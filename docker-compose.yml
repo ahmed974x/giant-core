@@ -1,6 +1,7 @@
 # OMEGA · Pre-Cog Syndicate — one local stack
 #
 #   timescale    memory core: 1-min candles (hypertable) + anomaly detection in SQL
+#   db-migrate   one-shot on every `up`: applies any db/init script an older volume has not seen yet
 #   postgrest    read-only API over the api.* views
 #   n8n          every minute: Binance klines → Timescale → pulse/anomaly → relay + Telegram
 #                every 10 min: free RSS news + Fear & Greed → Timescale → scored by cortex → relay + Telegram
@@ -78,6 +79,30 @@ services:
       retries: 10
       start_period: 30s
 
+  # Postgres runs db/init only when it creates an empty volume. This brings an existing volume up to
+  # date: every script skips itself once its schema exists, so it is a no-op on a current stack.
+  db-migrate:
+    image: timescale/timescaledb:2.17.2-pg16
+    <<: *hardening
+    cap_drop: ["ALL"]
+    restart: "no"
+    user: postgres
+    read_only: true
+    depends_on:
+      timescale: { condition: service_healthy }
+    entrypoint: ["sh", "/db/migrate.sh"]
+    environment:
+      PGHOST: timescale
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      POSTGRES_USER: omega_admin
+      SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
+      PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+    volumes:
+      - ./db:/db:ro
+    networks: [db]
+    mem_limit: 128m
+
   postgrest:
     image: postgrest/postgrest:v12.2.3
     <<: *hardening
@@ -85,6 +110,7 @@ services:
     read_only: true
     depends_on:
       timescale: { condition: service_healthy }
+      db-migrate: { condition: service_completed_successfully }
     environment:
       PGRST_DB_URI: postgres://authenticator:${PGRST_DB_PASSWORD}@timescale:5432/${POSTGRES_DB:-omega}
       PGRST_DB_SCHEMAS: api
@@ -114,7 +140,7 @@ services:
     cap_drop: ["ALL"]
     depends_on:
       n8n-init: { condition: service_completed_successfully }
-      timescale: { condition: service_healthy }
+      db-migrate: { condition: service_completed_successfully }
       relay: { condition: service_healthy }
     environment: *n8n-env
     volumes:

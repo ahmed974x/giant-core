@@ -1,19 +1,13 @@
 #!/bin/sh
-# One-shot seeder: imports credentials (n8n encrypts them at rest) and the OMEGA workflows, then
-# activates them. Each workflow is seeded once per volume, so later `up`s leave your edits in the n8n
-# editor alone, and a volume seeded before a workflow existed picks that workflow up on the next `up`.
+# One-shot seeder: imports credentials (n8n encrypts them at rest) and every workflow in
+# /seed/workflows, then activates them. Each workflow is seeded once per volume and remembered by a
+# marker file, so later `up`s leave your edits in the n8n editor alone, and a workflow added to the
+# repo after the volume was created is picked up on the next `docker compose up`.
 # To re-seed everything after changing .env or a workflow file:
 #   docker compose run --rm -e OMEGA_RESEED=1 n8n-init && docker compose restart n8n
 set -eu
 : "${OMEGA_RELAY_TOKEN:?}" "${SENTINEL_DB_PASSWORD:?}" "${OMEGA_GATEWAY_TOKEN:?}"
-STATE=/home/node/.n8n
-MARK=$STATE/.omega-seeded              # Market Sentinel (kept from the first release)
-NEWS_MARK=$STATE/.omega-seeded-news    # News Sentiment
-RESEED=${OMEGA_RESEED:-0}
-need_sentinel=1; need_news=1
-if [ -f "$MARK" ] && [ "$RESEED" != "1" ]; then need_sentinel=0; fi
-if [ -f "$NEWS_MARK" ] && [ "$RESEED" != "1" ]; then need_news=0; fi
-if [ "$need_sentinel$need_news" = "00" ]; then echo "omega already seeded"; exit 0; fi
+export OMEGA_SEED_DIR="${OMEGA_SEED_DIR:-/seed}" OMEGA_N8N_DIR="${OMEGA_N8N_DIR:-/home/node/.n8n}"
 
 umask 077
 WORK=$(mktemp -d)
@@ -24,6 +18,7 @@ node - "$WORK" <<'JS'
 const fs = require("fs");
 const out = process.argv[2];
 const env = process.env;
+const SEED = env.OMEGA_SEED_DIR, STATE = env.OMEGA_N8N_DIR;
 const tg = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
 const creds = [
   { id: "omegaRelayAuth", name: "OMEGA relay token", type: "httpHeaderAuth",
@@ -36,29 +31,34 @@ const creds = [
   { id: "omegaCortexAuth", name: "OMEGA Cortex gateway token", type: "httpHeaderAuth",
     data: { name: "Authorization", value: `Bearer ${env.OMEGA_GATEWAY_TOKEN}` } },
 ];
-fs.writeFileSync(`${out}/creds.json`, JSON.stringify(creds));
 
-for (const file of ["market-sentinel", "news-sentiment"]) {
-  const wf = JSON.parse(fs.readFileSync(`/seed/workflows/${file}.json`, "utf8"));
-  for (const n of wf[0].nodes) {
-    if (n.type !== "n8n-nodes-base.telegram") continue;
-    if (tg) n.parameters.chatId = String(env.TELEGRAM_CHAT_ID);
-    else { n.disabled = true; n.parameters.chatId = ""; }
+// Marker per workflow id. ".omega-seeded" is the marker volumes seeded before this scheme carry.
+const reseed = env.OMEGA_RESEED === "1";
+const seeded = id => fs.existsSync(`${STATE}/.omega-seeded-${id}`) || (id === "omegaSentinel01" && fs.existsSync(`${STATE}/.omega-seeded`));
+const todo = [];
+for (const file of fs.readdirSync(`${SEED}/workflows`).filter(f => f.endsWith(".json")).sort()) {
+  for (const wf of JSON.parse(fs.readFileSync(`${SEED}/workflows/${file}`, "utf8"))) {
+    if (!reseed && seeded(wf.id)) continue;
+    for (const n of wf.nodes) {
+      if (n.type !== "n8n-nodes-base.telegram") continue;
+      if (tg) n.parameters.chatId = String(env.TELEGRAM_CHAT_ID);
+      else { n.disabled = true; n.parameters.chatId = ""; }
+    }
+    todo.push(wf);
   }
-  fs.writeFileSync(`${out}/${file}.json`, JSON.stringify(wf));
 }
-console.log(tg ? "telegram: enabled" : "telegram: TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set, node disabled");
+fs.writeFileSync(`${out}/creds.json`, JSON.stringify(creds));
+fs.writeFileSync(`${out}/workflows.json`, JSON.stringify(todo));
+fs.writeFileSync(`${out}/ids`, todo.map(w => w.id + "\n").join(""));
+console.log(todo.length ? `seeding: ${todo.map(w => w.name).join(", ")}` : "omega already seeded");
+if (todo.length) console.log(tg ? "telegram: enabled" : "telegram: TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set, node disabled");
 JS
 
+[ -s "$WORK/ids" ] || exit 0
 n8n import:credentials --input="$WORK/creds.json"
-if [ "$need_sentinel" = "1" ]; then
-  n8n import:workflow --input="$WORK/market-sentinel.json"
-  n8n update:workflow --id=omegaSentinel01 --active=true
-  touch "$MARK"
-fi
-if [ "$need_news" = "1" ]; then
-  n8n import:workflow --input="$WORK/news-sentiment.json"
-  n8n update:workflow --id=omegaNews01 --active=true
-  touch "$NEWS_MARK"
-fi
+n8n import:workflow --input="$WORK/workflows.json"
+while read -r id; do
+  n8n update:workflow --id="$id" --active=true
+  touch "$OMEGA_N8N_DIR/.omega-seeded-$id"
+done < "$WORK/ids"
 echo "omega seed complete"
