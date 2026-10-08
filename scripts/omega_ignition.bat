@@ -63,8 +63,8 @@ rem Fill every empty secret with 32 random bytes (hex). Existing values are neve
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$keys='N8N_ENCRYPTION_KEY','OMEGA_RELAY_TOKEN','POSTGRES_PASSWORD','SENTINEL_DB_PASSWORD','PGRST_DB_PASSWORD','PGRST_JWT_SECRET','OMEGA_GATEWAY_TOKEN';" ^
   "$rng=[Security.Cryptography.RandomNumberGenerator]::Create();" ^
-  "$lines=Get-Content .env | ForEach-Object { $l=$_; foreach($k in $keys){ if($l -eq \"$k=\"){ $b=New-Object byte[] 32; $rng.GetBytes($b); $l=\"$k=\"+(($b|ForEach-Object{$_.ToString('x2')}) -join '') } }; $l };" ^
-  "[IO.File]::WriteAllLines((Resolve-Path .env), $lines)" || (call :fail "Could not write .env" & exit /b 1)
+  "$lines=Get-Content .env | ForEach-Object { $l=$_; foreach($k in $keys){ if($l -eq ($k+'=')){ $b=New-Object byte[] 32; $rng.GetBytes($b); $l=$k+'='+(($b|ForEach-Object{$_.ToString('x2')}) -join '') } }; $l };" ^
+  "[IO.File]::WriteAllLines((Resolve-Path .env).Path, $lines)" || (call :fail "Could not write .env" & exit /b 1)
 findstr /b /c:"OMEGA_LOCAL_MODEL=" .env >nul || echo OMEGA_LOCAL_MODEL=llama3.2:3b>>.env
 if defined FIRST_RUN (
   echo.
