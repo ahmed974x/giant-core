@@ -61,7 +61,7 @@ Every source is free and needs no key.
 | Bitcoin | every confirmed block | `OMEGA_BTC_API` = blockchain.info | one block, about 10 min |
 | Ethereum | native ETH + USDT, USDC, WETH, WBTC, stETH `Transfer` logs | `OMEGA_ETH_RPC_URL` = publicnode (any batch-capable JSON-RPC) | about 1 min (head − 3) |
 
-How a transfer is judged (all in SQL, `db/init/02-whale-watch.sh`):
+How a transfer is judged (all in SQL, `db/init/04-whale-watch.sh`):
 
 - **Bitcoin amount** = outputs that do not go back to one of the transaction's own input addresses, so change
   and self-consolidations don't count.
@@ -89,7 +89,7 @@ A paid label feed (Whale Alert, Arkham) would fill this in bulk; nothing else in
 **Upgrading an existing stack** (the database volume already exists, so new init scripts don't run):
 
 ```sh
-docker compose exec -T timescale sh /docker-entrypoint-initdb.d/02-whale-watch.sh
+docker compose exec -T timescale sh /docker-entrypoint-initdb.d/04-whale-watch.sh
 docker compose up -d relay
 docker compose run --rm -e OMEGA_RESEED=1 n8n-init && docker compose restart n8n
 ```

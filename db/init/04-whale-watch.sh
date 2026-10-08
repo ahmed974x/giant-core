@@ -3,7 +3,7 @@
 #   chain.*  transfers (hypertable), whale_alerts, entities, assets, thresholds; written only via chain.ingest()
 #   api.*    whales + whale_feeds views for PostgREST
 # Runs on the first boot of an empty volume. On a volume that already exists, apply it once with:
-#   docker compose exec -T timescale sh /docker-entrypoint-initdb.d/02-whale-watch.sh
+#   docker compose exec -T timescale sh /docker-entrypoint-initdb.d/04-whale-watch.sh
 set -eu
 
 if psql -tA --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "SELECT 1 FROM pg_namespace WHERE nspname = 'chain'" | grep -q 1; then
