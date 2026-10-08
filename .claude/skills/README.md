@@ -9,6 +9,7 @@ Claude Code loads every folder here automatically when it runs inside this repo.
 | `web-artifacts-builder` | Multi-component React + Tailwind + shadcn/ui pages bundled into one HTML file |
 | `theme-factory` | Colour and font themes; can generate a custom dark "neural" theme |
 | `algorithmic-art` | p5.js particle systems and flow fields for live neural backgrounds |
+| `build-mcpb` | Packaging an OMEGA tool server as a one-file `.mcpb` bundle you drag onto Claude Desktop (from [claude-plugins-official](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/mcp-server-dev) at `f713a7c`) |
 | `webapp-testing` | Playwright screenshots and checks of the dashboard running locally |
 
 To update: re-copy the folders from a fresh clone of anthropics/skills.
