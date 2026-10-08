@@ -7,11 +7,16 @@
 #   news.score()       n8n's door for scores; returns the rows it scored
 #   api.news, api.sentiment_now, api.sentiment_1h, api.fear_greed, api.sentiment_vs_price   read-only views
 # Sentiment is in [-1, 1]. Aggregates weight each headline by relevance × impact (low 1, medium 2, high 3).
-# Runs on first boot of an empty volume. On an existing volume:
-#   docker compose exec timescale sh /docker-entrypoint-initdb.d/03-news.sh
+# Runs on first boot of an empty volume; on an older volume the db-migrate service applies it.
 set -eu
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
+# Applied once: skipped when the news schema already exists, because db/migrate.sh re-runs every
+# init script on each `docker compose up` to bring older volumes up to date.
+if psql -tAq --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+     -c "SELECT 1 FROM pg_namespace WHERE nspname = 'news'" | grep -q 1; then
+  echo "03-news.sh: news schema present, nothing to do"
+else
+psql -v ON_ERROR_STOP=1 --single-transaction --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
 CREATE SCHEMA news;
 
 CREATE TABLE news.items (
@@ -212,3 +217,4 @@ WHERE h.scope <> 'MARKET';
 GRANT SELECT ON api.news, api.sentiment_now, api.sentiment_1h, api.fear_greed, api.sentiment_vs_price TO web_anon;
 NOTIFY pgrst, 'reload schema';
 SQL
+fi

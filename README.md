@@ -37,6 +37,21 @@ open http://localhost:8088    # the constellation; n8n editor at http://localhos
 The first run back-fills ~16 hours of candles, so the z-score rules arm within minutes.
 Opening `dashboard/index.html` straight from disk (or adding `?demo`) runs it on simulated data.
 
+## Upgrading
+
+```sh
+git pull
+docker compose up -d                  # db-migrate adds new tables, n8n-init seeds new workflows
+docker compose restart relay n8n      # the relay loads its code, and n8n its workflows, at start
+```
+
+Postgres runs `db/init/*` only when it creates an empty volume, so on every `up` the one-shot
+`db-migrate` service runs those scripts against the existing volume. Each one skips itself once its
+schema exists, so on a current stack it changes nothing (`docker compose logs db-migrate` shows what
+it did). `n8n-init` remembers each workflow it seeded (`.omega-seeded-<id>` in the n8n volume) and
+imports only the ones it hasn't seen; when it does, it also refreshes the OMEGA credentials from
+`.env`. Your edits to already-seeded workflows are kept.
+
 ## Anomaly rules
 
 All in SQL (`db/init/01-sentinel.sh`), evaluated on each pair's newest closed candle. Thresholds live in the
@@ -91,14 +106,8 @@ VALUES ('eth', lower('0xYourAddress'), 'Bybit', 'exchange', 'manual');   -- ETH 
 
 A paid label feed (Whale Alert, Arkham) would fill this in bulk; nothing else in Whale Watch needs paying for.
 
-**Upgrading an existing stack** (the database volume already exists, so new init scripts don't run):
-
-```sh
-docker compose exec -T timescale sh /docker-entrypoint-initdb.d/04-whale-watch.sh
-docker compose up -d && docker compose restart n8n relay
-```
-
-The seeder imports only the workflows a volume hasn't seen yet, so your edits to the others stay.
+Already running an older stack? See [Upgrading](#upgrading); `db-migrate` adds the `chain` schema and
+n8n-init seeds the two Whale Watch workflows.
 
 ## Telegram
 
@@ -155,13 +164,7 @@ WHERE next_1h_return_pct IS NOT NULL GROUP BY symbol;
 **Tuning.** Feeds live in the n8n *Feeds* node, the route in *Build prompt* (`omega/smart` puts Claude
 first and costs money; `omega/local` keeps headlines on the machine), the Telegram bar in *Format Telegram*.
 
-Already running an older volume? Add the news tables and the new workflow once:
-```sh
-docker compose exec timescale sh /docker-entrypoint-initdb.d/03-news.sh
-docker compose run --rm n8n-init
-docker compose up -d && docker compose restart n8n relay
-```
-(The seeder imports only workflows a volume hasn't seen yet, and refreshes credentials from `.env`.)
+Already running an older stack? See [Upgrading](#upgrading).
 
 ## Cortex: LLM gateway
 
@@ -214,8 +217,7 @@ Claude calls go through the official Anthropic SDK with server-side refusal fall
 providers (LLM7, OVHcloud, Kilo) may log them and stay off unless `OMEGA_ALLOW_ANON_PROVIDERS=true`.
 Send sensitive work through `claude` or `omega/smart`.
 
-Already running an older volume? Add the performance tables once:
-`docker compose exec timescale sh /docker-entrypoint-initdb.d/02-cortex.sh`
+Already running an older stack? See [Upgrading](#upgrading).
 
 ## Security notes
 

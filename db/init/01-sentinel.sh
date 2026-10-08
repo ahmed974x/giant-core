@@ -1,10 +1,16 @@
 #!/bin/sh
-# Market Sentinel memory core. Runs once, on the first boot of an empty volume.
+# Market Sentinel memory core. Runs on the first boot of an empty volume.
 #   market.*  raw 1-minute candles (hypertable) + detected anomalies; writable only via market.ingest()
 #   api.*     read-only views served by PostgREST to the Neural Constellation
 set -eu
 : "${SENTINEL_DB_PASSWORD:?}" "${PGRST_DB_PASSWORD:?}"
 
+# Applied once: skipped when the market schema already exists, because db/migrate.sh re-runs every
+# init script on each `docker compose up` to bring older volumes up to date.
+if psql -tAq --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+     -c "SELECT 1 FROM pg_namespace WHERE nspname = 'market'" | grep -q 1; then
+  echo "01-sentinel.sh: market schema present, nothing to do"
+else
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
   -v writer_pw="$SENTINEL_DB_PASSWORD" -v rest_pw="$PGRST_DB_PASSWORD" <<'SQL'
 CREATE EXTENSION IF NOT EXISTS timescaledb;
@@ -210,3 +216,4 @@ FROM market.anomalies WHERE ts > now() - interval '30 days';
 GRANT USAGE ON SCHEMA api TO web_anon;
 GRANT SELECT ON ALL TABLES IN SCHEMA api TO web_anon;
 SQL
+fi
