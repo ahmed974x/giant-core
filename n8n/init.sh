@@ -44,9 +44,12 @@ const SOURCES = {
   __OMEGA_ETH_RPC_URL__: url(env.OMEGA_ETH_RPC_URL, "https://ethereum-rpc.publicnode.com", "OMEGA_ETH_RPC_URL"),
 };
 
-// Marker per workflow id. ".omega-seeded" is the marker volumes seeded before this scheme carry.
+// Marker per workflow id. Volumes seeded before this scheme carry the older names below
+// (#1 wrote ".omega-seeded" for the Sentinel, #5 wrote ".omega-seeded-news" for News); honour
+// them so those workflows are not re-imported over the user's edits.
+const LEGACY = { omegaSentinel01: ".omega-seeded", omegaNews01: ".omega-seeded-news" };
 const reseed = env.OMEGA_RESEED === "1";
-const seeded = id => fs.existsSync(`${STATE}/.omega-seeded-${id}`) || (id === "omegaSentinel01" && fs.existsSync(`${STATE}/.omega-seeded`));
+const seeded = id => fs.existsSync(`${STATE}/.omega-seeded-${id}`) || (LEGACY[id] && fs.existsSync(`${STATE}/${LEGACY[id]}`));
 const todo = [];
 for (const file of fs.readdirSync(`${SEED}/workflows`).filter(f => f.endsWith(".json")).sort()) {
   let text = fs.readFileSync(`${SEED}/workflows/${file}`, "utf8");
