@@ -1,7 +1,7 @@
 """
-Ø§ØªØ¬Ø§Ù‡ Ø§Ù„ØªØµÙ…ÙŠÙ…: Â«Giant Core WorkstationÂ» â€” Ø³Ø·Ø­ Ù…ÙƒØªØ¨ Ø¨Ø±Ù…Ø¬ÙŠ Ø¯Ø§ÙƒÙ† ÙˆÙ‡Ø§Ø¯Ø¦ØŒ Ù…ØªØ¯Ø±Ø¬
-Ø¨Ø¨Ø·Ø¡ ÙˆÙ…Ø¯Ø±ÙˆØ³ Ù„Ù„Ù…Ø³ Ø¹Ù„Ù‰ iPad Pro. ØªØ±ÙƒØ² Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© Ø¹Ù„Ù‰ Ù…Ø­Ø±Ø± ÙˆØ§Ø¶Ø­ ÙˆÙ…Ø³Ø§Ø¹Ø¯ ÙƒÙˆØ¯ Ù…Ø­Ù„ÙŠ ØµØ§Ø¯Ù‚
-ÙˆÙ„ÙˆØ­Ø§Øª Ø¬Ù„Ø³Ø© ÙˆÙ…Ù„Ù Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ù‚Ø±Ø§Ø¡Ø©ØŒ Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† Ø§Ø¯Ø¹Ø§Ø¡ ØªÙ†ÙÙŠØ° Ø°ÙƒØ§Ø¡ Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ø®Ø§Ø±Ø¬ÙŠ.
+اتجاه التصميم: «Giant Core Workstation» — سطح مكتب برمجي داكن وهادئ، متدرج
+ببطء ومدروس للمس على iPad Pro. تركز الواجهة على محرر واضح ومساعد كود محلي صادق
+ولوحات جلسة وملف قابلة للقراءة، بدلاً من ادعاء تنفيذ ذكاء اصطناعي خارجي.
 """
 
 from __future__ import annotations
@@ -28,11 +28,11 @@ LOGO_URL = "/manus-storage/plugin-symbol_fb028041.png"
 MAX_OPERATION_LOG_ITEMS = 8
 
 
-st.set_page_config(page_title="Giant Core", page_icon="â—ˆ", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Giant Core", page_icon="◈", layout="wide", initial_sidebar_state="collapsed")
 
 
 def inject_theme() -> None:
-    """ÙŠØ¶ÙŠÙ ÙˆØ§Ø¬Ù‡Ø© Giant Core Ø§Ù„Ù…Ø±ÙŠØ­Ø© Ù„Ù„Ø¹ÙŠÙ† ÙˆÙ…Ù‚Ø§Ø³Ø§Øª Ù„Ù…Ø³ Ù…Ø±ØªÙØ¹Ø© Ù„Ù„Ø¢ÙŠØ¨Ø§Ø¯."""
+    """يضيف واجهة Giant Core المريحة للعين ومقاسات لمس مرتفعة للآيباد."""
     st.markdown(
         f"""
         <style>
@@ -80,21 +80,21 @@ def inject_theme() -> None:
 
 
 def record_operation(title: str, detail: str, tone: str = "info") -> None:
-    """ÙŠØ¶ÙŠÙ Ø¹Ù…Ù„ÙŠØ© Ø¬Ø¯ÙŠØ¯Ø© Ø¥Ù„Ù‰ Ø³Ø¬Ù„ Ø¬Ù„Ø³Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙˆÙŠØ­Ø§ÙØ¸ Ø¹Ù„Ù‰ Ø£Ø­Ø¯Ø« Ø§Ù„Ø¹Ù†Ø§ØµØ± ÙÙ‚Ø·."""
+    """يضيف عملية جديدة إلى سجل جلسة المستخدم ويحافظ على أحدث العناصر فقط."""
     log = st.session_state.setdefault("operation_log", [])
     log.insert(0, {"time": datetime.now().strftime("%H:%M"), "title": title, "detail": detail, "tone": tone})
     del log[MAX_OPERATION_LOG_ITEMS:]
 
 
 def get_operation_log() -> list[dict[str, str]]:
-    """ÙŠØ¹ÙŠØ¯ Ø³Ø¬Ù„ Ø§Ù„Ø¬Ù„Ø³Ø© Ø£Ùˆ Ø­Ø§Ù„Ø© Ø¨Ø¯Ø¡ ÙˆØ§Ø¶Ø­Ø© Ø¹Ù†Ø¯ Ø¹Ø¯Ù… ÙˆØ¬ÙˆØ¯ Ø¹Ù…Ù„ÙŠØ§Øª."""
+    """يعيد سجل الجلسة أو حالة بدء واضحة عند عدم وجود عمليات."""
     if "operation_log" not in st.session_state:
-        st.session_state["operation_log"] = [{"time":"â€”","title":"Ø§Ù„Ù…Ø­Ø·Ø© Ø¬Ø§Ù‡Ø²Ø©","detail":"Ø£Ø¶Ù ÙƒÙˆØ¯Ø§Ù‹ Ù„Ø¨Ø¯Ø¡ Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ø­Ù„ÙŠ.","tone":"info"}]
+        st.session_state["operation_log"] = [{"time":"—","title":"المحطة جاهزة","detail":"أضف كوداً لبدء التحليل المحلي.","tone":"info"}]
     return st.session_state["operation_log"]
 
 
 def session_totals() -> tuple[int, int, int]:
-    """ÙŠØ­Ø³Ø¨ Ø¹Ø¯Ø¯ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª ÙˆØ§Ù„Ù†Ø¬Ø§Ø­Ø§Øª ÙˆØ§Ù„Ø¥Ø®ÙØ§Ù‚Ø§Øª Ù…Ù† Ø³Ø¬Ù„ Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ø­Ø§Ù„ÙŠ."""
+    """يحسب عدد العمليات والنجاحات والإخفاقات من سجل الجلسة الحالي."""
     log = get_operation_log()
     successes = sum(item["tone"] == "success" for item in log)
     failures = sum(item["tone"] == "error" for item in log)
@@ -102,20 +102,20 @@ def session_totals() -> tuple[int, int, int]:
 
 
 def overall_status(analysis: CodeAnalysis) -> tuple[str, str, str]:
-    """ÙŠØ­Ø¯Ø¯ Ø­Ø§Ù„Ø© Ø§Ù„Ù†ÙˆØ§Ø© Ø§Ù„Ø¹Ø§Ù…Ø© Ø¯ÙˆÙ† Ø¥Ø®ÙØ§Ø¡ Ø£Ø®Ø·Ø§Ø¡ Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ø­Ù„ÙŠ."""
+    """يحدد حالة النواة العامة دون إخفاء أخطاء التحليل المحلي."""
     if not analysis.valid:
-        return "REVIEW", "waiting", "ÙŠÙˆØ¬Ø¯ Ø®Ø·Ø£ Ù†Ø­ÙˆÙŠ ÙŠØ­ØªØ§Ø¬ Ø¥Ù„Ù‰ Ù…Ø±Ø§Ø¬Ø¹Ø© Ù‚Ø¨Ù„ Ø§Ù„ØªØ´ØºÙŠÙ„."
+        return "REVIEW", "waiting", "يوجد خطأ نحوي يحتاج إلى مراجعة قبل التشغيل."
     if st.session_state.get("plugin_code", "").strip() or MERGED_PLUGIN_PATH.exists():
-        return "ACTIVE", "active", "Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯ Ø§Ù„Ù…Ø­Ù„ÙŠ ÙŠØ­Ù„Ù„ Ø¥Ø¶Ø§ÙØ© Ù…ØªØ§Ø­Ø© Ù„Ù„ØªØ´ØºÙŠÙ„ Ø£Ùˆ Ø§Ù„Ø­ÙØ¸."
-    return "WAITING", "waiting", "Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø¥Ø¶Ø§ÙØ© ÙƒÙˆØ¯ Ø¥Ù„Ù‰ Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„."
+        return "ACTIVE", "active", "المساعد المحلي يحلل إضافة متاحة للتشغيل أو الحفظ."
+    return "WAITING", "waiting", "بانتظار إضافة كود إلى مساحة العمل."
 
 
 def render_dashboard(analysis: CodeAnalysis) -> None:
-    """ÙŠØ¹Ø±Ø¶ Ù‡ÙˆÙŠØ© Giant CoreØŒ Ø­Ø§Ù„Ø© Ø§Ù„Ù†ÙˆØ§Ø©ØŒ ÙˆÙ…Ù‚Ø§ÙŠÙŠØ³ Ø§Ù„Ù…Ù„Ù ÙˆØ§Ù„Ø¬Ù„Ø³Ø© ÙˆØ§Ù„Ù…Ø³Ø§Ø¹Ø¯."""
+    """يعرض هوية Giant Core، حالة النواة، ومقاييس الملف والجلسة والمساعد."""
     status, status_class, status_detail = overall_status(analysis)
     summary = get_plugin_file_summary()
     operations, successes, failures = session_totals()
-    file_status = summary.name if summary.exists else "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ù„Ù Ù…Ø¯Ù…Ø¬"
+    file_status = summary.name if summary.exists else "لا يوجد ملف مدمج"
     diagnostics_html = "".join(
         f'<div class="assistant-item diag-{html.escape(item.level)}"><strong>{html.escape(item.title)}</strong><br>{html.escape(item.message)}</div>'
         for item in analysis.diagnostics
@@ -127,19 +127,19 @@ def render_dashboard(analysis: CodeAnalysis) -> None:
         f"""
         <section class="hero"><div class="brand"><span class="mark" aria-hidden="true"></span><div>
             <p class="eyebrow">LOCAL PROGRAMMING WORKSTATION</p><h1>Giant Core</h1>
-            <p class="subtitle">Ù…Ø³Ø§Ø­Ø© Ø¨Ø±Ù…Ø¬Ø© Ù…Ø±ÙƒØ²Ø© Ù„Ù„Ø¢ÙŠØ¨Ø§Ø¯: ØªØ­Ù„ÙŠÙ„ Ø«Ø§Ø¨ØªØŒ ØªØ´Ø®ÙŠØµ ÙˆØ§Ø¶Ø­ØŒ ÙˆØ¥Ø¯Ø§Ø±Ø© Ø¢Ù…Ù†Ø© Ù„Ù„Ù…Ù„Ù ÙˆØ§Ù„Ø¬Ù„Ø³Ø© Ù…Ù† Ø´Ø§Ø´Ø© ÙˆØ§Ø­Ø¯Ø©.</p></div></div>
+            <p class="subtitle">مساحة برمجة مركزة للآيباد: تحليل ثابت، تشخيص واضح، وإدارة آمنة للملف والجلسة من شاشة واحدة.</p></div></div>
             <aside class="core-state" title="{html.escape(status_detail)}"><p class="state-label">CORE STATUS</p><p class="state-value {status_class}">{status}</p></aside>
         </section>
-        <section class="dashboard"><div class="section-row"><p class="section-title">Ù„ÙˆØ­Ø© ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø¬Ù„Ø³Ø©</p><p class="section-note">{html.escape(status_detail)}</p></div>
+        <section class="dashboard"><div class="section-row"><p class="section-title">لوحة تحليل الجلسة</p><p class="section-note">{html.escape(status_detail)}</p></div>
             <div class="metric-grid">
-                <article class="metric"><p class="metric-label">CODE HEALTH</p><p class="metric-value">{analysis.score}%</p><p class="metric-detail">{analysis.line_count} Ø£Ø³Ø·Ø± Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„ØªØ­Ù„ÙŠÙ„</p></article>
-                <article class="metric"><p class="metric-label">STRUCTURE</p><p class="metric-value">{analysis.function_count}</p><p class="metric-detail">Ø¯ÙˆØ§Ù„ Â· {analysis.class_count} Ø£ØµÙ†Ø§Ù</p></article>
-                <article class="metric"><p class="metric-label">PLUGIN FILE</p><p class="metric-value">{summary.size_bytes if summary.exists else 'â€”'}</p><p class="metric-detail">{html.escape(file_status)}</p></article>
-                <article class="metric"><p class="metric-label">SESSION</p><p class="metric-value">{operations}</p><p class="metric-detail">{successes} Ù†Ø¬Ø§Ø­ Â· {failures} Ø£Ø®Ø·Ø§Ø¡</p></article>
+                <article class="metric"><p class="metric-label">CODE HEALTH</p><p class="metric-value">{analysis.score}%</p><p class="metric-detail">{analysis.line_count} أسطر قابلة للتحليل</p></article>
+                <article class="metric"><p class="metric-label">STRUCTURE</p><p class="metric-value">{analysis.function_count}</p><p class="metric-detail">دوال · {analysis.class_count} أصناف</p></article>
+                <article class="metric"><p class="metric-label">PLUGIN FILE</p><p class="metric-value">{summary.size_bytes if summary.exists else '—'}</p><p class="metric-detail">{html.escape(file_status)}</p></article>
+                <article class="metric"><p class="metric-label">SESSION</p><p class="metric-value">{operations}</p><p class="metric-detail">{successes} نجاح · {failures} أخطاء</p></article>
             </div>
-            <section class="assistant" aria-live="polite"><div class="assistant-head"><div><p class="assistant-title">Ù…Ø³Ø§Ø¹Ø¯ Ø§Ù„ÙƒÙˆØ¯</p><p class="assistant-caption">ØªØ´Ø®ÙŠØµ ÙˆØ§Ù‚ØªØ±Ø§Ø­Ø§Øª Ù…Ø­Ù„ÙŠØ© Ø¹Ø¨Ø± ØªØ­Ù„ÙŠÙ„ Ø¨Ø§ÙŠØ«ÙˆÙ† Ø§Ù„Ø«Ø§Ø¨ØªØ› Ù„Ø§ ÙŠÙØ±Ø³Ù„ Ø§Ù„ÙƒÙˆØ¯ Ø¥Ù„Ù‰ Ø£ÙŠ Ø®Ø¯Ù…Ø© Ø®Ø§Ø±Ø¬ÙŠØ©.</p></div><span class="local-tag">LOCAL AUTO-DEBUG</span></div>
+            <section class="assistant" aria-live="polite"><div class="assistant-head"><div><p class="assistant-title">مساعد الكود</p><p class="assistant-caption">تشخيص واقتراحات محلية عبر تحليل بايثون الثابت؛ لا يُرسل الكود إلى أي خدمة خارجية.</p></div><span class="local-tag">LOCAL AUTO-DEBUG</span></div>
                 <div class="assistant-body"><div class="score"><span class="score-number">{analysis.score}</span><span class="score-label">QUALITY SCORE</span></div>
-                    <div class="assistant-columns"><div class="assistant-group"><p class="group-title">Ø§Ù„ØªØ´Ø®ÙŠØµ Ø§Ù„Ø¢Ù†</p>{diagnostics_html}</div><div class="assistant-group"><p class="group-title">Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø©</p>{suggestions_html}</div></div>
+                    <div class="assistant-columns"><div class="assistant-group"><p class="group-title">التشخيص الآن</p>{diagnostics_html}</div><div class="assistant-group"><p class="group-title">الخطوة المقترحة</p>{suggestions_html}</div></div>
                 </div></section>
         </section>
         """,
@@ -148,15 +148,15 @@ def render_dashboard(analysis: CodeAnalysis) -> None:
 
 
 def render_workspace_intelligence() -> None:
-    """ÙŠØ¹Ø±Ø¶ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…Ù„Ù Ø§Ù„Ù…Ø­ÙÙˆØ¸ ÙˆÙ…Ø¤Ø´Ø±Ø§Øª Ø§Ù„Ø¬Ù„Ø³Ø© ÙÙˆÙ‚ Ù…Ø­Ø±Ø± Ø§Ù„ÙƒÙˆØ¯."""
+    """يعرض معلومات الملف المحفوظ ومؤشرات الجلسة فوق محرر الكود."""
     summary = get_plugin_file_summary()
     operations, successes, failures = session_totals()
-    file_title = summary.name if summary.exists else "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø¶Ø§ÙØ© Ù…Ø­ÙÙˆØ¸Ø©"
-    file_detail = f"{summary.size_bytes} Ø¨Ø§ÙŠØª Â· Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„ {summary.modified_at}" if summary.exists else "Ø³ÙŠÙÙ†Ø´Ø£ Ù…Ø¬Ù„Ø¯ plugins Ø¹Ù†Ø¯ Ø£ÙˆÙ„ Ø¯Ù…Ø¬."
+    file_title = summary.name if summary.exists else "لا توجد إضافة محفوظة"
+    file_detail = f"{summary.size_bytes} بايت · آخر تعديل {summary.modified_at}" if summary.exists else "سيُنشأ مجلد plugins عند أول دمج."
     st.markdown(
         f"""
-        <section class="intel-grid"><article class="intel-panel"><p class="intel-title">Ø§Ù„Ù…Ù„Ù Ø§Ù„Ù†Ø´Ø·</p><p class="file-main">{html.escape(file_title)}</p><p class="intel-line">{html.escape(file_detail)}</p></article>
-            <article class="intel-panel"><p class="intel-title">Ù†Ø¨Ø¶ Ø§Ù„Ø¬Ù„Ø³Ø©</p><div class="session-rows"><div class="session-row"><span>Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø©</span><strong>{operations}</strong></div><div class="session-row"><span>ØªØ´ØºÙŠÙ„ Ù†Ø§Ø¬Ø­</span><strong>{successes}</strong></div><div class="session-row"><span>ÙŠØ­ØªØ§Ø¬ Ù…Ø±Ø§Ø¬Ø¹Ø©</span><strong>{failures}</strong></div></div></article>
+        <section class="intel-grid"><article class="intel-panel"><p class="intel-title">الملف النشط</p><p class="file-main">{html.escape(file_title)}</p><p class="intel-line">{html.escape(file_detail)}</p></article>
+            <article class="intel-panel"><p class="intel-title">نبض الجلسة</p><div class="session-rows"><div class="session-row"><span>العمليات المسجلة</span><strong>{operations}</strong></div><div class="session-row"><span>تشغيل ناجح</span><strong>{successes}</strong></div><div class="session-row"><span>يحتاج مراجعة</span><strong>{failures}</strong></div></div></article>
         </section>
         """,
         unsafe_allow_html=True,
@@ -164,16 +164,16 @@ def render_workspace_intelligence() -> None:
 
 
 def render_results() -> None:
-    """ÙŠØ¹Ø±Ø¶ Ø¢Ø®Ø± Ù…Ø®Ø±Ø¬Ø§Øª ØªØ´ØºÙŠÙ„ ÙˆØ­Ø§Ù„ØªÙ‡Ø§ ÙˆÙ…Ø¯Ø© Ø§Ù„ØªÙ†ÙÙŠØ°."""
+    """يعرض آخر مخرجات تشغيل وحالتها ومدة التنفيذ."""
     result = st.session_state.get("last_result")
     if not result:
-        body = '<span class="placeholder"># Ø³ØªØ¸Ù‡Ø± Ù‡Ù†Ø§ Ù…Ø®Ø±Ø¬Ø§Øª Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø£Ùˆ Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø®Ø·Ø£ Ø¨Ø¹Ø¯ Ø§Ù„ØªØ´ØºÙŠÙ„.</span>'
-        state, state_class, meta = "WAITING", "", "Ù„Ù… ÙŠÙØ³Ø¬Ù‘Ù„ ØªØ´ØºÙŠÙ„ ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©"
+        body = '<span class="placeholder"># ستظهر هنا مخرجات الإضافة أو رسالة الخطأ بعد التشغيل.</span>'
+        state, state_class, meta = "WAITING", "", "لم يُسجّل تشغيل في هذه الجلسة"
     else:
-        content = result["content"] or "# ØªÙ… Ø§Ù„ØªÙ†ÙÙŠØ° Ø¨Ù†Ø¬Ø§Ø­ Ø¯ÙˆÙ† Ù…Ø®Ø±Ø¬Ø§Øª Ù†ØµÙŠØ©."
+        content = result["content"] or "# تم التنفيذ بنجاح دون مخرجات نصية."
         body = f'<pre class="terminal">{html.escape(content)}</pre>'
         state, state_class = ("COMPLETED", "") if result["ok"] else ("STOPPED", "error")
-        meta = f"{max(1, len(content.splitlines()))} Ø³Ø·Ø± Â· {result.get('duration_ms', 0)} Ù…Ù„Ù„ÙŠ Ø«Ø§Ù†ÙŠØ©"
+        meta = f"{max(1, len(content.splitlines()))} سطر · {result.get('duration_ms', 0)} مللي ثانية"
     st.markdown(
         f'<section class="results" aria-live="polite"><div class="panel-head"><div><p class="panel-title">RESULTS / CONSOLE</p><p class="panel-meta">{meta}</p></div><p class="panel-state {state_class}">{state}</p></div>{body}</section>',
         unsafe_allow_html=True,
@@ -181,19 +181,19 @@ def render_results() -> None:
 
 
 def render_operation_log() -> None:
-    """ÙŠØ¹Ø±Ø¶ Ø³Ø¬Ù„ Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ø¬Ù„Ø³Ø© Ø¨ØªØ±ØªÙŠØ¨ Ø²Ù…Ù†ÙŠ Ø¹ÙƒØ³ÙŠ ÙˆÙ…Ù‚Ø±ÙˆØ¡ Ù„Ù„Ù…Ø³."""
+    """يعرض سجل عمليات الجلسة بترتيب زمني عكسي ومقروء للمس."""
     rows = "".join(
         f'<div class="op-row"><span class="op-time">{html.escape(item["time"])}</span><div><p class="op-title">{html.escape(item["title"])}</p><p class="op-detail">{html.escape(item["detail"])}</p></div><span class="op-tag tag-{html.escape(item["tone"])}">{html.escape(item["tone"].upper())}</span></div>'
         for item in get_operation_log()
     )
     st.markdown(
-        f'<section class="operations"><div class="panel-head"><div><p class="panel-title">SESSION ACTIVITY</p><p class="panel-meta">Ø¢Ø®Ø± Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©</p></div><p class="panel-state">LOG</p></div><div class="operation-list">{rows}</div></section>',
+        f'<section class="operations"><div class="panel-head"><div><p class="panel-title">SESSION ACTIVITY</p><p class="panel-meta">آخر العمليات في هذه الجلسة</p></div><p class="panel-state">LOG</p></div><div class="operation-list">{rows}</div></section>',
         unsafe_allow_html=True,
     )
 
 
 def main() -> None:
-    """ÙŠØ´ØºÙ‘Ù„ Ù…Ø­Ø·Ø© Giant Core Ù…Ø¹ Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ø­Ù„ÙŠ ÙˆØ­ÙØ¸ ÙˆØªØ´ØºÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª."""
+    """يشغّل محطة Giant Core مع التحليل المحلي وحفظ وتشغيل الإضافات."""
     inject_theme()
     current_code = st.session_state.get("plugin_code", "")
     analysis = analyze_python_code(current_code)
@@ -204,22 +204,22 @@ def main() -> None:
     render_dashboard(analysis)
     st.markdown('<section class="workspace">', unsafe_allow_html=True)
     render_workspace_intelligence()
-    st.markdown('<p class="editor-title">Ù…Ø³Ø§Ø­Ø© Ø¨Ø±Ù…Ø¬Ø© Ø¨Ø§ÙŠØ«ÙˆÙ†</p><p class="editor-help">Ø£Ù„ØµÙ‚ Ø§Ù„ÙƒÙˆØ¯ØŒ Ø±Ø§Ù‚Ø¨ ØªØ´Ø®ÙŠØµ Ù…Ø³Ø§Ø¹Ø¯ Ø§Ù„ÙƒÙˆØ¯ØŒ Ø«Ù… Ø§Ø¯Ù…Ø¬Ù‡ Ù„Ù„Ø­ÙØ¸ Ø£Ùˆ Ø´ØºÙ‘Ù„Ù‡ Ù„Ø¹Ø±Ø¶ Ø§Ù„Ù†ØªÙŠØ¬Ø© ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©.</p>', unsafe_allow_html=True)
-    code = st.text_area("Ù…Ø³Ø§Ø­Ø© Ø¨Ø±Ù…Ø¬Ø© Ø¨Ø§ÙŠØ«ÙˆÙ†", key="plugin_code", height=410, placeholder="def run_plugin():\n    print('Giant Core ready')\n\nrun_plugin()", label_visibility="collapsed")
+    st.markdown('<p class="editor-title">مساحة برمجة بايثون</p><p class="editor-help">ألصق الكود، راقب تشخيص مساعد الكود، ثم ادمجه للحفظ أو شغّله لعرض النتيجة في هذه الجلسة.</p>', unsafe_allow_html=True)
+    code = st.text_area("مساحة برمجة بايثون", key="plugin_code", height=410, placeholder="def run_plugin():\n    print('Giant Core ready')\n\nrun_plugin()", label_visibility="collapsed")
 
     merge_column, run_column = st.columns(2, gap="medium")
     with merge_column:
-        merge_clicked = st.button("Ø¯Ù…Ø¬ ÙˆØ­ÙØ¸ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", use_container_width=True)
+        merge_clicked = st.button("دمج وحفظ الإضافة", use_container_width=True)
     with run_column:
-        run_clicked = st.button("ØªØ´ØºÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", type="primary", use_container_width=True)
+        run_clicked = st.button("تشغيل الإضافة", type="primary", use_container_width=True)
 
     if merge_clicked:
         try:
             path = merge_plugin_code(code)
-            record_operation("ØªÙ… Ø¯Ù…Ø¬ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", f"Ø­ÙÙØ¸Øª Ø§Ù„Ù†Ø³Ø®Ø© ÙÙŠ {Path(path).parent.name}/{Path(path).name}.", "success")
-            st.success(f"Ø­ÙÙØ¸Øª Ø§Ù„Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø¯Ù…Ø¬Ø© ÙÙŠ {Path(path).parent.name}/{Path(path).name}")
+            record_operation("تم دمج الإضافة", f"حُفظت النسخة في {Path(path).parent.name}/{Path(path).name}.", "success")
+            st.success(f"حُفظت النسخة المدمجة في {Path(path).parent.name}/{Path(path).name}")
         except ValueError as exc:
-            record_operation("ØªØ¹Ø°Ø± Ø§Ù„Ø¯Ù…Ø¬", str(exc), "error")
+            record_operation("تعذر الدمج", str(exc), "error")
             st.warning(str(exc))
 
     if run_clicked:
@@ -232,12 +232,12 @@ def main() -> None:
                 "duration_ms": result.duration_ms,
             }
             if result.ok:
-                record_operation("Ø§ÙƒØªÙ…Ù„ ØªØ´ØºÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", f"Ø§Ù†ØªÙ‡Øª Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ø®Ù„Ø§Ù„ {result.duration_ms} Ù…Ù„Ù„ÙŠ Ø«Ø§Ù†ÙŠØ©.", "success")
+                record_operation("اكتمل تشغيل الإضافة", f"انتهت العملية خلال {result.duration_ms} مللي ثانية.", "success")
             else:
-                record_operation("ØªÙˆÙ‚Ù ØªØ´ØºÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", "Ø±Ø§Ø¬Ø¹ ØªÙØ§ØµÙŠÙ„ Ø§Ù„ØªØ´Ø®ÙŠØµ Ø£Ùˆ Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ù‚Ø¨Ù„ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ø§Ù„ØªØ§Ù„ÙŠØ©.", "error")
+                record_operation("توقف تشغيل الإضافة", "راجع تفاصيل التشخيص أو النتائج قبل المحاولة التالية.", "error")
         except ValueError as exc:
             st.session_state["last_result"] = {"ok": False, "content": str(exc), "duration_ms": 0}
-            record_operation("ØªØ¹Ø°Ø± ØªØ´ØºÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙØ©", str(exc), "error")
+            record_operation("تعذر تشغيل الإضافة", str(exc), "error")
 
     render_results()
     render_operation_log()
@@ -245,3 +245,7 @@ def main() -> None:
     if merge_clicked or run_clicked:
         st.rerun()
 
+
+
+if __name__ == "__main__":
+    main()
