@@ -32,12 +32,29 @@ const creds = [
     data: { name: "Authorization", value: `Bearer ${env.OMEGA_GATEWAY_TOKEN}` } },
 ];
 
-// Marker per workflow id. ".omega-seeded" is the marker volumes seeded before this scheme carry.
+// Public chain endpoints for Whale Watch (n8n nodes cannot read env, so the URLs are written into the
+// workflows here).
+const url = (v, dflt, name) => {
+  const u = (v || dflt).replace(/\/+$/, "");
+  if (!/^https?:\/\/[^\s"'{}\\]+$/.test(u)) throw new Error(`${name} is not a plain http(s) URL`);
+  return u;
+};
+const SOURCES = {
+  __OMEGA_BTC_API__: url(env.OMEGA_BTC_API, "https://blockchain.info", "OMEGA_BTC_API"),
+  __OMEGA_ETH_RPC_URL__: url(env.OMEGA_ETH_RPC_URL, "https://ethereum-rpc.publicnode.com", "OMEGA_ETH_RPC_URL"),
+};
+
+// Marker per workflow id. Volumes seeded before this scheme carry the older names below
+// (#1 wrote ".omega-seeded" for the Sentinel, #5 wrote ".omega-seeded-news" for News); honour
+// them so those workflows are not re-imported over the user's edits.
+const LEGACY = { omegaSentinel01: ".omega-seeded", omegaNews01: ".omega-seeded-news" };
 const reseed = env.OMEGA_RESEED === "1";
-const seeded = id => fs.existsSync(`${STATE}/.omega-seeded-${id}`) || (id === "omegaSentinel01" && fs.existsSync(`${STATE}/.omega-seeded`));
+const seeded = id => fs.existsSync(`${STATE}/.omega-seeded-${id}`) || (LEGACY[id] && fs.existsSync(`${STATE}/${LEGACY[id]}`));
 const todo = [];
 for (const file of fs.readdirSync(`${SEED}/workflows`).filter(f => f.endsWith(".json")).sort()) {
-  for (const wf of JSON.parse(fs.readFileSync(`${SEED}/workflows/${file}`, "utf8"))) {
+  let text = fs.readFileSync(`${SEED}/workflows/${file}`, "utf8");
+  for (const [k, v] of Object.entries(SOURCES)) text = text.split(k).join(v);
+  for (const wf of JSON.parse(text)) {
     if (!reseed && seeded(wf.id)) continue;
     for (const n of wf.nodes) {
       if (n.type !== "n8n-nodes-base.telegram") continue;

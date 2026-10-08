@@ -65,6 +65,26 @@ canvas#sky.dragging { cursor: grabbing; }
 .sev.watch { color: var(--warn); border: 1px solid rgba(245, 181, 74, 0.45); }
 .empty { padding: 12px 14px; font-size: 12px; color: var(--ink-3); }
 
+/* whale stream: shares the anomaly stream's slot; the header chips swap between them */
+#whales { top: 22px; right: 22px; width: min(340px, calc(100vw - 44px)); max-height: 44vh; display: flex; flex-direction: column; gap: 8px; }
+body:not(.show-whales) #whales, body.show-whales #stream { display: none; }
+#whales h2, #stream h2 { align-items: center; }
+#whales h2 { margin: 0 4px 2px; font: 600 10.5px var(--mono); letter-spacing: 0.24em; color: var(--ink-2); display: flex; justify-content: space-between; }
+#whales ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
+#whales li { padding: 10px 13px; cursor: pointer; transition: transform .25s ease, border-color .25s ease; }
+#whales li:nth-child(odd) { margin-left: 14px; }
+#whales li:hover, #whales li.sel { border-color: rgba(73, 214, 255, 0.45); transform: translateX(-4px); }
+#whales li.fresh { animation: arrive 1.2s ease-out; }
+.w-usd { font: 300 19px var(--mono); letter-spacing: 0.02em; }
+.w-route { margin: 5px 0 0; font: 12px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.w-verdict { margin: 3px 0 0; font-size: 12px; color: var(--ink-2); }
+.w-foot { margin-top: 5px; display: flex; justify-content: space-between; font: 10.5px var(--mono); color: var(--ink-3); }
+.w-foot a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dotted var(--ink-3); }
+.w-foot a:hover { color: var(--ink); }
+.swap { font: 600 9.5px var(--mono); letter-spacing: 0.12em; color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+.swap:hover { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
+.swap.ping { color: var(--ink); border-color: var(--warn); }
+
 /* focus: replay / sparkline, bottom-left, tilted card */
 #focus { left: 26px; bottom: 26px; width: min(460px, calc(100vw - 52px)); padding: 16px 18px 12px; }
 #focus .f-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -140,14 +160,15 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
 @media (max-width: 760px) {
   #brand .mark { font-size: 30px; }
   #stream { top: auto; bottom: 272px; max-height: 24vh; }
-  #stream li:nth-child(odd) { margin-left: 0; }
+  #stream li:nth-child(odd), #whales li:nth-child(odd) { margin-left: 0; }
+  #whales { top: auto; bottom: 272px; max-height: 24vh; }
   #focus { left: 16px; bottom: 16px; width: calc(100vw - 32px); }
   #pulse { display: none; }
   #brand { left: 16px; top: 16px; }
   #mood { right: 16px; bottom: 16px; width: calc(100vw - 32px); max-height: calc(100vh - 140px); z-index: 4; background: rgba(5, 7, 13, 0.94); transform: none; }
   #cortex { left: 16px; top: 120px; width: calc(100vw - 32px); max-height: calc(100vh - 140px); z-index: 4; background: rgba(5, 7, 13, 0.94); transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { #stream li.fresh, #mlist li.fresh { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #stream li.fresh, #whales li.fresh, #mlist li.fresh { animation: none; } }
 </style>
 </head>
 <body>
@@ -160,8 +181,13 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
 </header>
 
 <section id="stream" class="hud" aria-label="Anomaly stream">
-  <h2><span>ANOMALY STREAM</span><span id="acount">0</span></h2>
+  <h2><span>ANOMALY STREAM</span><span><button class="swap" data-show="whales">WHALES ▸</button> <span id="acount">0</span></span></h2>
   <ol id="alist"><li class="empty glass">No anomalies yet. The Sentinel needs about an hour of memory before z-score rules arm.</li></ol>
+</section>
+
+<section id="whales" class="hud" aria-label="Whale stream">
+  <h2><span>WHALE STREAM · ≥ $50M</span><span><button class="swap" data-show="anomalies">ANOMALIES ▸</button> <span id="wcount">0</span></span></h2>
+  <ol id="wlist"><li class="empty glass">No whale transfers yet. Bitcoin is read block by block (about every 10 minutes); Ethereum every minute.</li></ol>
 </section>
 
 <section id="focus" class="hud glass" aria-live="polite">
@@ -219,6 +245,14 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const params = new URLSearchParams(location.search);
 const FORCE_DEMO = location.protocol === "file:" || params.has("demo");
 const KIND_LABEL = { price_shock: "PRICE SHOCK", volume_spike: "VOLUME SPIKE", drawdown_1h: "1H DRAWDOWN" };
+const ASSET_COLOR = { BTC: "#c87a14", WBTC: "#c87a14", ETH: "#6d7ce8", WETH: "#6d7ce8", STETH: "#6d7ce8", USDT: "#169c84", USDC: "#169c84" };
+const VERDICT_LABEL = {
+  to_exchange: "Into an exchange · sell pressure", from_exchange: "Out of an exchange · accumulation",
+  exchange_shuffle: "Exchange to exchange", mint: "Fresh stablecoin mint", burn: "Stablecoin burn",
+  issuer_out: "Issuer release · new supply", unknown: "Unlabelled wallets",
+};
+const CHAIN_NODE = { btc: "btcnet", eth: "ethnet" };
+const EXPLORER = { btc: h => `https://mempool.space/tx/${h}`, eth: h => `https://etherscan.io/tx/${h}` };
 
 // ───────────────────────────── state ─────────────────────────────
 const state = {
@@ -226,7 +260,8 @@ const state = {
   symbols: [],
   latest: {},                      // symbol -> {close, change_1h_pct, change_24h_pct}
   anomalies: [],                   // newest first
-  status: { relay: "unknown", n8n: "unknown", postgrest: "unknown", timescale: "unknown", cortex: "unknown" },
+  whales: [],                      // newest first
+  status: { relay: "unknown", n8n: "unknown", postgrest: "unknown", timescale: "unknown", btc_chain: "unknown", eth_chain: "unknown", cortex: "unknown" },
   lastPulse: null,
   focus: { type: "symbol", symbol: "BTCUSDT" },
 };
@@ -257,7 +292,10 @@ function removeNode(id) {
   { id: "telegram",  label: "TELEGRAM",  role: "Anomaly alerts to the Architect", ext: true },
   { id: "cortex",    label: "CORTEX",    role: "LLM gateway · Claude + free tiers, failover, performance memory", health: "cortex", size: 1.3 },
   { id: "news",      label: "NEWS WIRE", role: "Free RSS headlines + Fear & Greed · every 10 minutes, scored by the Cortex", ext: true },
+  { id: "btcnet",    label: "BITCOIN",   role: "Whale Watch · confirmed blocks, change-adjusted", health: "btc_chain" },
+  { id: "ethnet",    label: "ETHEREUM",  role: "Whale Watch · ETH + USDT/USDC/WETH/WBTC/stETH transfers", health: "eth_chain" },
 ].forEach(addNode);
+addEdge("btcnet", "n8n", 140); addEdge("ethnet", "n8n", 140);
 addEdge("binance", "n8n", 130); addEdge("n8n", "timescale", 120); addEdge("timescale", "postgrest", 110);
 addEdge("postgrest", "relay", 110); addEdge("n8n", "relay", 140); addEdge("relay", "ops", 110); addEdge("n8n", "telegram", 150);
 addEdge("relay", "cortex", 120); addEdge("cortex", "postgrest", 150, true);
@@ -344,7 +382,7 @@ function project(p) {
 // keep the whole constellation framed at any screen size (the core nodes, not drifting dead ones)
 function fitCamera() {
   let R = 1;
-  for (const n of nodes.values()) if (!n.anomaly && healthOf(n) !== "down") R = Math.max(R, Math.hypot(n.x, n.y, n.z));
+  for (const n of nodes.values()) if (!n.anomaly && !n.whale && healthOf(n) !== "down") R = Math.max(R, Math.hypot(n.x, n.y, n.z));
   const target = Math.max(200, R * 820 / (0.42 * Math.min(W, H > 700 ? H : H * 0.8) * cam.zoom)) + R;
   cam.dist += (target - cam.dist) * 0.04;
 }
@@ -362,7 +400,7 @@ function flare(id, color, amt = 1) { const n = nodes.get(id); if (n) { n.flare =
 
 // ───────────────────────────── render ─────────────────────────────
 function healthColor(h) { return h === "down" ? CRIT : h === "degraded" ? WARN : h === "unknown" ? INK3 : OK; }
-function nodeColor(n) { return n.sym ? SYM_COLOR[n.sym] : n.anomaly ? (n.severity === "high" ? CRIT : WARN) : n.id === "ops" ? FLOW : healthColor(healthOf(n)); }
+function nodeColor(n) { return n.sym ? SYM_COLOR[n.sym] : n.anomaly ? (n.severity === "high" ? CRIT : WARN) : n.whale ? (n.ghost ? INK3 : n.color) : n.id === "ops" ? FLOW : healthColor(healthOf(n)); }
 let hover = null, lastFrame = performance.now();
 const P = new Map();
 
@@ -430,7 +468,7 @@ function draw(now) {
   for (const n of order) {
     const q = P.get(n.id), col = nodeColor(n);
     const r = (n.anomaly ? 3.2 : 5.5) * n.size * q.s;
-    const fade = n.anomaly ? Math.max(0.15, 1 - (Date.now() - n.born) / n.ttl) : 1;
+    const fade = n.anomaly || n.whale ? Math.max(n.ghost || n.anomaly ? 0.15 : 0.55, 1 - (Date.now() - n.born) / n.ttl) : 1;
     ctx.globalAlpha = fade;
     // halo
     const halo = r * (3.2 + n.flare * 5);
@@ -456,20 +494,20 @@ function draw(now) {
     // label (text wears ink, not series colour)
     const fs = Math.max(9, Math.min(13, 10.5 * q.s));
     ctx.font = `600 ${fs}px ui-monospace, Menlo, monospace`;
-    ctx.fillStyle = n.anomaly ? INK2 : INK; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = n.anomaly || n.whale ? INK2 : INK; ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.fillText(n.label, q.x + r + 8, q.y - (n.sym ? 7 : 0));
     if (n.sym && state.latest[n.sym]) {
       const L = state.latest[n.sym];
       ctx.font = `${fs}px ui-monospace, Menlo, monospace`; ctx.fillStyle = INK2;
       const ch = L.change_1h_pct;
       ctx.fillText(`${fmtPrice(L.close)}  ${ch == null ? "" : (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "% 1h"}`, q.x + r + 8, q.y + 8);
-    } else if (!n.anomaly && n.id !== "ops" && healthOf(n) !== "ok") {
+    } else if (!n.anomaly && !n.whale && n.id !== "ops" && healthOf(n) !== "ok") {
       ctx.font = `${fs - 1}px ui-monospace, Menlo, monospace`; ctx.fillStyle = healthColor(healthOf(n));
       ctx.fillText(healthOf(n).toUpperCase(), q.x + r + 8, q.y + 12);
     }
   }
   ctx.globalAlpha = 1;
-  expireAnomalyNodes();
+  expireAnomalyNodes(); expireWhaleNodes();
   requestAnimationFrame(draw);
 }
 
@@ -503,7 +541,7 @@ sky.addEventListener("pointermove", e => {
 });
 sky.addEventListener("pointerup", e => {
   dragging = false; sky.classList.remove("dragging");
-  if (moved < 6) { const n = pick(e.clientX, e.clientY); if (n?.sym) focusSymbol(n.sym); else if (n?.anomaly) focusAnomaly(n.aid); }
+  if (moved < 6) { const n = pick(e.clientX, e.clientY); if (n?.sym) focusSymbol(n.sym); else if (n?.anomaly) focusAnomaly(n.aid); else if (n?.whale && n.wid) focusWhale(n.wid); }
 });
 sky.addEventListener("wheel", e => { e.preventDefault(); cam.zoom = Math.max(0.4, Math.min(2.5, cam.zoom * (1 - e.deltaY * 0.001))); }, { passive: false });
 function pick(x, y) {
@@ -550,12 +588,62 @@ function spawnAnomalyNode(a) {
   const sats = [...nodes.values()].filter(x => x.anomaly).sort((x, y) => x.born - y.born);
   while (sats.length > 8) removeNode(sats.shift().id);
 }
+function fmtUsd(v) { return v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : `$${(v / 1e6).toFixed(1)}M`; }
+function fmtAmt(v) { return Number(v).toLocaleString("en-US", { maximumFractionDigits: v >= 1000 ? 0 : 2 }); }
+function shortAddr(a) { return a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a; }
+function sideLabel(w, side) {
+  if (side === "from" && w.verdict === "mint") return "MINT";
+  if (side === "to" && w.verdict === "burn") return "BURN";
+  return w[`${side}_entity`] || shortAddr(w[`${side}_addr`]);
+}
+function onWhale(w, fresh = true) {
+  if (state.whales.some(x => x.id === w.id)) return;
+  state.whales.unshift(w); state.whales.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
+  state.whales.length = Math.min(state.whales.length, 40);
+  if (fresh) {
+    const col = ASSET_COLOR[w.asset] || FLOW, sev = w.severity === "high" ? CRIT : WARN, net = CHAIN_NODE[w.chain];
+    const a = whaleNode(w, "from"), b = whaleNode(w, "to");
+    const size = Math.min(4.2, 2.2 + Math.log10(Math.max(1, w.usd_value / 5e7)) * 1.6);
+    if (a && b) {
+      emit([a, b], col, 0.008, size);
+      setTimeout(() => { const n = nodes.get(b); if (n) n.shock = { t0: performance.now(), color: sev }; flare(b, sev, 1); }, 1600);
+    }
+    flare(net, col, 0.8);
+    emit([net, "n8n", "timescale"], col, 0.02, 2.4);
+    setTimeout(() => emit(["n8n", "relay", "ops"], sev, 0.02, 2.6), 700);
+    if (w.severity === "high") setTimeout(() => emit(["timescale", "n8n", "telegram"], sev, 0.016, 2.6), 400);
+  }
+  renderWhales(fresh ? w.id : null);
+  markWhaleSeen(fresh);
+}
+// One node per wallet/entity. Labelled entities linger and darken slowly; unlabelled wallets are ghosts.
+function whaleNode(w, side) {
+  const ent = side === "from" && w.verdict === "mint" ? "MINT" : side === "to" && w.verdict === "burn" ? "BURN" : w[`${side}_entity`];
+  const id = "whale-" + w.chain + "-" + (ent || w[`${side}_addr`]);
+  const net = nodes.get(CHAIN_NODE[w.chain]);
+  if (!net) return null;
+  let n = nodes.get(id);
+  if (!n) {
+    n = addNode({ id, label: (ent || shortAddr(w[`${side}_addr`])).toUpperCase(), whale: true, ghost: !ent,
+                  color: ASSET_COLOR[w.asset] || FLOW, size: ent ? 1 : 0.7 });
+    n.x = net.x + (Math.random() - 0.5) * 40; n.y = net.y + (Math.random() - 0.5) * 40; n.z = net.z + (Math.random() - 0.5) * 40;
+    addEdge(id, net.id, ent ? 110 : 80, true);
+  }
+  n.born = Date.now(); n.ttl = (ent ? 6 * 60 : 20) * 60 * 1000; n.wid = w.id;
+  n.role = `${fmtUsd(w.usd_value)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")} · ${VERDICT_LABEL[w.verdict] || w.verdict}`;
+  const list = [...nodes.values()].filter(x => x.whale).sort((x, y) => x.born - y.born);
+  while (list.length > 12) removeNode(list.shift().id);
+  return id;
+}
+function expireWhaleNodes() { for (const n of nodes.values()) if (n.whale && Date.now() - n.born > n.ttl) removeNode(n.id); }
 function expireAnomalyNodes() { for (const n of nodes.values()) if (n.anomaly && Date.now() - n.born > n.ttl) removeNode(n.id); }
 function onStatus(s) {
   const prev = state.status; state.status = { ...state.status, ...s };
-  for (const k of ["n8n", "postgrest", "timescale", "relay", "cortex"]) {
-    if (prev[k] !== state.status[k] && state.status[k] === "down") flare(k, CRIT, 1);
-    if (prev[k] === "down" && state.status[k] === "ok") flare(k, OK, 1);
+  const NODE_OF = { btc_chain: "btcnet", eth_chain: "ethnet" };
+  for (const k of ["n8n", "postgrest", "timescale", "relay", "btc_chain", "eth_chain", "cortex"]) {
+    const id = NODE_OF[k] || k;
+    if (prev[k] !== state.status[k] && state.status[k] === "down") flare(id, CRIT, 1);
+    if (prev[k] === "down" && state.status[k] === "ok") flare(id, OK, 1);
   }
   renderPulse();
 }
@@ -579,6 +667,49 @@ function renderStream(freshId) {
       <div class="a-time">${esc(fmtTime(a.ts, true))} · ${esc(fmtPrice(a.price))}</div>
     </li>`).join("");
 }
+// Arrivals are scrambled hex that resolve into the readable line (skipped for reduced motion).
+function decrypt(el, text) {
+  if (REDUCED || !el) { if (el) el.textContent = text; return; }
+  const HEX = "0123456789abcdef", t0 = performance.now(), D = 1100;
+  (function tick(now) {
+    const k = Math.min(1, (now - t0) / D), keep = Math.floor(text.length * k);
+    el.textContent = text.slice(0, keep) + [...text.slice(keep)].map(c => c === " " ? " " : HEX[Math.random() * 16 | 0]).join("");
+    if (k < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+function renderWhales(freshId) {
+  const ol = document.getElementById("wlist");
+  document.getElementById("wcount").textContent = state.whales.length;
+  if (!state.whales.length) return;
+  ol.innerHTML = state.whales.slice(0, 20).map(w => `
+    <li class="glass${w.id === freshId ? " fresh" : ""}${state.focus.type === "whale" && state.focus.id === w.id ? " sel" : ""}" data-id="${esc(w.id)}" tabindex="0">
+      <div class="a-top"><span class="w-usd">${esc(fmtUsd(w.usd_value))}</span>
+        <span class="sev ${esc(w.severity)}">${w.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${esc(w.chain.toUpperCase())}</span></div>
+      <p class="w-route"><span class="a-sym"><b style="background:${ASSET_COLOR[w.asset] || INK3}"></b></span><span data-route>${esc(`${fmtAmt(w.amount)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")}`)}</span></p>
+      <p class="w-verdict">${esc(VERDICT_LABEL[w.verdict] || w.verdict)}</p>
+      <div class="w-foot"><span>${esc(fmtTime(w.ts, true))} · block ${esc(w.block)}</span><a href="${esc(EXPLORER[w.chain](w.tx_hash))}" target="_blank" rel="noopener noreferrer">tx ↗</a></div>
+    </li>`).join("");
+  if (freshId != null) { const li = ol.querySelector(`li[data-id="${Number(freshId)}"] [data-route]`); if (li) decrypt(li, li.textContent); }
+}
+for (const [ev, ok] of [["click", () => true], ["keydown", e => e.key === "Enter"]]) {
+  document.getElementById("wlist").addEventListener(ev, e => {
+    if (!ok(e) || e.target.closest("a")) return;
+    const li = e.target.closest("li[data-id]"); if (li) focusWhale(Number(li.dataset.id));
+  });
+}
+// Whales arriving while the anomaly stream is showing light up its WHALES chip with a count.
+let unseenWhales = 0;
+function markWhaleSeen(fresh) {
+  const showing = document.body.classList.contains("show-whales");
+  unseenWhales = showing ? 0 : unseenWhales + (fresh ? 1 : 0);
+  const chip = document.querySelector('.swap[data-show="whales"]');
+  chip.textContent = unseenWhales ? `WHALES · ${unseenWhales} NEW ▸` : "WHALES ▸";
+  chip.classList.toggle("ping", unseenWhales > 0);
+}
+for (const b of document.querySelectorAll(".swap")) b.addEventListener("click", () => {
+  document.body.classList.toggle("show-whales", b.dataset.show === "whales"); markWhaleSeen(false);
+});
+
 document.getElementById("alist").addEventListener("click", e => { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); });
 document.getElementById("alist").addEventListener("keydown", e => { if (e.key === "Enter") { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); } });
 
@@ -592,8 +723,9 @@ function renderPulse() {
   const p = state.lastPulse;
   document.getElementById("pmem").textContent = p ? `+${p.stored} candles · ${p.anomalies} anomal${p.anomalies === 1 ? "y" : "ies"}` : "—";
   const s = state.status;
-  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest", "cortex"].map(k =>
-    `<span style="color:${healthColor(s[k])}">${s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"}</span> ${k.toUpperCase()}`).join("&nbsp;&nbsp;");
+  const NAME = { btc_chain: "BTC", eth_chain: "ETH" };
+  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest", "cortex", "btc_chain", "eth_chain"].map(k =>
+    `<span style="color:${healthColor(s[k])}">${s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"}</span> ${NAME[k] || k.toUpperCase()}`).join("&nbsp;&nbsp;");
 }
 setInterval(() => {
   const p = state.lastPulse;
@@ -603,8 +735,9 @@ setInterval(() => {
 
 // ───────────────────────────── focus chart ─────────────────────────────
 let series = [], marks = [], chartColor = FLOW;
-function focusSymbol(sym) { state.focus = { type: "symbol", symbol: sym }; renderSymButtons(); renderStream(); loadFocus(); }
-function focusAnomaly(id) { const a = state.anomalies.find(x => x.id === id); if (!a) return; state.focus = { type: "anomaly", id, a }; renderSymButtons(); renderStream(); loadFocus(); }
+function focusSymbol(sym) { state.focus = { type: "symbol", symbol: sym }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
+function focusAnomaly(id) { const a = state.anomalies.find(x => x.id === id); if (!a) return; state.focus = { type: "anomaly", id, a }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
+function focusWhale(id) { const w = state.whales.find(x => x.id === id); if (!w) return; state.focus = { type: "whale", id, w }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
 
 async function loadFocus() {
   const f = state.focus;
@@ -621,6 +754,18 @@ async function loadFocus() {
     series = rows.map(r => ({ t: Date.parse(r.ts), v: r.close }));
     marks = state.anomalies.filter(a => a.symbol === f.symbol).map(a => ({ t: Date.parse(a.ts), sev: a.severity, label: KIND_LABEL[a.kind] }));
     chartColor = SYM_COLOR[f.symbol] || FLOW;
+  } else if (f.type === "whale") {
+    // Replay the pair that prices this asset around the block, with the transfer marked.
+    const w = f.w, sym = ["BTC", "WBTC"].includes(w.asset) ? "BTCUSDT" : "ETHUSDT";
+    document.getElementById("ftitle").textContent = `${w.chain.toUpperCase()} WHALE · ${w.asset}`;
+    document.getElementById("fsub").textContent = `${sideLabel(w, "from")} → ${sideLabel(w, "to")} · ${sym} ±60 min around block ${w.block}`;
+    document.getElementById("fbig").textContent = fmtUsd(w.usd_value);
+    const chEl = document.getElementById("fchg");
+    chEl.textContent = VERDICT_LABEL[w.verdict] || w.verdict; chEl.style.color = w.severity === "high" ? CRIT : WARN;
+    const rows = await data.candlesAround(sym, w.ts);
+    series = rows.map(r => ({ t: Date.parse(r.ts), v: r.close }));
+    marks = [{ t: Date.parse(w.ts), sev: w.severity, label: `WHALE ${fmtUsd(w.usd_value)}` }];
+    chartColor = ASSET_COLOR[w.asset] || FLOW;
   } else {
     const a = f.a;
     document.getElementById("ftitle").textContent = `${a.symbol} · ${KIND_LABEL[a.kind]}`;
@@ -891,7 +1036,8 @@ function connectLive() {
     if (h.pulse) { state.lastPulse = h.pulse; renderPulse(); }
     try { for (const a of await api("/api/anomalies?order=ts.desc&limit=20")) onAnomaly(a, false); } catch { (h.recent || []).forEach(a => onAnomaly(a, false)); }
     try { for (const r of await api("/api/latest")) state.latest[r.symbol] = r; } catch { /* shown via status */ }
-    renderStream(); loadFocus(); refreshCortex();
+    try { for (const w of await api("/api/whales?order=ts.desc&limit=20")) onWhale(w, false); } catch { (h.whales || []).forEach(w => onWhale(w, false)); }
+    renderStream(); renderWhales(); loadFocus(); refreshCortex();
     (h.news || []).forEach(n => onNews({ items: [n] }, false));
     refreshMood();
   });
@@ -899,6 +1045,7 @@ function connectLive() {
   es.addEventListener("cortex", e => onCortex(JSON.parse(e.data)));
   es.addEventListener("pulse", e => onPulse(JSON.parse(e.data)));
   es.addEventListener("anomaly", e => onAnomaly(JSON.parse(e.data)));
+  es.addEventListener("whale", e => onWhale(JSON.parse(e.data)));
   es.addEventListener("status", e => onStatus(JSON.parse(e.data)));
   es.onerror = () => { if (gotHello) { setLink("down"); onStatus({ relay: "down" }); } };
   es.onopen = () => { if (gotHello) { setLink("live"); onStatus({ relay: "ok" }); } };
@@ -921,7 +1068,7 @@ function startDemo() {
     candles5m: async s => hist[s].filter((_, i) => i % 5 === 0),
     candlesAround: async (s, ts) => { const t = Date.parse(ts); return hist[s].filter(r => Math.abs(Date.parse(r.ts) - t) <= 3600e3); },
   };
-  onStatus({ relay: "ok", n8n: "ok", postgrest: "ok", timescale: "ok", cortex: "ok" });
+  onStatus({ relay: "ok", n8n: "ok", postgrest: "ok", timescale: "ok", cortex: "ok", btc_chain: "ok", eth_chain: "ok" });
   const demoProv = [
     { id: "anthropic", label: "Claude", paid: true, enabled: true, state: "ok", models: ["claude-opus-5-5"] },
     { id: "groq", label: "Groq", enabled: true, state: "ok", models: ["openai/gpt-oss-120b"] },
@@ -993,7 +1140,31 @@ function startDemo() {
     onAnomaly({ id: id++, ts: r.ts, symbol: s, kind: k, severity: Math.random() < 0.35 ? "high" : "watch", price: r.close, reason: reasons[k]() }, fresh);
   };
   for (let i = 0; i < 4; i++) fire(false, (i + 1) * 3.3 * 3600e3);
-  renderStream(); loadFocus();
+  // simulated whales: amounts, labels and addresses are made up
+  const hexs = n => Array.from({ length: n }, () => "0123456789abcdef"[Math.random() * 16 | 0]).join("");
+  const WHALES = [
+    { chain: "eth", asset: "USDT", from_entity: null, to_entity: "Binance", verdict: "to_exchange" },
+    { chain: "btc", asset: "BTC", from_entity: "Coinbase", to_entity: null, verdict: "from_exchange" },
+    { chain: "eth", asset: "USDC", from_entity: null, to_entity: null, verdict: "mint" },
+    { chain: "eth", asset: "ETH", from_entity: null, to_entity: null, verdict: "unknown" },
+    { chain: "btc", asset: "BTC", from_entity: null, to_entity: "Bitfinex", verdict: "to_exchange" },
+    { chain: "eth", asset: "WETH", from_entity: "Kraken", to_entity: "Binance", verdict: "exchange_shuffle" },
+  ];
+  let wid = 1, blk = { btc: 917000, eth: 23500000 };
+  const whale = (fresh = true, ago = 0) => {
+    const k = WHALES[Math.floor(Math.random() * WHALES.length)], usd = 5e7 * (1 + Math.random() * 3) ** 1.5;
+    const px = { BTC: base.BTCUSDT, ETH: base.ETHUSDT, WETH: base.ETHUSDT }[k.asset] || 1;
+    const addr = () => k.chain === "btc" ? "bc1q" + hexs(38) : "0x" + hexs(40);
+    const w = { id: wid++, ts: new Date(Date.now() - ago).toISOString(), chain: k.chain, block: blk[k.chain]++, tx_hash: (k.chain === "eth" ? "0x" : "") + hexs(64),
+      asset: k.asset, amount: usd / px, usd_value: usd, from_addr: k.verdict === "mint" ? "0x" + "0".repeat(40) : addr(), to_addr: addr(),
+      from_entity: k.from_entity, to_entity: k.to_entity, verdict: k.verdict,
+      severity: ["to_exchange", "from_exchange", "mint"].includes(k.verdict) || usd >= 2.5e8 ? "high" : "watch" };
+    onWhale(w, fresh);
+  };
+  for (let i = 0; i < 3; i++) whale(false, (i + 1) * 2.1 * 3600e3);
+  setTimeout(() => whale(), 3000);
+  setInterval(() => { if (Math.random() < 0.5) whale(); }, 14000);
+  renderStream(); renderWhales(); loadFocus();
   setInterval(() => {
     const symbols = syms.map(s => {
       const h = hist[s], last = h[h.length - 1], close = last.close * (1 + (Math.random() - 0.5) * 0.002);

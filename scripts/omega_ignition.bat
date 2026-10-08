@@ -1,13 +1,16 @@
 @echo off
 rem ============================================================================
-rem  OMEGA IGNITION - one click: merge the OMEGA branch into main, boot the stack,
+rem  OMEGA IGNITION - one click: check out the latest OMEGA code, boot the stack,
 rem  wait for the Ops Room, open it.
 rem  Put this file in the giant-core folder (or run scripts\omega_ignition.bat).
-rem  Safe by design: a normal merge (never a force push), stops on the first error.
+rem  Safe by design: it never pushes, never touches main, stops on the first error.
+rem  Merging the PRs stays your call on GitHub.
 rem ============================================================================
 setlocal EnableExtensions EnableDelayedExpansion
 
-set "BRANCH=claude/project-thread-7x7mot"
+rem Tip of the open PR chain #1 -> #2 -> #5 -> #7 -> #6: one branch that holds all of it.
+rem Once those PRs are merged (and the branch deleted), the script falls back to main.
+set "BRANCH=claude/project-thread-g7957c"
 set "OPS_URL=http://localhost:8088"
 
 rem cmd reads a .bat while it runs; git may rewrite this file, so run from a temp copy.
@@ -34,24 +37,12 @@ where docker >nul 2>&1 || (call :fail "Docker Desktop is not installed." & exit 
 docker info >nul 2>&1 || (call :fail "Docker Desktop is not running. Start it, wait for the whale icon, run me again." & exit /b 1)
 git diff --quiet && git diff --cached --quiet || (call :fail "You have uncommitted changes. Commit or stash them first." & exit /b 1)
 
-rem ---- 1. merge the OMEGA branch into main --------------------------------------
-echo [1/4] Merging %BRANCH% into main...
+rem ---- 1. check out the latest OMEGA code (local only, nothing is pushed) -----------
 git fetch origin || (call :fail "git fetch failed. Check your internet / GitHub login." & exit /b 1)
-git checkout main || (call :fail "Could not switch to main." & exit /b 1)
-git pull --ff-only origin main || (call :fail "Local main has diverged from GitHub. Resolve that first." & exit /b 1)
-git merge-base --is-ancestor origin/%BRANCH% HEAD
-if errorlevel 1 (
-  git merge --no-ff origin/%BRANCH% -m "Merge OMEGA stack + Cortex LLM gateway (PR #1, #2)"
-  if errorlevel 1 (
-    git merge --abort >nul 2>&1
-    call :fail "Merge conflict. Nothing was changed; tell OMEGA PRIME and it will resolve it."
-    exit /b 1
-  )
-  git push origin main || (call :fail "Merged locally but push to GitHub failed. Run: git push origin main" & exit /b 1)
-  echo       merged and pushed. GitHub marks PR #1 and #2 as merged.
-) else (
-  echo       already merged, skipping.
-)
+git rev-parse --verify --quiet "origin/%BRANCH%" >nul || set "BRANCH=main"
+echo [1/4] Checking out origin/%BRANCH% as local branch omega-run...
+git checkout -B omega-run "origin/%BRANCH%" || (call :fail "Could not check out origin/%BRANCH%." & exit /b 1)
+echo       running %BRANCH%. Your main branch and GitHub are untouched.
 
 rem ---- 2. secrets ---------------------------------------------------------------
 echo [2/4] Preparing .env...
