@@ -2,7 +2,8 @@
 // Zero dependencies.
 //   POST /ingest/pulse     n8n → "a minute of market memory was stored"   (token required)
 //   POST /ingest/anomaly   n8n → one detected anomaly                     (token required)
-//   GET  /events           SSE fan-out: hello, pulse, anomaly, status
+//   POST /ingest/news      n8n → freshly scored headlines                 (token required)
+//   GET  /events           SSE fan-out: hello, pulse, anomaly, news, status, cortex
 //   GET  /api/<view>       read-only proxy to PostgREST (allowlisted views)
 //   GET  /llm/providers    live state of the Cortex LLM gateway's providers
 //   POST /llm/chat         same-origin only: the dashboard's console → Cortex (token added here)
@@ -22,9 +23,11 @@ const CORTEX_URL = process.env.CORTEX_URL || "http://cortex:8090";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
-const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls"]);
+const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls",
+  "news", "sentiment_now", "sentiment_1h", "fear_greed", "sentiment_vs_price"]);
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
+const MAX_NEWS_BODY = 96 * 1024;
 const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "omega/local", "claude"]);
 const KEEP = 50;
 const STATUS_EVERY_MS = 15000;
@@ -33,6 +36,7 @@ if (TOKEN.length < 32) { console.error("OMEGA_RELAY_TOKEN missing or shorter tha
 const tokenHash = crypto.createHash("sha256").update(TOKEN).digest();
 
 const recent = [];          // last anomalies
+let recentNews = [];        // last scored headlines, newest first
 let lastPulse = null;
 let lastStatus = { relay: "ok", n8n: "unknown", postgrest: "unknown", timescale: "unknown", cortex: "unknown", checkedAt: null };
 const clients = new Set();
@@ -83,6 +87,30 @@ function validateAnomaly(a) {
     price: a.price, value: round(a.value, 6), baseline: round(a.baseline, 6), zscore: round(a.zscore, 2),
     reason: a.reason, at: new Date().toISOString(),
   };
+}
+
+const IMPACTS = new Set(["low", "medium", "high"]);
+const LABELS = new Set(["bullish", "bearish", "neutral"]);
+const text = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max;
+function validateNewsItem(n) {
+  if (!n || typeof n !== "object" || !Number.isInteger(n.id) || n.id < 1 || !isoOk(n.published_at)) return null;
+  if (!text(n.source, 40) || !text(n.title, 300) || !text(n.url, 600) || !/^https?:\/\/[^\s<>"]+$/.test(n.url)) return null;
+  if (!num(n.sentiment) || n.sentiment < -1 || n.sentiment > 1 || !num(n.relevance) || n.relevance < 0 || n.relevance > 1) return null;
+  if (!IMPACTS.has(n.impact) || !LABELS.has(n.label)) return null;
+  if (!Array.isArray(n.symbols) || n.symbols.length > 8 || !n.symbols.every(s => typeof s === "string" && /^[A-Z0-9]{2,10}$/.test(s))) return null;
+  if (n.rationale !== null && n.rationale !== undefined && !text(n.rationale, 160)) return null;
+  if (!text(n.scored_by, 160)) return null;
+  return {
+    id: n.id, published_at: new Date(n.published_at).toISOString(), source: n.source, title: n.title, url: n.url,
+    symbols: n.symbols, sentiment: round(n.sentiment, 3), relevance: round(n.relevance, 3), impact: n.impact, label: n.label,
+    rationale: n.rationale || null, scored_by: n.scored_by,
+  };
+}
+function validateNews(b) {
+  if (!b || !Array.isArray(b.items) || b.items.length === 0 || b.items.length > 40) return null;
+  const items = [];
+  for (const n of b.items) { const v = validateNewsItem(n); if (!v) return null; items.push(v); }
+  return { items, served_by: text(b.served_by, 160) ? b.served_by : null, fallback: num(b.fallback) ? Math.trunc(b.fallback) : 0, at: new Date().toISOString() };
 }
 
 function broadcast(event, data) {
@@ -158,8 +186,17 @@ const server = http.createServer((req, res) => {
   if (req.method === "POST" && url.pathname.startsWith("/ingest/")) {
     if (!authorised(req)) return send(res, 401, { error: "unauthorised" });
     const kind = url.pathname.slice("/ingest/".length);
-    if (kind !== "pulse" && kind !== "anomaly") return send(res, 404, { error: "not found" });
+    if (kind !== "pulse" && kind !== "anomaly" && kind !== "news") return send(res, 404, { error: "not found" });
     return readJson(req, res, body => {
+      if (kind === "news") {
+        const news = validateNews(body);
+        if (!news) return send(res, 400, { error: "invalid news" });
+        const fresh = news.items.filter(n => !recentNews.some(r => r.id === n.id));
+        recentNews = [...fresh, ...recentNews].sort((a, b) => b.published_at.localeCompare(a.published_at)).slice(0, KEEP);
+        broadcast("news", news);
+        console.log(`NEWS ${news.items.length} scored by ${news.served_by || "?"}${news.fallback ? ` (${news.fallback} by keywords)` : ""}`);
+        return send(res, 202, { ok: true, items: news.items.length, listeners: clients.size });
+      }
       if (kind === "pulse") {
         const pulse = validatePulse(body);
         if (!pulse) return send(res, 400, { error: "invalid pulse" });
@@ -173,7 +210,7 @@ const server = http.createServer((req, res) => {
       broadcast("anomaly", a);
       console.log(`ANOMALY ${a.symbol} ${a.kind} ${a.severity}: ${a.reason}`);
       return send(res, 202, { ok: true, id: a.id, listeners: clients.size });
-    });
+    }, kind === "news" ? MAX_NEWS_BODY : MAX_BODY);
   }
 
   if (req.method !== "GET") return send(res, 405, { error: "method not allowed" });
@@ -195,7 +232,7 @@ const server = http.createServer((req, res) => {
   switch (url.pathname) {
     case "/events": {
       res.writeHead(200, { ...SEC_HEADERS, "Content-Type": "text/event-stream", Connection: "keep-alive" });
-      res.write(`retry: 5000\nevent: hello\ndata: ${JSON.stringify({ recent: recent.slice(-10), pulse: lastPulse, status: lastStatus, symbols: [...SYMBOLS] })}\n\n`);
+      res.write(`retry: 5000\nevent: hello\ndata: ${JSON.stringify({ recent: recent.slice(-10), news: recentNews.slice(0, 10), pulse: lastPulse, status: lastStatus, symbols: [...SYMBOLS] })}\n\n`);
       clients.add(res);
       const ping = setInterval(() => res.write(": ping\n\n"), 25000);
       req.on("close", () => { clearInterval(ping); clients.delete(res); });

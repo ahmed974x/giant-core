@@ -47,7 +47,7 @@ canvas#sky.dragging { cursor: grabbing; }
 .chip.down i { background: var(--crit); }
 
 /* anomaly stream: a falling column on the right edge, skewed off-axis */
-#stream { top: 22px; right: 22px; width: min(340px, calc(100vw - 44px)); max-height: 58vh; display: flex; flex-direction: column; gap: 8px; }
+#stream { top: 22px; right: 22px; width: min(340px, calc(100vw - 44px)); max-height: 44vh; display: flex; flex-direction: column; gap: 8px; }
 #stream h2 { margin: 0 4px 2px; font: 600 10.5px var(--mono); letter-spacing: 0.24em; color: var(--ink-2); display: flex; justify-content: space-between; }
 #stream ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
 #stream li { padding: 10px 13px; cursor: pointer; transition: transform .25s ease, border-color .25s ease; }
@@ -107,6 +107,30 @@ canvas#sky.dragging { cursor: grabbing; }
 button.chip { background: transparent; cursor: pointer; }
 button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
 
+/* news mood: right edge under the anomaly stream, tilted the other way */
+#mood { right: 22px; bottom: 92px; width: min(340px, calc(100vw - 44px)); max-height: calc(56vh - 140px); min-height: 180px; padding: 13px 15px; display: flex; flex-direction: column; gap: 9px; transform: rotate(0.5deg); }
+#mood[hidden] { display: none; }
+#mood h2 { margin: 0; font: 600 10.5px var(--mono); letter-spacing: 0.24em; color: var(--ink-2); display: flex; justify-content: space-between; }
+#mood h2 span:last-child { letter-spacing: 0.08em; color: var(--ink-3); font-weight: 500; }
+.m-top { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.m-score { font: 300 30px/1 var(--mono); }
+.m-label { font: 600 10px var(--mono); letter-spacing: 0.16em; margin-top: 5px; }
+.m-sub { font: 10.5px var(--mono); color: var(--ink-3); margin-top: 3px; }
+.m-fg { text-align: right; font: 10px var(--mono); letter-spacing: 0.1em; color: var(--ink-3); }
+.m-fg strong { display: block; font: 300 22px/1.1 var(--mono); color: var(--ink); letter-spacing: 0; }
+.m-fg svg { display: block; margin: 4px 0 0 auto; }
+#msyms { display: flex; gap: 6px; flex-wrap: wrap; }
+#msyms span { font: 600 10px var(--mono); letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); }
+#msyms b { font-weight: 600; }
+#mlist { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; gap: 7px; scrollbar-width: thin; min-height: 40px; }
+#mlist li { display: grid; grid-template-columns: 8px 1fr; gap: 9px; align-items: start; }
+#mlist li > i { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; }
+#mlist a { color: var(--ink); text-decoration: none; font-size: 12px; line-height: 1.38; }
+#mlist a:hover { text-decoration: underline; text-decoration-color: rgba(73, 214, 255, 0.5); }
+#mlist .m-meta { font: 10px var(--mono); color: var(--ink-3); margin-top: 2px; }
+#mlist li.fresh { animation: arrive 1.2s ease-out; }
+#mlist .hi { color: var(--warn); }
+
 #tip { position: fixed; z-index: 3; pointer-events: none; padding: 8px 11px; border-radius: 12px; background: rgba(5, 7, 13, 0.92); border: 1px solid var(--line); font-size: 12px; opacity: 0; transition: opacity .12s; max-width: 260px; }
 #tip b { font: 600 11px var(--mono); letter-spacing: 0.12em; display: block; margin-bottom: 3px; }
 #tip span { color: var(--ink-2); }
@@ -120,9 +144,10 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
   #focus { left: 16px; bottom: 16px; width: calc(100vw - 32px); }
   #pulse { display: none; }
   #brand { left: 16px; top: 16px; }
+  #mood { right: 16px; bottom: 16px; width: calc(100vw - 32px); max-height: calc(100vh - 140px); z-index: 4; background: rgba(5, 7, 13, 0.94); transform: none; }
   #cortex { left: 16px; top: 120px; width: calc(100vw - 32px); max-height: calc(100vh - 140px); z-index: 4; background: rgba(5, 7, 13, 0.94); transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { #stream li.fresh { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #stream li.fresh, #mlist li.fresh { animation: none; } }
 </style>
 </head>
 <body>
@@ -131,7 +156,7 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
 <header id="brand" class="hud">
   <p class="mark">OMEGA</p>
   <p class="sub">PRE-COG SYNDICATE · NEURAL CONSTELLATION</p>
-  <div class="meta"><span id="link" class="chip"><i></i><span>CONNECTING</span></span><span id="clock">--:--:--</span><span>KUWAIT</span><button id="ctoggle" class="chip on" type="button" aria-controls="cortex" aria-expanded="true">CORTEX</button></div>
+  <div class="meta"><span id="link" class="chip"><i></i><span>CONNECTING</span></span><span id="clock">--:--:--</span><span>KUWAIT</span><button id="ctoggle" class="chip on" type="button" aria-controls="cortex" aria-expanded="true">CORTEX</button><button id="mtoggle" class="chip on" type="button" aria-controls="mood" aria-expanded="true">NEWS</button></div>
 </header>
 
 <section id="stream" class="hud" aria-label="Anomaly stream">
@@ -162,6 +187,16 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
   <form id="cform"><textarea id="cq" rows="1" placeholder="Ask the Cortex…" aria-label="Prompt"></textarea><button id="csend" type="submit">SEND</button></form>
   <div id="cout" aria-live="polite"></div>
   <div id="cmeta"></div>
+</section>
+
+<section id="mood" class="hud glass" aria-label="News sentiment">
+  <h2><span>NEWS MOOD</span><span id="mmeta">—</span></h2>
+  <div class="m-top">
+    <div><div class="m-score" id="mscore">—</div><div class="m-label" id="mlabel">WAITING FOR HEADLINES</div><div class="m-sub" id="msub">market · last 24h</div></div>
+    <div class="m-fg" title="Crypto Fear &amp; Greed Index (alternative.me), last 30 days">FEAR &amp; GREED<strong id="fgv">—</strong><span id="fgl"></span><span id="fgspark"></span></div>
+  </div>
+  <div id="msyms"></div>
+  <ol id="mlist"><li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li></ol>
 </section>
 
 <footer id="pulse" class="hud">
@@ -221,10 +256,12 @@ function removeNode(id) {
   { id: "ops",       label: "OPS ROOM",  role: "You are here", size: 1.2 },
   { id: "telegram",  label: "TELEGRAM",  role: "Anomaly alerts to the Architect", ext: true },
   { id: "cortex",    label: "CORTEX",    role: "LLM gateway · Claude + free tiers, failover, performance memory", health: "cortex", size: 1.3 },
+  { id: "news",      label: "NEWS WIRE", role: "Free RSS headlines + Fear & Greed · every 10 minutes, scored by the Cortex", ext: true },
 ].forEach(addNode);
 addEdge("binance", "n8n", 130); addEdge("n8n", "timescale", 120); addEdge("timescale", "postgrest", 110);
 addEdge("postgrest", "relay", 110); addEdge("n8n", "relay", 140); addEdge("relay", "ops", 110); addEdge("n8n", "telegram", 150);
 addEdge("relay", "cortex", 120); addEdge("cortex", "postgrest", 150, true);
+addEdge("news", "n8n", 140); addEdge("n8n", "cortex", 160, true);
 
 // LLM providers orbit the Cortex; only switched-on ones appear.
 const LLM_STATE = { ok: "ok", cooling: "degraded", degraded: "degraded", off: "down" };
@@ -739,6 +776,73 @@ document.getElementById("ctoggle").addEventListener("click", e => {
 });
 if (matchMedia("(max-width: 760px)").matches) document.getElementById("ctoggle").click();
 
+// ───────────────────────────── news mood ─────────────────────────────
+const mood = { now: [], news: [], fg: [], fresh: new Set(), servedBy: null };
+const moodColor = v => v == null ? INK3 : v >= 0.2 ? OK : v <= -0.2 ? CRIT : INK2;
+const moodLabel = v => v == null ? "NO SCORED HEADLINES" : v >= 0.5 ? "STRONGLY BULLISH" : v >= 0.2 ? "BULLISH" : v <= -0.5 ? "STRONGLY BEARISH" : v <= -0.2 ? "BEARISH" : "NEUTRAL";
+const signed = (v, d = 2) => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+function ago(iso) {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`;
+}
+function renderMood() {
+  const by = Object.fromEntries(mood.now.map(r => [r.scope, r]));
+  const m = by.MARKET, score = m && m.score_24h != null ? Number(m.score_24h) : null;
+  const el = document.getElementById("mscore");
+  el.textContent = signed(score); el.style.color = moodColor(score);
+  const lab = document.getElementById("mlabel"); lab.textContent = moodLabel(score); lab.style.color = moodColor(score);
+  const prev = m && m.score_prev_24h != null ? Number(m.score_prev_24h) : null;
+  document.getElementById("msub").textContent = m
+    ? `market · 24h · ${m.n_24h} headlines${m.high_impact_24h > 0 ? ` · ${m.high_impact_24h} high impact` : ""}${prev != null && score != null ? ` · ${signed(score - prev)} vs prior day` : ""}`
+    : "market · last 24h";
+  document.getElementById("msyms").innerHTML = state.symbols.map(sym => {
+    const base = sym.replace(/USDT$/, ""), r = by[base], v = r && r.score_24h != null ? Number(r.score_24h) : null;
+    return `<span title="${esc(r ? `${r.n_24h} headlines in 24h · ${r.bullish_24h} bullish · ${r.bearish_24h} bearish` : "no headlines in 24h")}">${esc(base)} <b style="color:${moodColor(v)}">${esc(signed(v))}</b></span>`;
+  }).join("");
+  const fg = mood.fg.length ? mood.fg[mood.fg.length - 1] : null;
+  document.getElementById("fgv").textContent = fg ? fg.value : "—";
+  document.getElementById("fgv").style.color = fg ? (fg.value >= 55 ? OK : fg.value <= 45 ? CRIT : INK) : INK;
+  document.getElementById("fgl").textContent = fg ? fg.label.toUpperCase() : "";
+  const pts = mood.fg.slice(-30);
+  document.getElementById("fgspark").innerHTML = pts.length > 1 ? `<svg width="74" height="18" viewBox="0 0 74 18" aria-hidden="true"><polyline fill="none" stroke="${INK2}" stroke-width="1.2" points="${pts.map((p, i) => `${(i / (pts.length - 1) * 72 + 1).toFixed(1)},${(17 - p.value / 100 * 16).toFixed(1)}`).join(" ")}"/></svg>` : "";
+  const list = [...mood.news].sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at)).slice(0, 20);
+  document.getElementById("mmeta").textContent = mood.servedBy ? `scored by ${mood.servedBy.split(":")[0]}` : list.length ? `${list.length} recent` : "—";
+  document.getElementById("mlist").innerHTML = list.length ? list.map(n => {
+    const href = /^https?:\/\//.test(n.url) ? n.url : "#";
+    const tags = [n.source, ago(n.published_at), (n.symbols || []).join(" ") || "market"];
+    return `<li class="${mood.fresh.has(n.id) ? "fresh" : ""}"><i style="background:${moodColor(Number(n.sentiment))}" title="${esc(`${n.label} ${signed(Number(n.sentiment))}`)}"></i><div>` +
+      `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(n.rationale || n.title)}">${esc(n.title)}</a>` +
+      `<div class="m-meta">${esc(tags.join(" · "))} · ${n.impact === "high" ? '<span class="hi">HIGH IMPACT</span>' : esc(n.impact)}${n.scored_by === "lexicon" ? " · keywords" : ""}</div></div></li>`;
+  }).join("") : '<li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li>';
+  mood.fresh.clear();
+  const nn = nodes.get("news"); if (nn) nn.role = `Free RSS headlines + Fear & Greed · market mood ${signed(score)} (${moodLabel(score).toLowerCase()})`;
+}
+async function refreshMood() {
+  const [now, news, fg] = await Promise.all([newsData.now().catch(() => null), newsData.news().catch(() => null), newsData.fg().catch(() => null)]);
+  if (now) mood.now = now; if (news) mood.news = news; if (fg) mood.fg = fg;
+  renderMood();
+}
+function onNews(ev, fresh = true) {
+  const known = new Set(mood.news.map(n => n.id));
+  for (const n of ev.items || []) if (!known.has(n.id)) { mood.news.push(n); if (fresh) mood.fresh.add(n.id); }
+  if (ev.served_by) mood.servedBy = ev.served_by;
+  if (fresh) {
+    const avg = (ev.items || []).reduce((s, n) => s + Number(n.sentiment), 0) / Math.max(1, (ev.items || []).length);
+    emit(["news", "n8n", "timescale"], FLOW, 0.02, 2);
+    setTimeout(() => emit(["n8n", "cortex"], INK2, 0.022, 2.2), 600);
+    setTimeout(() => emit(["cortex", "n8n", "relay", "ops"], moodColor(avg), 0.022, 2.4), 1300);
+    flare("news", moodColor(avg), 1);
+    for (const n of ev.items || []) for (const s of n.symbols || []) if (nodes.has(s + "USDT") && n.impact !== "low") flare(s + "USDT", moodColor(Number(n.sentiment)), 0.8);
+  }
+  if (state.mode === "live") { clearTimeout(mood.t); mood.t = setTimeout(refreshMood, 1200); }
+  renderMood();
+}
+document.getElementById("mtoggle").addEventListener("click", e => {
+  const panel = document.getElementById("mood"), open = panel.hidden;
+  panel.hidden = !open; e.currentTarget.classList.toggle("on", open); e.currentTarget.setAttribute("aria-expanded", String(open));
+});
+if (matchMedia("(max-width: 760px)").matches) document.getElementById("mtoggle").click();
+
 // ───────────────────────────── data sources ─────────────────────────────
 const api = async path => { const r = await fetch(path, { headers: { Accept: "application/json" } }); if (!r.ok) throw new Error(r.status); return r.json(); };
 const live = {
@@ -758,6 +862,11 @@ let cortexData = {
     if (!r.ok && !j.error) j.error = `HTTP ${r.status}`;
     return j;
   },
+};
+let newsData = {
+  now: () => api("/api/sentiment_now"),
+  news: () => api("/api/news?order=published_at.desc&limit=30"),
+  fg: () => api("/api/fear_greed?order=ts.asc"),
 };
 let latestTimer = 0;
 function refreshLatest() {
@@ -783,7 +892,10 @@ function connectLive() {
     try { for (const a of await api("/api/anomalies?order=ts.desc&limit=20")) onAnomaly(a, false); } catch { (h.recent || []).forEach(a => onAnomaly(a, false)); }
     try { for (const r of await api("/api/latest")) state.latest[r.symbol] = r; } catch { /* shown via status */ }
     renderStream(); loadFocus(); refreshCortex();
+    (h.news || []).forEach(n => onNews({ items: [n] }, false));
+    refreshMood();
   });
+  es.addEventListener("news", e => onNews(JSON.parse(e.data)));
   es.addEventListener("cortex", e => onCortex(JSON.parse(e.data)));
   es.addEventListener("pulse", e => onPulse(JSON.parse(e.data)));
   es.addEventListener("anomaly", e => onAnomaly(JSON.parse(e.data)));
@@ -842,6 +954,33 @@ function startDemo() {
     },
   };
   refreshCortex();
+  const demoNews = [
+    ["CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"],
+    ["Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"],
+    ["Cointelegraph", "Ethereum core devs lock the date for the next network upgrade", ["ETH"], 0.38, "medium"],
+    ["The Block", "Major exchange pauses withdrawals after a hot-wallet exploit", [], -0.84, "high"],
+    ["CryptoSlate", "Analysts split on whether funding rates signal an overheated market", ["BTC", "ETH"], -0.08, "low"],
+    ["Bitcoin Magazine", "Sovereign fund discloses a bitcoin position in its quarterly filing", ["BTC"], 0.55, "medium"],
+    ["Decrypt", "Memecoin volumes cool as traders rotate into majors", [], 0.12, "low"],
+  ];
+  let nid = 1;
+  const mkNews = ([source, title, symbols, sentiment, impact], agoMin) => ({ id: nid++, published_at: new Date(Date.now() - agoMin * 60e3).toISOString(),
+    source, title, url: "https://example.com/demo-" + nid, symbols, sentiment, relevance: 0.8, impact,
+    label: sentiment >= 0.2 ? "bullish" : sentiment <= -0.2 ? "bearish" : "neutral", rationale: "Demo headline", scored_by: "groq:openai/gpt-oss-120b" });
+  const recomputeMood = () => {
+    const scopes = {};
+    for (const n of mood.news) for (const sc of ["MARKET", ...n.symbols]) {
+      const w = n.relevance * { low: 1, medium: 2, high: 3 }[n.impact], a = scopes[sc] ||= { scope: sc, sw: 0, w: 0, n_24h: 0, bullish_24h: 0, bearish_24h: 0, high_impact_24h: 0 };
+      a.sw += n.sentiment * w; a.w += w; a.n_24h++; if (n.label === "bullish") a.bullish_24h++; if (n.label === "bearish") a.bearish_24h++; if (n.impact === "high") a.high_impact_24h++;
+    }
+    return Object.values(scopes).map(a => ({ ...a, score_24h: a.sw / a.w, score_prev_24h: a.scope === "MARKET" ? 0.05 : null }));
+  };
+  const fgDemo = Array.from({ length: 30 }, (_, i) => { const v = Math.round(50 + 18 * Math.sin(i / 5) + (Math.random() - 0.5) * 8); return { ts: new Date(Date.now() - (29 - i) * 864e5).toISOString(), value: v, label: v >= 75 ? "Extreme Greed" : v >= 55 ? "Greed" : v <= 25 ? "Extreme Fear" : v <= 45 ? "Fear" : "Neutral" }; });
+  newsData = { now: async () => recomputeMood(), news: async () => mood.news, fg: async () => fgDemo };
+  demoNews.slice(0, 5).forEach((n, i) => onNews({ items: [mkNews(n, 25 + i * 70)], served_by: "groq:openai/gpt-oss-120b" }, false));
+  refreshMood();
+  let dn = 5;
+  setInterval(() => { onNews({ items: [mkNews(demoNews[dn++ % demoNews.length], 0)], served_by: "groq:openai/gpt-oss-120b" }); refreshMood(); }, 21000);
   let id = 1;
   const reasons = {
     price_shock: () => `Down 1-min move -${(1 + Math.random() * 2).toFixed(2)}% (z=-${(4 + Math.random() * 3).toFixed(1)}) vs 24h baseline`,
