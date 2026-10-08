@@ -1,0 +1,27 @@
+{
+  "name": "omega-sentinel-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only MCP server that lets Claude Desktop query the local OMEGA Market Sentinel.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=server/index.js --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "pack": "npm run build && mcpb validate manifest.json && mcpb pack . dist/omega-sentinel.mcpb"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
+    "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}
