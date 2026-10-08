@@ -1,6 +1,6 @@
 #!/bin/sh
-# One-shot seeder: imports credentials (n8n encrypts them at rest) and the Sentinel workflow,
-# then activates it. Runs once per volume; later `up`s leave your edits in the n8n editor alone.
+# One-shot seeder: imports credentials (n8n encrypts them at rest) and every workflow in
+# /seed/workflows (Market Sentinel, Whale Watch BTC + ETH), then activates them. Runs once per volume; later `up`s leave your edits in the n8n editor alone.
 # To re-seed after changing .env or the workflow file:
 #   docker compose run --rm -e OMEGA_RESEED=1 n8n-init && docker compose restart n8n
 set -eu
@@ -29,18 +29,39 @@ const creds = [
 ];
 fs.writeFileSync(`${out}/creds.json`, JSON.stringify(creds));
 
-const wf = JSON.parse(fs.readFileSync("/seed/workflows/market-sentinel.json", "utf8"));
-for (const n of wf[0].nodes) {
-  if (n.type !== "n8n-nodes-base.telegram") continue;
-  if (tg) n.parameters.chatId = String(env.TELEGRAM_CHAT_ID);
-  else { n.disabled = true; n.parameters.chatId = ""; }
+// Public chain endpoints (n8n nodes cannot read env, so the URLs are written into the workflows here).
+const url = (v, dflt, name) => {
+  const u = (v || dflt).replace(/\/+$/, "");
+  if (!/^https?:\/\/[^\s"'{}\\]+$/.test(u)) throw new Error(`${name} is not a plain http(s) URL`);
+  return u;
+};
+const SOURCES = {
+  __OMEGA_BTC_API__: url(env.OMEGA_BTC_API, "https://blockchain.info", "OMEGA_BTC_API"),
+  __OMEGA_ETH_RPC_URL__: url(env.OMEGA_ETH_RPC_URL, "https://ethereum-rpc.publicnode.com", "OMEGA_ETH_RPC_URL"),
+};
+
+const all = [];
+for (const file of fs.readdirSync("/seed/workflows").filter(f => f.endsWith(".json")).sort()) {
+  let text = fs.readFileSync(`/seed/workflows/${file}`, "utf8");
+  for (const [k, v] of Object.entries(SOURCES)) text = text.split(k).join(v);
+  for (const wf of JSON.parse(text)) {
+    for (const n of wf.nodes) {
+      if (n.type !== "n8n-nodes-base.telegram") continue;
+      if (tg) n.parameters.chatId = String(env.TELEGRAM_CHAT_ID);
+      else { n.disabled = true; n.parameters.chatId = ""; }
+    }
+    all.push(wf);
+  }
 }
-fs.writeFileSync(`${out}/workflow.json`, JSON.stringify(wf));
+fs.writeFileSync(`${out}/workflow.json`, JSON.stringify(all));
+fs.writeFileSync(`${out}/ids`, all.map(w => w.id).join("\n") + "\n");
+console.log(`workflows: ${all.map(w => w.name).join(", ")}`);
+console.log(`chain sources: ${Object.values(SOURCES).join(", ")}`);
 console.log(tg ? "telegram: enabled" : "telegram: TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set, node disabled");
 JS
 
 n8n import:credentials --input="$WORK/creds.json"
 n8n import:workflow --input="$WORK/workflow.json"
-n8n update:workflow --id=omegaSentinel01 --active=true
+while read -r id; do n8n update:workflow --id="$id" --active=true; done < "$WORK/ids"
 touch "$MARK"
 echo "omega seed complete"

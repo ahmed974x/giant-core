@@ -3,6 +3,7 @@
 #   timescale    memory core: 1-min candles (hypertable) + anomaly detection in SQL
 #   postgrest    read-only API over the api.* views
 #   n8n          every minute: Binance klines → Timescale → pulse/anomaly → relay + Telegram
+#                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
 #   workstation  Giant Core Streamlit app   (optional: --profile workstation)
 #
@@ -26,6 +27,8 @@ x-n8n-env: &n8n-env
   POSTGRES_DB: ${POSTGRES_DB:-omega}
   TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+  OMEGA_BTC_API: ${OMEGA_BTC_API:-https://blockchain.info}
+  OMEGA_ETH_RPC_URL: ${OMEGA_ETH_RPC_URL:-https://ethereum-rpc.publicnode.com}
   GENERIC_TIMEZONE: ${TZ:-Asia/Kuwait}
   TZ: ${TZ:-Asia/Kuwait}
   N8N_HOST: localhost
@@ -171,7 +174,7 @@ networks:
     internal: true
   core:     # n8n, postgrest <-> relay. No internet.
     internal: true
-  egress:   # n8n's way out to Binance + Telegram
+  egress:   # n8n's way out to Binance, Telegram and the public BTC/ETH endpoints
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
