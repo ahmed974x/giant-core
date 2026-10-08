@@ -65,14 +65,15 @@ canvas#sky.dragging { cursor: grabbing; }
 .sev.watch { color: var(--warn); border: 1px solid rgba(245, 181, 74, 0.45); }
 .empty { padding: 12px 14px; font-size: 12px; color: var(--ink-3); }
 
-/* whale stream: left edge, between the brand and the focus card */
-#whales { top: 150px; left: 26px; width: min(330px, calc(100vw - 52px)); max-height: calc(100vh - 150px - 300px); display: flex; flex-direction: column; gap: 8px; }
+/* whale stream: shares the anomaly stream's slot; the header chips swap between them */
+#whales { top: 22px; right: 22px; width: min(340px, calc(100vw - 44px)); max-height: 44vh; display: flex; flex-direction: column; gap: 8px; }
+body:not(.show-whales) #whales, body.show-whales #stream { display: none; }
 #whales h2, #stream h2 { align-items: center; }
 #whales h2 { margin: 0 4px 2px; font: 600 10.5px var(--mono); letter-spacing: 0.24em; color: var(--ink-2); display: flex; justify-content: space-between; }
 #whales ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
 #whales li { padding: 10px 13px; cursor: pointer; transition: transform .25s ease, border-color .25s ease; }
-#whales li:nth-child(even) { margin-left: 14px; }
-#whales li:hover, #whales li.sel { border-color: rgba(73, 214, 255, 0.45); transform: translateX(4px); }
+#whales li:nth-child(odd) { margin-left: 14px; }
+#whales li:hover, #whales li.sel { border-color: rgba(73, 214, 255, 0.45); transform: translateX(-4px); }
 #whales li.fresh { animation: arrive 1.2s ease-out; }
 .w-usd { font: 300 19px var(--mono); letter-spacing: 0.02em; }
 .w-route { margin: 5px 0 0; font: 12px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
@@ -80,8 +81,9 @@ canvas#sky.dragging { cursor: grabbing; }
 .w-foot { margin-top: 5px; display: flex; justify-content: space-between; font: 10.5px var(--mono); color: var(--ink-3); }
 .w-foot a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dotted var(--ink-3); }
 .w-foot a:hover { color: var(--ink); }
-.swap { display: none; font: 600 9.5px var(--mono); letter-spacing: 0.12em; color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
-@media (max-height: 640px) { #whales { display: none; } }
+.swap { font: 600 9.5px var(--mono); letter-spacing: 0.12em; color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+.swap:hover { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
+.swap.ping { color: var(--ink); border-color: var(--warn); }
 
 /* focus: replay / sparkline, bottom-left, tilted card */
 #focus { left: 26px; bottom: 26px; width: min(460px, calc(100vw - 52px)); padding: 16px 18px 12px; }
@@ -158,11 +160,8 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
 @media (max-width: 760px) {
   #brand .mark { font-size: 30px; }
   #stream { top: auto; bottom: 272px; max-height: 24vh; }
-  #stream li:nth-child(odd), #whales li:nth-child(even) { margin-left: 0; }
-  /* one column on phones: anomalies and whales swap in the same slot */
-  #whales { display: flex; top: auto; left: auto; right: 22px; bottom: 272px; width: min(340px, calc(100vw - 44px)); max-height: 24vh; }
-  body:not(.show-whales) #whales, body.show-whales #stream { display: none; }
-  .swap { display: inline-block; }
+  #stream li:nth-child(odd), #whales li:nth-child(odd) { margin-left: 0; }
+  #whales { top: auto; bottom: 272px; max-height: 24vh; }
   #focus { left: 16px; bottom: 16px; width: calc(100vw - 32px); }
   #pulse { display: none; }
   #brand { left: 16px; top: 16px; }
@@ -615,6 +614,7 @@ function onWhale(w, fresh = true) {
     if (w.severity === "high") setTimeout(() => emit(["timescale", "n8n", "telegram"], sev, 0.016, 2.6), 400);
   }
   renderWhales(fresh ? w.id : null);
+  markWhaleSeen(fresh);
 }
 // One node per wallet/entity. Labelled entities linger and darken slowly; unlabelled wallets are ghosts.
 function whaleNode(w, side) {
@@ -697,7 +697,18 @@ for (const [ev, ok] of [["click", () => true], ["keydown", e => e.key === "Enter
     const li = e.target.closest("li[data-id]"); if (li) focusWhale(Number(li.dataset.id));
   });
 }
-for (const b of document.querySelectorAll(".swap")) b.addEventListener("click", () => document.body.classList.toggle("show-whales", b.dataset.show === "whales"));
+// Whales arriving while the anomaly stream is showing light up its WHALES chip with a count.
+let unseenWhales = 0;
+function markWhaleSeen(fresh) {
+  const showing = document.body.classList.contains("show-whales");
+  unseenWhales = showing ? 0 : unseenWhales + (fresh ? 1 : 0);
+  const chip = document.querySelector('.swap[data-show="whales"]');
+  chip.textContent = unseenWhales ? `WHALES · ${unseenWhales} NEW ▸` : "WHALES ▸";
+  chip.classList.toggle("ping", unseenWhales > 0);
+}
+for (const b of document.querySelectorAll(".swap")) b.addEventListener("click", () => {
+  document.body.classList.toggle("show-whales", b.dataset.show === "whales"); markWhaleSeen(false);
+});
 
 document.getElementById("alist").addEventListener("click", e => { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); });
 document.getElementById("alist").addEventListener("keydown", e => { if (e.key === "Enter") { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); } });
