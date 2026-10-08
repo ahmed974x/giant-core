@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "omega-sentinel",
+  "display_name": "OMEGA Sentinel",
+  "version": "0.1.0",
+  "description": "Read-only window into your local OMEGA Market Sentinel: prices, alerts, history and system health.",
+  "long_description": "Lets Claude query the OMEGA stack running on this machine (giant-core, `docker compose up`). Every tool is read-only, and the server only talks to the OMEGA relay on 127.0.0.1. It holds no API keys and cannot place orders, write to the database, or reach the internet.",
+  "author": { "name": "ahmed974x", "url": "https://github.com/ahmed974x" },
+  "repository": { "type": "git", "url": "https://github.com/ahmed974x/giant-core" },
+  "license": "Apache-2.0",
+  "icon": "icon.png",
+  "keywords": ["crypto", "market", "alerts", "omega", "timescale"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": { "OMEGA_URL": "${user_config.omega_url}" }
+    }
+  },
+  "user_config": {
+    "omega_url": {
+      "type": "string",
+      "title": "OMEGA relay URL",
+      "description": "Where the OMEGA dashboard runs on this machine. Must be 127.0.0.1 or localhost.",
+      "default": "http://127.0.0.1:8088",
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "sentinel_market_snapshot", "description": "Latest price, 1h/24h change and 24h volume per tracked pair" },
+    { "name": "sentinel_list_alerts", "description": "Detected price shocks, volume spikes and drawdowns, filterable" },
+    { "name": "sentinel_price_history", "description": "Summarised price curve and stats for one pair over up to 7 days" },
+    { "name": "sentinel_system_status", "description": "Health of relay, n8n, PostgREST and Timescale" }
+  ],
+  "prompts": [
+    { "name": "market_brief", "description": "Short briefing on the market and the alerts that matter", "arguments": ["hours"], "text": "Brief me on the last ${arguments.hours} hours using the OMEGA Sentinel tools." }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["win32", "darwin", "linux"],
+    "runtimes": { "node": ">=20.0.0" }
+  }
+}
