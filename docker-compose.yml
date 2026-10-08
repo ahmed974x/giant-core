@@ -4,10 +4,13 @@
 #   postgrest    read-only API over the api.* views
 #   n8n          every minute: Binance klines → Timescale → pulse/anomaly → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
+#   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
+#                every call's latency/tokens/outcome remembered in Timescale
 #   workstation  Giant Core Streamlit app   (optional: --profile workstation)
 #
-# Everything published binds to 127.0.0.1. Only n8n can reach the internet.
+# Everything published binds to 127.0.0.1. Only n8n and cortex can reach the internet.
 #   Dashboard  http://localhost:8088      n8n editor  http://localhost:5678
+#   Cortex     http://localhost:8089/v1   (OpenAI-compatible, Bearer OMEGA_GATEWAY_TOKEN)
 #   Workstation http://localhost:8501     (with --profile workstation)
 
 name: omega
@@ -86,6 +89,7 @@ services:
       PGRST_DB_MAX_ROWS: "3000"
       PGRST_ADMIN_SERVER_PORT: "3001"
       PGRST_OPENAPI_MODE: disabled
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?set PGRST_JWT_SECRET in .env}   # only cortex signs with it
     networks: [db, core]
     mem_limit: 128m
 
@@ -139,6 +143,8 @@ services:
       N8N_HEALTH_URL: http://n8n:5678/healthz
       PGRST_URL: http://postgrest:3000
       PGRST_ADMIN_URL: http://postgrest:3001
+      CORTEX_URL: http://cortex:8090
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
       - ./relay:/app:ro
@@ -150,6 +156,47 @@ services:
     pids_limit: 64
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  cortex:
+    build: { context: ./gateway }
+    image: omega-cortex:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      postgrest: { condition: service_started }
+    environment:
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
+      PGRST_URL: http://postgrest:3000
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?set PGRST_JWT_SECRET in .env}
+      OMEGA_PROVIDERS_FILE: /config/providers.json
+      OMEGA_ALLOW_ANON_PROVIDERS: ${OMEGA_ALLOW_ANON_PROVIDERS:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-}
+      CLAUDE_EFFORT: ${CLAUDE_EFFORT:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ZAI_API_KEY: ${ZAI_API_KEY:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      LLM7_API_KEY: ${LLM7_API_KEY:-}
+      TZ: ${TZ:-Asia/Kuwait}
+    volumes:
+      - ./gateway/config:/config:ro     # edit providers.json, then: docker compose kill -s HUP cortex
+    ports:
+      - "127.0.0.1:8089:8090"
+    networks: [egress, core]
+    mem_limit: 192m
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -171,7 +218,7 @@ networks:
     internal: true
   core:     # n8n, postgrest <-> relay. No internet.
     internal: true
-  egress:   # n8n's way out to Binance + Telegram
+  egress:   # the way out: n8n to Binance + Telegram, cortex to the LLM providers
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:

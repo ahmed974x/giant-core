@@ -83,6 +83,30 @@ canvas#sky.dragging { cursor: grabbing; }
 #pulse { right: 26px; bottom: 26px; text-align: right; font: 11px var(--mono); color: var(--ink-3); line-height: 1.7; }
 #pulse strong { color: var(--ink-2); font-weight: 600; }
 
+/* cortex: LLM gateway console, drifting on the left between brand and focus */
+#cortex { left: 26px; top: 150px; width: min(360px, calc(100vw - 52px)); max-height: calc(100vh - 150px - 290px); min-height: 220px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; transform: rotate(-0.6deg); }
+#cortex[hidden] { display: none; }
+#cortex h2 { margin: 0; font: 600 10.5px var(--mono); letter-spacing: 0.24em; color: var(--ink-2); display: flex; justify-content: space-between; }
+#csum { margin-top: -6px; font: 10.5px var(--mono); letter-spacing: 0.08em; color: var(--ink-3); }
+#cprov { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; gap: 3px; font: 11px var(--mono); scrollbar-width: thin; min-height: 40px; }
+#cprov li { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 8px; align-items: baseline; color: var(--ink-2); }
+#cprov li b { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+#cprov li .n { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cprov li.off { opacity: 0.45; }
+#cprov li .m { color: var(--ink-3); text-align: right; }
+.c-routes { display: flex; gap: 6px; flex-wrap: wrap; }
+.c-routes button, #csend { font: 600 10px var(--mono); letter-spacing: 0.1em; color: var(--ink-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.c-routes button.on, .c-routes button:hover, #csend:hover { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
+#cform { display: flex; gap: 8px; align-items: flex-end; }
+#cq { flex: 1; resize: none; min-height: 38px; max-height: 120px; background: rgba(5, 7, 13, 0.6); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font: 12.5px/1.4 var(--sans); }
+#cq:focus { outline: none; border-color: rgba(73, 214, 255, 0.5); }
+#cout { font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; max-height: 26vh; color: var(--ink); scrollbar-width: thin; }
+#cout:empty { display: none; }
+#cmeta { font: 10.5px var(--mono); color: var(--ink-3); }
+#cmeta:empty { display: none; }
+button.chip { background: transparent; cursor: pointer; }
+button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
+
 #tip { position: fixed; z-index: 3; pointer-events: none; padding: 8px 11px; border-radius: 12px; background: rgba(5, 7, 13, 0.92); border: 1px solid var(--line); font-size: 12px; opacity: 0; transition: opacity .12s; max-width: 260px; }
 #tip b { font: 600 11px var(--mono); letter-spacing: 0.12em; display: block; margin-bottom: 3px; }
 #tip span { color: var(--ink-2); }
@@ -96,6 +120,7 @@ canvas#sky.dragging { cursor: grabbing; }
   #focus { left: 16px; bottom: 16px; width: calc(100vw - 32px); }
   #pulse { display: none; }
   #brand { left: 16px; top: 16px; }
+  #cortex { left: 16px; top: 120px; width: calc(100vw - 32px); max-height: calc(100vh - 140px); z-index: 4; background: rgba(5, 7, 13, 0.94); transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { #stream li.fresh { animation: none; } }
 </style>
@@ -106,7 +131,7 @@ canvas#sky.dragging { cursor: grabbing; }
 <header id="brand" class="hud">
   <p class="mark">OMEGA</p>
   <p class="sub">PRE-COG SYNDICATE · NEURAL CONSTELLATION</p>
-  <div class="meta"><span id="link" class="chip"><i></i><span>CONNECTING</span></span><span id="clock">--:--:--</span><span>KUWAIT</span></div>
+  <div class="meta"><span id="link" class="chip"><i></i><span>CONNECTING</span></span><span id="clock">--:--:--</span><span>KUWAIT</span><button id="ctoggle" class="chip on" type="button" aria-controls="cortex" aria-expanded="true">CORTEX</button></div>
 </header>
 
 <section id="stream" class="hud" aria-label="Anomaly stream">
@@ -122,6 +147,20 @@ canvas#sky.dragging { cursor: grabbing; }
   <div id="chartWrap"><canvas id="chart" role="img" aria-label="Price chart"></canvas><div id="ctip"></div></div>
   <div class="f-foot" id="fsyms"></div>
   <table class="sr" id="ftable"></table>
+</section>
+
+<section id="cortex" class="hud glass" aria-label="Cortex LLM gateway">
+  <h2><span>CORTEX · LLM GATEWAY</span></h2>
+  <div id="csum">—</div>
+  <ul id="cprov"><li class="off"><span></span><span class="n">waiting for the gateway…</span></li></ul>
+  <div class="c-routes" id="croutes">
+    <button data-route="omega/fast" class="on" title="Free tiers only, re-ranked by measured speed and success">FAST · FREE</button>
+    <button data-route="omega/smart" title="Claude first, strongest free models as failover">SMART · CLAUDE</button>
+    <button data-route="omega/free-smart" title="Strongest free models only">SMART · FREE</button>
+  </div>
+  <form id="cform"><textarea id="cq" rows="1" placeholder="Ask the Cortex…" aria-label="Prompt"></textarea><button id="csend" type="submit">SEND</button></form>
+  <div id="cout" aria-live="polite"></div>
+  <div id="cmeta"></div>
 </section>
 
 <footer id="pulse" class="hud">
@@ -151,7 +190,7 @@ const state = {
   symbols: [],
   latest: {},                      // symbol -> {close, change_1h_pct, change_24h_pct}
   anomalies: [],                   // newest first
-  status: { relay: "unknown", n8n: "unknown", postgrest: "unknown", timescale: "unknown" },
+  status: { relay: "unknown", n8n: "unknown", postgrest: "unknown", timescale: "unknown", cortex: "unknown" },
   lastPulse: null,
   focus: { type: "symbol", symbol: "BTCUSDT" },
 };
@@ -180,9 +219,28 @@ function removeNode(id) {
   { id: "relay",     label: "RELAY",     role: "Authenticated inbox · live stream to this room", health: "relay" },
   { id: "ops",       label: "OPS ROOM",  role: "You are here", size: 1.2 },
   { id: "telegram",  label: "TELEGRAM",  role: "Anomaly alerts to the Architect", ext: true },
+  { id: "cortex",    label: "CORTEX",    role: "LLM gateway · Claude + free tiers, failover, performance memory", health: "cortex", size: 1.3 },
 ].forEach(addNode);
 addEdge("binance", "n8n", 130); addEdge("n8n", "timescale", 120); addEdge("timescale", "postgrest", 110);
 addEdge("postgrest", "relay", 110); addEdge("n8n", "relay", 140); addEdge("relay", "ops", 110); addEdge("n8n", "telegram", 150);
+addEdge("relay", "cortex", 120); addEdge("cortex", "postgrest", 150, true);
+
+// LLM providers orbit the Cortex; only switched-on ones appear.
+const LLM_STATE = { ok: "ok", cooling: "degraded", degraded: "degraded", off: "down" };
+function setProviders(list) {
+  const want = new Set(list.filter(p => p.enabled).map(p => "llm-" + p.id));
+  for (const n of [...nodes.values()]) if (n.llm && !want.has(n.id)) removeNode(n.id);
+  for (const p of list) {
+    if (!p.enabled) continue;
+    const id = "llm-" + p.id;
+    const role = `${p.label}${p.paid ? " · paid" : " · free tier"} · ${p.state}` +
+      (p.calls_24h ? ` · ${p.calls_24h} calls/24h, ${Math.round(p.success_24h * 100)}% ok` : "") +
+      (p.trains_on_prompts ? " · may train on prompts" : "");
+    const n = nodes.get(id) || addNode({ id, label: p.label.toUpperCase(), llm: true, size: p.paid ? 1.15 : 0.8 });
+    if (!edges.some(e => e.a === id)) { addEdge(id, "cortex", p.paid ? 80 : 95); const c = nodes.get("cortex"), r = () => (Math.random() - 0.5) * 60; n.x = c.x + r(); n.y = c.y + r(); n.z = c.z + r(); }
+    n.role = role; n.llmState = LLM_STATE[p.state] || "unknown"; n.label = p.label.toUpperCase();
+  }
+}
 
 function setSymbols(list) {
   state.symbols = list;
@@ -196,7 +254,7 @@ function setSymbols(list) {
 }
 
 // ───────────────────────────── physics ─────────────────────────────
-function healthOf(n) { return n.health ? state.status[n.health] : n.ext ? (state.status.n8n === "down" ? "unknown" : "ok") : "ok"; }
+function healthOf(n) { if (n.llm) return n.llmState; return n.health ? state.status[n.health] : n.ext ? (state.status.n8n === "down" ? "unknown" : "ok") : "ok"; }
 function step() {
   const arr = [...nodes.values()];
   for (let i = 0; i < arr.length; i++) {
@@ -457,7 +515,7 @@ function spawnAnomalyNode(a) {
 function expireAnomalyNodes() { for (const n of nodes.values()) if (n.anomaly && Date.now() - n.born > n.ttl) removeNode(n.id); }
 function onStatus(s) {
   const prev = state.status; state.status = { ...state.status, ...s };
-  for (const k of ["n8n", "postgrest", "timescale", "relay"]) {
+  for (const k of ["n8n", "postgrest", "timescale", "relay", "cortex"]) {
     if (prev[k] !== state.status[k] && state.status[k] === "down") flare(k, CRIT, 1);
     if (prev[k] === "down" && state.status[k] === "ok") flare(k, OK, 1);
   }
@@ -496,7 +554,7 @@ function renderPulse() {
   const p = state.lastPulse;
   document.getElementById("pmem").textContent = p ? `+${p.stored} candles · ${p.anomalies} anomal${p.anomalies === 1 ? "y" : "ies"}` : "—";
   const s = state.status;
-  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest"].map(k =>
+  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest", "cortex"].map(k =>
     `<span style="color:${healthColor(s[k])}">${s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"}</span> ${k.toUpperCase()}`).join("&nbsp;&nbsp;");
 }
 setInterval(() => {
@@ -604,6 +662,82 @@ chart.addEventListener("pointermove", e => {
 chart.addEventListener("pointerleave", () => { chartHover = null; ctip.style.opacity = 0; drawChart(); });
 addEventListener("resize", () => drawChart());
 
+// ───────────────────────────── cortex console ─────────────────────────────
+const cortex = { route: "omega/fast", providers: [], perf: [], history: [], busy: false };
+function fmtMs(v) { return v == null ? "—" : v >= 1000 ? (v / 1000).toFixed(1) + "s" : Math.round(v) + "ms"; }
+function renderCortex() {
+  const perfBy = {};
+  for (const r of cortex.perf) {                                     // per provider: calls-weighted roll-up of its models
+    const a = perfBy[r.provider] ||= { calls: 0, ok: 0, p50: [], tokens: 0 };
+    a.calls += Number(r.calls); a.ok += Number(r.success_rate) * Number(r.calls);
+    if (r.p50_ms != null) a.p50.push([Number(r.p50_ms), Number(r.calls)]);
+    a.tokens += Number(r.prompt_tokens) + Number(r.completion_tokens);
+  }
+  const list = [...cortex.providers].sort((a, b) => (b.enabled - a.enabled) || ((perfBy[b.id]?.calls || 0) - (perfBy[a.id]?.calls || 0)));
+  const on = list.filter(p => p.enabled).length;
+  let calls = 0, tokens = 0; for (const a of Object.values(perfBy)) { calls += a.calls; tokens += a.tokens; }
+  document.getElementById("csum").textContent = cortex.providers.length ? `${on}/${list.length} live · ${calls} calls · ${tokens.toLocaleString("en-US")} tokens / 24h` : "gateway not reachable";
+  if (!list.length) return;
+  document.getElementById("cprov").innerHTML = list.map(p => {
+    const a = perfBy[p.id];
+    const p50 = a && a.p50.length ? a.p50.reduce((s, [v, w]) => s + v * w, 0) / a.p50.reduce((s, [, w]) => s + w, 0) : null;
+    const col = !p.enabled ? INK3 : healthColor(LLM_STATE[p.state]);
+    const right = !p.enabled ? (p.anonymous || /anon/i.test(p.reason || "") ? "keyless · off" : "no key") : a ? `${Math.round(a.ok / a.calls * 100)}% · ${fmtMs(p50)}` : "no calls yet";
+    return `<li class="${p.enabled ? "" : "off"}" title="${esc(p.enabled ? p.models.join(", ") : p.reason || "off")}"><span><b style="background:${col}"></b></span>` +
+      `<span class="n">${esc(p.label)}${p.paid ? " ◆" : ""}</span><span class="m">${a ? esc(a.calls) + "×" : ""}</span><span class="m">${right}</span></li>`;
+  }).join("");
+}
+async function refreshCortex() {
+  try { const j = await cortexData.providers(); cortex.providers = j.providers || []; setProviders(cortex.providers); } catch { cortex.providers = []; setProviders([]); }
+  try { cortex.perf = await cortexData.perf(); } catch { cortex.perf = []; }
+  renderCortex();
+}
+function onCortex(ev) {
+  for (const a of ev.attempts || []) if (!a.ok) flare("llm-" + a.provider, CRIT, 0.9);
+  if (ev.provider) {
+    emit(["ops", "relay", "cortex", "llm-" + ev.provider], FLOW, 0.026, 2.2);
+    setTimeout(() => emit(["llm-" + ev.provider, "cortex", "relay", "ops"], OK, 0.026, 2.4), 700);
+    setTimeout(() => emit(["cortex", "postgrest"], INK2, 0.02, 1.4), 900);
+    flare("llm-" + ev.provider, OK, 1);
+  }
+  clearTimeout(cortex.t); cortex.t = setTimeout(refreshCortex, 1500);
+}
+document.getElementById("croutes").addEventListener("click", e => {
+  const b = e.target.closest("button[data-route]"); if (!b) return;
+  cortex.route = b.dataset.route;
+  for (const x of document.querySelectorAll("#croutes button")) x.classList.toggle("on", x === b);
+});
+const cq = document.getElementById("cq");
+cq.addEventListener("input", () => { cq.style.height = "auto"; cq.style.height = Math.min(120, cq.scrollHeight) + "px"; });
+cq.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("cform").requestSubmit(); } });
+document.getElementById("cform").addEventListener("submit", async e => {
+  e.preventDefault();
+  const q = cq.value.trim(); if (!q || cortex.busy) return;
+  cortex.busy = true; cq.value = ""; cq.style.height = "auto";
+  const out = document.getElementById("cout"), meta = document.getElementById("cmeta");
+  out.textContent = "…"; meta.textContent = `${cortex.route} · routing`;
+  emit(["ops", "relay", "cortex"], FLOW, 0.03, 2);
+  const messages = [...cortex.history.slice(-8), { role: "user", content: q }];
+  try {
+    const j = await cortexData.chat(cortex.route, messages);
+    if (j.error) throw new Error(j.error.message || j.error);
+    const answer = j.choices[0].message.content, o = j.omega || {};
+    out.textContent = answer;                                      // model text is never parsed as HTML
+    cortex.history.push({ role: "user", content: q }, { role: "assistant", content: answer });
+    const failed = (o.attempts || []).filter(a => a.called && !a.ok).length;
+    meta.textContent = `${o.provider_label || o.provider} · ${j.model.split(":").slice(1).join(":")} · ${fmtMs(o.latency_ms)} · ${j.usage?.total_tokens ?? "?"} tok${failed ? ` · ${failed} failover${failed > 1 ? "s" : ""}` : ""}`;
+    if (state.mode === "demo") onCortex({ ok: true, provider: o.provider, attempts: (o.attempts || []).filter(a => a.called) });
+  } catch (err) {
+    out.textContent = ""; meta.textContent = `No answer: ${err.message}`;
+    flare("cortex", CRIT, 1);
+  } finally { cortex.busy = false; }
+});
+document.getElementById("ctoggle").addEventListener("click", e => {
+  const panel = document.getElementById("cortex"), open = panel.hidden;
+  panel.hidden = !open; e.currentTarget.classList.toggle("on", open); e.currentTarget.setAttribute("aria-expanded", String(open));
+});
+if (matchMedia("(max-width: 760px)").matches) document.getElementById("ctoggle").click();
+
 // ───────────────────────────── data sources ─────────────────────────────
 const api = async path => { const r = await fetch(path, { headers: { Accept: "application/json" } }); if (!r.ok) throw new Error(r.status); return r.json(); };
 const live = {
@@ -614,6 +748,16 @@ const live = {
   },
 };
 let data = live;
+let cortexData = {
+  providers: () => api("/llm/providers"),
+  perf: () => api("/api/llm_perf"),
+  chat: async (route, messages) => {
+    const r = await fetch("/llm/chat", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ route, messages }) });
+    const j = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+    if (!r.ok && !j.error) j.error = `HTTP ${r.status}`;
+    return j;
+  },
+};
 let latestTimer = 0;
 function refreshLatest() {
   if (state.mode !== "live") return;
@@ -637,8 +781,9 @@ function connectLive() {
     if (h.pulse) { state.lastPulse = h.pulse; renderPulse(); }
     try { for (const a of await api("/api/anomalies?order=ts.desc&limit=20")) onAnomaly(a, false); } catch { (h.recent || []).forEach(a => onAnomaly(a, false)); }
     try { for (const r of await api("/api/latest")) state.latest[r.symbol] = r; } catch { /* shown via status */ }
-    renderStream(); loadFocus();
+    renderStream(); loadFocus(); refreshCortex();
   });
+  es.addEventListener("cortex", e => onCortex(JSON.parse(e.data)));
   es.addEventListener("pulse", e => onPulse(JSON.parse(e.data)));
   es.addEventListener("anomaly", e => onAnomaly(JSON.parse(e.data)));
   es.addEventListener("status", e => onStatus(JSON.parse(e.data)));
@@ -663,7 +808,36 @@ function startDemo() {
     candles5m: async s => hist[s].filter((_, i) => i % 5 === 0),
     candlesAround: async (s, ts) => { const t = Date.parse(ts); return hist[s].filter(r => Math.abs(Date.parse(r.ts) - t) <= 3600e3); },
   };
-  onStatus({ relay: "ok", n8n: "ok", postgrest: "ok", timescale: "ok" });
+  onStatus({ relay: "ok", n8n: "ok", postgrest: "ok", timescale: "ok", cortex: "ok" });
+  const demoProv = [
+    { id: "anthropic", label: "Claude", paid: true, enabled: true, state: "ok", models: ["claude-opus-5-5"] },
+    { id: "groq", label: "Groq", enabled: true, state: "ok", models: ["openai/gpt-oss-120b"] },
+    { id: "gemini", label: "Google Gemini", enabled: true, state: "ok", trains_on_prompts: true, models: ["gemini-2.5-flash"] },
+    { id: "cloudflare", label: "Cloudflare Workers AI", enabled: true, state: "cooling", models: ["@cf/meta/llama-3.3-70b-instruct-fp8-fast"] },
+    { id: "nvidia", label: "NVIDIA NIM", enabled: true, state: "ok", models: ["openai/gpt-oss-20b"] },
+    { id: "openrouter", label: "OpenRouter", enabled: false, reason: "set OPENROUTER_API_KEY", models: ["openrouter/free"] },
+    { id: "kilo", label: "Kilo Code", enabled: false, reason: "anonymous: off", models: ["kilo-auto/free"] },
+  ];
+  const demoPerf = [
+    { provider: "groq", model: "openai/gpt-oss-120b", calls: 142, success_rate: 0.98, p50_ms: 420, prompt_tokens: 61000, completion_tokens: 23000 },
+    { provider: "gemini", model: "gemini-2.5-flash", calls: 37, success_rate: 0.95, p50_ms: 1150, prompt_tokens: 18000, completion_tokens: 9100 },
+    { provider: "anthropic", model: "claude-opus-5-5", calls: 12, success_rate: 1, p50_ms: 6800, prompt_tokens: 15000, completion_tokens: 7400 },
+    { provider: "cloudflare", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", calls: 20, success_rate: 0.7, p50_ms: 900, prompt_tokens: 6000, completion_tokens: 2100 },
+    { provider: "nvidia", model: "openai/gpt-oss-20b", calls: 9, success_rate: 1, p50_ms: 1600, prompt_tokens: 3000, completion_tokens: 1400 },
+  ];
+  cortexData = {
+    providers: async () => ({ providers: demoProv }),
+    perf: async () => demoPerf,
+    chat: async (route, messages) => {
+      await new Promise(r => setTimeout(r, 900));
+      const provider = route === "omega/smart" ? "anthropic" : "groq", label = provider === "anthropic" ? "Claude" : "Groq";
+      return { model: provider === "anthropic" ? "anthropic:claude-opus-5-5" : "groq:openai/gpt-oss-120b",
+        choices: [{ message: { content: `Demo mode: no model was called. In the live stack this goes to ${route} and the answer for "${messages.at(-1).content.slice(0, 80)}" lands here.` } }],
+        usage: { total_tokens: 64 },
+        omega: { provider, provider_label: label, latency_ms: provider === "anthropic" ? 6200 : 410, attempts: route === "omega/fast" ? [{ provider: "cloudflare", called: true, ok: false }, { provider, called: true, ok: true }] : [{ provider, called: true, ok: true }] } };
+    },
+  };
+  refreshCortex();
   let id = 1;
   const reasons = {
     price_shock: () => `Down 1-min move -${(1 + Math.random() * 2).toFixed(2)}% (z=-${(4 + Math.random() * 3).toFixed(1)}) vs 24h baseline`,
@@ -694,6 +868,7 @@ function startDemo() {
 // ───────────────────────────── boot ─────────────────────────────
 renderPulse();
 if (FORCE_DEMO) startDemo(); else connectLive();
+setInterval(() => { if (state.mode !== "connecting") refreshCortex(); }, 30000);
 requestAnimationFrame(draw);
 </script>
 </body>
