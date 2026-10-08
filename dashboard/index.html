@@ -157,6 +157,7 @@ button.chip.on { color: var(--ink); border-color: rgba(73, 214, 255, 0.5); }
     <button data-route="omega/fast" class="on" title="Free tiers only, re-ranked by measured speed and success">FAST · FREE</button>
     <button data-route="omega/smart" title="Claude first, strongest free models as failover">SMART · CLAUDE</button>
     <button data-route="omega/free-smart" title="Strongest free models only">SMART · FREE</button>
+    <button data-route="omega/local" title="Open-source model inside the stack: nothing leaves this machine">LOCAL · PRIVATE</button>
   </div>
   <form id="cform"><textarea id="cq" rows="1" placeholder="Ask the Cortex…" aria-label="Prompt"></textarea><button id="csend" type="submit">SEND</button></form>
   <div id="cout" aria-live="polite"></div>
@@ -233,7 +234,7 @@ function setProviders(list) {
   for (const p of list) {
     if (!p.enabled) continue;
     const id = "llm-" + p.id;
-    const role = `${p.label}${p.paid ? " · paid" : " · free tier"} · ${p.state}` +
+    const role = `${p.label}${p.paid ? " · paid" : p.local ? " · open source, on this machine" : " · free tier"} · ${p.state}` +
       (p.calls_24h ? ` · ${p.calls_24h} calls/24h, ${Math.round(p.success_24h * 100)}% ok` : "") +
       (p.trains_on_prompts ? " · may train on prompts" : "");
     const n = nodes.get(id) || addNode({ id, label: p.label.toUpperCase(), llm: true, size: p.paid ? 1.15 : 0.8 });
@@ -684,7 +685,7 @@ function renderCortex() {
     const col = !p.enabled ? INK3 : healthColor(LLM_STATE[p.state]);
     const right = !p.enabled ? (p.anonymous || /anon/i.test(p.reason || "") ? "keyless · off" : "no key") : a ? `${Math.round(a.ok / a.calls * 100)}% · ${fmtMs(p50)}` : "no calls yet";
     return `<li class="${p.enabled ? "" : "off"}" title="${esc(p.enabled ? p.models.join(", ") : p.reason || "off")}"><span><b style="background:${col}"></b></span>` +
-      `<span class="n">${esc(p.label)}${p.paid ? " ◆" : ""}</span><span class="m">${a ? esc(a.calls) + "×" : ""}</span><span class="m">${right}</span></li>`;
+      `<span class="n">${esc(p.label)}${p.paid ? " ◆" : p.local ? " ⌂" : ""}</span><span class="m">${a ? esc(a.calls) + "×" : ""}</span><span class="m">${right}</span></li>`;
   }).join("");
 }
 async function refreshCortex() {
@@ -817,12 +818,14 @@ function startDemo() {
     { id: "nvidia", label: "NVIDIA NIM", enabled: true, state: "ok", models: ["openai/gpt-oss-20b"] },
     { id: "openrouter", label: "OpenRouter", enabled: false, reason: "set OPENROUTER_API_KEY", models: ["openrouter/free"] },
     { id: "kilo", label: "Kilo Code", enabled: false, reason: "anonymous: off", models: ["kilo-auto/free"] },
+    { id: "local", label: "Local · Ollama", local: true, enabled: true, state: "ok", models: ["llama3.2:3b"] },
   ];
   const demoPerf = [
     { provider: "groq", model: "openai/gpt-oss-120b", calls: 142, success_rate: 0.98, p50_ms: 420, prompt_tokens: 61000, completion_tokens: 23000 },
     { provider: "gemini", model: "gemini-2.5-flash", calls: 37, success_rate: 0.95, p50_ms: 1150, prompt_tokens: 18000, completion_tokens: 9100 },
     { provider: "anthropic", model: "claude-opus-5-5", calls: 12, success_rate: 1, p50_ms: 6800, prompt_tokens: 15000, completion_tokens: 7400 },
     { provider: "cloudflare", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", calls: 20, success_rate: 0.7, p50_ms: 900, prompt_tokens: 6000, completion_tokens: 2100 },
+    { provider: "local", model: "llama3.2:3b", calls: 6, success_rate: 1, p50_ms: 3900, prompt_tokens: 2100, completion_tokens: 900 },
     { provider: "nvidia", model: "openai/gpt-oss-20b", calls: 9, success_rate: 1, p50_ms: 1600, prompt_tokens: 3000, completion_tokens: 1400 },
   ];
   cortexData = {
@@ -830,8 +833,9 @@ function startDemo() {
     perf: async () => demoPerf,
     chat: async (route, messages) => {
       await new Promise(r => setTimeout(r, 900));
-      const provider = route === "omega/smart" ? "anthropic" : "groq", label = provider === "anthropic" ? "Claude" : "Groq";
-      return { model: provider === "anthropic" ? "anthropic:claude-opus-5-5" : "groq:openai/gpt-oss-120b",
+      const provider = route === "omega/smart" ? "anthropic" : route === "omega/local" ? "local" : "groq";
+      const label = { anthropic: "Claude", local: "Local · Ollama", groq: "Groq" }[provider];
+      return { model: { anthropic: "anthropic:claude-opus-5-5", local: "local:llama3.2:3b", groq: "groq:openai/gpt-oss-120b" }[provider],
         choices: [{ message: { content: `Demo mode: no model was called. In the live stack this goes to ${route} and the answer for "${messages.at(-1).content.slice(0, 80)}" lands here.` } }],
         usage: { total_tokens: 64 },
         omega: { provider, provider_label: label, latency_ms: provider === "anthropic" ? 6200 : 410, attempts: route === "omega/fast" ? [{ provider: "cloudflare", called: true, ok: false }, { provider, called: true, ok: true }] : [{ provider, called: true, ok: true }] } };

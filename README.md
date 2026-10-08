@@ -18,6 +18,7 @@ Binance ─▶ n8n (every minute) ─▶ Timescale: market.ingest()  ──▶ a
 | `postgrest` | Read-only API over `api.latest`, `api.candles`, `api.candles_5m`, `api.anomalies` | internal |
 | `n8n` | *OMEGA · Market Sentinel* workflow, seeded and activated on first boot | 5678 |
 | `relay` | Token-checked inbox for n8n, SSE stream, `/api` proxy, serves the dashboard | 8088 |
+| `ollama` | Open-source local LLM runtime (MIT); pulls `OMEGA_LOCAL_MODEL` once, then runs offline | internal |
 | `cortex` | LLM gateway: Claude + free tiers behind one OpenAI-compatible API, failover, performance memory | 8089 |
 | `workstation` | Giant Core Streamlit app (`--profile workstation`) | 8501 |
 
@@ -77,6 +78,7 @@ live state and 24h performance, and has a console that talks to the gateway thro
 | `omega/fast` (or `auto`) | Groq → Cloudflare → Gemini Flash → Mistral Small → NVIDIA → Z AI → Ollama → OpenRouter → keyless | never |
 | `omega/smart` | **Claude** (`claude-opus-5-5`) → Gemini Pro → Nemotron Ultra → Mistral Medium → … | Claude only |
 | `omega/free-smart` | the strongest free models only | never |
+| `omega/local` | the open-source model inside the stack; nothing leaves the machine | never |
 | `claude` | Claude only | yes |
 | `provider:model` | that one model, e.g. `groq:openai/gpt-oss-120b` | depends |
 
@@ -89,6 +91,13 @@ curl localhost:8089/v1/chat/completions -H "Authorization: Bearer $OMEGA_GATEWAY
 Any OpenAI SDK works: `base_url=http://localhost:8089/v1`, `api_key=$OMEGA_GATEWAY_TOKEN`. Inside the
 stack (n8n) the address is `http://cortex:8090/v1`. Each answer carries an `omega` block with the
 provider that served it, total latency, and every failover attempt.
+
+**Local open-source model.** [Ollama](https://github.com/ollama/ollama) (MIT) runs an open-weight model
+inside the stack and closes every chain, so Cortex still answers when every cloud tier is down or out
+of quota. Default `llama3.2:3b` (~3 GB RAM, CPU is fine); pick any model from
+[ollama.com/library](https://ollama.com/library) with `OMEGA_LOCAL_MODEL` and give it RAM with
+`OLLAMA_MEM_LIMIT`. The first `up` downloads it once (`ollama-pull`); until it lands, the local link is
+skipped for 30s at a time. Leave `OMEGA_LOCAL_LLM_URL` empty to switch it off.
 
 **Failover.** A 429 benches that provider for its `retry-after` (or 60s), a bad key or retired model
 for 30 min, a timeout or 5xx for 30s, and the request moves down the chain. Client-side per-minute

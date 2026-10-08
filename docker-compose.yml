@@ -6,6 +6,7 @@
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
 #                every call's latency/tokens/outcome remembered in Timescale
+#   ollama       open-source local LLM (MIT): the free, quota-less last link of every Cortex chain
 #   workstation  Giant Core Streamlit app   (optional: --profile workstation)
 #
 # Everything published binds to 127.0.0.1. Only n8n and cortex can reach the internet.
@@ -187,6 +188,8 @@ services:
       ZAI_API_KEY: ${ZAI_API_KEY:-}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       LLM7_API_KEY: ${LLM7_API_KEY:-}
+      OMEGA_LOCAL_LLM_URL: ${OMEGA_LOCAL_LLM_URL-http://ollama:11434/v1}   # set empty to switch the local model off
+      OMEGA_LOCAL_MODEL: ${OMEGA_LOCAL_MODEL:-llama3.2:3b}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
       - ./gateway/config:/config:ro     # edit providers.json, then: docker compose kill -s HUP cortex
@@ -200,6 +203,35 @@ services:
       interval: 15s
       timeout: 3s
       retries: 3
+
+  # Open-source LLM runtime. Pulls OMEGA_LOCAL_MODEL once into a volume; afterwards it runs offline.
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.34.4}
+    <<: *hardening
+    environment:
+      OLLAMA_KEEP_ALIVE: 30m          # keep the model warm between calls
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_NOPRUNE: "1"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks: [egress, core]          # egress only to pull models
+    mem_limit: ${OLLAMA_MEM_LIMIT:-6g}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ollama-pull:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.34.4}
+    restart: "no"
+    depends_on:
+      ollama: { condition: service_healthy }
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OMEGA_LOCAL_MODEL:-llama3.2:3b}"]
+    networks: [core]
 
   workstation:
     profiles: ["workstation"]
@@ -222,6 +254,7 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  ollama_models:
   timescale_data:
   n8n_data:
   workstation_plugins:

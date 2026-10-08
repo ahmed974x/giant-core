@@ -25,7 +25,7 @@ const DASHBOARD = "/srv/dashboard/index.html";
 const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls"]);
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
-const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "claude"]);
+const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "omega/local", "claude"]);
 const KEEP = 50;
 const STATUS_EVERY_MS = 15000;
 

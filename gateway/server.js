@@ -35,16 +35,19 @@ function loadRegistry(env = process.env) {
     const missing = (p.requires || []).filter(k => !env[k]);
     let reason = null;
     if (missing.length) reason = `set ${missing.join(", ")}`;
-    else if (!key && !p.anonymous) reason = `set ${p.key}`;
+    else if (!key && !p.anonymous && !p.local) reason = `set ${p.key}`;
     else if (!key && p.anonymous && !ALLOW_ANON) reason = "anonymous: set OMEGA_ALLOW_ANON_PROVIDERS=true";
-    const base = p.base ? p.base.replace(/\$\{(\w+)\}/g, (_, k) => encodeURIComponent(env[k] || "")) : null;
+    const sub = v => (/^https?:\/\/[\w.:-]+(\/[\w./-]*)?$/.test(v) ? v : encodeURIComponent(v));   // whole URLs pass, ids are escaped
+    const base = p.base ? p.base.replace(/\$\{(\w+)\}/g, (_, k) => sub(env[k] || "")) : null;
     const models = [...p.models];
-    if (id === "anthropic" && env.CLAUDE_MODEL && !models.includes(env.CLAUDE_MODEL)) models.unshift(env.CLAUDE_MODEL);
+    const pinned = p.model_env ? env[p.model_env] : "";          // e.g. CLAUDE_MODEL, OMEGA_LOCAL_MODEL
+    if (pinned && !models.includes(pinned)) models.unshift(pinned);
     providers[id] = {
       id, label: p.label || id, kind: p.kind, base, key, models, rpm: p.rpm || 30, concurrency: p.concurrency || 8,
+      timeoutMs: p.timeout_ms || TIMEOUT_MS, local: !!p.local,
       paid: !!p.paid, anonymous: !!p.anonymous && !key, trainsOnPrompts: !!p.trains_on_prompts,
       enabled: !reason, reason,
-      defaultModel: id === "anthropic" ? env.CLAUDE_MODEL || models[0] : models[0],
+      defaultModel: pinned || models[0],
     };
   }
   const routes = {};
@@ -174,7 +177,7 @@ async function callOpenAI(p, model, req) {
   if (p.id === "openrouter") { headers["HTTP-Referer"] = "http://localhost:8088"; headers["X-Title"] = "OMEGA Cortex"; }
   let r;
   try {
-    r = await fetch(`${p.base}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(TIMEOUT_MS) });
+    r = await fetch(`${p.base}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(p.timeoutMs) });
   } catch (e) {
     throw new UpstreamError(e.name === "TimeoutError" ? "timeout" : "network", null, e.message);
   }
@@ -193,7 +196,7 @@ async function callOpenAI(p, model, req) {
 const anthropicClients = new Map();
 async function callAnthropic(p, model, req) {
   let client = anthropicClients.get(p.key);
-  if (!client) { client = new Anthropic({ apiKey: p.key, maxRetries: 0, timeout: TIMEOUT_MS }); anthropicClients.set(p.key, client); }
+  if (!client) { client = new Anthropic({ apiKey: p.key, maxRetries: 0, timeout: p.timeoutMs }); anthropicClients.set(p.key, client); }
   const system = req.messages.filter(m => m.role === "system" || m.role === "developer").map(m => textOf(m.content)).join("\n\n");
   const messages = [];
   for (const m of req.messages) {
@@ -279,7 +282,8 @@ async function complete(req) {
     } catch (e) {
       const latency = Date.now() - started;
       const kind = e instanceof UpstreamError ? e.kind : "internal";
-      const cool = e instanceof UpstreamError ? coolFor(e) : 0;
+      let cool = e instanceof UpstreamError ? coolFor(e) : 0;
+      if (p.local) cool = Math.min(cool, 30e3);              // a local model may still be downloading: retry soon
       if (cool) s.coolUntil = Date.now() + cool;
       s.lastError = { kind, status: e.status ?? null, at: new Date().toISOString() };
       queue.push({ ...row, ok: false, http_status: e.status ?? null, error: kind, latency_ms: latency });
@@ -319,7 +323,7 @@ function providerView() {
     const s = lv(p.id), m = p.models.map(x => perf.get(`${p.id}:${x}`)).filter(Boolean);
     const calls = m.reduce((a, x) => a + Number(x.calls), 0);
     return {
-      id: p.id, label: p.label, enabled: p.enabled, reason: p.reason, paid: p.paid, anonymous: p.anonymous,
+      id: p.id, label: p.label, enabled: p.enabled, reason: p.reason, paid: p.paid, anonymous: p.anonymous, local: p.local,
       trains_on_prompts: p.trainsOnPrompts, models: p.models,
       state: !p.enabled ? "off" : s.coolUntil > Date.now() ? "cooling" : s.lastError && !s.lastOkAt ? "degraded" : "ok",
       cooling_until: s.coolUntil > Date.now() ? new Date(s.coolUntil).toISOString() : null,
