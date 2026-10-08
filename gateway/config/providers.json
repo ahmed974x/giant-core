@@ -1,0 +1,223 @@
+{
+  "_comment": "Provider registry for the Cortex gateway. Curated from github.com/mnfst/awesome-free-llm-apis (permanent free tiers, 2026-10). Edit freely: a provider is live only when its key env var is set (anonymous ones also need OMEGA_ALLOW_ANON_PROVIDERS=true). rpm is our own client-side ceiling, kept under the published free limit.",
+  "providers": {
+    "local": {
+      "label": "Local · Ollama",
+      "kind": "openai",
+      "base": "${OMEGA_LOCAL_LLM_URL}",
+      "local": true,
+      "requires": [
+        "OMEGA_LOCAL_LLM_URL"
+      ],
+      "model_env": "OMEGA_LOCAL_MODEL",
+      "rpm": 120,
+      "concurrency": 1,
+      "timeout_ms": 240000,
+      "_note": "Open-source Ollama (MIT) running open-weight models inside the stack: free, no quota, no data leaves the machine. The last link of every chain, so the gateway still answers when every cloud tier is down or out of quota.",
+      "models": [
+        "llama3.2:3b"
+      ]
+    },
+    "anthropic": {
+      "label": "Claude",
+      "kind": "anthropic",
+      "key": "ANTHROPIC_API_KEY",
+      "rpm": 50,
+      "paid": true,
+      "models": [
+        "claude-opus-5-5"
+      ],
+      "_default": "anthropic:default resolves to CLAUDE_MODEL from .env, else the first model here",
+      "model_env": "CLAUDE_MODEL"
+    },
+    "groq": {
+      "label": "Groq",
+      "kind": "openai",
+      "base": "https://api.groq.com/openai/v1",
+      "key": "GROQ_API_KEY",
+      "rpm": 25,
+      "models": [
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b"
+      ]
+    },
+    "gemini": {
+      "label": "Google Gemini",
+      "kind": "openai",
+      "base": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "key": "GEMINI_API_KEY",
+      "rpm": 12,
+      "trains_on_prompts": true,
+      "models": [
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-pro"
+      ]
+    },
+    "mistral": {
+      "label": "Mistral AI",
+      "kind": "openai",
+      "base": "https://api.mistral.ai/v1",
+      "key": "MISTRAL_API_KEY",
+      "rpm": 50,
+      "trains_on_prompts": true,
+      "models": [
+        "mistral-small-latest",
+        "mistral-medium-latest"
+      ]
+    },
+    "cloudflare": {
+      "label": "Cloudflare Workers AI",
+      "kind": "openai",
+      "base": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+      "key": "CLOUDFLARE_API_TOKEN",
+      "requires": [
+        "CLOUDFLARE_ACCOUNT_ID"
+      ],
+      "rpm": 30,
+      "models": [
+        "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "@cf/openai/gpt-oss-120b"
+      ]
+    },
+    "nvidia": {
+      "label": "NVIDIA NIM",
+      "kind": "openai",
+      "base": "https://integrate.api.nvidia.com/v1",
+      "key": "NVIDIA_API_KEY",
+      "rpm": 35,
+      "models": [
+        "nvidia/nemotron-3-super-120b-a12b",
+        "openai/gpt-oss-20b",
+        "nvidia/nemotron-3-ultra-550b-a55b"
+      ]
+    },
+    "openrouter": {
+      "label": "OpenRouter",
+      "kind": "openai",
+      "base": "https://openrouter.ai/api/v1",
+      "key": "OPENROUTER_API_KEY",
+      "rpm": 15,
+      "trains_on_prompts": true,
+      "models": [
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "openrouter/free",
+        "google/gemma-4-31b-it:free"
+      ]
+    },
+    "zai": {
+      "label": "Z AI",
+      "kind": "openai",
+      "base": "https://api.z.ai/api/paas/v4",
+      "key": "ZAI_API_KEY",
+      "rpm": 10,
+      "concurrency": 1,
+      "models": [
+        "glm-4.7-flash"
+      ]
+    },
+    "ollama": {
+      "label": "Ollama Cloud",
+      "kind": "openai",
+      "base": "https://ollama.com/v1",
+      "key": "OLLAMA_API_KEY",
+      "rpm": 20,
+      "models": [
+        "gpt-oss:120b",
+        "gpt-oss:20b"
+      ]
+    },
+    "llm7": {
+      "label": "LLM7.io",
+      "kind": "openai",
+      "base": "https://api.llm7.io/v1",
+      "key": "LLM7_API_KEY",
+      "anonymous": true,
+      "rpm": 30,
+      "trains_on_prompts": true,
+      "models": [
+        "gpt-oss:20b"
+      ]
+    },
+    "ovh": {
+      "label": "OVHcloud AI Endpoints",
+      "kind": "openai",
+      "base": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+      "anonymous": true,
+      "rpm": 2,
+      "models": [
+        "gpt-oss-120b"
+      ]
+    },
+    "kilo": {
+      "label": "Kilo Code",
+      "kind": "openai",
+      "base": "https://api.kilo.ai/api/gateway",
+      "anonymous": true,
+      "rpm": 3,
+      "trains_on_prompts": true,
+      "models": [
+        "kilo-auto/free"
+      ]
+    }
+  },
+  "_routes": "A route is an ordered failover chain of provider:model. adaptive=true reorders it by the last 24h of measured success and latency from Timescale. Claude only appears where you ask for it: omega/fast never spends money. local:default (open-source Ollama in the stack) closes every chain; omega/local never leaves the machine.",
+  "routes": {
+    "omega/fast": {
+      "adaptive": true,
+      "chain": [
+        "groq:openai/gpt-oss-120b",
+        "cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "gemini:gemini-2.5-flash",
+        "groq:qwen/qwen3.8-27b",
+        "mistral:mistral-small-latest",
+        "nvidia:openai/gpt-oss-20b",
+        "zai:glm-4.7-flash",
+        "ollama:gpt-oss:120b",
+        "openrouter:openrouter/free",
+        "llm7:gpt-oss:20b",
+        "ovh:gpt-oss-120b",
+        "kilo:kilo-auto/free",
+        "local:default"
+      ]
+    },
+    "omega/smart": {
+      "adaptive": false,
+      "chain": [
+        "anthropic:default",
+        "gemini:gemini-2.5-pro",
+        "nvidia:nvidia/nemotron-3-ultra-550b-a55b",
+        "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
+        "mistral:mistral-medium-latest",
+        "ollama:gpt-oss:120b",
+        "groq:openai/gpt-oss-120b",
+        "local:default"
+      ]
+    },
+    "omega/free-smart": {
+      "adaptive": true,
+      "chain": [
+        "gemini:gemini-2.5-pro",
+        "nvidia:nvidia/nemotron-3-ultra-550b-a55b",
+        "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
+        "mistral:mistral-medium-latest",
+        "ollama:gpt-oss:120b",
+        "groq:openai/gpt-oss-120b",
+        "local:default"
+      ]
+    },
+    "claude": {
+      "adaptive": false,
+      "chain": [
+        "anthropic:default"
+      ]
+    },
+    "omega/local": {
+      "adaptive": false,
+      "chain": [
+        "local:default"
+      ]
+    }
+  }
+}
