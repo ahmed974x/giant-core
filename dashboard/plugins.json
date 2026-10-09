@@ -65,6 +65,18 @@
       "enabled": true
     },
     {
+      "id": "maritime-anomaly",
+      "name": "Maritime anomaly engine",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Supply-chain signals from public AIS tracks: AIS gaps (dark periods), route deviation, port congestion. Pure Python, flags to the Master agent.",
+      "entry": "services/maritime-agent/anomaly.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
       "id": "market-sentinel",
       "name": "Market Sentinel",
       "kind": "workflow",

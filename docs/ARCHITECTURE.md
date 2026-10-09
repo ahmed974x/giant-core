@@ -216,6 +216,66 @@ Each external source is an **MCP server** in its own container (one responsibili
 
 ---
 
+## 2b. Supply-chain anomaly engine (maritime "Radar")
+
+A geospatial anomaly layer over public AIS that turns raw vessel positions into supply-chain signals.
+Implemented as pure functions in `services/maritime-agent/anomaly.py` (standard library, deterministic,
+tested without Docker); the maritime-agent runs them each cycle and forwards any flag to the Master agent.
+
+**What it detects (public AIS only, ADR 006):**
+
+| Signal | Rule | Why it matters |
+|---|---|---|
+| **AIS gap** ("dark" period) | a vessel stops broadcasting longer than a threshold; "high" when it also jumps position during the silence | sanctions/insurance compliance, re-routing — a standard commercial OSINT signal, not person tracking |
+| **Route deviation** | cross-track distance from the expected shipping corridor exceeds a limit | disruption, congestion avoidance, re-routing around a blocked choke-point |
+| **Port congestion** | distinct vessels dwelling within a radius of a port beyond a dwell time, vs. a normal baseline | backlog / delay — a leading indicator for supply-chain and price pressure |
+
+**How the agent flags the Master agent.** Each rule returns JSON
+(`{type, severity, reason, mmsi, …}`). The maritime-agent publishes these to **Redis Streams** (ADR 003);
+**Director 00** consumes the stream, correlates a flag with market and news context (the Quant/Neural/News
+engines), localizes it (Arabic/English), and surfaces it on the Market and Map screens. Positions persist in
+**PostGIS**; historical tracks in **TimescaleDB** for replay.
+
+**Libraries.** The core ships on the standard library (haversine, cross-track) to stay light on the 7 GB
+laptop. Heavier upgrades are *proposed, not auto-installed* (the Scout / Brain pattern), each with its RAM
+cost so the Architect can approve or skip:
+
+| Capability | Proposed FOSS lib | License | Cost note |
+|---|---|---|---|
+| Complex port/EEZ polygons, spatial joins | **Shapely** / **GeoPandas** | BSD / BSD | GeoPandas pulls GDAL (~hundreds of MB) — opt-in |
+| Cluster-based congestion (density) | **scikit-learn** (DBSCAN) | BSD | ~30 MB; light |
+| ETA & disruption forecasting | **PyTorch** (already in `services/neural`) | BSD | reuse the existing CPU build |
+| Fast spatial lookups | **PostGIS** indexes (already in `db/geo`) | — | in the database, no extra process |
+
+## 2c. Self-optimization (bounded, human-approved)
+
+The platform improves itself on two tracks, with a hard line between them.
+
+**Automatic and safe — the system does this on its own:**
+- **Model retraining** on fresh labeled data (the neural forecaster already retrains every 6 h and scores
+  itself walk-forward; the maritime models follow the same loop).
+- **Threshold auto-tuning**: anomaly thresholds (gap minutes, off-corridor km, dwell hours) live in a table,
+  not in code, and are nudged from the recent true/false-positive rate — like `market.thresholds` today.
+- **Adaptive routing**: the Cortex gateway already re-ranks model routes from measured latency and success.
+
+**Gated — never autonomous (ADR 006 + safety):**
+- Adding a **new data source**, changing **code or scripts**, or installing a **dependency** becomes a
+  *proposal* that waits for the Architect's **Add / Skip** (the Scout and Brain already work this way).
+- The platform does **not** rewrite, deploy, or run new code on itself unattended. "Self-evolution" means
+  bounded auto-tuning and retraining, plus a proposal queue for anything structural — not self-modifying
+  software. This keeps every change reviewable and reversible.
+
+## Execution priority (recommended first step)
+
+**Infrastructure first: stand up PostgreSQL/PostGIS + Redis, then build the maritime-agent.** The agent
+needs a place to write positions (PostGIS, already schema'd in `db/geo`) and a stream to publish flags
+(Redis, already in the compose `geo` profile) before it can do anything useful; the anomaly engine and the
+bilingual geo-api already exist, so bringing up the two stores unblocks the agent immediately. **Supabase is
+the optional cloud *mirror*, not a prerequisite** — it copies public signals out for remote read once the
+local source of truth works. Concretely: (1) `docker compose --profile geo up -d` on a machine with Docker,
+(2) build `maritime-agent` as an MCP server that ingests a public AIS feed into PostGIS and runs
+`anomaly.py`, (3) wire its flags through Redis to Director 00.
+
 ## Architecture Decision Records (ADRs)
 
 **ADR 001 — FastAPI for the API gateway.** Need async endpoints, WebSockets and fast JSON next to the
@@ -240,6 +300,11 @@ ingest CCTV or private camera feeds, parse "leaked"/illicit intelligence sources
 identify individuals. Proposed integrations evoking those (e.g. CCTV markers, "ShadowBroker"-style feed
 parsers, "God's-Eye" live-camera overlays) are **out of scope and will not be built**, whatever they are
 named. This ADR governs the others.
+
+**ADR 007 — Bounded self-optimization, not self-modifying code.** The platform auto-retrains models and
+auto-tunes thresholds from measured performance, but any change to data sources, dependencies, code or
+scripts goes through a human-approved proposal (Scout/Brain). It never rewrites or deploys itself
+unattended, so every structural change stays reviewable and reversible. Subordinate to ADR 006.
 
 ## Mapping to the current codebase
 
