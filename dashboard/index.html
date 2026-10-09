@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,6 +26,7 @@
   --crit: #fb7185;
   --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
   --sans: "Segoe UI Variable", "Segoe UI", ui-sans-serif, -apple-system, Inter, Roboto, sans-serif;
+  --sans-ar: "Tajawal", "Cairo", "Segoe UI", "Noto Sans Arabic", "Dubai", system-ui, sans-serif;
   --r: 16px;
   color-scheme: dark;
 }
@@ -70,6 +71,10 @@ button.chip.on { color: var(--void); background: var(--cyan); border-color: var(
 a.chip { text-decoration: none; color: var(--magenta); border-color: rgba(244, 114, 182, 0.5); }
 a.chip:hover { color: var(--void); background: var(--magenta); }
 #lite.on { background: var(--ink-2); border-color: var(--ink-2); }
+#lang { font-weight: 800; }
+html[dir="rtl"] body { font-family: var(--sans-ar); }
+html[dir="rtl"] .mark, html[dir="rtl"] #clock, html[dir="rtl"] #bq { font-family: var(--sans); }  /* brand/clock/search stay Latin-friendly */
+html[dir="rtl"] .panel h2, html[dir="rtl"] #brand .sub { letter-spacing: 0; }  /* Arabic must not be letter-spaced */
 
 /* ── Brain: search bar + thinking drawer ── */
 #bform { flex: 1 1 380px; max-width: 620px; display: flex; gap: 8px; align-items: center; margin: 0 8px; }
@@ -286,6 +291,7 @@ li.fresh { animation: arrive 1.2s ease-out; }
     <button id="xtoggle" class="chip on" type="button" aria-controls="modules" aria-expanded="true">MODULES</button>
     <button id="mtoggle" class="chip on" type="button" aria-controls="mood" aria-expanded="true">NEWS</button>
     <a id="studio" class="chip" href="http://localhost:5006" target="_blank" rel="noopener" title="Deep analysis in OMEGA Studio (docker compose --profile studio up -d)">STUDIO ↗</a>
+    <button id="lang" class="chip" type="button" title="العربية / English">ع</button>
     <button id="lite" class="chip" type="button" aria-pressed="false" title="Stop the 3D animation to save CPU and battery">LITE</button>
   </div>
 </header>
@@ -1584,6 +1590,47 @@ function setLite(on) {
   try { localStorage.setItem("omega.lite", on ? "1" : "0"); } catch { /* fine without it */ }
 }
 liteBtn.addEventListener("click", () => setLite(!lite));
+// ───────────────────────────── bilingual (AR / EN, RTL / LTR) ─────────────────────────────
+// A curated dictionary of the UI's visible strings. Keyed by the English source text; the element's
+// English is saved in data-en the first time we switch, so EN restores exactly. Live data stays as-is.
+const AR = {
+  "PRE-COG SYNDICATE · OPS ROOM": "نقابة ما قبل الإدراك · غرفة العمليات",
+  "CORTEX": "النواة", "MODULES": "الوحدات", "NEWS": "الأخبار", "STUDIO ↗": "الاستوديو ↗", "LITE": "خفيف",
+  "CORTEX · LLM GATEWAY": "النواة · بوابة النماذج", "MODULES · PLUGINS": "الوحدات · الإضافات",
+  "QUANT · RISK ENGINE": "التحليل · محرك المخاطر", "AGENTS · WORKFORCE": "الوكلاء · فريق العمل",
+  "ANOMALY STREAM": "تدفّق الشذوذ", "WHALES · ≥ $50M": "الحيتان · ≥ 50 مليون", "NEWS MOOD": "مزاج الأخبار",
+  "THE BRAIN · AGENT WEB": "العقل · شبكة الوكلاء", "PROPOSALS · YOUR CALL": "مقترحات · قرارك",
+  "FAST · FREE": "سريع · مجاني", "SMART · CLAUDE": "ذكي · كلود", "SMART · FREE": "ذكي · مجاني", "LOCAL · PRIVATE": "محلي · خاص",
+  "SEND": "إرسال", "THINK": "فكّر", "PAIR": "الزوج", "VOL": "التذبذب", "REGIME": "الحالة", "24H": "24س",
+  "MEMORY": "الذاكرة", "LAST PULSE": "آخر نبضة", "KUWAIT": "الكويت",
+  "Ask the Cortex…": "اسأل النواة…",
+  "Ask, design or change anything… the Brain plans, researches and designs": "اسأل أو صمّم أو عدّل أي شيء… العقل يخطّط ويبحث ويصمّم",
+};
+const I18N_SEL = "#brand .sub, .meta button, #cortex h2 span:first-child, #modules h2 span:first-child, " +
+  "#quant h2 span:first-child, #agents h2 span:first-child, #stream h2 span:first-child, #whales h2 span:first-child, " +
+  "#mood h2 span:first-child, #brainp h2 span:first-child, .ahead, #croutes button, #csend, #bgo, " +
+  "#qtable thead th, #pulse strong, #brand .meta > span:nth-child(3)";
+let lang = "en";
+try { lang = localStorage.getItem("omega.lang") === "ar" ? "ar" : "en"; } catch { /* storage may be blocked */ }
+function applyLang(next) {
+  lang = next;
+  const html = document.documentElement;
+  html.lang = lang; html.dir = lang === "ar" ? "rtl" : "ltr";
+  document.getElementById("lang").textContent = lang === "ar" ? "EN" : "ع";
+  for (const el of document.querySelectorAll(I18N_SEL)) {
+    if (el.id === "lang") continue;                      // the toggle manages its own label
+    if (!el.dataset.en) el.dataset.en = el.textContent.trim();
+    const src = el.dataset.en;
+    el.textContent = lang === "ar" ? (AR[src] || src) : src;
+  }
+  const cq = document.getElementById("cq"), bq = document.getElementById("bq");
+  if (cq) cq.placeholder = lang === "ar" ? AR["Ask the Cortex…"] : "Ask the Cortex…";
+  if (bq) bq.placeholder = lang === "ar" ? AR[bq.dataset.en || (bq.dataset.en = bq.placeholder)] || bq.placeholder : (bq.dataset.en || bq.placeholder);
+  try { localStorage.setItem("omega.lang", lang); } catch { /* fine without it */ }
+}
+document.getElementById("lang").addEventListener("click", () => applyLang(lang === "ar" ? "en" : "ar"));
+applyLang(lang);
+
 setLite(lite);
 
 // ───────────────────────────── boot ─────────────────────────────

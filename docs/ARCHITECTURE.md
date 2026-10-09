@@ -1,5 +1,7 @@
 # OMEGA PRIME — Global Logistics & Market Analytics Platform
 
+_Architecture v1.2 — bilingual (Arabic/English) edition._
+
 **A unified dashboard that correlates public logistics data, geopolitical events and financial markets, built entirely on free and open-source software and free-tier public data.**
 
 ## Scope and boundaries
@@ -59,9 +61,36 @@ Databases and read APIs sit on internal Docker networks with no route out. Every
 
 ---
 
+## 1b. Internationalization (bilingual Arabic / English, RTL + LTR)
+
+OMEGA PRIME is bilingual from the schema up, so RTL is a first-class case, not a retrofit.
+
+**Frontend.** The Phase-3 SPA uses **Next.js + `next-intl`** (web) and **React Native + `react-i18next`**
+(mobile). The active locale sets `dir="rtl"` for Arabic and `dir="ltr"` for English on `<html>`, and all
+spacing uses **CSS logical properties** (`margin-inline`, `padding-inline-start`, `inset-inline`) so the
+layout mirrors automatically — no duplicated RTL stylesheets. Styling is **Tailwind CSS** (from
+[github.com/topics/css](https://github.com/topics/css); its `rtl:`/`ltr:` variants and logical utilities
+make bidirectional UIs clean). Fonts: **Cairo** or **Tajawal** for Arabic, **Inter** for English, served
+self-hosted (not via a CDN, so the strict CSP holds). One header button toggles the language on every screen
+and persists the choice.
+
+**API.** Every endpoint resolves the language from an explicit `?lang=` or the `Accept-Language` header
+(`ar` | `en`, English default) and returns the localized field plus the raw `*_i18n` map for clients that
+want both. This is already live in `services/geo-api`.
+
+**Database.** Translatable text is stored as JSONB (`name_i18n: {"en": …, "ar": …}`), validated so both
+languages are present, and indexed for bilingual full-text search (the `'simple'` config handles both
+scripts). Live in `db/geo/01-postgis.sql`.
+
+**AI (the Brain / Master agent).** The orchestrator detects the query language, handles **mixed-language**
+queries (e.g. "Analyze oil shipments in هرمز" — English intent, Arabic entity) by extracting entities in
+either script and routing them to the right agents, and replies in the user's UI language. It runs on the
+`omega/open` route (multilingual open-weight models: Qwen, Gemma, Llama, Nemotron), with the local model as
+the private fallback.
+
 ## 2. The four screen modules
 
-Each screen is a module in one SPA (Vite + a light framework). The map screens lazy-load their engines so the other three stay light.
+Each screen is a module in one SPA (Vite + a light framework). The map screens lazy-load their engines so the other three stay light. Every screen flips between Arabic (RTL) and English (LTR) from one header button, using logical CSS so layout mirrors automatically.
 
 ### Screen 1 — Company / Operations (the "partner" screen)
 
@@ -160,7 +189,8 @@ Each external source is an **MCP server** in its own container (one responsibili
 | Map (2D/vector) | **MapLibre GL** + **deck.gl** | BSD-3 / MIT | FOSS Mapbox fork; GPU layers for AIS/ADS-B scale |
 | Globe (3D) | **CesiumJS** + **NASA GIBS**/**Copernicus** | Apache-2.0 | true 3D, open imagery, no key for GIBS |
 | Charts | **Lightweight Charts** + **uPlot** + **D3** | Apache-2.0 / MIT / ISC | finance-grade, low-CPU, custom viz |
-| Frontend | **Vite** + **React** (or keep the single-file Ops Room for the light screens) | MIT | fast builds; code-split the heavy map screen |
+| Frontend | **Vite** + **React/Next.js** + **Tailwind CSS**, with **next-intl** (web) / **react-i18next** (mobile) | MIT | fast builds, code-split map; Tailwind `rtl:`/logical utilities + next-intl give clean bilingual RTL/LTR |
+| Fonts | **Cairo**/**Tajawal** (Arabic), **Inter** (English), self-hosted | OFL / OFL | professional bidirectional typography without a CDN (CSP-safe) |
 | Mobile | **PWA** (installable) first; **Capacitor** if native shells are needed | MIT | one codebase, offline cache, push |
 | Orchestration | **Docker Compose** (existing), profiles for heavy services | Apache-2.0 | reproducible, resource-capped |
 | CI | **CircleCI** (existing config) | — | every suite, audit, secrets scan, compose validation |

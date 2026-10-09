@@ -112,6 +112,12 @@ GET /geo/nodes/search?q=هرمز      ·  GET /geo/nodes/near?lon=55.3&lat=25.2&
 ```
 
 It runs on demo data when the database is down, so `python -m pytest services/geo-api` needs no Docker.
+
+The **Ops Room** itself is now bilingual: the header **ع / EN** button flips the whole dashboard between
+Arabic (RTL) and English (LTR) — the CSS grid mirrors automatically, labels switch, an Arabic font stack
+(Tajawal/Cairo, system-hosted so the CSP holds) applies, and the choice is remembered. Per
+[github.com/topics/css](https://github.com/topics/css), the Phase-3 SPA standardises on **Tailwind CSS**
+with its `rtl:`/logical utilities; the single-file dashboard uses the same logical-property approach inline.
 Secrets stay in `.env` (`GEO_DB_PASSWORD`); the stores bind to 127.0.0.1 only and are capped for the laptop.
 
 ### The Brain: the search bar
