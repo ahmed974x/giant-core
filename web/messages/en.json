@@ -85,6 +85,35 @@
       "ground": "on ground",
       "speed": "Speed",
       "heading": "Heading"
+    },
+    "subtitle": "Live 3D globe: aircraft, ships, public webcams and day/night, from open data.",
+    "tabs": {
+      "cams": "Cameras",
+      "flights": "Flights",
+      "ships": "Ships",
+      "nodes": "Nodes",
+      "alerts": "Alerts"
+    },
+    "openLive": "Open live",
+    "close": "Close",
+    "loading": "Loading…",
+    "liveTag": "Live",
+    "empty": {
+      "cams": "No public webcams in this view yet.",
+      "flights": "No aircraft in this view. Zoom into a region.",
+      "ships": "No ships in this view yet."
+    },
+    "keyHint": "Add the free key in web/.env.local, then restart the app.",
+    "fx": {
+      "night": "Day/night",
+      "spin": "Spin",
+      "ar": "AR",
+      "arDenied": "AR blocked"
+    },
+    "gl": {
+      "title": "3D view paused",
+      "body": "The browser could not start WebGL2 (the graphics card was busy or reset). Reload to try again; closing other heavy tabs helps.",
+      "reload": "Reload"
     }
   },
   "severity": {

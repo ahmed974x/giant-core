@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { GeoJSONSource, Map as MlMap, Marker as MlMarker, Popup as MlPopup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { nightPolygon } from "@/lib/sun";
 import type { GeoNode } from "@/lib/types";
 
 // Free, keyless vector tiles (OpenFreeMap, OSM data): vectors stay razor-sharp at every zoom level.
@@ -17,7 +18,9 @@ const COLOR: Record<string, string> = { strait: "#3dd6c6", canal: "#f2b84b", por
 const MAX_ZOOM = 19;
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
-type Layer = "flights" | "ships" | "cams";
+export type Layer = "flights" | "ships" | "cams";
+export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number };
+export type MapTarget = { lon: number; lat: number; zoom: number; seq: number };
 type Feed = { on: boolean; count: number | null; state: "idle" | "loading" | "live" | "stale" | "nokey" | "error" };
 type Basemap = "satellite" | "map";
 type Hit = { features?: { properties: Record<string, unknown> }[]; lngLat: { lng: number; lat: number } };
@@ -70,7 +73,10 @@ function viewQuery(m: MlMap) {
   return `lat=${c.lat.toFixed(2)}&lon=${wrapLon(c.lng).toFixed(2)}&km=${km}`;
 }
 
-export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; focus: string | null; onFocus: (slug: string) => void }) {
+export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
+  nodes: GeoNode[]; focus: string | null; onFocus: (slug: string) => void;
+  target?: MapTarget | null; onFeed?: (layer: Layer, items: FeedItem[]) => void;
+}) {
   const t = useTranslations("earth");
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
@@ -88,10 +94,19 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
   const [feeds, setFeeds] = useState<Record<Layer, Feed>>({
     flights: { on: true, count: null, state: "idle" },
     ships: { on: true, count: null, state: "idle" },
-    cams: { on: false, count: null, state: "idle" },
+    cams: { on: true, count: null, state: "idle" },
   });
   const feedsRef = useRef(feeds);
   feedsRef.current = feeds;
+  const [glFailed, setGlFailed] = useState(false);
+  const [night, setNight] = useState(true);
+  const [spin, setSpin] = useState(true);
+  const [ar, setAr] = useState<"off" | "on" | "denied">("off");
+  const [canAr, setCanAr] = useState(false);
+  const trails = useRef(new Map<string, { pts: [number, number][]; seen: number }>());
+  const tick = useRef(0);
+  const onFeedRef = useRef(onFeed);
+  onFeedRef.current = onFeed;
   const onFocusRef = useRef(onFocus);
   onFocusRef.current = onFocus;
 
@@ -105,16 +120,27 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
       ml.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       if (cancelled || !el.current) return;
       lib.current = ml;
-      m = new ml.Map({
-        container: el.current, style: STYLE, center: [50, 22], zoom: 1.6, maxZoom: MAX_ZOOM, maxPitch: 80,
-        // Render at least 2x (3x on dense phone screens) so labels and coastlines stay crisp when zoomed.
-        pixelRatio: Math.min(Math.max(window.devicePixelRatio || 1, 2), 3),
-        attributionControl: { compact: true },
-      });
+      try {
+        m = new ml.Map({
+          container: el.current, style: STYLE, center: [50, 22], zoom: 1.6, maxZoom: MAX_ZOOM, maxPitch: 80,
+          // Render at 2x everywhere so labels and coastlines stay crisp; 3x on phones cost too much GPU for little gain.
+          pixelRatio: 2,
+          attributionControl: { compact: true },
+          // Keep the camera in the URL (#zoom/lat/lon/bearing/pitch) so any view can be bookmarked or shared.
+          hash: true,
+        });
+      } catch {
+        // No WebGL2 (old browser, or the GPU was reset): say so instead of leaving a blank box.
+        setGlFailed(true);
+        return;
+      }
+      m.on("webglcontextlost", () => setGlFailed(true));
+      m.on("webglcontextrestored", () => setGlFailed(false));
       m.addControl(new ml.NavigationControl({ visualizePitch: true }), "top-left");
       m.addControl(new ml.GlobeControl(), "top-left");
       m.addControl(new ml.FullscreenControl(), "top-left");
       m.addControl(new ml.ScaleControl({ unit: "metric" }), "bottom-left");
+      setZoom(m.getZoom()); // the URL hash may have opened the map at another zoom
       m.on("zoom", () => setZoom(m!.getZoom()));
       m.on("mousemove", e => setCursor({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
       m.on("style.load", () => {
@@ -130,14 +156,23 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
         mm.addLayer({ id: "hillshade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#000" } }, firstSymbol);
 
         for (const [name, draw] of [["plane", PLANE], ["ship", SHIP], ["cam", CAM]] as const) mm.addImage(name, icon(draw), { sdf: true, pixelRatio: 2 });
-        for (const s of ["nodes", "flights", "ships", "cams", "me-acc"]) mm.addSource(s, { type: "geojson", data: EMPTY });
+        for (const s of ["nodes", "flights", "trails", "ships", "cams", "me-acc", "night"]) mm.addSource(s, { type: "geojson", data: EMPTY });
 
+        // Live day/night shading: the half of the planet in darkness right now.
+        mm.addLayer({ id: "night", type: "fill", source: "night", paint: { "fill-color": "#000814", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 1, 0.45, 6, 0.25, 9, 0] } }, firstSymbol);
+        // Real 3D buildings from OpenStreetMap heights once you are close enough to see streets.
+        mm.addLayer({ id: "buildings-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 14,
+          paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#1d2b3a", 60, "#2f4a66", 200, "#4f7aa6"],
+            "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 14, 0, 15.5, ["coalesce", ["get", "render_height"], 6]],
+            "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 0.88 } });
         mm.addLayer({ id: "me-acc", type: "fill", source: "me-acc", paint: { "fill-color": "#ff3b6b", "fill-opacity": 0.12 } });
         mm.addLayer({ id: "nodes-halo", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 12, 10, 26], "circle-color": ["get", "color"], "circle-opacity": 0.2 } });
         mm.addLayer({ id: "nodes", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 10, 9], "circle-color": ["get", "color"], "circle-stroke-width": 2, "circle-stroke-color": "#0a0f15" } });
         mm.addLayer({ id: "ships", type: "symbol", source: "ships",
           layout: { "icon-image": "ship", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.45, 12, 0.9], "icon-rotate": ["get", "rot"], "icon-rotation-alignment": "map", "icon-allow-overlap": true },
           paint: { "icon-color": ["case", [">", ["get", "sog"], 0.5], "#4cd38a", "#8b98a8"], "icon-halo-color": "#0a0f15", "icon-halo-width": 1 } });
+        mm.addLayer({ id: "trails", type: "line", source: "trails", layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#ffd166", "line-width": ["interpolate", ["linear"], ["zoom"], 3, 1, 10, 2.5], "line-opacity": 0.45, "line-blur": 0.5 } });
         mm.addLayer({ id: "flights", type: "symbol", source: "flights",
           layout: { "icon-image": "plane", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 12, 1], "icon-rotate": ["get", "track"], "icon-rotation-alignment": "map", "icon-allow-overlap": true,
             "text-field": ["step", ["zoom"], "", 7, ["coalesce", ["get", "callsign"], ""]], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, 1.6], "text-anchor": "top", "text-optional": true },
@@ -198,15 +233,26 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
 
   useEffect(() => {
     const m = map.current; if (!ready || !m) return;
-    m.setTerrain(terrain ? { source: "dem", exaggeration: 1.5 } : null);
-    m.setLayoutProperty("hillshade", "visibility", terrain ? "visible" : "none");
+    // Relief only matters once you are near the ground; skipping it on the whole-globe view keeps the GPU cool.
+    let on: boolean | null = null;
+    const apply = () => {
+      const want = terrain && m.getZoom() >= 4;
+      if (want === on) return;
+      on = want;
+      m.setTerrain(want ? { source: "dem", exaggeration: 1.5 } : null);
+      m.setLayoutProperty("hillshade", "visibility", want ? "visible" : "none");
+    };
+    apply();
+    m.on("zoomend", apply);
     if (terrain && m.getPitch() < 30 && m.getZoom() > 4) m.easeTo({ pitch: 55, duration: 600 });
+    return () => { m.off("zoomend", apply); };
   }, [terrain, ready]);
 
   const { flights, ships, cams } = feeds;
   useEffect(() => {
     const m = map.current; if (!ready || !m) return;
     m.setLayoutProperty("flights", "visibility", flights.on ? "visible" : "none");
+    m.setLayoutProperty("trails", "visibility", flights.on ? "visible" : "none");
     m.setLayoutProperty("ships", "visibility", ships.on ? "visible" : "none");
     m.setLayoutProperty("cams", "visibility", cams.on ? "visible" : "none");
   }, [flights.on, ships.on, cams.on, ready]);
@@ -224,6 +270,60 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
     if (n && ready && map.current) map.current.flyTo({ center: [n.lon, n.lat], zoom: n.node_type === "port" ? 12 : 9, pitch: 55, speed: 1.2, essential: true });
   }, [focus, nodes, ready]);
 
+  // ---- day/night, external fly-to, cinematic spin, phone AR -----------------------------------
+  useEffect(() => {
+    const m = map.current; if (!ready || !m) return;
+    const paint = () => (m.getSource("night") as GeoJSONSource | undefined)?.setData(night ? nightPolygon() : EMPTY);
+    paint();
+    const id = setInterval(paint, 60_000);
+    return () => clearInterval(id);
+  }, [night, ready]);
+
+  useEffect(() => {
+    if (target && ready && map.current) map.current.flyTo({ center: [target.lon, target.lat], zoom: target.zoom, pitch: 55, speed: 1.3, essential: true });
+  }, [target, ready]);
+
+  useEffect(() => {
+    const m = map.current; if (!ready || !m || !spin) return;
+    // Slow eastward drift while the globe is zoomed out and nobody is touching it.
+    let raf = 0, last = performance.now(), held = false;
+    const hold = () => { held = true; };
+    const release = () => { held = false; last = performance.now(); };
+    // Throttled to ~12 fps: smooth enough for a slow drift, far lighter on this laptop than redrawing every frame.
+    const step = (now: number) => {
+      if (now - last >= 80) {
+        if (!held && m.getZoom() < 3.5 && !m.isMoving()) m.setCenter([m.getCenter().lng + ((now - last) / 1000) * 2.4, m.getCenter().lat]);
+        last = now;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    m.on("mousedown", hold); m.on("touchstart", hold); m.on("mouseup", release); m.on("touchend", release);
+    raf = requestAnimationFrame(step);
+    return () => { cancelAnimationFrame(raf); m.off("mousedown", hold); m.off("touchstart", hold); m.off("mouseup", release); m.off("touchend", release); };
+  }, [spin, ready]);
+
+  useEffect(() => { setCanAr(typeof DeviceOrientationEvent !== "undefined" && window.matchMedia("(pointer: coarse)").matches); }, []);
+
+  useEffect(() => {
+    const m = map.current; if (!ready || !m || ar !== "on") return;
+    // AR mode: the phone becomes a window onto the globe. Compass heading turns the map, tilt sets the pitch.
+    const onTurn = (e: DeviceOrientationEvent) => {
+      const heading = (e as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading ?? (e.alpha != null ? 360 - e.alpha : null);
+      if (heading == null || e.beta == null) return;
+      m.jumpTo({ bearing: heading, pitch: Math.max(0, Math.min(80, e.beta)) });
+    };
+    window.addEventListener("deviceorientation", onTurn);
+    return () => window.removeEventListener("deviceorientation", onTurn);
+  }, [ar, ready]);
+
+  const toggleAr = async () => {
+    if (ar === "on") return setAr("off");
+    const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<"granted" | "denied"> };
+    try { if (D.requestPermission && (await D.requestPermission()) !== "granted") return setAr("denied"); } catch { return setAr("denied"); }
+    setSpin(false);
+    setAr("on");
+  };
+
   // ---- live feeds ----------------------------------------------------------------------------
   const refresh = useCallback(async (l: Layer) => {
     const m = map.current; if (!m || !feedsRef.current[l].on) return;
@@ -231,9 +331,30 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
     try {
       const r = await fetch(`/api/${l === "cams" ? "webcams" : l}?${viewQuery(m)}`, { cache: "no-store" });
       const j = await r.json();
-      if (j.configured === false) { patch(l, { state: "nokey", count: null }); return; }
+      if (j.configured === false) { patch(l, { state: "nokey", count: null }); onFeedRef.current?.(l, []); return; }
       if (!r.ok) throw new Error(String(r.status));
       const src = m.getSource(l) as GeoJSONSource | undefined;
+      if (l === "flights") {
+        // Trails: remember each aircraft's recent fixes so its path draws behind it.
+        const run = ++tick.current;
+        for (const f of j.flights as { id: string; lat: number; lon: number }[]) {
+          const tr = trails.current.get(f.id) ?? { pts: [], seen: run };
+          const last = tr.pts[tr.pts.length - 1];
+          if (!last || last[0] !== f.lon || last[1] !== f.lat) tr.pts.push([f.lon, f.lat]);
+          if (tr.pts.length > 14) tr.pts.shift();
+          tr.seen = run;
+          trails.current.set(f.id, tr);
+        }
+        for (const [id, tr] of trails.current) if (run - tr.seen > 2) trails.current.delete(id);
+        (m.getSource("trails") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [...trails.current.values()]
+          .filter(tr => tr.pts.length > 1).map(tr => ({ type: "Feature", geometry: { type: "LineString", coordinates: tr.pts }, properties: {} })) });
+        onFeedRef.current?.("flights", (j.flights as { id: string; lat: number; lon: number; callsign: string | null; reg: string | null; type: string | null; altFt: number | null; track: number }[])
+          .map(f => ({ id: f.id, lat: f.lat, lon: f.lon, label: f.callsign || f.reg || f.id, sub: [f.type, f.altFt != null ? `${f.altFt.toLocaleString()} ft` : null].filter(Boolean).join(" · "), heading: f.track })));
+      }
+      if (l === "ships") onFeedRef.current?.("ships", (j.ships as { mmsi: number; name: string | null; lat: number; lon: number; sog: number }[])
+        .map(s => ({ id: String(s.mmsi), lat: s.lat, lon: s.lon, label: s.name || `MMSI ${s.mmsi}`, sub: `${s.sog.toFixed(1)} kn` })));
+      if (l === "cams") onFeedRef.current?.("cams", (j.webcams as { id: string; title: string; lat: number; lon: number; preview: string | null; url: string | null }[])
+        .map(c => ({ id: c.id, lat: c.lat, lon: c.lon, label: c.title, image: c.preview, url: c.url })));
       if (l === "flights") src?.setData({ type: "FeatureCollection", features: (j.flights as { id: string; lat: number; lon: number; track: number; callsign: string | null; reg: string | null; type: string | null; altFt: number | null; speedKt: number | null; ground: boolean }[]).map(f => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { id: f.id, callsign: f.callsign, reg: f.reg, type: f.type, alt: f.altFt, speed: f.speedKt, track: f.track, ground: f.ground } })) });
@@ -295,7 +416,16 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
 
   return (
     <div className="relative">
-      <div ref={el} className="h-[64dvh] min-h-[360px] w-full overflow-hidden rounded-[14px] lg:h-[calc(100dvh-170px)]" />
+      <div ref={el} className="h-[64dvh] min-h-[360px] w-full overflow-hidden rounded-[14px] bg-[#050b12] lg:h-[calc(100dvh-170px)]" />
+      {glFailed && (
+        <div className="absolute inset-0 z-20 grid place-items-center rounded-[14px] bg-[#050b12]/90 p-6 text-center">
+          <div className="max-w-xs space-y-2">
+            <p className="font-semibold">{t("gl.title")}</p>
+            <p className="text-sm text-muted">{t("gl.body")}</p>
+            <button onClick={() => location.reload()} className="mt-2 rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-[#0a0f15]">{t("gl.reload")}</button>
+          </div>
+        </div>
+      )}
 
       {/* Physical right: the map canvas does not mirror in RTL, and MapLibre's own controls sit top-left. */}
       <div className="pointer-events-none absolute right-3 top-3 z-10 flex w-[min(15rem,calc(100%-4.5rem))] flex-col items-stretch gap-2" dir="ltr">
@@ -328,6 +458,16 @@ export default function EarthMap({ nodes, focus, onFocus }: { nodes: GeoNode[]; 
                   </li>
                 );
               })}
+              <li className="flex gap-1 border-t border-white/10 p-1.5 text-[11px]">
+                {[
+                  { on: night, set: () => setNight(v => !v), label: t("fx.night") },
+                  { on: spin, set: () => setSpin(v => !v), label: t("fx.spin") },
+                  ...(canAr ? [{ on: ar === "on", set: toggleAr, label: ar === "denied" ? t("fx.arDenied") : t("fx.ar") }] : []),
+                ].map(b => (
+                  <button key={b.label} onClick={b.set} aria-pressed={b.on}
+                    className={`flex-1 rounded-md px-2 py-1.5 ${b.on ? "bg-accent/20 font-semibold text-accent" : "text-muted hover:bg-white/5"}`}>{b.label}</button>
+                ))}
+              </li>
               <li className="border-t border-white/10">
                 <button onClick={locate} className="flex w-full items-center gap-2.5 px-3 py-2 hover:bg-white/5">
                   <span className="omega-me-sm" />
