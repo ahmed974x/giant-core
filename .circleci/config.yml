@@ -46,6 +46,7 @@ jobs:
       - run: { name: Plugin registry, command: python scripts/plugins.py --check }
       - run: { name: Agents workforce, command: pip install pytest && cd services/agents && python -m pytest -q }
       - run: { name: Studio + DuckDB vault, command: pip install -r services/studio/requirements.txt pytest && cd services/studio && python -m pytest -q }
+      - run: { name: Geo-API (bilingual, demo), command: pip install -r services/geo-api/requirements.txt pytest && cd services/geo-api && python -m pytest -q }
 
   neural:
     executor: python

@@ -38,8 +38,9 @@ services/
   cloud-sync/    Supabase mirror (--profile cloud)
   quant/         OMEGA Quant: stdlib risk engine (volatility, regime, z-score, tail odds, correlation)
   studio/        OMEGA Studio: Panel + Material UI analytics app + DuckDB vault (--profile studio, port 5006)
+  geo-api/       bilingual (AR/EN) FastAPI over PostGIS logistics nodes (--profile geo)
 dashboard/       the Ops Room (one self-contained index.html) + plugins.json (generated)
-db/              Timescale init + migrate scripts
+db/              Timescale init + migrate scripts; db/geo/ PostGIS schema (bilingual nodes)
 n8n/             workflows (Market Sentinel, News Sentiment, Whale Watch) + seeder
 mcp/             MCP servers (omega-sentinel)
 plugins/         the plugin registry: one folder + plugin.json per capability (see plugins/README.md)
@@ -96,6 +97,22 @@ outlives the views' 48 h / 30 day windows. The **History · DuckDB vault** tab r
 process: no server, no RAM when idle. Demo data never touches the file.
 
 Adding a metric, view, table or service: follow `.claude/skills/omega-extend/SKILL.md`.
+
+### Bilingual geospatial layer (Phase 1)
+
+`docker compose --profile geo up -d` starts **PostGIS** (`geo`), **Redis** and the **geo-api**. The
+schema (`db/geo/01-postgis.sql`) stores logistics nodes with bilingual JSONB names
+(`{"en": "Strait of Hormuz", "ar": "مضيق هرمز"}`), spatial (GiST) and full-text (GIN) indexes, and
+seeds the world's major choke-points and a regional port. The API localises by `?lang=` or the
+`Accept-Language` header, so one endpoint serves both the RTL and LTR frontends:
+
+```
+GET /geo/nodes?lang=ar            ·  GET /geo/nodes/suez
+GET /geo/nodes/search?q=هرمز      ·  GET /geo/nodes/near?lon=55.3&lat=25.2&km=600
+```
+
+It runs on demo data when the database is down, so `python -m pytest services/geo-api` needs no Docker.
+Secrets stay in `.env` (`GEO_DB_PASSWORD`); the stores bind to 127.0.0.1 only and are capped for the laptop.
 
 ### The Brain: the search bar
 

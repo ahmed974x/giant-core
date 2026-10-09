@@ -9,6 +9,7 @@
 //   GET  /quant            latest risk snapshot from the stdlib quant engine
 //   POST /brain/ask        same-origin only: the search bar's request → the Brain's agent web
 //   GET  /brain[/jobs/<id>] the Brain's agents and memory size / one job's live steps and answer
+//   GET  /geo/*             bilingual logistics nodes from PostGIS (opt-in --profile geo)
 //   GET  /agents           the workforce roster + proposals waiting for an answer
 //   POST /agents/decide    same-origin only: approve or skip a proposal
 //   GET  /neural           latest PyTorch forecast (opt-in --profile ml)
@@ -31,6 +32,7 @@ const CORTEX_URL = process.env.CORTEX_URL || "http://cortex:8090";
 const QUANT_URL = process.env.QUANT_URL || "http://quant:8091";
 const NEURAL_URL = process.env.NEURAL_URL || "http://neural:8092";
 const AGENTS_URL = process.env.AGENTS_URL || "http://agents:8093";
+const GEOAPI_URL = process.env.GEOAPI_URL || "http://geo-api:8094";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
@@ -315,6 +317,12 @@ const server = http.createServer((req, res) => {
     return fetch(`${PGRST_URL}/${view}${url.search}`, { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } })
       .then(async r => send(res, r.status, await r.text()))
       .catch(() => send(res, 503, { error: "memory core unreachable" }));
+  }
+
+  if (url.pathname.startsWith("/geo/")) {            // bilingual logistics nodes (read-only)
+    return fetch(`${GEOAPI_URL}${url.pathname}${url.search}`, { signal: AbortSignal.timeout(5000), headers: { "Accept-Language": req.headers["accept-language"] || "en" } })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "geo-api not running (docker compose --profile geo up -d)" }));
   }
 
   if (url.pathname === "/brain" || /^\/brain\/jobs\/[0-9a-f]{12}$/.test(url.pathname)) {

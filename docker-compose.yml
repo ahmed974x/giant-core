@@ -7,6 +7,8 @@
 #                every 10 min: free RSS news + Fear & Greed → Timescale → scored by cortex → relay + Telegram
 #                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
+#   geo          PostGIS: logistics nodes + vessel geometry, bilingual (AR/EN)   (--profile geo)
+#   redis        hot cache + pub/sub for live map and tickers                     (--profile geo)
 #   agents       workforce: Sentinel, Analyst, Scout (asks before adding any tool)
 #   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
@@ -21,6 +23,7 @@
 #   with LLM    docker compose --profile llm up -d
 #   + Studio    docker compose --profile studio up -d   (Panel analytics, http://localhost:5006)
 #   + neural    docker compose --profile ml up -d       (PyTorch forecaster, ~400 MB RAM)
+#   + geo       docker compose --profile geo up -d      (PostGIS + Redis, ~600 MB RAM)
 #   + cloud     docker compose --profile cloud up -d    (Supabase mirror; needs SUPABASE_* in .env)
 #
 # Everything published binds to 127.0.0.1. Only n8n, cortex and ollama (model pulls) can reach the internet.
@@ -196,6 +199,7 @@ services:
       QUANT_URL: http://quant:8091
       NEURAL_URL: http://neural:8092
       AGENTS_URL: http://agents:8093
+      GEOAPI_URL: http://geo-api:8094
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -332,6 +336,78 @@ services:
       timeout: 3s
       retries: 3
 
+  # OMEGA PRIME geospatial store (Phase 1). PostGIS for vessel/node geometry + bilingual (AR/EN) metadata.
+  # Opt-in (--profile geo); hardened like the rest: secret from .env, 127.0.0.1 only, capped.
+  geo:
+    image: postgis/postgis:16-3.4
+    profiles: ["geo"]
+    <<: *hardening
+    environment:
+      POSTGRES_USER: omega_geo
+      POSTGRES_PASSWORD: ${GEO_DB_PASSWORD:?set GEO_DB_PASSWORD in .env}
+      POSTGRES_DB: omega_geo
+      TZ: UTC
+    volumes:
+      - geo_data:/var/lib/postgresql/data
+      - ./db/geo:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"          # local inspection only; never the LAN
+    networks: [db, core]
+    shm_size: 128m
+    mem_limit: ${GEO_MEM_LIMIT:-512m}
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omega_geo -d omega_geo"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Redis: hot cache (latest vessel/flight position) + pub/sub fan-out for WebSockets (Phase 1-3).
+  redis:
+    image: redis:7.4-alpine
+    profiles: ["geo"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "redis"
+    read_only: true
+    command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    tmpfs: ["/data:size=16m"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [core]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  # OMEGA PRIME geo-api (Phase 1): bilingual (AR/EN) FastAPI over the PostGIS logistics nodes.
+  geo-api:
+    profiles: ["geo"]
+    build: { context: ./services/geo-api }
+    image: omega-geo-api:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      geo: { condition: service_healthy }
+    environment:
+      OMEGA_GEO_DSN: postgresql://omega_geo:${GEO_DB_PASSWORD:?set GEO_DB_PASSWORD in .env}@geo:5432/omega_geo
+      TZ: ${TZ:-Asia/Kuwait}
+    networks: [db, core]
+    mem_limit: 192m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8094/geo/healthz',timeout=3).status==200 else 1)"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+
   # OMEGA workforce: Sentinel (health), Analyst (market brief via Cortex), Scout (open-source tool research,
   # proposals wait for an answer in the Ops Room). Standard library Python, ~30 MB.
   agents:
@@ -437,6 +513,7 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  geo_data:
   agents_data:
   neural_data:
   vault_data:

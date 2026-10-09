@@ -199,3 +199,10 @@ Already built in this repo (branch `omega/stability-restructure`):
 - **Ops Room** (`dashboard/index.html`) — the current single-page dashboard with the neural constellation / spider web, the search bar, and the Quant/Agents/Modules panels; the four-screen SPA grows from it.
 
 New for OMEGA PRIME: **PostGIS + Redis**, the five **ingest MCP servers**, and the **MapLibre/deck.gl/CesiumJS** geospatial screen.
+
+### Phase 1 landed (bilingual geospatial base)
+
+`db/geo/01-postgis.sql` (PostGIS, bilingual `logistics_nodes` with JSONB names, spatial + FTS indexes,
+seeded choke-points), **Redis**, and `services/geo-api` (FastAPI, localizes by `?lang`/`Accept-Language`,
+demo fallback, tested) — all under `--profile geo`, reached through the relay at `/geo/*`. Internationalization
+is built in from the schema up, per v1.2 of this design.

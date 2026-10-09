@@ -33,6 +33,28 @@
       "enabled": true
     },
     {
+      "id": "geo-api",
+      "name": "Geo-API (bilingual)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "FastAPI over PostGIS logistics nodes; localizes by ?lang or Accept-Language (Arabic/English), with search and nearest-node queries.",
+      "entry": "services/geo-api/app.py",
+      "requires": [
+        "geo"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "geo-postgis",
+      "name": "Geo store (PostGIS)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "PostGIS database: logistics_nodes with bilingual JSONB names, spatial + full-text indexes, seeded choke-points.",
+      "entry": "db/geo/01-postgis.sql",
+      "requires": [],
+      "enabled": true
+    },
+    {
       "id": "holoviz-skills",
       "name": "HoloViz skills",
       "kind": "skill",

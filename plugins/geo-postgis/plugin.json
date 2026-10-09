@@ -1,0 +1,10 @@
+{
+  "id": "geo-postgis",
+  "name": "Geo store (PostGIS)",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "PostGIS database: logistics_nodes with bilingual JSONB names, spatial + full-text indexes, seeded choke-points.",
+  "entry": "db/geo/01-postgis.sql",
+  "requires": [],
+  "enabled": true
+}
