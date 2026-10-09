@@ -71,6 +71,33 @@ a.chip { text-decoration: none; color: var(--magenta); border-color: rgba(244, 1
 a.chip:hover { color: var(--void); background: var(--magenta); }
 #lite.on { background: var(--ink-2); border-color: var(--ink-2); }
 
+/* ── Brain: search bar + thinking drawer ── */
+#bform { flex: 1 1 380px; max-width: 620px; display: flex; gap: 8px; align-items: center; margin: 0 8px; }
+#bq { flex: 1; min-width: 0; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(4, 6, 12, 0.75);
+      color: var(--ink); font: 14px var(--sans); transition: border-color .2s, box-shadow .2s; }
+#bq:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2), 0 0 24px rgba(34, 211, 238, 0.15); }
+#bgo { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; cursor: pointer; font: 700 11.5px var(--mono); letter-spacing: 0.12em; color: var(--void);
+       background: linear-gradient(90deg, var(--cyan), var(--violet) 60%, var(--magenta)); }
+#bgo:disabled { opacity: 0.55; cursor: progress; }
+#brainp { --accent: var(--violet); position: fixed; z-index: 6; top: 76px; left: 50%; transform: translateX(-50%); width: min(780px, calc(100vw - 32px));
+          max-height: calc(100vh - 120px); background: rgba(8, 12, 26, 0.96); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+#brainp h2 button { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; cursor: pointer; font: 700 11px var(--mono); }
+#breq { font-size: 15px; color: var(--ink); }
+#bsteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+#bsteps li { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.02); }
+#bsteps .h { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; font: 700 12px var(--mono); letter-spacing: 0.06em; cursor: pointer; }
+#bsteps .h i { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-3); }
+#bsteps li.working .h i { background: var(--violet); box-shadow: 0 0 12px var(--violet); animation: throb 1s ease-in-out infinite; }
+#bsteps li.done .h i { background: var(--ok); } #bsteps li.failed .h i { background: var(--crit); } #bsteps li.skipped .h i { background: var(--ink-3); }
+#bsteps .h small { color: var(--ink-3); font-weight: 500; }
+#bsteps .o { margin-top: 6px; white-space: pre-wrap; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); max-height: 180px; overflow: auto; }
+#bsteps li:not(.open) .o { display: none; }
+#banswer { white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: var(--ink); padding: 12px 14px; border-radius: 12px;
+           background: linear-gradient(135deg, rgba(34, 211, 238, 0.07), rgba(167, 139, 250, 0.08)); border: 1px solid rgba(167, 139, 250, 0.25); }
+#banswer:empty { display: none; }
+#bmeta { font: 11px var(--mono); color: var(--ink-3); }
+@keyframes throb { 50% { transform: scale(1.5); } }
+
 /* ── layout: left column · open stage (constellation) · right column ── */
 #deck { position: relative; z-index: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 360px) 1fr minmax(310px, 380px); gap: 16px; padding: 16px; pointer-events: none; }
 .col { min-height: 0; display: flex; flex-direction: column; gap: 16px; pointer-events: auto; }
@@ -237,6 +264,7 @@ li.fresh { animation: arrive 1.2s ease-out; }
   .panel { max-height: 70vh; }
   #brand { padding: 10px 16px; }
   #brand .meta { margin-left: 0; }
+  #bform { order: 3; flex-basis: 100%; max-width: none; margin: 0; }
   #phealth { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { li.fresh { animation: none; } }
@@ -247,6 +275,10 @@ li.fresh { animation: arrive 1.2s ease-out; }
 
 <header id="brand">
   <div class="logo"><div class="orb" aria-hidden="true"></div><div><p class="mark">OMEGA</p><p class="sub">PRE-COG SYNDICATE · OPS ROOM</p></div></div>
+  <form id="bform" role="search" autocomplete="off">
+    <input id="bq" type="search" maxlength="4000" placeholder="Ask, design or change anything… the Brain plans, researches and designs" aria-label="Ask the Brain">
+    <button id="bgo" type="submit">THINK</button>
+  </form>
   <div class="meta">
     <span id="link" class="chip"><i></i><span>CONNECTING</span></span>
     <span id="clock">--:--:--</span><span>KUWAIT</span>
@@ -337,6 +369,14 @@ li.fresh { animation: arrive 1.2s ease-out; }
   <div>LAST PULSE <strong id="pago">waiting</strong></div>
   <div id="phealth">—</div>
 </footer>
+
+<section id="brainp" class="panel" aria-label="The Brain" aria-live="polite" hidden>
+  <h2><span>THE BRAIN · AGENT WEB</span><button type="button" id="bclose" aria-label="Close">✕</button></h2>
+  <div id="breq"></div>
+  <ol id="bsteps" class="scroll"></ol>
+  <div id="banswer" class="scroll"></div>
+  <div id="bmeta"></div>
+</section>
 
 <div id="tip"></div>
 
@@ -502,6 +542,14 @@ function fitCamera() {
 // stars: fixed far field, parallax with yaw
 const stars = Array.from({ length: 260 }, () => ({ a: Math.random() * Math.PI * 2, e: (Math.random() - 0.5) * 1.6, r: Math.random() * 1.2 + 0.2, t: Math.random() * 6 }));
 
+// agents on the web: the Brain's thinking pipeline, then the background workforce
+const WEB_AGENTS = [
+  { id: "memory", label: "MEMORY", brain: true }, { id: "planner", label: "PLANNER", brain: true }, { id: "researcher", label: "RESEARCHER", brain: true },
+  { id: "designer", label: "DESIGNER", brain: true }, { id: "critic", label: "CRITIC", brain: true }, { id: "synthesizer", label: "SYNTHESIZER", brain: true },
+  { id: "sentinel", label: "SENTINEL" }, { id: "analyst", label: "ANALYST" }, { id: "scout", label: "SCOUT" },
+];
+const brainView = { status: {} };
+
 // spider web: radial threads + sagging rings around the stage centre, with synapse pulses on the threads
 function drawWeb(now) {
   const N = 12, RINGS = 6, R = Math.min(view.w, view.h) * 0.62, rot = cam.yaw * 0.3;
@@ -520,6 +568,28 @@ function drawWeb(now) {
     }
     ctx.stroke();
   }
+  // the agents sit on the outer ring; the one thinking glows and receives light from the agent before it
+  ctx.font = "700 10px ui-monospace, Menlo, monospace"; ctx.textBaseline = "middle";
+  WEB_AGENTS.forEach((a, i) => {
+    const [x, y] = pt(i * N / WEB_AGENTS.length, R * 0.96);
+    const st = brainView.status[a.id], active = st === "working";
+    const col = a.brain ? (active ? "#a78bfa" : st === "done" ? "#34d399" : "rgba(167,139,250,0.55)") : "rgba(244,114,182,0.6)";
+    if (active && !lite) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 26); g.addColorStop(0, "rgba(167,139,250,0.55)"); g.addColorStop(1, "transparent");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+      const prev = WEB_AGENTS[i - 1];
+      if (prev && prev.brain) {                                         // helping hand: light runs from the previous agent
+        const [px, py] = pt((i - 1) * N / WEB_AGENTS.length, R * 0.96), t = (now / 900) % 1;
+        ctx.strokeStyle = "rgba(167,139,250,0.35)"; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
+        ctx.fillStyle = "#22d3ee"; ctx.beginPath(); ctx.arc(px + (x - px) * t, py + (y - py) * t, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, active ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = active ? 1 : 0.7; ctx.fillStyle = active ? "#eef3fb" : "#b4c0d4";
+    ctx.textAlign = x < view.cx ? "right" : "left"; ctx.fillText(a.label, x + (x < view.cx ? -9 : 9), y);
+    ctx.globalAlpha = 1;
+  });
+  ctx.textAlign = "left";
   if (lite) return;
   for (let k = 0; k < N; k += 3) {                                  // synapse pulses running outward
     const t = ((now / 2600) + k / N) % 1, [x, y] = pt(k + 0.5 * Math.sin(now / 9000), R * t);
@@ -1414,6 +1484,70 @@ function demoAgents() {
     ],
   };
 }
+
+// ───────────────────────────── the Brain (search bar → agent web) ─────────────────────────────
+const brainEl = { panel: document.getElementById("brainp"), req: document.getElementById("breq"), steps: document.getElementById("bsteps"),
+  answer: document.getElementById("banswer"), meta: document.getElementById("bmeta"), go: document.getElementById("bgo"), q: document.getElementById("bq") };
+const openSteps = new Set();
+function renderBrain(job) {
+  brainEl.panel.hidden = false;
+  brainEl.req.textContent = job.request;
+  brainView.status = Object.fromEntries(job.steps.map(s => [s.agent, s.status]));
+  brainEl.steps.innerHTML = job.steps.map(s => `<li class="${esc(s.status)}${openSteps.has(s.agent) || s.status === "working" ? " open" : ""}" data-a="${esc(s.agent)}">` +
+    `<div class="h"><i></i><span>${esc(s.title.toUpperCase())} <small>· ${esc(s.role)}</small></span><small>${esc(s.status)}${s.ms != null ? " · " + esc(fmtMs(s.ms)) : ""}</small></div>` +
+    `<div class="o">${esc(typeof s.output === "string" ? s.output : s.output == null ? "" : JSON.stringify(s.output, null, 1))}</div></li>`).join("");
+  brainEl.answer.textContent = job.answer || "";                       // model text is never parsed as HTML
+  brainEl.meta.textContent = `${job.status.toUpperCase()}${job.intent ? " · intent " + job.intent : ""} · open-weight models first · the Brain proposes, it never edits the site by itself`;
+}
+brainEl.steps.addEventListener("click", e => {
+  const li = e.target.closest("li[data-a]"); if (!li) return;
+  openSteps.has(li.dataset.a) ? openSteps.delete(li.dataset.a) : openSteps.add(li.dataset.a); li.classList.toggle("open");
+});
+document.getElementById("bclose").addEventListener("click", () => { brainEl.panel.hidden = true; brainView.status = {}; });
+addEventListener("keydown", e => { if (e.key === "Escape") { brainEl.panel.hidden = true; brainView.status = {}; } });
+
+function demoBrain(request) {
+  const steps = [
+    ["memory", "Memory", "Recalls what was learned before", "Demo: 2 related memories. LESSON: every new POST route needs a rate limit."],
+    ["planner", "Planner", "Classifies the request and plans it", `Intent: design\nGoal: ${request}\nPlan:\n1. Map what exists\n2. Research proven patterns\n3. Draft the design\n4. Review cost and security`],
+    ["researcher", "Researcher", "Gathers evidence from the system, memory and GitHub", "[installed modules] 14 plugins · [risk engine] 3 pairs live · [github] curated tools from awesome-python"],
+    ["designer", "Designer", "Designs the solution", "Layout, components and states drafted on the 3-column grid with one accent per panel."],
+    ["critic", "Critic", "Reviews security, cost and gaps", "No new ports; stays inside the CSP; adds ~0 MB RAM.\nLESSON: keep features inside the existing relay."],
+    ["synthesizer", "Synthesizer", "Writes the final answer", ""],
+  ];
+  const job = { request, status: "running", intent: "design", answer: null, steps: steps.map(([agent, title, role]) => ({ agent, title, role, status: "waiting", output: null, ms: null })) };
+  let i = 0;
+  const tick = () => {
+    if (i > 0) Object.assign(job.steps[i - 1], { status: "done", output: steps[i - 1][3] || "Answer written.", ms: 700 + i * 180 });
+    if (i < steps.length) { job.steps[i].status = "working"; i++; renderBrain(job); setTimeout(tick, 900); return; }
+    job.status = "done";
+    job.answer = `Demo mode: no model was called.\n\nIn the live stack the six agents above would research and design "${request}" with free open-weight models, review it for security and RAM cost, and remember the lesson for next time.`;
+    renderBrain(job); brainEl.go.disabled = false; setTimeout(() => { brainView.status = {}; }, 4000);
+  };
+  tick();
+}
+document.getElementById("bform").addEventListener("submit", async e => {
+  e.preventDefault();
+  const request = brainEl.q.value.trim();
+  if (request.length < 3 || brainEl.go.disabled) return;
+  brainEl.go.disabled = true; openSteps.clear();
+  if (state.mode === "demo") return demoBrain(request);
+  try {
+    const r = await fetch("/brain/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+    const poll = async () => {
+      const job = await api(`/brain/jobs/${encodeURIComponent(j.id)}`);
+      renderBrain(job);
+      if (job.status === "done") { brainEl.go.disabled = false; setTimeout(() => { brainView.status = {}; }, 4000); }
+      else setTimeout(poll, 1200);
+    };
+    poll();
+  } catch (err) {
+    brainEl.panel.hidden = false; brainEl.req.textContent = request; brainEl.steps.innerHTML = "";
+    brainEl.answer.textContent = `The Brain is not reachable: ${err.message}`; brainEl.meta.textContent = ""; brainEl.go.disabled = false;
+  }
+});
 
 // ───────────────────────────── modules (plugin registry) ─────────────────────────────
 const KIND_COLOR = { workflow: "var(--cyan)", tool: "var(--lime)", skill: "var(--violet)", mcp: "var(--magenta)", provider: "var(--amber)", panel: "var(--flow)" };

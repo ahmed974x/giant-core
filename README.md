@@ -45,7 +45,7 @@ mcp/             MCP servers (omega-sentinel)
 plugins/         the plugin registry: one folder + plugin.json per capability (see plugins/README.md)
 scripts/         omega_ignition.bat (one-click start), plugins.py (validate + publish the registry)
 ops/             machine setup: wslconfig.example (Docker VM memory cap)
-docs/            handover notes
+docs/            handover notes, SECURITY.md (exposure, protections, checks)
 .claude/skills/  Claude skills used on this repo
 ```
 
@@ -96,6 +96,17 @@ outlives the views' 48 h / 30 day windows. The **History · DuckDB vault** tab r
 process: no server, no RAM when idle. Demo data never touches the file.
 
 Adding a metric, view, table or service: follow `.claude/skills/omega-extend/SKILL.md`.
+
+### The Brain: the search bar
+
+Type anything in the Ops Room's search bar: a question, a design, or a change to the site or app.
+Six agents work on it in turn and build on each other's output, lighting up on the spider web as they think:
+**Memory** (recalls earlier requests and lessons, SQLite full-text search) → **Planner** (ask / design /
+change, plan, research questions) → **Researcher** (live system, memory, GitHub with awesome-list trust)
+→ **Designer** → **Critic** (security, RAM cost, gaps, one lesson to remember) → **Synthesizer**.
+Thinking runs on the `omega/open` route: open-weight models (gpt-oss, Nemotron, Qwen, Gemma, GLM, Llama)
+on free tiers, then the local model. Every answer and lesson is stored, so the Brain gets better with use.
+It proposes; it never edits the site by itself. Without any model it says so and returns the evidence it found.
 
 ### Workforce: agents that work in the background
 

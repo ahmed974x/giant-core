@@ -1,6 +1,16 @@
 {
   "plugins": [
     {
+      "id": "awesome-research",
+      "name": "awesome-research skill",
+      "kind": "skill",
+      "version": "1.0.0",
+      "description": "Claude skill: research trusted free tools and open-weight models through the curated awesome lists, then ask.",
+      "entry": ".claude/skills/awesome-research/SKILL.md",
+      "requires": [],
+      "enabled": true
+    },
+    {
       "id": "cortex-providers",
       "name": "Cortex LLM routes",
       "kind": "provider",
@@ -59,6 +69,19 @@
       "entry": "services/agents/workforce.py",
       "requires": [
         "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-brain",
+      "name": "The Brain",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Search bar → memory, planner, researcher, designer, critic and synthesizer agents on open-weight models; learns from every request.",
+      "entry": "services/agents/brain.py",
+      "requires": [
+        "relay",
+        "cortex"
       ],
       "enabled": true
     },

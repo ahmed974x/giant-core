@@ -162,7 +162,7 @@
       ]
     }
   },
-  "_routes": "A route is an ordered failover chain of provider:model. adaptive=true reorders it by the last 24h of measured success and latency from Timescale. Claude only appears where you ask for it: omega/fast never spends money. local:default (open-source Ollama in the stack) closes every chain; omega/local never leaves the machine.",
+  "_routes": "A route is an ordered failover chain of provider:model. adaptive=true reorders it by the last 24h of measured success and latency from Timescale. Claude only appears where you ask for it: omega/fast never spends money. local:default (open-source Ollama in the stack) closes every chain; omega/local never leaves the machine. omega/open uses open-weight models only (gpt-oss, Nemotron, Qwen, Gemma, GLM, Llama) on free tiers, then the local model.",
   "routes": {
     "omega/fast": {
       "adaptive": true,
@@ -216,6 +216,20 @@
     "omega/local": {
       "adaptive": false,
       "chain": [
+        "local:default"
+      ]
+    },
+    "omega/open": {
+      "adaptive": true,
+      "chain": [
+        "groq:openai/gpt-oss-120b",
+        "nvidia:nvidia/nemotron-3-ultra-550b-a55b",
+        "groq:qwen/qwen3.8-27b",
+        "openrouter:google/gemma-4-31b-it:free",
+        "zai:glm-4.7-flash",
+        "cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "ollama:gpt-oss:120b",
+        "nvidia:openai/gpt-oss-20b",
         "local:default"
       ]
     }

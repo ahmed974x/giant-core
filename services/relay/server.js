@@ -7,6 +7,8 @@
 //   GET  /events           SSE fan-out: hello, pulse, anomaly, whale, news, status, cortex
 //   GET  /api/<view>       read-only proxy to PostgREST (allowlisted views)
 //   GET  /quant            latest risk snapshot from the stdlib quant engine
+//   POST /brain/ask        same-origin only: the search bar's request → the Brain's agent web
+//   GET  /brain[/jobs/<id>] the Brain's agents and memory size / one job's live steps and answer
 //   GET  /agents           the workforce roster + proposals waiting for an answer
 //   POST /agents/decide    same-origin only: approve or skip a proposal
 //   GET  /neural           latest PyTorch forecast (opt-in --profile ml)
@@ -38,7 +40,7 @@ const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
 const MAX_NEWS_BODY = 96 * 1024;
-const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "omega/local", "claude"]);
+const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "omega/open", "omega/local", "claude"]);
 const KEEP = 50;
 const STATUS_EVERY_MS = 15000;
 
@@ -58,7 +60,22 @@ const SEC_HEADERS = {
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "no-referrer",
   "Cache-Control": "no-store",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
 };
+
+// Token bucket per client for every browser POST: the LLM routes cost quota and CPU on a small laptop.
+const BUCKETS = new Map();
+function allow(req, perMinute) {
+  const key = `${req.socket.remoteAddress}|${new URL(req.url, "http://relay").pathname}`, now = Date.now();
+  const b = BUCKETS.get(key) || { tokens: perMinute, at: now };
+  b.tokens = Math.min(perMinute, b.tokens + (now - b.at) / 60000 * perMinute); b.at = now;
+  if (b.tokens < 1) { BUCKETS.set(key, b); return false; }
+  b.tokens -= 1; BUCKETS.set(key, b);
+  if (BUCKETS.size > 2000) for (const [k, v] of BUCKETS) if (now - v.at > 600000) BUCKETS.delete(k);
+  return true;
+}
 
 function send(res, code, body, type = "application/json") {
   res.writeHead(code, { ...SEC_HEADERS, "Content-Type": type });
@@ -218,6 +235,18 @@ function chat(req, res) {
   }, MAX_CHAT_BODY);
 }
 
+// The search bar hands a request to the Brain (planner → researcher → designer → critic). Same-origin JSON only.
+function brainAsk(req, res) {
+  if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
+  return readJson(req, res, body => {
+    if (!body || typeof body.request !== "string" || body.request.length < 3 || body.request.length > 4000) return send(res, 400, { error: "request must be 3-4000 characters" });
+    fetch(`${AGENTS_URL}/brain/ask`, { method: "POST", signal: AbortSignal.timeout(5000), headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: body.request }) })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "brain unreachable" }));
+  }, 16384);
+}
+
 // The Agents panel answers a proposal (approved | skipped). Same-origin JSON only, like the console.
 function decide(req, res) {
   if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
@@ -233,8 +262,11 @@ function decide(req, res) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://relay");
 
+  const LIMITS = { "/llm/chat": 12, "/brain/ask": 6, "/agents/decide": 30 };
+  if (req.method === "POST" && LIMITS[url.pathname] && !allow(req, LIMITS[url.pathname])) return send(res, 429, { error: "too many requests, slow down" });
   if (req.method === "POST" && url.pathname === "/llm/chat") return chat(req, res);
   if (req.method === "POST" && url.pathname === "/agents/decide") return decide(req, res);
+  if (req.method === "POST" && url.pathname === "/brain/ask") return brainAsk(req, res);
 
   if (req.method === "POST" && url.pathname.startsWith("/ingest/")) {
     if (!authorised(req)) return send(res, 401, { error: "unauthorised" });
@@ -282,6 +314,12 @@ const server = http.createServer((req, res) => {
     return fetch(`${PGRST_URL}/${view}${url.search}`, { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } })
       .then(async r => send(res, r.status, await r.text()))
       .catch(() => send(res, 503, { error: "memory core unreachable" }));
+  }
+
+  if (url.pathname === "/brain" || /^\/brain\/jobs\/[0-9a-f]{12}$/.test(url.pathname)) {
+    return fetch(`${AGENTS_URL}${url.pathname}`, { signal: AbortSignal.timeout(4000) })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "brain unreachable" }));
   }
 
   if (url.pathname === "/agents") {

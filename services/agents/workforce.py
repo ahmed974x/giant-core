@@ -200,6 +200,10 @@ class Scout(Agent):
         "topic:python topic:agents stars:>5000",
         "topic:scala stars:>5000",
     ]
+    # Curated awesome lists (from github.com/sindresorhus/awesome): being listed in one adds trust.
+    AWESOME = ["vinta/awesome-python", "krzjoa/awesome-python-data-science", "josephmisiti/awesome-machine-learning",
+               "georgezouq/awesome-ai-in-finance", "ChristosChristofidis/awesome-deep-learning", "lauris/awesome-scala",
+               "0xnr/awesome-bigdata", "steven2358/awesome-generative-ai"]
     HEAVY = {"Scala": "needs a JVM (~0.5–1 GB RAM)", "Java": "needs a JVM (~0.5–1 GB RAM)", "C++": "native build"}
 
     def __init__(self, inbox: Inbox, known: set[str] | None = None):
@@ -224,6 +228,9 @@ class Scout(Agent):
         trust = min(40, 8 * math.log10(max(stars, 10))) + (10 if age_days <= 30 else 5) + (5 if repo.get("forks_count", 0) > 500 else 0)
         relevance = 12 * len(gains) + (10 if repo.get("language") == "Python" else 0)
         reasons = [f"helps: {', '.join(gains)}", f"{stars:,} stars · {lic} · updated {age_days} d ago"]
+        if repo.get("_curated"):
+            trust += 8
+            reasons.append(f"curated in {', '.join(repo['_curated'][:2])}")
         cost = cls.HEAVY.get(repo.get("language") or "", "library · check its RAM use before installing")
         if repo.get("language") in cls.HEAVY:
             reasons.append(f"caution: {cost}")
@@ -235,14 +242,31 @@ class Scout(Agent):
         url = "https://api.github.com/search/repositories?" + urllib.parse.urlencode({"q": q + " archived:false", "sort": "stars", "per_page": 15})
         return get_json(url, timeout=20, headers={"Accept": "application/vnd.github+json"}).get("items", [])
 
+    def curated(self) -> dict[str, list[str]]:
+        """owner/repo (lower-case) → the awesome lists that include it."""
+        out: dict[str, list[str]] = {}
+        for lst in self.AWESOME:
+            for branch in ("master", "main"):
+                try:
+                    url = f"https://raw.githubusercontent.com/{lst}/{branch}/README.md"
+                    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "omega-agents"}), timeout=20) as r:
+                        text = r.read().decode("utf-8", "replace")
+                    break
+                except OSError:
+                    text = ""
+            for m in set(re.findall(r"github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)", text)):
+                out.setdefault(m.lower().removesuffix(".git"), []).append(lst.split("/")[1])
+        return out
+
     def run(self) -> str:
         new, seen = 0, 0
+        curated = self.curated()
         for q in self.QUERIES:
             for repo in self.search(q):
                 seen += 1
                 if repo["name"].lower() in self.known or repo["full_name"].lower() in self.known:
                     continue
-                p = self.assess(repo)
+                p = self.assess({**repo, "_curated": curated.get(repo["full_name"].lower(), [])})
                 if p and p["score"] >= 45 and self.inbox.propose(self.name, p):
                     new += 1
             time.sleep(7)                                   # stay under GitHub's 10 searches/min without a token
