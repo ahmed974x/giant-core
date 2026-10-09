@@ -2,8 +2,9 @@
 // Zero dependencies.
 //   POST /ingest/pulse     n8n → "a minute of market memory was stored"   (token required)
 //   POST /ingest/anomaly   n8n → one detected anomaly                     (token required)
+//   POST /ingest/whale     n8n → one on-chain transfer >= the whale floor  (token required)
 //   POST /ingest/news      n8n → freshly scored headlines                 (token required)
-//   GET  /events           SSE fan-out: hello, pulse, anomaly, news, status, cortex
+//   GET  /events           SSE fan-out: hello, pulse, anomaly, whale, news, status, cortex
 //   GET  /api/<view>       read-only proxy to PostgREST (allowlisted views)
 //   GET  /llm/providers    live state of the Cortex LLM gateway's providers
 //   POST /llm/chat         same-origin only: the dashboard's console → Cortex (token added here)
@@ -24,7 +25,7 @@ const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
 const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls",
-  "news", "sentiment_now", "sentiment_1h", "fear_greed", "sentiment_vs_price"]);
+  "news", "sentiment_now", "sentiment_1h", "fear_greed", "sentiment_vs_price", "whales", "whale_feeds"]);
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
 const MAX_NEWS_BODY = 96 * 1024;
@@ -36,9 +37,11 @@ if (TOKEN.length < 32) { console.error("OMEGA_RELAY_TOKEN missing or shorter tha
 const tokenHash = crypto.createHash("sha256").update(TOKEN).digest();
 
 const recent = [];          // last anomalies
+const recentWhales = [];    // last whale transfers
 let recentNews = [];        // last scored headlines, newest first
 let lastPulse = null;
-let lastStatus = { relay: "ok", n8n: "unknown", postgrest: "unknown", timescale: "unknown", cortex: "unknown", checkedAt: null };
+const FEEDS = ["btc_chain", "eth_chain"];
+let lastStatus = { relay: "ok", n8n: "unknown", postgrest: "unknown", timescale: "unknown", cortex: "unknown", btc_chain: "unknown", eth_chain: "unknown", checkedAt: null };
 const clients = new Set();
 
 const SEC_HEADERS = {
@@ -89,6 +92,27 @@ function validateAnomaly(a) {
   };
 }
 
+const CHAINS = { btc: { hash: /^[0-9a-f]{64}$/, addr: /^[A-Za-z0-9]{14,90}$/, assets: new Set(["BTC"]) },
+                 eth: { hash: /^0x[0-9a-f]{64}$/, addr: /^0x[0-9a-f]{40}$/, assets: new Set(["ETH", "USDT", "USDC", "WETH", "WBTC", "STETH"]) } };
+const VERDICTS = new Set(["to_exchange", "from_exchange", "exchange_shuffle", "mint", "burn", "issuer_out", "unknown"]);
+const label = v => v === null || v === undefined || (typeof v === "string" && v.length >= 1 && v.length <= 40 && !/[<>\u0000-\u001f]/.test(v));
+function validateWhale(w) {
+  if (!w || typeof w !== "object") return null;
+  const c = CHAINS[w.chain];
+  if (!c || !Number.isInteger(Number(w.id)) || !Number.isInteger(Number(w.block)) || !isoOk(w.ts)) return null;
+  if (typeof w.tx_hash !== "string" || !c.hash.test(w.tx_hash) || !c.assets.has(w.asset)) return null;
+  if (typeof w.from_addr !== "string" || !c.addr.test(w.from_addr) || typeof w.to_addr !== "string" || !c.addr.test(w.to_addr)) return null;
+  const amount = Number(w.amount), usd = Number(w.usd_value);
+  if (!num(amount) || amount <= 0 || !num(usd) || usd <= 0) return null;
+  if (!label(w.from_entity) || !label(w.to_entity) || !VERDICTS.has(w.verdict) || !["watch", "high"].includes(w.severity)) return null;
+  if (typeof w.reason !== "string" || w.reason.length > 200) return null;
+  return {
+    id: Number(w.id), ts: new Date(w.ts).toISOString(), chain: w.chain, block: Number(w.block), tx_hash: w.tx_hash, asset: w.asset,
+    amount, usd_value: Math.round(usd), from_addr: w.from_addr, to_addr: w.to_addr,
+    from_entity: w.from_entity ?? null, to_entity: w.to_entity ?? null, verdict: w.verdict, severity: w.severity,
+    reason: w.reason, at: new Date().toISOString(),
+  };
+}
 const IMPACTS = new Set(["low", "medium", "high"]);
 const LABELS = new Set(["bullish", "bearish", "neutral"]);
 const text = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max;
@@ -137,8 +161,15 @@ async function refreshStatus() {
   const [n8n, postgrest, cortex] = await Promise.all([probe(N8N_HEALTH), probe(PGRST_ADMIN + "/live"), probe(CORTEX_URL + "/healthz")]);
   // PostgREST's /ready is 200 only while its DB pool is connected: that is our Timescale signal.
   const timescale = postgrest === "down" ? "unknown" : await probe(PGRST_ADMIN + "/ready");
-  const next = { relay: "ok", n8n, postgrest, timescale, cortex, checkedAt: new Date().toISOString() };
-  const changed = ["n8n", "postgrest", "timescale", "cortex"].some(k => next[k] !== lastStatus[k]);
+  const feeds = { btc_chain: "unknown", eth_chain: "unknown" };
+  if (timescale === "ok") {
+    try {
+      const r = await fetch(`${PGRST_URL}/whale_feeds?select=chain,health`, { signal: AbortSignal.timeout(4000) });
+      for (const f of r.ok ? await r.json() : []) if (`${f.chain}_chain` in feeds && ["ok", "degraded", "down", "unknown"].includes(f.health)) feeds[`${f.chain}_chain`] = f.health;
+    } catch { /* stays unknown */ }
+  }
+  const next = { relay: "ok", n8n, postgrest, timescale, cortex, ...feeds, checkedAt: new Date().toISOString() };
+  const changed = ["n8n", "postgrest", "timescale", "cortex", ...FEEDS].some(k => next[k] !== lastStatus[k]);
   lastStatus = next;
   if (changed) broadcast("status", lastStatus);
 }
@@ -186,8 +217,16 @@ const server = http.createServer((req, res) => {
   if (req.method === "POST" && url.pathname.startsWith("/ingest/")) {
     if (!authorised(req)) return send(res, 401, { error: "unauthorised" });
     const kind = url.pathname.slice("/ingest/".length);
-    if (kind !== "pulse" && kind !== "anomaly" && kind !== "news") return send(res, 404, { error: "not found" });
+    if (kind !== "pulse" && kind !== "anomaly" && kind !== "whale" && kind !== "news") return send(res, 404, { error: "not found" });
     return readJson(req, res, body => {
+      if (kind === "whale") {
+        const w = validateWhale(body);
+        if (!w) return send(res, 400, { error: "invalid whale" });
+        if (!recentWhales.some(r => r.id === w.id)) { recentWhales.push(w); if (recentWhales.length > KEEP) recentWhales.shift(); }
+        broadcast("whale", w);
+        console.log(`WHALE ${w.chain} ${w.severity}: ${w.reason}`);
+        return send(res, 202, { ok: true, id: w.id, listeners: clients.size });
+      }
       if (kind === "news") {
         const news = validateNews(body);
         if (!news) return send(res, 400, { error: "invalid news" });
@@ -232,7 +271,7 @@ const server = http.createServer((req, res) => {
   switch (url.pathname) {
     case "/events": {
       res.writeHead(200, { ...SEC_HEADERS, "Content-Type": "text/event-stream", Connection: "keep-alive" });
-      res.write(`retry: 5000\nevent: hello\ndata: ${JSON.stringify({ recent: recent.slice(-10), news: recentNews.slice(0, 10), pulse: lastPulse, status: lastStatus, symbols: [...SYMBOLS] })}\n\n`);
+      res.write(`retry: 5000\nevent: hello\ndata: ${JSON.stringify({ recent: recent.slice(-10), news: recentNews.slice(0, 10), whales: recentWhales.slice(-10), pulse: lastPulse, status: lastStatus, symbols: [...SYMBOLS] })}\n\n`);
       clients.add(res);
       const ping = setInterval(() => res.write(": ping\n\n"), 25000);
       req.on("close", () => { clearInterval(ping); clients.delete(res); });
