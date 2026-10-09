@@ -8,7 +8,7 @@ import { DEMO_NODES } from "@/lib/demo";
 import { relayJson, useLive } from "@/lib/relay";
 import type { GeoNode } from "@/lib/types";
 
-const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false, loading: () => <div className="panel h-[55dvh] animate-pulse" /> });
+const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false, loading: () => <div className="panel h-[60dvh] animate-pulse" /> });
 
 export default function Earth() {
   const t = useTranslations("earth");
@@ -30,7 +30,7 @@ export default function Earth() {
         <LiveBadge connected={live.connected} demo={live.demo} />
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <EarthMap nodes={nodes} focus={focus} />
+        <EarthMap nodes={nodes} focus={focus} onFocus={setFocus} />
         <aside className="space-y-4">
           <section className="panel">
             <h2 className="border-b border-line px-4 py-3 font-semibold">{t("nodes")}</h2>

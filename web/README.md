@@ -8,7 +8,7 @@ Arabic (RTL) is the default, English (LTR) is one tap away in the header, and th
 | Company | `/ar`, `/en` | relay `/status` (service health), KPI counts |
 | Market | `/…/market` | relay SSE `/events`: price pulse, anomalies, scored headlines |
 | Research | `/…/research` | relay `POST /brain/ask`, then polls `/brain/jobs/:id` |
-| Earth | `/…/earth` | relay `/geo/nodes` on a MapLibre map (OpenFreeMap tiles, no key), live alerts |
+| Earth | `/…/earth` | relay `/geo/nodes` on a MapLibre 3D globe: Sentinel-2 satellite or vector map, zoom to z19, live alerts |
 
 When the relay is offline every screen still renders, using clearly labelled demo data.
 
@@ -42,3 +42,11 @@ npm start            # http://127.0.0.1:3100 (about 110 MB RAM)
 - Serve it behind the relay (or Caddy) so the phone can reach it over the LAN or a tunnel.
 - Screen 2 charts (Lightweight Charts) and the correlation heatmap once Phase 2 data lands.
 - deck.gl vessel layer on Earth when `maritime-agent` publishes positions.
+
+## Map imagery
+
+- **Satellite:** Sentinel-2 cloudless 2024 by EOX (10 m per pixel, native to zoom 14, sharpened by overzoom beyond).
+  Licence CC BY-NC-SA 4.0: fine for this personal, non-commercial platform; swap the tile URL in
+  `src/components/EarthMap.tsx` before any commercial use.
+- **Map:** OpenFreeMap vector tiles (OSM data), sharp at every zoom.
+- The map renders at 2x to 3x pixel density, so labels and coastlines stay crisp when zoomed in.

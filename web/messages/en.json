@@ -1,18 +1,40 @@
 {
-  "app": { "name": "OMEGA PRIME", "tagline": "Global logistics & market intelligence", "switchLang": "العربية", "demo": "Demo data: relay offline", "live": "Live" },
-  "nav": { "company": "Company", "market": "Market", "research": "Research", "earth": "Earth" },
+  "app": {
+    "name": "OMEGA PRIME",
+    "tagline": "Global logistics & market intelligence",
+    "switchLang": "العربية",
+    "demo": "Demo data: relay offline",
+    "live": "Live"
+  },
+  "nav": {
+    "company": "Company",
+    "market": "Market",
+    "research": "Research",
+    "earth": "Earth"
+  },
   "company": {
     "title": "Operations overview",
     "services": "Service health",
     "checked": "Checked {time}",
     "never": "not checked yet",
-    "kpis": { "nodes": "Watched choke-points", "alerts": "Recent alerts", "symbols": "Tracked markets", "news": "Scored headlines" },
-    "state": { "ok": "Up", "down": "Down", "unknown": "Unknown" }
+    "kpis": {
+      "nodes": "Watched choke-points",
+      "alerts": "Recent alerts",
+      "symbols": "Tracked markets",
+      "news": "Scored headlines"
+    },
+    "state": {
+      "ok": "Up",
+      "down": "Down",
+      "unknown": "Unknown"
+    }
   },
   "market": {
     "title": "Markets & anomalies",
     "prices": "Latest prices",
-    "symbol": "Market", "close": "Close", "time": "Time",
+    "symbol": "Market",
+    "close": "Close",
+    "time": "Time",
     "anomalies": "Anomalies",
     "none": "No anomalies yet. They appear here the moment the relay pushes one.",
     "news": "Headline sentiment",
@@ -34,7 +56,21 @@
     "nodes": "Logistics nodes",
     "alerts": "Live alerts",
     "noAlerts": "Quiet. Fast-path alerts stream in here.",
-    "types": { "strait": "Strait", "canal": "Canal", "port": "Port" }
+    "types": {
+      "strait": "Strait",
+      "canal": "Canal",
+      "port": "Port"
+    },
+    "basemap": "Base map",
+    "layers": {
+      "satellite": "Satellite",
+      "map": "Map"
+    },
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
   },
-  "severity": { "watch": "Watch", "high": "High" }
+  "severity": {
+    "watch": "Watch",
+    "high": "High"
+  }
 }
