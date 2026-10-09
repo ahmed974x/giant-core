@@ -3,5 +3,5 @@ import { routing } from "./i18n/routing";
 
 export default createMiddleware(routing);
 
-// Locale routing for pages only; the /relay proxy and static files pass straight through.
-export const config = { matcher: ["/((?!relay|_next|_vercel|.*\..*).*)"] };
+// Locale routing for pages only; the /relay and /api routes and static files pass straight through.
+export const config = { matcher: ["/((?!relay|api|_next|_vercel|.*\\..*).*)"] };

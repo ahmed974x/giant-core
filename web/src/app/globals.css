@@ -20,3 +20,16 @@ body { font-family: var(--font-sans); min-height: 100dvh; }
 
 .panel { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 14px; }
 .num { font-variant-numeric: tabular-nums; }
+
+/* ---- Earth map: my-location beacon and popups ---- */
+.omega-me { width: 16px; height: 16px; border-radius: 9999px; background: #ff3b6b; border: 2px solid #fff; box-shadow: 0 0 0 0 rgba(255, 59, 107, 0.7); animation: omega-ping 1.8s ease-out infinite; }
+.omega-me-sm { width: 10px; height: 10px; border-radius: 9999px; background: #ff3b6b; box-shadow: 0 0 0 3px rgba(255, 59, 107, 0.25); }
+@keyframes omega-ping { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 107, 0.7); } 100% { box-shadow: 0 0 0 22px rgba(255, 59, 107, 0); } }
+.omega-popup .maplibregl-popup-content { background: #0b1520; color: var(--color-ink); border: 1px solid var(--color-line); border-radius: 10px; padding: 10px 12px; font-size: 12px; }
+.omega-popup .maplibregl-popup-tip { border-top-color: #0b1520 !important; border-bottom-color: #0b1520 !important; }
+.omega-popup .maplibregl-popup-close-button { color: var(--color-muted); }
+.omega-pop { display: grid; gap: 3px; direction: ltr; }
+.omega-pop img { width: 100%; border-radius: 6px; margin-bottom: 4px; }
+.omega-pop strong { font-size: 13px; }
+.omega-pop span { color: var(--color-muted); }
+.omega-pop a { color: var(--color-accent); justify-self: end; }

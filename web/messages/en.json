@@ -67,7 +67,25 @@
       "map": "Map"
     },
     "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out"
+    "zoomOut": "Zoom out",
+    "radar": "Live radar",
+    "terrain": "3D terrain",
+    "feeds": {
+      "flights": "Flights (ADS-B)",
+      "ships": "Ships (AIS)",
+      "cams": "Public webcams"
+    },
+    "needsKey": "needs free key",
+    "myLocation": "My location",
+    "locationDenied": "not allowed",
+    "pop": {
+      "type": "Type",
+      "reg": "Reg",
+      "alt": "Altitude",
+      "ground": "on ground",
+      "speed": "Speed",
+      "heading": "Heading"
+    }
   },
   "severity": {
     "watch": "Watch",

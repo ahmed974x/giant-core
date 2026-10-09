@@ -8,7 +8,7 @@ Arabic (RTL) is the default, English (LTR) is one tap away in the header, and th
 | Company | `/ar`, `/en` | relay `/status` (service health), KPI counts |
 | Market | `/…/market` | relay SSE `/events`: price pulse, anomalies, scored headlines |
 | Research | `/…/research` | relay `POST /brain/ask`, then polls `/brain/jobs/:id` |
-| Earth | `/…/earth` | relay `/geo/nodes` on a MapLibre 3D globe: Sentinel-2 satellite or vector map, zoom to z19, live alerts |
+| Earth | `/…/earth` | 3D globe with terrain, satellite or vector map, zoom to z19, live flight and ship radar, public webcams, my-location dot |
 
 When the relay is offline every screen still renders, using clearly labelled demo data.
 
@@ -50,3 +50,24 @@ npm start            # http://127.0.0.1:3100 (about 110 MB RAM)
   `src/components/EarthMap.tsx` before any commercial use.
 - **Map:** OpenFreeMap vector tiles (OSM data), sharp at every zoom.
 - The map renders at 2x to 3x pixel density, so labels and coastlines stay crisp when zoomed in.
+
+## Live radar layers (Earth screen)
+
+| Layer | Source | Key | Notes |
+| --- | --- | --- | --- |
+| Flights | [adsb.lol](https://adsb.lol) community ADS-B, open data (ODbL) | none | `/api/flights`, cached 10 s, polled every 15 s. Military aircraft and owners who opted out (LADD/PIA) are dropped server-side (ADR 006). |
+| Ships | [aisstream.io](https://aisstream.io) live AIS | free, `AISSTREAM_API_KEY` | One WebSocket per server, subscribed only to the five watched choke-points, capped at 4,000 vessels. |
+| Webcams | [Windy Webcams API](https://api.windy.com/webcams) | free, `WINDY_WEBCAMS_KEY` | Only cameras their owners publish (weather, ports, beaches, skylines). No CCTV or private feeds (ADR 006). |
+| 3D terrain | Mapzen Terrarium on [AWS Open Data](https://registry.opendata.aws/terrain-tiles/) | none | Real elevation with hillshade; toggle with the 3D button. |
+| My location | the browser's own Geolocation API | none | Asks permission, stays in the browser, never sent to a server. Needs `localhost` or HTTPS. |
+
+Put keys in `web/.env.local` (git-ignored) and restart `npm start`. Without a key the layer shows "needs free key".
+
+## Globe engine research (2026-10-09)
+
+| Engine | Licence | Package size | Verdict |
+| --- | --- | --- | --- |
+| **MapLibre GL JS 6** (current) | BSD-3 | ~28 MB unpacked, lazy-loaded | Kept: globe, 3D terrain, sky, SDF icons and Arabic shaping in one light engine. |
+| [AntV L7](https://github.com/antvis/L7) (Alibaba, China) | MIT | ~1.5 MB | Strong for large point/flow/heatmap layers. Candidate to add on top of MapLibre for AIS density heatmaps if needed. |
+| [CesiumJS](https://github.com/CesiumGS/cesium) | Apache-2.0 | ~80 MB unpacked | Best true-3D (photogrammetry, 3D Tiles), but several times heavier; too much for this 7 GB laptop today. |
+| [deck.gl](https://github.com/visgl/deck.gl) | MIT | — | GPU layers for 100k+ moving points; add when the AIS feed outgrows symbol layers. |

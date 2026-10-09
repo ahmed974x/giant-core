@@ -67,7 +67,25 @@
       "map": "خريطة"
     },
     "zoomIn": "تكبير",
-    "zoomOut": "تصغير"
+    "zoomOut": "تصغير",
+    "radar": "الرادار المباشر",
+    "terrain": "تضاريس ثلاثية الأبعاد",
+    "feeds": {
+      "flights": "الطيران (ADS-B)",
+      "ships": "السفن (AIS)",
+      "cams": "كاميرات عامة"
+    },
+    "needsKey": "يحتاج مفتاح مجاني",
+    "myLocation": "موقعي",
+    "locationDenied": "غير مسموح",
+    "pop": {
+      "type": "الطراز",
+      "reg": "التسجيل",
+      "alt": "الارتفاع",
+      "ground": "على الأرض",
+      "speed": "السرعة",
+      "heading": "الاتجاه"
+    }
   },
   "severity": {
     "watch": "مراقبة",
