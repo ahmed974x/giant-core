@@ -1,0 +1,390 @@
+[
+  {
+    "id": "omegaWhaleEth01",
+    "name": "OMEGA · Whale Watch ETH",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Asia/Kuwait",
+      "saveDataSuccessExecution": "none",
+      "saveDataErrorExecution": "all"
+    },
+    "nodes": [
+      {
+        "id": "e1",
+        "name": "Every minute",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "e2",
+        "name": "Plan",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          220,
+          0
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT chain.plan('eth') AS plan;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "omegaTimescale",
+            "name": "OMEGA Timescale (sentinel_writer)"
+          }
+        },
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "id": "e3",
+        "name": "ETH head",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          440,
+          0
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "__OMEGA_ETH_RPC_URL__",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\",\"params\":[]}",
+          "options": {
+            "timeout": 15000,
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "e4",
+        "name": "Pick blocks",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          660,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Blocks to read: after the cursor, up to head-3 (reorg margin), at most 10 per run so a\n// restart catches up at 2x real time without hammering a free RPC. One JSON-RPC batch does it all.\nconst plan = $('Plan').first().json.plan;\nconst res = JSON.parse($input.first().json.data);\nif (!plan || !plan.ready) return [];          // Market Sentinel has no ETH/BTC price yet\nif (!res || !res.result) throw new Error('eth_blockNumber failed: ' + JSON.stringify(res && res.error || res).slice(0, 200));\nconst safe = parseInt(res.result, 16) - 3;\nconst MAX = 10;\nconst from = plan.cursor == null ? safe : Number(plan.cursor) + 1;\nconst through = Math.min(safe, from + MAX - 1);\nif (from > through) return [];\nconst hex = n => '0x' + n.toString(16);\nconst body = [];\nfor (let n = from; n <= through; n++) body.push({ jsonrpc: '2.0', id: n, method: 'eth_getBlockByNumber', params: [hex(n), true] });\nbody.push({ jsonrpc: '2.0', id: 0, method: 'eth_getLogs', params: [{\n  fromBlock: hex(from), toBlock: hex(through),\n  address: plan.assets.filter(a => a.contract).map(a => a.contract),\n  topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],   // Transfer(address,address,uint256)\n}] });\nreturn [{ json: { from, through, body } }];\n"
+        }
+      },
+      {
+        "id": "e5",
+        "name": "ETH blocks + logs",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          880,
+          0
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "__OMEGA_ETH_RPC_URL__",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.body) }}",
+          "options": {
+            "timeout": 60000,
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "e6",
+        "name": "Whale candidates",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Native ETH from block bodies, ERC-20s from Transfer logs. Amounts stay exact (BigInt -> decimal string);\n// only moves above each asset's store floor (from chain.plan) leave n8n.\nconst plan = $('Plan').first().json.plan;\nconst pick = $('Pick blocks').first().json;\nconst res = JSON.parse($input.first().json.data);\nif (!Array.isArray(res)) throw new Error('RPC batch failed: ' + JSON.stringify(res).slice(0, 200));\nconst byId = new Map(res.map(r => [Number(r.id), r]));\nconst asset = Object.fromEntries(plan.assets.map(a => [a.asset, a]));\nconst byContract = Object.fromEntries(plan.assets.filter(a => a.contract).map(a => [a.contract, a]));\nconst floorRaw = a => BigInt(Math.floor(a.floor * 1e6)) * 10n ** BigInt(a.decimals) / 1000000n;\nconst units = (raw, dec) => {\n  const s = raw.toString().padStart(dec + 1, '0');\n  const int = s.slice(0, s.length - dec), frac = s.slice(s.length - dec).replace(/0+$/, '');\n  return frac ? `${int}.${frac}` : int;\n};\nconst addr = topic => '0x' + topic.slice(26).toLowerCase();\nconst blockTs = new Map(), transfers = [];\nconst ethFloor = floorRaw(asset.ETH);\nfor (let n = pick.from; n <= pick.through; n++) {\n  const r = byId.get(n);\n  if (!r || r.error || !r.result) throw new Error(`Block ${n}: ` + JSON.stringify(r ? r.error : 'missing').slice(0, 200));\n  const t = parseInt(r.result.timestamp, 16) * 1000;\n  blockTs.set(n, t);\n  for (const tx of r.result.transactions || []) {\n    if (!tx.to) continue;                                                // contract creation\n    const v = BigInt(tx.value);\n    if (v < ethFloor) continue;\n    transfers.push({ h: tx.hash, i: -1, a: 'ETH', q: units(v, 18), t, b: n, f: [tx.from.toLowerCase()], o: [tx.to.toLowerCase()] });\n  }\n}\nconst logs = byId.get(0);\nif (!logs || logs.error || !Array.isArray(logs.result)) throw new Error('eth_getLogs: ' + JSON.stringify(logs ? logs.error : 'missing').slice(0, 200));\nfor (const l of logs.result) {\n  const a = byContract[String(l.address).toLowerCase()];\n  if (!a || l.removed || !l.topics || l.topics.length !== 3 || !l.data || l.data.length < 66) continue;\n  const v = BigInt(l.data.slice(0, 66));\n  if (v < floorRaw(a)) continue;\n  const n = parseInt(l.blockNumber, 16);\n  transfers.push({ h: l.transactionHash, i: parseInt(l.logIndex, 16), a: a.asset, q: units(v, a.decimals),\n                   t: blockTs.get(n), b: n, f: [addr(l.topics[1])], o: [addr(l.topics[2])] });\n}\nreturn [{ json: { through: pick.through, transfers } }];\n"
+        }
+      },
+      {
+        "id": "e7",
+        "name": "Store + judge (Timescale)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1320,
+          0
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT * FROM chain.ingest('eth', $1::bigint, $2::jsonb);",
+          "options": {
+            "queryReplacement": "={{ [$json.through, JSON.stringify($json.transfers)] }}"
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "omegaTimescale",
+            "name": "OMEGA Timescale (sentinel_writer)"
+          }
+        },
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "id": "e8",
+        "name": "Whale?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1540,
+          0
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "number",
+                  "operation": "exists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "e9",
+        "name": "Flare Constellation",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1760,
+          -100
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://relay:8080/ingest/whale",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ id: $json.id, ts: $json.ts, chain: $json.chain, block: $json.block, tx_hash: $json.tx_hash, asset: $json.asset, amount: $json.amount, usd_value: $json.usd_value, from_addr: $json.from_addr, to_addr: $json.to_addr, from_entity: $json.from_entity, to_entity: $json.to_entity, verdict: $json.verdict, severity: $json.severity, reason: $json.reason }) }}",
+          "options": {
+            "timeout": 5000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "omegaRelayAuth",
+            "name": "OMEGA relay token"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "id": "e10",
+        "name": "Format Telegram",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1760,
+          100
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Telegram gets severity HIGH only; the Constellation gets everything. HTML parse mode, all text escaped.\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst LINK = { btc: h => `https://mempool.space/tx/${h}`, eth: h => `https://etherscan.io/tx/${h}` };\nreturn $input.all().filter(i => i.json.severity === 'high').map(({ json: w }) => {\n  const when = new Date(w.ts).toLocaleString('en-GB', { timeZone: 'Asia/Kuwait', hour12: false });\n  const text = `🐋 <b>OMEGA WHALE · ${esc(String(w.chain).toUpperCase())}</b> · HIGH\\n${esc(w.reason)}\\n` +\n    `<a href=\"${esc(LINK[w.chain](w.tx_hash))}\">View transaction</a>\\n<i>${esc(when)} Kuwait</i>`;\n  return { json: { text } };\n});\n"
+        }
+      },
+      {
+        "id": "e11",
+        "name": "Telegram → Architect",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1980,
+          100
+        ],
+        "parameters": {
+          "chatId": "__TELEGRAM_CHAT_ID__",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": true
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "omegaTelegram",
+            "name": "OMEGA Telegram bot"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000,
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Every minute": {
+        "main": [
+          [
+            {
+              "node": "Plan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Plan": {
+        "main": [
+          [
+            {
+              "node": "ETH head",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "ETH head": {
+        "main": [
+          [
+            {
+              "node": "Pick blocks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pick blocks": {
+        "main": [
+          [
+            {
+              "node": "ETH blocks + logs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "ETH blocks + logs": {
+        "main": [
+          [
+            {
+              "node": "Whale candidates",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whale candidates": {
+        "main": [
+          [
+            {
+              "node": "Store + judge (Timescale)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Store + judge (Timescale)": {
+        "main": [
+          [
+            {
+              "node": "Whale?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whale?": {
+        "main": [
+          [
+            {
+              "node": "Flare Constellation",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Format Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Telegram": {
+        "main": [
+          [
+            {
+              "node": "Telegram → Architect",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {}
+  }
+]

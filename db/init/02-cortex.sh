@@ -4,13 +4,20 @@
 #   api.llm_perf       per provider/model over the last 24h: success rate, p50/p95 latency, tokens
 #   api.llm_perf_1h    hourly buckets over 48h, for the dashboard
 #   api.llm_calls      recent attempts
-# Runs on first boot of an empty volume. On an existing volume:
-#   docker compose exec timescale sh /docker-entrypoint-initdb.d/02-cortex.sh
+# Runs on first boot of an empty volume; on an older volume the db-migrate service applies it.
 set -eu
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
+# Applied once: skipped when the llm schema already exists, because db/migrate.sh re-runs every
+# init script on each `docker compose up` to bring older volumes up to date.
+if psql -tAq --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+     -c "SELECT 1 FROM pg_namespace WHERE nspname = 'llm'" | grep -q 1; then
+  echo "02-cortex.sh: llm schema present, nothing to do"
+else
+psql -v ON_ERROR_STOP=1 --single-transaction --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
 -- PostgREST switches to this role when the gateway presents its signed JWT.
-CREATE ROLE gateway_writer NOLOGIN;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'gateway_writer') THEN CREATE ROLE gateway_writer NOLOGIN; END IF;
+END $$;
 GRANT gateway_writer TO authenticator;
 
 CREATE SCHEMA llm;
@@ -101,3 +108,4 @@ FROM llm.calls WHERE ts > now() - interval '7 days';
 GRANT SELECT ON api.llm_perf, api.llm_perf_1h, api.llm_calls TO web_anon, gateway_writer;
 NOTIFY pgrst, 'reload schema';
 SQL
+fi
