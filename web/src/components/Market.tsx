@@ -1,7 +1,10 @@
 "use client";
 import { useFormatter, useNow, useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import LiveBadge from "./LiveBadge";
 import Severity from "./Severity";
+
+const PriceChart = dynamic(() => import("./PriceChart"), { ssr: false, loading: () => <div className="panel h-[430px] animate-pulse" /> });
 import { useLive } from "@/lib/relay";
 
 export default function Market() {
@@ -17,6 +20,8 @@ export default function Market() {
         <h1 className="text-2xl font-bold">{t("title")}</h1>
         <LiveBadge connected={live.connected} demo={live.demo} />
       </div>
+
+      <PriceChart anomalies={live.anomalies} />
 
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="panel overflow-hidden lg:col-span-2">

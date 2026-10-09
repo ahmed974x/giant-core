@@ -38,7 +38,9 @@
     "anomalies": "Anomalies",
     "none": "No anomalies yet. They appear here the moment the relay pushes one.",
     "news": "Headline sentiment",
-    "noNews": "No scored headlines yet."
+    "noNews": "No scored headlines yet.",
+    "chart": "Price chart",
+    "chartError": "Market data is unreachable right now."
   },
   "research": {
     "title": "Research",
