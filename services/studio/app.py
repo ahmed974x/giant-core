@@ -13,6 +13,7 @@ import panel_material_ui as pmui
 import param
 
 import data
+import vault
 
 pn.extension("tabulator", throttled=True)
 pmui.Paper.param.margin.default = 10
@@ -99,7 +100,8 @@ class OmegaStudio(pn.viewable.Viewer):
                     pmui.Grid(pmui.Paper(pmui.Column(self._title("Headline sentiment", ACCENT["amber"]), self._news_plot)), size={"xs": 12, "md": 6}),
                     container=True, spacing=2,
                 ),
-                pmui.Paper(pmui.Tabs(("Anomalies", self._anomaly_table), ("Whales", self._whale_table), ("News", self._news_table))),
+                pmui.Paper(pmui.Tabs(("Anomalies", self._anomaly_table), ("Whales", self._whale_table), ("News", self._news_table),
+                                     ("History · DuckDB vault", self._history_view))),
                 margin=15,
             )
 
@@ -206,7 +208,8 @@ class OmegaStudio(pn.viewable.Viewer):
 
     @param.depends("symbol", "hours", "tick")
     def _volume_plot(self):
-        df = self._candles().set_index("ts")["volume"].resample("1h").sum().reset_index()
+        hourly = self._candles().set_index("ts")["volume"].resample("1h")
+        df = hourly.sum()[hourly.count() >= 12].reset_index()        # complete hours only (12 five-minute bars)
         bars = df.hvplot.area(x="ts", y="volume", color=ACCENT["lime"], alpha=0.35, line_color=ACCENT["lime"], line_width=1.8,
                               xlabel="", ylabel=f"{self._base()} / hour", **{**self._plot_opts, "height": 240})
         return pn.pane.HoloViews(bars, sizing_mode="stretch_width", theme="dark_minimal")
@@ -220,6 +223,27 @@ class OmegaStudio(pn.viewable.Viewer):
         pts = df.hvplot.scatter(x="published_at", y="sentiment", c="color", size=160, hover_cols=["source", "title", "impact"],
                                 xlabel="", ylabel="sentiment", ylim=(-1.05, 1.05), **{**self._plot_opts, "height": 240})
         return pn.pane.HoloViews(pts, sizing_mode="stretch_width", theme="dark_minimal")
+
+    # ── history from the DuckDB vault ──
+    @param.depends("symbol", "tick")
+    def _history_view(self):
+        df = vault.history(self.symbol)
+        note = ("Demo vault (in memory): it fills with real data once the stack is live." if vault.is_demo()
+                else f"Vault file: {vault.VAULT_PATH.name} · {vault.file_size_mb()} MB · synced every 5 minutes.")
+        if df.empty:
+            return pmui.Typography("The vault has no candles for this pair yet.", sx={"color": "text.secondary", "p": 2})
+        color = COLORS.get(self.symbol, ACCENT["cyan"])
+        plot = (df.hvplot.line(x="day", y="close", color=color, line_width=2.4, xlabel="", ylabel="close", **{**self._plot_opts, "height": 220})
+                + df.hvplot.bar(x="day", y="vol_ann_pct", color=ACCENT["violet"], xlabel="", ylabel="vol % (ann.)", rot=0,
+                                **{**self._plot_opts, "height": 220})).cols(2)
+        table = df.assign(day=df["day"].dt.strftime("%d %b %Y"),
+                          net_into_exchanges=df["net_into_exchanges_usd"].map(lambda v: "—" if pd.isna(v) else ("+" if v > 0 else "−") + fmt_usd(abs(v))))
+        cols = ["day", "open", "close", "change_pct", "vol_ann_pct", "anomalies", "high_anomalies", "net_into_exchanges", "mood"]
+        return pmui.Column(
+            pmui.Typography(note, variant="caption", sx={"color": "text.secondary"}),
+            pn.pane.HoloViews(plot, sizing_mode="stretch_width", theme="dark_minimal"),
+            pn.widgets.Tabulator(table[cols].round({"open": 2, "close": 2}), **self._table_opts),
+        )
 
     # ── tables ──
     _table_opts = dict(theme="materialize", pagination="local", page_size=8, show_index=False, disabled=True,
@@ -249,6 +273,7 @@ class OmegaStudio(pn.viewable.Viewer):
         studio = cls(**params)
         if pn.state.served:
             pn.state.add_periodic_callback(lambda: setattr(studio, "tick", studio.tick + 1), period=60_000)
+            pn.state.add_periodic_callback(vault.sync, period=300_000)   # archive the live views into DuckDB
         return pmui.Page(
             title="OMEGA Studio",
             sidebar=[

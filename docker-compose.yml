@@ -7,6 +7,7 @@
 #                every 10 min: free RSS news + Fear & Greed → Timescale → scored by cortex → relay + Telegram
 #                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
+#   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
 #                every call's latency/tokens/outcome remembered in Timescale
 #   ollama       open-source local LLM (MIT): the free, quota-less last link of every Cortex chain
@@ -189,6 +190,7 @@ services:
       PGRST_URL: http://postgrest:3000
       PGRST_ADMIN_URL: http://postgrest:3001
       CORTEX_URL: http://cortex:8090
+      QUANT_URL: http://quant:8091
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -302,6 +304,29 @@ services:
     mem_limit: 512m
     cpus: 1.0
 
+  # OMEGA Quant: stdlib risk engine (volatility, z-score, tail odds, drawdown, correlation) every minute.
+  quant:
+    build: { context: ./services/quant }
+    image: omega-quant:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      TZ: ${TZ:-Asia/Kuwait}
+    networks: [core]
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8091/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
   # OMEGA Studio: Panel + Material UI deep-analysis app over the relay's read-only /api.
   studio:
     profiles: ["studio"]
@@ -316,7 +341,10 @@ services:
     environment:
       OMEGA_API_URL: http://relay:8080
       OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      OMEGA_VAULT_PATH: /data/omega.duckdb      # DuckDB vault: long-range history, survives restarts
       TZ: ${TZ:-Asia/Kuwait}
+    volumes:
+      - vault_data:/data
     ports:
       - "127.0.0.1:5006:5006"
     networks: [core, edge]
@@ -332,6 +360,7 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  vault_data:
   ollama_models:
   timescale_data:
   n8n_data:

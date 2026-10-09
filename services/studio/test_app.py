@@ -42,3 +42,15 @@ def test_studio_reacts_to_symbol_and_hours():
 
 def test_app_builds():
     assert app.OmegaStudio.create_app().title == "OMEGA Studio"
+
+
+def test_vault_history_rolls_up_days():
+    import vault
+
+    assert vault.is_demo() and vault.sync() == {}          # demo never writes the vault file
+    stats = vault.stats().set_index("table")["rows"]
+    assert stats["candles_5m"] == 3 * 48 * 12 and stats["anomalies"] > 0
+    h = vault.history("BTCUSDT")
+    assert {"day", "close", "vol_ann_pct", "anomalies", "mood"} <= set(h.columns)
+    assert 2 <= len(h) <= 3 and (h["vol_ann_pct"] > 0).all()
+    assert app.OmegaStudio()._history_view() is not None

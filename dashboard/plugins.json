@@ -51,6 +51,18 @@
       "enabled": true
     },
     {
+      "id": "omega-quant",
+      "name": "OMEGA Quant",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "stdlib risk engine: EWMA and realised volatility, regime, z-score with tail odds, momentum, drawdown, cross-pair correlation.",
+      "entry": "services/quant/quant.js",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
       "id": "omega-sentinel-mcp",
       "name": "OMEGA Sentinel MCP",
       "kind": "mcp",
@@ -69,6 +81,18 @@
       "version": "1.0.0",
       "description": "Panel + Material UI analytics app: price with anomalies, volume, exchange flow, news mood, sortable tables.",
       "entry": "services/studio/app.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-vault",
+      "name": "OMEGA Vault (DuckDB)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "In-process DuckDB archive of candles, anomalies, whales and news with daily roll-ups beyond the live 48 h window.",
+      "entry": "services/studio/vault.py",
       "requires": [
         "relay"
       ],

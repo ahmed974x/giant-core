@@ -1,0 +1,12 @@
+{
+  "id": "omega-quant",
+  "name": "OMEGA Quant",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "stdlib risk engine: EWMA and realised volatility, regime, z-score with tail odds, momentum, drawdown, cross-pair correlation.",
+  "entry": "services/quant/quant.js",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}

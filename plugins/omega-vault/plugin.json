@@ -1,0 +1,12 @@
+{
+  "id": "omega-vault",
+  "name": "OMEGA Vault (DuckDB)",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "In-process DuckDB archive of candles, anomalies, whales and news with daily roll-ups beyond the live 48 h window.",
+  "entry": "services/studio/vault.py",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}

@@ -3,7 +3,8 @@ RUN useradd --create-home --uid 1000 omega
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py data.py ./
+COPY app.py data.py vault.py ./
+RUN mkdir /data && chown omega:omega /data   # the DuckDB vault volume inherits this owner
 USER omega
 EXPOSE 5006
 CMD ["panel", "serve", "app.py", "--port", "5006", "--address", "0.0.0.0", \

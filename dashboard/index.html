@@ -85,7 +85,7 @@ a.chip:hover { color: var(--void); background: var(--magenta); }
 .empty { padding: 12px 14px; font-size: 13px; color: var(--ink-3); }
 
 /* ── cortex ── */
-#cortex { --accent: var(--violet); flex: 1 1 58%; }
+#cortex { --accent: var(--violet); flex: 1 1 50%; }
 #csum { margin-top: -4px; font: 12px var(--mono); color: var(--ink-3); }
 #cprov { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font: 12.5px var(--mono); min-height: 40px; flex: 0 1 auto; }
 #cprov li { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 8px; align-items: baseline; color: var(--ink-2); padding: 3px 0; border-bottom: 1px dashed rgba(140, 170, 230, 0.08); }
@@ -107,8 +107,21 @@ a.chip:hover { color: var(--void); background: var(--magenta); }
 #cmeta { font: 11.5px var(--mono); color: var(--ink-3); }
 #cmeta:empty { display: none; }
 
+/* ── quant (stdlib risk engine) ── */
+#quant { --accent: var(--flow); flex: 0 0 auto; }
+#qtable { width: 100%; border-collapse: collapse; font: 12.5px var(--mono); }
+#qtable th { text-align: right; font-weight: 600; color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.08em; padding: 0 0 6px; }
+#qtable th:first-child, #qtable td:first-child { text-align: left; }
+#qtable td { text-align: right; padding: 5px 0; border-top: 1px dashed rgba(140, 170, 230, 0.1); }
+#qtable td b { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.reg { font: 700 10px var(--mono); letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; color: var(--void); }
+.reg.calm { background: var(--ok); } .reg.normal { background: var(--ink-2); } .reg.turbulent { background: var(--crit); }
+#qcorr { display: flex; gap: 6px; flex-wrap: wrap; font: 11px var(--mono); color: var(--ink-2); }
+#qcorr span { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); }
+#qmeta { font: 11px var(--mono); color: var(--ink-3); }
+
 /* ── modules (plugin registry) ── */
-#modules { --accent: var(--lime); flex: 1 1 42%; }
+#modules { --accent: var(--lime); flex: 1 1 30%; }
 #xlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 #xlist li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 9px 11px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
 #xlist li.off { opacity: 0.5; }
@@ -237,6 +250,13 @@ li.fresh { animation: arrive 1.2s ease-out; }
       <form id="cform"><textarea id="cq" rows="1" placeholder="Ask the Cortex…" aria-label="Prompt"></textarea><button id="csend" type="submit">SEND</button></form>
       <div id="cout" class="scroll" aria-live="polite"></div>
       <div id="cmeta"></div>
+    </section>
+
+    <section id="quant" class="panel" aria-label="Quant risk engine">
+      <h2><span>QUANT · RISK ENGINE</span><span class="count" id="qsrc">—</span></h2>
+      <table id="qtable"><thead><tr><th>PAIR</th><th title="EWMA volatility, annualised">VOL</th><th>REGIME</th><th title="Newest 5-min return vs the last 24h">Z</th><th>24H</th></tr></thead><tbody><tr><td colspan="5" class="empty">Waiting for the engine…</td></tr></tbody></table>
+      <div id="qcorr"></div>
+      <div id="qmeta">stdlib · EWMA λ 0.94 · 5-min bars · 48h</div>
     </section>
 
     <section id="modules" class="panel" aria-label="Modules">
@@ -1162,6 +1182,7 @@ function startDemo() {
     },
   };
   refreshCortex();
+  quantDemo = () => demoQuant(hist); refreshQuant();
   const demoNews = [
     ["CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"],
     ["Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"],
@@ -1240,11 +1261,58 @@ function startDemo() {
   setTimeout(() => onStatus({ postgrest: "ok", timescale: "ok" }), 32000);
 }
 
+// ───────────────────────────── quant (stdlib risk engine) ─────────────────────────────
+function renderQuant(q) {
+  const body = document.querySelector("#qtable tbody");
+  document.getElementById("qsrc").textContent = q && q.source ? q.source.toUpperCase() : "—";
+  const rows = q ? Object.entries(q.pairs || {}).filter(([, p]) => p) : [];
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="5" class="empty">Quant engine not reachable.</td></tr>'; document.getElementById("qcorr").innerHTML = ""; return; }
+  const sgn = v => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2);
+  body.innerHTML = rows.map(([sym, p]) => {
+    const m = p.momentum_pct?.["24h"], z = p.zscore;
+    return `<tr title="${esc(`realised vol ${p.vol_ann_pct}% · tail odds ${p.tail_prob} · max drawdown ${p.max_drawdown_pct}%`)}">` +
+      `<td><b style="background:${SYM_COLOR[sym] || INK3}"></b>${esc(sym.replace(/USDT$/, ""))}</td>` +
+      `<td>${esc(p.ewma_vol_ann_pct?.toFixed(1))}%</td><td><span class="reg ${esc(p.regime)}">${esc(p.regime.toUpperCase())}</span></td>` +
+      `<td style="color:${Math.abs(z) >= 3 ? CRIT : Math.abs(z) >= 2 ? WARN : INK}">${esc(sgn(z))}</td>` +
+      `<td style="color:${m == null ? INK3 : m >= 0 ? OK : CRIT}">${esc(sgn(m))}%</td></tr>`;
+  }).join("");
+  document.getElementById("qcorr").innerHTML = Object.entries(q.correlations || {}).map(([k, v]) =>
+    `<span title="Correlation of 5-min returns">${esc(k.replace(/USDT/g, ""))} <b style="color:${v == null ? INK3 : v >= 0.7 ? WARN : INK}">${v == null ? "—" : v.toFixed(2)}</b></span>`).join("");
+}
+// Demo: the same metrics computed in the browser from the simulated history.
+function demoQuant(hist) {
+  const pairs = {}, rets = {};
+  for (const [s, rows] of Object.entries(hist)) {
+    const c = rows.filter((_, i) => i % 5 === 0).map(r => r.close), r = c.slice(1).map((v, i) => Math.log(v / c[i]));
+    rets[s] = r;
+    const mean = r.reduce((a, b) => a + b, 0) / r.length, sd = Math.sqrt(r.reduce((a, b) => a + (b - mean) ** 2, 0) / (r.length - 1));
+    let ew = 0; for (const x of r) ew = 0.94 * ew + 0.06 * x * x;
+    const ann = Math.sqrt(365 * 288), base = r.slice(-289, -1), bm = base.reduce((a, b) => a + b, 0) / base.length;
+    const bs = Math.sqrt(base.reduce((a, b) => a + (b - bm) ** 2, 0) / (base.length - 1)), z = (r.at(-1) - bm) / bs;
+    const evol = Math.sqrt(ew) * ann * 100, vol = sd * ann * 100;
+    pairs[s] = { ewma_vol_ann_pct: evol, vol_ann_pct: +vol.toFixed(2), regime: evol > vol * 1.5 ? "turbulent" : evol < vol * 0.7 ? "calm" : "normal",
+      zscore: z, tail_prob: "—", max_drawdown_pct: "—", momentum_pct: { "24h": (c.at(-1) / c.at(-289) - 1) * 100 } };
+  }
+  const syms = Object.keys(rets).sort(), correlations = {};
+  for (let i = 0; i < syms.length; i++) for (let j = i + 1; j < syms.length; j++) {
+    const a = rets[syms[i]], b = rets[syms[j]], n = Math.min(a.length, b.length), ma = a.reduce((x, y) => x + y, 0) / a.length, mb = b.reduce((x, y) => x + y, 0) / b.length;
+    let sab = 0, saa = 0, sbb = 0; for (let k = 0; k < n; k++) { sab += (a[k] - ma) * (b[k] - mb); saa += (a[k] - ma) ** 2; sbb += (b[k] - mb) ** 2; }
+    correlations[`${syms[i]}/${syms[j]}`] = sab / Math.sqrt(saa * sbb);
+  }
+  return { source: "demo", pairs, correlations };
+}
+let quantDemo = null;
+async function refreshQuant() {
+  if (quantDemo) return renderQuant(quantDemo());
+  try { renderQuant(await api("/quant")); } catch { renderQuant(null); }
+}
+
 // ───────────────────────────── modules (plugin registry) ─────────────────────────────
 const KIND_COLOR = { workflow: "var(--cyan)", tool: "var(--lime)", skill: "var(--violet)", mcp: "var(--magenta)", provider: "var(--amber)", panel: "var(--flow)" };
 const DEMO_PLUGINS = [
   { id: "market-sentinel", name: "Market Sentinel", kind: "workflow", description: "Binance 1-min candles, pulse and anomaly detection.", requires: ["n8n", "timescale"], enabled: true },
   { id: "news-sentiment", name: "News Sentiment", kind: "workflow", description: "RSS news and Fear & Greed, scored by Cortex.", requires: ["n8n", "cortex"], enabled: true },
+  { id: "omega-quant", name: "OMEGA Quant", kind: "tool", description: "stdlib risk engine: volatility, z-scores, tail odds, correlation.", requires: ["relay"], enabled: true },
   { id: "omega-sentinel-mcp", name: "OMEGA Sentinel MCP", kind: "mcp", description: "Lets Claude query the market memory.", requires: ["postgrest"], enabled: true },
 ];
 function renderModules(list) {
@@ -1279,6 +1347,8 @@ setLite(lite);
 renderPulse();
 resize();
 loadModules();
+setInterval(refreshQuant, 60000);
+if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshQuant(); }, 1500);
 if (FORCE_DEMO) startDemo(); else connectLive();
 setInterval(() => { if (state.mode !== "connecting") refreshCortex(); }, 30000);
 requestAnimationFrame(draw);

@@ -33,7 +33,8 @@ services/
   relay/         doorway: SSE stream, /api proxy, serves the Ops Room dashboard
   cortex/        LLM gateway (Node), providers in config/providers.json
   workstation/   Giant Core Streamlit app + local plugin engine
-  studio/        OMEGA Studio: Panel + Material UI analytics app (--profile studio, port 5006)
+  quant/         OMEGA Quant: stdlib risk engine (volatility, regime, z-score, tail odds, correlation)
+  studio/        OMEGA Studio: Panel + Material UI analytics app + DuckDB vault (--profile studio, port 5006)
 dashboard/       the Ops Room (one self-contained index.html) + plugins.json (generated)
 db/              Timescale init + migrate scripts
 n8n/             workflows (Market Sentinel, News Sentiment, Whale Watch) + seeder
@@ -76,6 +77,22 @@ services/studio/.venv/Scripts/python -m pytest services/studio
 
 The official HoloViz agent skills (`panel`, `panel-material-ui`, `hvplot`, `param`) live in
 `.claude/skills/` so Claude follows Panel's own best practices when extending the Studio.
+
+### OMEGA Quant (stdlib) and the DuckDB vault
+
+`quant` reads the 5-minute candles every minute and computes, with [stdlib](https://stdlib.io/)'s
+incremental accumulators: realised and EWMA volatility (RiskMetrics λ 0.94, annualised), a
+calm / normal / turbulent regime, the newest return's z-score against the last 24 h with its two-sided
+normal tail probability, 1 h / 6 h / 24 h momentum, max drawdown and the return correlation of every pair.
+The relay serves it at `/quant`; the Ops Room shows it in the **Quant** panel. ~40 MB RAM, no ports.
+
+The Studio keeps a [DuckDB](https://duckdb.org/) vault (`/data/omega.duckdb` in the `vault_data`
+volume): every 5 minutes it upserts the live candles, anomalies, whales and headlines, so history
+outlives the views' 48 h / 30 day windows. The **History · DuckDB vault** tab rolls it up per day
+(OHLC, volatility, anomalies, net whale flow into exchanges, news mood). DuckDB runs inside the Studio
+process: no server, no RAM when idle. Demo data never touches the file.
+
+Adding a metric, view, table or service: follow `.claude/skills/omega-extend/SKILL.md`.
 
 ### Low-RAM laptops (7–8 GB)
 

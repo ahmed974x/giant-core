@@ -6,6 +6,7 @@
 //   POST /ingest/news      n8n → freshly scored headlines                 (token required)
 //   GET  /events           SSE fan-out: hello, pulse, anomaly, whale, news, status, cortex
 //   GET  /api/<view>       read-only proxy to PostgREST (allowlisted views)
+//   GET  /quant            latest risk snapshot from the stdlib quant engine
 //   GET  /llm/providers    live state of the Cortex LLM gateway's providers
 //   POST /llm/chat         same-origin only: the dashboard's console → Cortex (token added here)
 //   GET  /status           health of every node in the constellation
@@ -22,6 +23,7 @@ const N8N_HEALTH = process.env.N8N_HEALTH_URL || "http://n8n:5678/healthz";
 const PGRST_URL = process.env.PGRST_URL || "http://postgrest:3000";
 const PGRST_ADMIN = process.env.PGRST_ADMIN_URL || "http://postgrest:3001";
 const CORTEX_URL = process.env.CORTEX_URL || "http://cortex:8090";
+const QUANT_URL = process.env.QUANT_URL || "http://quant:8091";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
@@ -262,6 +264,12 @@ const server = http.createServer((req, res) => {
     return fetch(`${PGRST_URL}/${view}${url.search}`, { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } })
       .then(async r => send(res, r.status, await r.text()))
       .catch(() => send(res, 503, { error: "memory core unreachable" }));
+  }
+
+  if (url.pathname === "/quant") {
+    return fetch(`${QUANT_URL}/quant`, { signal: AbortSignal.timeout(4000) })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "quant engine unreachable" }));
   }
 
   if (url.pathname === "/llm/providers") {
