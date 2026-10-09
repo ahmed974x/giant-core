@@ -4,7 +4,7 @@
 // Cached 5 minutes so the globe never hammers either service.
 import { ttlCache } from "@/lib/geo";
 
-export type Hazard = { id: string; kind: string; title: string; lat: number; lon: number; mag: number | null; at: string; url: string | null; source: "USGS" | "NASA EONET" };
+export type Hazard = { id: string; kind: string; title: string; lat: number; lon: number; mag: number | null; at: string; url: string | null; source: "USGS" | "NASA EONET" | "NASA FIRMS" };
 
 const cache = ttlCache<Hazard[]>(5 * 60_000, 2);
 const SKIP = new Set(["seaLakeIce", "snow", "waterColor", "manmade"]);
@@ -39,7 +39,27 @@ async function load(): Promise<Hazard[]> {
     }
     out.push(...latest.values());
   }
-  if (!out.length) throw new Error("both hazard feeds unreachable");
+  // Optional: NASA FIRMS VIIRS active-fire pixels (free MAP_KEY), high confidence only, over the Middle East and
+  // its sea lanes so the response stays small. Widen FIRMS_AREA (west,south,east,north) in .env.local if needed.
+  const firmsKey = process.env.NASA_FIRMS_KEY;
+  if (firmsKey) {
+    try {
+      const area = process.env.FIRMS_AREA ?? "25,5,65,40";
+      const r = await fetch(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(firmsKey)}/VIIRS_NOAA20_NRT/${area}/1`, opts);
+      if (r.ok) {
+        const [head, ...rows] = (await r.text()).trim().split("\n");
+        const col = Object.fromEntries(head.split(",").map((h, i) => [h, i]));
+        for (const row of rows.slice(0, 5000)) {
+          const c = row.split(",");
+          if (c[col.confidence] !== "h") continue;
+          out.push({ id: `firms-${c[col.latitude]}-${c[col.longitude]}-${c[col.acq_time]}`, kind: "firePixel", title: `VIIRS fire ${c[col.frp]} MW`,
+            lat: Number(c[col.latitude]), lon: Number(c[col.longitude]), mag: Number(c[col.frp]) || null,
+            at: `${c[col.acq_date]}T${String(c[col.acq_time]).padStart(4, "0").replace(/(\d\d)(\d\d)/, "$1:$2")}:00Z`, url: null, source: "NASA FIRMS" });
+        }
+      }
+    } catch { /* FIRMS is optional; the other feeds still render */ }
+  }
+  if (!out.length) throw new Error("all hazard feeds unreachable");
   return out;
 }
 

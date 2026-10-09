@@ -11,10 +11,11 @@ import type { GeoNode } from "@/lib/types";
 
 const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false, loading: () => <div className="panel h-[64dvh] animate-pulse" /> });
 
-type Tab = "cams" | "flights" | "ships" | "hazards" | "nodes" | "alerts";
+type Tab = "cams" | "flights" | "ships" | "hazards" | "events" | "nodes" | "alerts";
 const TABS: { id: Tab; color: string }[] = [
   { id: "cams", color: "#c792ea" }, { id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" },
   { id: "hazards", color: "#ff6b3d" },
+  { id: "events", color: "#ff4d6d" },
   { id: "nodes", color: "#3dd6c6" }, { id: "alerts", color: "#f2685c" },
 ];
 
@@ -27,7 +28,7 @@ export default function Earth() {
   const [nodes, setNodes] = useState<GeoNode[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("cams");
-  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null, hazards: null });
+  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null, hazards: null, events: null });
   const [camOn, setCamOn] = useState<FeedItem | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(null);
 
@@ -39,7 +40,7 @@ export default function Earth() {
   const fly = (i: { lon: number; lat: number }, zoom: number) => setTarget({ lon: i.lon, lat: i.lat, zoom, seq: Date.now() });
 
   const count = (id: Tab) => (id === "nodes" ? nodes.length : id === "alerts" ? live.anomalies.length : items[id]?.length ?? null);
-  const list = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" ? items[tab] : null;
+  const list = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" || tab === "events" ? items[tab] : null;
 
   return (
     <div className="space-y-4">
@@ -54,7 +55,7 @@ export default function Earth() {
       {/* Sidebar sits physically on the left in both languages; its own content follows the page direction. */}
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]" dir="ltr">
         <aside dir={locale === "ar" ? "rtl" : "ltr"} className="panel order-2 flex max-h-[70dvh] min-h-0 flex-col overflow-hidden lg:order-1 lg:h-[calc(100dvh-170px)] lg:max-h-none">
-          <nav className="grid grid-cols-6 border-b border-line text-[11px]" role="tablist">
+          <nav className="grid grid-cols-7 border-b border-line text-[10px]" role="tablist">
             {TABS.map(({ id, color }) => {
               const n = count(id);
               return (
@@ -114,6 +115,20 @@ export default function Earth() {
                         {i.sub && <span className="block truncate text-xs text-muted" dir="ltr">{i.sub}</span>}
                       </span>
                     </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {tab === "events" && list && list.length > 0 && (
+              <ul className="divide-y divide-line/60">
+                {list.slice(0, 300).map(ev => (
+                  <li key={ev.id} className="flex items-start gap-2 px-3 py-2 hover:bg-panel-2">
+                    <button onClick={() => fly(ev, 7)} className="min-w-0 flex-1 text-start">
+                      <span className="block truncate text-sm" dir="auto">{ev.label}</span>
+                      {ev.sub && <span className="block truncate text-xs text-muted" dir="auto">{ev.sub}</span>}
+                    </button>
+                    {ev.url && /^https?:\/\//.test(ev.url) && <a href={ev.url} target="_blank" rel="noopener noreferrer" className="pt-0.5 text-xs text-accent" aria-label={t("openSource")}>↗</a>}
                   </li>
                 ))}
               </ul>

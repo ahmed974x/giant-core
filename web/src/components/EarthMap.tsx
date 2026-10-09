@@ -18,7 +18,7 @@ const COLOR: Record<string, string> = { strait: "#3dd6c6", canal: "#f2b84b", por
 const MAX_ZOOM = 19;
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
-export type Layer = "flights" | "ships" | "cams" | "hazards";
+export type Layer = "flights" | "ships" | "cams" | "hazards" | "events";
 export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number };
 export type MapTarget = { lon: number; lat: number; zoom: number; seq: number };
 type Feed = { on: boolean; count: number | null; state: "idle" | "loading" | "live" | "stale" | "nokey" | "error" };
@@ -96,6 +96,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     ships: { on: true, count: null, state: "idle" },
     cams: { on: true, count: null, state: "idle" },
     hazards: { on: true, count: null, state: "idle" },
+    events: { on: true, count: null, state: "idle" },
   });
   const feedsRef = useRef(feeds);
   feedsRef.current = feeds;
@@ -157,7 +158,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
         mm.addLayer({ id: "hillshade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#000" } }, firstSymbol);
 
         for (const [name, draw] of [["plane", PLANE], ["ship", SHIP], ["cam", CAM]] as const) mm.addImage(name, icon(draw), { sdf: true, pixelRatio: 2 });
-        for (const s of ["nodes", "flights", "trails", "ships", "cams", "hazards", "me-acc", "night"]) mm.addSource(s, { type: "geojson", data: EMPTY });
+        for (const s of ["nodes", "flights", "trails", "ships", "cams", "hazards", "events", "me-acc", "night"]) mm.addSource(s, { type: "geojson", data: EMPTY });
 
         // Live day/night shading: the half of the planet in darkness right now.
         mm.addLayer({ id: "night", type: "fill", source: "night", paint: { "fill-color": "#000814", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 1, 0.45, 6, 0.25, 9, 0] } }, firstSymbol);
@@ -170,7 +171,12 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
         mm.addLayer({ id: "nodes-halo", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 12, 10, 26], "circle-color": ["get", "color"], "circle-opacity": 0.2 } });
         mm.addLayer({ id: "nodes", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 10, 9], "circle-color": ["get", "color"], "circle-stroke-width": 2, "circle-stroke-color": "#0a0f15" } });
         // Hazards: quakes sized by magnitude, other events by type, each with a soft warning halo.
-        const HAZARD_COLOR: ExpressionSpecification = ["match", ["get", "kind"], "earthquake", "#ff6b3d", "wildfires", "#ff3b30", "volcanoes", "#d6336c", "severeStorms", "#4dabf7", "floods", "#339af0", "#f59f00"];
+        const HAZARD_COLOR: ExpressionSpecification = ["match", ["get", "kind"], "earthquake", "#ff6b3d", "wildfires", "#ff3b30", "volcanoes", "#d6336c", "severeStorms", "#4dabf7", "floods", "#339af0", "firePixel", "#ff922b", "#f59f00"];
+        // World events from GDELT: small diamonds coloured by kind, sized by how widely the story is reported.
+        const EVENT_COLOR: ExpressionSpecification = ["match", ["get", "category"], "conflict", "#ff4d6d", "protest", "#ffa94d", "tension", "#ffd43b", "cooperation", "#69db7c", "#adb5bd"];
+        mm.addLayer({ id: "events", type: "circle", source: "events", paint: {
+          "circle-color": EVENT_COLOR, "circle-opacity": 0.85, "circle-stroke-color": "#0a0f15", "circle-stroke-width": 1,
+          "circle-radius": ["interpolate", ["linear"], ["get", "mentions"], 1, 2.5, 20, 6, 100, 10] } });
         mm.addLayer({ id: "hazards-halo", type: "circle", source: "hazards", paint: {
           "circle-color": HAZARD_COLOR, "circle-opacity": 0.18, "circle-blur": 0.6,
           "circle-radius": ["case", ["==", ["get", "kind"], "earthquake"], ["interpolate", ["linear"], ["coalesce", ["get", "mag"], 3], 2.5, 10, 7, 40], 16] } });
@@ -193,7 +199,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
           paint: { "text-color": "#ffffff", "text-halo-color": "#0a0f15", "text-halo-width": 1.6 } });
 
         mm.on("click", "nodes", e => { const slug = e.features?.[0]?.properties?.slug; if (slug) onFocusRef.current(String(slug)); });
-        for (const id of ["nodes", "flights", "ships", "cams", "hazards"]) {
+        for (const id of ["nodes", "flights", "ships", "cams", "hazards", "events"]) {
           mm.on("mouseenter", id, () => { mm.getCanvas().style.cursor = "pointer"; });
           mm.on("mouseleave", id, () => { mm.getCanvas().style.cursor = ""; });
         }
@@ -235,8 +241,14 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
       show(e.lngLat, card(String(p.title), [[t("pop.kind"), t.has(`hazardKinds.${p.kind}`) ? t(`hazardKinds.${p.kind}`) : String(p.kind)],
         [t("pop.magnitude"), p.mag != null ? String(p.mag) : null], [t("pop.when"), new Date(String(p.at)).toLocaleString()], [t("pop.source"), String(p.source)]], null, p.url as string | null));
     };
-    m.on("click", "flights", onFlight); m.on("click", "ships", onShip); m.on("click", "cams", onCam); m.on("click", "hazards", onHazard);
-    return () => { m.off("click", "flights", onFlight); m.off("click", "ships", onShip); m.off("click", "cams", onCam); m.off("click", "hazards", onHazard); };
+    const onEvent = (e: Hit) => {
+      const p = e.features?.[0]?.properties; if (!p) return;
+      let host = ""; try { host = new URL(String(p.url)).hostname.replace(/^www\./, ""); } catch { /* keep empty */ }
+      show(e.lngLat, card(String(p.place || t("eventKinds.other")), [[t("pop.kind"), t(`eventKinds.${p.category}`)], [t("pop.tone"), String(p.tone)],
+        [t("pop.reports"), String(p.mentions)], [t("pop.source"), host]], null, p.url as string | null));
+    };
+    m.on("click", "flights", onFlight); m.on("click", "ships", onShip); m.on("click", "cams", onCam); m.on("click", "hazards", onHazard); m.on("click", "events", onEvent);
+    return () => { m.off("click", "flights", onFlight); m.off("click", "ships", onShip); m.off("click", "cams", onCam); m.off("click", "hazards", onHazard); m.off("click", "events", onEvent); };
   }, [ready, t]);
 
   // ---- basemap, terrain and layer visibility -------------------------------------------------
@@ -262,7 +274,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     return () => { m.off("zoomend", apply); };
   }, [terrain, ready]);
 
-  const { flights, ships, cams, hazards } = feeds;
+  const { flights, ships, cams, hazards, events } = feeds;
   useEffect(() => {
     const m = map.current; if (!ready || !m) return;
     m.setLayoutProperty("flights", "visibility", flights.on ? "visible" : "none");
@@ -270,7 +282,8 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     m.setLayoutProperty("ships", "visibility", ships.on ? "visible" : "none");
     m.setLayoutProperty("cams", "visibility", cams.on ? "visible" : "none");
     for (const id of ["hazards", "hazards-halo"]) m.setLayoutProperty(id, "visibility", hazards.on ? "visible" : "none");
-  }, [flights.on, ships.on, cams.on, hazards.on, ready]);
+    m.setLayoutProperty("events", "visibility", events.on ? "visible" : "none");
+  }, [flights.on, ships.on, cams.on, hazards.on, events.on, ready]);
 
   useEffect(() => {
     if (!ready || !map.current) return;
@@ -376,6 +389,12 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
       if (l === "ships") src?.setData({ type: "FeatureCollection", features: (j.ships as { mmsi: number; name: string | null; lat: number; lon: number; cog: number; sog: number; heading: number | null }[]).map(s => ({
         type: "Feature", geometry: { type: "Point", coordinates: [s.lon, s.lat] },
         properties: { mmsi: s.mmsi, name: s.name, sog: s.sog, rot: s.heading ?? s.cog } })) });
+      if (l === "events") {
+        const list = j.events as { id: string; lat: number; lon: number; place: string; category: string; tone: number; mentions: number; url: string; at: string }[];
+        src?.setData({ type: "FeatureCollection", features: list.map(ev => ({ type: "Feature", geometry: { type: "Point", coordinates: [ev.lon, ev.lat] }, properties: { ...ev } })) });
+        onFeedRef.current?.("events", list.map(ev => ({ id: ev.id, lat: ev.lat, lon: ev.lon, label: ev.place || "—",
+          sub: `${t(`eventKinds.${ev.category}`)} · ${ev.mentions} · ${ev.tone}`, url: ev.url })));
+      }
       if (l === "hazards") {
         const list = j.hazards as { id: string; kind: string; title: string; lat: number; lon: number; mag: number | null; at: string; url: string | null; source: string }[];
         src?.setData({ type: "FeatureCollection", features: list.map(h => ({ type: "Feature", geometry: { type: "Point", coordinates: [h.lon, h.lat] }, properties: { ...h } })) });
@@ -396,13 +415,13 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     const m = map.current; if (!ready || !m) return;
     let debounce: ReturnType<typeof setTimeout>;
     const all = () => { refresh("flights"); refresh("ships"); refresh("cams"); };
-    refresh("hazards");
+    refresh("hazards"); refresh("events");
     const onMove = () => { clearTimeout(debounce); debounce = setTimeout(all, 600); };
     m.on("moveend", onMove);
     all();
     const tFlights = setInterval(() => refresh("flights"), 15_000);
     const tShips = setInterval(() => refresh("ships"), 20_000);
-    const tHazards = setInterval(() => refresh("hazards"), 5 * 60_000);
+    const tHazards = setInterval(() => { refresh("hazards"); refresh("events"); }, 5 * 60_000);
     return () => { m.off("moveend", onMove); clearTimeout(debounce); clearInterval(tFlights); clearInterval(tShips); clearInterval(tHazards); };
   }, [ready, refresh]);
 
@@ -435,7 +454,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
 
   const zoomBy = (d: number) => map.current?.easeTo({ zoom: Math.min(MAX_ZOOM, Math.max(0, zoom + d)), duration: 300 });
   const dot = (s: Feed["state"]) => (s === "live" ? "bg-good animate-pulse" : s === "error" ? "bg-bad" : s === "nokey" || s === "stale" ? "bg-warn" : "bg-muted");
-  const LAYERS: { id: Layer; color: string }[] = [{ id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" }, { id: "cams", color: "#c792ea" }, { id: "hazards", color: "#ff6b3d" }];
+  const LAYERS: { id: Layer; color: string }[] = [{ id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" }, { id: "cams", color: "#c792ea" }, { id: "hazards", color: "#ff6b3d" }, { id: "events", color: "#ff4d6d" }];
   const glass = "rounded-lg border border-white/10 bg-[#07101a]/80 shadow-lg backdrop-blur-md";
 
   return (

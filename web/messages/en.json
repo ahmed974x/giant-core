@@ -76,7 +76,8 @@
       "flights": "Flights (ADS-B)",
       "ships": "Ships (AIS)",
       "cams": "Public webcams",
-      "hazards": "Hazards (USGS, NASA)"
+      "hazards": "Hazards (USGS, NASA)",
+      "events": "World events (GDELT)"
     },
     "needsKey": "needs free key",
     "myLocation": "My location",
@@ -91,7 +92,9 @@
       "kind": "Type",
       "magnitude": "Magnitude",
       "when": "When",
-      "source": "Source"
+      "source": "Source",
+      "tone": "Tone",
+      "reports": "Reports"
     },
     "subtitle": "Live 3D globe: aircraft, ships, public webcams and day/night, from open data.",
     "tabs": {
@@ -100,7 +103,8 @@
       "ships": "Ships",
       "nodes": "Nodes",
       "alerts": "Alerts",
-      "hazards": "Hazards"
+      "hazards": "Hazards",
+      "events": "Events"
     },
     "openLive": "Open live",
     "close": "Close",
@@ -110,7 +114,8 @@
       "cams": "No public webcams in this view yet.",
       "flights": "No aircraft in this view. Zoom into a region.",
       "ships": "No ships in this view yet.",
-      "hazards": "No active hazards reported."
+      "hazards": "No active hazards reported.",
+      "events": "No geolocated events in the last hour yet."
     },
     "keyHint": "Add the free key in web/.env.local, then restart the app.",
     "fx": {
@@ -133,7 +138,16 @@
       "drought": "Drought",
       "dustHaze": "Dust/haze",
       "landslides": "Landslide",
-      "tempExtremes": "Extreme heat/cold"
+      "tempExtremes": "Extreme heat/cold",
+      "firePixel": "VIIRS fire pixel"
+    },
+    "openSource": "Open source article",
+    "eventKinds": {
+      "conflict": "Conflict",
+      "protest": "Protest",
+      "tension": "Tension",
+      "cooperation": "Cooperation",
+      "other": "Event"
     }
   },
   "severity": {
