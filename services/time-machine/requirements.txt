@@ -1,0 +1,43 @@
+# GDELT Historical Ingestor & Time Machine Agent Dependencies
+# Python 3.10+
+
+# Core async & web
+aioredis==2.0.1
+redis==5.0.1
+requests==2.31.0
+aiohttp==3.9.1
+
+# Database
+psycopg[binary]==3.1.12
+psycopg-pool==3.1.12
+SQLAlchemy==2.0.23
+alembic==1.12.1
+
+# Data processing
+pandas==2.1.3
+numpy==1.26.2
+matplotlib==3.8.2
+
+# Backtesting & Financial Analysis
+backtrader==1.9.78.123
+ta-lib==0.4.28
+yfinance==0.2.32
+
+# Monitoring & Logging
+python-json-logger==2.0.7
+structlog==23.2.0
+py-healthcheck==3.0.0
+
+# Type hints & validation
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Testing (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+moto==4.2.9
+
+# Utilities
+python-dotenv==1.0.0
+click==8.1.7
