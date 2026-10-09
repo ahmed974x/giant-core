@@ -1,7 +1,7 @@
 # Remote control from the phone
 
 How Ahmad drives this laptop from his phone, and the extra open-source pieces that can strengthen it.
-Everything here is light: no Docker, each MCP server is one short-lived Node or Python process (roughly 40â€“90 MB RAM).
+Everything here is light: no Docker, each MCP server is one short-lived Node or Python process (roughly 40 to 90 MB RAM).
 
 ## What already works (no install)
 
