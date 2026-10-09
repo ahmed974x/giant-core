@@ -33,6 +33,9 @@ services/
   relay/         doorway: SSE stream, /api proxy, serves the Ops Room dashboard
   cortex/        LLM gateway (Node), providers in config/providers.json
   workstation/   Giant Core Streamlit app + local plugin engine
+  agents/        workforce: Sentinel, Analyst, Scout (proposals wait for your Add / Skip)
+  neural/        PyTorch forecaster (--profile ml)
+  cloud-sync/    Supabase mirror (--profile cloud)
   quant/         OMEGA Quant: stdlib risk engine (volatility, regime, z-score, tail odds, correlation)
   studio/        OMEGA Studio: Panel + Material UI analytics app + DuckDB vault (--profile studio, port 5006)
 dashboard/       the Ops Room (one self-contained index.html) + plugins.json (generated)
@@ -93,6 +96,34 @@ outlives the views' 48 h / 30 day windows. The **History · DuckDB vault** tab r
 process: no server, no RAM when idle. Demo data never touches the file.
 
 Adding a metric, view, table or service: follow `.claude/skills/omega-extend/SKILL.md`.
+
+### Workforce: agents that work in the background
+
+`agents` (standard-library Python, ~30 MB) runs three agents and shows them in the Ops Room's
+**Agents** panel:
+
+| Agent | Every | Does |
+|---|---|---|
+| Sentinel | 2 min | checks every node, reports outages and recoveries |
+| Analyst | 15 min | turns Quant + Neural + anomalies into a 3-sentence brief (through Cortex; plain facts without it) |
+| Scout | 24 h | searches GitHub (Python, Scala, time-series, dataframes, ML, agents) for trusted tools: OSI license, active in the last 180 days, not archived, relevant to forecasting / data / models; scores trust + fit and flags JVM cost |
+
+The Scout never installs anything. Each find waits under **Proposals · your call** with **Add** / **Skip**;
+an answer is recorded and never asked again. Adding an approved tool is then a normal plugin step.
+
+### Neural forecaster (PyTorch) and the Supabase mirror
+
+- `--profile ml`: a ~1.5k-parameter PyTorch net estimates next-hour up-probability and volatility,
+  calibrated and scored walk-forward against naive baselines (relay `/neural`). Research signal, not advice.
+- `--profile cloud`: apply `supabase/migrations/*.sql` to a Supabase project, put `SUPABASE_URL` and
+  `SUPABASE_SECRET_KEY` in `.env`; `cloud-sync` mirrors anomalies, whales, news and engine snapshots to
+  `public.omega_*` (RLS: signed-in read, no client writes; Realtime on anomalies and whales).
+
+### CI
+
+`.circleci/config.yml` runs every suite (relay, cloud-sync, n8n, quant, cortex, MCP, agents, Studio,
+neural), `npm audit`, a committed-secrets check and `docker compose config` for every profile.
+Enable it once in CircleCI (Set Up Project → giant-core → use existing config).
 
 ### Low-RAM laptops (7–8 GB)
 

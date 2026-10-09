@@ -120,6 +120,29 @@ a.chip:hover { color: var(--void); background: var(--magenta); }
 #qcorr span { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); }
 #qmeta { font: 11px var(--mono); color: var(--ink-3); }
 
+/* ── agents (workforce + proposals) ── */
+#agents { --accent: var(--magenta); flex: 1 1 34%; }
+#aroster { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+#aroster li { display: grid; grid-template-columns: 10px 1fr auto; gap: 4px 8px; align-items: baseline; font-size: 12.5px; }
+#aroster li > i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+#aroster li.ok > i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+#aroster li.bad > i { background: var(--crit); }
+#aroster b { font: 700 11.5px var(--mono); letter-spacing: 0.06em; color: var(--ink); }
+#aroster .s { grid-column: 2 / 4; color: var(--ink-2); font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#aroster .e { font: 10.5px var(--mono); color: var(--ink-3); }
+#aprops { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#aprops li { padding: 9px 11px; border-radius: 12px; border: 1px solid var(--line); background: rgba(244, 114, 182, 0.04); }
+#aprops .p-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+#aprops a { color: var(--ink); font-weight: 600; font-size: 13px; text-decoration: none; overflow-wrap: anywhere; }
+#aprops a:hover { color: var(--magenta); }
+#aprops .p-why { margin-top: 3px; font-size: 12px; color: var(--ink-2); }
+#aprops .p-cost { font: 10.5px var(--mono); color: var(--ink-3); margin-top: 2px; }
+#aprops .p-act { display: flex; gap: 6px; margin-top: 7px; }
+#aprops button { font: 700 10.5px var(--mono); letter-spacing: 0.08em; border-radius: 999px; padding: 4px 11px; cursor: pointer; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); }
+#aprops button.add { background: var(--magenta); border-color: var(--magenta); color: var(--void); }
+#aprops button:hover { filter: brightness(1.15); color: var(--ink); }
+.ahead { font: 700 10.5px var(--mono); letter-spacing: 0.14em; color: var(--ink-3); margin: 10px 0 6px; }
+
 /* ── modules (plugin registry) ── */
 #modules { --accent: var(--lime); flex: 1 1 30%; }
 #xlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -146,7 +169,7 @@ a.chip:hover { color: var(--void); background: var(--magenta); }
 /* ── anomaly / whale stream (one slot, swap chips) ── */
 #stream { --accent: var(--magenta); }
 #whales { --accent: var(--cyan); }
-#stream, #whales { flex: 1 1 52%; }
+#stream, #whales { flex: 1 1 36%; }
 body:not(.show-whales) #whales, body.show-whales #stream { display: none; }
 #stream ol, #whales ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 #stream li, #whales li { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); cursor: pointer; transition: border-color .2s, background .2s; border-left: 3px solid var(--ink-3); }
@@ -173,7 +196,7 @@ li.fresh { animation: arrive 1.2s ease-out; }
 .swap.ping { color: var(--void); background: var(--amber); border-color: var(--amber); }
 
 /* ── news mood ── */
-#mood { --accent: var(--amber); flex: 1 1 48%; }
+#mood { --accent: var(--amber); flex: 1 1 30%; }
 #mood h2 span:last-child { letter-spacing: 0.04em; color: var(--ink-3); font-weight: 600; }
 .m-top { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; padding: 10px 12px; border-radius: 12px; background: rgba(251, 191, 36, 0.06); border: 1px solid rgba(251, 191, 36, 0.16); }
 .m-score { font: 600 32px/1 var(--mono); }
@@ -296,6 +319,15 @@ li.fresh { animation: arrive 1.2s ease-out; }
       </div>
       <div id="msyms"></div>
       <ol id="mlist" class="scroll"><li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li></ol>
+    </section>
+
+    <section id="agents" class="panel" aria-label="Agent workforce">
+      <h2><span>AGENTS · WORKFORCE</span><span class="count" id="apending">—</span></h2>
+      <div class="scroll">
+        <ul id="aroster"><li class="empty">Waiting for the workforce…</li></ul>
+        <p class="ahead">PROPOSALS · YOUR CALL</p>
+        <ol id="aprops"><li class="empty">No proposals yet. The Scout researches open-source tools once a day.</li></ol>
+      </div>
     </section>
   </aside>
 </main>
@@ -1211,6 +1243,7 @@ function startDemo() {
   };
   refreshCortex();
   quantDemo = () => demoQuant(hist); refreshQuant();
+  agentsDemo = demoAgents(); refreshAgents();
   const demoNews = [
     ["CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"],
     ["Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"],
@@ -1335,11 +1368,59 @@ async function refreshQuant() {
   try { renderQuant(await api("/quant")); } catch { renderQuant(null); }
 }
 
+// ───────────────────────────── agents (workforce + proposals) ─────────────────────────────
+let agentsDemo = null;
+const GITHUB_URL = /^https:\/\/github\.com\//;
+function renderAgents(a) {
+  const roster = document.getElementById("aroster"), props = document.getElementById("aprops");
+  if (!a) { roster.innerHTML = '<li class="empty">Agents service not reachable.</li>'; return; }
+  roster.innerHTML = a.agents.map(g => `<li class="${g.last ? (g.last.ok ? "ok" : "bad") : ""}"><i></i><b>${esc(g.title.toUpperCase())}</b>` +
+    `<span class="e">every ${g.every_min >= 60 ? Math.round(g.every_min / 60) + "h" : g.every_min + "m"}</span>` +
+    `<span class="s" title="${esc(g.last ? g.last.summary : g.role)}">${esc(g.last ? g.last.summary : g.role)}</span></li>`).join("");
+  document.getElementById("apending").textContent = `${a.proposals.length} waiting`;
+  props.innerHTML = a.proposals.length ? a.proposals.slice(0, 8).map(p => `<li data-id="${esc(p.id)}">` +
+    `<div class="p-top"><a href="${esc(GITHUB_URL.test(p.url) ? p.url : "#")}" target="_blank" rel="noopener noreferrer">${esc(p.title)}</a><span class="reg normal">${esc(Math.round(p.score))}</span></div>` +
+    `<div class="p-why">${esc(p.reasons[0])} · ${esc(p.reasons[1] || "")}</div><div class="p-cost">${esc(p.cost)}</div>` +
+    `<div class="p-act"><button class="add" data-d="approved">ADD</button><button data-d="skipped">SKIP</button></div></li>`).join("")
+    : '<li class="empty">Nothing waiting. The Scout researches open-source tools once a day.</li>';
+}
+async function refreshAgents() {
+  if (agentsDemo) return renderAgents(agentsDemo);
+  try { renderAgents(await api("/agents")); } catch { renderAgents(null); }
+}
+document.getElementById("aprops").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-d]"); if (!b) return;
+  const id = b.closest("li").dataset.id, decision = b.dataset.d;
+  if (agentsDemo) { agentsDemo.proposals = agentsDemo.proposals.filter(p => p.id !== id); return renderAgents(agentsDemo); }
+  b.disabled = true;
+  const r = await fetch("/agents/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, decision }) }).catch(() => null);
+  if (!r || !r.ok) b.disabled = false;
+  refreshAgents();
+});
+function demoAgents() {
+  const ago = m => ({ ok: 1, at: new Date(Date.now() - m * 60e3).toISOString() });
+  const lib = "library · check its RAM use before installing";
+  return {
+    agents: [
+      { name: "sentinel", title: "Sentinel · watchdog", every_min: 2, role: "", last: { ...ago(1), summary: "All systems nominal." } },
+      { name: "analyst", title: "Analyst · market brief", every_min: 15, role: "", last: { ...ago(6), summary: "BTC sits in a normal-volatility regime; SOL is the most active pair after a 1h drawdown. BTC and ETH still move together, so holding both diversifies little." } },
+      { name: "scout", title: "Scout · tool research", every_min: 1440, role: "", last: { ...ago(180), summary: "Reviewed 57 repositories, 23 new proposals waiting for your answer." } },
+    ],
+    proposals: [
+      { id: "nixtla/statsforecast", title: "Nixtla/statsforecast", url: "https://github.com/Nixtla/statsforecast", score: 85.5, reasons: ["helps: faster forecasting, faster data", "4,922 stars · Apache-2.0 · updated 1 d ago"], cost: lib },
+      { id: "sktime/sktime", title: "sktime/sktime", url: "https://github.com/sktime/sktime", score: 81, reasons: ["helps: faster forecasting, smarter models", "10,062 stars · BSD-3-Clause · updated 4 d ago"], cost: lib },
+      { id: "amazon-science/chronos-forecasting", title: "amazon-science/chronos-forecasting", url: "https://github.com/amazon-science/chronos-forecasting", score: 79.2, reasons: ["helps: faster forecasting", "6,018 stars · Apache-2.0 · updated 3 d ago"], cost: lib },
+      { id: "apache/spark", title: "apache/spark", url: "https://github.com/apache/spark", score: 52, reasons: ["helps: faster data, streaming", "44,148 stars · Apache-2.0 · updated 0 d ago"], cost: "needs a JVM (~0.5–1 GB RAM)" },
+    ],
+  };
+}
+
 // ───────────────────────────── modules (plugin registry) ─────────────────────────────
 const KIND_COLOR = { workflow: "var(--cyan)", tool: "var(--lime)", skill: "var(--violet)", mcp: "var(--magenta)", provider: "var(--amber)", panel: "var(--flow)" };
 const DEMO_PLUGINS = [
   { id: "market-sentinel", name: "Market Sentinel", kind: "workflow", description: "Binance 1-min candles, pulse and anomaly detection.", requires: ["n8n", "timescale"], enabled: true },
   { id: "news-sentiment", name: "News Sentiment", kind: "workflow", description: "RSS news and Fear & Greed, scored by Cortex.", requires: ["n8n", "cortex"], enabled: true },
+  { id: "omega-agents", name: "OMEGA Workforce", kind: "tool", description: "Sentinel, Analyst and Scout agents; the Scout asks before adding any tool.", requires: ["relay"], enabled: true },
   { id: "omega-quant", name: "OMEGA Quant", kind: "tool", description: "stdlib risk engine: volatility, z-scores, tail odds, correlation.", requires: ["relay"], enabled: true },
   { id: "omega-sentinel-mcp", name: "OMEGA Sentinel MCP", kind: "mcp", description: "Lets Claude query the market memory.", requires: ["postgrest"], enabled: true },
 ];
@@ -1376,6 +1457,8 @@ renderPulse();
 resize();
 loadModules();
 setInterval(refreshQuant, 60000);
+setInterval(refreshAgents, 60000);
+if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshAgents(); }, 1500);
 if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshQuant(); }, 1500);
 if (FORCE_DEMO) startDemo(); else connectLive();
 setInterval(() => { if (state.mode !== "connecting") refreshCortex(); }, 30000);

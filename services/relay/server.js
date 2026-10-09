@@ -7,6 +7,8 @@
 //   GET  /events           SSE fan-out: hello, pulse, anomaly, whale, news, status, cortex
 //   GET  /api/<view>       read-only proxy to PostgREST (allowlisted views)
 //   GET  /quant            latest risk snapshot from the stdlib quant engine
+//   GET  /agents           the workforce roster + proposals waiting for an answer
+//   POST /agents/decide    same-origin only: approve or skip a proposal
 //   GET  /neural           latest PyTorch forecast (opt-in --profile ml)
 //   GET  /llm/providers    live state of the Cortex LLM gateway's providers
 //   POST /llm/chat         same-origin only: the dashboard's console → Cortex (token added here)
@@ -26,6 +28,7 @@ const PGRST_ADMIN = process.env.PGRST_ADMIN_URL || "http://postgrest:3001";
 const CORTEX_URL = process.env.CORTEX_URL || "http://cortex:8090";
 const QUANT_URL = process.env.QUANT_URL || "http://quant:8091";
 const NEURAL_URL = process.env.NEURAL_URL || "http://neural:8092";
+const AGENTS_URL = process.env.AGENTS_URL || "http://agents:8093";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
@@ -215,10 +218,23 @@ function chat(req, res) {
   }, MAX_CHAT_BODY);
 }
 
+// The Agents panel answers a proposal (approved | skipped). Same-origin JSON only, like the console.
+function decide(req, res) {
+  if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
+  return readJson(req, res, body => {
+    if (!body || typeof body.id !== "string" || body.id.length > 200 || !["approved", "skipped"].includes(body.decision)) return send(res, 400, { error: "invalid decision" });
+    fetch(`${AGENTS_URL}/agents/decide`, { method: "POST", signal: AbortSignal.timeout(5000), headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: body.id, decision: body.decision }) })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "agents unreachable" }));
+  }, MAX_BODY);
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://relay");
 
   if (req.method === "POST" && url.pathname === "/llm/chat") return chat(req, res);
+  if (req.method === "POST" && url.pathname === "/agents/decide") return decide(req, res);
 
   if (req.method === "POST" && url.pathname.startsWith("/ingest/")) {
     if (!authorised(req)) return send(res, 401, { error: "unauthorised" });
@@ -266,6 +282,12 @@ const server = http.createServer((req, res) => {
     return fetch(`${PGRST_URL}/${view}${url.search}`, { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } })
       .then(async r => send(res, r.status, await r.text()))
       .catch(() => send(res, 503, { error: "memory core unreachable" }));
+  }
+
+  if (url.pathname === "/agents") {
+    return fetch(`${AGENTS_URL}/agents`, { signal: AbortSignal.timeout(4000) })
+      .then(async r => send(res, r.status, await r.text()))
+      .catch(() => send(res, 503, { error: "agents unreachable" }));
   }
 
   if (url.pathname === "/neural") {

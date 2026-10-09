@@ -1,0 +1,12 @@
+{
+  "id": "omega-agents",
+  "name": "OMEGA Workforce",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "Sentinel, Analyst and Scout agents: health watch, market brief, and open-source tool research that asks before adding anything.",
+  "entry": "services/agents/workforce.py",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}

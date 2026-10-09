@@ -1,0 +1,76 @@
+# OMEGA CI on CircleCI: every service's tests, the dependency audit and the compose file, in parallel.
+# Turn it on once at https://app.circleci.com/projects (Set Up Project → giant-core → "use existing config").
+version: 2.1
+
+executors:
+  node:
+    docker: [{ image: cimg/node:22.12 }]
+    resource_class: small
+  python:
+    docker: [{ image: cimg/python:3.12 }]
+    resource_class: medium
+  base:
+    docker: [{ image: cimg/base:current }]
+    resource_class: small
+
+jobs:
+  node-services:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Relay + cloud-sync (zero dependencies)
+          command: |
+            node --check services/relay/server.js
+            node --check services/cloud-sync/sync.js
+            node --test services/cloud-sync/test/sync.test.js
+            node --test n8n/test/news-sentiment.test.js
+      - run: { name: Quant engine (stdlib), command: cd services/quant && npm ci --no-audit --no-fund && npm test }
+      - run: { name: Cortex gateway, command: cd services/cortex && npm ci --no-audit --no-fund && npm test }
+      - run: { name: Sentinel MCP, command: cd mcp/omega-sentinel && npm ci --no-audit --no-fund && npm run typecheck && npm test }
+
+  python-services:
+    executor: python
+    steps:
+      - checkout
+      - run: { name: Plugin registry, command: python scripts/plugins.py --check }
+      - run: { name: Agents workforce, command: pip install pytest && cd services/agents && python -m pytest -q }
+      - run: { name: Studio + DuckDB vault, command: pip install -r services/studio/requirements.txt pytest && cd services/studio && python -m pytest -q }
+
+  neural:
+    executor: python
+    steps:
+      - checkout
+      - run: { name: PyTorch forecaster (CPU), command: pip install -r services/neural/requirements.txt pytest && python -m pytest -q services/neural }
+
+  audit:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: npm audit (production dependencies)
+          command: |
+            for d in services/quant services/cortex mcp/omega-sentinel; do
+              (cd "$d" && npm audit --omit=dev --audit-level=high) || exit 1
+            done
+      - run:
+          name: No secrets committed
+          command: |
+            ! git ls-files | grep -E '(^|/)\.env$'
+            ! git grep -nIE '(sk-ant-[A-Za-z0-9]{10}|sb_secret_[A-Za-z0-9]{10}|ghp_[A-Za-z0-9]{20}|-----BEGIN [A-Z ]*PRIVATE KEY)' -- ':!*.md'
+
+  compose:
+    executor: base
+    steps:
+      - checkout
+      - run:
+          name: docker compose config (every profile)
+          command: |
+            for k in N8N_ENCRYPTION_KEY OMEGA_RELAY_TOKEN OMEGA_GATEWAY_TOKEN POSTGRES_PASSWORD SENTINEL_DB_PASSWORD PGRST_DB_PASSWORD PGRST_JWT_SECRET; do
+              echo "$k=$(openssl rand -hex 32)" >> .env
+            done
+            docker compose --profile llm --profile studio --profile ml --profile cloud --profile workstation config -q
+
+workflows:
+  omega:
+    jobs: [node-services, python-services, neural, audit, compose]

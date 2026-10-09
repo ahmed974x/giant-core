@@ -7,6 +7,7 @@
 #                every 10 min: free RSS news + Fear & Greed → Timescale → scored by cortex → relay + Telegram
 #                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
+#   agents       workforce: Sentinel, Analyst, Scout (asks before adding any tool)
 #   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
 #                every call's latency/tokens/outcome remembered in Timescale
@@ -194,6 +195,7 @@ services:
       CORTEX_URL: http://cortex:8090
       QUANT_URL: http://quant:8091
       NEURAL_URL: http://neural:8092
+      AGENTS_URL: http://agents:8093
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -330,6 +332,32 @@ services:
       timeout: 3s
       retries: 3
 
+  # OMEGA workforce: Sentinel (health), Analyst (market brief via Cortex), Scout (open-source tool research,
+  # proposals wait for an answer in the Ops Room). Standard library Python, ~30 MB.
+  agents:
+    image: python:3.12-alpine
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "1000"
+    read_only: true
+    working_dir: /app
+    command: ["python", "server.py"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      CORTEX_URL: http://cortex:8090
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
+      OMEGA_AGENTS_DB: /data/agents.sqlite
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./services/agents:/app:ro
+      - agents_data:/data
+    networks: [core, egress]          # egress: GitHub's public search API for the Scout
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+
   # OMEGA Neural (opt-in: --profile ml): PyTorch forecaster, next-hour direction probability + volatility,
   # scored walk-forward. CPU only, one thread, retrains every 6 h.
   neural:
@@ -409,6 +437,7 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  agents_data:
   neural_data:
   vault_data:
   ollama_models:
