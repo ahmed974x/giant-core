@@ -13,6 +13,16 @@
       "enabled": true
     },
     {
+      "id": "holoviz-skills",
+      "name": "HoloViz skills",
+      "kind": "skill",
+      "version": "1.0.0",
+      "description": "Official Panel, Panel Material UI, hvPlot and Param agent skills that guide Claude when building dashboards.",
+      "entry": ".claude/skills/panel/SKILL.md",
+      "requires": [],
+      "enabled": true
+    },
+    {
       "id": "market-sentinel",
       "name": "Market Sentinel",
       "kind": "workflow",
@@ -49,6 +59,18 @@
       "entry": "mcp/omega-sentinel",
       "requires": [
         "postgrest"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-studio",
+      "name": "OMEGA Studio",
+      "kind": "panel",
+      "version": "1.0.0",
+      "description": "Panel + Material UI analytics app: price with anomalies, volume, exchange flow, news mood, sortable tables.",
+      "entry": "services/studio/app.py",
+      "requires": [
+        "relay"
       ],
       "enabled": true
     },

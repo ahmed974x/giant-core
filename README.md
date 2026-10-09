@@ -33,6 +33,7 @@ services/
   relay/         doorway: SSE stream, /api proxy, serves the Ops Room dashboard
   cortex/        LLM gateway (Node), providers in config/providers.json
   workstation/   Giant Core Streamlit app + local plugin engine
+  studio/        OMEGA Studio: Panel + Material UI analytics app (--profile studio, port 5006)
 dashboard/       the Ops Room (one self-contained index.html) + plugins.json (generated)
 db/              Timescale init + migrate scripts
 n8n/             workflows (Market Sentinel, News Sentiment, Whale Watch) + seeder
@@ -57,6 +58,24 @@ open http://localhost:8088    # the Ops Room; n8n editor at http://localhost:567
 
 Or double-click `scripts\omega_ignition.bat`: it checks free RAM first, refuses to start when the
 machine is short, and boots the stack from the branch you have checked out.
+
+### OMEGA Studio (Panel)
+
+Deep analysis built with [HoloViz Panel](https://panel.holoviz.org/) + Panel Material UI + hvPlot:
+KPIs, price with anomaly markers, hourly volume, headline sentiment and sortable anomaly / whale /
+news tables for one pair over 6 h, 24 h or 48 h. It reads the relay's read-only `/api`, refreshes every
+minute, and falls back to simulated data when the stack is down.
+
+```sh
+docker compose --profile studio up -d          # http://localhost:5006  (STUDIO ↗ in the Ops Room header)
+# without Docker:
+python -m venv services/studio/.venv && services/studio/.venv/Scripts/pip install -r services/studio/requirements.txt
+services/studio/.venv/Scripts/panel serve services/studio/app.py --port 5006
+services/studio/.venv/Scripts/python -m pytest services/studio
+```
+
+The official HoloViz agent skills (`panel`, `panel-material-ui`, `hvplot`, `param`) live in
+`.claude/skills/` so Claude follows Panel's own best practices when extending the Studio.
 
 ### Low-RAM laptops (7–8 GB)
 

@@ -67,6 +67,8 @@ button.chip.on { color: var(--void); background: var(--cyan); border-color: var(
 #mtoggle.on { background: var(--amber); border-color: var(--amber); }
 #ctoggle.on { background: var(--violet); border-color: var(--violet); }
 #xtoggle.on { background: var(--lime); border-color: var(--lime); }
+a.chip { text-decoration: none; color: var(--magenta); border-color: rgba(244, 114, 182, 0.5); }
+a.chip:hover { color: var(--void); background: var(--magenta); }
 #lite.on { background: var(--ink-2); border-color: var(--ink-2); }
 
 /* ── layout: left column · open stage (constellation) · right column ── */
@@ -215,6 +217,7 @@ li.fresh { animation: arrive 1.2s ease-out; }
     <button id="ctoggle" class="chip on" type="button" aria-controls="cortex" aria-expanded="true">CORTEX</button>
     <button id="xtoggle" class="chip on" type="button" aria-controls="modules" aria-expanded="true">MODULES</button>
     <button id="mtoggle" class="chip on" type="button" aria-controls="mood" aria-expanded="true">NEWS</button>
+    <a id="studio" class="chip" href="http://localhost:5006" target="_blank" rel="noopener" title="Deep analysis in OMEGA Studio (docker compose --profile studio up -d)">STUDIO ↗</a>
     <button id="lite" class="chip" type="button" aria-pressed="false" title="Stop the 3D animation to save CPU and battery">LITE</button>
   </div>
 </header>

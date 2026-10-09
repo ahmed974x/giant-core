@@ -1,0 +1,12 @@
+{
+  "id": "omega-studio",
+  "name": "OMEGA Studio",
+  "kind": "panel",
+  "version": "1.0.0",
+  "description": "Panel + Material UI analytics app: price with anomalies, volume, exchange flow, news mood, sortable tables.",
+  "entry": "services/studio/app.py",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}

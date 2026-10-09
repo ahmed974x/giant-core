@@ -1,0 +1,7 @@
+panel==1.9.4
+panel-material-ui==0.16.1
+hvplot==0.12.2
+holoviews==1.23.2
+bokeh==3.9.2
+pandas==3.0.6
+numpy==2.5.3
