@@ -51,6 +51,18 @@
       "enabled": true
     },
     {
+      "id": "omega-neural",
+      "name": "OMEGA Neural (PyTorch)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Tiny PyTorch net: next-hour up-probability and volatility, calibrated and scored walk-forward.",
+      "entry": "services/neural/model.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
       "id": "omega-quant",
       "name": "OMEGA Quant",
       "kind": "tool",
@@ -93,6 +105,18 @@
       "version": "1.0.0",
       "description": "In-process DuckDB archive of candles, anomalies, whales and news with daily roll-ups beyond the live 48 h window.",
       "entry": "services/studio/vault.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "supabase-mirror",
+      "name": "Supabase cloud mirror",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Copies anomalies, whales, news and engine snapshots to Supabase (RLS, Realtime).",
+      "entry": "services/cloud-sync/sync.js",
       "requires": [
         "relay"
       ],

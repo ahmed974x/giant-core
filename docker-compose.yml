@@ -19,6 +19,8 @@
 #   core only   docker compose up -d
 #   with LLM    docker compose --profile llm up -d
 #   + Studio    docker compose --profile studio up -d   (Panel analytics, http://localhost:5006)
+#   + neural    docker compose --profile ml up -d       (PyTorch forecaster, ~400 MB RAM)
+#   + cloud     docker compose --profile cloud up -d    (Supabase mirror; needs SUPABASE_* in .env)
 #
 # Everything published binds to 127.0.0.1. Only n8n, cortex and ollama (model pulls) can reach the internet.
 #   Dashboard  http://localhost:8088      n8n editor  http://localhost:5678
@@ -191,6 +193,7 @@ services:
       PGRST_ADMIN_URL: http://postgrest:3001
       CORTEX_URL: http://cortex:8090
       QUANT_URL: http://quant:8091
+      NEURAL_URL: http://neural:8092
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -327,6 +330,52 @@ services:
       timeout: 3s
       retries: 3
 
+  # OMEGA Neural (opt-in: --profile ml): PyTorch forecaster, next-hour direction probability + volatility,
+  # scored walk-forward. CPU only, one thread, retrains every 6 h.
+  neural:
+    profiles: ["ml"]
+    build: { context: ./services/neural }
+    image: omega-neural:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=64m"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      OMEGA_NEURAL_MODEL: /data/neural.pt
+    volumes:
+      - neural_data:/data
+    networks: [core]
+    mem_limit: ${NEURAL_MEM_LIMIT:-768m}
+    cpus: 1.0
+    pids_limit: 64
+
+  # Supabase cloud mirror (opt-in: --profile cloud). Copies public market signals to public.omega_* tables.
+  cloud-sync:
+    profiles: ["cloud"]
+    image: node:22.12.0-alpine
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "node"
+    read_only: true
+    working_dir: /app
+    command: ["node", "sync.js"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
+    volumes:
+      - ./services/cloud-sync:/app:ro
+    networks: [core, egress]
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 32
+
   # OMEGA Studio: Panel + Material UI deep-analysis app over the relay's read-only /api.
   studio:
     profiles: ["studio"]
@@ -360,6 +409,7 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  neural_data:
   vault_data:
   ollama_models:
   timescale_data:

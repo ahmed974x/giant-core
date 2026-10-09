@@ -1,0 +1,8 @@
+{
+  "name": "omega-cloud-sync",
+  "private": true,
+  "description": "Mirror OMEGA's public market signals into Supabase. Zero dependencies.",
+  "main": "sync.js",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node sync.js", "test": "node --test test/*.test.js" }
+}

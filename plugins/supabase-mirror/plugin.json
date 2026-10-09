@@ -1,0 +1,12 @@
+{
+  "id": "supabase-mirror",
+  "name": "Supabase cloud mirror",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "Copies anomalies, whales, news and engine snapshots to Supabase (RLS, Realtime).",
+  "entry": "services/cloud-sync/sync.js",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}

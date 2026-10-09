@@ -1,0 +1,12 @@
+{
+  "id": "omega-neural",
+  "name": "OMEGA Neural (PyTorch)",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "Tiny PyTorch net: next-hour up-probability and volatility, calibrated and scored walk-forward.",
+  "entry": "services/neural/model.py",
+  "requires": [
+    "relay"
+  ],
+  "enabled": true
+}
