@@ -1,0 +1,21 @@
+# OMEGA code quality + security for Python. One fast tool (Ruff): lint, import order, security.
+#   check:  tools-quality/.venv/Scripts/ruff check .
+#   fix:    tools-quality/.venv/Scripts/ruff check --fix .  &&  ruff format .
+target-version = "py312"
+line-length = 140
+
+extend-exclude = ["**/.venv", "**/node_modules", "vendor", "omega-graph", "tools", "tools-quality", ".claude", "**/__pycache__"]
+
+[lint]
+# E/W pycodestyle · F pyflakes · I import order · UP pyupgrade · B bugbear · S bandit (security)
+# C4 comprehensions · SIM simplify · RUF ruff-specific
+select = ["E", "W", "F", "I", "UP", "B", "S", "C4", "SIM", "RUF"]
+# E501 long lines (we set 140 and allow data rows past it) · RUF001/003 ambiguous chars (Arabic strings)
+ignore = ["E501", "RUF001", "RUF002", "RUF003"]
+
+[lint.per-file-ignores]
+# tests may use assert (S101) and build fake data; the agents' demo seeds use non-crypto randomness (S311)
+"**/test*.py" = ["S101", "S311", "B011"]
+"**/test/*.py" = ["S101", "S311"]
+"services/neural/model.py" = ["S311"]      # numpy RNG for synthetic market data, not security
+"services/agents/*.py" = ["S311"]          # demo seeds and jitter, not security

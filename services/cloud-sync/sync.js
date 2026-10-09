@@ -50,7 +50,7 @@ async function syncOnce() {
   }
   const snaps = [];
   for (const engine of ["quant", "neural"]) {
-    try { const s = await getJson(`/${engine}`); if (s && s.at) snaps.push({ engine, at: s.at, source: s.source || "live", body: s }); }
+    try { const s = await getJson(`/${engine}`); if (s?.at) snaps.push({ engine, at: s.at, source: s.source || "live", body: s }); }
     catch { /* the neural engine is opt-in; a missing one is normal */ }
   }
   try { sent.snapshots = await upsert("snapshots", snaps); } catch (e) { sent.snapshots = `error: ${e.message}`; }

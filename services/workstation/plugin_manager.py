@@ -148,9 +148,9 @@ def run_merged_plugin() -> RunResult:
         raise ValueError("لا توجد إضافة محفوظة للتشغيل.")
     started = time.perf_counter()
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # noqa: S603 - fixed argv (no shell), isolated -I interpreter, time-limited sandbox by design
             [sys.executable, "-I", str(MERGED_PLUGIN_PATH)],
-            cwd=PLUGINS_DIR, capture_output=True, text=True, timeout=RUN_TIMEOUT_S,
+            cwd=PLUGINS_DIR, capture_output=True, text=True, timeout=RUN_TIMEOUT_S, check=False,
         )
     except subprocess.TimeoutExpired:
         return RunResult(False, "", f"تجاوزت الإضافة المهلة ({RUN_TIMEOUT_S} ثوانٍ) وأُوقفت.",

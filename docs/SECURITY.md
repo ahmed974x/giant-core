@@ -29,6 +29,10 @@ What is exposed, what protects it, and how it is checked. Keep this current when
 - The Brain and the Scout propose; they never edit code, install packages or change settings.
 - Brain requests are capped at 4,000 characters, 3 queued jobs and one pipeline at a time.
 
+## Code quality gate
+- `scripts/quality.sh` (and the CircleCI `quality` job): **Ruff** for Python (lint, imports, bandit security rules) and **Biome** for JS/TS (lint, security rules), plus a committed-secrets scan and plugin-registry validation.
+- Findings from the first pass were fixed: URL opens reject non-http(s) schemes, DuckDB SQL identifiers are allow-listed, the plugin sandbox subprocess is documented, and the relay's deliberate control-char input filter is annotated rather than removed.
+
 ## Checks
-- CircleCI: all test suites, `npm audit --audit-level=high`, committed-secrets scan, compose validation.
+- CircleCI: the quality gate, all test suites, `npm audit --audit-level=high`, committed-secrets scan, compose validation.
 - Windows Defender scan of the project folder: clean on 2026-10-09.

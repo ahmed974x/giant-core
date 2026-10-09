@@ -1,9 +1,8 @@
 """Workforce tests: `python -m pytest services/agents` (standard library only, no network)."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 import workforce as wf
 
 
@@ -11,7 +10,7 @@ def repo(**kw):
     base = {"full_name": "acme/fastcast", "name": "fastcast", "html_url": "https://github.com/acme/fastcast",
             "description": "Fast time-series forecasting in Python", "topics": ["forecasting"], "language": "Python",
             "license": {"spdx_id": "MIT"}, "stargazers_count": 12000, "forks_count": 900, "archived": False, "fork": False,
-            "pushed_at": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()}
+            "pushed_at": (datetime.now(UTC) - timedelta(days=3)).isoformat()}
     return {**base, **kw}
 
 

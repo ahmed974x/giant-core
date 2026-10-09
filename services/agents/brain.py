@@ -68,7 +68,7 @@ class Memory:
             """)
 
     def recall(self, text: str, k: int = 3) -> list[dict]:
-        terms = [t for t in re.findall(r"\w{3,}", text.lower())][:12]
+        terms = re.findall(r"\w{3,}", text.lower())[:12]
         if not terms:
             return []
         q = " OR ".join(f'"{t}"' for t in terms)
@@ -76,7 +76,8 @@ class Memory:
             rows = self.db.execute(
                 "SELECT j.at, j.request, j.intent, j.answer, j.lesson FROM brain_fts f JOIN brain_jobs j ON j.rowid = f.rowid "
                 "WHERE brain_fts MATCH ? ORDER BY rank LIMIT ?", (q, k)).fetchall()
-        return [dict(zip(["at", "request", "intent", "answer", "lesson"], r)) for r in rows]
+        cols = ["at", "request", "intent", "answer", "lesson"]
+        return [dict(zip(cols, r, strict=True)) for r in rows]
 
     def remember(self, jid: str, request: str, intent: str, answer: str, lesson: str):
         with self.lock, self.db:
@@ -96,10 +97,10 @@ def think(role: str, content: str, max_tokens: int = 700) -> str | None:
     body = json.dumps({"model": ROUTE, "max_tokens": max_tokens, "messages": [
         {"role": "system", "content": SYSTEM + " Your role: " + role + ". " + PROMPTS[role]},
         {"role": "user", "content": content}]}).encode()
-    req = urllib.request.Request(f"{wf.CORTEX}/v1/chat/completions", data=body, method="POST",
+    req = urllib.request.Request(f"{wf.CORTEX}/v1/chat/completions", data=body, method="POST",  # noqa: S310 - opened via wf.http_open
                                  headers={"Content-Type": "application/json", "Authorization": f"Bearer {wf.GATEWAY_TOKEN}"})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with wf.http_open(req, 120) as r:
             j = json.loads(r.read())
         return j["choices"][0]["message"]["content"].strip()
     except (OSError, KeyError, ValueError):
@@ -197,7 +198,7 @@ class Brain:
 
             evidence = self._step(job, "researcher", lambda: self.evidence(plan["questions"]))
             ev_txt = "\n".join(evidence or [])
-            research = think("researcher", f"Questions:\n" + "\n".join(plan["questions"]) + f"\n\nEvidence:\n{ev_txt}") if evidence else None
+            research = think("researcher", "Questions:\n" + "\n".join(plan["questions"]) + f"\n\nEvidence:\n{ev_txt}") if evidence else None
             next(s for s in job["steps"] if s["agent"] == "researcher")["output"] = research or ("Evidence collected:\n" + ev_txt[:1500])
 
             design = self._step(job, "designer", lambda: think("designer", f"Request: {req}\nPlan: {json.dumps(plan)}\nResearch:\n{research or ev_txt[:2000]}", 900))

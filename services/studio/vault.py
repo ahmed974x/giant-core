@@ -18,10 +18,9 @@ import os
 import threading
 from pathlib import Path
 
+import data
 import duckdb
 import pandas as pd
-
-import data
 
 DEFAULT_PATH = Path(__file__).resolve().parent / "vault" / "omega.duckdb"
 VAULT_PATH = Path(os.environ.get("OMEGA_VAULT_PATH", DEFAULT_PATH))
@@ -64,8 +63,10 @@ def _upsert(con: duckdb.DuckDBPyConnection, table: str, df: pd.DataFrame) -> int
     frame = df.reindex(columns=TABLES[table]).copy()
     if table == "news":
         frame["symbols"] = frame["symbols"].map(lambda s: list(s) if isinstance(s, (list, tuple)) else [])
+    if table not in TABLES:
+        raise ValueError(f"unknown table {table!r}")               # identifiers come only from TABLES, never user input
     con.register("incoming", frame)
-    con.execute(f"INSERT OR REPLACE INTO {table} SELECT * FROM incoming")
+    con.execute(f"INSERT OR REPLACE INTO {table} SELECT * FROM incoming")  # noqa: S608 - table is an allow-listed identifier
     con.unregister("incoming")
     return len(frame)
 
@@ -97,7 +98,7 @@ def sync() -> dict[str, int]:
 def stats() -> pd.DataFrame:
     with _lock:
         con = connection()
-        rows = [(t, con.execute(f"SELECT count(*) FROM {t}").fetchone()[0]) for t in TABLES]
+        rows = [(t, con.execute(f"SELECT count(*) FROM {t}").fetchone()[0]) for t in TABLES]  # noqa: S608 - t iterates allow-listed TABLES
     return pd.DataFrame(rows, columns=["table", "rows"])
 
 

@@ -11,7 +11,6 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
-
 from plugin_manager import (
     MERGED_PLUGIN_PATH,
     CodeAnalysis,
@@ -20,7 +19,6 @@ from plugin_manager import (
     merge_plugin_code,
     run_merged_plugin,
 )
-
 
 WALLPAPER_URL = "/manus-storage/plugin-console-wallpaper_ed066218.png"
 TERMINAL_TEXTURE_URL = "/manus-storage/plugin-terminal-ambient_734c444d.png"

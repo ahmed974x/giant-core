@@ -130,6 +130,23 @@ an answer is recorded and never asked again. Adding an approved tool is then a n
   `SUPABASE_SECRET_KEY` in `.env`; `cloud-sync` mirrors anomalies, whales, news and engine snapshots to
   `public.omega_*` (RLS: signed-in read, no client writes; Realtime on anomalies and whales).
 
+### Code quality & security gate
+
+One command checks (and fixes) every language in the repo:
+
+```sh
+# install once
+python -m venv tools-quality/.venv && tools-quality/.venv/Scripts/pip install -r tools-quality/requirements.txt
+(cd tools-quality && npm ci)
+
+scripts/quality.sh            # check: Ruff (Python) + Biome (JS/TS) lint + security, secret scan, plugin validation
+scripts/quality.sh --fix      # apply every safe autofix first
+```
+
+- **Ruff** (`ruff.toml`) lints Python with import ordering, pyupgrade, bugbear, comprehension and **bandit security** rules; URL opens are scheme-checked, SQL identifiers allow-listed, and the one sandboxed subprocess is documented.
+- **Biome** (`biome.json`) lints JS/TS with its security rules (no `eval`, no `dangerouslySetInnerHTML`); deliberate patterns (the relay's control-char input filter) are annotated, not disabled.
+- The gate also fails on a committed `.env` or any secret-shaped string, and validates every `plugin.json`.
+
 ### CI
 
 `.circleci/config.yml` runs every suite (relay, cloud-sync, n8n, quant, cortex, MCP, agents, Studio,

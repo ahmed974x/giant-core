@@ -11,6 +11,16 @@
       "enabled": true
     },
     {
+      "id": "code-quality",
+      "name": "Code quality gate",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Ruff (Python) + Biome (JS/TS) lint and security, a committed-secrets scan and plugin validation, in one scripts/quality.sh command and a CI job.",
+      "entry": "scripts/quality.sh",
+      "requires": [],
+      "enabled": true
+    },
+    {
       "id": "cortex-providers",
       "name": "Cortex LLM routes",
       "kind": "provider",

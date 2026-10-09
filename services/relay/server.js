@@ -121,6 +121,7 @@ function validateAnomaly(a) {
 const CHAINS = { btc: { hash: /^[0-9a-f]{64}$/, addr: /^[A-Za-z0-9]{14,90}$/, assets: new Set(["BTC"]) },
                  eth: { hash: /^0x[0-9a-f]{64}$/, addr: /^0x[0-9a-f]{40}$/, assets: new Set(["ETH", "USDT", "USDC", "WETH", "WBTC", "STETH"]) } };
 const VERDICTS = new Set(["to_exchange", "from_exchange", "exchange_shuffle", "mint", "burn", "issuer_out", "unknown"]);
+// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — rejects control chars in untrusted entity labels
 const label = v => v === null || v === undefined || (typeof v === "string" && v.length >= 1 && v.length <= 40 && !/[<>\u0000-\u001f]/.test(v));
 function validateWhale(w) {
   if (!w || typeof w !== "object") return null;
@@ -184,9 +185,9 @@ async function probe(url) {
   catch { return "down"; }
 }
 async function refreshStatus() {
-  const [n8n, postgrest, cortex] = await Promise.all([probe(N8N_HEALTH), probe(PGRST_ADMIN + "/live"), probe(CORTEX_URL + "/healthz")]);
+  const [n8n, postgrest, cortex] = await Promise.all([probe(N8N_HEALTH), probe(`${PGRST_ADMIN}/live`), probe(`${CORTEX_URL}/healthz`)]);
   // PostgREST's /ready is 200 only while its DB pool is connected: that is our Timescale signal.
-  const timescale = postgrest === "down" ? "unknown" : await probe(PGRST_ADMIN + "/ready");
+  const timescale = postgrest === "down" ? "unknown" : await probe(`${PGRST_ADMIN}/ready`);
   const feeds = { btc_chain: "unknown", eth_chain: "unknown" };
   if (timescale === "ok") {
     try {
@@ -212,7 +213,7 @@ function chat(req, res) {
   if (!GATEWAY_TOKEN) return send(res, 503, { error: "cortex not configured" });
   if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
   return readJson(req, res, body => {
-    const model = body && body.route;
+    const model = body?.route;
     if (!CHAT_ROUTES.has(model) || !Array.isArray(body.messages) || body.messages.length > 40) return send(res, 400, { error: "invalid chat" });
     const messages = [];
     for (const m of body.messages) {

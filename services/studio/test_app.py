@@ -4,10 +4,9 @@ import os
 
 os.environ["OMEGA_STUDIO_DEMO"] = "1"
 
-import pandas as pd  # noqa: E402
-
-import app  # noqa: E402
-import data  # noqa: E402
+import app
+import data
+import pandas as pd
 
 
 def test_demo_candles_shape_and_window():

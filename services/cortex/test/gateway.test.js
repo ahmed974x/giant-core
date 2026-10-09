@@ -53,7 +53,7 @@ test.before(async () => {
     OMEGA_PROVIDERS_FILE: path.join(dir, "providers.json"), OMEGA_GATEWAY_TOKEN: "t".repeat(40),
     PGRST_URL: pgrst.url, PGRST_JWT_SECRET: "s".repeat(40),
     T_ANTHROPIC: "sk-test", T_SLOW: "k1", T_FAST: "k2", ANTHROPIC_BASE_URL: claude.url,
-    T_LOCAL_URL: good.url + "/v1", T_LOCAL_MODEL: "llama3.2:3b",
+    T_LOCAL_URL: `${good.url}/v1`, T_LOCAL_MODEL: "llama3.2:3b",
   });
   gw = require("../server.js");
   gw._setRegistry(gw.loadRegistry());
@@ -126,7 +126,7 @@ test("perf rows flush to PostgREST with a gateway_writer JWT", async () => {
 test("local provider needs no key, takes a whole URL and its model from env", async () => {
   const { providers } = gw.loadRegistry();
   assert.equal(providers.local.enabled, true);
-  assert.equal(providers.local.base, good.url + "/v1");
+  assert.equal(providers.local.base, `${good.url}/v1`);
   assert.equal(providers.local.defaultModel, "llama3.2:3b");
   const out = await gw.complete({ model: "omega/local", messages: [{ role: "user", content: "offline?" }] });
   assert.equal(out.model, "local:llama3.2:3b");

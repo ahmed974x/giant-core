@@ -8,12 +8,12 @@ deterministic synthetic data with the same columns, so the Studio always renders
 from __future__ import annotations
 
 import json
-import zlib
 import os
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+import zlib
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -35,7 +35,10 @@ def _get(view: str, **query: str) -> list[dict]:
     url = f"{API_URL}/api/{view}"
     if query:
         url += "?" + urllib.parse.urlencode(query, safe=".,:")
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=TIMEOUT_S) as r:
+    if not url.startswith(("http://", "https://")):
+        raise ValueError("OMEGA_API_URL must be http(s)")
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})  # noqa: S310 - scheme checked above
+    with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:  # noqa: S310
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -77,7 +80,7 @@ def _demo_candles(symbol: str, hours: int) -> pd.DataFrame:
 
 
 def _demo_anomalies() -> pd.DataFrame:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     kinds = [("price_shock", "Down 1-min move -2.1% (z=-5.4) vs 24h baseline"), ("volume_spike", "Volume x7.2 the 24h average (z=6.1)"),
              ("drawdown_1h", "-3.05% below the 1h high")]
     rows = []
@@ -92,7 +95,7 @@ def _demo_anomalies() -> pd.DataFrame:
 
 
 def _demo_whales() -> pd.DataFrame:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     spec = [("eth", "USDT", None, "Binance", "to_exchange"), ("btc", "BTC", "Coinbase", None, "from_exchange"),
             ("eth", "USDC", None, None, "mint"), ("btc", "BTC", None, "Bitfinex", "to_exchange"),
             ("eth", "WETH", "Kraken", "Binance", "exchange_shuffle"), ("eth", "ETH", None, None, "unknown")]
@@ -107,7 +110,7 @@ def _demo_whales() -> pd.DataFrame:
 
 
 def _demo_news() -> pd.DataFrame:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     items = [("CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"),
              ("Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"),
              ("Cointelegraph", "Ethereum core devs lock the date for the next network upgrade", ["ETH"], 0.38, "medium"),
@@ -127,7 +130,7 @@ def candles(symbol: str, hours: int = 48) -> pd.DataFrame:
     hours = max(1, min(48, int(hours)))
     if is_live():
         try:
-            since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(timespec="seconds")
+            since = (datetime.now(UTC) - timedelta(hours=hours)).isoformat(timespec="seconds")
             df = _frame(_get("candles_5m", symbol=f"eq.{symbol}", ts=f"gte.{since}", order="ts.asc"), CANDLE_COLS, "ts")
             if len(df):
                 return df

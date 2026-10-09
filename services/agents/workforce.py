@@ -18,7 +18,8 @@ import threading
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import ClassVar
 
 API = os.environ.get("OMEGA_API_URL", "http://relay:8080").rstrip("/")
 CORTEX = os.environ.get("CORTEX_URL", "http://cortex:8090").rstrip("/")
@@ -27,12 +28,19 @@ DB_PATH = os.environ.get("OMEGA_AGENTS_DB", ":memory:")
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def http_open(req: urllib.request.Request, timeout: float):
+    """urlopen that refuses anything but http/https, so a file:// or custom scheme can never be fetched."""
+    if req.type not in ("http", "https"):
+        raise ValueError(f"refusing non-http(s) URL scheme: {req.type}")
+    return urllib.request.urlopen(req, timeout=timeout)  # noqa: S310 - scheme is checked on the line above
 
 
 def get_json(url: str, timeout: float = 10, headers: dict | None = None):
-    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "omega-agents", **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "omega-agents", **(headers or {})})  # noqa: S310 - opened via http_open, which rejects non-http(s)
+    with http_open(req, timeout) as r:
         return json.loads(r.read())
 
 
@@ -42,10 +50,10 @@ def ask_cortex(prompt: str, max_tokens: int = 220) -> str | None:
         return None
     body = json.dumps({"model": "omega/fast", "max_tokens": max_tokens,
                        "messages": [{"role": "user", "content": prompt}]}).encode()
-    req = urllib.request.Request(f"{CORTEX}/v1/chat/completions", data=body, method="POST",
+    req = urllib.request.Request(f"{CORTEX}/v1/chat/completions", data=body, method="POST",  # noqa: S310 - opened via http_open
                                  headers={"Content-Type": "application/json", "Authorization": f"Bearer {GATEWAY_TOKEN}"})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with http_open(req, 60) as r:
             return json.loads(r.read())["choices"][0]["message"]["content"].strip()
     except (OSError, KeyError, ValueError):
         return None
@@ -182,9 +190,9 @@ class Scout(Agent):
     name, title, every_s = "scout", "Scout · tool research", 24 * 3600
     role = "Daily: researches open-source tools (Python, Scala, data, forecasting) and asks before adding any."
 
-    OSI = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "ISC", "LGPL-3.0", "LGPL-2.1", "PSF-2.0", "Unlicense", "0BSD"}
+    OSI: ClassVar = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "ISC", "LGPL-3.0", "LGPL-2.1", "PSF-2.0", "Unlicense", "0BSD"}
     # what the stack would gain → words that signal it
-    NEEDS = {
+    NEEDS: ClassVar = {
         "faster forecasting": ["forecast", "time-series", "time series", "timeseries", "prophet", "arima", "temporal"],
         "faster data": ["dataframe", "polars", "arrow", "columnar", "fast", "jit", "numba", "vectorized", "olap", "query engine"],
         "smarter models": ["machine learning", "deep learning", "neural", "gradient boosting", "xgboost", "lightgbm", "pytorch"],
@@ -192,7 +200,7 @@ class Scout(Agent):
         "better visuals": ["visualization", "dashboard", "plot", "chart", "interactive"],
         "streaming": ["stream", "real-time", "realtime", "event", "kafka"],
     }
-    QUERIES = [
+    QUERIES: ClassVar = [
         "topic:time-series language:python stars:>2000",
         "topic:forecasting stars:>1500",
         "topic:dataframe stars:>3000",
@@ -201,10 +209,10 @@ class Scout(Agent):
         "topic:scala stars:>5000",
     ]
     # Curated awesome lists (from github.com/sindresorhus/awesome): being listed in one adds trust.
-    AWESOME = ["vinta/awesome-python", "krzjoa/awesome-python-data-science", "josephmisiti/awesome-machine-learning",
+    AWESOME: ClassVar = ["vinta/awesome-python", "krzjoa/awesome-python-data-science", "josephmisiti/awesome-machine-learning",
                "georgezouq/awesome-ai-in-finance", "ChristosChristofidis/awesome-deep-learning", "lauris/awesome-scala",
                "0xnr/awesome-bigdata", "steven2358/awesome-generative-ai"]
-    HEAVY = {"Scala": "needs a JVM (~0.5–1 GB RAM)", "Java": "needs a JVM (~0.5–1 GB RAM)", "C++": "native build"}
+    HEAVY: ClassVar = {"Scala": "needs a JVM (~0.5–1 GB RAM)", "Java": "needs a JVM (~0.5–1 GB RAM)", "C++": "native build"}
 
     def __init__(self, inbox: Inbox, known: set[str] | None = None):
         super().__init__(inbox)
@@ -217,7 +225,7 @@ class Scout(Agent):
         if repo.get("archived") or repo.get("fork") or lic not in cls.OSI:
             return None
         pushed = datetime.fromisoformat(repo["pushed_at"].replace("Z", "+00:00"))
-        age_days = (datetime.now(timezone.utc) - pushed).days
+        age_days = (datetime.now(UTC) - pushed).days
         if age_days > 180:
             return None
         text = " ".join([repo.get("description") or "", " ".join(repo.get("topics") or [])]).lower()   # names are too noisy
@@ -236,7 +244,7 @@ class Scout(Agent):
             reasons.append(f"caution: {cost}")
             relevance -= 15
         return {"id": repo["full_name"].lower(), "title": repo["full_name"], "url": repo["html_url"], "score": round(trust + relevance, 1),
-                "kind": repo.get("language") or "other", "reasons": reasons + [repo.get("description") or ""], "cost": cost}
+                "kind": repo.get("language") or "other", "reasons": [*reasons, repo.get("description") or ""], "cost": cost}
 
     def search(self, q: str) -> list[dict]:
         url = "https://api.github.com/search/repositories?" + urllib.parse.urlencode({"q": q + " archived:false", "sort": "stars", "per_page": 15})
@@ -249,7 +257,7 @@ class Scout(Agent):
             for branch in ("master", "main"):
                 try:
                     url = f"https://raw.githubusercontent.com/{lst}/{branch}/README.md"
-                    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "omega-agents"}), timeout=20) as r:
+                    with http_open(urllib.request.Request(url, headers={"User-Agent": "omega-agents"}), 20) as r:
                         text = r.read().decode("utf-8", "replace")
                     break
                 except OSError:

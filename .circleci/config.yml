@@ -12,8 +12,18 @@ executors:
   base:
     docker: [{ image: cimg/base:current }]
     resource_class: small
+  pynode:
+    docker: [{ image: cimg/python:3.12-node }]
+    resource_class: small
 
 jobs:
+  quality:
+    executor: pynode
+    steps:
+      - checkout
+      - run: { name: Install Ruff + Biome, command: "pip install -r tools-quality/requirements.txt && (cd tools-quality && npm ci --no-audit --no-fund)" }
+      - run: { name: Quality + security gate, command: "bash scripts/quality.sh" }
+
   node-services:
     executor: node
     steps:
@@ -73,4 +83,4 @@ jobs:
 
 workflows:
   omega:
-    jobs: [node-services, python-services, neural, audit, compose]
+    jobs: [quality, node-services, python-services, neural, audit, compose]

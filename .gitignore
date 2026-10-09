@@ -3,3 +3,5 @@ __pycache__/
 services/workstation/plugins/
 .venv/
 node_modules/
+tools-quality/.venv/
+tools-quality/node_modules/

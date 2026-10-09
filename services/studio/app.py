@@ -6,13 +6,14 @@ Preview:  python app.py                             (opens a browser; demo data 
 
 from __future__ import annotations
 
+from typing import ClassVar
+
+import data
 import hvplot.pandas  # noqa: F401  registers .hvplot on DataFrames
 import pandas as pd
 import panel as pn
 import panel_material_ui as pmui
 import param
-
-import data
 import vault
 
 pn.extension("tabulator", throttled=True)
@@ -190,7 +191,7 @@ class OmegaStudio(pn.viewable.Viewer):
         return pmui.Typography(f"{s:+.2f} {word}", variant="h6", sx={**KPI_SX, "color": color})
 
     # ── plots ──
-    _plot_opts = dict(height=320, responsive=True, active_tools=["pan"], bgcolor="#0b1122", grid=True, fontscale=1.05, toolbar="above")
+    _plot_opts: ClassVar = {"height": 320, "responsive": True, "active_tools": ["pan"], "bgcolor": "#0b1122", "grid": True, "fontscale": 1.05, "toolbar": "above"}
 
     @param.depends("symbol", "hours", "tick")
     def _price_plot(self):
@@ -246,8 +247,8 @@ class OmegaStudio(pn.viewable.Viewer):
         )
 
     # ── tables ──
-    _table_opts = dict(theme="materialize", pagination="local", page_size=8, show_index=False, disabled=True,
-                       sizing_mode="stretch_width", header_align="left")
+    _table_opts: ClassVar = {"theme": "materialize", "pagination": "local", "page_size": 8, "show_index": False, "disabled": True,
+                             "sizing_mode": "stretch_width", "header_align": "left"}
 
     @param.depends("symbol", "hours", "tick")
     def _anomaly_table(self):

@@ -20,6 +20,7 @@ function demoSeries() {
   let shock = 0;
   for (const s of SYMBOLS) {
     let p = base[s] || 100, seed = [...s].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) >>> 0;
+    // biome-ignore lint/suspicious/noAssignInExpressions: compact linear-congruential PRNG for demo data
     const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32) - 0.5;
     out[s] = [];
     for (let i = 575; i >= 0; i--) { shock = 0.7 * shock + rnd(); p *= 1 + 0.002 * rnd() + 0.0012 * shock / 3; out[s].push({ ts: new Date(now - i * 300e3).toISOString(), close: p }); }

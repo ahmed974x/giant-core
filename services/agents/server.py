@@ -16,7 +16,8 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from brain import AGENTS as BRAIN_AGENTS, Brain
+from brain import AGENTS as BRAIN_AGENTS
+from brain import Brain
 from workforce import API, Analyst, Inbox, Scout, Sentinel, get_json
 
 PORT = int(os.environ.get("PORT", "8093"))
@@ -103,4 +104,4 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     threading.Thread(target=loop, daemon=True).start()
     print(f"omega agents listening on :{PORT} · {', '.join(a.name for a in workforce)}", flush=True)
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()  # noqa: S104 - container-internal, reached only via the relay

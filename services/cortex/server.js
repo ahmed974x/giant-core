@@ -72,6 +72,7 @@ let REG = loadRegistry();
 
 // ───────────────────────────── live provider state ─────────────────────────────
 const live = {};          // provider -> { window: [ts], inflight, coolUntil, lastError, lastOkAt, lastLatency }
+// biome-ignore lint/suspicious/noAssignInExpressions: lazy-init the per-provider record with ||=
 function lv(id) { return (live[id] ||= { window: [], inflight: 0, coolUntil: 0, lastError: null, lastOkAt: null, lastLatency: null }); }
 
 function admit(p) {
@@ -184,8 +185,8 @@ async function callOpenAI(p, model, req) {
   const text = await r.text();
   if (!r.ok) throw new UpstreamError(classify(r.status), r.status, text.slice(0, 300), retryAfter(r.headers.get("retry-after")));
   let j; try { j = JSON.parse(text); } catch { throw new UpstreamError("upstream", r.status, "non-JSON reply"); }
-  const choice = j.choices && j.choices[0];
-  const content = choice && choice.message ? textOf(choice.message.content) : "";
+  const choice = j.choices?.[0];
+  const content = choice?.message ? textOf(choice.message.content) : "";
   if (!choice || (!content && choice.finish_reason !== "length")) throw new UpstreamError("empty", r.status, "empty completion");
   return {
     status: r.status, content, finish_reason: choice.finish_reason || "stop",
@@ -204,7 +205,7 @@ async function callAnthropic(p, model, req) {
     const t = textOf(m.content);
     if (!t) continue;
     const last = messages[messages.length - 1];
-    if (last && last.role === m.role) last.content += "\n\n" + t; else messages.push({ role: m.role, content: t });
+    if (last && last.role === m.role) last.content += `\n\n${t}`; else messages.push({ role: m.role, content: t });
   }
   if (!messages.length || messages[0].role !== "user") throw new UpstreamError("bad_request", 400, "first message must be from the user");
   if (messages[messages.length - 1].role !== "user") throw new UpstreamError("bad_request", 400, "last message must be from the user");

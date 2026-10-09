@@ -49,7 +49,7 @@ export class OmegaError extends Error {}
 // Refuse anything that is not plain http(s) on this machine: the bundle runs with the
 // user's full privileges, so it must not become a way to reach other hosts.
 export function parseBaseUrl(raw: string | undefined): URL {
-  const url = new URL(raw && raw.trim() ? raw.trim() : "http://127.0.0.1:8088");
+  const url = new URL(raw?.trim() ? raw.trim() : "http://127.0.0.1:8088");
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new OmegaError(`OMEGA_URL must be http(s), got ${url.protocol}`);
   }

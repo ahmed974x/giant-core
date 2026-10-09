@@ -14,13 +14,12 @@ import os
 import threading
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import model
 import numpy as np
 import torch
-
-import model
 
 API = os.environ.get("OMEGA_API_URL", "http://relay:8080").rstrip("/")
 SYMBOLS = [s.strip() for s in os.environ.get("OMEGA_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT").split(",") if s.strip()]
@@ -36,7 +35,9 @@ lock = threading.Lock()
 def _closes_5m(symbol: str) -> np.ndarray:
     """The last 48 h of 5-minute closes from the relay (api.candles_5m, ~576 bars)."""
     url = f"{API}/api/candles_5m?symbol=eq.{symbol}&select=ts,close&order=ts.asc"
-    with urllib.request.urlopen(url, timeout=20) as r:
+    if not url.startswith(("http://", "https://")):
+        raise ValueError("OMEGA_API_URL must be http(s)")
+    with urllib.request.urlopen(url, timeout=20) as r:  # noqa: S310 - scheme checked above
         rows = json.loads(r.read())
     return np.array([float(x["close"]) for x in rows])
 
@@ -56,7 +57,7 @@ def retrain() -> None:
     series, source = load_series()
     res = model.train(series)
     with lock:
-        state.update(net=res.model, metrics=res.metrics, trained_at=datetime.now(timezone.utc).isoformat(timespec="seconds"), source=source)
+        state.update(net=res.model, metrics=res.metrics, trained_at=datetime.now(UTC).isoformat(timespec="seconds"), source=source)
     if MODEL_PATH and source == "live":
         torch.save({"state_dict": res.model.state_dict(), "metrics": res.metrics, "trained_at": state["trained_at"]}, MODEL_PATH)
     print(f"trained on {source} data: {res.metrics}", flush=True)
@@ -69,7 +70,7 @@ def infer() -> None:
     if net is None:
         return
     pairs = {sym: model.predict(net, closes) for sym, closes in series.items()}
-    snap = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "source": source, "horizon_min": 60,
+    snap = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "source": source, "horizon_min": 60,
             "model": {**metrics, "trained_at": trained_at, "trained_on": state["source"]}, "pairs": pairs,
             "note": "Research signal scored walk-forward; not trading advice."}
     with lock:
@@ -118,7 +119,7 @@ def main() -> None:
         state.update(net=net, metrics=saved["metrics"], trained_at=saved["trained_at"], source="live")
     threading.Thread(target=loop, daemon=True).start()
     print(f"omega neural listening on :{PORT} · {','.join(SYMBOLS)}{' · demo' if DEMO else ''}", flush=True)
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()  # noqa: S104 - container-internal, reached only via the relay
 
 
 if __name__ == "__main__":

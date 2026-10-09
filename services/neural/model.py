@@ -129,7 +129,7 @@ def train(series: dict[str, np.ndarray], epochs: int = 60, seed: int = 7) -> Tra
         naive_vol_mae = (yvte - yvtr.mean()).abs().mean().item()
         vol_corr = float(np.corrcoef(vl.numpy(), yvte.numpy())[0, 1]) if len(yvte) > 2 else float("nan")
     metrics = {
-        "train_samples": int(len(Xtr)), "test_samples": int(len(Xte)), "params": sum(p.numel() for p in net.parameters()),
+        "train_samples": len(Xtr), "test_samples": len(Xte), "params": sum(p.numel() for p in net.parameters()),
         "direction_accuracy": round(acc, 4), "direction_baseline": round(base_acc, 4), "brier": round(brier, 4),
         "vol_mae": round(vol_mae, 4), "vol_naive_mae": round(naive_vol_mae, 4), "vol_corr": round(vol_corr, 3),
         "direction_edge": round(acc - base_acc, 4), "brier_coin_flip": 0.25, "temperature": round(float(best), 2),
