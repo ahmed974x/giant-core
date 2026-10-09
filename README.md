@@ -136,6 +136,19 @@ python agent.py           # one cycle: AIS gaps, route deviation, port congestio
 The schema in `migrations/001_init.sql` mirrors `db/geo` so the same logic moves to PostGIS unchanged.
 The test suite checks the engine catches every injected scenario and raises nothing on normal traffic.
 
+### Speed layer (Phase 3)
+
+`services/maritime-agent/pipeline.py` turns AIS into decisions in under a second: Arrow batches on a
+**Redis Stream** (in-process fallback when Redis isn't running) → **Polars + DuckDB** sliding-window rules
+(event → alert ~20 ms) → **ONNX Runtime** risk scoring and async **Director 00** on a separate consumer group
+→ `omega:alerts`. Live from aisstream.io when `AISSTREAM_API_KEY` is set, otherwise a paced mock replay.
+
+```sh
+cd services/maritime-agent && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt -r requirements-dev.txt
+.venv/Scripts/python pipeline.py --replay --metrics-port 9108     # latency summary + urgent alerts
+docker compose --profile speed --profile metrics up -d            # Redis + maritime + Prometheus + Grafana (:3000)
+```
+
 ### The Brain: the search bar
 
 Type anything in the Ops Room's search bar: a question, a design, or a change to the site or app.

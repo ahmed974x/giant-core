@@ -265,6 +265,55 @@ The platform improves itself on two tracks, with a hard line between them.
   bounded auto-tuning and retraining, plus a proposal queue for anything structural — not self-modifying
   software. This keeps every change reviewable and reversible.
 
+## 2d. Speed Layer (Phase 3: sub-second decisions)
+
+Built in `services/maritime-agent` and measured on the 7 GB laptop (CPU only, mock replay, 5,466 positions):
+
+```
+ aisstream.io WebSocket ─┐                                                    ┌─▶ omega:alerts:fast ──▶ UI (immediate)
+ (or paced mock replay)  │   Arrow IPC batches          FAST PATH              │
+                         ├──▶ Redis Stream ──────▶ group "fastpath" ──────────┤   Polars sliding window (event time)
+   ais_ws.py             │   omega:ais           (zero-copy → Polars frame)    │   + DuckDB in-memory OLAP (port congestion)
+                         │   XADD, MAXLEN~2000                                 │   15 ms / 200-row batch · event→alert 16–19 ms p50
+                         │                                                     │
+                         │                        SLOW PATH                    │
+                         │   omega:alerts:fast ─▶ group "director" ─▶ Director 00 (asyncio.gather, per-call deadlines)
+                         │                                              ├─ ONNX Runtime risk score  (CUDA → DirectML → CPU)  0.3 ms
+                         │                                              ├─ market context (Quant via relay, cached 30 s)
+                         │                                              └─ AR/EN localization ─▶ omega:alerts ─▶ relay SSE ─▶ UI
+                         │
+ Prometheus ◀── :9108/metrics (ingest, fast path, inference, decision, sub-agent ms) ──▶ Grafana "OMEGA · Speed Layer"
+```
+
+| Stage | Measured (p50) | Notes |
+|---|---|---|
+| Ingest: XADD → consumer | **0.1 ms** | in-process bus; Redis adds a network hop |
+| Fast-path rules per 200-row batch | **15 ms** | ≈ 13,000 positions/s on one core |
+| Event → fast alert | **16–19 ms** | the number that matters for "immediate" |
+| ONNX inference per alert batch | **0.3 ms** | CPU provider (no GPU on this machine) |
+| Event → scored decision | **~175 ms** | dominated by the market-context deadline when the relay is down; cached afterwards |
+
+**Fast path vs. slow path.** Ingestion never waits on AI or network calls: the fast path only runs rules and
+publishes, and the slow path is a *separate consumer group* on the fast-alert stream. An early version that
+awaited the slow path inline measured 480 ms of ingest lag; splitting them brought it to 0.1 ms.
+
+**Fast-path rules** (`fast_path.py`): AIS gap on reappearance (checked against per-vessel last-seen state, so
+gaps longer than the window still count), live silence, stopped vessel (< 1 kn within 15 km for ≥ X s),
+abrupt speed change, and port congestion (DuckDB over the window's slow vessels). Each alert fires once until
+it clears.
+
+**ONNX** (`onnx_scorer.py`): a logistic-regression risk scorer trained with NumPy on labeled simulated
+cases, written as a standard ONNX graph (MatMul → Add → Sigmoid). The model file is encoded directly as
+protobuf because this machine's application-control policy blocks the `onnx` builder package's native DLL;
+ONNX Runtime itself is unaffected. YOLO-style vision models are out of scope (ADR 006: no camera feeds).
+
+**Real-time UI.** Decisions land on `omega:alerts`. The relay already streams SSE to the Ops Room; Phase 4's
+Next.js + MapLibre/deck.gl frontend subscribes the same way (SSE first, WebSockets only where the client must
+send data back), rendering thousands of vessels on the GPU.
+
+**Run it:** `python pipeline.py --replay` (local, in-process bus) · `docker compose --profile speed up -d`
+(Redis + maritime) · `docker compose --profile metrics up -d` (Prometheus :9090, Grafana :3000).
+
 ## Execution priority (recommended first step)
 
 **Infrastructure first: stand up PostgreSQL/PostGIS + Redis, then build the maritime-agent.** The agent
@@ -305,6 +354,18 @@ named. This ADR governs the others.
 auto-tunes thresholds from measured performance, but any change to data sources, dependencies, code or
 scripts goes through a human-approved proposal (Scout/Brain). It never rewrites or deploys itself
 unattended, so every structural change stays reviewable and reversible. Subordinate to ADR 006.
+
+**ADR 008 — Speed vs. accuracy: two paths, never one.** Context: a sub-second alert and a well-reasoned
+decision pull in opposite directions. Decision: split them. The **fast path** runs deterministic rules over a
+sliding event-time window (Polars + DuckDB) and publishes within ~20 ms, accepting more false positives; the
+**slow path** consumes those alerts on its own consumer group and adds an ONNX risk score, market context and
+localization within a deadline, accepting ~0.2 s more latency for fewer, ranked alerts. Each slow-path
+sub-agent has a hard deadline; one that misses it is listed in `degraded` instead of delaying the decision.
+Trade-offs accepted: alerts can arrive twice (fast, then scored) and the UI must show which; the rules are
+simpler than a model and will flag benign events (a ship anchoring); scoring quality is bounded by the
+training labels (simulated today, real once collected — ADR 007). Rejected: one inline pipeline (measured:
+the slow path's network deadline added 480 ms of ingest lag) and GPU-only inference (no GPU on the target
+laptop; ONNX Runtime picks CUDA/DirectML when present and CPU otherwise).
 
 ## Mapping to the current codebase
 

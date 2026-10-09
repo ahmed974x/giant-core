@@ -47,7 +47,7 @@ jobs:
       - run: { name: Agents workforce, command: pip install pytest && cd services/agents && python -m pytest -q }
       - run: { name: Studio + DuckDB vault, command: pip install -r services/studio/requirements.txt pytest && cd services/studio && python -m pytest -q }
       - run: { name: Geo-API (bilingual, demo), command: pip install -r services/geo-api/requirements.txt pytest && cd services/geo-api && python -m pytest -q }
-      - run: { name: Maritime agent (mock AIS end to end), command: pip install pytest && cd services/maritime-agent && python -m pytest -q }
+      - run: { name: Maritime agent + speed layer (mock streams), command: cd services/maritime-agent && pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q }
 
   neural:
     executor: python

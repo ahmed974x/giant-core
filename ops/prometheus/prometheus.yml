@@ -1,0 +1,11 @@
+# OMEGA speed metrics. Scrapes the maritime speed layer (pipeline.py exposes :9108/metrics).
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+scrape_configs:
+  - job_name: omega-maritime
+    static_configs:
+      - targets: ["maritime:9108"]
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

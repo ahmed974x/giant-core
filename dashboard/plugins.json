@@ -68,9 +68,9 @@
       "id": "maritime-anomaly",
       "name": "Maritime agent",
       "kind": "tool",
-      "version": "1.1.0",
-      "description": "Local-first maritime agent: SQLite store with tracked migrations, a mock AIS simulator with injected scenarios, and an anomaly cycle (AIS gaps, route deviation, port congestion) emitting flags for the Master agent.",
-      "entry": "services/maritime-agent/agent.py",
+      "version": "1.2.0",
+      "description": "Maritime speed layer: AIS (aisstream.io or mock) → Redis Streams (Arrow) → Polars/DuckDB fast path (~20 ms) → ONNX + async Director 00 slow path → localized alerts; Prometheus metrics.",
+      "entry": "services/maritime-agent/pipeline.py",
       "requires": [],
       "enabled": true
     },

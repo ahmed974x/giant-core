@@ -24,6 +24,8 @@
 #   + Studio    docker compose --profile studio up -d   (Panel analytics, http://localhost:5006)
 #   + neural    docker compose --profile ml up -d       (PyTorch forecaster, ~400 MB RAM)
 #   + geo       docker compose --profile geo up -d      (PostGIS + Redis, ~600 MB RAM)
+#   + speed     docker compose --profile speed up -d    (Redis Streams + maritime speed layer, ~500 MB RAM)
+#   + metrics   docker compose --profile metrics up -d  (Prometheus :9090 + Grafana :3000, ~500 MB RAM)
 #   + cloud     docker compose --profile cloud up -d    (Supabase mirror; needs SUPABASE_* in .env)
 #
 # Everything published binds to 127.0.0.1. Only n8n, cortex and ollama (model pulls) can reach the internet.
@@ -366,7 +368,7 @@ services:
   # Redis: hot cache (latest vessel/flight position) + pub/sub fan-out for WebSockets (Phase 1-3).
   redis:
     image: redis:7.4-alpine
-    profiles: ["geo"]
+    profiles: ["geo", "speed"]
     <<: *hardening
     cap_drop: ["ALL"]
     user: "redis"
@@ -407,6 +409,67 @@ services:
       interval: 20s
       timeout: 4s
       retries: 3
+
+  # OMEGA speed layer (Phase 3): AIS → Redis Streams → Polars/DuckDB fast path → ONNX slow path → alerts.
+  # Live aisstream.io when AISSTREAM_API_KEY is set, otherwise a paced mock replay. Metrics on :9108.
+  maritime:
+    profiles: ["speed"]
+    build: { context: ./services/maritime-agent }
+    image: omega-maritime:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=32m"]
+    depends_on:
+      redis: { condition: service_healthy }
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OMEGA_STREAM_MAXLEN: "2000"
+      OMEGA_API_URL: http://relay:8080
+      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY:-}
+      MARITIME_DB_PATH: /data/maritime.sqlite
+    volumes:
+      - maritime_data:/data
+    networks: [core, egress]          # egress: the aisstream.io WebSocket
+    mem_limit: ${MARITIME_MEM_LIMIT:-384m}
+    cpus: 1.0
+    pids_limit: 64
+
+  # Speed metrics (opt-in: --profile metrics). Prometheus scrapes maritime:9108; Grafana shows "OMEGA · Speed Layer".
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    profiles: ["metrics"]
+    <<: *hardening
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=7d"]
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [core, edge]
+    mem_limit: 256m
+    cpus: 0.5
+
+  grafana:
+    image: grafana/grafana-oss:12.0.0
+    profiles: ["metrics"]
+    <<: *hardening
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [core, edge]
+    mem_limit: 256m
+    cpus: 0.5
 
   # OMEGA workforce: Sentinel (health), Analyst (market brief via Cortex), Scout (open-source tool research,
   # proposals wait for an answer in the Ops Room). Standard library Python, ~30 MB.
@@ -513,6 +576,9 @@ networks:
   edge:     # carries 127.0.0.1 port publishes
 
 volumes:
+  maritime_data:
+  prometheus_data:
+  grafana_data:
   geo_data:
   agents_data:
   neural_data:

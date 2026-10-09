@@ -78,18 +78,19 @@ def simulate(ships: int = 30, hours: int = 24, seed: int = 42, scenarios: bool =
         dark = vessels[0]
         dark["route"] = "hormuz-jebelali"
         positions = [p for p in positions if p["mmsi"] != dark["mmsi"]]
-        for h, (lon, lat) in [(0, (56.6, 26.4)), (1, (56.5, 26.35)), (2, (56.4, 26.3)),
-                              (8, (55.5, 25.4)), (9, (55.4, 25.3))]:   # 6 h gap, ~120+ km jump
+        track = [(0, (56.6, 26.4)), (1, (56.5, 26.35)), (2, (56.4, 26.3)), (8, (55.5, 25.4))]   # 6 h gap, ~135 km jump
+        track += [(h, (55.5 - 0.04 * (h - 8), 25.4 - 0.03 * (h - 8))) for h in range(9, hours)]  # then sails on, pinging
+        for h, (lon, lat) in track:
             positions.append({"mmsi": dark["mmsi"], "ts": (start + timedelta(hours=h)).isoformat().replace("+00:00", "Z"),
-                              "lon": lon, "lat": lat, "sog": 12.0, "cog": 230.0})
+                              "lon": round(lon, 5), "lat": round(lat, 5), "sog": 12.0, "cog": 230.0})
         truth.append({"scenario": "dark_ship", "mmsi": dark["mmsi"]})
 
         # 2) route deviation: Red Sea ship swings ~1.1° (~120 km) off its corridor mid-voyage
         dev = vessels[1]
         dev["route"] = "redsea-suez"
         positions = [p for p in positions if p["mmsi"] != dev["mmsi"]]
-        for h in range(0, 12):
-            lon, lat = _along(corridors["redsea-suez"], h / 24)
+        for h in range(0, hours):
+            lon, lat = _along(corridors["redsea-suez"], h / max(hours, 1))
             if 5 <= h <= 7:
                 lon += 1.1
             positions.append({"mmsi": dev["mmsi"], "ts": (start + timedelta(hours=h)).isoformat().replace("+00:00", "Z"),
