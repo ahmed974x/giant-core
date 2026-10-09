@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #e6edf3;
+  --color-muted: #8b98a8;
+  --color-panel: #111821;
+  --color-panel-2: #172231;
+  --color-line: #233246;
+  --color-accent: #3dd6c6;
+  --color-warn: #f2b84b;
+  --color-bad: #f2685c;
+  --color-good: #4cd38a;
+  --font-sans: var(--font-inter), var(--font-cairo), system-ui, sans-serif;
+  --font-arabic: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
+}
+
+html { background: #0a0f15; color: var(--color-ink); color-scheme: dark; }
+html[lang="ar"] body { font-family: var(--font-arabic); }
+body { font-family: var(--font-sans); min-height: 100dvh; }
+
+.panel { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 14px; }
+.num { font-variant-numeric: tabular-nums; }

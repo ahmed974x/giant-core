@@ -1,0 +1,40 @@
+{
+  "app": { "name": "OMEGA PRIME", "tagline": "Global logistics & market intelligence", "switchLang": "العربية", "demo": "Demo data: relay offline", "live": "Live" },
+  "nav": { "company": "Company", "market": "Market", "research": "Research", "earth": "Earth" },
+  "company": {
+    "title": "Operations overview",
+    "services": "Service health",
+    "checked": "Checked {time}",
+    "never": "not checked yet",
+    "kpis": { "nodes": "Watched choke-points", "alerts": "Recent alerts", "symbols": "Tracked markets", "news": "Scored headlines" },
+    "state": { "ok": "Up", "down": "Down", "unknown": "Unknown" }
+  },
+  "market": {
+    "title": "Markets & anomalies",
+    "prices": "Latest prices",
+    "symbol": "Market", "close": "Close", "time": "Time",
+    "anomalies": "Anomalies",
+    "none": "No anomalies yet. They appear here the moment the relay pushes one.",
+    "news": "Headline sentiment",
+    "noNews": "No scored headlines yet."
+  },
+  "research": {
+    "title": "Research",
+    "hint": "Ask the Brain anything. Six agents plan, research, design, critique and synthesize an answer.",
+    "placeholder": "e.g. How would a Hormuz slowdown move Brent and gold this week?",
+    "ask": "Ask",
+    "asking": "Working…",
+    "steps": "Agent steps",
+    "answer": "Answer",
+    "error": "The Brain is not reachable. Start the stack with docker compose up -d.",
+    "tooShort": "Write at least 3 characters."
+  },
+  "earth": {
+    "title": "Earth",
+    "nodes": "Logistics nodes",
+    "alerts": "Live alerts",
+    "noAlerts": "Quiet. Fast-path alerts stream in here.",
+    "types": { "strait": "Strait", "canal": "Canal", "port": "Port" }
+  },
+  "severity": { "watch": "Watch", "high": "High" }
+}
