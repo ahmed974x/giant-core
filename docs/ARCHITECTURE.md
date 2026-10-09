@@ -216,6 +216,31 @@ Each external source is an **MCP server** in its own container (one responsibili
 
 ---
 
+## Architecture Decision Records (ADRs)
+
+**ADR 001 — FastAPI for the API gateway.** Need async endpoints, WebSockets and fast JSON next to the
+Python AI libraries. Decision: FastAPI. Already used by `services/geo-api`. (Node stays for the relay.)
+
+**ADR 002 — PostgreSQL + PostGIS as the spatial store.** Need queries like "vessels within 50 km of a
+choke-point". Decision: PostGIS; the open-source standard, no separate spatial engine. Live in `db/geo`.
+
+**ADR 003 — Redis Streams for inter-agent messaging.** Agents must talk asynchronously without dropping
+messages. Decision: Redis Streams — light vs. Kafka, already in the stack, with consumer groups for scaling.
+
+**ADR 004 — next-intl for frontend localization.** Need seamless Arabic (RTL) / English (LTR). Decision:
+next-intl with the Next.js App Router; server-rendered translations avoid the language-switch flicker.
+
+**ADR 005 — MCP for ingestion.** Standardize how the Master agent reaches each scraper. Decision: wrap every
+ingest source in an MCP server, decoupling AI logic from data extraction so agents discover sources dynamically.
+
+**ADR 006 — Public-data-only, no surveillance scope (binding).** The platform aggregates *broadcast or
+open-licensed* data: AIS (vessels), ADS-B (civil aircraft, with the standard sensitive/military filtering),
+NASA GIBS / Copernicus imagery, USGS/GDACS hazards, and free-tier market & news feeds. It does **not**
+ingest CCTV or private camera feeds, parse "leaked"/illicit intelligence sources, track defense assets, or
+identify individuals. Proposed integrations evoking those (e.g. CCTV markers, "ShadowBroker"-style feed
+parsers, "God's-Eye" live-camera overlays) are **out of scope and will not be built**, whatever they are
+named. This ADR governs the others.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):
