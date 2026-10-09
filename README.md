@@ -120,6 +120,22 @@ Arabic (RTL) and English (LTR) — the CSS grid mirrors automatically, labels sw
 with its `rtl:`/logical utilities; the single-file dashboard uses the same logical-property approach inline.
 Secrets stay in `.env` (`GEO_DB_PASSWORD`); the stores bind to 127.0.0.1 only and are capped for the laptop.
 
+### Maritime agent (local-first, mock AIS)
+
+Runs today without Docker or any external service — SQLite plus a simulator:
+
+```sh
+cd services/maritime-agent
+python db.py              # apply migrations (tracked in schema_migrations) + seed ports/corridors (AR/EN)
+python simulate_ais.py    # 30+ synthetic ships on real corridors, with a dark ship, a route deviation
+                          # and Jebel Ali congestion injected (MMSI 900000000+, never a real vessel)
+python agent.py           # one cycle: AIS gaps, route deviation, port congestion → anomalies table +
+                          # data/outbox.jsonl (the message Director 00 will read from Redis Streams)
+```
+
+The schema in `migrations/001_init.sql` mirrors `db/geo` so the same logic moves to PostGIS unchanged.
+The test suite checks the engine catches every injected scenario and raises nothing on normal traffic.
+
 ### The Brain: the search bar
 
 Type anything in the Ops Room's search bar: a question, a design, or a change to the site or app.

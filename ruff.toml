@@ -19,3 +19,4 @@ ignore = ["E501", "RUF001", "RUF002", "RUF003"]
 "**/test/*.py" = ["S101", "S311"]
 "services/neural/model.py" = ["S311"]      # numpy RNG for synthetic market data, not security
 "services/agents/*.py" = ["S311"]          # demo seeds and jitter, not security
+"services/maritime-agent/simulate_ais.py" = ["S311"]   # mock AIS data, not security

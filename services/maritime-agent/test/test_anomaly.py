@@ -54,7 +54,7 @@ def test_port_congestion_counts_only_dwellers():
     passing = [{"mmsi": 99, "track": track([("2026-10-01T00:00:00Z", 55.05, 25.0),
                                             ("2026-10-01T01:00:00Z", 60.0, 25.0)])}]   # transits away
     res = a.port_congestion(waiting + passing, port, baseline=3)      # 8 / 3 ≈ 2.7x → high
-    assert res and res["severity"] == "high" and res["waiting"] == 8 and 99 not in res["mmsi"]
+    assert res and res["severity"] == "high" and res["waiting"] == 8 and 99 not in res["waiting_mmsi"]
     assert a.port_congestion(waiting[:6], port, baseline=5)["severity"] == "watch"   # 6 / 5 = 1.2x
     assert a.port_congestion(waiting[:4], port, baseline=5) is None   # below baseline
 

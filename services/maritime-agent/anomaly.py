@@ -103,7 +103,7 @@ def port_congestion(vessels: list[dict], port: tuple[float, float], radius_km: f
     ratio = n / max(1, baseline)
     level = "high" if ratio >= 2 else "watch"
     return _flag("port_congestion", level, f"{n} vessels waiting (~{ratio:.1f}x normal)",
-                 waiting=n, baseline=baseline, radius_km=radius_km, dwell_hours=dwell_hours, mmsi=waiting)
+                 waiting=n, baseline=baseline, radius_km=radius_km, dwell_hours=dwell_hours, waiting_mmsi=waiting)
 
 
 def analyse_vessel(vessel: dict, corridor: list[tuple[float, float]] | None = None, **kw) -> list[dict]:

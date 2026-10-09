@@ -66,14 +66,12 @@
     },
     {
       "id": "maritime-anomaly",
-      "name": "Maritime anomaly engine",
+      "name": "Maritime agent",
       "kind": "tool",
-      "version": "1.0.0",
-      "description": "Supply-chain signals from public AIS tracks: AIS gaps (dark periods), route deviation, port congestion. Pure Python, flags to the Master agent.",
-      "entry": "services/maritime-agent/anomaly.py",
-      "requires": [
-        "relay"
-      ],
+      "version": "1.1.0",
+      "description": "Local-first maritime agent: SQLite store with tracked migrations, a mock AIS simulator with injected scenarios, and an anomaly cycle (AIS gaps, route deviation, port congestion) emitting flags for the Master agent.",
+      "entry": "services/maritime-agent/agent.py",
+      "requires": [],
       "enabled": true
     },
     {

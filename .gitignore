@@ -5,3 +5,4 @@ services/workstation/plugins/
 node_modules/
 tools-quality/.venv/
 tools-quality/node_modules/
+services/maritime-agent/data/
