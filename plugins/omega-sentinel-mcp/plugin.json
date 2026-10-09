@@ -1,0 +1,12 @@
+{
+  "id": "omega-sentinel-mcp",
+  "name": "OMEGA Sentinel MCP",
+  "kind": "mcp",
+  "version": "1.0.0",
+  "description": "MCP server that lets Claude query the market memory (candles, anomalies, whales, news).",
+  "entry": "mcp/omega-sentinel",
+  "requires": [
+    "postgrest"
+  ],
+  "enabled": true
+}

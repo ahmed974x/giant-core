@@ -9,6 +9,7 @@
 //   GET  /llm/providers    live state of the Cortex LLM gateway's providers
 //   POST /llm/chat         same-origin only: the dashboard's console → Cortex (token added here)
 //   GET  /status           health of every node in the constellation
+//   GET  /plugins.json     the plugin registry (plugins/*/plugin.json, built by scripts/plugins.py)
 //   GET  /                 the dashboard
 "use strict";
 const http = require("node:http");
@@ -24,6 +25,7 @@ const CORTEX_URL = process.env.CORTEX_URL || "http://cortex:8090";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
+const PLUGINS = "/srv/dashboard/plugins.json";   // built by scripts/plugins.py
 const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls",
   "news", "sentiment_now", "sentiment_1h", "fear_greed", "sentiment_vs_price", "whales", "whale_feeds"]);
 const MAX_BODY = 8192;
@@ -281,6 +283,8 @@ const server = http.createServer((req, res) => {
       return send(res, 200, lastStatus);
     case "/healthz":
       return send(res, 200, { status: "ok", listeners: clients.size });
+    case "/plugins.json":
+      return fs.readFile(PLUGINS, "utf8", (err, json) => send(res, 200, err ? { plugins: [] } : json));
     case "/":
     case "/index.html":
       return fs.readFile(DASHBOARD, (err, html) => {

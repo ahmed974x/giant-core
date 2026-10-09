@@ -1,0 +1,14 @@
+{
+  "id": "market-sentinel",
+  "name": "Market Sentinel",
+  "kind": "workflow",
+  "version": "1.0.0",
+  "description": "Every minute: Binance 1-min candles into Timescale, pulse and anomaly detection, relay and Telegram alerts.",
+  "entry": "n8n/workflows/market-sentinel.json",
+  "requires": [
+    "n8n",
+    "timescale",
+    "relay"
+  ],
+  "enabled": true
+}

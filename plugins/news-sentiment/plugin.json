@@ -1,0 +1,14 @@
+{
+  "id": "news-sentiment",
+  "name": "News Sentiment",
+  "kind": "workflow",
+  "version": "1.0.0",
+  "description": "Every 10 minutes: free RSS news and Fear & Greed, scored by Cortex, stored and pushed live.",
+  "entry": "n8n/workflows/news-sentiment.json",
+  "requires": [
+    "n8n",
+    "cortex",
+    "timescale"
+  ],
+  "enabled": true
+}

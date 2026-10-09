@@ -26,13 +26,51 @@ RSS feeds + Fear & Greed ─▶ n8n (every 10 min) ─▶ news.ingest() ─▶ C
 | `cortex` | LLM gateway: Claude + free tiers behind one OpenAI-compatible API, failover, performance memory | 8089 |
 | `workstation` | Giant Core Streamlit app (`--profile workstation`) | 8501 |
 
+## Layout
+
+```
+services/
+  relay/         doorway: SSE stream, /api proxy, serves the Ops Room dashboard
+  cortex/        LLM gateway (Node), providers in config/providers.json
+  workstation/   Giant Core Streamlit app + local plugin engine
+dashboard/       the Ops Room (one self-contained index.html) + plugins.json (generated)
+db/              Timescale init + migrate scripts
+n8n/             workflows (Market Sentinel, News Sentiment, Whale Watch) + seeder
+mcp/             MCP servers (omega-sentinel)
+plugins/         the plugin registry: one folder + plugin.json per capability (see plugins/README.md)
+scripts/         omega_ignition.bat (one-click start), plugins.py (validate + publish the registry)
+ops/             machine setup: wslconfig.example (Docker VM memory cap)
+docs/            handover notes
+.claude/skills/  Claude skills used on this repo
+```
+
+New tools, workflows, skills and MCP servers are added as plugins: copy `plugins/_template/`, fill
+`plugin.json`, run `python scripts/plugins.py`. They then appear in the dashboard's **Modules** panel.
+
 ## Run
 
 ```sh
 cp .env.example .env          # fill every secret: openssl rand -hex 32
-docker compose up -d          # add --profile workstation for the Streamlit app
-open http://localhost:8088    # the constellation; n8n editor at http://localhost:5678
+docker compose up -d          # core stack (~1.5 GB RAM); add --profile llm for the local model
+open http://localhost:8088    # the Ops Room; n8n editor at http://localhost:5678
 ```
+
+Or double-click `scripts\omega_ignition.bat`: it checks free RAM first, refuses to start when the
+machine is short, and boots the stack from the branch you have checked out.
+
+### Low-RAM laptops (7–8 GB)
+
+The stack is tuned for a 7 GB laptop after a Docker + local-LLM overload froze one:
+
+- Copy `ops/wslconfig.example` to `%UserProfile%\.wslconfig` and run `wsl --shutdown`. This caps the
+  whole Docker VM at 4 GB RAM and 2 CPUs, whatever the containers do.
+- Every service has a hard `mem_limit` and `cpus`. Raise one with `TIMESCALE_MEM_LIMIT`,
+  `N8N_MEM_LIMIT`, `OLLAMA_MEM_LIMIT`, `OLLAMA_CPUS` in `.env`.
+- The local model (`ollama`) is opt-in: `docker compose --profile llm up -d`. It never restarts on its
+  own and unloads after 5 idle minutes. Without it, Cortex uses the cloud tiers you have keys for.
+- Docker Desktop's "Start when you sign in" stays off; start it only when you need the stack.
+- The dashboard's **LITE** button stops the 3D animation (it already caps itself at 30 fps).
+- Stop everything with `docker compose down` (data stays in the volumes).
 
 The first run back-fills ~16 hours of candles, so the z-score rules arm within minutes.
 Opening `dashboard/index.html` straight from disk (or adding `?demo`) runs it on simulated data.
@@ -194,7 +232,7 @@ provider that served it, total latency, and every failover attempt.
 
 **Local open-source model.** [Ollama](https://github.com/ollama/ollama) (MIT) runs an open-weight model
 inside the stack and closes every chain, so Cortex still answers when every cloud tier is down or out
-of quota. Default `llama3.2:3b` (~3 GB RAM, CPU is fine); pick any model from
+of quota. Opt-in with `--profile llm`. Default `llama3.2:3b` (~2 GB download, capped at 2.5 GB RAM, CPU is fine); pick any model from
 [ollama.com/library](https://ollama.com/library) with `OMEGA_LOCAL_MODEL` and give it RAM with
 `OLLAMA_MEM_LIMIT`. The first `up` downloads it once (`ollama-pull`); until it lands, the local link is
 skipped for 30s at a time. Leave `OMEGA_LOCAL_LLM_URL` empty to switch it off.
@@ -209,7 +247,7 @@ rate, p50/p95, tokens/s), `/api/llm_perf_1h`, `/api/llm_calls`. The `omega/fast`
 `omega/free-smart` routes re-rank themselves from it every minute: fastest reliable model first, with
 10% of traffic kept in configured order so newcomers get measured.
 
-**Editing providers.** `gateway/config/providers.json` holds providers, models and routes. Edit it, then
+**Editing providers.** `services/cortex/config/providers.json` holds providers, models and routes. Edit it, then
 `docker compose kill -s HUP cortex`. Claude's model and effort come from `CLAUDE_MODEL` / `CLAUDE_EFFORT`.
 Claude calls go through the official Anthropic SDK with server-side refusal fallback enabled.
 

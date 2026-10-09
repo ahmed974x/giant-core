@@ -1,16 +1,13 @@
 @echo off
 rem ============================================================================
-rem  OMEGA IGNITION - one click: check out the latest OMEGA code, boot the stack,
-rem  wait for the Ops Room, open it.
+rem  OMEGA IGNITION - one click: check the machine has room, boot the stack from the
+rem  branch you have checked out, wait for the Ops Room, open it.
 rem  Put this file in the giant-core folder (or run scripts\omega_ignition.bat).
 rem  Safe by design: it never pushes, never touches main, stops on the first error.
 rem  Merging the PRs stays your call on GitHub.
 rem ============================================================================
 setlocal EnableExtensions EnableDelayedExpansion
 
-rem Tip of the open PR chain #1 -> #2 -> #5 -> #7 -> #6: one branch that holds all of it.
-rem Once those PRs are merged (and the branch deleted), the script falls back to main.
-set "BRANCH=claude/project-thread-g7957c"
 set "OPS_URL=http://localhost:8088"
 
 rem cmd reads a .bat while it runs; git may rewrite this file, so run from a temp copy.
@@ -35,14 +32,21 @@ rem ---- 0. preflight ----------------------------------------------------------
 where git >nul 2>&1 || (call :fail "git is not installed or not on PATH." & exit /b 1)
 where docker >nul 2>&1 || (call :fail "Docker Desktop is not installed." & exit /b 1)
 docker info >nul 2>&1 || (call :fail "Docker Desktop is not running. Start it, wait for the whale icon, run me again." & exit /b 1)
-git diff --quiet && git diff --cached --quiet || (call :fail "You have uncommitted changes. Commit or stash them first." & exit /b 1)
+rem Low-RAM guard: this laptop froze when Docker + the local LLM ran out of memory.
+for /f %%m in ('powershell -NoProfile -Command "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)"') do set "FREE_MB=%%m"
+echo       free RAM: %FREE_MB% MB
+if %FREE_MB% LSS 1500 (call :fail "Only %FREE_MB% MB RAM free. Close browsers/apps first; the stack needs about 1.5 GB." & exit /b 1)
+if not exist "%USERPROFILE%\.wslconfig" (
+  echo       No %USERPROFILE%\.wslconfig: copying ops\wslconfig.example so Docker's VM is capped at 4 GB.
+  copy /y "ops\wslconfig.example" "%USERPROFILE%\.wslconfig" >nul
+  echo       Restart Docker Desktop ^(or run: wsl --shutdown^) for the cap to apply, then run me again.
+  pause
+  exit /b 0
+)
 
-rem ---- 1. check out the latest OMEGA code (local only, nothing is pushed) -----------
-git fetch origin || (call :fail "git fetch failed. Check your internet / GitHub login." & exit /b 1)
-git rev-parse --verify --quiet "origin/%BRANCH%" >nul || set "BRANCH=main"
-echo [1/4] Checking out origin/%BRANCH% as local branch omega-run...
-git checkout -B omega-run "origin/%BRANCH%" || (call :fail "Could not check out origin/%BRANCH%." & exit /b 1)
-echo       running %BRANCH%. Your main branch and GitHub are untouched.
+rem ---- 1. code: run whatever branch is checked out (nothing is fetched, switched or pushed) ----
+for /f %%b in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%b"
+echo [1/4] Running branch %BRANCH% as it is on disk.
 
 rem ---- 2. secrets ---------------------------------------------------------------
 echo [2/4] Preparing .env...
@@ -67,7 +71,12 @@ if defined FIRST_RUN (
 
 rem ---- 3. boot -------------------------------------------------------------------
 echo [3/4] Booting the stack (first run builds images and downloads the model)...
-docker compose up -d --build || (call :fail "docker compose failed. See the output above." & exit /b 1)
+set "PROFILES="
+if %FREE_MB% GEQ 4000 (
+  choice /c YN /n /t 10 /d N /m "      Also start the local LLM (needs ~2.5 GB more RAM)? [Y/N, default N in 10s] "
+  if not errorlevel 2 set "PROFILES=--profile llm"
+) else echo       Local LLM skipped: under 4 GB RAM free. Cortex uses the cloud tiers.
+docker compose %PROFILES% up -d --build || (call :fail "docker compose failed. See the output above." & exit /b 1)
 
 rem ---- 4. wait for the Ops Room ----------------------------------------------------
 echo [4/4] Waiting for the Ops Room...
@@ -86,8 +95,7 @@ echo.
 echo   ====================================================
 echo     OMEGA IS LIVE   -   Ops Room  %OPS_URL%
 echo     Cortex LLM API  -   http://localhost:8089/v1
-echo     The local model keeps downloading in the background
-echo     the first time ^(docker compose logs -f ollama-pull^).
+echo     Stop it all:  docker compose down
 echo   ====================================================
 start "" "%OPS_URL%"
 pause

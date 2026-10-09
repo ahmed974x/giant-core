@@ -1,0 +1,10 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "kind": "tool",
+  "version": "0.1.0",
+  "description": "One sentence on what it does.",
+  "entry": "plugins/my-plugin/main.py",
+  "requires": [],
+  "enabled": false
+}

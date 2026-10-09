@@ -34,3 +34,14 @@
 - Blocker: Docker Desktop is installed, but its Linux engine cannot start because WSL, Virtual Machine
   Platform and Hyper-V are disabled. Fix as admin: `wsl --install`, reboot, open Docker Desktop, then
   `docker compose up -d --build` from this folder.
+
+## Stability + restructure (2026-10-09, branch `omega/stability-restructure`)
+- The laptop (7.2 GB RAM, Ryzen 3) froze in a black-screen boot loop, most likely Docker + the local LLM
+  exhausting RAM. Fixes: `%UserProfile%\.wslconfig` caps the Docker VM at 4 GB / 2 CPUs (template in
+  `ops/wslconfig.example`); every service has `mem_limit` + `cpus`; `ollama` is opt-in (`--profile llm`),
+  never auto-restarts and unloads after 5 idle minutes; Docker Desktop auto-start is off.
+- Layout: `relay/` → `services/relay/`, `gateway/` → `services/cortex/`, the Streamlit app →
+  `services/workstation/`; new `plugins/` registry (`scripts/plugins.py`), `ops/`, `docs/`.
+- Ops Room redesigned: three-column grid (Cortex + Modules | constellation + chart | signals + news),
+  one accent colour per panel, larger type, 30 fps cap and a LITE mode.
+- `scripts/omega_ignition.bat` no longer checks out another branch; it refuses to start under 1.5 GB free RAM.

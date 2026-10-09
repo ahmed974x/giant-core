@@ -1,0 +1,12 @@
+{
+  "id": "cortex-providers",
+  "name": "Cortex LLM routes",
+  "kind": "provider",
+  "version": "1.0.0",
+  "description": "Claude and free LLM tiers behind one OpenAI-compatible endpoint with failover.",
+  "entry": "services/cortex/config/providers.json",
+  "requires": [
+    "cortex"
+  ],
+  "enabled": true
+}

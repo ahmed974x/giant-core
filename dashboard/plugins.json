@@ -1,0 +1,80 @@
+{
+  "plugins": [
+    {
+      "id": "cortex-providers",
+      "name": "Cortex LLM routes",
+      "kind": "provider",
+      "version": "1.0.0",
+      "description": "Claude and free LLM tiers behind one OpenAI-compatible endpoint with failover.",
+      "entry": "services/cortex/config/providers.json",
+      "requires": [
+        "cortex"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "market-sentinel",
+      "name": "Market Sentinel",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "Every minute: Binance 1-min candles into Timescale, pulse and anomaly detection, relay and Telegram alerts.",
+      "entry": "n8n/workflows/market-sentinel.json",
+      "requires": [
+        "n8n",
+        "timescale",
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "news-sentiment",
+      "name": "News Sentiment",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "Every 10 minutes: free RSS news and Fear & Greed, scored by Cortex, stored and pushed live.",
+      "entry": "n8n/workflows/news-sentiment.json",
+      "requires": [
+        "n8n",
+        "cortex",
+        "timescale"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-sentinel-mcp",
+      "name": "OMEGA Sentinel MCP",
+      "kind": "mcp",
+      "version": "1.0.0",
+      "description": "MCP server that lets Claude query the market memory (candles, anomalies, whales, news).",
+      "entry": "mcp/omega-sentinel",
+      "requires": [
+        "postgrest"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "whale-watch",
+      "name": "Whale Watch",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "BTC and ETH blocks scanned for transfers of $50M or more, labelled and alerted.",
+      "entry": "n8n/workflows/whale-watch-btc.json",
+      "requires": [
+        "n8n",
+        "timescale",
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "workstation",
+      "name": "Giant Core Workstation",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Streamlit code workstation: static analysis and sandboxed runs of Python plugins.",
+      "entry": "services/workstation",
+      "requires": [],
+      "enabled": true
+    }
+  ]
+}
