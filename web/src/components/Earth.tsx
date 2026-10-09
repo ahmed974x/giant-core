@@ -11,9 +11,10 @@ import type { GeoNode } from "@/lib/types";
 
 const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false, loading: () => <div className="panel h-[64dvh] animate-pulse" /> });
 
-type Tab = "cams" | "flights" | "ships" | "nodes" | "alerts";
+type Tab = "cams" | "flights" | "ships" | "hazards" | "nodes" | "alerts";
 const TABS: { id: Tab; color: string }[] = [
   { id: "cams", color: "#c792ea" }, { id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" },
+  { id: "hazards", color: "#ff6b3d" },
   { id: "nodes", color: "#3dd6c6" }, { id: "alerts", color: "#f2685c" },
 ];
 
@@ -26,7 +27,7 @@ export default function Earth() {
   const [nodes, setNodes] = useState<GeoNode[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("cams");
-  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null });
+  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null, hazards: null });
   const [camOn, setCamOn] = useState<FeedItem | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(null);
 
@@ -38,7 +39,7 @@ export default function Earth() {
   const fly = (i: { lon: number; lat: number }, zoom: number) => setTarget({ lon: i.lon, lat: i.lat, zoom, seq: Date.now() });
 
   const count = (id: Tab) => (id === "nodes" ? nodes.length : id === "alerts" ? live.anomalies.length : items[id]?.length ?? null);
-  const list = tab === "cams" || tab === "flights" || tab === "ships" ? items[tab] : null;
+  const list = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" ? items[tab] : null;
 
   return (
     <div className="space-y-4">
@@ -53,7 +54,7 @@ export default function Earth() {
       {/* Sidebar sits physically on the left in both languages; its own content follows the page direction. */}
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]" dir="ltr">
         <aside dir={locale === "ar" ? "rtl" : "ltr"} className="panel order-2 flex max-h-[70dvh] min-h-0 flex-col overflow-hidden lg:order-1 lg:h-[calc(100dvh-170px)] lg:max-h-none">
-          <nav className="grid grid-cols-5 border-b border-line text-[11px]" role="tablist">
+          <nav className="grid grid-cols-6 border-b border-line text-[11px]" role="tablist">
             {TABS.map(({ id, color }) => {
               const n = count(id);
               return (
@@ -80,7 +81,7 @@ export default function Earth() {
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             {list === null && <Empty text={t("loading")} />}
-            {list && list.length === 0 && <Empty text={t(`empty.${tab}`)} hint={tab !== "flights" ? t("keyHint") : undefined} />}
+            {list && list.length === 0 && <Empty text={t(`empty.${tab}`)} hint={tab === "cams" || tab === "ships" ? t("keyHint") : undefined} />}
 
             {tab === "cams" && list && list.length > 0 && (
               <ul className="grid grid-cols-2 gap-2 p-2">
@@ -111,6 +112,22 @@ export default function Earth() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-mono text-sm" dir="ltr">{i.label}</span>
                         {i.sub && <span className="block truncate text-xs text-muted" dir="ltr">{i.sub}</span>}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {tab === "hazards" && list && list.length > 0 && (
+              <ul className="divide-y divide-line/60">
+                {list.map(h => (
+                  <li key={h.id}>
+                    <button onClick={() => fly(h, 6)} className="flex w-full items-start gap-3 px-3 py-2 text-start hover:bg-panel-2">
+                      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-[#ff6b3d]/15 text-sm text-[#ff6b3d]">!</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm" dir="auto">{h.label}</span>
+                        {h.sub && <span className="block truncate text-xs text-muted" dir="auto">{h.sub}</span>}
                       </span>
                     </button>
                   </li>
