@@ -45,7 +45,7 @@ npm start            # http://127.0.0.1:3100 (about 110 MB RAM)
 
 ## Map imagery
 
-- **Satellite:** Sentinel-2 cloudless 2024 by EOX (10 m per pixel, native to zoom 14, sharpened by overzoom beyond).
+- **Satellite:** Sentinel-2 cloudless 2024 by EOX (10 m per pixel, native to zoom 14; deeper zoom enlarges those pixels, so the vector labels and roads carry the detail there).
   Licence CC BY-NC-SA 4.0: fine for this personal, non-commercial platform; swap the tile URL in
   `src/components/EarthMap.tsx` before any commercial use.
 - **Map:** OpenFreeMap vector tiles (OSM data), sharp at every zoom.
