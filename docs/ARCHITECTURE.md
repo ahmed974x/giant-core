@@ -514,6 +514,17 @@ text, caps size at 2 MB and time at 10 s. A link sent from the phone now gets a 
 send. Known limit: DNS can change between the check and the fetch (rebinding); acceptable for a single-user laptop
 tool, revisit if the reader is exposed beyond the PIN. Self-hosted Firecrawl stays the option once Docker runs.
 
+**ADR-027 — Awesome atlas.** Context: Ahmad asked to "install" sindresorhus/awesome and the GitHub `awesome` topic and
+link them into Claude. Those are curated link lists, not software. Decision: `web/src/lib/awesome.ts` parses the
+index README (CC0) into ~680 entries (name, url, description, category, parent list); the snapshot is committed in
+`web/data/awesome-atlas.json` so it works offline, and `npm run atlas:sync` refreshes it from the raw README (no
+GitHub API key). The web app gets an Atlas page (`/atlas`, linked from Research and the desktop nav) with ranked
+search, category filters and "send to inbox" on each list, which hands the link to the phone intake and its page
+reader. Claude gets `mcp/awesome-atlas`, a dependency-free stdio MCP server with `awesome_search` and
+`awesome_categories`, sharing the same search code. Rejected: a search library such as Orama, since 700 short entries
+need no index; the GitHub topic API, since it needs a token and returns repos ranked by stars rather than curation.
+Lists found here are leads only: any tool from them still goes through the usual vetting before it is added.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { relayJson } from "@/lib/relay";
 import type { BrainJob } from "@/lib/types";
 
@@ -12,6 +13,7 @@ const pending = (s?: string) => s === "queued" || s === "running";
 
 export default function Research() {
   const t = useTranslations("research");
+  const ta = useTranslations("atlas");
   const [q, setQ] = useState("");
   const [job, setJob] = useState<BrainJob | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export default function Research() {
       <div>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted">{t("hint")}</p>
+        <Link href="/atlas" className="mt-3 inline-block rounded-lg border border-line px-3 py-1.5 text-sm text-accent hover:border-accent">{ta("open")}</Link>
       </div>
 
       <form onSubmit={ask} className="panel flex flex-col gap-3 p-3 sm:flex-row">

@@ -11,7 +11,8 @@
     "market": "Market",
     "research": "Research",
     "earth": "Earth",
-    "send": "Send"
+    "send": "Send",
+    "atlas": "Atlas"
   },
   "company": {
     "title": "Operations overview",
@@ -297,5 +298,16 @@
     "offline": "The laptop can't be reached. Check you're on the same Wi-Fi.",
     "failed": "Sending failed",
     "safety": "Files are checked by their contents and stored only; they are never opened or run."
+  },
+  "atlas": {
+    "title": "Awesome atlas",
+    "lead": "{total} curated awesome-lists of open-source tools and resources, searchable offline.",
+    "updated": "Updated {date}.",
+    "search": "Search: machine learning, security, Python…",
+    "all": "All",
+    "empty": "No list matches. Try a broader word.",
+    "keep": "Send to inbox",
+    "credit": "From sindresorhus/awesome (CC0). Lists link to GitHub; nothing is installed from here.",
+    "open": "Find tools in the Awesome atlas"
   }
 }

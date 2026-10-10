@@ -8,6 +8,7 @@ const SCREENS = [
   { href: "/research", key: "research" },
   { href: "/earth", key: "earth" },
 ] as const;
+const DESKTOP_ONLY = [{ href: "/atlas", key: "atlas" }] as const;
 
 const isActive = (href: string, path: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
@@ -28,7 +29,7 @@ export default function Header() {
             <span>{t("app.name")}</span>
           </Link>
           <nav className="hidden gap-1 sm:flex">
-            {SCREENS.map(s => {
+            {[...SCREENS, ...DESKTOP_ONLY].map(s => {
               const active = isActive(s.href, path);
               return (
                 <Link key={s.key} href={s.href} aria-current={active ? "page" : undefined}
