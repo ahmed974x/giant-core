@@ -200,6 +200,84 @@ def _counterfactual(ch: dict, target: str, observed: float | None, evidence: dic
             "ar": f"لو لم يحدث {name(root, 'ar')}، لكان {name(target, 'ar')} أصغر بنحو {explained:.0%} (تقدير مسبق غير مختبر)."}
 
 
+# ── probabilistic scenarios (ADR-022) ───────────────────────────────────────────────────────────────────
+ROOT_PRIOR = 0.20          # base rate that any one root driver is active in the anomaly's window (stated assumption)
+# Likelihood ratios for the Bayesian update of "this root is behind the move", one per link on its chain.
+LIKELIHOOD = {("data", True): 3.0, ("data", False): 0.33, ("live", True): 4.0, ("live", False): 0.4, ("prior", True): 1.0}
+SCENARIO_RUNS = 20_000
+
+
+def scenarios(chains: list[dict], evidence: dict, target: str, observed: float | None, seed: int = 11) -> list[dict]:
+    """Five outcome scenarios from a Monte Carlo over root causes.
+
+    1. Bayesian update per root: posterior odds = prior odds x product of the likelihood ratios of its chain's links.
+    2. Each run samples which roots are active (Bernoulli(posterior)); an active root moves the target by
+       |observed| x (its chain strength / the strongest chain's) x lognormal noise, in the observed direction.
+    3. Runs are grouped into: no driver (move fades), the three most probable single drivers, and a compound shock
+       (two or more drivers at once). Each scenario reports its share of runs, the 10-90% range of the move, a
+       confidence (chain evidence quality x how many runs back it) and a tail-risk flag.
+    """
+    rng = np.random.default_rng(seed)
+    base = abs(observed) if observed else 1.0
+    sign = -1.0 if (observed or 0) < 0 else 1.0
+    roots: dict[str, dict] = {}
+    for ch in chains:                                            # best-scoring chain per root
+        r = ch["path"][0]
+        if r not in roots or ch["score"] > roots[r]["score"]:
+            roots[r] = ch
+    if not roots:
+        return []
+    names = list(roots)
+    post, strength, quality = [], [], []
+    for r in names:
+        links = list(zip(roots[r]["path"], roots[r]["path"][1:]))
+        lr = float(np.prod([LIKELIHOOD[(evidence[l].kind, evidence[l].factor >= 1)] for l in links]))
+        odds = ROOT_PRIOR / (1 - ROOT_PRIOR) * lr
+        post.append(odds / (1 + odds))
+        strength.append(roots[r]["prior"])
+        quality.append(math.exp(np.mean([math.log(QUALITY[(evidence[l].kind, evidence[l].factor >= 1)]) for l in links])))
+    post, strength = np.array(post), np.array(strength) / max(strength)
+
+    active = rng.random((SCENARIO_RUNS, len(names))) < post                  # which drivers fire in each run
+    noise = rng.lognormal(0.0, 0.5, size=active.shape)
+    moves = sign * base * (active * strength * noise).sum(axis=1)
+    n_active = active.sum(axis=1)
+    p95 = np.quantile(np.abs(moves), 0.95)
+
+    order = [names[i] for i in np.argsort(-post)][:3]
+    groups = [("none", "No driver persists: the move fades", "لا يستمر أي سبب: يتلاشى التحرك", n_active == 0)]
+    for r in order:
+        i = names.index(r)
+        groups.append((r, f"Driven by {NODES[r]['en'].lower()}", f"بدافع {NODES[r]['ar']}", (n_active == 1) & active[:, i]))
+    groups.append(("compound", "Compound shock: two or more drivers at once", "صدمة مركّبة: سببان أو أكثر معًا", n_active >= 2))
+
+    out = []
+    for key, en, ar, mask in groups:
+        share = float(mask.mean())
+        sel = moves[mask] if mask.any() else np.zeros(1)
+        lo, hi = (float(np.quantile(sel, 0.1)), float(np.quantile(sel, 0.9))) if mask.any() else (0.0, 0.0)
+        support = min(1.0, mask.sum() / 500)                                   # few runs -> less confidence
+        if key in names:
+            conf = quality[names.index(key)] * support
+        elif key == "compound":
+            conf = float(np.mean(quality)) * support
+        else:
+            conf = (1 - float(np.max(post))) * support                       # "nothing persists" is as sure as no driver is likely
+        tail = bool(key == "compound" or (mask.any() and np.mean(np.abs(sel) >= p95) > 0.25))
+        out.append({"key": key, "scenario": en, "scenario_ar": ar, "probability": round(share, 3),
+                    "impact_range": [round(min(lo, hi), 3), round(max(lo, hi), 3)], "confidence": round(conf, 2),
+                    "tail_risk_flag": tail, "posterior": round(float(post[names.index(key)]), 3) if key in names else None})
+    # The groups are disjoint, but runs where a single driver outside the top three fires belong to none of them.
+    # Fold those into the third single-driver scenario and say so, so the five probabilities always add up to 1.
+    missing = round(1.0 - sum(s["probability"] for s in out), 3)
+    if missing > 0 and len(out) >= 4:
+        last_single = out[-2]
+        last_single["probability"] = round(last_single["probability"] + missing, 3)
+        last_single["scenario"] += " (or another single driver)"
+        last_single["scenario_ar"] += " (أو سبب منفرد آخر)"
+    return out
+
+
 # ── engine ───────────────────────────────────────────────────────────────────────────────────────────────
 def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[str, list[dict]] | None = None,
           max_depth: int = 4, top_k: int = 3, seed: int = 7) -> dict:
@@ -275,6 +353,7 @@ def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[s
         } for ch in best],
         "confidence": best[0]["confidence"] if best else 0.0,
         "observed_move_pct": observed,
+        "scenarios": scenarios(chains, evidence, target, observed, seed=seed),
         "graph": {
             "nodes": [{"id": n, "en": NODES[n]["en"], "ar": NODES[n]["ar"], "kind": NODES[n]["kind"], "target": n == target} for n in sorted(node_ids)],
             "edges": [{"source": c, "target": e, "prior": w, "evidence": evidence[(c, e)].kind, "factor": evidence[(c, e)].factor,

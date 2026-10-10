@@ -457,6 +457,17 @@ flags, excluded from entity search by default and from Butterfly live evidence. 
 Trade-offs: strict by design (single reports wait for a second source; ~11% of a live GKG batch passed); the tier list
 is opinion about editorial process and must be reviewed like code; no article text is read. Pure standard library.
 
+**ADR-022 — Butterfly scenarios: five probabilistic outcomes, NumPy only.** Context: a ranked list of causes says
+*why*; a decision also needs *what next, how likely, how bad*. Decision: after tracing, the engine runs a Monte Carlo
+(20,000 runs) over root causes. Each root starts from a stated base rate (0.20) and gets a Bayesian odds update from
+the evidence on its chain (data supported ×3, refuted ×0.33, observed live ×4, not observed ×0.4, untested ×1). Each
+run samples which roots fire and moves the target by the observed size × relative chain strength × lognormal noise.
+Runs are grouped into five scenarios: the move fades, the three most probable single drivers, and a compound shock;
+each reports `probability`, `impact_range` (10th-90th percentile), `confidence` (evidence quality × runs backing it)
+and `tail_risk_flag`. The Research screen shows them as probability bars; Director 00 lists them in its answer.
+Trade-offs: the base rate and likelihood ratios are explicit assumptions in code, not fitted values; results are
+reproducible (fixed seed). PyMC/Prophet were not installed (heavy for this laptop); NumPy only.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

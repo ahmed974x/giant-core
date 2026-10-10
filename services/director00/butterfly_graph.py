@@ -98,6 +98,12 @@ def _narrate(s: TraceState) -> TraceState:
         tag = (f" ({weak} روابط بلا بيانات بعد)" if ar else f" ({weak} links still prior-only)") if weak else ""
         lines.append(f"{i}. {ch['text_ar'] if ar else ch['text_en']} [{ch['confidence']:.2f}]{tag}")
         lines.append(f"   ↳ {ch['counterfactual']['ar' if ar else 'en']}")
+    if r.get("scenarios"):
+        lines.append("السيناريوهات:" if ar else "Scenarios:")
+        for sc in r["scenarios"]:
+            lo, hi = sc["impact_range"]
+            tail = (" ⚠ ذيل خطر" if ar else " ⚠ tail risk") if sc["tail_risk_flag"] else ""
+            lines.append(f"   {sc['probability']:.0%}  {sc['scenario_ar'] if ar else sc['scenario']}  [{lo:+.2f}% .. {hi:+.2f}%]{tail}")
     return {"answer": "\n".join(lines)}
 
 

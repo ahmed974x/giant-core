@@ -47,3 +47,11 @@ returns ranked root-cause chains such as *Gold <- Risk-off <- Oil <- Ship delay 
 Output goes to `out/butterfly/latest.json` (and a timestamped copy); the Research screen's Causal Graph panel reads it.
 Director 00 calls it as a read-only tool: ask "why did gold jump near Hormuz?" or «لماذا تأخرت السفن في هرمز؟».
 DoWhy and CausalNex are not imported (their pandas build is blocked on this laptop); the method is the same in NumPy.
+
+## Scenarios (ADR-022)
+
+Every trace also returns five `scenarios`: the move fades, the three most probable single drivers, and a compound
+shock. Each has `probability` (they sum to 1), `impact_range` (10th to 90th percentile of the move, in %),
+`confidence` (0-1) and `tail_risk_flag`. They come from a NumPy Monte Carlo (20,000 runs, fixed seed) after a Bayesian
+odds update per root cause: base rate 0.20, then ×3 / ×0.33 for links supported / refuted by market data, ×4 / ×0.4 for
+drivers observed / not observed live nearby. The Research screen draws them as probability bars.

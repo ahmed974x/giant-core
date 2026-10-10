@@ -100,7 +100,13 @@
         "live": "observed live nearby",
         "prior": "prior only"
       },
-      "confidence": "Confidence"
+      "confidence": "Confidence",
+      "scenarios": {
+        "title": "Scenarios",
+        "subtitle": "Monte Carlo over the causes, after a Bayesian update on the evidence",
+        "tail": "tail risk",
+        "legend": "Bar length = probability; brighter = more confident; range = 10th to 90th percentile of the move."
+      }
     }
   },
   "earth": {

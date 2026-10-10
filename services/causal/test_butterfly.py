@@ -73,3 +73,43 @@ def test_offline_counterfactual_is_labelled_prior_based():
     cf = r["chains"][0]["counterfactual"]
     assert cf["method"] == "prior-based estimate" and cf["counterfactual_pct"] < 12.0 and "untested" in cf["en"]
     assert r["confidence"] < 0.6                                   # prior-only evidence never claims high confidence
+
+
+# ── probabilistic scenarios (ADR-022) ──
+def test_five_scenarios_with_probabilities_that_sum_to_one():
+    sc = be.trace({"type": "oil_move", "magnitude": 3.0})["scenarios"]
+    assert len(sc) == 5 and abs(sum(s["probability"] for s in sc) - 1.0) < 0.002
+    assert {"scenario", "probability", "impact_range", "confidence", "tail_risk_flag"} <= set(sc[0])
+    assert sc[0]["key"] == "none" and sc[-1]["key"] == "compound"
+
+
+def test_live_evidence_raises_the_matching_scenario_by_bayesian_update():
+    quiet = {s["key"]: s["probability"] for s in be.trace({"type": "ship_deviation", "magnitude": 5.0},
+             live={"storm": [], "earthquake": [], "conflict": [], "unverified": []})["scenarios"]}
+    stormy = {s["key"]: s["probability"] for s in be.trace({"type": "ship_deviation", "magnitude": 5.0},
+              live={"storm": [{"title": "Cyclone", "km": 90}], "earthquake": [], "conflict": [], "unverified": []})["scenarios"]}
+    assert stormy.get("climate_pattern", 0) > quiet.get("climate_pattern", 0) + 0.15
+    assert stormy["none"] < quiet["none"]
+
+
+def test_compound_shock_is_the_tail_and_has_the_widest_impact():
+    sc = be.trace({"type": "oil_move", "magnitude": 3.0})["scenarios"]
+    compound = sc[-1]
+    singles = [s for s in sc if s["key"] not in ("none", "compound")]
+    assert compound["tail_risk_flag"] and compound["impact_range"][1] > max(s["impact_range"][1] for s in singles)
+
+
+def test_impact_ranges_scale_with_the_observed_move_and_keep_its_sign():
+    small = be.trace({"type": "oil_move", "magnitude": 1.0})["scenarios"]
+    big = be.trace({"type": "oil_move", "magnitude": -4.0})["scenarios"]
+    s1 = next(s for s in small if s["key"] == "compound")["impact_range"]
+    s4 = next(s for s in big if s["key"] == "compound")["impact_range"]
+    assert s4[1] <= 0 and abs(s4[0]) > 3 * abs(s1[1]) * 0.9
+
+
+def test_scenarios_are_reproducible_and_confidence_is_bounded():
+    a = be.trace({"type": "price_spike", "asset": "PAXGUSDT"}, rets=synthetic(0.25))["scenarios"]
+    b = be.trace({"type": "price_spike", "asset": "PAXGUSDT"}, rets=synthetic(0.25))["scenarios"]
+    assert a == b and all(0.0 <= s["confidence"] <= 1.0 for s in a)
+    top_driver = max((s for s in a if s["key"] not in ("none", "compound")), key=lambda s: s["probability"])
+    assert top_driver["confidence"] >= min(s["confidence"] for s in a if s["key"] not in ("none", "compound"))

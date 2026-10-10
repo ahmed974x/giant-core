@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Background, Controls, MarkerType, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import ScenarioBars, { type Scenario } from "./ScenarioBars";
 
 type GNode = { id: string; en: string; ar: string; kind: string; target: boolean };
 type GEdge = { source: string; target: string; prior: number; evidence: "data" | "live" | "prior"; factor: number; note: string };
@@ -11,6 +12,7 @@ type Trace = {
   created: string; mode: string;
   chains: { path: string[]; share: number; text_en: string; text_ar: string; confidence?: number; counterfactual?: { en: string; ar: string } }[];
   confidence?: number;
+  scenarios?: Scenario[];
   graph: { nodes: GNode[]; edges: GEdge[] };
 };
 
@@ -132,7 +134,7 @@ export default function CausalGraph() {
                 <span className="num w-12 shrink-0 text-xs text-accent" title={t("confidence")}>{(c.confidence ?? c.share).toFixed(2)}</span>
                 <span className="min-w-0">
                   <span className="block">{locale === "ar" ? c.text_ar : c.text_en}</span>
-                  {c.counterfactual && <span className="block text-xs text-muted">↳ {locale === "ar" ? c.counterfactual.ar : c.counterfactual.en}</span>}
+                  {c.counterfactual && <span className="block text-xs text-muted">→ {locale === "ar" ? c.counterfactual.ar : c.counterfactual.en}</span>}
                 </span>
               </li>
             ))}
@@ -144,6 +146,7 @@ export default function CausalGraph() {
           </div>
         </div>
       )}
+      {trace?.scenarios && trace.scenarios.length > 0 && <ScenarioBars scenarios={trace.scenarios} />}
     </section>
   );
 }
