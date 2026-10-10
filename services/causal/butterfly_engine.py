@@ -178,15 +178,15 @@ def _counterfactual(ch: dict, target: str, observed: float | None, evidence: dic
         without = observed - ev.detail["effect_per_1pct"] * cause_move
         return {"method": "measured effect", "removed": cause, "observed_pct": round(observed, 3), "counterfactual_pct": round(without, 3),
                 "en": f"If {name(cause, 'en').lower()} ({cause_move:+.2f}%) hadn't happened, {name(target, 'en').lower()} would have been "
-                      f"{without:+.2f}% instead of {observed:+.2f}%.",
-                "ar": f"لو لم يحدث {name(cause, 'ar')} ({cause_move:+.2f}%)، لكان {name(target, 'ar')} {without:+.2f}% بدل {observed:+.2f}%."}
+                      f"{without:+.3f}% instead of {observed:+.3f}%.",
+                "ar": f"لو لم يحدث {name(cause, 'ar')} ({cause_move:+.2f}%)، لكان {name(target, 'ar')} {without:+.3f}% بدل {observed:+.3f}%."}
     explained = ch["prior"]
     if observed is not None:
         without = observed * (1 - explained)
         return {"method": "prior-based estimate", "removed": root, "observed_pct": round(observed, 3), "counterfactual_pct": round(without, 3),
-                "en": f"If {name(root, 'en').lower()} hadn't happened, {name(target, 'en').lower()} would have been about {without:+.2f}% "
-                      f"instead of {observed:+.2f}% (prior-based, untested).",
-                "ar": f"لو لم يحدث {name(root, 'ar')}، لكان {name(target, 'ar')} تقريبًا {without:+.2f}% بدل {observed:+.2f}% (تقدير مسبق غير مختبر)."}
+                "en": f"If {name(root, 'en').lower()} hadn't happened, {name(target, 'en').lower()} would have been about {without:+.3f}% "
+                      f"instead of {observed:+.3f}% (prior-based, untested).",
+                "ar": f"لو لم يحدث {name(root, 'ar')}، لكان {name(target, 'ar')} تقريبًا {without:+.3f}% بدل {observed:+.3f}% (تقدير مسبق غير مختبر)."}
     return {"method": "prior-based estimate", "removed": root, "share_explained": round(explained, 3),
             "en": f"If {name(root, 'en').lower()} hadn't happened, {name(target, 'en').lower()} would likely have been about "
                   f"{explained:.0%} smaller (prior-based, untested).",
