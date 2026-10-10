@@ -9,7 +9,8 @@ type GEdge = { source: string; target: string; prior: number; evidence: "data" |
 type Trace = {
   anomaly: { type: string; asset?: string; node: string; place?: string };
   created: string; mode: string;
-  chains: { path: string[]; share: number; text_en: string; text_ar: string }[];
+  chains: { path: string[]; share: number; text_en: string; text_ar: string; confidence?: number; counterfactual?: { en: string; ar: string } }[];
+  confidence?: number;
   graph: { nodes: GNode[]; edges: GEdge[] };
 };
 
@@ -95,6 +96,7 @@ export default function CausalGraph() {
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
         <h2 className="font-semibold">{t("title")}</h2>
         <span className="text-xs text-muted">{t("subtitle")}</span>
+        {trace?.confidence !== undefined && <span className="num rounded bg-accent/15 px-2 py-0.5 text-xs text-accent">{t("confidence")} {trace.confidence.toFixed(2)}</span>}
         <div className="ms-auto flex flex-wrap items-center gap-2 text-xs">
           <select value={anomaly} onChange={e => setAnomaly(e.target.value as typeof anomaly)} className="rounded-md border border-line bg-panel-2 px-2 py-1" aria-label={t("anomaly")}>
             {ANOMALIES.map(a => <option key={a.id} value={a.id}>{t(`anomalies.${a.id}`)}</option>)}
@@ -127,8 +129,11 @@ export default function CausalGraph() {
           <ol className="space-y-1.5">
             {trace.chains.map((c, i) => (
               <li key={i} className="flex gap-2" dir="auto">
-                <span className="num w-10 shrink-0 text-xs text-accent">{Math.round(c.share * 100)}%</span>
-                <span>{locale === "ar" ? c.text_ar : c.text_en}</span>
+                <span className="num w-12 shrink-0 text-xs text-accent" title={t("confidence")}>{(c.confidence ?? c.share).toFixed(2)}</span>
+                <span className="min-w-0">
+                  <span className="block">{locale === "ar" ? c.text_ar : c.text_en}</span>
+                  {c.counterfactual && <span className="block text-xs text-muted">↳ {locale === "ar" ? c.counterfactual.ar : c.counterfactual.en}</span>}
+                </span>
               </li>
             ))}
           </ol>

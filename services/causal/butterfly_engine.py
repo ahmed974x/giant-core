@@ -143,6 +143,56 @@ def live_signals(lat: float, lon: float) -> dict[str, list[dict]]:
     return found
 
 
+# ── confidence and counterfactuals ───────────────────────────────────────────────────────────────────────
+# How much each kind of evidence should be trusted, 0..1. Tested-and-supported data is strongest; a link the data
+# refuted, or a live driver that is not happening, is weakest; an untested prior sits in the middle.
+QUALITY = {("data", True): 0.9, ("data", False): 0.15, ("live", True): 0.8, ("live", False): 0.3, ("prior", True): 0.45}
+
+
+def _confidence(ch: dict, best_score: float, evidence: dict) -> float:
+    """0..1: geometric mean of the links' evidence quality, scaled by how close the chain scores to the best one."""
+    q = [QUALITY[(evidence[(a, b)].kind, evidence[(a, b)].factor >= 1)] for a, b in zip(ch["path"], ch["path"][1:])]
+    geo = math.exp(sum(math.log(x) for x in q) / len(q))
+    rel = ch["score"] / best_score if best_score else 0.0
+    return round(max(0.0, min(1.0, geo * (0.5 + 0.5 * rel))), 2)
+
+
+def _observed_move(anomaly: dict, target: str, rets: dict | None) -> float | None:
+    """The size of the anomaly in %, from the request or, for markets, the latest hourly return."""
+    if anomaly.get("magnitude") is not None:
+        return float(anomaly["magnitude"])
+    series = NODES[target].get("series")
+    if rets and series in rets and len(rets[series]):
+        return round(float(rets[series][-1]), 3)
+    return None
+
+
+def _counterfactual(ch: dict, target: str, observed: float | None, evidence: dict, rets: dict | None) -> dict:
+    """'If X hadn't happened, Y would have been Z%.' Uses the measured effect when the last link was tested on data,
+    otherwise a prior-based estimate (the chain's prior strength as the share of the move it explains)."""
+    root, cause = ch["path"][0], ch["path"][-2]
+    ev = evidence[(cause, target)]
+    name = lambda n, lang: NODES[n][lang]
+    if observed is not None and ev.kind == "data" and ev.factor >= 1 and rets:
+        cause_move = float(rets[NODES[cause]["series"]][-2])          # cause at t-1 drives the effect at t
+        without = observed - ev.detail["effect_per_1pct"] * cause_move
+        return {"method": "measured effect", "removed": cause, "observed_pct": round(observed, 3), "counterfactual_pct": round(without, 3),
+                "en": f"If {name(cause, 'en').lower()} ({cause_move:+.2f}%) hadn't happened, {name(target, 'en').lower()} would have been "
+                      f"{without:+.2f}% instead of {observed:+.2f}%.",
+                "ar": f"لو لم يحدث {name(cause, 'ar')} ({cause_move:+.2f}%)، لكان {name(target, 'ar')} {without:+.2f}% بدل {observed:+.2f}%."}
+    explained = ch["prior"]
+    if observed is not None:
+        without = observed * (1 - explained)
+        return {"method": "prior-based estimate", "removed": root, "observed_pct": round(observed, 3), "counterfactual_pct": round(without, 3),
+                "en": f"If {name(root, 'en').lower()} hadn't happened, {name(target, 'en').lower()} would have been about {without:+.2f}% "
+                      f"instead of {observed:+.2f}% (prior-based, untested).",
+                "ar": f"لو لم يحدث {name(root, 'ar')}، لكان {name(target, 'ar')} تقريبًا {without:+.2f}% بدل {observed:+.2f}% (تقدير مسبق غير مختبر)."}
+    return {"method": "prior-based estimate", "removed": root, "share_explained": round(explained, 3),
+            "en": f"If {name(root, 'en').lower()} hadn't happened, {name(target, 'en').lower()} would likely have been about "
+                  f"{explained:.0%} smaller (prior-based, untested).",
+            "ar": f"لو لم يحدث {name(root, 'ar')}، لكان {name(target, 'ar')} أصغر بنحو {explained:.0%} (تقدير مسبق غير مختبر)."}
+
+
 # ── engine ───────────────────────────────────────────────────────────────────────────────────────────────
 def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[str, list[dict]] | None = None,
           max_depth: int = 4, top_k: int = 3, seed: int = 7) -> dict:
@@ -175,21 +225,25 @@ def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[s
 
     chains: list[dict] = []
 
-    def walk(node: str, path: list[str], score: float, depth: int):
+    def walk(node: str, path: list[str], score: float, prior: float, depth: int):
         ps = parents.get(node, [])
         if (not ps or depth >= max_depth) and len(path) > 1:
             # Rank by the geometric mean of link scores so a longer, well-evidenced chain is not beaten by a
             # short chain of untested priors just because it multiplies fewer numbers below 1.
-            chains.append({"path": list(reversed(path)), "score": score ** (1 / (len(path) - 1))})
+            chains.append({"path": list(reversed(path)), "score": score ** (1 / (len(path) - 1)), "prior": prior})
             return
         for c, w in ps:
             if c in path:
                 continue
-            walk(c, path + [c], score * w * edge_ev(c, node).factor, depth + 1)
+            walk(c, path + [c], score * w * edge_ev(c, node).factor, prior * w, depth + 1)
 
-    walk(target, [target], 1.0, 0)
+    walk(target, [target], 1.0, 1.0, 0)
     chains.sort(key=lambda ch: -ch["score"])
     best = chains[:top_k]
+    observed = _observed_move(anomaly, target, rets)
+    for ch in best:
+        ch["confidence"] = _confidence(ch, chains[0]["score"], evidence)
+        ch["counterfactual"] = _counterfactual(ch, target, observed, evidence, rets)
 
     used = {(ch["path"][i], ch["path"][i + 1]) for ch in best for i in range(len(ch["path"]) - 1)}
     node_ids = {n for ch in best for n in ch["path"]}
@@ -208,7 +262,10 @@ def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[s
             "text_ar": " ← ".join(label(n, "ar") for n in reversed(ch["path"])),
             "links": [{"cause": ch["path"][i], "effect": ch["path"][i + 1], "evidence": evidence[(ch["path"][i], ch["path"][i + 1])].kind,
                        "note": evidence[(ch["path"][i], ch["path"][i + 1])].note} for i in range(len(ch["path"]) - 1)],
+            "confidence": ch["confidence"], "counterfactual": ch["counterfactual"],
         } for ch in best],
+        "confidence": best[0]["confidence"] if best else 0.0,
+        "observed_move_pct": observed,
         "graph": {
             "nodes": [{"id": n, "en": NODES[n]["en"], "ar": NODES[n]["ar"], "kind": NODES[n]["kind"], "target": n == target} for n in sorted(node_ids)],
             "edges": [{"source": c, "target": e, "prior": w, "evidence": evidence[(c, e)].kind, "factor": evidence[(c, e)].factor,
@@ -241,12 +298,15 @@ def main():
     ap.add_argument("--type", default="price_spike", choices=["price_spike", "ship_deviation", "port_congestion", "oil_move"])
     ap.add_argument("--asset", default="PAXGUSDT", help="for price_spike: BTCUSDT, ETHUSDT, SOLUSDT or PAXGUSDT")
     ap.add_argument("--lat", type=float); ap.add_argument("--lon", type=float)
+    ap.add_argument("--magnitude", type=float, help="size of the anomaly in %% (default: latest hourly move for markets)")
     ap.add_argument("--offline", action="store_true", help="prior graph only, no network")
     a = ap.parse_args()
-    out = run({"type": a.type, "asset": a.asset, "lat": a.lat, "lon": a.lon}, offline=a.offline)
+    out = run({"type": a.type, "asset": a.asset, "lat": a.lat, "lon": a.lon, "magnitude": a.magnitude}, offline=a.offline)
     import sys
     sys.stdout.reconfigure(encoding="utf-8")
-    print(json.dumps({"chains": [c["text_en"] for c in out["chains"]], "mode": out["mode"]}, ensure_ascii=False, indent=2))
+    print(json.dumps({"confidence": out["confidence"], "mode": out["mode"],
+                      "chains": [{"chain": c["text_en"], "confidence": c["confidence"], "counterfactual": c["counterfactual"]["en"]}
+                                 for c in out["chains"]]}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -105,3 +105,13 @@ def test_why_questions_run_the_butterfly_engine_without_approval(director, monke
     assert "<-" in out["answer"] and director.pending() == []
     ar = director.ask("لماذا تأخرت السفن في هرمز؟")
     assert ar["causal"]["anomaly"]["node"] == "ship_delay" and "←" in ar["answer"]
+
+
+def test_butterfly_subgraph_tool_returns_confidence_counterfactual_and_graph(monkeypatch):
+    monkeypatch.setenv("DIRECTOR_OFFLINE", "1")
+    from butterfly_graph import SUBGRAPH, butterfly_trace
+    assert list(SUBGRAPH.get_graph().nodes) == ["__start__", "locate", "gather_evidence", "trace", "narrate", "__end__"]
+    out = butterfly_trace.invoke({"anomaly_type": "oil_move", "place": "hormuz", "magnitude": 3.0})
+    r = out["result"]
+    assert 0.0 <= r["confidence"] <= 1.0 and r["chains"][0]["counterfactual"]["counterfactual_pct"] < 3.0
+    assert r["graph"]["nodes"] and r["graph"]["edges"] and "Confidence" in out["answer"]

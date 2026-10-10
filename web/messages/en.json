@@ -99,7 +99,8 @@
         "data": "tested on market data",
         "live": "observed live nearby",
         "prior": "prior only"
-      }
+      },
+      "confidence": "Confidence"
     }
   },
   "earth": {

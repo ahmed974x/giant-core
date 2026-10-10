@@ -79,45 +79,6 @@ def valid_actions(raw: Any) -> list[dict]:
 
 
 _EXPLAIN = re.compile(r"^\s*(why|explain|trace|what caused|لماذا|ليش|فسر|فسّر|ما سبب|وش سبب)\b", re.I)
-_ASSETS = [(re.compile(r"gold|paxg|ذهب", re.I), {"type": "price_spike", "asset": "PAXGUSDT"}),
-           (re.compile(r"bitcoin|btc|بيتكوين|بتكوين", re.I), {"type": "price_spike", "asset": "BTCUSDT"}),
-           (re.compile(r"ether|eth|إيثيريوم|ايثيريوم", re.I), {"type": "price_spike", "asset": "ETHUSDT"}),
-           (re.compile(r"solana|sol\b|سولانا", re.I), {"type": "price_spike", "asset": "SOLUSDT"}),
-           (re.compile(r"oil|brent|نفط|برنت", re.I), {"type": "oil_move"}),
-           (re.compile(r"congest|ازدحام", re.I), {"type": "port_congestion"}),
-           (re.compile(r"ship|vessel|tanker|سفن|سفين|ناقلة|ناقلات", re.I), {"type": "ship_deviation"})]
-_PLACES = {"hormuz": (26.57, 56.25), "هرمز": (26.57, 56.25), "suez": (30.6, 32.35), "السويس": (30.6, 32.35),
-           "bab": (12.58, 43.33), "المندب": (12.58, 43.33), "malacca": (2.5, 100.4), "ملقا": (2.5, 100.4),
-           "panama": (9.08, -79.68), "بنما": (9.08, -79.68), "jebel ali": (24.98, 55.03), "جبل علي": (24.98, 55.03)}
-
-
-def explain_anomaly(request: str) -> dict | None:
-    """Read-only tool: route 'why …' questions to the Butterfly Engine (services/causal). No approval needed."""
-    anomaly = next((dict(a) for rx, a in _ASSETS if rx.search(request)), None)
-    if anomaly is None:
-        return None
-    low = request.lower()
-    for name, (lat, lon) in _PLACES.items():
-        if name in low:
-            anomaly.update(lat=lat, lon=lon, place=name)
-            break
-    causal = Path(__file__).resolve().parents[1] / "causal"
-    if str(causal) not in sys.path:
-        sys.path.insert(0, str(causal))
-    import butterfly_engine
-    return butterfly_engine.run(anomaly, offline=os.environ.get("DIRECTOR_OFFLINE") == "1")
-
-
-def explain_answer(request: str, result: dict) -> str:
-    arabic = bool(re.search(r"[؀-ۿ]", request))
-    lines = [("أقوى الأسباب الجذرية المحتملة:" if arabic else "Most likely root-cause chains:")]
-    for i, ch in enumerate(result["chains"], 1):
-        weak = sum(1 for l in ch["links"] if l["evidence"] == "prior")
-        tag = (f" ({weak} روابط بلا بيانات بعد)" if arabic else f" ({weak} links still prior-only)") if weak else ""
-        lines.append(f"{i}. {ch['text_ar'] if arabic else ch['text_en']} [{ch['share']:.0%}]{tag}")
-    return "\n".join(lines)
-
-
 def rule_plan(request: str, memories: list[dict]) -> tuple[str, list[dict]]:
     relevant = [m for m in memories if m["score"] >= MIN_SCORE]
     recall = "; ".join(f"[{m['kind']}] {m['content']}" for m in relevant[:3])
@@ -181,10 +142,11 @@ def build(store: Store, embedder, checkpointer):
 
     def plan(s: State) -> State:
         if _EXPLAIN.match(s["request"]):                         # read-only causal tool: answer, no actions
-            try:
-                result = explain_anomaly(s["request"])
-                if result:
-                    return {"answer": explain_answer(s["request"], result), "actions": [], "causal": result}
+            try:                                                  # tool call into the Butterfly sub-graph
+                from butterfly_graph import anomaly_from_text, butterfly_trace
+                if anomaly_from_text(s["request"]):
+                    out = butterfly_trace.invoke({"question": s["request"]})
+                    return {"answer": out["answer"], "actions": [], "causal": out["result"]}
             except Exception as e:
                 return {"answer": f"Butterfly Engine unavailable: {type(e).__name__}: {e}", "actions": []}
         planner = llm_plan if os.environ.get("DIRECTOR_LLM_URL") else rule_plan

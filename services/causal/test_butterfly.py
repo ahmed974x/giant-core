@@ -55,3 +55,21 @@ def test_unknown_anomaly_is_refused_and_output_is_bilingual():
     r = be.trace({"type": "oil_move"})
     assert r["chains"][0]["text_ar"] and "←" in r["chains"][0]["text_ar"]
     assert {n["id"] for n in r["graph"]["nodes"]} >= set(r["chains"][0]["path"])
+
+
+def test_confidence_is_bounded_and_counterfactual_uses_the_measured_effect():
+    rets = synthetic(0.25)
+    r = be.trace({"type": "price_spike", "asset": "PAXGUSDT"}, rets=rets)
+    top = r["chains"][0]
+    assert 0.0 <= r["confidence"] <= 1.0 and r["confidence"] == top["confidence"]
+    cf = top["counterfactual"]
+    assert cf["method"] == "measured effect" and cf["removed"] == "crypto_selloff"
+    expected = rets["PAXGUSDT"][-1] - next(e for e in r["graph"]["edges"] if e["source"] == "crypto_selloff")["detail"]["effect_per_1pct"] * rets["BTCUSDT"][-2]
+    assert abs(cf["counterfactual_pct"] - expected) < 1e-2 and "instead of" in cf["en"] and "بدل" in cf["ar"]
+
+
+def test_offline_counterfactual_is_labelled_prior_based():
+    r = be.trace({"type": "ship_deviation", "magnitude": 12.0})
+    cf = r["chains"][0]["counterfactual"]
+    assert cf["method"] == "prior-based estimate" and cf["counterfactual_pct"] < 12.0 and "untested" in cf["en"]
+    assert r["confidence"] < 0.6                                   # prior-only evidence never claims high confidence
