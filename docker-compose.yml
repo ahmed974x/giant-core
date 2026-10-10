@@ -394,6 +394,25 @@ services:
       retries: 10
       start_period: 20s
 
+  # SwissPipe (OpenObserve, Apache-2.0, Rust): a ~30 MB workflow runner evaluated beside n8n (ADR 015).
+  # Opt-in (--profile swisspipe); n8n stays the default. UI/API on localhost:3700, admin login from .env.
+  swisspipe:
+    image: public.ecr.aws/zinclabs/swisspipe:0.9.49
+    profiles: ["swisspipe"]
+    <<: *hardening
+    environment:
+      SP_USERNAME: ${SWISSPIPE_USERNAME:?set SWISSPIPE_USERNAME in .env}
+      SP_PASSWORD: ${SWISSPIPE_PASSWORD:?set SWISSPIPE_PASSWORD in .env}
+      DATABASE_URL: sqlite:data/swisspipe.db?mode=rwc
+      PORT: "3700"
+    volumes:
+      - swisspipe_data:/app/data
+    ports:
+      - "127.0.0.1:3700:3700"          # local only; workflows reach the relay over the core network
+    networks: [core, egress, edge]
+    mem_limit: ${SWISSPIPE_MEM_LIMIT:-64m}
+    cpus: 0.25
+
   # Redis: hot cache (latest vessel/flight position) + pub/sub fan-out for WebSockets (Phase 1-3).
   redis:
     image: redis:7.4-alpine
@@ -610,6 +629,7 @@ volumes:
   grafana_data:
   geo_data:
   director_memory:
+  swisspipe_data:
   agents_data:
   neural_data:
   vault_data:
