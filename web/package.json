@@ -16,7 +16,9 @@
     "briefing": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/briefing.ts",
     "secrets:encrypt": "node scripts/secrets.mjs encrypt",
     "secrets:set": "node scripts/secrets.mjs set",
-    "secrets:check": "node scripts/secrets.mjs check"
+    "secrets:check": "node scripts/secrets.mjs check",
+    "secrets:test": "node scripts/secrets.mjs test",
+    "secrets:backup": "node scripts/secrets.mjs backup"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "1.75.1",
