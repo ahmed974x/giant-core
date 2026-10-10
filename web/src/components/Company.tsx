@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useFormatter, useNow, useLocale, useTranslations } from "next-intl";
 import LiveBadge from "./LiveBadge";
+import SystemHealth from "./SystemHealth";
 import { DEMO_NODES } from "@/lib/demo";
 import { relayJson, useLive } from "@/lib/relay";
 import type { GeoNode } from "@/lib/types";
@@ -43,6 +44,8 @@ export default function Company() {
           </div>
         ))}
       </section>
+
+      <SystemHealth />
 
       <section className="panel p-4">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">

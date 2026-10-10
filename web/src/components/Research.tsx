@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { relayJson } from "@/lib/relay";
 import type { BrainJob } from "@/lib/types";
+
+const CausalGraph = dynamic(() => import("./CausalGraph"), { ssr: false, loading: () => <div className="panel h-[480px] animate-pulse" /> });
 
 const text = (v: unknown) => (v == null ? "" : typeof v === "string" ? v : JSON.stringify(v, null, 2));
 const pending = (s?: string) => s === "queued" || s === "running";
@@ -83,6 +86,8 @@ export default function Research() {
           </section>
         </div>
       )}
+
+      <CausalGraph />
     </div>
   );
 }

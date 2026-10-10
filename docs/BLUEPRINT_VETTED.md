@@ -156,3 +156,23 @@ use case) · 🔴 skip (doesn't exist, untrustworthy, proprietary, too heavy, or
 3. **pgvector + LangGraph Director 00** with the approval inbox kept in the loop.
 4. **Global Fishing Watch + NASA FIRMS + GDELT ingestors** (free keys / rate-limited, server-side, into Timescale).
 5. **DoWhy + Optuna** in the quant engine for cause-and-effect checks and bounded threshold tuning.
+
+## Added since the first vetting (2026-10-10, branch `feat/ai-coordinator-memory`)
+
+| Tool | Licence | Where | Why this one |
+| --- | --- | --- | --- |
+| **LangGraph** 1.2 | MIT | `services/director00` | `interrupt()` + checkpointer = a durable two-level human approval gate |
+| **pg8000** 1.31 | BSD-3 | `services/director00` | Pure-Python Postgres driver: no native DLL for Application Control to block |
+| **pgvector** 0.8.6 (pg17 image) | PostgreSQL | compose profile `director` | Long-term memory (`agent_memories`, HNSW cosine), 256 MB cap |
+| **PGlite** 0.5 + socket + pgvector | Apache-2.0 | `services/director00/devtools` | Real Postgres + pgvector in WebAssembly, so tests hit real SQL without Docker |
+| **Optuna** 5.0 | MIT | `services/maritime-agent/tune.py` | Bounded threshold tuning that writes proposals only (ADR 007) |
+| **Caddy** 2.11.7 | Apache-2.0 | `ops/caddy` | Local HTTPS for the phone with its own CA; checksum-verified binary |
+| **TradingView Lightweight Charts** 5.2 | Apache-2.0 | Market screen | Candles, volume, anomaly markers |
+| **React Flow** (`@xyflow/react`) 12.12 | MIT | Research screen, Causal Graph | 1.2 MB vs Cytoscape.js 5.7 MB; renders the Butterfly Engine's graph |
+| **GDELT 2.0 GKG** | public, keyless | `/api/gkg` | Places, people (only when named across several articles), organisations, themes |
+| **NASA EONET**, **USGS** | public, keyless | `/api/hazards` | Storms, fires, volcanoes, floods, earthquakes |
+| **NASA FIRMS** | free key (optional) | `/api/hazards` | VIIRS fire pixels; shows "key not configured" until `NASA_FIRMS_KEY` is set |
+
+**Still not loadable here:** DoWhy and CausalNex both need pandas, whose Python 3.12 build this laptop's Application
+Control policy blocks. `services/causal` (flight-to-safety check, Butterfly Engine) implements the same estimate →
+refute → graph steps in NumPy; on a server without that policy either library is a drop-in addition.

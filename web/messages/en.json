@@ -27,6 +27,24 @@
       "ok": "Up",
       "down": "Down",
       "unknown": "Unknown"
+    },
+    "health": {
+      "title": "System health",
+      "failed": "Health check unreachable.",
+      "items": {
+        "director": "Director 00",
+        "caddy": "Caddy (phone HTTPS)",
+        "database": "Memory database",
+        "relay": "Relay",
+        "web": "Web app",
+        "backup": "Last backup"
+      },
+      "state": {
+        "up": "OK",
+        "down": "Down",
+        "idle": "Attention",
+        "unknown": "Not set up"
+      }
     }
   },
   "market": {
@@ -51,7 +69,38 @@
     "steps": "Agent steps",
     "answer": "Answer",
     "error": "The Brain is not reachable. Start the stack with docker compose up -d.",
-    "tooShort": "Write at least 3 characters."
+    "tooShort": "Write at least 3 characters.",
+    "causal": {
+      "title": "Causal graph",
+      "subtitle": "Butterfly Engine: why did it happen?",
+      "anomaly": "Anomaly",
+      "place": "Where",
+      "trace": "Trace causes",
+      "running": "Tracing…",
+      "error": "The Butterfly Engine could not run (services/causal/.venv).",
+      "empty": "No trace yet. Pick an anomaly and press Trace causes.",
+      "anomalies": {
+        "gold": "Gold price spike",
+        "btc": "Bitcoin price spike",
+        "oil": "Oil price move",
+        "ship": "Ship delay / deviation",
+        "congestion": "Port congestion"
+      },
+      "places": {
+        "none": "Anywhere",
+        "hormuz": "Strait of Hormuz",
+        "suez": "Suez Canal",
+        "bab-el-mandeb": "Bab-el-Mandeb",
+        "malacca": "Strait of Malacca",
+        "panama": "Panama Canal",
+        "jebel-ali": "Jebel Ali"
+      },
+      "evidence": {
+        "data": "tested on market data",
+        "live": "observed live nearby",
+        "prior": "prior only"
+      }
+    }
   },
   "earth": {
     "title": "Earth",
