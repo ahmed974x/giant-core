@@ -5,8 +5,8 @@
 // Needs a build first: npm run build && npm run e2e. Never touches the real ledger, inbox or PIN.
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { previewOffice } from "../src/lib/office.ts";
@@ -16,6 +16,9 @@ const WEB = path.resolve(import.meta.dirname, "..");
 const PORT = 3199, BASE = `http://127.0.0.1:${PORT}`, PIN = "e2e-424242";
 const DATA = mkdtempSync(path.join(tmpdir(), "omega-e2e-"));
 const ROOT = mkdtempSync(path.join(tmpdir(), "omega-e2e-root-"));
+// Keys Vault test fixtures: a throwaway env file in the web folder (dotenvx needs it relative), its own key file and Desktop copy.
+const VAULT_ENV = ".env.e2e.local", VAULT_KEYS_FILE = path.join(mkdtempSync(path.join(tmpdir(), "omega-e2e-keys-")), "web.env.keys");
+const VAULT_DESKTOP = path.join(mkdtempSync(path.join(tmpdir(), "omega-e2e-desk-")), "المفاتيح.txt");
 const CHROME = process.env.CHROME_PATH ?? ["C:/Program Files (x86)/Google/Chrome/Application/chrome.exe", "C:/Program Files/Google/Chrome/Application/chrome.exe", "/opt/pw-browsers/chromium"].find(existsSync);
 let server: ChildProcess;
 
@@ -35,6 +38,8 @@ async function intake(fields: Record<string, string>, file?: { name: string; byt
 before(async () => {
   assert.ok(existsSync(path.join(WEB, ".next", "BUILD_ID")), "run `npm run build` first");
   mkdirSync(path.join(DATA, "inbox"), { recursive: true });
+  writeFileSync(path.join(WEB, VAULT_ENV), "SEED=1\n");
+  execFileSync(process.execPath, [path.join(WEB, "node_modules/@dotenvx/dotenvx/src/cli/dotenvx.js"), "encrypt", "-f", VAULT_ENV, "-fk", VAULT_KEYS_FILE], { cwd: WEB, stdio: "ignore" });
   // Copies of the reviewed files, so Review edits and approvals never touch the real ones.
   for (const rel of ["services/truth/sources.json", "services/causal/assumptions.json", "services/sweeper/rules.json"]) {
     mkdirSync(path.join(ROOT, path.dirname(rel)), { recursive: true });
@@ -44,7 +49,7 @@ before(async () => {
   writeFileSync(path.join(DATA, "positions.json"), JSON.stringify({ positions: [{ symbol: "BTCUSDT", qty: 0.01, cost_usd: 1 }] }));
   server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", ".", "-p", String(PORT), "-H", "127.0.0.1"], {
     cwd: WEB, stdio: "ignore", windowsHide: true,
-    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, OMEGA_ROOT: ROOT, DIRECTOR_DB_URL: "", OMEGA_SECRETS_CHECK: "report", DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
+    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, OMEGA_ROOT: ROOT, DIRECTOR_DB_URL: "", OMEGA_SECRETS_CHECK: "report", OMEGA_VAULT_ENV_FILE: VAULT_ENV, OMEGA_ENV_KEYS: VAULT_KEYS_FILE, OMEGA_KEYS_DESKTOP_FILE: VAULT_DESKTOP, DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
   });
   for (let i = 0; i < 60; i++) {
     try { if ((await get("/api/health")).ok) return; } catch { /* starting */ }
@@ -52,7 +57,7 @@ before(async () => {
   }
   throw new Error("test server did not start");
 });
-after(() => { server?.kill(); });
+after(() => { server?.kill(); rmSync(path.join(WEB, VAULT_ENV), { force: true }); });
 
 test("every screen renders in Arabic and English", async () => {
   for (const locale of ["ar", "en"]) for (const route of ["", "/company", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library", "/review"]) {
@@ -191,4 +196,31 @@ test("Profit Sweeper rules are edited on the Review screen and then need approva
   assert.equal(sweeper.content.min_gain_pct, 20);
   assert.equal((await post("/api/review", { pin: PIN, id: "sweeper", action: "edit", values: { min_gain_pct: 20, sweep_share: 5, min_sweep_usd: 25, reserve: "USDT" } })).status, 400);
   assert.equal((await post("/api/review", { pin: PIN, id: "sources", action: "edit", values: {} })).status, 400);
+});
+
+test("Keys Vault: one-time link + PIN, saves encrypted and to the Desktop copy, tests, then burns the link", async () => {
+  const { createSession } = await import("../src/lib/keys-vault.ts");
+  assert.equal((await json("/api/keys-vault?token=not-a-real-token-aaaaaaaa")).link, "missing");
+  const { token } = await createSession(DATA);
+  assert.equal((await json(`/api/keys-vault?token=${token}`)).link, "ok");
+  const keys = { NASA_FIRMS_KEY: "e2e0000000000000deadbeef00000000", AISSTREAM_API_KEY: "e2e0000000000000deadbeef0000000000000000" };
+  const send = (body: object, headers: Record<string, string> = {}) => fetch(`${BASE}/api/keys-vault`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE, ...headers }, body: JSON.stringify(body) });
+
+  assert.equal((await send({ token, pin: PIN, keys }, { "x-forwarded-host": "192.168.8.3" })).status, 403, "plain HTTP from the LAN is refused");
+  assert.equal((await send({ token, pin: "000000", keys })).status, 401, "wrong PIN");
+  assert.equal((await send({ token: token + "x", pin: PIN, keys })).status, 403, "wrong link");
+
+  const r = await send({ token, pin: PIN, keys });
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  for (const k of Object.keys(keys)) assert.ok(["invalid", "unreachable"].includes(j.verdicts[k]), `${k}: fake key must not pass (${j.verdicts[k]})`);
+  const envText = readFileSync(path.join(WEB, VAULT_ENV), "utf8");
+  for (const v of Object.values(keys)) assert.ok(!envText.includes(v), "env file holds ciphertext only");
+  assert.match(envText, /NASA_FIRMS_KEY="?encrypted:/);
+  const desk = readFileSync(VAULT_DESKTOP, "utf8");
+  assert.ok(desk.includes(`NASA_FIRMS_KEY=${keys.NASA_FIRMS_KEY}`) && desk.includes("# النسخة المشفرة في: web/.env.local (dotenvx)"));
+  const auditText = readFileSync(path.join(DATA, "keys-vault-audit.jsonl"), "utf8");
+  for (const v of Object.values(keys)) assert.ok(!auditText.includes(v), "audit log holds no values");
+  assert.equal((await send({ token, pin: PIN, keys })).status, 403, "the link works once");
+  assert.equal((await json(`/api/keys-vault?token=${token}`)).link, "used");
 });

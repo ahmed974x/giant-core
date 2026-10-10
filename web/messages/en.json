@@ -656,5 +656,34 @@
       "screens": "screens",
       "close": "close"
     }
+  },
+  "vault": {
+    "title": "Keys Vault",
+    "lead": "Paste your keys here. The laptop stores them encrypted and tests them.",
+    "status": {
+      "checking": "Checking the link…",
+      "ok": "Connected to the laptop · link valid",
+      "expired": "This link has expired. Ask for a new one.",
+      "used": "This link was already used.",
+      "missing": "No vault link is open on the laptop.",
+      "wrong": "This link is not valid.",
+      "offline": "Can't reach the laptop. Are you on the home Wi-Fi?"
+    },
+    "paste": "Paste",
+    "pin": "PIN",
+    "save": "Save and encrypt",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "offline": "Can't reach the laptop.",
+    "failed": "Saving failed.",
+    "noClipboard": "The browser didn't allow pasting. Long-press the field and paste instead.",
+    "verdict": {
+      "ok": "WORKING",
+      "invalid": "REJECTED",
+      "unreachable": "COULDN'T CONFIRM",
+      "not-set": "empty"
+    },
+    "wipe": "This page clears itself in {s} s.",
+    "safety": "The link works once, for 10 minutes. Keys are encrypted on the laptop, never logged, and cleared from this page as soon as you tap save."
   }
 }

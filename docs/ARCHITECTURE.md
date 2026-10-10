@@ -726,6 +726,27 @@ is unsafe. The full procedure is in docs/SECURITY.md, section Secrets.
 - **Verified live.** A plain `next start` refused to start, a dotenvx start passed all six checks, the PIN-guarded
   routes worked, and the log held no secret.
 
+**ADR-043 — Keys Vault.** Ahmad wants to paste his data keys on the phone and have the laptop store them, encrypted
+in the site and as a plain copy on his Desktop, then test them and report back. Decision:
+- **Page.** `/[locale]/keys-vault` plus `POST /api/keys-vault`, served through the existing Caddy HTTPS (8443). His
+  sketch had a WebSocket server on 3001; this needs no new port, firewall rule or certificate, and one paste-and-save
+  is a single request.
+- **Access.** A one-time link from `npm run keys:vault`: a 192-bit token, of which only the SHA-256 is stored, valid
+  10 minutes and burned on first save. On top of that: the PIN, same-origin, the wrong-PIN throttle, and HTTPS from
+  any device other than the laptop itself. His "60-second session" became the page's 60-second self-wipe after
+  saving, because 60 seconds is too short to open the link and paste two keys.
+- **Saving.** Each key is encrypted into `web/.env.local` through dotenvx's API (never as a process argument). The
+  Desktop copy `C:\Users\Hp\Desktop\المفاتيح.txt` follows his format and is written UTF-8 with a BOM so Notepad shows
+  the Arabic. Both keys load into the running site, both are tested live, and the result goes back to the phone.
+- **Audit.** `keys-vault-audit.jsonl` holds time, IP, key names and verdicts, never values.
+- **Limits.** Only the two vault keys are accepted, and they must look like keys (no spaces, newlines or `=`). That
+  stops anyone injecting other variables into `.env.local`.
+- **Tests.** The end-to-end test uses a throwaway env file, key file and Desktop copy, sends fake keys, and confirms:
+  - real NASA FIRMS and AISStream reject them;
+  - the env file holds only ciphertext and the audit log holds no values;
+  - plain HTTP from the LAN, a wrong PIN, a wrong link and a reused link are all refused.
+- **The Desktop copy.** It is plain text by Ahmad's choice; docs/KEYS-VAULT.md says so.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):
