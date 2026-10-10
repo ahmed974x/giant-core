@@ -27,6 +27,9 @@ export default function NervousSystem() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const view = useRef({ scale: 1, ox: 0, oy: 0 });
   const drag = useRef<{ x: number; y: number; ox: number; oy: number; moved: boolean } | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; scale: number } | null>(null);
+  const detailsRef = useRef<HTMLElement>(null);
 
   const load = useCallback(() => fetch("/api/network", { cache: "no-store" }).then(r => r.json()).then(setData).catch(() => null), []);
   useEffect(() => { load(); const id = setInterval(load, 30_000); return () => clearInterval(id); }, [load]);
@@ -104,7 +107,10 @@ export default function NervousSystem() {
         const ring = STATE_RING[n.state];
         if (ring) { ctx.strokeStyle = ring; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2); ctx.stroke(); }
         if (n.id === selected) { ctx.strokeStyle = "#e4ecf4"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, r + 6, 0, Math.PI * 2); ctx.stroke(); }
-        const showLabel = n.kind === "core" || n.kind === "screen" || (near?.has(n.id) ?? false) || (match?.has(n.id) ?? false) || view.current.scale > 1.6;
+        // Phones are too narrow for every label: show the centre, the focused node and search hits until zoomed in.
+        const narrow = w < 640;
+        const showLabel = n.kind === "core" || n.id === focus || (match?.has(n.id) ?? false) || view.current.scale > (narrow ? 1.8 : 1.6)
+          || (!narrow && (n.kind === "screen" || (near?.has(n.id) ?? false)));
         if (showLabel && on) {
           ctx.font = `${n.kind === "core" ? 600 : 500} ${n.kind === "atlas" ? 11 : 12}px ${family}`;
           ctx.fillStyle = n.kind === "atlas" ? "#8ea3b8" : "#e4ecf4";
@@ -149,7 +155,7 @@ export default function NervousSystem() {
           </p>
         </div>
         <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={t("search")} aria-label={t("search")}
-          className="w-56 rounded-lg border border-line bg-panel px-3 py-2 text-sm" dir="auto" />
+          className="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm sm:w-56" dir="auto" />
         <label className="flex items-center gap-2 text-sm text-muted">
           <input type="checkbox" checked={showAtlas} onChange={e => setShowAtlas(e.target.checked)} className="accent-[#3dd6c6]" />
           {t("atlas")}
@@ -157,20 +163,44 @@ export default function NervousSystem() {
       </div>
 
       <div className="mt-4 grid gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_340px]">
-        <div className="panel relative h-[68vh] min-h-[460px] overflow-hidden bg-[radial-gradient(ellipse_at_center,#0d2136_0%,#071526_70%)]">
+        <div className="panel relative h-[58vh] min-h-[380px] overflow-hidden bg-[radial-gradient(ellipse_at_center,#0d2136_0%,#071526_70%)] lg:h-[68vh] lg:min-h-[460px]">
           <canvas ref={canvasRef} className="size-full touch-none cursor-grab active:cursor-grabbing" aria-label={t("title")} role="img"
-            onPointerDown={e => { (e.target as Element).setPointerCapture(e.pointerId); drag.current = { x: e.clientX, y: e.clientY, ox: view.current.ox, oy: view.current.oy, moved: false }; }}
+            onPointerDown={e => {
+              (e.target as Element).setPointerCapture(e.pointerId);
+              pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+              if (pointers.current.size === 2) { // second finger: switch from panning to pinch zoom
+                const [a, b] = [...pointers.current.values()];
+                pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: view.current.scale };
+                if (drag.current) drag.current.moved = true;
+              } else drag.current = { x: e.clientX, y: e.clientY, ox: view.current.ox, oy: view.current.oy, moved: false };
+            }}
             onPointerMove={e => {
+              if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+              if (pinch.current && pointers.current.size === 2) {
+                const [a, b] = [...pointers.current.values()];
+                view.current.scale = Math.min(4, Math.max(0.6, pinch.current.scale * Math.hypot(a.x - b.x, a.y - b.y) / pinch.current.dist));
+                return;
+              }
               const d = drag.current;
               if (d) {
-                if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 3) d.moved = true;
+                if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true;
                 view.current.ox = d.ox + e.clientX - d.x; view.current.oy = d.oy + e.clientY - d.y;
-              } else setHover(hit(e));
+              } else if (e.pointerType === "mouse") setHover(hit(e));
             }}
-            onPointerUp={e => { const d = drag.current; drag.current = null; if (d && !d.moved) { const id = hit(e); if (id) setSelected(id); } }}
+            onPointerUp={e => {
+              pointers.current.delete(e.pointerId);
+              if (pointers.current.size < 2) pinch.current = null;
+              if (pointers.current.size > 0) return;
+              const d = drag.current; drag.current = null;
+              if (d && !d.moved) {
+                const id = hit(e);
+                if (id) { setSelected(id); if (window.innerWidth < 1024) detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }
+              }
+            }}
+            onPointerCancel={e => { pointers.current.delete(e.pointerId); pinch.current = null; drag.current = null; }}
             onPointerLeave={() => setHover(null)}
             onWheel={e => { const s = Math.min(4, Math.max(0.6, view.current.scale * (e.deltaY < 0 ? 1.12 : 0.89))); view.current.scale = s; }} />
-          <ul className="pointer-events-none absolute bottom-3 start-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
+          <ul className="pointer-events-none absolute bottom-3 start-3 end-3 hidden flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted sm:flex">
             {KINDS.filter(k => showAtlas || k !== "atlas").map(k => (
               <li key={k} className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: COLOR[k] }} />{t(`kinds.${k}`)}</li>
             ))}
@@ -179,7 +209,7 @@ export default function NervousSystem() {
             className="absolute end-3 top-3 rounded-md border border-line bg-panel/80 px-2 py-1 text-xs text-muted hover:text-ink">{t("reset")}</button>
         </div>
 
-        <aside className="panel p-4" aria-live="polite">
+        <aside ref={detailsRef} className="panel scroll-mt-20 p-4" aria-live="polite">
           {!sel ? <p className="text-sm text-muted">{t("pick")}</p> : (
             <>
               <div className="flex items-center gap-2">

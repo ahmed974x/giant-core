@@ -64,7 +64,7 @@ export default function Library() {
     setOpen(name); setPreview(null); setSheet(0);
     try { setPreview(await (await call(`/api/documents?file=${encodeURIComponent(name)}`)).json()); } catch (e) { setError((e as Error).message); }
   };
-  const download = async (format: "xlsx" | "docx") => {
+  const download = async (format: "xlsx" | "docx" | "pptx") => {
     try {
       const blob = await (await call(`/api/documents?export=${format}`)).blob();
       const a = document.createElement("a");
@@ -102,6 +102,7 @@ export default function Library() {
             <div className="flex flex-wrap gap-2 border-b border-line px-1 pb-3">
               <button onClick={() => download("xlsx")} className="rounded-md border border-line px-3 py-1.5 text-sm text-[#7fd6a4] hover:border-[#7fd6a4]">{t("exportExcel")}</button>
               <button onClick={() => download("docx")} className="rounded-md border border-line px-3 py-1.5 text-sm text-[#8db4ff] hover:border-[#8db4ff]">{t("exportWord")}</button>
+              <button onClick={() => download("pptx")} className="rounded-md border border-line px-3 py-1.5 text-sm text-[#ff9f85] hover:border-[#ff9f85]">{t("exportSlides")}</button>
             </div>
             {items && items.length === 0 && <p className="p-2 text-sm text-muted">{t("empty")}</p>}
             <ul className="mt-2 max-h-[60vh] space-y-1 overflow-y-auto">

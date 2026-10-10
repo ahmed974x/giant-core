@@ -14,14 +14,14 @@ export async function GET(req: Request) {
   const p = new URL(req.url).searchParams;
 
   const format = p.get("export");
-  if (format === "xlsx" || format === "docx") {
+  if (format === "xlsx" || format === "docx" || format === "pptx") {
     const { DatabaseSync } = await import("node:sqlite");
     const db = new DatabaseSync(path.join(directorDir(), "data", "director.sqlite"), { readOnly: true });
     try {
       const approvals = db.prepare("SELECT thread_id, request, status, risk, decided_by, decided_at, created_at FROM director_approvals ORDER BY created_at DESC LIMIT 2000").all() as never[];
       const rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections ORDER BY created_at DESC LIMIT 2000").all() as never[];
       const file = ledgerFile(format, approvals, rejections);
-      const type = format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const type = { xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation" }[format];
       return new Response(new Uint8Array(file), { headers: { "Content-Type": type, "Content-Disposition": `attachment; filename="omega-ledger-${new Date().toISOString().slice(0, 10)}.${format}"`, "Cache-Control": "no-store" } });
     } finally { db.close(); }
   }

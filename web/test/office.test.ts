@@ -67,6 +67,13 @@ test("ledger exports carry the approvals and rejections", () => {
   assert.ok(x.kind === "xlsx" && x.sheets.length === 2 && x.sheets[0].rows[1][3] === "low" && x.sheets[1].rows[1][1] === "RISK-001");
   const d = previewOffice(ledgerFile("docx", approvals, rejections));
   assert.ok(d.kind === "docx" && d.blocks.some(b => b.text.includes("book berth")) && d.blocks.some(b => b.text.includes("RISK-001")));
+  const p = previewOffice(ledgerFile("pptx", approvals, rejections, new Date("2026-10-10T10:00:00Z")));
+  assert.ok(p.kind === "pptx" && p.slides.length === 4, "four slides");
+  if (p.kind === "pptx") {
+    assert.deepEqual(p.slides[0].lines.slice(0, 2), ["Director 00 briefing", "OMEGA PRIME · 2026-10-10"]);
+    assert.ok(p.slides[2].lines.includes("remember: TASK: book berth"));
+    assert.ok(p.slides[3].lines.includes("RISK-001: 1"));
+  }
 });
 
 test("Immich client: loopback only, v3 search, thumbnails by UUID, uploads as multipart", async () => {

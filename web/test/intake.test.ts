@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { directorRequest, sniff, storedName, validate } from "../src/lib/intake.ts";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { directorDir, runDirector } from "../src/lib/director.ts";
 
 const bytes = (...parts: (string | number[])[]) =>
@@ -44,6 +47,8 @@ test("storedName strips paths and odd characters", () => {
 });
 
 test("a phone note reaches Director 00 and waits for approval", async () => {
+  // Work in a throwaway ledger so test runs never touch the real Director 00 data.
+  process.env.DIRECTOR_DATA_DIR = mkdtempSync(path.join(tmpdir(), "omega-intake-"));
   const out = await runDirector(["ask", directorRequest("note", "intake test from node --test")], directorDir(), 60_000) as
     { thread_id: string; status: string };
   assert.match(out.thread_id, /^[0-9a-f]{12}$/);

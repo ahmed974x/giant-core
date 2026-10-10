@@ -14,7 +14,8 @@
     "send": "أرسل",
     "atlas": "الأطلس",
     "network": "الشبكة",
-    "library": "المكتبة"
+    "library": "المكتبة",
+    "more": "شاشات أخرى"
   },
   "company": {
     "title": "نظرة عامة على العمليات",
@@ -409,6 +410,7 @@
         "title": "Immich رجّع خطأ",
         "body": "تأكد إن مفتاح API في web/.env.local لسا صالح."
       }
-    }
+    },
+    "exportSlides": "إحاطة PowerPoint"
   }
 }

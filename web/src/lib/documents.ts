@@ -2,6 +2,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { previewOffice, writeDocx, writeXlsx, type Cell, type Preview } from "./office.ts";
+import { writePptx } from "./pptx.ts";
 
 export type DocItem = { name: string; type: string; size: number; modified: string };
 export type DocPreview = Preview | { kind: "text"; text: string } | { kind: "binary"; type: string };
@@ -41,11 +42,25 @@ export function ledgerRows(approvals: Approval[], rejections: Rejection[]) {
   return { a, r };
 }
 
-/** Director 00's ledger as an Excel workbook (two sheets) or a Word report. */
-export function ledgerFile(format: "xlsx" | "docx", approvals: Approval[], rejections: Rejection[], now = new Date()): Buffer {
+/** Director 00's ledger as an Excel workbook (two sheets), a Word report or a PowerPoint briefing. */
+export function ledgerFile(format: "xlsx" | "docx" | "pptx", approvals: Approval[], rejections: Rejection[], now = new Date()): Buffer {
   const { a, r } = ledgerRows(approvals, rejections);
   if (format === "xlsx") return writeXlsx([{ name: "Approvals", rows: a }, { name: "Rejections", rows: r }]);
   const pending = approvals.filter(x => x.status === "pending" || x.status === "escalated");
+  if (format === "pptx") {
+    const codes = new Map<string, number>();
+    for (const x of rejections) codes.set(x.code, (codes.get(x.code) ?? 0) + 1);
+    const clip = (s: string) => (s.length > 110 ? `${s.slice(0, 107)}…` : s);
+    return writePptx([
+      { title: "Director 00 briefing", subtitle: `OMEGA PRIME · ${now.toISOString().slice(0, 10)}` },
+      { title: "At a glance", big: [
+        { value: String(pending.length), label: "Waiting for approval" },
+        { value: String(approvals.filter(x => x.status === "executed" || x.status === "approved").length), label: "Approved" },
+        { value: String(rejections.length), label: "Rejected" }] },
+      { title: "Waiting for your approval", bullets: pending.length ? pending.slice(0, 7).map(x => clip(x.request)) : ["Nothing is waiting."] },
+      { title: "Why proposals were rejected", bullets: codes.size ? [...codes].sort((p, q) => q[1] - p[1]).map(([c, k]) => `${c}: ${k}`) : ["No rejections yet."] },
+    ]);
+  }
   return writeDocx([
     { text: "OMEGA PRIME · Director 00 ledger", style: "title" },
     { text: `Generated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC · ${approvals.length} proposals · ${rejections.length} rejections`, style: "muted" },

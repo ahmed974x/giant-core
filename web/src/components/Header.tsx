@@ -47,6 +47,17 @@ export default function Header() {
             {t("app.switchLang")}
           </Link>
         </div>
+        <nav aria-label={t("nav.more")} className="flex gap-1 overflow-x-auto px-4 pb-2 sm:hidden">
+          {DESKTOP_ONLY.map(s => {
+            const active = isActive(s.href, path);
+            return (
+              <Link key={s.key} href={s.href} aria-current={active ? "page" : undefined}
+                className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs ${active ? "border-accent text-accent" : "border-line text-muted"}`}>
+                {t(`nav.${s.key}`)}
+              </Link>
+            );
+          })}
+        </nav>
       </header>
 
       <nav aria-label={t("app.name")}

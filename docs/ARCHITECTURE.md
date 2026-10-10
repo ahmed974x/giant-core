@@ -559,6 +559,16 @@ browser: thumbnails go through `/api/photos` behind the PIN. Photos sent from th
 when it runs (best effort, never blocking the intake). Until Docker runs, System Health and the nervous system show
 Immich as waiting.
 
+**ADR-031 — PowerPoint briefings and the network on the phone.** Ahmad confirmed PowerPoint was part of the Office
+ask. `web/src/lib/pptx.ts` writes a real 16:9 deck (presentation, master, blank layout, theme and slides) in the OMEGA
+look: navy background, brass titles, teal figures, and Arabic lines set right to left. The Library exports a four-slide
+Director 00 briefing (at a glance, waiting proposals, rejection reasons). The deck was opened and rendered to images
+in real PowerPoint during development. The nervous system screen now works on the phone: the details panel stacks
+under the map and scrolls into view on tap, two-finger pinch zooms, labels are limited to the centre and the
+focused node until you zoom in, and Library, Network and Atlas get a strip under the header because the bottom bar
+is full. Tests that call the real Director 00 now use a throwaway data folder, so test runs no longer write to
+Ahmad's ledger.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

@@ -14,7 +14,8 @@
     "send": "Send",
     "atlas": "Atlas",
     "network": "Network",
-    "library": "Library"
+    "library": "Library",
+    "more": "More screens"
   },
   "company": {
     "title": "Operations overview",
@@ -409,6 +410,7 @@
         "title": "Immich returned an error",
         "body": "Check that the API key in web/.env.local is still valid."
       }
-    }
+    },
+    "exportSlides": "Briefing to PowerPoint"
   }
 }
