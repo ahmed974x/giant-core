@@ -94,3 +94,14 @@ def test_backup_snapshots_memory_and_checkpoints(director, tmp_path):
     director.decide(tid, approved=True)
     out = director.backup()
     assert out["files"] and all(p for p in out["files"])
+
+
+# ── Butterfly Engine as a read-only Director tool ──
+def test_why_questions_run_the_butterfly_engine_without_approval(director, monkeypatch):
+    monkeypatch.setenv("DIRECTOR_OFFLINE", "1")
+    out = director.ask("Why did gold jump near Hormuz?")
+    assert out["status"] == "done" and out["actions"] == []
+    assert out["causal"]["anomaly"]["node"] == "gold_price" and out["causal"]["anomaly"]["place"] == "hormuz"
+    assert "<-" in out["answer"] and director.pending() == []
+    ar = director.ask("لماذا تأخرت السفن في هرمز؟")
+    assert ar["causal"]["anomaly"]["node"] == "ship_delay" and "←" in ar["answer"]

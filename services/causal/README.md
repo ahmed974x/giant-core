@@ -23,3 +23,27 @@ NumPy (about 5 MB, already allowed). On a server without that policy, swapping i
 First result (2026-10-10, 997 hourly bars, 10 shock hours): **no reliable causal effect**. The adjusted effect was
 -0.06% with a 95% interval of -0.27% to +0.14%, and the placebo test could not separate it from chance. Ten shock hours
 is too few; rerun after a volatile month or with `--shock -0.75`.
+
+## Butterfly Engine: causal back-trace
+
+`butterfly_engine.py` takes an anomaly (gold/BTC/ETH/SOL price spike, ship deviation, port congestion, oil move) and
+returns ranked root-cause chains such as *Gold <- Risk-off <- Oil <- Ship delay at Hormuz <- Strait closure*.
+
+1. **Structure:** a small, explicit causal prior (13 nodes, 18 edges) from domain knowledge, the step CausalNex would
+   learn from data. Every edge has a prior strength and can be argued with in code review.
+2. **Evidence:** links between markets are tested on public Binance hourly bars (backdoor-adjusted lagged OLS plus a
+   placebo refuter: supported x1.6, refuted x0.35). World drivers are checked *live* near the anomaly: open storms and
+   quakes (USGS, NASA EONET) and GDELT conflict events from the web app's `/api/hazards` and `/api/events`
+   (observed x1.4, not observed x0.7). Links with neither stay "prior only" and are flagged in the answer.
+3. **Ranking:** chains are ranked by the geometric mean of their link scores, so a longer well-evidenced chain can beat a
+   short untested one.
+
+```bash
+.venv/Scripts/python.exe butterfly_engine.py --type price_spike --asset PAXGUSDT --lat 26.57 --lon 56.25
+.venv/Scripts/python.exe butterfly_engine.py --type ship_deviation --offline
+.venv/Scripts/python.exe -m pytest -q        # 5 tests on synthetic data with a known cause
+```
+
+Output goes to `out/butterfly/latest.json` (and a timestamped copy); the Research screen's Causal Graph panel reads it.
+Director 00 calls it as a read-only tool: ask "why did gold jump near Hormuz?" or «لماذا تأخرت السفن في هرمز؟».
+DoWhy and CausalNex are not imported (their pandas build is blocked on this laptop); the method is the same in NumPy.
