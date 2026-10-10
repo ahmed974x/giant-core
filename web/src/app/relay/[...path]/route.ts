@@ -30,8 +30,12 @@ export async function GET(req: Request, { params }: Ctx) {
 export async function POST(req: Request, { params }: Ctx) {
   const path = (await params).path.join("/");
   if (!POST_PATHS.has(path)) return Response.json({ error: "not found" }, { status: 404 });
+  // Same-origin check on the host only: behind Caddy the browser sees https://<lan-ip>:8443 while Next sees http.
   const origin = req.headers.get("origin");
-  if (origin && origin !== new URL(req.url).origin) return Response.json({ error: "forbidden" }, { status: 403 });
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  let originHost = "";
+  try { originHost = origin ? new URL(origin).host : ""; } catch { /* malformed origin */ }
+  if (origin && originHost !== host) return Response.json({ error: "forbidden" }, { status: 403 });
   const body = await req.text();
   if (body.length > 16384) return Response.json({ error: "too large" }, { status: 413 });
   return forward(req, path, { method: "POST", body, headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(8000) });

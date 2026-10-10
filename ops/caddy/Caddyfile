@@ -1,0 +1,36 @@
+# OMEGA PRIME: local HTTPS so the phone can open the web app over home Wi-Fi.
+# Caddy's own local CA ("tls internal") signs the certificate; nothing is requested from the internet.
+# The web app itself stays bound to 127.0.0.1:3100; only Caddy listens on the LAN.
+#
+#   OMEGA_LAN_IP=192.168.8.3 caddy run --config Caddyfile     (ops/caddy/start-https.ps1 does this)
+
+{
+	# Never touch the Windows trust store; the phone trusts the root explicitly instead.
+	skip_install_trust
+	storage file_system {$OMEGA_CADDY_DATA:./data}
+	admin 127.0.0.1:2019
+}
+
+# The app over HTTPS, reachable from the phone at https://<laptop-ip>:8443
+https://{$OMEGA_LAN_IP}:8443, https://localhost:8443 {
+	tls internal
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3100 {
+		# Server-sent events (live radar, alerts) must stream, not buffer.
+		flush_interval -1
+	}
+	header {
+		Strict-Transport-Security "max-age=86400"
+		-Server
+	}
+}
+
+# Plain HTTP on the LAN serves only the public root certificate, so the phone can install it once.
+http://{$OMEGA_LAN_IP}:8480 {
+	handle /omega-root.crt {
+		root * {$OMEGA_CADDY_DATA:./data}/pki/authorities/local
+		rewrite * /root.crt
+		file_server
+	}
+	respond "OMEGA PRIME: install /omega-root.crt, then open https://{$OMEGA_LAN_IP}:8443" 200
+}
