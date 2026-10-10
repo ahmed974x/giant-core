@@ -145,7 +145,7 @@ services:
     cpus: 0.5
 
   n8n-init:
-    image: n8nio/n8n:${N8N_VERSION:-1.80.0}
+    image: n8nio/n8n:${N8N_VERSION:-2.42.6}
     <<: *hardening
     cap_drop: ["ALL"]
     restart: "no"
@@ -159,7 +159,7 @@ services:
     cpus: 0.5
 
   n8n:
-    image: n8nio/n8n:${N8N_VERSION:-1.80.0}
+    image: n8nio/n8n:${N8N_VERSION:-2.42.6}
     <<: *hardening
     cap_drop: ["ALL"]
     depends_on:

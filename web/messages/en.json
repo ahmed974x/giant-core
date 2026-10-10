@@ -37,7 +37,8 @@
         "database": "Memory database",
         "relay": "Relay",
         "web": "Web app",
-        "backup": "Last backup"
+        "backup": "Last backup",
+        "n8n": "n8n automations (MCP)"
       },
       "state": {
         "up": "OK",

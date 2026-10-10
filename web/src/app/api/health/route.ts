@@ -7,6 +7,22 @@ import path from "node:path";
 const ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "..");
 const DIRECTOR = process.env.OMEGA_DIRECTOR_DIR ?? path.join(ROOT, "services", "director00", "data");
 const RELAY = process.env.RELAY_URL ?? "http://127.0.0.1:8088";
+const N8N = process.env.N8N_URL ?? "http://127.0.0.1:5678";
+
+/** n8n and its instance-level MCP endpoint. Unauthenticated, /mcp-server/http answers 401 when MCP access is enabled
+ *  and 404 when it is not, so the tile can say which step is missing without holding any token. */
+async function n8n(): Promise<Check> {
+  try {
+    const up = await fetch(`${N8N}/healthz`, { signal: AbortSignal.timeout(1500), cache: "no-store" });
+    if (!up.ok) return { state: "down", detail: "n8n not healthy" };
+    const mcp = await fetch(`${N8N}/mcp-server/http`, { method: "POST", signal: AbortSignal.timeout(1500), cache: "no-store",
+      headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: "{}" });
+    if (mcp.status === 404) return { state: "idle", detail: "n8n up · enable Settings > Instance-level MCP" };
+    return { state: "up", detail: "n8n up · MCP endpoint ready for Claude (n8n-mcp)" };
+  } catch {
+    return { state: "down", detail: "n8n not running (docker compose up -d n8n)" };
+  }
+}
 
 type Check = { state: "up" | "down" | "idle" | "unknown"; detail: string; at?: string | null };
 
@@ -55,11 +71,12 @@ async function director(): Promise<{ check: Check; backup: Check }> {
 
 export async function GET() {
   const pgUrl = process.env.DIRECTOR_DB_URL ?? "";
-  const [d, caddy, pg, relay] = await Promise.all([
+  const [d, caddy, pg, relay, automations] = await Promise.all([
     director(),
     port("127.0.0.1", 8443),            // Caddy admin refuses fetch() (origin check), so probe the HTTPS listener
     port("127.0.0.1", 5435),
     http(`${RELAY}/healthz`),
+    n8n(),
   ]);
   const mem = process.memoryUsage();
   const body: Record<string, Check> = {
@@ -70,6 +87,7 @@ export async function GET() {
     relay: relay ? { state: "up", detail: RELAY } : { state: "down", detail: "relay offline (docker compose up)" },
     web: { state: "up", detail: `up ${Math.round(process.uptime() / 60)} min · ${Math.round(mem.rss / 1048576)} MB RAM` },
     backup: d.backup,
+    n8n: automations,
   };
   return Response.json({ checkedAt: new Date().toISOString(), checks: body }, { headers: { "Cache-Control": "no-store" } });
 }
