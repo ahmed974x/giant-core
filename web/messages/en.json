@@ -10,7 +10,8 @@
     "company": "Company",
     "market": "Market",
     "research": "Research",
-    "earth": "Earth"
+    "earth": "Earth",
+    "send": "Send"
   },
   "company": {
     "title": "Operations overview",
@@ -271,5 +272,30 @@
   "severity": {
     "watch": "Watch",
     "high": "High"
+  },
+  "send": {
+    "title": "Send to Director 00",
+    "lead": "A note, task, link or file from your phone. It waits in the approval inbox until you approve it; nothing runs on its own.",
+    "kind": "What are you sending",
+    "kinds": {
+      "note": "Note",
+      "task": "Task",
+      "link": "Link"
+    },
+    "url": "Link",
+    "comment": "Why it matters (optional)",
+    "taskText": "What needs doing",
+    "noteText": "Your note",
+    "attach": "Attach a photo, PDF or text file",
+    "remove": "Remove",
+    "fileHint": "Up to 8 MB",
+    "pin": "PIN",
+    "submit": "Send",
+    "sending": "Sending…",
+    "sent": "Sent. Waiting for your approval as",
+    "openInbox": "Open the inbox",
+    "offline": "The laptop can't be reached. Check you're on the same Wi-Fi.",
+    "failed": "Sending failed",
+    "safety": "Files are checked by their contents and stored only; they are never opened or run."
   }
 }

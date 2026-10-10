@@ -41,7 +41,7 @@ export default function ApprovalInbox() {
 
   const items = inbox?.pending ?? [];
   return (
-    <section className="panel p-4">
+    <section id="inbox" className="panel scroll-mt-20 p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="font-semibold">{t("title")}</h2>
         <span className="rounded-full bg-panel-2 px-2 py-0.5 text-xs text-muted">{items.length}</span>
@@ -74,7 +74,7 @@ export default function ApprovalInbox() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                   {p.status === "pending" ? (
                     <button disabled={busy === p.thread_id || !pin} onClick={() => act(p.thread_id, { action: "approve" })}
-                      className="rounded-md bg-accent px-3 py-1.5 font-semibold text-[#0a0f15] disabled:opacity-50">{busy === p.thread_id ? "…" : t("approve")}</button>
+                      className="rounded-md bg-accent px-3 py-1.5 font-semibold text-[#071526] disabled:opacity-50">{busy === p.thread_id ? "…" : t("approve")}</button>
                   ) : (
                     <>
                       <input value={phrase[p.thread_id] ?? ""} onChange={e => setPhrase(s => ({ ...s, [p.thread_id]: e.target.value }))}

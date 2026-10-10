@@ -488,6 +488,20 @@ and a "verified only" switch; unverified events are drawn faint and hollow on th
 Phoenix's state per service, its last run and recent incidents from `phoenix_events`. Fixed on the way: under
 `pythonw` (the scheduled task) `sys.stdout` is `None`, which made every scheduled run fail; now covered by a test.
 
+**ADR-025 — Installable app and phone intake (Layer C).** Context: Ahmad drives the project from his phone and wants
+anything he sends to reach the system, without a native app store build. Decision: (1) the web app is a PWA served
+over the existing Caddy HTTPS: `manifest.ts` (Arabic, RTL, standalone, PNG + maskable icons, shortcuts to Send, Inbox
+and Earth), a small hand-written service worker (`public/sw.js`, no Workbox dependency) that caches the shell and static
+assets, serves `offline.html` when the laptop is unreachable, and never caches `/api` or `/relay`. (2) `/[locale]/send`
+takes a note, task or link plus an optional file and is also the manifest's `share_target`, so "Share → OMEGA" from
+any phone app prefills it. `POST /api/intake` uses the same guards as approvals (same origin, PIN, throttle), checks
+files by their bytes (images, PDF, plain text only, 8 MB), stores them under `services/director00/data/inbox` with a
+generated name, and asks Director 00 to `remember:` the item. Nothing is executed: every intake is a proposal that
+waits in the approval inbox. (3) A design pass: navy "night bridge" palette with teal for live data and brass for
+anything Director 00 does on Ahmad's behalf, IBM Plex Sans Arabic for both scripts, and on phones a bottom tab bar
+with Send raised in the middle (thumb reach). Rejected: a native wrapper (Capacitor) — a store build adds signing and
+updates for no gain over an installed PWA on the same Wi-Fi.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):
