@@ -1,0 +1,14 @@
+{
+  "name": "director00-pg-test",
+  "private": true,
+  "type": "module",
+  "description": "Real Postgres 17 + pgvector in WebAssembly (PGlite) for running the Director 00 tests without Docker",
+  "scripts": {
+    "pg": "node pg-test-server.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite-pgvector": "0.0.9",
+    "@electric-sql/pglite-socket": "0.2.11"
+  }
+}

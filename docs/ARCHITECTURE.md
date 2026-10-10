@@ -367,6 +367,16 @@ training labels (simulated today, real once collected — ADR 007). Rejected: on
 the slow path's network deadline added 480 ms of ingest lag) and GPU-only inference (no GPU on the target
 laptop; ONNX Runtime picks CUDA/DirectML when present and CPU otherwise).
 
+**ADR 009 — Director 00: LangGraph + pgvector with a durable human gate.** Context: the coordinator needs long-term
+memory and must never change state or act outside the platform without the human's approval (ADR 007). Decision:
+a LangGraph graph (retrieve → plan → approval → execute) whose approval node calls `interrupt()` and is checkpointed
+to disk, so a proposal can wait for a decision across restarts; memories live in Postgres + pgvector (`agent_memories`,
+HNSW cosine) with a SQLite fallback when Docker is off, and every write records who approved it. Trade-offs accepted:
+the default hashing embedder recalls shared words, not synonyms, until an embedding model is configured; the pure-Python
+pg8000 driver is slower than psycopg but loads under this laptop's Application Control policy. Rejected: AutoGen and
+AutoGPT-style autonomy (no gate), HashiCorp Vault (BSL; OpenBao if a secrets server is ever needed). Code:
+`services/director00`, schema `db/director/01-memory.sql`, compose profile `director`.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):
