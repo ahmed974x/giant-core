@@ -12,7 +12,8 @@
     "research": "Research",
     "earth": "Earth",
     "send": "Send",
-    "atlas": "Atlas"
+    "atlas": "Atlas",
+    "network": "Network"
   },
   "company": {
     "title": "Operations overview",
@@ -309,5 +310,54 @@
     "keep": "Send to inbox",
     "credit": "From sindresorhus/awesome (CC0). Lists link to GitHub; nothing is installed from here.",
     "open": "Find tools in the Awesome atlas"
+  },
+  "network": {
+    "title": "Nervous system",
+    "lead": "Every part of OMEGA as one network: {nodes} parts, {edges} connections.",
+    "status": "Now: {up} healthy, {down} down, {key} waiting for a key.",
+    "search": "Find a part…",
+    "atlas": "Show atlas categories",
+    "reset": "Reset view",
+    "pick": "Click any node to see what it does and what it connects to.",
+    "open": "Open",
+    "links": "Connections ({n})",
+    "kinds": {
+      "core": "Core",
+      "screen": "Screens",
+      "service": "Services",
+      "store": "Data stores",
+      "infra": "Infrastructure",
+      "mcp": "Claude tools",
+      "feed": "Data feeds",
+      "atlas": "Atlas categories"
+    },
+    "states": {
+      "up": "Healthy",
+      "idle": "Idle",
+      "down": "Down",
+      "unknown": "Unknown",
+      "needs-key": "Needs a key",
+      "static": "Always on"
+    },
+    "out": {
+      "uses": "uses",
+      "calls": "calls",
+      "guards": "approves",
+      "shows": "shows",
+      "feeds": "feeds",
+      "stores": "writes to",
+      "heals": "watches",
+      "depends": "runs"
+    },
+    "in": {
+      "uses": "used by",
+      "calls": "called by",
+      "guards": "approved by",
+      "shows": "shown in",
+      "feeds": "fed by",
+      "stores": "written by",
+      "heals": "watched by",
+      "depends": "runs on"
+    }
   }
 }

@@ -525,6 +525,19 @@ reader. Claude gets `mcp/awesome-atlas`, a dependency-free stdio MCP server with
 need no index; the GitHub topic API, since it needs a token and returns repos ranked by stars rather than curation.
 Lists found here are leads only: any tool from them still goes through the usual vetting before it is added.
 
+**ADR-028 — Nervous system map.** Context: Ahmad wants every tool, service and feed to read as one connected
+network. Decision: a single registry, `web/data/nervous-system.json`, lists each part of OMEGA (people, screens,
+services, data stores, infrastructure, Claude's MCP tools, data feeds) with typed edges (uses, calls, approves,
+shows, feeds, writes to, watches, runs on); the Awesome atlas categories join as satellites of the Atlas screen.
+`/api/network` adds each node's live state from System Health and whether its optional key is configured (true or
+false, never the value). `/network` draws it on a Canvas 2D: a seeded force layout with kinds on rings around
+Ahmad and Director 00, signals travelling along live nerves (paused under reduced motion), state rings for down
+or key-less parts, search, pan and zoom, and a details panel with each node's connections and a link to its
+screen. A test fails if any part is unconnected, an edge points nowhere, or a health key or screen link is wrong,
+so the registry stays honest as the project grows. Rejected for now: Sigma.js + graphology, a WebGL renderer built
+for thousands of nodes. At ~75 nodes, Canvas 2D needs no new dependency and keeps working where WebGL is
+unavailable. The phone layout comes next.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

@@ -8,7 +8,7 @@ const SCREENS = [
   { href: "/research", key: "research" },
   { href: "/earth", key: "earth" },
 ] as const;
-const DESKTOP_ONLY = [{ href: "/atlas", key: "atlas" }] as const;
+const DESKTOP_ONLY = [{ href: "/network", key: "network" }, { href: "/atlas", key: "atlas" }] as const;
 
 const isActive = (href: string, path: string) => (href === "/" ? path === "/" : path.startsWith(href));
 

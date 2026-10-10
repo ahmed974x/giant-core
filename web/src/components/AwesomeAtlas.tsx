@@ -7,11 +7,11 @@ import type { Entry } from "@/lib/awesome";
 type Res = { fetchedAt: string; total: number; categories: string[]; results: Entry[] };
 
 /** Search ~700 curated awesome-lists by tool, topic or field; each result can be sent to Director 00 for later. */
-export default function AwesomeAtlas() {
+export default function AwesomeAtlas({ initialCat = "" }: { initialCat?: string }) {
   const t = useTranslations("atlas");
   const f = useFormatter();
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("");
+  const [cat, setCat] = useState(initialCat);
   const [res, setRes] = useState<Res | null>(null);
 
   useEffect(() => {
