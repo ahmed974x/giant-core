@@ -1,0 +1,23 @@
+services:
+  web:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE44_PREVIEW_MODE=${BASE44_PREVIEW_MODE:-0}
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX:-}
+    command:
+      [
+        "sh", "-ec",
+        "pip install --no-cache-dir -r requirements.txt && mkdir -p .streamlit && printf '[client]\nallowedOrigins = [\"https://3000-%s\"]\n' \"$${BASE44_PUBLIC_HOST_SUFFIX}\" > .streamlit/config.toml && exec streamlit run app.py --server.port=3000 --server.address=0.0.0.0 --server.headless=true --server.runOnSave=true --server.fileWatcherType=poll --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"
+      ]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/_stcore/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: on-failure
