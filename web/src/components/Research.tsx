@@ -63,7 +63,7 @@ export default function Research() {
           placeholder={t("placeholder")}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }}
           className="min-h-12 flex-1 resize-y rounded-lg bg-panel-2 px-3 py-2 outline-none ring-accent placeholder:text-muted focus:ring-1" />
-        <button disabled={busy} className="rounded-lg bg-accent px-5 py-2 font-semibold text-[#071526] disabled:opacity-60">
+        <button disabled={busy} className="rounded-lg bg-accent px-5 py-2 font-semibold text-[#0A0E1A] disabled:opacity-60">
           {busy ? t("asking") : t("ask")}
         </button>
       </form>

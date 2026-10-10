@@ -641,6 +641,34 @@ since the next backup carries them. The first real drill showed this: the snapsh
 newer `checkpoints` and `truth_scores` tables. A fresh backup then restored and verified in 2.5 s. The same drill
 fixed a time bug: Restic writes local time with an offset, and the drill now honours it.
 
+**ADR-039 — Command Center.** Ahmad's brief (2026-10-10): one front door with four live miniature screens, a
+central command bar and a status bar, in his palette.
+
+What it is:
+- `/` is now the Command Center; Company moved to `/company`, and links, alerts and the manifest followed.
+- The miniatures are a turning 3D MapLibre globe with world events, hazards, planes over the Gulf, and ships once
+  AIS is keyed; a Lightweight Charts BTC area; the nervous system with running signals; and the latest Library files
+  with one-tap Excel, Word and PowerPoint exports.
+- 🔮 asks Director 00 and answers in place. ⚡ files the command as a task proposal through the phone intake, so it
+  waits in the approval inbox like everything else. 📎 attaches a file and 🎤 dictates through the browser's speech
+  recognition.
+- The header gained Live and Director indicators, an approvals bell with its count, search (Ctrl+K) and settings
+  (Review). The status bar shows pending approvals, Phoenix, memory, the live feed and freshness, from one shared
+  30-second poll (`lib/status.ts`).
+
+How it differs from the brief: the app is on Next.js 16 and Tailwind 4 rather than 14. Motion uses CSS (300 ms
+transitions, a launch pulse on send, pulsing live dots) instead of Framer Motion, to avoid a new dependency. The
+network miniature reuses the existing Canvas renderer rather than React Flow, and MapLibre stands in for CesiumJS.
+
+His palette became the app-wide tokens: `--bg-primary`, gold, purple, cyan, pink, green, red and orange, with the
+existing Tailwind names mapped onto them, gold and purple gradients, and glass panels. Fonts are Cairo and Inter,
+with JetBrains Mono for codes.
+
+His extras: a particle background that drifts away from the pointer (it pauses when the tab is hidden and stays
+still under reduced motion), keys 1-4 for the screens and Esc to close, a Web Audio ping on approve and reject, and a
+warmer palette from 23:00 to 06:00. On phones the command bar comes first, the cards stack in one column, and the
+status bar sits at the end above the tab bar.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

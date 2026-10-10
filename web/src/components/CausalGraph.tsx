@@ -81,13 +81,13 @@ export default function CausalGraph() {
     const nodes: Node[] = trace.graph.nodes.map(n => ({
       id: n.id, position: pos[n.id] ?? { x: 0, y: 0 }, data: { label: locale === "ar" ? n.ar : n.en },
       sourcePosition: "right" as Node["sourcePosition"], targetPosition: "left" as Node["targetPosition"],
-      style: { background: n.target ? "#3dd6c6" : "#111821", color: n.target ? "#071526" : "#e6edf3", fontWeight: n.target ? 700 : 500,
+      style: { background: n.target ? "#3dd6c6" : "#111821", color: n.target ? "#0A0E1A" : "#e6edf3", fontWeight: n.target ? 700 : 500,
         border: `1.5px solid ${KIND_COLOR[n.kind] ?? "#233246"}`, borderRadius: 10, fontSize: 12, width: 180, padding: 8 },
     }));
     const edges: Edge[] = trace.graph.edges.map(e => ({
       id: `${e.source}-${e.target}`, source: e.source, target: e.target, label: `×${e.factor}`, animated: e.evidence !== "prior",
       style: { stroke: EVIDENCE_COLOR[e.evidence], strokeWidth: 1 + e.prior * 2.5, strokeDasharray: e.evidence === "prior" ? "5 4" : undefined },
-      labelStyle: { fill: EVIDENCE_COLOR[e.evidence], fontSize: 10 }, labelBgStyle: { fill: "#071526" },
+      labelStyle: { fill: EVIDENCE_COLOR[e.evidence], fontSize: 10 }, labelBgStyle: { fill: "#0A0E1A" },
       markerEnd: { type: MarkerType.ArrowClosed, color: EVIDENCE_COLOR[e.evidence] },
     }));
     return { nodes, edges };
@@ -106,7 +106,7 @@ export default function CausalGraph() {
           <select value={place} onChange={e => setPlace(e.target.value as typeof place)} className="rounded-md border border-line bg-panel-2 px-2 py-1" aria-label={t("place")}>
             {PLACES.map(p => <option key={p} value={p}>{p ? t(`places.${p}`) : t("places.none")}</option>)}
           </select>
-          <button onClick={run} disabled={state === "running"} className="rounded-md bg-accent px-3 py-1 font-semibold text-[#071526] disabled:opacity-60">
+          <button onClick={run} disabled={state === "running"} className="rounded-md bg-accent px-3 py-1 font-semibold text-[#0A0E1A] disabled:opacity-60">
             {state === "running" ? t("running") : t("trace")}
           </button>
         </div>

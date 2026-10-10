@@ -163,7 +163,7 @@ export default function NervousSystem() {
       </div>
 
       <div className="mt-4 grid gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_340px]">
-        <div className="panel relative h-[58vh] min-h-[380px] overflow-hidden bg-[radial-gradient(ellipse_at_center,#0d2136_0%,#071526_70%)] lg:h-[68vh] lg:min-h-[460px]">
+        <div className="panel relative h-[58vh] min-h-[380px] overflow-hidden bg-[radial-gradient(ellipse_at_center,#0d2136_0%,#0A0E1A_70%)] lg:h-[68vh] lg:min-h-[460px]">
           <canvas ref={canvasRef} className="size-full touch-none cursor-grab active:cursor-grabbing" aria-label={t("title")} role="img"
             onPointerDown={e => {
               (e.target as Element).setPointerCapture(e.pointerId);
@@ -224,7 +224,7 @@ export default function NervousSystem() {
               {sel.detail && <p className="mt-2 font-mono text-xs text-muted" dir="ltr">{sel.detail}</p>}
               {sel.file && <p className="mt-1 font-mono text-xs text-muted/80" dir="ltr">{sel.file}</p>}
               {sel.href && (
-                <Link href={sel.href} className="mt-3 inline-block rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-[#071526]">{t("open")}</Link>
+                <Link href={sel.href} className="mt-3 inline-block rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-[#0A0E1A]">{t("open")}</Link>
               )}
               <h3 className="mt-5 text-xs font-semibold text-muted">{t("links", { n: links.length })}</h3>
               <ul className="mt-2 max-h-[34vh] space-y-1 overflow-y-auto text-sm">

@@ -89,7 +89,7 @@ export default function Library() {
       <div role="tablist" className="mt-5 inline-grid grid-cols-2 gap-1 rounded-lg bg-panel-2 p-1">
         {(["documents", "photos"] as const).map(k => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium ${tab === k ? "bg-accent text-[#071526]" : "text-muted hover:text-ink"}`}>{t(`tabs.${k}`)}</button>
+            className={`rounded-md px-4 py-1.5 text-sm font-medium ${tab === k ? "bg-accent text-[#0A0E1A]" : "text-muted hover:text-ink"}`}>{t(`tabs.${k}`)}</button>
         ))}
       </div>
 

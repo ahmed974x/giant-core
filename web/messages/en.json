@@ -16,7 +16,8 @@
     "network": "Network",
     "library": "Library",
     "more": "More screens",
-    "review": "Review"
+    "review": "Review",
+    "command": "Command"
   },
   "company": {
     "title": "Operations overview",
@@ -540,6 +541,103 @@
         "sweep_share": "% of the gain",
         "min_sweep_usd": "amount"
       }
+    }
+  },
+  "pulse": {
+    "live": "Live",
+    "local": "Local",
+    "search": "Command (Ctrl+K)",
+    "inbox": "{n} waiting for approval"
+  },
+  "command": {
+    "title": "Command Center",
+    "lead": "Everything at a glance. Tell Director 00 what you need from one place.",
+    "loading": "Loading…",
+    "cards": {
+      "earth": {
+        "title": "Earth",
+        "stat": "{events} events · {hazards} hazards · {planes} planes over the Gulf",
+        "ships": "{n} ships tracked",
+        "noShips": "Ships appear once the AIS key is added"
+      },
+      "market": {
+        "title": "Market",
+        "detail": "Charts, prices and the Profit Sweeper. Opens the full Market screen."
+      },
+      "network": {
+        "title": "Nervous system",
+        "stat": "{nodes} parts · {edges} connections",
+        "down": "{n} part(s) down: open to see which",
+        "allOk": "Every running part is answering"
+      },
+      "docs": {
+        "title": "Library",
+        "stat": "{n} files",
+        "private": "Private: enter your PIN in the command bar",
+        "detail": "Word, Excel and PowerPoint open in place; briefings land here at 07:00."
+      }
+    },
+    "docs": {
+      "locked": "Enter your PIN in the command bar once to see your latest files here.",
+      "empty": "Nothing yet.",
+      "types": {
+        "word": "Word",
+        "excel": "Excel",
+        "powerpoint": "PowerPoint",
+        "pdf": "PDF",
+        "image": "Photo",
+        "text": "Text",
+        "file": "File"
+      },
+      "export": {
+        "xlsx": "Ledger → Excel",
+        "docx": "Ledger → Word",
+        "pptx": "Briefing → PowerPoint"
+      }
+    },
+    "bar": {
+      "title": "Command bar",
+      "placeholder": "Ask Director 00… add a screen, analyse gold, show the reports",
+      "pin": "PIN",
+      "voice": "Dictate",
+      "attach": "Attach a file",
+      "propose": "Propose",
+      "execute": "Execute",
+      "thinking": "Thinking…",
+      "sending": "Sending…",
+      "enterHint": "propose",
+      "ctrlEnterHint": "execute (after your approval)",
+      "queued": "Sent for your approval as",
+      "openInbox": "Open the inbox",
+      "confidence": "Confidence {pct}%",
+      "offline": "The laptop can't be reached.",
+      "failed": "Director 00 couldn't take that.",
+      "noVoice": "Voice input isn't available in this browser.",
+      "examples": {
+        "0": "Why did gold move near Hormuz?",
+        "1": "Add a screen for crypto",
+        "2": "Show me the performance report",
+        "3": "Alert me when Bitcoin hits 100k"
+      }
+    },
+    "status": {
+      "director": "Director: {n} pending",
+      "phoenix": "Phoenix",
+      "phoenixState": {
+        "ok": "OK",
+        "down": "attention",
+        "unknown": "—"
+      },
+      "memory": "Memory: {n}",
+      "live": "Live",
+      "local": "Local only",
+      "updated": "Updated {s}s ago",
+      "loading": "Checking…"
+    },
+    "keys": {
+      "command": "command bar",
+      "screens": "screens",
+      "close": "close"
     }
   }
 }

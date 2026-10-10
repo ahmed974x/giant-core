@@ -71,7 +71,7 @@ export default function PhoneAlerts() {
       {(status === "off" || status === "on") && (
         <div className="mt-3 flex gap-2">
           {status === "off"
-            ? <button disabled={busy || pin.length < 6} onClick={turnOn} className="rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#071526] disabled:opacity-40">{t("on")}</button>
+            ? <button disabled={busy || pin.length < 6} onClick={turnOn} className="rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#0A0E1A] disabled:opacity-40">{t("on")}</button>
             : <>
                 <button disabled={busy || pin.length < 6} onClick={() => call({ action: "test" }).then(() => setMsg({ ok: true, text: t("testMsg") })).catch(e => setMsg({ ok: false, text: e.message }))}
                   className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-40">{t("test")}</button>

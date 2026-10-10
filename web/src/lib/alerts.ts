@@ -37,7 +37,7 @@ export function pendingAlerts(proposals: Proposal[], phoenix: PhoenixRow[], stat
   const fresh = proposals.filter(p => p.created_at > state.proposalAt && (p.status === "pending" || p.status === "escalated"));
   for (const p of fresh) notes.push({
     title: p.status === "escalated" ? "Director 00 · high risk, needs your phrase" : "Director 00 · approval waiting",
-    body: p.request.replace(/^remember:\s*/i, "").slice(0, 140), url: "/ar#inbox", tag: `proposal-${p.thread_id}`,
+    body: p.request.replace(/^remember:\s*/i, "").slice(0, 140), url: "/ar/company#inbox", tag: `proposal-${p.thread_id}`,
   });
   // Failures, restarts and restores only (a passing drill or a briefing is not news). Phoenix's first run only sets the bookmark, so an existing history doesn't flood the phone.
   const incidents = state.phoenixId < 0 ? [] : phoenix.filter(e => e.id > state.phoenixId && (e.result !== "ok" || e.action === "restart" || e.action === "restore"));

@@ -1,29 +1,45 @@
 @import "tailwindcss";
 
 @theme {
-  /* Night bridge: the screens of a ship's bridge at night. Ink-blue water, deck panels, chart teal for live data,
-     brass for everything Director 00 does on your behalf, signal red for risk. */
-  --color-ink: #e4ecf4;
-  --color-muted: #8ea3b8;
-  --color-panel: #0d2136;
-  --color-panel-2: #132b45;
-  --color-line: #1f3a58;
-  --color-accent: #3dd6c6;
-  --color-brass: #d4a72c;
-  --color-warn: #f2b84b;
-  --color-bad: #f2685c;
-  --color-good: #4cd38a;
-  --font-sans: var(--font-plex), system-ui, sans-serif;
-  --font-arabic: var(--font-plex), system-ui, sans-serif;
+  /* Ahmad's palette (Command Center brief, ADR-039): deep space, gold for decisions, cosmic purple for analysis,
+     cyan for data, pink for financial warnings, orange for Phoenix. */
+  --color-ink: #e6e9f2;
+  --color-muted: #94a0b8;
+  --color-panel: #1a1f35;
+  --color-panel-2: #111827;
+  --color-line: #2a3152;
+  --color-accent: #06b6d4;
+  --color-brass: #f5b301;
+  --color-purple: #7c3aed;
+  --color-pink: #ec4899;
+  --color-warn: #f97316;
+  --color-bad: #ef4444;
+  --color-good: #10b981;
+  --color-space: #0a0e1a;
+  --font-sans: var(--font-inter), var(--font-cairo), system-ui, sans-serif;
+  --font-arabic: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-mono-jb), ui-monospace, monospace;
 }
 
-html { background: #071526; color: var(--color-ink); color-scheme: dark; }
+:root {
+  --bg-primary: #0A0E1A; --bg-secondary: #111827; --bg-card: #1A1F35;
+  --gold: #F5B301; --purple: #7C3AED; --cyan: #06B6D4; --pink: #EC4899; --green: #10B981; --red: #EF4444; --orange: #F97316;
+  --gold-gradient: linear-gradient(135deg, #F5B301, #F59E0B);
+  --purple-gradient: linear-gradient(135deg, #7C3AED, #A855F7);
+}
+html { background: radial-gradient(ellipse at 50% 0%, #1A1F35 0%, #0A0E1A 70%) fixed, #0A0E1A; color: var(--color-ink); color-scheme: dark; }
+/* Gold actions get Ahmad's gradient; purple marks analysis. */
+.bg-brass { background-image: var(--gold-gradient); }
+.bg-purple { background-image: var(--purple-gradient); }
+/* Late at night (23:00-06:00) the screen turns a little warmer to rest the eyes. */
+html[data-night] { --color-ink: #efe7da; --color-muted: #a99f92; --color-accent: #27b3b8; }
+html[data-night] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; background: rgba(255, 140, 40, 0.045); z-index: 100; }
 :focus-visible { outline: 2px solid var(--color-brass); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 html[lang="ar"] body { font-family: var(--font-arabic); }
 body { font-family: var(--font-sans); min-height: 100dvh; }
 
-.panel { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 14px; }
+.panel { background: rgba(26, 31, 53, 0.6); border: 1px solid var(--color-line); border-radius: 14px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .num { font-variant-numeric: tabular-nums; }
 
 /* ---- Earth map: my-location beacon and popups ---- */
@@ -38,3 +54,23 @@ body { font-family: var(--font-sans); min-height: 100dvh; }
 .omega-pop strong { font-size: 13px; }
 .omega-pop span { color: var(--color-muted); }
 .omega-pop a { color: var(--color-accent); justify-self: end; }
+
+/* ---- Command Center (ADR-039) ---- */
+.omega-mark { background-image: var(--gold-gradient); box-shadow: 0 0 18px rgba(245, 179, 1, 0.45), inset 0 0 6px rgba(255, 255, 255, 0.25); }
+.pulse-dot { animation: omega-pulse 2s ease-in-out infinite; }
+@keyframes omega-pulse { 0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; } 50% { box-shadow: 0 0 0 4px transparent; opacity: 0.55; } }
+.glass { background: rgba(26, 31, 53, 0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--color-line); }
+.mini-card { transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease; will-change: transform; }
+.mini-card:hover { transform: translateY(-3px); }
+.glow-gold { border-color: rgba(245, 179, 1, 0.45); box-shadow: 0 0 0 1px rgba(245, 179, 1, 0.15), 0 10px 40px -12px rgba(245, 179, 1, 0.35); }
+.glow-cyan { border-color: rgba(6, 182, 212, 0.45); box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.15), 0 10px 40px -12px rgba(6, 182, 212, 0.35); }
+.glow-purple { border-color: rgba(124, 58, 237, 0.5); box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.18), 0 10px 40px -12px rgba(124, 58, 237, 0.4); }
+.glow-orange { border-color: rgba(249, 115, 22, 0.55); box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2), 0 10px 40px -12px rgba(249, 115, 22, 0.45); }
+.glow-green { border-color: rgba(16, 185, 129, 0.45); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 10px 40px -12px rgba(16, 185, 129, 0.35); }
+.command-ring { position: relative; }
+.command-ring::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(245, 179, 1, 0.8), rgba(124, 58, 237, 0.7), rgba(6, 182, 212, 0.7));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.command-launch { animation: omega-launch 700ms ease-out; }
+@keyframes omega-launch { 0% { box-shadow: 0 0 0 0 rgba(245, 179, 1, 0.55); transform: scale(1); } 40% { transform: scale(1.012); } 100% { box-shadow: 0 0 0 28px rgba(245, 179, 1, 0); transform: scale(1); } }
+.kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--color-line); border-radius: 5px; padding: 1px 5px; color: var(--color-muted); }

@@ -58,7 +58,7 @@ export default function Review() {
       {status(it)}
       {it.id !== "restic" && <span className="font-mono text-[11px] text-muted" dir="ltr">v {it.hash}</span>}
       {!it.current && (
-        <button disabled={busy === it.id} onClick={() => sign(it)} className="ms-auto rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#071526] disabled:opacity-50">
+        <button disabled={busy === it.id} onClick={() => sign(it)} className="ms-auto rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#0A0E1A] disabled:opacity-50">
           {t(it.id === "restic" ? "saved" : "approve")}
         </button>
       )}
@@ -154,7 +154,7 @@ export default function Review() {
                 </select>
               </label>
               <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-                <button disabled={busy === "sweeper"} onClick={saveRules} className="rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#071526] disabled:opacity-50">{t("sweeper.save")}</button>
+                <button disabled={busy === "sweeper"} onClick={saveRules} className="rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#0A0E1A] disabled:opacity-50">{t("sweeper.save")}</button>
                 <button onClick={() => setDraft(null)} className="rounded-md border border-line px-3 py-1.5 text-sm">{t("sweeper.cancel")}</button>
                 <span className="basis-full text-xs text-muted">{t("sweeper.afterSave")}</span>
               </div>

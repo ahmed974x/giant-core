@@ -71,13 +71,13 @@ export default function ProfitSweeper() {
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
             <span className="text-sm">{t("total", { amount: usd(plan.totalSweepUsd), reserve: plan.reserve })}</span>
             <button disabled={busy || plan.totalSweepUsd <= 0} onClick={propose}
-              className="ms-auto rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#071526] disabled:opacity-40">{t("propose")}</button>
+              className="ms-auto rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#0A0E1A] disabled:opacity-40">{t("propose")}</button>
           </div>
         </>
       )}
       {msg && (
         <p className={`mt-3 rounded-md px-3 py-2 text-sm ${msg.ok ? "bg-good/10 text-good" : "bg-bad/10 text-bad"}`}>
-          {msg.text} {msg.ok && <Link href="/#inbox" className="underline">{t("openInbox")}</Link>}
+          {msg.text} {msg.ok && <Link href="/company#inbox" className="underline">{t("openInbox")}</Link>}
         </p>
       )}
       <p className="mt-3 text-xs text-muted">{t("safety")} <Link href="/review" className="underline">{t("rules")}</Link></p>

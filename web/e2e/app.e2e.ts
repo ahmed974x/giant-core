@@ -55,7 +55,7 @@ before(async () => {
 after(() => { server?.kill(); });
 
 test("every screen renders in Arabic and English", async () => {
-  for (const locale of ["ar", "en"]) for (const route of ["", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library", "/review"]) {
+  for (const locale of ["ar", "en"]) for (const route of ["", "/company", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library", "/review"]) {
     const r = await get(`/${locale}${route}`);
     assert.equal(r.status, 200, `/${locale}${route}`);
     const html = await r.text();

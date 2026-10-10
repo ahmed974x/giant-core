@@ -50,7 +50,7 @@ export default function SendBox({ initialText = "", initialUrl = "" }: { initial
         <div role="radiogroup" aria-label={t("kind")} className="grid grid-cols-3 gap-1 rounded-lg bg-panel-2 p-1">
           {KINDS.map(k => (
             <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
-              className={`rounded-md py-2 text-sm font-medium transition ${kind === k ? "bg-brass text-[#071526]" : "text-muted hover:text-ink"}`}>
+              className={`rounded-md py-2 text-sm font-medium transition ${kind === k ? "bg-brass text-[#0A0E1A]" : "text-muted hover:text-ink"}`}>
               {t(`kinds.${k}`)}
             </button>
           ))}
@@ -85,7 +85,7 @@ export default function SendBox({ initialText = "", initialUrl = "" }: { initial
           <input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={e => setPin(e.target.value)}
             placeholder={t("pin")} aria-label={t("pin")} className="w-32 rounded-md border border-line bg-panel-2 px-3 py-2.5 text-sm" dir="ltr" />
           <button type="submit" disabled={!ready || busy}
-            className="ms-auto rounded-md bg-brass px-5 py-2.5 font-semibold text-[#071526] disabled:opacity-40">
+            className="ms-auto rounded-md bg-brass px-5 py-2.5 font-semibold text-[#0A0E1A] disabled:opacity-40">
             {busy ? t("sending") : t("submit")}
           </button>
         </div>
@@ -94,7 +94,7 @@ export default function SendBox({ initialText = "", initialUrl = "" }: { initial
         {sent && (
           <p role="status" className="rounded-md bg-good/10 px-3 py-2 text-sm text-good">
             {t("sent")} <span className="font-mono" dir="ltr">{sent.thread_id}</span>.{" "}
-            <Link href="/#inbox" className="underline">{t("openInbox")}</Link>
+            <Link href="/company#inbox" className="underline">{t("openInbox")}</Link>
           </p>
         )}
       </form>

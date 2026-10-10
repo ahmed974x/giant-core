@@ -31,7 +31,7 @@
       "kind": "screen",
       "en": "Company",
       "ar": "الشركة",
-      "href": "/",
+      "href": "/company",
       "descEn": "Operations overview, approval inbox, system health, Phoenix timeline.",
       "descAr": "نظرة العمليات، صندوق الموافقات، صحة النظام، سجل Phoenix."
     },
@@ -495,6 +495,15 @@
       "file": "services/director00/phoenix.py",
       "descEn": "Every Sunday at 06:30: restores the newest backup into a scratch folder and verifies every database.",
       "descAr": "كل أحد الساعة 6:30: يسترجع آخر نسخة في مجلد مؤقت ويتحقق من كل قاعدة بيانات."
+    },
+    {
+      "id": "screen-command",
+      "kind": "screen",
+      "en": "Command Center",
+      "ar": "مركز القيادة",
+      "href": "/",
+      "descEn": "The front door: four live mini screens, one command bar to Director 00, and the system's pulse.",
+      "descAr": "الواجهة الرئيسية: أربع شاشات مصغرة حية، وشريط أوامر واحد لـ Director 00، ونبض النظام."
     }
   ],
   "edges": [
@@ -996,6 +1005,41 @@
     {
       "from": "screen-library",
       "to": "briefing",
+      "type": "shows"
+    },
+    {
+      "from": "web",
+      "to": "screen-command",
+      "type": "shows"
+    },
+    {
+      "from": "ahmad",
+      "to": "screen-command",
+      "type": "uses"
+    },
+    {
+      "from": "screen-command",
+      "to": "director",
+      "type": "calls"
+    },
+    {
+      "from": "screen-command",
+      "to": "screen-earth",
+      "type": "shows"
+    },
+    {
+      "from": "screen-command",
+      "to": "screen-market",
+      "type": "shows"
+    },
+    {
+      "from": "screen-command",
+      "to": "screen-network",
+      "type": "shows"
+    },
+    {
+      "from": "screen-command",
+      "to": "screen-library",
       "type": "shows"
     }
   ]

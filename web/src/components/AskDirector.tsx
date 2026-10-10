@@ -43,7 +43,7 @@ export default function AskDirector() {
         <div className="flex gap-2 sm:flex-col">
           <input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={e => setPin(e.target.value)}
             placeholder={t("pin")} aria-label={t("pin")} className="w-28 rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm" dir="ltr" />
-          <button disabled={busy || q.trim().length < 3 || pin.length < 6} className="flex-1 rounded-lg bg-brass px-5 py-2 font-semibold text-[#071526] disabled:opacity-50">
+          <button disabled={busy || q.trim().length < 3 || pin.length < 6} className="flex-1 rounded-lg bg-brass px-5 py-2 font-semibold text-[#0A0E1A] disabled:opacity-50">
             {busy ? t("asking") : t("ask")}
           </button>
         </div>
@@ -63,7 +63,7 @@ export default function AskDirector() {
           )}
           {waiting && (
             <p className="rounded-md bg-brass/10 px-3 py-2 text-sm text-brass">
-              {t("waiting")} <Link href="/#inbox" className="underline">{t("openInbox")}</Link>
+              {t("waiting")} <Link href="/company#inbox" className="underline">{t("openInbox")}</Link>
             </p>
           )}
         </div>

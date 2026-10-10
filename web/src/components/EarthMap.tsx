@@ -173,7 +173,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
             "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 0.88 } });
         mm.addLayer({ id: "me-acc", type: "fill", source: "me-acc", paint: { "fill-color": "#ff3b6b", "fill-opacity": 0.12 } });
         mm.addLayer({ id: "nodes-halo", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 12, 10, 26], "circle-color": ["get", "color"], "circle-opacity": 0.2 } });
-        mm.addLayer({ id: "nodes", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 10, 9], "circle-color": ["get", "color"], "circle-stroke-width": 2, "circle-stroke-color": "#071526" } });
+        mm.addLayer({ id: "nodes", type: "circle", source: "nodes", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 5, 10, 9], "circle-color": ["get", "color"], "circle-stroke-width": 2, "circle-stroke-color": "#0A0E1A" } });
         // Hazards: quakes sized by magnitude, other events by type, each with a soft warning halo.
         const HAZARD_COLOR: ExpressionSpecification = ["match", ["get", "kind"], "earthquake", "#ff6b3d", "wildfires", "#ff3b30", "volcanoes", "#d6336c", "severeStorms", "#4dabf7", "floods", "#339af0", "firePixel", "#ff922b", "#f59f00"];
         // World events from GDELT: small diamonds coloured by kind, sized by how widely the story is reported.
@@ -184,28 +184,28 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
           "circle-stroke-width": 1.5, "circle-radius": ["interpolate", ["linear"], ["get", "articles"], 1, 4, 10, 9, 60, 18] } });
         mm.addLayer({ id: "events", type: "circle", source: "events", paint: {
           "circle-color": EVENT_COLOR, "circle-opacity": ["case", ["==", ["get", "truth_status"], "verified"], 0.9, 0.25],
-          "circle-stroke-color": ["case", ["==", ["get", "truth_status"], "verified"], "#071526", "#adb5bd"], "circle-stroke-width": 1,
+          "circle-stroke-color": ["case", ["==", ["get", "truth_status"], "verified"], "#0A0E1A", "#adb5bd"], "circle-stroke-width": 1,
           "circle-radius": ["interpolate", ["linear"], ["get", "mentions"], 1, 2.5, 20, 6, 100, 10] } });
         mm.addLayer({ id: "hazards-halo", type: "circle", source: "hazards", paint: {
           "circle-color": HAZARD_COLOR, "circle-opacity": 0.18, "circle-blur": 0.6,
           "circle-radius": ["case", ["==", ["get", "kind"], "earthquake"], ["interpolate", ["linear"], ["coalesce", ["get", "mag"], 3], 2.5, 10, 7, 40], 16] } });
         mm.addLayer({ id: "hazards", type: "circle", source: "hazards", paint: {
-          "circle-color": HAZARD_COLOR, "circle-stroke-color": "#071526", "circle-stroke-width": 1.5,
+          "circle-color": HAZARD_COLOR, "circle-stroke-color": "#0A0E1A", "circle-stroke-width": 1.5,
           "circle-radius": ["case", ["==", ["get", "kind"], "earthquake"], ["interpolate", ["linear"], ["coalesce", ["get", "mag"], 3], 2.5, 3, 7, 11], 5] } });
         mm.addLayer({ id: "ships", type: "symbol", source: "ships",
           layout: { "icon-image": "ship", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.45, 12, 0.9], "icon-rotate": ["get", "rot"], "icon-rotation-alignment": "map", "icon-allow-overlap": true },
-          paint: { "icon-color": ["case", [">", ["get", "sog"], 0.5], "#4cd38a", "#8b98a8"], "icon-halo-color": "#071526", "icon-halo-width": 1 } });
+          paint: { "icon-color": ["case", [">", ["get", "sog"], 0.5], "#4cd38a", "#8b98a8"], "icon-halo-color": "#0A0E1A", "icon-halo-width": 1 } });
         mm.addLayer({ id: "trails", type: "line", source: "trails", layout: { "line-cap": "round", "line-join": "round" },
           paint: { "line-color": "#ffd166", "line-width": ["interpolate", ["linear"], ["zoom"], 3, 1, 10, 2.5], "line-opacity": 0.45, "line-blur": 0.5 } });
         mm.addLayer({ id: "flights", type: "symbol", source: "flights",
           layout: { "icon-image": "plane", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 12, 1], "icon-rotate": ["get", "track"], "icon-rotation-alignment": "map", "icon-allow-overlap": true,
             "text-field": ["step", ["zoom"], "", 7, ["coalesce", ["get", "callsign"], ""]], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, 1.6], "text-anchor": "top", "text-optional": true },
-          paint: { "icon-color": ["case", ["get", "ground"], "#8b98a8", "#ffd166"], "icon-halo-color": "#071526", "icon-halo-width": 1, "text-color": "#ffd166", "text-halo-color": "#071526", "text-halo-width": 1.2 } });
+          paint: { "icon-color": ["case", ["get", "ground"], "#8b98a8", "#ffd166"], "icon-halo-color": "#0A0E1A", "icon-halo-width": 1, "text-color": "#ffd166", "text-halo-color": "#0A0E1A", "text-halo-width": 1.2 } });
         mm.addLayer({ id: "cams", type: "symbol", source: "cams",
-          layout: { "icon-image": "cam", "icon-size": 0.6, "icon-allow-overlap": true }, paint: { "icon-color": "#c792ea", "icon-halo-color": "#071526", "icon-halo-width": 1 } });
+          layout: { "icon-image": "cam", "icon-size": 0.6, "icon-allow-overlap": true }, paint: { "icon-color": "#c792ea", "icon-halo-color": "#0A0E1A", "icon-halo-width": 1 } });
         mm.addLayer({ id: "nodes-label", type: "symbol", source: "nodes",
           layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 2, 12, 10, 16], "text-offset": [0, 1.4], "text-anchor": "top" },
-          paint: { "text-color": "#ffffff", "text-halo-color": "#071526", "text-halo-width": 1.6 } });
+          paint: { "text-color": "#ffffff", "text-halo-color": "#0A0E1A", "text-halo-width": 1.6 } });
 
         mm.on("click", "nodes", e => { const slug = e.features?.[0]?.properties?.slug; if (slug) onFocusRef.current(String(slug)); });
         for (const id of ["nodes", "flights", "ships", "cams", "hazards", "events", "gkg"]) {
@@ -496,7 +496,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
           <div className="max-w-xs space-y-2">
             <p className="font-semibold">{t("gl.title")}</p>
             <p className="text-sm text-muted">{t("gl.body")}</p>
-            <button onClick={() => location.reload()} className="mt-2 rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-[#071526]">{t("gl.reload")}</button>
+            <button onClick={() => location.reload()} className="mt-2 rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-[#0A0E1A]">{t("gl.reload")}</button>
           </div>
         </div>
       )}
@@ -506,7 +506,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
         <div className={`pointer-events-auto flex overflow-hidden text-xs ${glass}`}>
           {(["satellite", "map"] as const).map(b => (
             <button key={b} onClick={() => setBasemap(b)} aria-pressed={basemap === b}
-              className={`flex-1 px-3 py-1.5 ${basemap === b ? "bg-accent font-semibold text-[#071526]" : "text-ink hover:bg-white/5"}`}>{t(`layers.${b}`)}</button>
+              className={`flex-1 px-3 py-1.5 ${basemap === b ? "bg-accent font-semibold text-[#0A0E1A]" : "text-ink hover:bg-white/5"}`}>{t(`layers.${b}`)}</button>
           ))}
           <button onClick={() => setTerrain(v => !v)} aria-pressed={terrain} title={t("terrain")}
             className={`border-s border-white/10 px-3 py-1.5 ${terrain ? "bg-accent/20 font-semibold text-accent" : "text-ink hover:bg-white/5"}`}>3D</button>

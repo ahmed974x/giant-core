@@ -16,7 +16,8 @@
     "network": "الشبكة",
     "library": "المكتبة",
     "more": "شاشات أخرى",
-    "review": "المراجعة"
+    "review": "المراجعة",
+    "command": "القيادة"
   },
   "company": {
     "title": "نظرة عامة على العمليات",
@@ -540,6 +541,103 @@
         "sweep_share": "% من الربح",
         "min_sweep_usd": "المبلغ"
       }
+    }
+  },
+  "pulse": {
+    "live": "مباشر",
+    "local": "محلي",
+    "search": "الأوامر (Ctrl+K)",
+    "inbox": "{n} ينتظر موافقتك"
+  },
+  "command": {
+    "title": "مركز القيادة",
+    "lead": "كل شي بنظرة وحدة. قل لـ Director 00 وش تبي من مكان واحد.",
+    "loading": "جارٍ التحميل…",
+    "cards": {
+      "earth": {
+        "title": "الأرض",
+        "stat": "{events} حدث · {hazards} خطر · {planes} طائرة فوق الخليج",
+        "ships": "{n} سفينة متتبعة",
+        "noShips": "السفن تظهر بعد إضافة مفتاح AIS"
+      },
+      "market": {
+        "title": "السوق",
+        "detail": "الشارتات والأسعار وجامع الأرباح. يفتح شاشة السوق كاملة."
+      },
+      "network": {
+        "title": "الجهاز العصبي",
+        "stat": "{nodes} جزء · {edges} اتصال",
+        "down": "{n} جزء متوقف: افتح وشوف",
+        "allOk": "كل الأجزاء الشغالة ترد"
+      },
+      "docs": {
+        "title": "المكتبة",
+        "stat": "{n} ملف",
+        "private": "خاصة: اكتب الرمز في شريط الأوامر",
+        "detail": "Word و Excel و PowerPoint تنفتح مباشرة، والإحاطة توصل هنا الساعة 7."
+      }
+    },
+    "docs": {
+      "locked": "اكتب الرمز في شريط الأوامر مرة وحدة عشان تشوف آخر ملفاتك هنا.",
+      "empty": "ما فيه شي للحين.",
+      "types": {
+        "word": "Word",
+        "excel": "Excel",
+        "powerpoint": "PowerPoint",
+        "pdf": "PDF",
+        "image": "صورة",
+        "text": "نص",
+        "file": "ملف"
+      },
+      "export": {
+        "xlsx": "السجل ← Excel",
+        "docx": "السجل ← Word",
+        "pptx": "الإحاطة ← PowerPoint"
+      }
+    },
+    "bar": {
+      "title": "شريط الأوامر",
+      "placeholder": "اسأل Director 00… أضف شاشة، حلل الذهب، اعرض التقارير",
+      "pin": "الرمز",
+      "voice": "تحدث",
+      "attach": "أرفق ملف",
+      "propose": "اقترح",
+      "execute": "نفّذ",
+      "thinking": "يفكر…",
+      "sending": "يرسل…",
+      "enterHint": "اقترح",
+      "ctrlEnterHint": "نفّذ (بعد موافقتك)",
+      "queued": "انرسل لموافقتك برقم",
+      "openInbox": "افتح الصندوق",
+      "confidence": "الثقة {pct}%",
+      "offline": "تعذّر الوصول إلى اللابتوب.",
+      "failed": "ما قدر Director 00 ياخذ الطلب.",
+      "noVoice": "الإدخال الصوتي غير متاح في هذا المتصفح.",
+      "examples": {
+        "0": "ليش تحرك الذهب قرب هرمز؟",
+        "1": "أضف شاشة للعملات الرقمية",
+        "2": "اعرض لي تقرير الأداء",
+        "3": "نبّهني لما Bitcoin يوصل 100k"
+      }
+    },
+    "status": {
+      "director": "Director: {n} ينتظر",
+      "phoenix": "Phoenix",
+      "phoenixState": {
+        "ok": "سليم",
+        "down": "يحتاج انتباه",
+        "unknown": "—"
+      },
+      "memory": "الذاكرة: {n}",
+      "live": "مباشر",
+      "local": "محلي فقط",
+      "updated": "آخر تحديث قبل {s} ث",
+      "loading": "جارٍ الفحص…"
+    },
+    "keys": {
+      "command": "شريط الأوامر",
+      "screens": "الشاشات",
+      "close": "إغلاق"
     }
   }
 }

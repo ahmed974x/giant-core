@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
+import { ping } from "@/lib/ping";
 
 type Action = { type: string; kind?: string; content?: string; message?: string };
 type Pending = { thread_id: string; request: string; status: "pending" | "escalated"; created_at: string;
@@ -34,6 +35,7 @@ export default function ApprovalInbox() {
     const r = await fetch("/api/director", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...body, thread_id, pin }) }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : { error: t("offline") };
+    if (r?.ok) ping(body.action === "reject" ? "no" : "ok");
     setMsg(r?.ok ? { ok: true, text: j.status === "escalated" ? t("escalated") : t(`done.${j.status ?? "executed"}`) } : { ok: false, text: j.error ?? t("failed") });
     setBusy(null);
     load();
@@ -74,7 +76,7 @@ export default function ApprovalInbox() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                   {p.status === "pending" ? (
                     <button disabled={busy === p.thread_id || !pin} onClick={() => act(p.thread_id, { action: "approve" })}
-                      className="rounded-md bg-accent px-3 py-1.5 font-semibold text-[#071526] disabled:opacity-50">{busy === p.thread_id ? "…" : t("approve")}</button>
+                      className="rounded-md bg-accent px-3 py-1.5 font-semibold text-[#0A0E1A] disabled:opacity-50">{busy === p.thread_id ? "…" : t("approve")}</button>
                   ) : (
                     <>
                       <input value={phrase[p.thread_id] ?? ""} onChange={e => setPhrase(s => ({ ...s, [p.thread_id]: e.target.value }))}

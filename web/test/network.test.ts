@@ -19,7 +19,7 @@ test("the shipped registry is one connected, valid network", () => {
 
 test("health keys and screen links point at real things", () => {
   const healthKeys = new Set(["director", "caddy", "database", "relay", "web", "backup", "n8n", "immich"]);
-  const screens = ["/", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library", "/review"];
+  const screens = ["/", "/company", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library", "/review"];
   for (const n of registry.nodes) {
     if (n.health) assert.ok(healthKeys.has(n.health), `${n.id}: ${n.health}`);
     if (n.href) assert.ok(screens.includes(n.href), `${n.id}: ${n.href}`);
