@@ -6,7 +6,7 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { previewOffice } from "../src/lib/office.ts";
@@ -15,6 +15,7 @@ import { validate, type LiveNode, type Registry } from "../src/lib/network.ts";
 const WEB = path.resolve(import.meta.dirname, "..");
 const PORT = 3199, BASE = `http://127.0.0.1:${PORT}`, PIN = "e2e-424242";
 const DATA = mkdtempSync(path.join(tmpdir(), "omega-e2e-"));
+const ROOT = mkdtempSync(path.join(tmpdir(), "omega-e2e-root-"));
 const CHROME = process.env.CHROME_PATH ?? ["C:/Program Files (x86)/Google/Chrome/Application/chrome.exe", "C:/Program Files/Google/Chrome/Application/chrome.exe", "/opt/pw-browsers/chromium"].find(existsSync);
 let server: ChildProcess;
 
@@ -34,11 +35,16 @@ async function intake(fields: Record<string, string>, file?: { name: string; byt
 before(async () => {
   assert.ok(existsSync(path.join(WEB, ".next", "BUILD_ID")), "run `npm run build` first");
   mkdirSync(path.join(DATA, "inbox"), { recursive: true });
+  // Copies of the reviewed files, so Review edits and approvals never touch the real ones.
+  for (const rel of ["services/truth/sources.json", "services/causal/assumptions.json", "services/sweeper/rules.json"]) {
+    mkdirSync(path.join(ROOT, path.dirname(rel)), { recursive: true });
+    copyFileSync(path.join(WEB, "..", rel), path.join(ROOT, rel));
+  }
   // Positions with a tiny cost so the sweeper always has something to propose, whatever the live price.
   writeFileSync(path.join(DATA, "positions.json"), JSON.stringify({ positions: [{ symbol: "BTCUSDT", qty: 0.01, cost_usd: 1 }] }));
   server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", ".", "-p", String(PORT), "-H", "127.0.0.1"], {
     cwd: WEB, stdio: "ignore", windowsHide: true,
-    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
+    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, OMEGA_ROOT: ROOT, DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
   });
   for (let i = 0; i < 60; i++) {
     try { if ((await get("/api/health")).ok) return; } catch { /* starting */ }
@@ -167,3 +173,22 @@ async function browse(route: string): Promise<string[]> {
     return errors.filter(e => !/relay|ERR_CONNECTION_REFUSED|Failed to load resource|WebGL|GPU stall/i.test(e));
   } finally { chrome.kill(); }
 }
+
+test("phone alerts: public key served, foreign push hosts refused, nothing sent without a phone", async () => {
+  const { publicKey, subscribed } = await json("/api/push");
+  assert.equal(Buffer.from(publicKey, "base64url").length, 65);
+  assert.equal(subscribed, 0);
+  const keys = { p256dh: publicKey, auth: Buffer.alloc(16).toString("base64url") };
+  assert.equal((await post("/api/push", { pin: PIN, action: "subscribe", subscription: { endpoint: "https://evil.example/push", keys } })).status, 400);
+  assert.equal((await post("/api/push", { pin: PIN, action: "test" })).status, 409);
+  assert.equal((await post("/api/push", { pin: "000000", action: "test" })).status, 401);
+});
+
+test("Profit Sweeper rules are edited on the Review screen and then need approval", async () => {
+  const edit = await post("/api/review", { pin: PIN, id: "sweeper", action: "edit", values: { min_gain_pct: 20, sweep_share: 0.5, min_sweep_usd: 25, reserve: "USDT" } });
+  assert.equal(edit.status, 200);
+  const sweeper = (await json("/api/review", pin)).items.find((i: { id: string }) => i.id === "sweeper");
+  assert.equal(sweeper.content.min_gain_pct, 20);
+  assert.equal((await post("/api/review", { pin: PIN, id: "sweeper", action: "edit", values: { min_gain_pct: 20, sweep_share: 5, min_sweep_usd: 25, reserve: "USDT" } })).status, 400);
+  assert.equal((await post("/api/review", { pin: PIN, id: "sources", action: "edit", values: {} })).status, 400);
+});

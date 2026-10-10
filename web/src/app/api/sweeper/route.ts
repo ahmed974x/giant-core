@@ -7,7 +7,7 @@ import { guard } from "@/lib/guard";
 import { fetchPrices, planSweep, sweepRequest, validPositions, validRules, type Plan } from "@/lib/sweeper";
 
 const throttle = makeThrottle();
-const rulesFile = () => path.resolve(directorDir(), "..", "sweeper", "rules.json");
+const rulesFile = () => process.env.OMEGA_ROOT ? path.join(process.env.OMEGA_ROOT, "services", "sweeper", "rules.json") : path.resolve(directorDir(), "..", "sweeper", "rules.json");
 const positionsFile = () => path.join(directorData(), "positions.json");
 
 async function build(): Promise<{ state: string; plan?: Plan; error?: string }> {

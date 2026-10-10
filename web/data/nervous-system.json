@@ -468,6 +468,15 @@
       "file": "web/e2e",
       "descEn": "Starts a separate test server with a throwaway ledger and checks every screen and flow.",
       "descAr": "يشغّل خادم اختبار منفصل بسجل مؤقت ويفحص كل الشاشات والمسارات."
+    },
+    {
+      "id": "alerts",
+      "kind": "service",
+      "en": "Phone alerts",
+      "ar": "تنبيهات الجوال",
+      "file": "web/src/lib/alerts.ts",
+      "descEn": "Checks the ledger and Phoenix every minute and pushes encrypted notifications to the phone.",
+      "descAr": "يفحص السجل و Phoenix كل دقيقة ويرسل إشعارات مشفرة للجوال."
     }
   ],
   "edges": [
@@ -910,6 +919,26 @@
       "from": "claude",
       "to": "e2e",
       "type": "calls"
+    },
+    {
+      "from": "sqlite",
+      "to": "alerts",
+      "type": "feeds"
+    },
+    {
+      "from": "phoenix",
+      "to": "alerts",
+      "type": "feeds"
+    },
+    {
+      "from": "alerts",
+      "to": "phone",
+      "type": "feeds"
+    },
+    {
+      "from": "screen-company",
+      "to": "alerts",
+      "type": "shows"
     }
   ]
 }

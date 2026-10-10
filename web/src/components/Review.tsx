@@ -14,6 +14,7 @@ export default function Review() {
   const [items, setItems] = useState<ReviewItem[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ min_gain_pct: string; sweep_share: string; min_sweep_usd: string; reserve: string } | null>(null);
 
   useEffect(() => { try { setPin(sessionStorage.getItem("omega-pin") ?? ""); } catch { /* storage blocked */ } }, []);
 
@@ -32,6 +33,17 @@ export default function Review() {
       body: JSON.stringify({ pin, id: it.id, hash: it.hash }) }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : { error: t("offline") };
     if (!r?.ok) setError(j.error ?? t("failed"));
+    setBusy(null); load();
+  };
+
+  const saveRules = async () => {
+    if (!draft) return;
+    setBusy("sweeper"); setError("");
+    const values = { min_gain_pct: Number(draft.min_gain_pct), sweep_share: Number(draft.sweep_share) / 100, min_sweep_usd: Number(draft.min_sweep_usd), reserve: draft.reserve };
+    const r = await fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, id: "sweeper", action: "edit", values }) }).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : { error: t("offline") };
+    if (r?.ok) setDraft(null); else setError(j.error ?? t("failed"));
     setBusy(null); load();
   };
 
@@ -118,13 +130,39 @@ export default function Review() {
           <h2 className="font-semibold">{t("sweeper.title")}</h2>
           <p className="mt-1 text-sm text-muted">{t("sweeper.lead")}</p>
           <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-            {([["min_gain_pct", `${sw.min_gain_pct}%`], ["sweep_share", `${Math.round(Number(sw.sweep_share) * 100)}%`], ["min_sweep_usd", `${sw.min_sweep_usd}`], ["reserve", String(sw.reserve)]] as const).map(([k, v]) => (
+            {([["min_gain_pct", `${sw.min_gain_pct}%`], ["sweep_share", `${Math.round(Number(sw.sweep_share) * 100)}%`], ["min_sweep_usd", `${sw.min_sweep_usd} ${sw.reserve}`], ["reserve", String(sw.reserve)]] as const).map(([k, v]) => (
               <div key={k} className="rounded-lg bg-panel-2 p-3">
                 <dt className="text-xs text-muted">{t(`sweeper.keys.${k}`)}</dt>
                 <dd className="num mt-1 text-lg font-semibold text-accent" dir="ltr">{v}</dd>
               </div>
             ))}
           </dl>
+          {draft ? (
+            <div className="mt-3 grid gap-3 rounded-lg border border-brass/40 p-3 sm:grid-cols-2">
+              {(["min_gain_pct", "sweep_share", "min_sweep_usd"] as const).map(k => (
+                <label key={k} className="text-sm">
+                  <span className="text-xs text-muted">{t(`sweeper.keys.${k}`)} ({t(`sweeper.units.${k}`)})</span>
+                  <input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*"
+                    value={draft[k]} onChange={e => setDraft({ ...draft, [k]: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-line bg-panel-2 px-3 py-2" dir="ltr" lang="en" />
+                </label>
+              ))}
+              <label className="text-sm">
+                <span className="text-xs text-muted">{t("sweeper.keys.reserve")}</span>
+                <select value={draft.reserve} onChange={e => setDraft({ ...draft, reserve: e.target.value })} className="mt-1 w-full rounded-md border border-line bg-panel-2 px-3 py-2">
+                  {["USDT", "USDC", "FDUSD"].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </label>
+              <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                <button disabled={busy === "sweeper"} onClick={saveRules} className="rounded-md bg-brass px-4 py-1.5 text-sm font-semibold text-[#071526] disabled:opacity-50">{t("sweeper.save")}</button>
+                <button onClick={() => setDraft(null)} className="rounded-md border border-line px-3 py-1.5 text-sm">{t("sweeper.cancel")}</button>
+                <span className="basis-full text-xs text-muted">{t("sweeper.afterSave")}</span>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setDraft({ min_gain_pct: String(sw.min_gain_pct), sweep_share: String(Math.round(Number(sw.sweep_share) * 100)), min_sweep_usd: String(sw.min_sweep_usd), reserve: String(sw.reserve) })}
+              className="mt-3 rounded-md border border-line px-3 py-1.5 text-sm text-accent hover:border-accent">{t("sweeper.edit")}</button>
+          )}
           {footer(sweeper)}
         </section>
       )}

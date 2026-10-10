@@ -1,7 +1,8 @@
 // Review (ADR-032): the judgement calls Ahmad signs off on, shown in the app with a fingerprint of their current
 // contents. An approval is recorded against that fingerprint, so any later edit shows up as "changed since review".
 import { createHash } from "node:crypto";
-import { readFile, writeFile, rename } from "node:fs/promises";
+import { appendFile, readFile, writeFile, rename } from "node:fs/promises";
+import { validRules } from "./sweeper.ts";
 import path from "node:path";
 
 export const ITEMS = {
@@ -41,4 +42,19 @@ export async function approve(root: string, file: string, id: unknown, hash: unk
   await writeFile(`${file}.tmp`, JSON.stringify(log, null, 2));
   await rename(`${file}.tmp`, file);
   return log[id];
+}
+
+/** Edit the Profit Sweeper rules from the Review screen (ADR-036). Values are range-checked; the edit changes the
+ *  fingerprint, so the rules show "changed since your review" until Ahmad approves the new version. */
+export async function editSweeperRules(root: string, editLog: string, values: unknown, by: string, now = new Date()) {
+  const file = path.join(root, ITEMS.sweeper);
+  const current = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
+  const v = values as Record<string, unknown>;
+  const next = validRules({ min_gain_pct: Number(v?.min_gain_pct), sweep_share: Number(v?.sweep_share), min_sweep_usd: Number(v?.min_sweep_usd), reserve: String(v?.reserve ?? "").toUpperCase() });
+  const out = { _about: current._about, ...next };
+  await writeFile(`${file}.tmp`, JSON.stringify(out, null, 2) + "\n");
+  await rename(`${file}.tmp`, file);
+  const before = Object.fromEntries(Object.keys(next).map(k => [k, current[k]]));
+  await appendFile(editLog, JSON.stringify({ at: now.toISOString(), by, item: "sweeper", before, after: next }) + "\n");
+  return out;
 }

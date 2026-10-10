@@ -4,6 +4,7 @@ import { useFormatter, useNow, useLocale, useTranslations } from "next-intl";
 import LiveBadge from "./LiveBadge";
 import ApprovalInbox from "./ApprovalInbox";
 import PhoenixTimeline from "./PhoenixTimeline";
+import PhoneAlerts from "./PhoneAlerts";
 import SystemHealth from "./SystemHealth";
 import { DEMO_NODES } from "@/lib/demo";
 import { relayJson, useLive } from "@/lib/relay";
@@ -48,6 +49,8 @@ export default function Company() {
       </section>
 
       <ApprovalInbox />
+
+      <PhoneAlerts />
 
       <SystemHealth />
 

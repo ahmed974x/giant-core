@@ -101,6 +101,28 @@
         "failed": "failed",
         "skipped": "skipped"
       }
+    },
+    "alerts": {
+      "title": "Phone alerts",
+      "pin": "PIN",
+      "offline": "The laptop can't be reached.",
+      "failed": "That didn't work.",
+      "status": {
+        "on": "On",
+        "off": "Off",
+        "unsupported": "Not available here",
+        "blocked": "Blocked"
+      },
+      "lead": "A notification on this phone when Director 00 has something waiting for your approval, or when Phoenix restarts or loses a service. Alerts are encrypted end to end.",
+      "unsupported": "Open OMEGA from the installed app over HTTPS to turn alerts on. On iPhone this needs iOS 16.4 or later and OMEGA added to the home screen.",
+      "blockedHelp": "Notifications are blocked for OMEGA. Allow them in the phone's settings for this site, then come back.",
+      "denied": "Notifications weren't allowed.",
+      "on": "Turn on alerts",
+      "off": "Turn off",
+      "test": "Send a test",
+      "onMsg": "Alerts are on. A test notification is on its way.",
+      "offMsg": "Alerts are off on this phone.",
+      "testMsg": "Test sent."
     }
   },
   "market": {
@@ -502,12 +524,21 @@
     },
     "sweeper": {
       "title": "Profit Sweeper rules",
-      "lead": "When a position is up at least the threshold, this share of the gain is proposed for the reserve, if the amount is worth a transaction. Placeholders until you approve them.",
+      "lead": "When a position is up at least the threshold, this share of the gain is proposed for the reserve, if the amount is worth a transaction. You can edit them here; each edit needs your approval again.",
       "keys": {
         "min_gain_pct": "Sweep when gain is at least",
         "sweep_share": "Share of the gain to set aside",
         "min_sweep_usd": "Smallest sweep",
         "reserve": "Reserve currency"
+      },
+      "edit": "Edit rules",
+      "save": "Save rules",
+      "cancel": "Cancel",
+      "afterSave": "After saving, approve the new version below.",
+      "units": {
+        "min_gain_pct": "%",
+        "sweep_share": "% of the gain",
+        "min_sweep_usd": "amount"
       }
     }
   }

@@ -598,6 +598,26 @@ Excel/Word/PowerPoint exports, Review sign-off and stale fingerprints, a Profit 
 rejected, and the nervous system and atlas APIs. It also loads four screens in headless Chrome and fails on console
 errors; failures from the relay are ignored, since it needs Docker. The real ledger, inbox and PIN are never touched.
 
+**ADR-035 — Phone alerts (Phase 4).** Ahmad wants to hear when something needs him without opening the app.
+Decision: standard Web Push from the installed PWA, with no dependency and no third-party account.
+`web/src/lib/webpush.ts` implements RFC 8291 message encryption (aes128gcm) and RFC 8292 VAPID (ES256) on Node's
+built-in crypto. A test reproduces the RFC's published example byte for byte, so push services only ever see
+ciphertext. Subscriptions are accepted only for the browser vendors' push services (FCM, Mozilla, Apple, Windows),
+so a crafted subscription can't point the laptop at other hosts. A dead subscription (404/410) is dropped. The VAPID
+key, subscriptions and bookmarks live in Director 00's data folder. A watcher started from Next.js's
+`instrumentation.ts` checks the ledger and Phoenix's log every minute and pushes new proposals and Phoenix incidents
+(at most 5 per check). Phoenix already keeps the web server alive, so no new scheduled task is needed. Turning it
+on happens on the Company screen with the PIN; a test notification confirms it. iPhones need iOS 16.4 or later and
+the app on the home screen.
+
+**ADR-036 — Editable Profit Sweeper rules.** Ahmad confirmed a 25 USDT minimum and asked to edit the rules from the
+Review screen. The sweeper section has an edit form; values are range-checked by the same `validRules` the sweeper
+uses, and the note in the file is kept. Each edit is appended to `rule-edits.jsonl` (before, after, who, when). It
+changes the content fingerprint, so the rules show "changed since your review" until Ahmad approves the new
+version. Only the sweeper rules are editable in the app; source tiers and Butterfly assumptions still change
+through code review. `OMEGA_ROOT` points the end-to-end server at copies of these files, so tests never edit the
+real ones.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

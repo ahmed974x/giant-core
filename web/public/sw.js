@@ -2,7 +2,7 @@
 // - Static assets (/_next/static, icons, fonts, the MapLibre worker): cache-first, they are content-hashed.
 // - Pages: network-first, falling back to the last copy, then to the offline page.
 // - /api and /relay: never cached, so live data, approvals and the PIN never sit in a cache.
-const VERSION = "omega-v1";
+const VERSION = "omega-v2";
 const SHELL = ["/ar", "/en", "/offline.html", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", event => {
@@ -35,4 +35,23 @@ self.addEventListener("fetch", event => {
       return res;
     }).catch(() => caches.match(req).then(hit => hit || caches.match("/offline.html"))));
   }
+});
+
+// Phone alerts (ADR-035): show what Director 00 or Phoenix pushed, and open the right screen on tap.
+self.addEventListener("push", event => {
+  let note = { title: "OMEGA PRIME", body: "", url: "/ar", tag: undefined };
+  try { note = { ...note, ...event.data.json() }; } catch { /* plain or empty push */ }
+  event.waitUntil(self.registration.showNotification(note.title, {
+    body: note.body, tag: note.tag, icon: "/icon-192.png", badge: "/icon-192.png", lang: "ar", dir: "auto", data: { url: note.url },
+  }));
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/ar", self.location.origin);
+  if (url.origin !== self.location.origin) return;   // only ever open OMEGA itself
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    const open = list.find(c => new URL(c.url).origin === url.origin);
+    return open ? open.navigate(url.href).then(c => c && c.focus()) : self.clients.openWindow(url.href);
+  }));
 });

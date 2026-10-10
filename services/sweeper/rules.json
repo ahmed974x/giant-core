@@ -1,5 +1,5 @@
 {
-  "_about": "Profit Sweeper rules (ADR-033). Placeholders until Ahmad reviews them on the Review screen. The sweeper only proposes: it never trades or moves money; Ahmad carries out any sweep himself.",
+  "_about": "Profit Sweeper rules (ADR-033). Edit them on the Review screen (ADR-036); every edit needs a fresh approval there. The sweeper only proposes: it never trades or moves money; Ahmad carries out any sweep himself.",
   "min_gain_pct": 15,
   "sweep_share": 0.5,
   "min_sweep_usd": 25,
