@@ -502,6 +502,18 @@ anything Director 00 does on Ahmad's behalf, IBM Plex Sans Arabic for both scrip
 with Send raised in the middle (thumb reach). Rejected: a native wrapper (Capacitor) — a store build adds signing and
 updates for no gain over an installed PWA on the same Wi-Fi.
 
+**ADR-026 — Firecrawl page reader for links from the phone.** Context: Ahmad asked to install Firecrawl and use it in
+the site. Vetting: self-hosted Firecrawl (AGPL-3.0) needs Docker Compose with Redis, Postgres, RabbitMQ, workers and
+Playwright, too heavy for this 7 GB laptop and Docker is not running; the cloud API is free up to 1,000 pages a month
+but sends each URL outside the laptop. Decision: `web/src/lib/reader.ts` calls Firecrawl's `/v2/scrape` with plain
+`fetch` (no SDK dependency) only when `FIRECRAWL_API_KEY` is set in `.env.local`, which is Ahmad's opt-in; otherwise,
+or if Firecrawl fails, a small local reader fetches the page itself. The local reader resolves the host first and
+refuses loopback, LAN, link-local, CGNAT and other private addresses, re-checks every redirect, reads only HTML or
+text, caps size at 2 MB and time at 10 s. A link sent from the phone now gets a Markdown snapshot in
+`services/director00/data/inbox` and a title and excerpt in the Director 00 proposal; a failed read never blocks the
+send. Known limit: DNS can change between the check and the fetch (rebinding); acceptable for a single-user laptop
+tool, revisit if the reader is exposed beyond the PIN. Self-hosted Firecrawl stays the option once Docker runs.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

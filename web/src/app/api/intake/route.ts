@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { directorDir, makeThrottle, pinOk, runDirector } from "@/lib/director";
 import { directorRequest, MAX_FILE, sniff, storedName, validate } from "@/lib/intake";
+import { excerpt, readPage } from "@/lib/reader";
 
 const throttle = makeThrottle();
 
@@ -40,9 +41,25 @@ export async function POST(req: Request) {
     attachment = `inbox/${name}`;
   }
 
+  // Links get a readable snapshot (ADR-026): stored next to attachments, summarised in the request. Failure is not fatal.
+  let snapshot = "", reader: string | null = null, note = item.text;
+  if (item.kind === "link") {
+    try {
+      const page = await readPage(item.url);
+      const name = storedName(page.title || new URL(item.url).hostname, "md");
+      const dir = path.join(directorDir(), "data", "inbox");
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, name), `# ${page.title || item.url}\n\n<${item.url}>\n\n${page.text}\n`, { flag: "wx" });
+      snapshot = `inbox/${name}`; reader = page.source;
+      const ex = excerpt(page);
+      if (ex) note = [item.text.trim(), ex].filter(Boolean).join(" — ");
+    } catch (e) { reader = `unread: ${(e as Error).message}`; }
+  }
+
   try {
-    const out = await runDirector(["ask", directorRequest(item.kind, item.text, item.url, attachment)]) as { thread_id: string; status: string };
-    return Response.json({ ok: true, thread_id: out.thread_id, status: out.status, attachment: attachment || null });
+    const request = directorRequest(item.kind, note, item.url, attachment) + (snapshot ? ` [snapshot: ${snapshot}]` : "");
+    const out = await runDirector(["ask", request]) as { thread_id: string; status: string };
+    return Response.json({ ok: true, thread_id: out.thread_id, status: out.status, attachment: attachment || null, snapshot: snapshot || null, reader });
   } catch (e) {
     return Response.json({ error: (e as Error).message, attachment: attachment || null }, { status: 502 });
   }
