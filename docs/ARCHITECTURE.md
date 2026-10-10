@@ -468,6 +468,17 @@ and `tail_risk_flag`. The Research screen shows them as probability bars; Direct
 Trade-offs: the base rate and likelihood ratios are explicit assumptions in code, not fitted values; results are
 reproducible (fixed seed). PyMC/Prophet were not installed (heavy for this laptop); NumPy only.
 
+**ADR-023 — Approval Inbox in the web app (Layer A).** Context: Ahmad works from his phone, but Director 00's gate
+was only reachable from the laptop's command line, so proposals waited until he was back. Decision: the Company screen
+lists pending and escalated proposals with their risk and actions, and lets him approve, type the high-risk
+confirmation phrase, or reject with a code. Reads come straight from the SQLite ledger; every change runs through
+Director 00's own CLI (`/api/director`), so the two-level gate, risk policy and rejection log stay authoritative.
+Changes need `DIRECTOR_WEB_PIN` (6+ digits, git-ignored `web/.env.local`; without it the inbox is read-only), a
+same-origin request and fewer than 5 wrong PINs per 15 minutes; requests are validated into fixed CLI arguments, never a
+shell string, and are recorded as approved by `web:Ahmad`. Reached from the phone over Caddy HTTPS (ADR-013).
+Trade-offs: a 6-digit PIN on a home network, not full user accounts (Keycloak stays deferred); each change costs ~5 s
+while the CLI starts.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

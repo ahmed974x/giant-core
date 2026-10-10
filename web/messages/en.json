@@ -46,6 +46,34 @@
         "idle": "Attention",
         "unknown": "Not set up"
       }
+    },
+    "inbox": {
+      "title": "Approval inbox (Director 00)",
+      "pin": "PIN",
+      "readonly": "read-only: no PIN set on the laptop",
+      "empty": "Nothing waiting for you.",
+      "low": "low risk",
+      "high": "HIGH RISK",
+      "needsConfirm": "type the phrase to confirm",
+      "remember": "Remember",
+      "notify": "Notify",
+      "approve": "Approve",
+      "confirm": "Confirm",
+      "reject": "Reject",
+      "code": "Rejection reason",
+      "offline": "Web app unreachable",
+      "failed": "Failed",
+      "escalated": "High risk: type the confirmation phrase to finish.",
+      "done": {
+        "executed": "Done: approved and executed.",
+        "rejected": "Rejected and logged.",
+        "failed": "Approved, but an action failed."
+      },
+      "codes": {
+        "USER-005": "Not now",
+        "RISK-001": "Too risky",
+        "COMPLIANCE-002": "Against policy"
+      }
     }
   },
   "market": {

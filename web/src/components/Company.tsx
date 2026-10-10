@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useFormatter, useNow, useLocale, useTranslations } from "next-intl";
 import LiveBadge from "./LiveBadge";
+import ApprovalInbox from "./ApprovalInbox";
 import SystemHealth from "./SystemHealth";
 import { DEMO_NODES } from "@/lib/demo";
 import { relayJson, useLive } from "@/lib/relay";
@@ -44,6 +45,8 @@ export default function Company() {
           </div>
         ))}
       </section>
+
+      <ApprovalInbox />
 
       <SystemHealth />
 
