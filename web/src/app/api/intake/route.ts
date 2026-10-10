@@ -2,7 +2,7 @@
 // PIN + same-origin + throttle as for approvals; files are byte-checked and stored under services/director00/data/inbox.
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { directorDir, makeThrottle, pinOk, runDirector } from "@/lib/director";
+import { directorData, makeThrottle, pinOk, runDirector } from "@/lib/director";
 import { directorRequest, MAX_FILE, sniff, storedName, validate } from "@/lib/intake";
 import { excerpt, readPage } from "@/lib/reader";
 import { uploadPhoto } from "@/lib/immich";
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const type = sniff(bytes);
     if (!type) return Response.json({ error: "only images, PDFs, plain text and Word/Excel/PowerPoint files can be sent" }, { status: 415 });
     const name = storedName(file.name, type.ext);
-    const dir = path.join(directorDir(), "data", "inbox");
+    const dir = path.join(directorData(), "inbox");
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, name), bytes, { flag: "wx" });
     attachment = `inbox/${name}`;
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     try {
       const page = await readPage(item.url);
       const name = storedName(page.title || new URL(item.url).hostname, "md");
-      const dir = path.join(directorDir(), "data", "inbox");
+      const dir = path.join(directorData(), "inbox");
       await mkdir(dir, { recursive: true });
       await writeFile(path.join(dir, name), `# ${page.title || item.url}\n\n<${item.url}>\n\n${page.text}\n`, { flag: "wx" });
       snapshot = `inbox/${name}`; reader = page.source;

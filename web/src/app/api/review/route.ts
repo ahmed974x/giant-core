@@ -1,13 +1,13 @@
 // Review (ADR-032): GET shows the items with their fingerprints and Ahmad's last approval; POST records an approval.
 // Both need the PIN. Nothing here edits the reviewed files; changes to them still go through code review.
 import path from "node:path";
-import { directorDir, makeThrottle } from "@/lib/director";
+import { directorData, directorDir, makeThrottle } from "@/lib/director";
 import { guard } from "@/lib/guard";
 import { approve, loadItems, readLog } from "@/lib/review";
 
 const throttle = makeThrottle();
 const root = () => path.resolve(directorDir(), "..", "..");
-const logFile = () => path.join(directorDir(), "data", "reviews.json");
+const logFile = () => path.join(directorData(), "reviews.json");
 
 export async function GET(req: Request) {
   const blocked = guard(req, req.headers.get("x-omega-pin"), throttle);

@@ -9,6 +9,8 @@ function sandbox() {
   const root = mkdtempSync(path.join(tmpdir(), "omega-review-"));
   mkdirSync(path.join(root, "services/truth"), { recursive: true });
   mkdirSync(path.join(root, "services/causal"), { recursive: true });
+  mkdirSync(path.join(root, "services/sweeper"), { recursive: true });
+  writeFileSync(path.join(root, "services/sweeper/rules.json"), JSON.stringify({ min_gain_pct: 15 }));
   writeFileSync(path.join(root, "services/truth/sources.json"), JSON.stringify({ tiers: { wire: { score: 0.9 } }, domains: {} }));
   writeFileSync(path.join(root, "services/causal/assumptions.json"), JSON.stringify({ root_prior: 0.2, likelihood: {}, runs: 20000 }));
   return { root, log: path.join(root, "reviews.json") };
@@ -17,7 +19,7 @@ function sandbox() {
 test("an approval is tied to the exact content reviewed", async () => {
   const { root, log } = sandbox();
   let items = await loadItems(root, await readLog(log));
-  assert.deepEqual(items.map(i => [i.id, i.current]), [["sources", false], ["butterfly", false], ["restic", false]]);
+  assert.deepEqual(items.map(i => [i.id, i.current]), [["sources", false], ["butterfly", false], ["sweeper", false], ["restic", false]]);
   const s = items.find(i => i.id === "sources")!;
   await approve(root, log, "sources", s.hash, "web:Ahmad", new Date("2026-10-10T10:00:00Z"));
   items = await loadItems(root, await readLog(log));

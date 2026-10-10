@@ -66,6 +66,11 @@ export function makeThrottle(limit = 5, windowMs = 15 * 60_000, now: () => numbe
   };
 }
 
+/** Director 00's data folder; DIRECTOR_DATA_DIR (shared with the Python side) lets tests use a throwaway copy. */
+export function directorData(): string {
+  return process.env.DIRECTOR_DATA_DIR ?? path.join(directorDir(), "data");
+}
+
 export function directorDir(): string {
   return process.env.OMEGA_DIRECTOR_DIR ?? path.resolve(/* turbopackIgnore: true */ process.cwd(), "..", "services", "director00");
 }

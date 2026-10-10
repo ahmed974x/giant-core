@@ -3,6 +3,7 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import LiveBadge from "./LiveBadge";
 import Severity from "./Severity";
+import ProfitSweeper from "./ProfitSweeper";
 
 const PriceChart = dynamic(() => import("./PriceChart"), { ssr: false, loading: () => <div className="panel h-[430px] animate-pulse" /> });
 import { useLive } from "@/lib/relay";
@@ -22,6 +23,8 @@ export default function Market() {
       </div>
 
       <PriceChart anomalies={live.anomalies} />
+
+      <ProfitSweeper />
 
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="panel overflow-hidden lg:col-span-2">

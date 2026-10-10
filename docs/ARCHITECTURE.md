@@ -581,6 +581,23 @@ is stored in `services/director00/data/reviews.json` against a 12-character SHA-
 reviewed, so any later edit shows as "changed since your review". The screen records approvals only; edits to the
 files still go through code review.
 
+**ADR-033 — Profit Sweeper, proposal-only.** Context: Ahmad asked for profits to be collected automatically.
+Decision: the sweeper computes and proposes; it never trades. It reads the holdings Ahmad enters himself
+(`services/director00/data/positions.json`, git-ignored, from `services/sweeper/positions.example.json`), live prices
+from Binance's public mirror, and his rules in `services/sweeper/rules.json`: sweep when the gain is at least 15%,
+set aside 50% of the gain, at least $25, into USDT. These are placeholders until he approves them on the Review
+screen. The plan appears on the Market screen. "Send plan for approval" makes a Director 00 `remember: TASK`
+proposal, so approving only records it, and Ahmad makes any sale himself. OMEGA holds no exchange keys and has no
+code path that places an order. Running the check on a schedule is a later step that needs his yes.
+
+**ADR-034 — End-to-end tests.** `npm run e2e` (after `npm run build`) starts a separate production server on
+:3199 with a throwaway Director 00 data folder (`DIRECTOR_DATA_DIR`, now honoured by every web route as well as by
+the Python side) and a test PIN. It covers every screen in both languages, PIN, origin and path guards, a phone note
+that is approved and executed, a Word file from intake to Library preview, a refused executable, the
+Excel/Word/PowerPoint exports, Review sign-off and stale fingerprints, a Profit Sweeper proposal that is then
+rejected, and the nervous system and atlas APIs. It also loads four screens in headless Chrome and fails on console
+errors; failures from the relay are ignored, since it needs Docker. The real ledger, inbox and PIN are never touched.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

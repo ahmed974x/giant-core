@@ -56,6 +56,8 @@ export default function Review() {
   const sources = items?.find(i => i.id === "sources");
   const butterfly = items?.find(i => i.id === "butterfly");
   const restic = items?.find(i => i.id === "restic");
+  const sweeper = items?.find(i => i.id === "sweeper");
+  const sw = sweeper?.content as Record<string, number | string> | undefined;
   const src = sources?.content as Sources | undefined, as = butterfly?.content as Assumptions | undefined;
 
   return (
@@ -108,6 +110,22 @@ export default function Review() {
             ))}
           </dl>
           {footer(butterfly)}
+        </section>
+      )}
+
+      {sweeper && sw && (
+        <section className="panel mt-5 p-4">
+          <h2 className="font-semibold">{t("sweeper.title")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("sweeper.lead")}</p>
+          <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+            {([["min_gain_pct", `${sw.min_gain_pct}%`], ["sweep_share", `${Math.round(Number(sw.sweep_share) * 100)}%`], ["min_sweep_usd", `${sw.min_sweep_usd}`], ["reserve", String(sw.reserve)]] as const).map(([k, v]) => (
+              <div key={k} className="rounded-lg bg-panel-2 p-3">
+                <dt className="text-xs text-muted">{t(`sweeper.keys.${k}`)}</dt>
+                <dd className="num mt-1 text-lg font-semibold text-accent" dir="ltr">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {footer(sweeper)}
         </section>
       )}
 

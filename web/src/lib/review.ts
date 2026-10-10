@@ -7,6 +7,7 @@ import path from "node:path";
 export const ITEMS = {
   sources: "services/truth/sources.json",       // Truth Layer source tiers (ADR-021)
   butterfly: "services/causal/assumptions.json", // Butterfly Engine scenario assumptions (ADR-022)
+  sweeper: "services/sweeper/rules.json",          // Profit Sweeper rules (ADR-033)
   restic: null,                                  // a manual step: the backup password is saved somewhere safe
 } as const;
 export type ItemId = keyof typeof ITEMS;

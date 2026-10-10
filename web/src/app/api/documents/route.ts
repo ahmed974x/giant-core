@@ -1,12 +1,12 @@
 // Documents (ADR-029): list and preview files sent from the phone, or download Director 00's ledger as Word/Excel.
 // Private: needs the PIN (x-omega-pin header), same origin, throttled. Files are only parsed as data, never opened.
 import path from "node:path";
-import { directorDir, makeThrottle } from "@/lib/director";
+import { directorData, makeThrottle } from "@/lib/director";
 import { ledgerFile, listDocs, previewDoc } from "@/lib/documents";
 import { guard } from "@/lib/guard";
 
 const throttle = makeThrottle();
-const inbox = () => path.join(directorDir(), "data", "inbox");
+const inbox = () => path.join(directorData(), "inbox");
 
 export async function GET(req: Request) {
   const blocked = guard(req, req.headers.get("x-omega-pin"), throttle);
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const format = p.get("export");
   if (format === "xlsx" || format === "docx" || format === "pptx") {
     const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(path.join(directorDir(), "data", "director.sqlite"), { readOnly: true });
+    const db = new DatabaseSync(path.join(directorData(), "director.sqlite"), { readOnly: true });
     try {
       const approvals = db.prepare("SELECT thread_id, request, status, risk, decided_by, decided_at, created_at FROM director_approvals ORDER BY created_at DESC LIMIT 2000").all() as never[];
       const rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections ORDER BY created_at DESC LIMIT 2000").all() as never[];

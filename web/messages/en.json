@@ -114,7 +114,35 @@
     "news": "Headline sentiment",
     "noNews": "No scored headlines yet.",
     "chart": "Price chart",
-    "chartError": "Market data is unreachable right now."
+    "chartError": "Market data is unreachable right now.",
+    "sweeper": {
+      "title": "Profit Sweeper",
+      "lead": "How much gain your rules would set aside into a reserve. It only proposes: approving records the plan, and you make any sale yourself on your exchange.",
+      "pin": "PIN",
+      "offline": "The laptop can't be reached.",
+      "failed": "Couldn't build the plan.",
+      "noPositions": "No positions yet. Copy services/sweeper/positions.example.json to services/director00/data/positions.json on the laptop and fill in your holdings. It stays on the laptop.",
+      "cols": {
+        "symbol": "Pair",
+        "value": "Value",
+        "gain": "Gain",
+        "sweep": "Sweep",
+        "why": ""
+      },
+      "reasons": {
+        "sweep": "sweep",
+        "below-threshold": "below your threshold",
+        "too-small": "too small",
+        "loss": "at a loss",
+        "no-price": "no price"
+      },
+      "total": "Plan: move {amount} into {reserve}",
+      "propose": "Send plan for approval",
+      "sent": "Sent. The plan is waiting in your approval inbox.",
+      "openInbox": "Open the inbox",
+      "safety": "OMEGA never trades or moves money; it has no exchange keys.",
+      "rules": "Review the rules"
+    }
   },
   "research": {
     "title": "Research",
@@ -471,6 +499,16 @@
     "restic": {
       "title": "Backup password",
       "lead": "Backups are encrypted with RESTIC_PASSWORD from giant-core/.env on the laptop. Without it they can't be restored. Save it in a password manager, then confirm here."
+    },
+    "sweeper": {
+      "title": "Profit Sweeper rules",
+      "lead": "When a position is up at least the threshold, this share of the gain is proposed for the reserve, if the amount is worth a transaction. Placeholders until you approve them.",
+      "keys": {
+        "min_gain_pct": "Sweep when gain is at least",
+        "sweep_share": "Share of the gain to set aside",
+        "min_sweep_usd": "Smallest sweep",
+        "reserve": "Reserve currency"
+      }
     }
   }
 }

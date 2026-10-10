@@ -6,7 +6,7 @@ import path from "node:path";
 import { ping as immichPing } from "@/lib/immich";
 
 const ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "..");
-const DIRECTOR = process.env.OMEGA_DIRECTOR_DIR ?? path.join(ROOT, "services", "director00", "data");
+const DIRECTOR = process.env.DIRECTOR_DATA_DIR ?? process.env.OMEGA_DIRECTOR_DIR ?? path.join(ROOT, "services", "director00", "data");
 const RELAY = process.env.RELAY_URL ?? "http://127.0.0.1:8088";
 const N8N = process.env.N8N_URL ?? "http://127.0.0.1:5678";
 

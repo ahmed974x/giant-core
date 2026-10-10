@@ -441,6 +441,33 @@
       "href": "/review",
       "descEn": "Ahmad signs off the source tiers, the Butterfly assumptions and the backup password.",
       "descAr": "أحمد يوافق على تصنيف المصادر وافتراضات الفراشة وكلمة سر النسخ."
+    },
+    {
+      "id": "sweeper",
+      "kind": "service",
+      "en": "Profit Sweeper",
+      "ar": "جامع الأرباح",
+      "file": "web/src/lib/sweeper.ts",
+      "descEn": "Works out how much gain your rules set aside and proposes it; never trades or moves money.",
+      "descAr": "يحسب كم من الربح تحطه قواعدك في الاحتياطي ويقترحه، وما يتداول ولا يحرك فلوس."
+    },
+    {
+      "id": "positions",
+      "kind": "store",
+      "en": "Your positions",
+      "ar": "مراكزك",
+      "file": "services/director00/data/positions.json",
+      "descEn": "Holdings and cost you enter yourself; stays on the laptop.",
+      "descAr": "المراكز والتكلفة اللي تكتبها بنفسك، وتبقى على اللابتوب."
+    },
+    {
+      "id": "e2e",
+      "kind": "infra",
+      "en": "End-to-end tests",
+      "ar": "اختبارات شاملة",
+      "file": "web/e2e",
+      "descEn": "Starts a separate test server with a throwaway ledger and checks every screen and flow.",
+      "descAr": "يشغّل خادم اختبار منفصل بسجل مؤقت ويفحص كل الشاشات والمسارات."
     }
   ],
   "edges": [
@@ -848,6 +875,41 @@
       "from": "screen-review",
       "to": "restic",
       "type": "guards"
+    },
+    {
+      "from": "feed-binance",
+      "to": "sweeper",
+      "type": "feeds"
+    },
+    {
+      "from": "positions",
+      "to": "sweeper",
+      "type": "feeds"
+    },
+    {
+      "from": "sweeper",
+      "to": "director",
+      "type": "feeds"
+    },
+    {
+      "from": "screen-market",
+      "to": "sweeper",
+      "type": "shows"
+    },
+    {
+      "from": "screen-review",
+      "to": "sweeper",
+      "type": "guards"
+    },
+    {
+      "from": "e2e",
+      "to": "web",
+      "type": "calls"
+    },
+    {
+      "from": "claude",
+      "to": "e2e",
+      "type": "calls"
     }
   ]
 }

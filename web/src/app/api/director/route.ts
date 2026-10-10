@@ -3,7 +3,7 @@
 // POST : ask / approve / confirm / reject, only with the DIRECTOR_WEB_PIN (web/.env.local), same-origin, throttled.
 //        Every change runs through Director 00's own CLI, so the two-level gate and risk policy still decide.
 import path from "node:path";
-import { cliArgs, directorDir, makeThrottle, pinOk, runDirector } from "@/lib/director";
+import { cliArgs, directorData, makeThrottle, pinOk, runDirector } from "@/lib/director";
 
 const throttle = makeThrottle();
 
@@ -14,7 +14,7 @@ function client(req: Request) {
 export async function GET() {
   try {
     const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(path.join(directorDir(), "data", "director.sqlite"), { readOnly: true });
+    const db = new DatabaseSync(path.join(directorData(), "director.sqlite"), { readOnly: true });
     const pending = db.prepare("SELECT thread_id, request, proposal, status, risk, created_at FROM director_approvals " +
       "WHERE status IN ('pending','escalated') ORDER BY created_at DESC LIMIT 50").all() as Record<string, string>[];
     const rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections " +

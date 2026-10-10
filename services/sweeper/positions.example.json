@@ -1,0 +1,7 @@
+{
+  "_about": "Copy to services/director00/data/positions.json (git-ignored) and fill in your own holdings. cost_usd is what the whole position cost you.",
+  "positions": [
+    { "symbol": "BTCUSDT", "qty": 0.05, "cost_usd": 2500 },
+    { "symbol": "ETHUSDT", "qty": 1.2, "cost_usd": 3000 }
+  ]
+}

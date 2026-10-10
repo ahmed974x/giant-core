@@ -11,7 +11,8 @@
     "start": "next start -p 3100 -H 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\"",
-    "atlas:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/atlas-sync.ts"
+    "atlas:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/atlas-sync.ts",
+    "e2e": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 \"e2e/**/*.e2e.ts\""
   },
   "dependencies": {
     "@xyflow/react": "12.12.0",
