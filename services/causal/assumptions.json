@@ -1,0 +1,12 @@
+{
+  "_about": "Stated assumptions behind the Butterfly Engine's scenarios (ADR-022). They are judgement, not fitted values; Ahmad reviews them on the Review screen (ADR-032). Changing a number here changes every scenario's probabilities.",
+  "root_prior": 0.20,
+  "likelihood": {
+    "data_supports": 3.0,
+    "data_refutes": 0.33,
+    "live_seen": 4.0,
+    "live_not_seen": 0.4,
+    "prior_only": 1.0
+  },
+  "runs": 20000
+}

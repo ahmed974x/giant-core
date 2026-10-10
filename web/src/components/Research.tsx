@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import AskDirector from "./AskDirector";
 import { relayJson } from "@/lib/relay";
 import type { BrainJob } from "@/lib/types";
 
@@ -54,6 +55,8 @@ export default function Research() {
         <p className="mt-1 text-sm text-muted">{t("hint")}</p>
         <Link href="/atlas" className="mt-3 inline-block rounded-lg border border-line px-3 py-1.5 text-sm text-accent hover:border-accent">{ta("open")}</Link>
       </div>
+
+      <AskDirector />
 
       <form onSubmit={ask} className="panel flex flex-col gap-3 p-3 sm:flex-row">
         <textarea value={q} onChange={e => setQ(e.target.value)} maxLength={4000} rows={2} dir="auto"

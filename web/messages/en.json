@@ -15,7 +15,8 @@
     "atlas": "Atlas",
     "network": "Network",
     "library": "Library",
-    "more": "More screens"
+    "more": "More screens",
+    "review": "Review"
   },
   "company": {
     "title": "Operations overview",
@@ -162,6 +163,20 @@
         "tail": "tail risk",
         "legend": "Bar length = probability; brighter = more confident; range = 10th to 90th percentile of the move."
       }
+    },
+    "director": {
+      "title": "Ask Director 00",
+      "lead": "Runs on this laptop, no Docker needed. \"Why\" questions answer at once with the Butterfly Engine; anything that would change memory or send something waits in your approval inbox.",
+      "placeholder": "Why did oil move near Hormuz? · remember: …",
+      "pin": "PIN",
+      "ask": "Ask",
+      "asking": "Thinking…",
+      "confidence": "Confidence {pct}%",
+      "recalled": "From memory",
+      "waiting": "This became a proposal and is waiting for your approval.",
+      "openInbox": "Open the inbox",
+      "offline": "The laptop can't be reached.",
+      "failed": "Director 00 couldn't answer."
     }
   },
   "earth": {
@@ -412,5 +427,50 @@
       }
     },
     "exportSlides": "Briefing to PowerPoint"
+  },
+  "review": {
+    "title": "Review",
+    "lead": "The judgement calls OMEGA runs on. Approve each one when it looks right; if it changes later, it shows as changed until you look again.",
+    "pin": "PIN",
+    "needPin": "Enter your PIN to open the review.",
+    "offline": "The laptop can't be reached.",
+    "failed": "Couldn't load the review.",
+    "approve": "Looks right",
+    "saved": "I saved it",
+    "approved": "Approved {date}",
+    "changed": "Changed since your review",
+    "notYet": "Not reviewed yet",
+    "sources": {
+      "title": "News source trust",
+      "lead": "How much the Truth Layer trusts each kind of outlet before other sources confirm a story. A story needs 0.7 or more to show as verified.",
+      "count": "{n} sites",
+      "tiers": {
+        "wire": "News agencies",
+        "record": "Major newspapers",
+        "public": "Public broadcasters",
+        "official": "Official sources",
+        "specialist": "Trade and data press",
+        "state_controlled": "State-controlled media",
+        "satire": "Satire",
+        "unknown": "Anything not listed"
+      }
+    },
+    "butterfly": {
+      "title": "Butterfly Engine assumptions",
+      "lead": "Starting numbers for the cause-and-effect scenarios. They are judgement, not fitted from data, so every probability depends on them.",
+      "keys": {
+        "root_prior": "Chance any one root cause is active",
+        "data_supports": "Data supports a link",
+        "data_refutes": "Data contradicts a link",
+        "live_seen": "Seen live nearby",
+        "live_not_seen": "Not seen live",
+        "prior_only": "No data yet",
+        "runs": "Simulation runs"
+      }
+    },
+    "restic": {
+      "title": "Backup password",
+      "lead": "Backups are encrypted with RESTIC_PASSWORD from giant-core/.env on the laptop. Without it they can't be restored. Save it in a password manager, then confirm here."
+    }
   }
 }

@@ -569,6 +569,18 @@ focused node until you zoom in, and Library, Network and Atlas get a strip under
 is full. Tests that call the real Director 00 now use a throwaway data folder, so test runs no longer write to
 Ahmad's ledger.
 
+**ADR-032 — Ask Director 00 from Research, and Phase 3 sign-off in the app.** Two things were still open. The first
+was the original Layer C idea: asking Director 00 from the Research screen. That panel calls the local CLI through
+`/api/director` (PIN). Questions are answered at once by read-only tools, and anything that writes waits in the
+inbox. Building it exposed a real bug: with live market data the Butterfly Engine returned NumPy scalars, which
+LangGraph's msgpack checkpointer rejected, so every online "why" question answered "Butterfly Engine unavailable".
+The trace node now returns plain JSON, and a regression test covers it. The second was Phase 3's review items.
+The Butterfly assumptions moved from code constants to `services/causal/assumptions.json`, with range checks and
+the same values. A Review screen shows the source tiers, the assumptions and the backup-password step. An approval
+is stored in `services/director00/data/reviews.json` against a 12-character SHA-256 fingerprint of the content
+reviewed, so any later edit shows as "changed since your review". The screen records approvals only; edits to the
+files still go through code review.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

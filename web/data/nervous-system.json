@@ -432,6 +432,15 @@
       "key": "IMMICH_API_KEY",
       "descEn": "Self-hosted photo library (AGPL). Runs under Docker profile photos, machine learning off.",
       "descAr": "مكتبة صور ذاتية الاستضافة (AGPL). تشتغل بملف Docker photos وبدون تعلم آلي."
+    },
+    {
+      "id": "screen-review",
+      "kind": "screen",
+      "en": "Review",
+      "ar": "المراجعة",
+      "href": "/review",
+      "descEn": "Ahmad signs off the source tiers, the Butterfly assumptions and the backup password.",
+      "descAr": "أحمد يوافق على تصنيف المصادر وافتراضات الفراشة وكلمة سر النسخ."
     }
   ],
   "edges": [
@@ -814,6 +823,31 @@
       "from": "docker",
       "to": "immich",
       "type": "depends"
+    },
+    {
+      "from": "web",
+      "to": "screen-review",
+      "type": "shows"
+    },
+    {
+      "from": "ahmad",
+      "to": "screen-review",
+      "type": "uses"
+    },
+    {
+      "from": "screen-review",
+      "to": "truth",
+      "type": "guards"
+    },
+    {
+      "from": "screen-review",
+      "to": "butterfly",
+      "type": "guards"
+    },
+    {
+      "from": "screen-review",
+      "to": "restic",
+      "type": "guards"
     }
   ]
 }

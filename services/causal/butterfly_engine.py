@@ -201,10 +201,16 @@ def _counterfactual(ch: dict, target: str, observed: float | None, evidence: dic
 
 
 # ── probabilistic scenarios (ADR-022) ───────────────────────────────────────────────────────────────────
-ROOT_PRIOR = 0.20          # base rate that any one root driver is active in the anomaly's window (stated assumption)
+# Stated assumptions live in assumptions.json so they can be reviewed (ADR-032) without reading code.
+_A = json.loads((Path(__file__).with_name("assumptions.json")).read_text(encoding="utf-8"))
+ROOT_PRIOR = float(_A["root_prior"])  # base rate that any one root driver is active in the anomaly's window
 # Likelihood ratios for the Bayesian update of "this root is behind the move", one per link on its chain.
-LIKELIHOOD = {("data", True): 3.0, ("data", False): 0.33, ("live", True): 4.0, ("live", False): 0.4, ("prior", True): 1.0}
-SCENARIO_RUNS = 20_000
+LIKELIHOOD = {("data", True): float(_A["likelihood"]["data_supports"]), ("data", False): float(_A["likelihood"]["data_refutes"]),
+              ("live", True): float(_A["likelihood"]["live_seen"]), ("live", False): float(_A["likelihood"]["live_not_seen"]),
+              ("prior", True): float(_A["likelihood"]["prior_only"])}
+SCENARIO_RUNS = int(_A["runs"])
+if not (0 < ROOT_PRIOR < 1 and all(v > 0 for v in LIKELIHOOD.values()) and 1000 <= SCENARIO_RUNS <= 200_000):
+    raise ValueError("assumptions.json is out of range")
 
 
 def scenarios(chains: list[dict], evidence: dict, target: str, observed: float | None, seed: int = 11) -> list[dict]:
