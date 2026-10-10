@@ -5,6 +5,9 @@ const config: NextConfig = {
   poweredByHeader: false,
   // Lean production server: one Node process, no image optimizer workers.
   images: { unoptimized: true },
+  // Loaded by Node at runtime, never bundled: dotenvx pulls in systeminformation (which Turbopack cannot trace on
+  // Windows), and pg is a plain Node driver (ADR-040, ADR-042).
+  serverExternalPackages: ["@dotenvx/dotenvx", "pg"],
   // Same alias the next-intl plugin would add. The plugin itself is skipped because it pulls in
   // @swc/core's native addon, which this laptop's application-control policy will not load.
   turbopack: { resolveAlias: { "next-intl/config": "./src/i18n/request.ts" } },
@@ -15,7 +18,7 @@ const config: NextConfig = {
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "no-referrer" },
         { key: "X-Frame-Options", value: "DENY" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
+        { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(self)" },
       ],
     }];
   },

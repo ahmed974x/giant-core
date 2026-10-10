@@ -5,17 +5,21 @@
   "description": "OMEGA PRIME four-screen web app (Company, Market, Research, Earth), Arabic/English",
   "scripts": {
     "predev": "node scripts/copy-maplibre-worker.mjs",
-    "dev": "next dev -p 3100",
+    "dev": "node scripts/secure-run.mjs dev -p 3100",
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
-    "build": "next build",
-    "start": "next start -p 3100 -H 127.0.0.1",
+    "build": "node scripts/secure-run.mjs build",
+    "start": "node scripts/secure-run.mjs start -p 3100 -H 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\"",
     "atlas:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/atlas-sync.ts",
     "e2e": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 \"e2e/**/*.e2e.ts\"",
-    "briefing": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/briefing.ts"
+    "briefing": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/briefing.ts",
+    "secrets:encrypt": "node scripts/secrets.mjs encrypt",
+    "secrets:set": "node scripts/secrets.mjs set",
+    "secrets:check": "node scripts/secrets.mjs check"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "1.75.1",
     "@types/pg": "8.15.5",
     "@xyflow/react": "12.12.0",
     "lightweight-charts": "5.2.1",

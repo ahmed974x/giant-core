@@ -696,6 +696,36 @@ Phoenix now starts Docker Desktop if the engine is down, for example after a reb
 The Director and Phoenix suites ran against real Postgres in a throwaway `omega_test` database, including the 18
 Postgres tests that were skipped until now: 52 passed.
 
+**ADR-042 — Secrets encrypted at rest, redacted in logs, checked at start.** Ahmad asked on 2026-10-10 for the keys
+to be encrypted with dotenvx, for logs to hide secrets, and for a startup check that refuses to run when anything
+is unsafe. The full procedure is in docs/SECURITY.md, section Secrets.
+- **Encryption.** `@dotenvx/dotenvx` 1.75.1 (BSD-3, pure JS) encrypts every value in `web/.env.local`. The encryption
+  was verified in memory before the plain file was replaced: both filled-in values decrypted back identically. The
+  private key sits outside the project at `%USERPROFILE%\.omega\secrets\web.env.keys`; Ahmad keeps the Bitwarden
+  copy.
+- **Running.** `npm run dev`, `build` and `start` go through `scripts/secure-run.mjs` (dotenvx run with that key
+  file), and so does Phoenix's web restart. dotenvx 1.75 mishandles absolute Windows paths for `-f`, so the env file
+  is passed relative to the web folder. Next.js bundles neither dotenvx nor `pg` (`serverExternalPackages`), because
+  dotenvx pulls in a module Turbopack cannot trace on Windows.
+- **Startup check.** The server exits unless:
+  - every value is encrypted;
+  - every value is decrypted in memory (an empty value decrypting to "" is fine);
+  - the key file exists outside the project;
+  - Git ignores and tracks neither file;
+  - no tracked file contains a live secret.
+
+  The first live run caught a false positive (npm's `secrets:check` script name looks secret), so npm and Next.js
+  tooling variables are excluded.
+- **Logs.** Redaction is installed before anything logs.
+- **Commits.** A pre-commit hook blocks key files and plain `.env` values.
+- **Data keys.** The key check on the Review screen decrypts `.env.local` in memory, loads the four data keys into
+  the running app and tests each one against its service. Fake keys were rejected by the real NASA FIRMS and
+  AISStream services, as expected.
+- **Fixed on the way.** The site's Permissions-Policy denied the microphone, which silently broke the Command
+  Center's voice input; it now allows `microphone=(self)`.
+- **Verified live.** A plain `next start` refused to start, a dotenvx start passed all six checks, the PIN-guarded
+  routes worked, and the log held no secret.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

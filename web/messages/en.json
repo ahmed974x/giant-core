@@ -541,6 +541,23 @@
         "sweep_share": "% of the gain",
         "min_sweep_usd": "amount"
       }
+    },
+    "keys": {
+      "title": "Data keys",
+      "lead": "Free keys that switch on extra live data. Put them in web/.env.local on the laptop, then tap the button: they load without a restart and each one is tested.",
+      "test": "Load and test keys",
+      "testing": "Testing…",
+      "failed": "Couldn't test the keys.",
+      "set": "Filled in",
+      "empty": "Empty",
+      "signup": "Get a key",
+      "where": "Keys stay on the laptop. This screen never shows their values.",
+      "verdict": {
+        "ok": "Working",
+        "invalid": "Rejected by the service",
+        "unreachable": "Couldn't confirm",
+        "not-set": "Empty"
+      }
     }
   },
   "pulse": {

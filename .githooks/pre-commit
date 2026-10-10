@@ -1,0 +1,4 @@
+#!/bin/sh
+# Block commits that would leak secrets (ADR-042): a dotenvx private key file, or any .env file with a plain value.
+# .env.example files are templates and must stay empty. Installed with: git config core.hooksPath .githooks
+exec node "$(git rev-parse --show-toplevel)/.githooks/check-staged-env.mjs"

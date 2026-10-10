@@ -224,10 +224,11 @@ def default_services(restic: Restic) -> list[Service]:
             return False, f"web app not answering: {type(e).__name__}"
 
     def web_restart():
-        nxt = CORE / "web" / "node_modules" / "next" / "dist" / "bin" / "next"
-        if not nxt.exists() or not shutil.which("node"):
+        # Through dotenvx (ADR-042): .env.local is encrypted, and the server refuses to start without its secrets.
+        runner = CORE / "web" / "scripts" / "secure-run.mjs"
+        if not runner.exists() or not shutil.which("node"):
             return False
-        subprocess.Popen(["node", str(nxt), "start", str(CORE / "web"), "-p", "3100", "-H", "127.0.0.1"], cwd=CORE / "web",
+        subprocess.Popen(["node", str(runner), "start", "-p", "3100", "-H", "127.0.0.1"], cwd=CORE / "web",
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=DETACHED)
         return True
 

@@ -44,7 +44,7 @@ before(async () => {
   writeFileSync(path.join(DATA, "positions.json"), JSON.stringify({ positions: [{ symbol: "BTCUSDT", qty: 0.01, cost_usd: 1 }] }));
   server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", ".", "-p", String(PORT), "-H", "127.0.0.1"], {
     cwd: WEB, stdio: "ignore", windowsHide: true,
-    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, OMEGA_ROOT: ROOT, DIRECTOR_DB_URL: "", DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
+    env: { ...process.env, DIRECTOR_DATA_DIR: DATA, OMEGA_ROOT: ROOT, DIRECTOR_DB_URL: "", OMEGA_SECRETS_CHECK: "report", DIRECTOR_WEB_PIN: PIN, IMMICH_URL: "", IMMICH_API_KEY: "", FIRECRAWL_API_KEY: "", NODE_ENV: "production" },
   });
   for (let i = 0; i < 60; i++) {
     try { if ((await get("/api/health")).ok) return; } catch { /* starting */ }

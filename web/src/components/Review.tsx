@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReviewItem } from "@/lib/review";
+import KeysPanel from "./KeysPanel";
 
 type Sources = { tiers: Record<string, { score: number; about: string }>; domains: Record<string, string> };
 type Assumptions = { root_prior: number; likelihood: Record<string, number>; runs: number };
@@ -166,6 +167,8 @@ export default function Review() {
           {footer(sweeper)}
         </section>
       )}
+
+      {items && <KeysPanel pin={pin} />}
 
       {restic && (
         <section className="panel mt-5 p-4">

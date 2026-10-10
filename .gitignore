@@ -9,3 +9,12 @@ services/maritime-agent/data/
 
 # Immich photo library
 data/immich/
+
+# Secrets (ADR-042): encrypted env files and dotenvx private keys never enter Git
+.env.local
+.env*.local
+*.env.keys
+.env.keys
+
+# Local server logs
+*.log
