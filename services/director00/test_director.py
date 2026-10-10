@@ -20,7 +20,7 @@ def _stores(tmp: Path):
     if url:
         pg = PgStore(url)
         pg.ensure_schema()
-        pg.con.run("TRUNCATE agent_memories, director_approvals")
+        pg.con.run("TRUNCATE agent_memories, director_approvals, director_rejections")
         yield "pg", pg
 
 
@@ -99,5 +99,7 @@ def test_llm_output_is_sanitised():
 def test_arabic_requests(director):
     out = director.ask("تذكر: أفضّل التنبيهات بالعربي")
     assert out["actions"][0]["kind"] == "preference"
-    director.decide(out["thread_id"], approved=True)
+    step = director.decide(out["thread_id"], approved=True)            # a preference steers future plans: high risk
+    assert step["status"] == "escalated"
+    director.confirm(out["thread_id"], step["type_to_confirm"])
     assert "بالعربي" in director.recall("التنبيهات بالعربي")[0]["content"]

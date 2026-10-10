@@ -16,6 +16,19 @@ START → retrieve (RAG) → plan ─┬─(no actions)────────�
 | `approval` | Records the proposal in `director_approvals`, then pauses with `interrupt()` | ledger row only |
 | `execute` | Runs only the approved actions (`remember` → memory write, `notify` → local webhook) | yes, after approval |
 
+### Two-level gate (Phase 2)
+
+`risk.py` scores every proposal. **High risk** = memory writes while `DIRECTOR_ENV=production`, a notification
+outside localhost, more than 3 memory writes or one longer than 1,000 characters, or a `decision`/`preference` memory
+(those steer every later plan). High-risk proposals pause twice: `approve` moves them to `escalated`, and only
+`confirm <thread> "CONFIRM XXXX"` (the phrase is printed) lets them run. External notifications additionally require
+https and a confirmed high-risk approval; plain http outward is always refused.
+
+Every rejection is logged to `director_rejections` with a code: `RISK-001` too risky, `COMPLIANCE-002` against policy,
+`EXPIRED-003` not decided within `DIRECTOR_APPROVAL_TTL_HOURS` (default 24; `cli.py expire` sweeps them),
+`ESCALATION-004` second confirmation declined or wrong, `USER-005` other. `cli.py backup` snapshots memory, ledger and
+checkpoints into `data/backups/`.
+
 The pause survives restarts: LangGraph checkpoints each thread to `data/checkpoints.sqlite`, so a proposal made
 now can be approved later from another process (or from the phone through Claude).
 
@@ -53,7 +66,7 @@ cd devtools && npm install && node pg-test-server.mjs # real Postgres + pgvector
 DIRECTOR_TEST_PG_URL="postgresql://postgres:x@127.0.0.1:5499/postgres?sslmode=disable" python -m pytest -q
 ```
 
-Both runs pass (16 tests): nothing is written before approval, rejection runs nothing, partial approval runs only the
+Both runs pass (33 tests across SQLite and pgvector): nothing is written before approval, high-risk proposals need the typed confirmation, rejections and timeouts are logged with codes, rejection runs nothing, partial approval runs only the
 chosen actions, a decision cannot be replayed, LLM output is sanitised, and Arabic requests work.
 
 ## Why these packages

@@ -6,8 +6,11 @@
   retrieve : embeds the request and recalls the closest memories (pgvector cosine, or SQLite + NumPy offline).
   plan     : drafts an answer plus a list of *proposed* actions. An OpenAI-compatible LLM is used when
              DIRECTOR_LLM_URL is set; otherwise a small rule-based planner. Planning never changes anything.
-  approval : if any action is proposed, records it in director_approvals and **pauses** (LangGraph interrupt).
-             The run is checkpointed to disk, so the decision can come minutes or days later, from another process.
+  approval : if any action is proposed, scores its risk (risk.py), records it in director_approvals and **pauses**
+             (LangGraph interrupt). HIGH-risk proposals pause a second time after approval and only continue when the
+             approver types the confirmation phrase. Every rejection (including timeouts after
+             DIRECTOR_APPROVAL_TTL_HOURS) is logged with a reason code in director_rejections.
+             The run is checkpointed to disk, so the decision can come minutes or hours later, from another process.
   execute  : runs only the actions the human approved. Rejected or unapproved actions never run.
 
 Every state change (a memory write) and every external action (a notification) is an action, so all of them pass the
@@ -20,6 +23,7 @@ import re
 import sqlite3
 import urllib.request
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -27,10 +31,12 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
+import risk as risk_mod
 from embed import get_embedder
 from memory import KINDS, Store, get_store
 
 DATA = Path(os.environ.get("DIRECTOR_DATA_DIR", Path(__file__).with_name("data")))
+APPROVAL_TTL_H = float(os.environ.get("DIRECTOR_APPROVAL_TTL_HOURS", "24"))   # undecided proposals expire (EXPIRED-003)
 MIN_SCORE = 0.15
 ACTION_TYPES = ("remember", "notify")
 
@@ -105,16 +111,19 @@ def llm_plan(request: str, memories: list[dict]) -> tuple[str, list[dict]]:
 
 
 # ── actions (run only after approval) ───────────────────────────────────────────────────────────────────
-def run_action(action: dict, store: Store, embedder, thread_id: str, by: str) -> dict:
+def run_action(action: dict, store: Store, embedder, thread_id: str, by: str, external_ok: bool = False) -> dict:
     if action["type"] == "remember":
         mid = store.add(action["kind"], action["content"], embedder.embed(action["content"]), approved_by=by,
                         metadata={"thread_id": thread_id, "embedder": embedder.name})
         return {"type": "remember", "ok": True, "memory_id": mid}
     if action["type"] == "notify":
         target = os.environ.get("DIRECTOR_NOTIFY_URL", "").strip()
-        # Only local targets (an n8n webhook, the relay): the outside world is reached through those, not from here.
-        if not re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?/", target):
-            return {"type": "notify", "ok": False, "skipped": "no local DIRECTOR_NOTIFY_URL configured"}
+        # Local targets (an n8n webhook, the relay) need one approval; anything else only after the second,
+        # high-risk confirmation. Plain http to the outside world is never allowed.
+        if not target:
+            return {"type": "notify", "ok": False, "skipped": "no DIRECTOR_NOTIFY_URL configured"}
+        if not risk_mod.LOCAL.match(target) and not (external_ok and target.startswith("https://")):
+            return {"type": "notify", "ok": False, "skipped": "external target needs a confirmed high-risk approval over https"}
         req = urllib.request.Request(target, data=json.dumps({"source": "director-00", "thread_id": thread_id,
                                                              "message": action["message"]}).encode(),
                                      headers={"Content-Type": "application/json"})
@@ -138,15 +147,33 @@ def build(store: Store, embedder, checkpointer):
         return {"answer": answer, "actions": valid_actions(actions)}
 
     def approval(s: State) -> State:
-        proposal = {"answer": s["answer"], "actions": s["actions"]}
-        store.create_pending(s["thread_id"], s["request"], proposal)
-        decision = interrupt({"thread_id": s["thread_id"], "request": s["request"], **proposal})
-        approved = bool(isinstance(decision, dict) and decision.get("approved"))
-        by = str(decision.get("by", "human")) if isinstance(decision, dict) else "human"
-        store.decide(s["thread_id"], "approved" if approved else "rejected", by)
-        if not approved:
-            store.finish(s["thread_id"], "rejected", {"reason": decision.get("reason", "") if isinstance(decision, dict) else ""})
-        return {"decision": {"approved": approved, "by": by, "only": decision.get("only") if isinstance(decision, dict) else None}}
+        # On resume LangGraph re-runs this node from the top and replays earlier interrupt() answers in order, so every
+        # store write below is idempotent (guarded by the current status).
+        tid = s["thread_id"]
+        risk = risk_mod.assess(s["actions"])
+        proposal = {"answer": s["answer"], "actions": s["actions"], "risk": risk}
+        store.create_pending(tid, s["request"], proposal, risk)
+
+        first = interrupt({"stage": "first", "thread_id": tid, "request": s["request"], **proposal}) or {}
+        by = str(first.get("by", "human"))
+        if not first.get("approved"):
+            store.reject(tid, first.get("code", "USER-005"), first.get("stage", "first"), first.get("reason", ""), by)
+            return {"decision": {"approved": False, "by": by, "code": first.get("code", "USER-005")}}
+
+        if risk["level"] == "high":
+            store.escalate(tid, by)
+            phrase = risk_mod.confirm_phrase(tid)
+            second = interrupt({"stage": "confirm", "thread_id": tid, "risk": risk, "type_to_confirm": phrase}) or {}
+            confirmer = str(second.get("by", by))
+            if not second.get("approved") or second.get("phrase", "").strip().upper() != phrase:
+                code = second.get("code") or "ESCALATION-004"
+                store.reject(tid, code, second.get("stage", "confirm"), second.get("reason", "") or "second confirmation not given", confirmer)
+                return {"decision": {"approved": False, "by": confirmer, "code": code}}
+            store.confirm(tid, confirmer)
+            return {"decision": {"approved": True, "by": by, "confirmed_by": confirmer, "high_risk": True, "only": first.get("only")}}
+
+        store.decide(tid, "approved", by)
+        return {"decision": {"approved": True, "by": by, "high_risk": False, "only": first.get("only")}}
 
     def execute(s: State) -> State:
         d = s["decision"]
@@ -154,7 +181,7 @@ def build(store: Store, embedder, checkpointer):
         results = []
         for a in chosen:
             try:
-                results.append(run_action(a, store, embedder, s["thread_id"], d["by"]))
+                results.append(run_action(a, store, embedder, s["thread_id"], d["by"], external_ok=d.get("high_risk", False)))
             except Exception as e:
                 results.append({"type": a["type"], "ok": False, "error": f"{type(e).__name__}: {e}"})
         store.finish(s["thread_id"], "executed" if all(r.get("ok") or r.get("skipped") for r in results) else "failed", {"results": results})
@@ -178,6 +205,7 @@ class Director:
 
     def __init__(self, store: Store | None = None, embedder=None, data_dir: Path = DATA):
         data_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir = data_dir
         self.store = store or get_store(data_dir)
         self.embedder = embedder or get_embedder()
         self._ckpt = sqlite3.connect(str(data_dir / "checkpoints.sqlite"), check_same_thread=False)
@@ -190,14 +218,72 @@ class Director:
         return {"thread_id": tid, "answer": out.get("answer"), "memories": out.get("memories", []),
                 "actions": out.get("actions", []), "status": "awaiting_approval" if waiting else "done"}
 
-    def decide(self, thread_id: str, approved: bool, by: str = "human", only: list[int] | None = None, reason: str = "") -> dict:
+    def _resume(self, thread_id: str, answer: dict) -> dict:
+        out = self.graph.invoke(Command(resume=answer), {"configurable": {"thread_id": thread_id}})
+        row = self.store.approval(thread_id) or {}
+        res = {"thread_id": thread_id, "status": row.get("status"), "results": out.get("results", [])}
+        if row.get("status") == "escalated":
+            res["type_to_confirm"] = risk_mod.confirm_phrase(thread_id)
+            res["risk"] = row.get("risk")
+        return res
+
+    def _expired(self, row: dict) -> bool:
+        return datetime.now(timezone.utc) - row["created_at"] > timedelta(hours=APPROVAL_TTL_H)
+
+    def decide(self, thread_id: str, approved: bool, by: str = "human", only: list[int] | None = None,
+               reason: str = "", code: str = "USER-005") -> dict:
+        """First-level decision. High-risk proposals come back as 'escalated' and need confirm()."""
         row = self.store.approval(thread_id)
         if not row or row["status"] != "pending":
             raise ValueError(f"no pending proposal {thread_id}")
-        out = self.graph.invoke(Command(resume={"approved": approved, "by": by, "only": only, "reason": reason}),
-                                {"configurable": {"thread_id": thread_id}})
-        return {"thread_id": thread_id, "approved": approved, "results": out.get("results", []),
-                "status": (self.store.approval(thread_id) or {}).get("status")}
+        if code not in risk_mod.REJECTION_CODES:
+            raise ValueError(f"unknown rejection code {code}; use one of {', '.join(risk_mod.REJECTION_CODES)}")
+        if self._expired(row):
+            return self._resume(thread_id, {"approved": False, "by": "system", "code": "EXPIRED-003", "stage": "timeout",
+                                            "reason": f"older than {APPROVAL_TTL_H} h"})
+        return self._resume(thread_id, {"approved": approved, "by": by, "only": only, "reason": reason, "code": code})
+
+    def confirm(self, thread_id: str, phrase: str, by: str = "human", approved: bool = True, reason: str = "") -> dict:
+        """Second-level confirmation for a high-risk proposal; the phrase must match exactly."""
+        row = self.store.approval(thread_id)
+        if not row or row["status"] != "escalated":
+            raise ValueError(f"no escalated proposal {thread_id}")
+        if self._expired(row):
+            return self._resume(thread_id, {"approved": False, "by": "system", "code": "EXPIRED-003", "stage": "timeout",
+                                            "reason": f"older than {APPROVAL_TTL_H} h"})
+        return self._resume(thread_id, {"approved": approved, "by": by, "phrase": phrase, "reason": reason})
+
+    def expire_stale(self) -> list[str]:
+        """Reject (EXPIRED-003) every pending or escalated proposal older than the approval window."""
+        expired = []
+        for p in self.store.pending():
+            row = self.store.approval(p["thread_id"])
+            if row and self._expired(row):
+                self._resume(p["thread_id"], {"approved": False, "by": "system", "code": "EXPIRED-003", "stage": "timeout",
+                                              "reason": f"older than {APPROVAL_TTL_H} h"})
+                expired.append(p["thread_id"])
+        return expired
+
+    def rejections(self, thread_id: str | None = None) -> list[dict]:
+        return self.store.rejections(thread_id)
+
+    def backup(self) -> dict:
+        """Snapshot memory + ledger (SQLite backup API) and the approval checkpoints into data/backups/."""
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        dest = self.data_dir / "backups" / stamp
+        files = []
+        if hasattr(self.store, "backup"):
+            files.append(str(self.store.backup(dest / "director.sqlite")))
+        else:                                                   # Postgres: export memories as JSON lines (pg_dump is the full path)
+            dest.mkdir(parents=True, exist_ok=True)
+            rows = self.store.con.run("SELECT row_to_json(m)::text FROM (SELECT id, agent, kind, content, metadata, approved_by, created_at "
+                                      "FROM agent_memories ORDER BY id) m")
+            (dest / "agent_memories.jsonl").write_text("\n".join(r[0] for r in rows), encoding="utf-8")
+            files.append(str(dest / "agent_memories.jsonl"))
+        with sqlite3.connect(str(dest / "checkpoints.sqlite")) as out:
+            self._ckpt.backup(out)
+        files.append(str(dest / "checkpoints.sqlite"))
+        return {"backup": str(dest), "files": files, "at": stamp}
 
     def pending(self) -> list[dict]:
         return self.store.pending()
