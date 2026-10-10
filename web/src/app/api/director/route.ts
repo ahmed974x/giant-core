@@ -4,6 +4,7 @@
 //        Every change runs through Director 00's own CLI, so the two-level gate and risk policy still decide.
 import path from "node:path";
 import { cliArgs, directorData, makeThrottle, pinOk, runDirector } from "@/lib/director";
+import { approvals, rejections as rejectionRows } from "@/lib/ledger";
 
 const throttle = makeThrottle();
 
@@ -13,13 +14,8 @@ function client(req: Request) {
 
 export async function GET() {
   try {
-    const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(path.join(directorData(), "director.sqlite"), { readOnly: true });
-    const pending = db.prepare("SELECT thread_id, request, proposal, status, risk, created_at FROM director_approvals " +
-      "WHERE status IN ('pending','escalated') ORDER BY created_at DESC LIMIT 50").all() as Record<string, string>[];
-    const rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections " +
-      "ORDER BY id DESC LIMIT 20").all();
-    db.close();
+    const pending = await approvals(directorData(), { pendingOnly: true, limit: 50 });
+    const rejections = await rejectionRows(directorData(), 20);
     return Response.json({
       writable: Boolean(process.env.DIRECTOR_WEB_PIN),
       pending: pending.map(p => ({ ...p, proposal: JSON.parse(p.proposal), risk: JSON.parse(p.risk || "{}"),

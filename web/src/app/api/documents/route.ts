@@ -4,6 +4,7 @@ import path from "node:path";
 import { directorData, makeThrottle } from "@/lib/director";
 import { ledgerFile, listDocs, previewDoc } from "@/lib/documents";
 import { guard } from "@/lib/guard";
+import { approvals, rejections } from "@/lib/ledger";
 
 const throttle = makeThrottle();
 const inbox = () => path.join(directorData(), "inbox");
@@ -15,15 +16,11 @@ export async function GET(req: Request) {
 
   const format = p.get("export");
   if (format === "xlsx" || format === "docx" || format === "pptx") {
-    const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(path.join(directorData(), "director.sqlite"), { readOnly: true });
-    try {
-      const approvals = db.prepare("SELECT thread_id, request, status, risk, decided_by, decided_at, created_at FROM director_approvals ORDER BY created_at DESC LIMIT 2000").all() as never[];
-      const rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections ORDER BY created_at DESC LIMIT 2000").all() as never[];
-      const file = ledgerFile(format, approvals, rejections);
+    {
+      const file = ledgerFile(format, await approvals(directorData()) as never[], await rejections(directorData()) as never[]);
       const type = { xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation" }[format];
       return new Response(new Uint8Array(file), { headers: { "Content-Type": type, "Content-Disposition": `attachment; filename="omega-ledger-${new Date().toISOString().slice(0, 10)}.${format}"`, "Cache-Control": "no-store" } });
-    } finally { db.close(); }
+    }
   }
 
   const file = p.get("file");

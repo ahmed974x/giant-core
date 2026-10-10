@@ -669,6 +669,33 @@ still under reduced motion), keys 1-4 for the screens and Esc to close, a Web Au
 warmer palette from 23:00 to 06:00. On phones the command bar comes first, the cards stack in one column, and the
 status bar sits at the end above the tab bar.
 
+**ADR-040 — Docker running; Director 00's ledger moves to Postgres + pgvector (blocker 1).** The checks found
+nothing to fix in firmware or Windows. Virtualization was enabled in the HP BIOS, the hypervisor was present, the
+Virtual Machine Platform was on, WSL 3.0.1 was installed, and Docker Desktop was installed per user. The engine
+simply wasn't started; starting it made `docker ps` work, with no BIOS change, admin prompt or restart.
+
+`docker compose` refused to start anything, because other profiles' required secrets (`IMMICH_DB_PASSWORD`,
+`SWISSPIPE_*`) were empty. Local random values now fill them in `.env`, along with a generated
+`DIRECTOR_DB_PASSWORD`; none of them is ever printed or committed. The `memory` service (pgvector 0.8.6, pg17,
+256 MB cap, 127.0.0.1:5435) runs at about 25-55 MB. Docker adds roughly 0.6 GB in total on this 7.2 GB laptop.
+
+Migration: SQLite was backed up first (Director backup and a Restic snapshot). `services/director00/migrate_to_pg.py`
+then copied the approvals, rejections, memories, Phoenix events, GKG entities and truth scores (2,802 rows). The
+script is idempotent (a second run adds nothing), checks counts per table, and only reads the SQLite files.
+`db/director/06-phase4-events.sql` lets Postgres accept the new Phoenix actions (`morning`, `restore-drill`).
+`DIRECTOR_DB_URL` is set in `.env` and `web/.env.local`; deleting that line falls back to SQLite.
+
+The web app used to read `director.sqlite` and `phoenix.sqlite` directly, so it would have shown stale data after
+the switch. All of those reads now go through `web/src/lib/ledger.ts`, which uses `pg` 8.23.0 (MIT, pure
+JavaScript, no native DLL) when `DIRECTOR_DB_URL` is set and SQLite otherwise, with the same row shapes. That covers
+the inbox, health, exports, briefing, alerts and the Phoenix timeline. The alert watcher re-bookmarks if the event
+log changes source. LangGraph's checkpoints stay in SQLite, since its Postgres saver would add native dependencies.
+
+Phoenix now starts Docker Desktop if the engine is down, for example after a reboot, before restarting the
+`memory` container. The end-to-end server forces `DIRECTOR_DB_URL` empty so tests never touch the real database.
+The Director and Phoenix suites ran against real Postgres in a throwaway `omega_test` database, including the 18
+Postgres tests that were skipped until now: 52 passed.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

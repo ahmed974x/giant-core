@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { readdir, readFile, unlink, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { ledgerFile } from "./documents.ts";
+import { approvals as ledgerApprovals, rejections as ledgerRejections } from "./ledger.ts";
 import { fetchPrices, planSweep, sweepRequest, validPositions, validRules } from "./sweeper.ts";
 
 export type BriefingResult = { deck: string; pending: number; sweep: "proposed" | "nothing" | "already-waiting" | "no-positions" | "no-prices"; sweepUsd: number; note: { title: string; body: string; url: string; tag: string } };
@@ -13,14 +14,10 @@ const KEEP = 14; // briefing decks kept in the Library
 
 export async function morningBriefing(dataDir: string, rulesFile: string, deps: Deps): Promise<BriefingResult> {
   const now = deps.now ?? new Date(), day = now.toISOString().slice(0, 10);
-  const { DatabaseSync } = await import("node:sqlite");
   let approvals: never[] = [], rejections: never[] = [];
   try {
-    const db = new DatabaseSync(path.join(dataDir, "director.sqlite"), { readOnly: true });
-    try {
-      approvals = db.prepare("SELECT thread_id, request, status, risk, decided_by, decided_at, created_at FROM director_approvals ORDER BY created_at DESC LIMIT 2000").all() as never[];
-      rejections = db.prepare("SELECT thread_id, code, stage, reason, rejected_by, created_at FROM director_rejections ORDER BY created_at DESC LIMIT 2000").all() as never[];
-    } finally { db.close(); }
+    approvals = await ledgerApprovals(dataDir) as never[];
+    rejections = await ledgerRejections(dataDir) as never[];
   } catch { /* no ledger yet: an empty briefing still goes out */ }
 
   // 1. The deck, saved where the Library lists it; old briefings beyond KEEP are removed.

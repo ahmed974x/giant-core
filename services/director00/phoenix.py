@@ -200,9 +200,20 @@ def default_services(restic: Restic) -> list[Service]:
         return director_check()[0], "SQLite fallback (Docker off)"
 
     def memory_restart():
-        if not shutil.which("docker"):
+        docker = shutil.which("docker")
+        if not docker:
             return False
-        r = subprocess.run(["docker", "compose", "--profile", "director", "up", "-d", "memory"], cwd=CORE, capture_output=True, timeout=180)
+        # Docker Desktop may not be running at all (after a reboot): start it and wait for the engine first (ADR-040).
+        if subprocess.run([docker, "info"], capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0).returncode != 0:
+            desktop = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DockerDesktop" / "Docker Desktop.exe"
+            if WINDOWS and desktop.exists():
+                subprocess.Popen([str(desktop)], creationflags=DETACHED)
+                for _ in range(24):
+                    time.sleep(5)
+                    if subprocess.run([docker, "info"], capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW).returncode == 0:
+                        break
+        r = subprocess.run([docker, "compose", "--profile", "director", "up", "-d", "memory"], cwd=CORE, capture_output=True, timeout=180,
+                           creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
         return r.returncode == 0
 
     def web_check():

@@ -3,13 +3,12 @@
 import path from "node:path";
 import { directorData } from "@/lib/director";
 import { summarize, type PhoenixEvent } from "@/lib/phoenix";
+import { phoenixEvents } from "@/lib/ledger";
 
 export async function GET() {
   try {
-    const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(path.join(directorData(), "phoenix.sqlite"), { readOnly: true });
-    const rows = db.prepare("SELECT ts, service, action, result, detail FROM phoenix_events ORDER BY id DESC LIMIT 500").all() as PhoenixEvent[];
-    db.close();
+    const rows = await phoenixEvents(directorData(), 500) as PhoenixEvent[];
+    if (!rows.length) throw new Error("empty");
     return Response.json(summarize(rows), { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json({ state: {}, lastRun: null, incidents: [], note: "Phoenix has not run yet" });

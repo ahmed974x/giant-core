@@ -4,6 +4,7 @@ import { readdir, stat } from "node:fs/promises";
 import { Socket } from "node:net";
 import path from "node:path";
 import { ping as immichPing } from "@/lib/immich";
+import { counts as ledgerCounts, usingPostgres } from "@/lib/ledger";
 
 const ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "..");
 const DIRECTOR = process.env.DIRECTOR_DATA_DIR ?? process.env.OMEGA_DIRECTOR_DIR ?? path.join(ROOT, "services", "director00", "data");
@@ -45,16 +46,9 @@ async function director(): Promise<{ check: Check; backup: Check }> {
   const file = path.join(DIRECTOR, "director.sqlite");
   let check: Check = { state: "unknown", detail: "not initialised yet (run cli.py ask …)" };
   try {
-    const { DatabaseSync } = await import("node:sqlite");
-    const db = new DatabaseSync(file, { readOnly: true });
-    const one = (sql: string) => (db.prepare(sql).get() as { n: number | string | null } | undefined)?.n ?? null;
-    const memories = Number(one("SELECT count(*) AS n FROM agent_memories"));
-    const waiting = Number(one("SELECT count(*) AS n FROM director_approvals WHERE status IN ('pending','escalated')"));
-    const rejected = Number(one("SELECT count(*) AS n FROM director_rejections"));
-    const last = one("SELECT max(created_at) AS n FROM director_approvals") as string | null;
-    db.close();
-    check = { state: waiting ? "idle" : "up", detail: `${memories} memories · ${waiting} awaiting approval · ${rejected} rejections`, at: last };
-  } catch { /* file missing: keep 'not initialised' */ }
+    const c = await ledgerCounts(path.dirname(file));
+    if (c) check = { state: c.waiting ? "idle" : "up", detail: `${c.memories} memories · ${c.waiting} awaiting approval · ${c.rejections} rejections${usingPostgres() ? " · Postgres" : ""}`, at: c.last };
+  } catch { check = { state: "down", detail: usingPostgres() ? "Postgres not answering on :5435" : "ledger unreadable" }; }
 
   let backup: Check = { state: "unknown", detail: "no backup yet (cli.py backup)" };
   try {

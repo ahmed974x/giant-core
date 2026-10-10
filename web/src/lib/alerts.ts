@@ -3,6 +3,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { newVapid, sendPush, vapidMatches, type Note, type Subscription, type Vapid } from "./webpush.ts";
+import { approvals as ledgerApprovals, phoenixEvents } from "./ledger.ts";
 
 export type Store = { vapid: Vapid; subs: Subscription[]; state: { proposalAt: string; phoenixId: number } };
 type Proposal = { thread_id: string; request: string; status: string; created_at: string };
@@ -40,6 +41,9 @@ export function pendingAlerts(proposals: Proposal[], phoenix: PhoenixRow[], stat
     body: p.request.replace(/^remember:\s*/i, "").slice(0, 140), url: "/ar/company#inbox", tag: `proposal-${p.thread_id}`,
   });
   // Failures, restarts and restores only (a passing drill or a briefing is not news). Phoenix's first run only sets the bookmark, so an existing history doesn't flood the phone.
+  // A smaller newest id than the bookmark means the log moved (e.g. SQLite to Postgres): re-bookmark, don't flood.
+  const newest = phoenix.reduce((m, e) => Math.max(m, e.id), 0);
+  if (newest && newest < state.phoenixId) state = { ...state, phoenixId: -1 };
   const incidents = state.phoenixId < 0 ? [] : phoenix.filter(e => e.id > state.phoenixId && (e.result !== "ok" || e.action === "restart" || e.action === "restore"));
   for (const e of incidents) notes.push({
     title: `Phoenix · ${e.service} ${e.action}${e.result === "ok" ? "" : ` (${e.result})`}`, body: e.detail.slice(0, 140), url: "/ar", tag: `phoenix-${e.id}`,
@@ -73,13 +77,8 @@ export async function broadcast(dir: string, store: Store, note: Note, f: typeof
 /** One watcher pass: read the ledgers, notify, move the bookmarks. */
 export async function checkOnce(dataDir: string, f: typeof fetch = fetch): Promise<number> {
   const dir = path.join(dataDir, "push"), store = await loadStore(dir);
-  const { DatabaseSync } = await import("node:sqlite");
-  const read = <T,>(file: string, sql: string): T[] => {
-    try { const db = new DatabaseSync(path.join(dataDir, file), { readOnly: true }); try { return db.prepare(sql).all() as T[]; } finally { db.close(); } }
-    catch { return []; }
-  };
-  const proposals = read<Proposal>("director.sqlite", "SELECT thread_id, request, status, created_at FROM director_approvals ORDER BY created_at DESC LIMIT 50");
-  const phoenix = read<PhoenixRow>("phoenix.sqlite", "SELECT id, ts, service, action, result, detail FROM phoenix_events ORDER BY id DESC LIMIT 50");
+  const proposals: Proposal[] = await ledgerApprovals(dataDir, { limit: 50 }).catch(() => []);
+  const phoenix: PhoenixRow[] = await phoenixEvents(dataDir, 50).catch(() => []);
   const { notes, state } = pendingAlerts(proposals, phoenix, store.state);
   if (store.subs.length) for (const n of notes) await broadcast(dir, store, n, f);
   if (JSON.stringify(state) !== JSON.stringify(store.state)) await saveState(dir, state);

@@ -13,9 +13,9 @@ const prices = (async () => Response.json([{ symbol: "BTCUSDT", price: "65000" }
 function setup(withPositions: boolean) {
   const dir = mkdtempSync(path.join(tmpdir(), "omega-brief-"));
   const db = new DatabaseSync(path.join(dir, "director.sqlite"));
-  db.exec("CREATE TABLE director_approvals (thread_id TEXT, request TEXT, status TEXT, risk TEXT, decided_by TEXT, decided_at TEXT, created_at TEXT)");
+  db.exec("CREATE TABLE director_approvals (thread_id TEXT, request TEXT, proposal TEXT DEFAULT '{}', status TEXT, risk TEXT, decided_by TEXT, decided_at TEXT, created_at TEXT)");
   db.exec("CREATE TABLE director_rejections (thread_id TEXT, code TEXT, stage TEXT, reason TEXT, rejected_by TEXT, created_at TEXT)");
-  db.prepare("INSERT INTO director_approvals VALUES (?,?,?,?,?,?,?)").run("a1", "remember: TASK: book berth", "pending", '{"level":"low"}', null, null, "2026-10-10T06:00:00Z");
+  db.prepare("INSERT INTO director_approvals (thread_id, request, status, risk, decided_by, decided_at, created_at) VALUES (?,?,?,?,?,?,?)").run("a1", "remember: TASK: book berth", "pending", '{"level":"low"}', null, null, "2026-10-10T06:00:00Z");
   db.close();
   if (withPositions) writeFileSync(path.join(dir, "positions.json"), JSON.stringify({ positions: [{ symbol: "BTCUSDT", qty: 0.05, cost_usd: 2500 }] }));
   const rules = path.join(dir, "rules.json");
@@ -50,7 +50,7 @@ test("no positions, no prices, or a sweep already waiting: no new proposal", asy
 
   const waiting = setup(true), day = new Date().toISOString().slice(0, 10);
   const db = new DatabaseSync(path.join(waiting.dir, "director.sqlite"));
-  db.prepare("INSERT INTO director_approvals VALUES (?,?,?,?,?,?,?)").run("s1", `remember: TASK: profit sweep plan ${day}, move ~$375`, "pending", "{}", null, null, `${day}T05:00:00Z`);
+  db.prepare("INSERT INTO director_approvals (thread_id, request, status, risk, decided_by, decided_at, created_at) VALUES (?,?,?,?,?,?,?)").run("s1", `remember: TASK: profit sweep plan ${day}, move ~$375`, "pending", "{}", null, null, `${day}T05:00:00Z`);
   db.close();
   const r3 = await morningBriefing(waiting.dir, waiting.rules, { runDirector: async () => assert.fail("must not ask twice"), fetch: prices });
   assert.equal(r3.sweep, "already-waiting");
