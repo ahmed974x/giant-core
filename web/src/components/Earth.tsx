@@ -124,7 +124,7 @@ export default function Earth() {
                 </label>
                 {(topPersons.length > 0 || topOrgs.length > 0) && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">{t("gkgTitle")}</p>
+                    <p className="text-xs font-semibold text-muted">{t("gkgTitle")}</p>
                     <div className="flex flex-wrap gap-1" dir="ltr">
                       {topPersons.slice(0, 8).map(p => <span key={`p-${p}`} className="rounded bg-[#22d3ee]/10 px-1.5 py-0.5 text-[11px] text-[#67e8f9]">{p}</span>)}
                       {topOrgs.slice(0, 8).map(o => <span key={`o-${o}`} className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-ink">{o}</span>)}
@@ -146,7 +146,7 @@ export default function Earth() {
                     <button onClick={() => { setCamOn(c); fly(c, 13); }} className={`group block w-full overflow-hidden rounded-lg border text-start ${camOn?.id === c.id ? "border-[#c792ea]" : "border-line hover:border-muted"}`}>
                       <div className="relative aspect-video bg-panel-2">
                         {c.image && <img src={c.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover transition group-hover:scale-105" />}
-                        <span className="absolute start-1.5 top-1.5 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
+                        <span className="absolute start-1.5 top-1.5 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                           <span className="size-1.5 animate-pulse rounded-full bg-bad" />{t("liveTag")}
                         </span>
                       </div>

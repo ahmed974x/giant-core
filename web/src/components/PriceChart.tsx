@@ -93,7 +93,7 @@ export default function PriceChart({ anomalies }: { anomalies: Anomaly[] }) {
           <div className="flex overflow-hidden rounded-lg border border-line text-xs">
             {SYMBOLS.map(s => (
               <button key={s.id} onClick={() => setSymbol(s.id)} aria-pressed={symbol === s.id}
-                className={`px-2.5 py-1 ${symbol === s.id ? "bg-accent font-semibold text-[#0a0f15]" : "text-muted hover:text-ink"}`}>{s.label}</button>
+                className={`px-2.5 py-1 ${symbol === s.id ? "bg-accent font-semibold text-[#071526]" : "text-muted hover:text-ink"}`}>{s.label}</button>
             ))}
           </div>
           <div className="flex overflow-hidden rounded-lg border border-line text-xs">
