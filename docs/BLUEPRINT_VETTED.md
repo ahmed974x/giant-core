@@ -176,3 +176,27 @@ use case) · 🔴 skip (doesn't exist, untrustworthy, proprietary, too heavy, or
 **Still not loadable here:** DoWhy and CausalNex both need pandas, whose Python 3.12 build this laptop's Application
 Control policy blocks. `services/causal` (flight-to-safety check, Butterfly Engine) implements the same estimate →
 refute → graph steps in NumPy; on a server without that policy either library is a drop-in addition.
+
+## Phase 2 additions (2026-10-10)
+
+| Item | Verdict | Where |
+| --- | --- | --- |
+| Two-level approval, rejection codes, expiry | ✅ | ADR 010, `services/director00/risk.py` |
+| Butterfly Engine sub-graph (confidence, counterfactuals, graph JSON) | ✅ | ADR 011, `services/director00/butterfly_graph.py` |
+| `event_entities` (GKG people/orgs/places/themes + sentiment, GIN) | ✅ | ADR 012, `db/director/03-event-entities.sql` |
+| Caddy local HTTPS | ✅ | ADR 013, `ops/caddy` |
+
+## Toolkit review (2026-10-10)
+
+Checked on GitHub, npm and PyPI the same day. "★" is GitHub stars at the time of checking.
+
+| Tool | Licence | Signals | Verdict | Why |
+| --- | --- | --- | --- | --- |
+| Penpot MCP (`@zcubekr/penpot-mcp-server` 1.0.0) | MIT | ★19, active June 2026 | 🟢 added, disabled until a token exists | ADR 014; needs a Penpot account token. `mcp/design/` |
+| SwissPipe (OpenObserve) 0.9.49 | Apache-2.0 | ★5, last release Oct 2025 | 🟡 added as opt-in compose profile | ADR 015; ~30 MB, runs beside n8n, not instead of it |
+| Locus AR (`locus-ar` 1.1.25) | MIT | ★0, single author, last change Feb 2026 | 🟡 on hold | ADR 016; image tracking needs a target image; existing AR mode covers the globe |
+| LibreYOLO Web (`libreyolo-web` 0.0.6) | MIT | ★0, v0.0.x | 🔴 rejected | ADR 017; camera-feed vehicle/ship detection is out of scope (ADR 006/008) |
+| Albumentations-MCP 1.0.2 | MIT | PyPI only | 🔴 rejected | ADR 018; augmentation ≠ enhancement; native OpenCV wheels |
+| OSINT-Web-MCP | MIT | ★1, March 2026 | 🔴 rejected | ADR 019; identity search + stealth bot-evasion |
+
+No integration test was added for Locus AR or LibreYOLO because neither was integrated.

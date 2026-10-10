@@ -377,6 +377,60 @@ pg8000 driver is slower than psycopg but loads under this laptop's Application C
 AutoGPT-style autonomy (no gate), HashiCorp Vault (BSL; OpenBao if a secrets server is ever needed). Code:
 `services/director00`, schema `db/director/01-memory.sql`, compose profile `director`.
 
+**ADR 010 — Two-level approval for high-risk actions.** Context: one "yes" is too easy to give for actions that
+reach outside the laptop or steer every later plan. Decision: `risk.py` marks production writes, non-local
+notifications, bulk or large memory writes and decision/preference memories as high risk; those pause a second time
+until the approver types `CONFIRM XXXX`. Every rejection is logged with a code (RISK-001, COMPLIANCE-002, EXPIRED-003,
+ESCALATION-004, USER-005) and undecided proposals expire after 24 h. Trade-off: one extra step for high-risk work;
+low-risk notes stay one tap. Code: `services/director00/risk.py`, `db/director/02-approval-hardening.sql`.
+
+**ADR 011 — Butterfly Engine: explicit causal prior + evidence, as a LangGraph sub-graph.** Context: "why did this
+happen?" needs cause, not correlation, but most world drivers have no local history yet. Decision: a small written
+causal graph (13 nodes, 18 edges) whose links are re-weighted by evidence: DoWhy-style backdoor estimate + placebo
+refuter on public market data, and live observations (USGS/EONET hazards, GDELT conflict) near the anomaly. Output per
+chain: 0-1 confidence, counterfactual, graph JSON. Wrapped as a sub-graph (locate → gather → trace → narrate) behind the
+`butterfly_trace` tool; read-only, so no approval. Trade-offs: the prior is opinionated and visible in code review;
+untested links are labelled, never hidden. DoWhy/CausalNex are swapped in on a host where pandas loads.
+
+**ADR 012 — News entities with a privacy floor.** Context: GDELT GKG names people, organisations and places in
+every article; storing all of them builds a profile store of private individuals. Decision: `event_entities` keeps a
+person only when at least 3 articles in the same batch name them (public figures in the news), tags sentiment from
+GDELT tone, purges after 7 days, and indexes every entity array with GIN plus a generated tsvector. Subordinate to
+ADR 006.
+
+**ADR 013 — Phone access through Caddy with a local CA.** Context: location and AR need a secure origin, and the app
+must stay off the LAN by default. Decision: the app binds to 127.0.0.1; Caddy (`tls internal`, checksum-verified
+binary) terminates HTTPS on the LAN and serves only its public root certificate over HTTP. The Windows trust store and
+firewall are not touched by tooling; the owner allows Caddy on Private networks and trusts the root on the phone.
+
+**ADR 014 — Penpot MCP for design automation (accepted, optional).** `@zcubekr/penpot-mcp-server` (MIT, 76 tools)
+lets an agent draft screen mockups in Penpot, the open-source Figma alternative. It is configured but not enabled:
+it needs a Penpot account token (penpot.app, or a self-hosted Penpot that is too heavy for this laptop, ~2 GB).
+Config: `mcp/design/`.
+
+**ADR 015 — SwissPipe as an opt-in, lighter workflow runner beside n8n (accepted for evaluation).** SwissPipe
+(Apache-2.0, OpenObserve, Rust, ~30 MB RAM) runs HTTP/condition/delay/human-in-loop workflows. It is added as compose
+profile `swisspipe` with a pinned image, 64 MB cap and localhost-only port; n8n stays the default until the existing
+workflows are ported and SwissPipe shows activity again (last release October 2025).
+
+**ADR 016 — Locus AR: on hold.** An image-tracking AR SDK (MIT) published by one author with no community use yet
+(0 stars, last change February 2026). Image tracking needs a printed target image, which the globe does not have, and
+the SDK would get camera access in the browser. The existing compass/tilt AR mode covers the globe; revisit for an
+"AR poster" of the Gulf if the project matures, or use MindAR (MIT, widely used).
+
+**ADR 017 — LibreYOLO Web: rejected for camera feeds.** Detecting ships and vehicles in camera feeds is the
+camera-surveillance scope ADR 006 excludes (and ADR 008 already rules out YOLO-style vision). Vessel positions come
+from AIS and, later, published SAR detections (Global Fishing Watch). The library itself (MIT, v0.0.6, 0 stars) was
+also too young to trust.
+
+**ADR 018 — Albumentations-MCP: rejected.** Albumentations generates augmented copies of images for training models;
+it does not enhance imagery for analysis. It also pulls opencv-python-headless and other native wheels into the
+runtime (likely blocked by this laptop's Application Control policy) and lists pre-commit as a runtime dependency.
+
+**ADR 019 — OSINT-Web-MCP: rejected.** Its "identity search" looks up individuals and its "stealth browser" is built
+to evade bot detection; both conflict with ADR 006 and with responsible scraping. Web research continues through the
+already-configured Firecrawl MCP, which identifies itself and respects site rules.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):
