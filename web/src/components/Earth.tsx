@@ -44,6 +44,7 @@ export default function Earth() {
 
   const [meta, setMeta] = useState<Partial<Record<Layer, FeedMeta>>>({});
   const [kinds, setKinds] = useState<string[] | undefined>(undefined);   // undefined = every event type
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const onFeed = useCallback((l: Layer, list: FeedItem[], m?: FeedMeta) => {
     setItems(s => ({ ...s, [l]: list }));
     if (m) setMeta(s => ({ ...s, [l]: m }));
@@ -60,7 +61,10 @@ export default function Earth() {
 
   const count = (id: Tab) => (id === "nodes" ? nodes.length : id === "alerts" ? live.anomalies.length : items[id]?.length ?? null);
   const raw = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" || tab === "events" ? items[tab] : null;
-  const list = tab === "events" && raw && kinds ? raw.filter(e => kinds.includes(e.kind ?? "other")) : raw;
+  const list = tab === "events" && raw
+    ? raw.filter(e => (!kinds || kinds.includes(e.kind ?? "other")) && (!verifiedOnly || e.truth?.status === "verified"))
+    : raw;
+  const verifiedCount = items.events?.filter(e => e.truth?.status === "verified").length ?? 0;
 
   return (
     <div className="space-y-4">
@@ -114,6 +118,10 @@ export default function Earth() {
                     );
                   })}
                 </div>
+                <label className="flex items-center gap-2 text-[11px] text-muted">
+                  <input type="checkbox" checked={verifiedOnly} onChange={e => setVerifiedOnly(e.target.checked)} className="accent-[#4cd38a]" />
+                  {t("truth.onlyVerified", { n: verifiedCount, total: items.events?.length ?? 0 })}
+                </label>
                 {(topPersons.length > 0 || topOrgs.length > 0) && (
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">{t("gkgTitle")}</p>
@@ -173,7 +181,14 @@ export default function Earth() {
                   <li key={ev.id} className="flex items-start gap-2 px-3 py-2 hover:bg-panel-2">
                     <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: KIND_COLOR[ev.kind ?? "other"] ?? "#adb5bd" }} />
                     <button onClick={() => fly(ev, 7)} className="min-w-0 flex-1 text-start">
-                      <span className="block truncate text-sm" dir="auto">{ev.label}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm" dir="auto">{ev.label}</span>
+                        {ev.truth && (
+                          <span title={ev.truth.flags.join(", ")} className={`shrink-0 rounded px-1 text-[10px] font-semibold ${ev.truth.status === "verified" ? "bg-good/15 text-good" : "bg-white/5 text-muted"}`}>
+                            {ev.truth.status === "verified" ? "✓" : "?"} {ev.truth.score.toFixed(2)}
+                          </span>
+                        )}
+                      </span>
                       {ev.sub && <span className="block truncate text-xs text-muted" dir="auto">{ev.sub}</span>}
                     </button>
                     {ev.url && /^https?:\/\//.test(ev.url) && <a href={ev.url} target="_blank" rel="noopener noreferrer" className="pt-0.5 text-xs text-accent" aria-label={t("openSource")}>↗</a>}

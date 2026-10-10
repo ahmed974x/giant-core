@@ -74,6 +74,26 @@
         "RISK-001": "خطر كبير",
         "COMPLIANCE-002": "مخالف للسياسة"
       }
+    },
+    "phoenix": {
+      "title": "التعافي الذاتي (Phoenix)",
+      "lastRun": "آخر فحص {when}",
+      "never": "لم يعمل بعد",
+      "quiet": "لا حوادث: كل شيء بقي سليمًا.",
+      "actions": {
+        "detect": "فُحص",
+        "restart": "أُعيد تشغيله",
+        "restore": "استُعيد من النسخة الاحتياطية",
+        "recover": "تعافى",
+        "backup": "نسخ احتياطي",
+        "notify": "أُبلغ"
+      },
+      "results": {
+        "ok": "سليم",
+        "down": "متوقف",
+        "failed": "فشل",
+        "skipped": "تُخطّي"
+      }
     }
   },
   "market": {
@@ -243,6 +263,9 @@
     "firms": {
       "missing": "بؤر حرائق ناسا: المفتاح غير مضبوط. أضف NASA_FIRMS_KEY في web/.env.local.",
       "error": "ناسا FIRMS غير متاح أو رُفض المفتاح؛ بقية المخاطر تتحدث."
+    },
+    "truth": {
+      "onlyVerified": "الموثّقة فقط ({n} من {total})"
     }
   },
   "severity": {

@@ -20,7 +20,8 @@ const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
 export type Layer = "flights" | "ships" | "cams" | "hazards" | "events" | "gkg";
 export type FeedMeta = Record<string, unknown>;
-export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number; kind?: string };
+export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number; kind?: string;
+  truth?: { score: number; status: string; flags: string[] } };
 export type MapTarget = { lon: number; lat: number; zoom: number; seq: number };
 type Feed = { on: boolean; count: number | null; state: "idle" | "loading" | "live" | "stale" | "nokey" | "error" };
 type Basemap = "satellite" | "map";
@@ -182,7 +183,8 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
           "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#22d3ee", "circle-stroke-opacity": 0.75,
           "circle-stroke-width": 1.5, "circle-radius": ["interpolate", ["linear"], ["get", "articles"], 1, 4, 10, 9, 60, 18] } });
         mm.addLayer({ id: "events", type: "circle", source: "events", paint: {
-          "circle-color": EVENT_COLOR, "circle-opacity": 0.85, "circle-stroke-color": "#0a0f15", "circle-stroke-width": 1,
+          "circle-color": EVENT_COLOR, "circle-opacity": ["case", ["==", ["get", "truth_status"], "verified"], 0.9, 0.25],
+          "circle-stroke-color": ["case", ["==", ["get", "truth_status"], "verified"], "#0a0f15", "#adb5bd"], "circle-stroke-width": 1,
           "circle-radius": ["interpolate", ["linear"], ["get", "mentions"], 1, 2.5, 20, 6, 100, 10] } });
         mm.addLayer({ id: "hazards-halo", type: "circle", source: "hazards", paint: {
           "circle-color": HAZARD_COLOR, "circle-opacity": 0.18, "circle-blur": 0.6,
@@ -417,9 +419,11 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventK
           sub: [...h.persons.slice(0, 2), ...h.orgs.slice(0, 2)].join(" · "), url: h.url })), { topPersons: j.topPersons, topOrgs: j.topOrgs });
       }
       if (l === "events") {
-        const list = j.events as { id: string; lat: number; lon: number; place: string; category: string; tone: number; mentions: number; url: string; at: string }[];
-        src?.setData({ type: "FeatureCollection", features: list.map(ev => ({ type: "Feature", geometry: { type: "Point", coordinates: [ev.lon, ev.lat] }, properties: { ...ev } })) });
+        const list = j.events as { id: string; lat: number; lon: number; place: string; category: string; tone: number; mentions: number; url: string; at: string;
+          truth: { score: number; status: string; flags: string[] } }[];
+        src?.setData({ type: "FeatureCollection", features: list.map(ev => ({ type: "Feature", geometry: { type: "Point", coordinates: [ev.lon, ev.lat] }, properties: { ...ev, truth_status: ev.truth.status, truth_score: ev.truth.score } })) });
         onFeedRef.current?.("events", list.map(ev => ({ id: ev.id, lat: ev.lat, lon: ev.lon, label: ev.place || "—", kind: ev.category,
+          truth: ev.truth,
           sub: `${t(`eventKinds.${ev.category}`)} · ${ev.mentions} · ${ev.tone}`, url: ev.url })));
       }
       if (l === "hazards") {

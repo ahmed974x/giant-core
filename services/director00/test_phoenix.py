@@ -140,3 +140,11 @@ def test_status_reports_latest_state_per_service(log):
     p.run_once()
     st = p.status()
     assert st["services"]["web"]["action"] in ("restart", "recover") and st["last_run"]["action"] == "heartbeat"
+
+
+def test_runs_without_a_console_like_the_scheduled_task(monkeypatch, log):
+    """pythonw (Task Scheduler) has sys.stdout = None; Phoenix must still run and log instead of crashing."""
+    monkeypatch.setattr(px, "from_env", lambda: make(log, web=Flaky()))
+    monkeypatch.setattr(px.sys, "stdout", None)
+    assert px.main(["run"]) == 0
+    assert log.events()[0]["action"] == "heartbeat"

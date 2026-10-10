@@ -479,6 +479,15 @@ shell string, and are recorded as approved by `web:Ahmad`. Reached from the phon
 Trade-offs: a 6-digit PIN on a home network, not full user accounts (Keycloak stays deferred); each change costs ~5 s
 while the CLI starts.
 
+**ADR-024 — Trust and resilience on screen (Layer B).** Context: the Truth Layer and Phoenix worked, but only in
+logs. Decision: (1) the web scores every GDELT event with a TypeScript twin of the Truth Layer that reads the same
+`sources.json`; a parity test runs both implementations on the same items and fails if they disagree. Because GDELT's
+NumSources is counted when an event is first seen (almost always 1), corroboration also counts other domains reporting
+the same kind of event at the same sub-country place within the hour. The Events tab shows a ✓/? badge with the score
+and a "verified only" switch; unverified events are drawn faint and hollow on the globe. (2) The Company screen shows
+Phoenix's state per service, its last run and recent incidents from `phoenix_events`. Fixed on the way: under
+`pythonw` (the scheduled task) `sys.stdout` is `None`, which made every scheduled run fail; now covered by a test.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

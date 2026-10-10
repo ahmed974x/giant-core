@@ -74,6 +74,26 @@
         "RISK-001": "Too risky",
         "COMPLIANCE-002": "Against policy"
       }
+    },
+    "phoenix": {
+      "title": "Self-healing (Phoenix)",
+      "lastRun": "last check {when}",
+      "never": "not run yet",
+      "quiet": "No incidents: everything stayed healthy.",
+      "actions": {
+        "detect": "checked",
+        "restart": "restarted",
+        "restore": "restored from backup",
+        "recover": "recovered",
+        "backup": "backup",
+        "notify": "notified"
+      },
+      "results": {
+        "ok": "ok",
+        "down": "down",
+        "failed": "failed",
+        "skipped": "skipped"
+      }
     }
   },
   "market": {
@@ -243,6 +263,9 @@
     "firms": {
       "missing": "NASA FIRMS fire pixels: key not configured. Add NASA_FIRMS_KEY to web/.env.local.",
       "error": "NASA FIRMS is unreachable or the key was refused; other hazards still update."
+    },
+    "truth": {
+      "onlyVerified": "Verified only ({n} of {total})"
     }
   },
   "severity": {

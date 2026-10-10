@@ -347,7 +347,8 @@ def from_env() -> Phoenix:
 
 
 def main(argv: list[str]) -> int:
-    sys.stdout.reconfigure(encoding="utf-8")
+    if sys.stdout is not None:                          # pythonw (the scheduled task) has no console at all
+        sys.stdout.reconfigure(encoding="utf-8")
     cmd = argv[0] if argv else "run"
     if cmd == "loop":                                   # alternative to the scheduled task: python phoenix.py loop 300
         every = float(argv[1]) if len(argv) > 1 else 300
