@@ -333,6 +333,77 @@ class Phoenix:
                 "recent": self.log.events(10)}
 
 
+# ── restore drill (ADR-038) ──────────────────────────────────────────────────────────────────────────────────
+def restore_drill(restic: Restic, log: "EventLog", data_dir: Path = DATA, scratch: Path | None = None) -> dict:
+    """Prove the backups can be restored, without touching live data: restore the newest snapshot into a scratch
+    folder, run SQLite's integrity check on every restored database, compare its tables with the live ones, time it,
+    log the result to phoenix_events, and delete the scratch copy."""
+    started = time.monotonic()
+    out: dict = {"ok": False, "snapshot": None, "age_h": None, "seconds": None, "databases": {}, "problems": [], "warnings": []}
+    if not restic.available:
+        out["problems"].append("restic not configured (RESTIC_REPOSITORY / RESTIC_PASSWORD in .env)")
+    snap = restic.latest() if restic.available else None
+    if restic.available and not snap:
+        out["problems"].append("no snapshot yet")
+    if snap:
+        out["snapshot"] = snap.get("short_id")
+        taken = datetime.fromisoformat(snap["time"].replace("Z", "+00:00"))   # restic writes local time with offset
+        out["age_h"] = round((datetime.now(timezone.utc) - taken).total_seconds() / 3600, 1)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        staging = (scratch or data_dir.parent) / f".phoenix-drill-{stamp}"
+        try:
+            if not restic.restore_latest(staging):
+                out["problems"].append("restic restore failed")
+            else:
+                restored = {p.name: p for p in staging.rglob("*.sqlite") if "backups" not in p.parts and "quarantine" not in str(p)}
+                if "director.sqlite" not in restored:
+                    out["problems"].append("director.sqlite missing from the snapshot")
+                for name, path in sorted(restored.items()):
+                    ok, detail = _sqlite_ok(path)
+                    counts = _table_counts(path)
+                    live = _table_counts(data_dir / name) if (data_dir / name).exists() else {}
+                    missing = sorted(set(live) - set(counts))
+                    out["databases"][name] = {"integrity": detail.split(": ", 1)[-1], "tables": counts, "missing_tables": missing}
+                    if not ok:
+                        out["problems"].append(f"{name}: {detail}")
+                    if missing:                  # created after this snapshot: the next backup will carry them
+                        out["warnings"].append(f"{name}: newer than the snapshot: {', '.join(missing)}")
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+    out["seconds"] = round(time.monotonic() - started, 1)
+    out["ok"] = not out["problems"]
+    summary = (f"snapshot {out['snapshot']} ({out['age_h']} h old) restored and verified in {out['seconds']} s"
+               + (f"; {len(out['warnings'])} warning(s): " + "; ".join(out["warnings"]) if out["warnings"] else "")
+               if out["ok"] else "; ".join(out["problems"]))
+    log.add("backup", "restore-drill", "ok" if out["ok"] else "failed", summary)
+    return out
+
+
+def _table_counts(path: Path) -> dict:
+    con = None
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=5)
+        names = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+        return {n: con.execute(f'SELECT count(*) FROM "{n}"').fetchone()[0] for n in names}
+    except sqlite3.DatabaseError:
+        return {}
+    finally:
+        if con is not None:
+            con.close()
+
+
+def run_briefing() -> int:
+    """The 07:00 scheduled task (ADR-037): run web/scripts/briefing.ts with no console window."""
+    node = shutil.which("node") or "node"
+    script = CORE / "web" / "scripts" / "briefing.ts"
+    r = subprocess.run([node, "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", str(script)], cwd=str(CORE / "web"),
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+                       creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
+    log = EventLog(DATA / "phoenix.sqlite")
+    log.add("briefing", "morning", "ok" if r.returncode == 0 else "failed", (r.stdout if r.returncode == 0 else r.stderr)[-480:])
+    return r.returncode
+
+
 def from_env() -> Phoenix:
     load_env()
     restic = Restic()
@@ -355,6 +426,15 @@ def main(argv: list[str]) -> int:
         while True:
             from_env().run_once()
             time.sleep(every)
+    if cmd == "briefing":                               # the 07:00 task (ADR-037)
+        load_env()
+        return run_briefing()
+    if cmd == "drill":                                  # weekly restore drill (ADR-038)
+        load_env()
+        out = restore_drill(Restic(), EventLog(DATA / "phoenix.sqlite"))
+        if sys.stdout is not None:
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+        return 0 if out["ok"] else 1
     p = from_env()
     out = p.status() if cmd == "status" else p.run_once()
     print(json.dumps(out, ensure_ascii=False, indent=2, default=str))

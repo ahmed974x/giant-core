@@ -618,6 +618,29 @@ version. Only the sweeper rules are editable in the app; source tiers and Butter
 through code review. `OMEGA_ROOT` points the end-to-end server at copies of these files, so tests never edit the
 real ones.
 
+**ADR-037 — Morning briefing.** Approved by Ahmad on 2026-10-10. The Windows task "OMEGA Morning Briefing" runs
+daily at 07:00 local time as `pythonw scripts/phoenix.py briefing`, which starts `web/scripts/briefing.ts` with no
+console window and logs the result to `phoenix_events`. The briefing does three things:
+- writes a four-slide PowerPoint deck of the ledger into the inbox, so it appears in the Library (the last 14 decks
+  are kept);
+- runs the Profit Sweeper check against Ahmad's positions and live prices, and proposes at most one sweep plan a day
+  (never if one is already waiting); it still never trades;
+- pushes one alert saying how many items wait for approval.
+
+The alert watcher now pushes only failures, restarts and restores. Passing drills and briefings are logged without
+an alert.
+
+**ADR-038 — Restore drill.** A backup only counts if it restores. The Windows task "OMEGA Restore Drill" runs every
+Sunday at 06:30 as `phoenix.py drill`:
+- it restores the newest Restic snapshot into a scratch folder, never over live data;
+- it runs SQLite's integrity check on every restored database and compares its tables with the live ones;
+- it times the drill, logs ok or failed, and deletes the scratch copy.
+
+A failure reaches the phone through the alert watcher. Tables created after the snapshot are reported as warnings,
+since the next backup carries them. The first real drill showed this: the snapshot was 7 hours old and lacked the
+newer `checkpoints` and `truth_scores` tables. A fresh backup then restored and verified in 2.5 s. The same drill
+fixed a time bug: Restic writes local time with an offset, and the drill now honours it.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

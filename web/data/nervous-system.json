@@ -477,6 +477,24 @@
       "file": "web/src/lib/alerts.ts",
       "descEn": "Checks the ledger and Phoenix every minute and pushes encrypted notifications to the phone.",
       "descAr": "يفحص السجل و Phoenix كل دقيقة ويرسل إشعارات مشفرة للجوال."
+    },
+    {
+      "id": "briefing",
+      "kind": "service",
+      "en": "Morning briefing",
+      "ar": "الإحاطة الصباحية",
+      "file": "web/src/lib/briefing.ts",
+      "descEn": "Every day at 07:00: a PowerPoint briefing into the Library, the Profit Sweeper check, one alert.",
+      "descAr": "كل يوم الساعة 7: إحاطة PowerPoint في المكتبة، وفحص جامع الأرباح، وتنبيه واحد."
+    },
+    {
+      "id": "drill",
+      "kind": "service",
+      "en": "Restore drill",
+      "ar": "تجربة الاسترجاع",
+      "file": "services/director00/phoenix.py",
+      "descEn": "Every Sunday at 06:30: restores the newest backup into a scratch folder and verifies every database.",
+      "descAr": "كل أحد الساعة 6:30: يسترجع آخر نسخة في مجلد مؤقت ويتحقق من كل قاعدة بيانات."
     }
   ],
   "edges": [
@@ -938,6 +956,46 @@
     {
       "from": "screen-company",
       "to": "alerts",
+      "type": "shows"
+    },
+    {
+      "from": "sqlite",
+      "to": "briefing",
+      "type": "feeds"
+    },
+    {
+      "from": "briefing",
+      "to": "inbox-files",
+      "type": "stores"
+    },
+    {
+      "from": "briefing",
+      "to": "sweeper",
+      "type": "calls"
+    },
+    {
+      "from": "briefing",
+      "to": "alerts",
+      "type": "calls"
+    },
+    {
+      "from": "phoenix",
+      "to": "briefing",
+      "type": "calls"
+    },
+    {
+      "from": "phoenix",
+      "to": "drill",
+      "type": "calls"
+    },
+    {
+      "from": "drill",
+      "to": "restic",
+      "type": "calls"
+    },
+    {
+      "from": "screen-library",
+      "to": "briefing",
       "type": "shows"
     }
   ]

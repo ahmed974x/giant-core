@@ -148,3 +148,33 @@ def test_runs_without_a_console_like_the_scheduled_task(monkeypatch, log):
     monkeypatch.setattr(px.sys, "stdout", None)
     assert px.main(["run"]) == 0
     assert log.events()[0]["action"] == "heartbeat"
+
+
+# ── restore drill (ADR-038) ──
+def _db(path, table, rows=1):
+    con = sqlite3.connect(path)
+    con.execute(f"CREATE TABLE {table} (v TEXT)")
+    con.executemany(f"INSERT INTO {table} VALUES (?)", [("x",)] * rows)
+    con.commit(); con.close()
+
+
+@pytest.mark.skipif(not px.RESTIC.exists(), reason="tools/restic not installed")
+def test_restore_drill_verifies_a_real_snapshot_without_touching_live_data(tmp_path, log):
+    data = tmp_path / "data"; data.mkdir()
+    _db(data / "director.sqlite", "director_approvals", 3)
+    restic = px.Restic(repo=str(tmp_path / "repo"), password="test-only-password")
+    assert restic._run("init").returncode == 0 and restic.backup(data)
+    _db(data / "phoenix.sqlite", "phoenix_events")          # created after the snapshot: a warning, not a failure
+    before = sorted(p.name for p in data.iterdir())
+    out = px.restore_drill(restic, log, data, scratch=tmp_path)
+    assert out["ok"] and out["problems"] == [] and out["databases"]["director.sqlite"]["tables"] == {"director_approvals": 3}
+    assert out["age_h"] is not None and 0 <= out["age_h"] < 1
+    assert sorted(p.name for p in data.iterdir()) == before                       # live data untouched
+    assert not list(tmp_path.glob(".phoenix-drill-*"))                            # scratch copy removed
+    assert log.events(1)[0]["action"] == "restore-drill" and log.events(1)[0]["result"] == "ok"
+
+
+def test_restore_drill_fails_loudly_without_a_usable_backup(tmp_path, log):
+    out = px.restore_drill(px.Restic(binary=tmp_path / "missing.exe", repo="", password=""), log, tmp_path)
+    assert not out["ok"] and "restic not configured" in out["problems"][0]
+    assert log.events(1)[0]["result"] == "failed"

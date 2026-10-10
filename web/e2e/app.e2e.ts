@@ -133,7 +133,7 @@ test("Profit Sweeper proposes a plan into the approval inbox and never trades", 
 test("the nervous system is one valid network with live states, and the atlas searches", async () => {
   const net = await json("/api/network") as { nodes: LiveNode[]; edges: Registry["edges"] };
   assert.deepEqual(validate(net), []);
-  for (const id of ["director", "truth", "butterfly", "phoenix", "sweeper", "screen-review", "immich", "e2e"]) assert.ok(net.nodes.some(n => n.id === id), id);
+  for (const id of ["director", "truth", "butterfly", "phoenix", "sweeper", "screen-review", "immich", "e2e", "alerts", "briefing", "drill"]) assert.ok(net.nodes.some(n => n.id === id), id);
   assert.equal(net.nodes.find(n => n.id === "immich")!.state, "needs-key");
   const atlas = await json("/api/atlas?q=security&limit=5");
   assert.ok(atlas.results.length > 0);

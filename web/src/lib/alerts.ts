@@ -39,8 +39,8 @@ export function pendingAlerts(proposals: Proposal[], phoenix: PhoenixRow[], stat
     title: p.status === "escalated" ? "Director 00 · high risk, needs your phrase" : "Director 00 · approval waiting",
     body: p.request.replace(/^remember:\s*/i, "").slice(0, 140), url: "/ar#inbox", tag: `proposal-${p.thread_id}`,
   });
-  // Phoenix's first run only sets the bookmark, so an existing history doesn't flood the phone.
-  const incidents = state.phoenixId < 0 ? [] : phoenix.filter(e => e.id > state.phoenixId && (e.action !== "heartbeat" || e.result !== "ok"));
+  // Failures, restarts and restores only (a passing drill or a briefing is not news). Phoenix's first run only sets the bookmark, so an existing history doesn't flood the phone.
+  const incidents = state.phoenixId < 0 ? [] : phoenix.filter(e => e.id > state.phoenixId && (e.result !== "ok" || e.action === "restart" || e.action === "restore"));
   for (const e of incidents) notes.push({
     title: `Phoenix · ${e.service} ${e.action}${e.result === "ok" ? "" : ` (${e.result})`}`, body: e.detail.slice(0, 140), url: "/ar", tag: `phoenix-${e.id}`,
   });
