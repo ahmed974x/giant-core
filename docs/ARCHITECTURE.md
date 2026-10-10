@@ -431,6 +431,21 @@ runtime (likely blocked by this laptop's Application Control policy) and lists p
 to evade bot detection; both conflict with ADR 006 and with responsible scraping. Web research continues through the
 already-configured Firecrawl MCP, which identifies itself and respects site rules.
 
+### Phase 3: Resilience & Trust Layer
+
+**ADR-020 — Phoenix Protocol: self-healing watchdog.** Context: the laptop sleeps, crashes and runs out of RAM; a
+dead web app or a damaged SQLite file should not wait for a human to notice. Decision: `scripts/phoenix.py` runs every
+5 minutes (per-user scheduled task `OMEGA Phoenix`, no admin, no console window) and checks five services: director
+(SQLite integrity of memory, ledger and checkpoints), memory_db (Postgres :5435 or the SQLite fallback), web
+(`/api/health`), caddy (HTTPS :8443) and backup (latest Restic snapshot under 26 h). A down service is restarted; if
+that fails, data services are restored from the newest Restic snapshot (the damaged files are moved to
+`data/quarantine-*`, never deleted) and stateless ones are escalated. Results go to a local webhook only and to
+`phoenix_events` (state changes, actions and one heartbeat per run, so ~300 rows/day). Backups use **Restic 0.19.1**
+(BSD-2, single binary, SHA-256 verified, encrypted repository at `OMEGA_PRIME_PROJECT/backups/restic`, password in the
+git-ignored `.env`). Trade-offs: the repository sits on the same disk, so it protects against corruption and mistakes,
+not disk loss (an off-site copy is a later step); Phoenix never touches the firewall or anything outside localhost.
+Code: `services/director00/phoenix.py`, `db/director/04-phoenix-events.sql`, `ops/phoenix/`; `director-00 phoenix status`.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

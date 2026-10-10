@@ -9,6 +9,7 @@
     python cli.py rejections [thread_id]
     python cli.py recall  "Hormuz"
     python cli.py backup
+    python cli.py phoenix status | run                                     # self-healing watchdog (ADR-020)
 """
 
 import argparse
@@ -33,7 +34,16 @@ def main(argv: list[str] | None = None) -> int:
     j = sub.add_parser("rejections"); j.add_argument("thread_id", nargs="?")
     q = sub.add_parser("recall"); q.add_argument("query"); q.add_argument("-k", type=int, default=5)
     sub.add_parser("backup")
+    ph = sub.add_parser("phoenix"); ph.add_argument("action", choices=["status", "run"])
     args = ap.parse_args(argv)
+
+    if args.cmd == "phoenix":                            # no Director graph needed for the watchdog
+        import phoenix
+        p = phoenix.from_env()
+        out = p.status() if args.action == "status" else p.run_once()
+        sys.stdout.reconfigure(encoding="utf-8")
+        print(json.dumps(out, ensure_ascii=False, indent=2, default=str))
+        return 0
 
     d = Director()
     if args.cmd == "ask":
