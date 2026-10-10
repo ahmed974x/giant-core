@@ -7,6 +7,8 @@ import { ttlCache } from "@/lib/geo";
 export type Hazard = { id: string; kind: string; title: string; lat: number; lon: number; mag: number | null; at: string; url: string | null; source: "USGS" | "NASA EONET" | "NASA FIRMS" };
 
 const cache = ttlCache<Hazard[]>(5 * 60_000, 2);
+// FIRMS state for the UI: no key -> "not_configured" (shown as a hint), never an error that breaks the layer.
+let firms: "not_configured" | "ok" | "error" = "not_configured";
 const SKIP = new Set(["seaLakeIce", "snow", "waterColor", "manmade"]);
 
 type UsgsFeature = { id: string; geometry: { coordinates: [number, number, number] }; properties: { mag: number; place: string; time: number; url: string } };
@@ -41,12 +43,14 @@ async function load(): Promise<Hazard[]> {
   }
   // Optional: NASA FIRMS VIIRS active-fire pixels (free MAP_KEY), high confidence only, over the Middle East and
   // its sea lanes so the response stays small. Widen FIRMS_AREA (west,south,east,north) in .env.local if needed.
-  const firmsKey = process.env.NASA_FIRMS_KEY;
+  const firmsKey = process.env.NASA_FIRMS_KEY?.trim();
+  firms = firmsKey ? "error" : "not_configured";
   if (firmsKey) {
     try {
       const area = process.env.FIRMS_AREA ?? "25,5,65,40";
       const r = await fetch(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(firmsKey)}/VIIRS_NOAA20_NRT/${area}/1`, opts);
       if (r.ok) {
+        firms = "ok";
         const [head, ...rows] = (await r.text()).trim().split("\n");
         const col = Object.fromEntries(head.split(",").map((h, i) => [h, i]));
         for (const row of rows.slice(0, 5000)) {
@@ -66,7 +70,7 @@ async function load(): Promise<Hazard[]> {
 export async function GET() {
   try {
     const hazards = await cache("all", load);
-    return Response.json({ count: hazards.length, hazards }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json({ count: hazards.length, firms, hazards }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json({ error: "hazard feeds unreachable" }, { status: 503 });
   }

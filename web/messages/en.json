@@ -77,7 +77,8 @@
       "ships": "Ships (AIS)",
       "cams": "Public webcams",
       "hazards": "Hazards (USGS, NASA)",
-      "events": "World events (GDELT)"
+      "events": "World events (GDELT)",
+      "gkg": "News hotspots (GKG)"
     },
     "needsKey": "needs free key",
     "myLocation": "My location",
@@ -94,7 +95,10 @@
       "when": "When",
       "source": "Source",
       "tone": "Tone",
-      "reports": "Reports"
+      "reports": "Reports",
+      "persons": "People",
+      "orgs": "Organisations",
+      "themes": "Themes"
     },
     "subtitle": "Live 3D globe: aircraft, ships, public webcams and day/night, from open data.",
     "tabs": {
@@ -148,6 +152,12 @@
       "tension": "Tension",
       "cooperation": "Cooperation",
       "other": "Event"
+    },
+    "filterKinds": "Filter event types",
+    "gkgTitle": "In the news now (GDELT GKG)",
+    "firms": {
+      "missing": "NASA FIRMS fire pixels: key not configured. Add NASA_FIRMS_KEY to web/.env.local.",
+      "error": "NASA FIRMS is unreachable or the key was refused; other hazards still update."
     }
   },
   "severity": {

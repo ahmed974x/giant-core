@@ -4,12 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { useFormatter, useLocale, useNow, useTranslations } from "next-intl";
 import LiveBadge from "./LiveBadge";
 import Severity from "./Severity";
-import type { FeedItem, Layer, MapTarget } from "./EarthMap";
+import type { FeedItem, FeedMeta, Layer, MapTarget } from "./EarthMap";
 import { DEMO_NODES } from "@/lib/demo";
 import { relayJson, useLive } from "@/lib/relay";
 import type { GeoNode } from "@/lib/types";
 
 const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false, loading: () => <div className="panel h-[64dvh] animate-pulse" /> });
+
+const EVENT_KINDS = [
+  { id: "conflict", color: "#ff4d6d" }, { id: "protest", color: "#ffa94d" }, { id: "tension", color: "#ffd43b" },
+  { id: "cooperation", color: "#69db7c" }, { id: "other", color: "#adb5bd" },
+] as const;
+const KIND_COLOR: Record<string, string> = Object.fromEntries(EVENT_KINDS.map(k => [k.id, k.color]));
 
 type Tab = "cams" | "flights" | "ships" | "hazards" | "events" | "nodes" | "alerts";
 const TABS: { id: Tab; color: string }[] = [
@@ -28,7 +34,7 @@ export default function Earth() {
   const [nodes, setNodes] = useState<GeoNode[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("cams");
-  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null, hazards: null, events: null });
+  const [items, setItems] = useState<Record<Layer, FeedItem[] | null>>({ cams: null, flights: null, ships: null, hazards: null, events: null, gkg: null });
   const [camOn, setCamOn] = useState<FeedItem | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(null);
 
@@ -36,11 +42,25 @@ export default function Earth() {
     relayJson<{ nodes: GeoNode[] }>(`geo/nodes?lang=${locale}`).then(r => setNodes(r.nodes)).catch(() => setNodes(DEMO_NODES[locale]));
   }, [locale]);
 
-  const onFeed = useCallback((l: Layer, list: FeedItem[]) => setItems(s => ({ ...s, [l]: list })), []);
+  const [meta, setMeta] = useState<Partial<Record<Layer, FeedMeta>>>({});
+  const [kinds, setKinds] = useState<string[] | undefined>(undefined);   // undefined = every event type
+  const onFeed = useCallback((l: Layer, list: FeedItem[], m?: FeedMeta) => {
+    setItems(s => ({ ...s, [l]: list }));
+    if (m) setMeta(s => ({ ...s, [l]: m }));
+  }, []);
+  const toggleKind = (k: string) => setKinds(cur => {
+    const base = cur ?? EVENT_KINDS.map(x => x.id);
+    const next = base.includes(k) ? base.filter(x => x !== k) : [...base, k];
+    return next.length === EVENT_KINDS.length ? undefined : next;
+  });
+  const topPersons = (meta.gkg?.topPersons as string[] | undefined) ?? [];
+  const topOrgs = (meta.gkg?.topOrgs as string[] | undefined) ?? [];
+  const firms = meta.hazards?.firms as string | undefined;
   const fly = (i: { lon: number; lat: number }, zoom: number) => setTarget({ lon: i.lon, lat: i.lat, zoom, seq: Date.now() });
 
   const count = (id: Tab) => (id === "nodes" ? nodes.length : id === "alerts" ? live.anomalies.length : items[id]?.length ?? null);
-  const list = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" || tab === "events" ? items[tab] : null;
+  const raw = tab === "cams" || tab === "flights" || tab === "ships" || tab === "hazards" || tab === "events" ? items[tab] : null;
+  const list = tab === "events" && raw && kinds ? raw.filter(e => kinds.includes(e.kind ?? "other")) : raw;
 
   return (
     <div className="space-y-4">
@@ -81,6 +101,33 @@ export default function Earth() {
           )}
 
           <div className="min-h-0 flex-1 overflow-y-auto">
+            {tab === "events" && (
+              <div className="space-y-2 border-b border-line p-2.5">
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("filterKinds")}>
+                  {EVENT_KINDS.map(k => {
+                    const on = !kinds || kinds.includes(k.id);
+                    return (
+                      <button key={k.id} onClick={() => toggleKind(k.id)} aria-pressed={on}
+                        className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] ${on ? "border-white/20 text-ink" : "border-line text-muted opacity-60"}`}>
+                        <span className="size-2 rounded-full" style={{ background: k.color }} />{t(`eventKinds.${k.id}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {(topPersons.length > 0 || topOrgs.length > 0) && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">{t("gkgTitle")}</p>
+                    <div className="flex flex-wrap gap-1" dir="ltr">
+                      {topPersons.slice(0, 8).map(p => <span key={`p-${p}`} className="rounded bg-[#22d3ee]/10 px-1.5 py-0.5 text-[11px] text-[#67e8f9]">{p}</span>)}
+                      {topOrgs.slice(0, 8).map(o => <span key={`o-${o}`} className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-ink">{o}</span>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {tab === "hazards" && firms && firms !== "ok" && (
+              <p className="border-b border-line bg-warn/5 px-3 py-2 text-xs text-warn" dir="auto">{t(firms === "error" ? "firms.error" : "firms.missing")}</p>
+            )}
             {list === null && <Empty text={t("loading")} />}
             {list && list.length === 0 && <Empty text={t(`empty.${tab}`)} hint={tab === "cams" || tab === "ships" ? t("keyHint") : undefined} />}
 
@@ -124,6 +171,7 @@ export default function Earth() {
               <ul className="divide-y divide-line/60">
                 {list.slice(0, 300).map(ev => (
                   <li key={ev.id} className="flex items-start gap-2 px-3 py-2 hover:bg-panel-2">
+                    <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: KIND_COLOR[ev.kind ?? "other"] ?? "#adb5bd" }} />
                     <button onClick={() => fly(ev, 7)} className="min-w-0 flex-1 text-start">
                       <span className="block truncate text-sm" dir="auto">{ev.label}</span>
                       {ev.sub && <span className="block truncate text-xs text-muted" dir="auto">{ev.sub}</span>}
@@ -178,7 +226,7 @@ export default function Earth() {
         </aside>
 
         <div className="order-1 min-w-0 lg:order-2">
-          <EarthMap nodes={nodes} focus={focus} onFocus={setFocus} target={target} onFeed={onFeed} />
+          <EarthMap nodes={nodes} focus={focus} onFocus={setFocus} target={target} onFeed={onFeed} eventKinds={kinds} />
         </div>
       </div>
     </div>

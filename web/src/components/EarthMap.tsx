@@ -18,8 +18,9 @@ const COLOR: Record<string, string> = { strait: "#3dd6c6", canal: "#f2b84b", por
 const MAX_ZOOM = 19;
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
-export type Layer = "flights" | "ships" | "cams" | "hazards" | "events";
-export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number };
+export type Layer = "flights" | "ships" | "cams" | "hazards" | "events" | "gkg";
+export type FeedMeta = Record<string, unknown>;
+export type FeedItem = { id: string; lat: number; lon: number; label: string; sub?: string | null; image?: string | null; url?: string | null; heading?: number; kind?: string };
 export type MapTarget = { lon: number; lat: number; zoom: number; seq: number };
 type Feed = { on: boolean; count: number | null; state: "idle" | "loading" | "live" | "stale" | "nokey" | "error" };
 type Basemap = "satellite" | "map";
@@ -73,9 +74,10 @@ function viewQuery(m: MlMap) {
   return `lat=${c.lat.toFixed(2)}&lon=${wrapLon(c.lng).toFixed(2)}&km=${km}`;
 }
 
-export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
+export default function EarthMap({ nodes, focus, onFocus, target, onFeed, eventKinds }: {
   nodes: GeoNode[]; focus: string | null; onFocus: (slug: string) => void;
-  target?: MapTarget | null; onFeed?: (layer: Layer, items: FeedItem[]) => void;
+  target?: MapTarget | null; onFeed?: (layer: Layer, items: FeedItem[], meta?: FeedMeta) => void;
+  eventKinds?: string[];   // event categories to show; undefined = all
 }) {
   const t = useTranslations("earth");
   const el = useRef<HTMLDivElement>(null);
@@ -97,6 +99,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     cams: { on: true, count: null, state: "idle" },
     hazards: { on: true, count: null, state: "idle" },
     events: { on: true, count: null, state: "idle" },
+    gkg: { on: true, count: null, state: "idle" },
   });
   const feedsRef = useRef(feeds);
   feedsRef.current = feeds;
@@ -158,7 +161,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
         mm.addLayer({ id: "hillshade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#000" } }, firstSymbol);
 
         for (const [name, draw] of [["plane", PLANE], ["ship", SHIP], ["cam", CAM]] as const) mm.addImage(name, icon(draw), { sdf: true, pixelRatio: 2 });
-        for (const s of ["nodes", "flights", "trails", "ships", "cams", "hazards", "events", "me-acc", "night"]) mm.addSource(s, { type: "geojson", data: EMPTY });
+        for (const s of ["nodes", "flights", "trails", "ships", "cams", "hazards", "events", "gkg", "me-acc", "night"]) mm.addSource(s, { type: "geojson", data: EMPTY });
 
         // Live day/night shading: the half of the planet in darkness right now.
         mm.addLayer({ id: "night", type: "fill", source: "night", paint: { "fill-color": "#000814", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 1, 0.45, 6, 0.25, 9, 0] } }, firstSymbol);
@@ -174,6 +177,10 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
         const HAZARD_COLOR: ExpressionSpecification = ["match", ["get", "kind"], "earthquake", "#ff6b3d", "wildfires", "#ff3b30", "volcanoes", "#d6336c", "severeStorms", "#4dabf7", "floods", "#339af0", "firePixel", "#ff922b", "#f59f00"];
         // World events from GDELT: small diamonds coloured by kind, sized by how widely the story is reported.
         const EVENT_COLOR: ExpressionSpecification = ["match", ["get", "category"], "conflict", "#ff4d6d", "protest", "#ffa94d", "tension", "#ffd43b", "cooperation", "#69db7c", "#adb5bd"];
+        // GKG hotspots: hollow cyan rings sized by how many articles mention the place.
+        mm.addLayer({ id: "gkg", type: "circle", source: "gkg", paint: {
+          "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#22d3ee", "circle-stroke-opacity": 0.75,
+          "circle-stroke-width": 1.5, "circle-radius": ["interpolate", ["linear"], ["get", "articles"], 1, 4, 10, 9, 60, 18] } });
         mm.addLayer({ id: "events", type: "circle", source: "events", paint: {
           "circle-color": EVENT_COLOR, "circle-opacity": 0.85, "circle-stroke-color": "#0a0f15", "circle-stroke-width": 1,
           "circle-radius": ["interpolate", ["linear"], ["get", "mentions"], 1, 2.5, 20, 6, 100, 10] } });
@@ -199,7 +206,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
           paint: { "text-color": "#ffffff", "text-halo-color": "#0a0f15", "text-halo-width": 1.6 } });
 
         mm.on("click", "nodes", e => { const slug = e.features?.[0]?.properties?.slug; if (slug) onFocusRef.current(String(slug)); });
-        for (const id of ["nodes", "flights", "ships", "cams", "hazards", "events"]) {
+        for (const id of ["nodes", "flights", "ships", "cams", "hazards", "events", "gkg"]) {
           mm.on("mouseenter", id, () => { mm.getCanvas().style.cursor = "pointer"; });
           mm.on("mouseleave", id, () => { mm.getCanvas().style.cursor = ""; });
         }
@@ -247,8 +254,14 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
       show(e.lngLat, card(String(p.place || t("eventKinds.other")), [[t("pop.kind"), t(`eventKinds.${p.category}`)], [t("pop.tone"), String(p.tone)],
         [t("pop.reports"), String(p.mentions)], [t("pop.source"), host]], null, p.url as string | null));
     };
-    m.on("click", "flights", onFlight); m.on("click", "ships", onShip); m.on("click", "cams", onCam); m.on("click", "hazards", onHazard); m.on("click", "events", onEvent);
-    return () => { m.off("click", "flights", onFlight); m.off("click", "ships", onShip); m.off("click", "cams", onCam); m.off("click", "hazards", onHazard); m.off("click", "events", onEvent); };
+    const onGkg = (e: Hit) => {
+      const p = e.features?.[0]?.properties; if (!p) return;
+      const list = (v: unknown) => { try { return (JSON.parse(String(v)) as string[]).join(", "); } catch { return ""; } };
+      show(e.lngLat, card(String(p.place), [[t("pop.reports"), String(p.articles)], [t("pop.tone"), String(p.tone)],
+        [t("pop.persons"), list(p.persons)], [t("pop.orgs"), list(p.orgs)], [t("pop.themes"), list(p.themes)]], null, p.url as string | null));
+    };
+    m.on("click", "flights", onFlight); m.on("click", "ships", onShip); m.on("click", "cams", onCam); m.on("click", "hazards", onHazard); m.on("click", "events", onEvent); m.on("click", "gkg", onGkg);
+    return () => { m.off("click", "flights", onFlight); m.off("click", "ships", onShip); m.off("click", "cams", onCam); m.off("click", "hazards", onHazard); m.off("click", "events", onEvent); m.off("click", "gkg", onGkg); };
   }, [ready, t]);
 
   // ---- basemap, terrain and layer visibility -------------------------------------------------
@@ -274,7 +287,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     return () => { m.off("zoomend", apply); };
   }, [terrain, ready]);
 
-  const { flights, ships, cams, hazards, events } = feeds;
+  const { flights, ships, cams, hazards, events, gkg } = feeds;
   useEffect(() => {
     const m = map.current; if (!ready || !m) return;
     m.setLayoutProperty("flights", "visibility", flights.on ? "visible" : "none");
@@ -283,7 +296,14 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     m.setLayoutProperty("cams", "visibility", cams.on ? "visible" : "none");
     for (const id of ["hazards", "hazards-halo"]) m.setLayoutProperty(id, "visibility", hazards.on ? "visible" : "none");
     m.setLayoutProperty("events", "visibility", events.on ? "visible" : "none");
-  }, [flights.on, ships.on, cams.on, hazards.on, events.on, ready]);
+    m.setLayoutProperty("gkg", "visibility", gkg.on ? "visible" : "none");
+  }, [flights.on, ships.on, cams.on, hazards.on, events.on, gkg.on, ready]);
+
+  const kindsKey = eventKinds?.join(",") ?? "*";
+  useEffect(() => {
+    const m = map.current; if (!ready || !m) return;
+    m.setFilter("events", eventKinds ? ["in", ["get", "category"], ["literal", eventKinds]] : null);
+  }, [kindsKey, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!ready || !map.current) return;
@@ -389,10 +409,17 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
       if (l === "ships") src?.setData({ type: "FeatureCollection", features: (j.ships as { mmsi: number; name: string | null; lat: number; lon: number; cog: number; sog: number; heading: number | null }[]).map(s => ({
         type: "Feature", geometry: { type: "Point", coordinates: [s.lon, s.lat] },
         properties: { mmsi: s.mmsi, name: s.name, sog: s.sog, rot: s.heading ?? s.cog } })) });
+      if (l === "gkg") {
+        const list = j.hotspots as { id: string; place: string; lat: number; lon: number; articles: number; tone: number; persons: string[]; orgs: string[]; themes: string[]; url: string }[];
+        src?.setData({ type: "FeatureCollection", features: list.map(h => ({ type: "Feature", geometry: { type: "Point", coordinates: [h.lon, h.lat] },
+          properties: { ...h, persons: JSON.stringify(h.persons), orgs: JSON.stringify(h.orgs), themes: JSON.stringify(h.themes) } })) });
+        onFeedRef.current?.("gkg", list.map(h => ({ id: h.id, lat: h.lat, lon: h.lon, label: h.place,
+          sub: [...h.persons.slice(0, 2), ...h.orgs.slice(0, 2)].join(" · "), url: h.url })), { topPersons: j.topPersons, topOrgs: j.topOrgs });
+      }
       if (l === "events") {
         const list = j.events as { id: string; lat: number; lon: number; place: string; category: string; tone: number; mentions: number; url: string; at: string }[];
         src?.setData({ type: "FeatureCollection", features: list.map(ev => ({ type: "Feature", geometry: { type: "Point", coordinates: [ev.lon, ev.lat] }, properties: { ...ev } })) });
-        onFeedRef.current?.("events", list.map(ev => ({ id: ev.id, lat: ev.lat, lon: ev.lon, label: ev.place || "—",
+        onFeedRef.current?.("events", list.map(ev => ({ id: ev.id, lat: ev.lat, lon: ev.lon, label: ev.place || "—", kind: ev.category,
           sub: `${t(`eventKinds.${ev.category}`)} · ${ev.mentions} · ${ev.tone}`, url: ev.url })));
       }
       if (l === "hazards") {
@@ -400,7 +427,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
         src?.setData({ type: "FeatureCollection", features: list.map(h => ({ type: "Feature", geometry: { type: "Point", coordinates: [h.lon, h.lat] }, properties: { ...h } })) });
         onFeedRef.current?.("hazards", [...list].sort((a, b) => b.at.localeCompare(a.at)).map(h => ({ id: h.id, lat: h.lat, lon: h.lon, label: h.title,
           sub: [t.has(`hazardKinds.${h.kind}`) ? t(`hazardKinds.${h.kind}`) : h.kind, h.mag != null ? (h.kind === "earthquake" ? `M${h.mag.toFixed(1)}` : String(h.mag)) : null, h.source].filter(Boolean).join(" · "),
-          url: h.url })));
+          url: h.url })), { firms: j.firms });
       }
       if (l === "cams") src?.setData({ type: "FeatureCollection", features: (j.webcams as { id: string; title: string; lat: number; lon: number; preview: string | null; url: string | null }[]).map(c => ({
         type: "Feature", geometry: { type: "Point", coordinates: [c.lon, c.lat] }, properties: { title: c.title, preview: c.preview, url: c.url } })) });
@@ -415,13 +442,13 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
     const m = map.current; if (!ready || !m) return;
     let debounce: ReturnType<typeof setTimeout>;
     const all = () => { refresh("flights"); refresh("ships"); refresh("cams"); };
-    refresh("hazards"); refresh("events");
+    refresh("hazards"); refresh("events"); refresh("gkg");
     const onMove = () => { clearTimeout(debounce); debounce = setTimeout(all, 600); };
     m.on("moveend", onMove);
     all();
     const tFlights = setInterval(() => refresh("flights"), 15_000);
     const tShips = setInterval(() => refresh("ships"), 20_000);
-    const tHazards = setInterval(() => { refresh("hazards"); refresh("events"); }, 5 * 60_000);
+    const tHazards = setInterval(() => { refresh("hazards"); refresh("events"); refresh("gkg"); }, 5 * 60_000);
     return () => { m.off("moveend", onMove); clearTimeout(debounce); clearInterval(tFlights); clearInterval(tShips); clearInterval(tHazards); };
   }, [ready, refresh]);
 
@@ -454,7 +481,7 @@ export default function EarthMap({ nodes, focus, onFocus, target, onFeed }: {
 
   const zoomBy = (d: number) => map.current?.easeTo({ zoom: Math.min(MAX_ZOOM, Math.max(0, zoom + d)), duration: 300 });
   const dot = (s: Feed["state"]) => (s === "live" ? "bg-good animate-pulse" : s === "error" ? "bg-bad" : s === "nokey" || s === "stale" ? "bg-warn" : "bg-muted");
-  const LAYERS: { id: Layer; color: string }[] = [{ id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" }, { id: "cams", color: "#c792ea" }, { id: "hazards", color: "#ff6b3d" }, { id: "events", color: "#ff4d6d" }];
+  const LAYERS: { id: Layer; color: string }[] = [{ id: "flights", color: "#ffd166" }, { id: "ships", color: "#4cd38a" }, { id: "cams", color: "#c792ea" }, { id: "hazards", color: "#ff6b3d" }, { id: "events", color: "#ff4d6d" }, { id: "gkg", color: "#22d3ee" }];
   const glass = "rounded-lg border border-white/10 bg-[#07101a]/80 shadow-lg backdrop-blur-md";
 
   return (
