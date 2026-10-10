@@ -82,9 +82,11 @@ def _gather(s: TraceState) -> TraceState:
 
 
 def _trace(s: TraceState) -> TraceState:
-    result = be.trace(s["anomaly"], s.get("rets"), s.get("live"))
-    be.OUT.mkdir(parents=True, exist_ok=True)
     import json
+    # NumPy scalars (float64, int64) break LangGraph's msgpack checkpointer, so the result is made plain JSON first.
+    result = json.loads(json.dumps(be.trace(s["anomaly"], s.get("rets"), s.get("live")),
+                                   default=lambda o: o.item() if hasattr(o, "item") else str(o)))
+    be.OUT.mkdir(parents=True, exist_ok=True)
     (be.OUT / "latest.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"result": result}
 

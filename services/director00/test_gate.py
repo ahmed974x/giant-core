@@ -115,3 +115,16 @@ def test_butterfly_subgraph_tool_returns_confidence_counterfactual_and_graph(mon
     r = out["result"]
     assert 0.0 <= r["confidence"] <= 1.0 and r["chains"][0]["counterfactual"]["counterfactual_pct"] < 3.0
     assert r["graph"]["nodes"] and r["graph"]["edges"] and "Confidence" in out["answer"]
+
+
+def test_live_butterfly_results_survive_the_checkpointer(monkeypatch, tmp_path):
+    # With live market data the engine returns NumPy scalars; LangGraph's msgpack checkpointer rejects those,
+    # which made every online "why" question answer "Butterfly Engine unavailable". The trace node now cleans them.
+    import numpy as np
+    from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+    import butterfly_graph as bg
+    monkeypatch.setattr(bg.be, "OUT", tmp_path)
+    monkeypatch.setattr(bg.be, "trace", lambda *a: {"confidence": np.float64(0.62), "n": np.int64(3), "s": [{"p": np.float32(0.5)}]})
+    out = bg._trace({"anomaly": {"type": "oil_move"}})
+    JsonPlusSerializer().dumps_typed(out)
+    assert type(out["result"]["confidence"]) is float and type(out["result"]["n"]) is int
