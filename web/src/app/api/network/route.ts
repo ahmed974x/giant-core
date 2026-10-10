@@ -6,7 +6,7 @@ import { GET as health } from "../health/route";
 import { nodeState, withAtlas, type LiveNode, type Registry } from "@/lib/network";
 import type { Atlas } from "@/lib/awesome";
 
-const KEYS = ["FIRECRAWL_API_KEY", "AISSTREAM_API_KEY", "WINDY_WEBCAMS_KEY", "NASA_FIRMS_KEY"];
+const KEYS = ["FIRECRAWL_API_KEY", "AISSTREAM_API_KEY", "WINDY_WEBCAMS_KEY", "NASA_FIRMS_KEY", "IMMICH_API_KEY"];
 
 export async function GET() {
   const { checks } = await (await health()).json() as { checks: Record<string, { state: string; detail?: string }> };

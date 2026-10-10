@@ -73,7 +73,7 @@ export default function SendBox({ initialText = "", initialUrl = "" }: { initial
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <label className="cursor-pointer rounded-md border border-dashed border-line px-3 py-2 text-muted hover:border-accent hover:text-ink">
             {file ? file.name : t("attach")}
-            <input ref={fileRef} type="file" accept="image/*,application/pdf,text/plain" className="sr-only"
+            <input ref={fileRef} type="file" accept="image/*,application/pdf,text/plain,.docx,.xlsx,.pptx" className="sr-only"
               onChange={e => setFile(e.target.files?.[0] ?? null)} />
           </label>
           {file && <button type="button" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ""; }}
@@ -99,6 +99,7 @@ export default function SendBox({ initialText = "", initialUrl = "" }: { initial
         )}
       </form>
       <p className="mt-3 text-xs text-muted">{t("safety")}</p>
+      <Link href="/library" className="mt-4 inline-block rounded-md border border-line px-3 py-1.5 text-sm text-accent hover:border-accent">{t("library")}</Link>
     </div>
   );
 }

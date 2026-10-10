@@ -5,6 +5,7 @@ import path from "node:path";
 import { directorDir, makeThrottle, pinOk, runDirector } from "@/lib/director";
 import { directorRequest, MAX_FILE, sniff, storedName, validate } from "@/lib/intake";
 import { excerpt, readPage } from "@/lib/reader";
+import { uploadPhoto } from "@/lib/immich";
 
 const throttle = makeThrottle();
 
@@ -27,18 +28,19 @@ export async function POST(req: Request) {
   try { item = validate(form.get("kind"), form.get("text"), form.get("url")); }
   catch (e) { return Response.json({ error: (e as Error).message }, { status: 400 }); }
 
-  let attachment = "";
+  let attachment = "", photo: string | null = null;
   const file = form.get("file");
   if (file && typeof file !== "string" && file.size > 0) {
     if (file.size > MAX_FILE) return Response.json({ error: "file is larger than 8 MB" }, { status: 413 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     const type = sniff(bytes);
-    if (!type) return Response.json({ error: "only images, PDFs and plain text can be sent" }, { status: 415 });
+    if (!type) return Response.json({ error: "only images, PDFs, plain text and Word/Excel/PowerPoint files can be sent" }, { status: 415 });
     const name = storedName(file.name, type.ext);
     const dir = path.join(directorDir(), "data", "inbox");
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, name), bytes, { flag: "wx" });
     attachment = `inbox/${name}`;
+    if (type.mime.startsWith("image/")) photo = await uploadPhoto(bytes, name, type.mime).catch(() => null);
   }
 
   // Links get a readable snapshot (ADR-026): stored next to attachments, summarised in the request. Failure is not fatal.
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
   try {
     const request = directorRequest(item.kind, note, item.url, attachment) + (snapshot ? ` [snapshot: ${snapshot}]` : "");
     const out = await runDirector(["ask", request]) as { thread_id: string; status: string };
-    return Response.json({ ok: true, thread_id: out.thread_id, status: out.status, attachment: attachment || null, snapshot: snapshot || null, reader });
+    return Response.json({ ok: true, thread_id: out.thread_id, status: out.status, attachment: attachment || null, snapshot: snapshot || null, reader, photo });
   } catch (e) {
     return Response.json({ error: (e as Error).message, attachment: attachment || null }, { status: 502 });
   }

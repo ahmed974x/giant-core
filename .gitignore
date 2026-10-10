@@ -6,3 +6,6 @@ node_modules/
 tools-quality/.venv/
 tools-quality/node_modules/
 services/maritime-agent/data/
+
+# Immich photo library
+data/immich/

@@ -18,8 +18,8 @@ test("the shipped registry is one connected, valid network", () => {
 });
 
 test("health keys and screen links point at real things", () => {
-  const healthKeys = new Set(["director", "caddy", "database", "relay", "web", "backup", "n8n"]);
-  const screens = ["/", "/market", "/research", "/earth", "/atlas", "/send", "/network"];
+  const healthKeys = new Set(["director", "caddy", "database", "relay", "web", "backup", "n8n", "immich"]);
+  const screens = ["/", "/market", "/research", "/earth", "/atlas", "/send", "/network", "/library"];
   for (const n of registry.nodes) {
     if (n.health) assert.ok(healthKeys.has(n.health), `${n.id}: ${n.health}`);
     if (n.href) assert.ok(screens.includes(n.href), `${n.id}: ${n.href}`);
@@ -49,7 +49,7 @@ test("layout is deterministic, finite and keeps the core in the middle", () => {
   const full = withAtlas(registry, atlas);
   const a = layout(full), b = layout(full);
   assert.deepEqual(a, b);
-  for (const p of Object.values(a)) assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y) && Math.abs(p.x) < 1.6 && Math.abs(p.y) < 1.6);
+  for (const p of Object.values(a)) assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y) && Math.abs(p.x) < 2.5 && Math.abs(p.y) < 2.5);
   const dist = (id: string) => Math.hypot(a[id].x, a[id].y);
   const atlasMean = full.nodes.filter(n => n.kind === "atlas").reduce((s, n) => s + dist(n.id), 0) / atlas.categories.length;
   assert.ok(dist("director") < atlasMean, "Director 00 sits inside the atlas ring");

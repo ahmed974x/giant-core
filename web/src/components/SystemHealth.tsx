@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 
 type Check = { state: "up" | "down" | "idle" | "unknown"; detail: string; at?: string | null };
-const ORDER = ["director", "caddy", "database", "relay", "web", "backup", "n8n"] as const;
+const ORDER = ["director", "caddy", "database", "relay", "web", "backup", "n8n", "immich"] as const;
 const TONE: Record<Check["state"], string> = { up: "bg-good", down: "bg-bad", idle: "bg-warn", unknown: "bg-muted" };
 
 /** Local platform health (Director 00, Caddy, DB, relay, web app, last backup), refreshed every 30 s. */

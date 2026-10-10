@@ -13,7 +13,8 @@
     "earth": "الأرض",
     "send": "أرسل",
     "atlas": "الأطلس",
-    "network": "الشبكة"
+    "network": "الشبكة",
+    "library": "المكتبة"
   },
   "company": {
     "title": "نظرة عامة على العمليات",
@@ -41,7 +42,8 @@
         "relay": "المرحّل",
         "web": "تطبيق الويب",
         "backup": "آخر نسخة احتياطية",
-        "n8n": "أتمتة n8n (MCP)"
+        "n8n": "أتمتة n8n (MCP)",
+        "immich": "صور Immich"
       },
       "state": {
         "up": "سليم",
@@ -288,7 +290,7 @@
     "comment": "لماذا يهم (اختياري)",
     "taskText": "المطلوب إنجازه",
     "noteText": "ملاحظتك",
-    "attach": "أرفق صورة أو PDF أو ملفًا نصيًا",
+    "attach": "أرفق صورة أو PDF أو ملف Word أو Excel أو PowerPoint",
     "remove": "إزالة",
     "fileHint": "حتى 8 ميغابايت",
     "pin": "الرمز",
@@ -298,7 +300,8 @@
     "openInbox": "افتح صندوق الموافقات",
     "offline": "تعذّر الوصول إلى اللابتوب. تأكد أنك على نفس شبكة الواي فاي.",
     "failed": "فشل الإرسال",
-    "safety": "تُفحص الملفات من محتواها وتُحفظ فقط، ولا تُفتح ولا تُشغَّل أبدًا."
+    "safety": "تُفحص الملفات من محتواها وتُحفظ فقط، ولا تُفتح ولا تُشغَّل أبدًا.",
+    "library": "افتح مكتبتك"
   },
   "atlas": {
     "title": "أطلس Awesome",
@@ -358,6 +361,54 @@
       "stores": "يكتب فيه",
       "heals": "يراقبه",
       "depends": "يعمل على"
+    }
+  },
+  "library": {
+    "title": "المكتبة",
+    "lead": "كل شي أرسلته من الجوال. ملفات Word و Excel و PowerPoint تنفتح هنا مباشرة، والصور تنحفظ في Immich.",
+    "pin": "الرمز",
+    "needPin": "اكتب الرمز عشان تفتح المكتبة.",
+    "tabs": {
+      "documents": "المستندات",
+      "photos": "الصور"
+    },
+    "exportExcel": "السجل إلى Excel",
+    "exportWord": "السجل إلى Word",
+    "empty": "ما فيه شي للحين. الملفات اللي ترسلها من الجوال تظهر هنا.",
+    "pick": "اختر ملف عشان تعرضه.",
+    "loading": "جارٍ الفتح…",
+    "truncated": "يعرض أول 200 صف و 30 عمود.",
+    "slide": "شريحة {n}",
+    "noPreview": "ما فيه عرض لهذا النوع. الملف محفوظ بأمان في مجلد الصندوق على اللابتوب.",
+    "offline": "تعذّر الوصول إلى اللابتوب.",
+    "failed": "تعذّر الفتح.",
+    "noPhotos": "Immich شغال بس ما فيه صور للحين. الصور اللي ترسلها من الجوال بتوصل هنا.",
+    "types": {
+      "word": "Word",
+      "excel": "Excel",
+      "powerpoint": "PowerPoint",
+      "pdf": "PDF",
+      "image": "صورة",
+      "text": "نص",
+      "file": "ملف"
+    },
+    "immich": {
+      "not-configured": {
+        "title": "الصور تنتظر Docker",
+        "body": "Immich يحتاج Docker. أول ما يشتغل: docker compose --profile photos up -d، ثم أنشئ مفتاح API في Immich وأضف IMMICH_API_KEY في web/.env.local. بعدها كل صورة ترسلها تنحفظ هنا بعد."
+      },
+      "offline": {
+        "title": "Immich ما يرد",
+        "body": "مُعدّ بس مو شغال. شغّله بـ: docker compose --profile photos up -d"
+      },
+      "misconfigured": {
+        "title": "عنوان Immich غير مسموح",
+        "body": "لازم IMMICH_URL يكون على هذا اللابتوب (127.0.0.1) عشان المفتاح ما يطلع منه."
+      },
+      "error": {
+        "title": "Immich رجّع خطأ",
+        "body": "تأكد إن مفتاح API في web/.env.local لسا صالح."
+      }
     }
   }
 }

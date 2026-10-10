@@ -13,7 +13,8 @@
     "earth": "Earth",
     "send": "Send",
     "atlas": "Atlas",
-    "network": "Network"
+    "network": "Network",
+    "library": "Library"
   },
   "company": {
     "title": "Operations overview",
@@ -41,7 +42,8 @@
         "relay": "Relay",
         "web": "Web app",
         "backup": "Last backup",
-        "n8n": "n8n automations (MCP)"
+        "n8n": "n8n automations (MCP)",
+        "immich": "Immich photos"
       },
       "state": {
         "up": "OK",
@@ -288,7 +290,7 @@
     "comment": "Why it matters (optional)",
     "taskText": "What needs doing",
     "noteText": "Your note",
-    "attach": "Attach a photo, PDF or text file",
+    "attach": "Attach a photo, PDF, Word, Excel or PowerPoint file",
     "remove": "Remove",
     "fileHint": "Up to 8 MB",
     "pin": "PIN",
@@ -298,7 +300,8 @@
     "openInbox": "Open the inbox",
     "offline": "The laptop can't be reached. Check you're on the same Wi-Fi.",
     "failed": "Sending failed",
-    "safety": "Files are checked by their contents and stored only; they are never opened or run."
+    "safety": "Files are checked by their contents and stored only; they are never opened or run.",
+    "library": "Open your library"
   },
   "atlas": {
     "title": "Awesome atlas",
@@ -358,6 +361,54 @@
       "stores": "written by",
       "heals": "watched by",
       "depends": "runs on"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "lead": "Everything you sent from the phone. Word, Excel and PowerPoint open right here; photos live in Immich.",
+    "pin": "PIN",
+    "needPin": "Enter your PIN to open the library.",
+    "tabs": {
+      "documents": "Documents",
+      "photos": "Photos"
+    },
+    "exportExcel": "Ledger to Excel",
+    "exportWord": "Ledger to Word",
+    "empty": "Nothing yet. Files you send from the phone appear here.",
+    "pick": "Pick a file to preview it.",
+    "loading": "Opening…",
+    "truncated": "Showing the first 200 rows and 30 columns.",
+    "slide": "Slide {n}",
+    "noPreview": "No preview for this type. It's stored safely in the inbox folder on the laptop.",
+    "offline": "The laptop can't be reached.",
+    "failed": "Couldn't open that.",
+    "noPhotos": "Immich is running but has no photos yet. Photos you send from the phone will land here.",
+    "types": {
+      "word": "Word",
+      "excel": "Excel",
+      "powerpoint": "PowerPoint",
+      "pdf": "PDF",
+      "image": "Photo",
+      "text": "Text",
+      "file": "File"
+    },
+    "immich": {
+      "not-configured": {
+        "title": "Photos are waiting for Docker",
+        "body": "Immich needs Docker. Once Docker runs: docker compose --profile photos up -d, create an API key in Immich, and add IMMICH_API_KEY to web/.env.local. Photos you send from then on are stored here too."
+      },
+      "offline": {
+        "title": "Immich isn't answering",
+        "body": "It is configured but not running. Start it with: docker compose --profile photos up -d"
+      },
+      "misconfigured": {
+        "title": "Immich address is not allowed",
+        "body": "IMMICH_URL must point at this laptop (127.0.0.1) so the API key never leaves it."
+      },
+      "error": {
+        "title": "Immich returned an error",
+        "body": "Check that the API key in web/.env.local is still valid."
+      }
     }
   }
 }

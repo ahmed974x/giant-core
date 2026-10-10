@@ -538,6 +538,27 @@ so the registry stays honest as the project grows. Rejected for now: Sigma.js + 
 for thousands of nodes. At ~75 nodes, Canvas 2D needs no new dependency and keeps working where WebGL is
 unavailable. The phone layout comes next.
 
+**ADR-029 — Word, Excel and PowerPoint inside the app.** Context: Ahmad asked to install Word and Excel and use them
+in the site and the phone app. Microsoft Office 2021 is already installed on the laptop, so the gap was the app, not
+the programs. Decision: no Office server (ONLYOFFICE and Collabora each need Docker and over 1 GB of RAM) and no new
+npm dependency. `web/src/lib/zip.ts` reads and writes zip archives with limits on entry count and expanded size, and
+`web/src/lib/office.ts` previews .docx (paragraphs and headings, including Arabic Word's localised style ids), .xlsx
+(sheets, shared strings, sparse cells, first 200 rows by 30 columns) and .pptx (text per slide). It also writes Word
+and Excel files. The phone intake accepts the three formats, identified by their contents, and refuses
+macro-enabled files. A Library screen previews them and exports Director 00's ledger to Excel (two sheets) or Word.
+It needs the PIN, and the route only serves names the intake wrote. Fixtures saved by real Word, Excel and PowerPoint
+are in `web/test/fixtures`, and the generated files were opened in real Excel and Word during development.
+PowerPoint files are preview-only for now.
+
+**ADR-030 — Immich photo library.** Immich (AGPL-3.0, v3.3.1) is the self-hosted photo library. It needs Docker,
+Postgres with VectorChord, Valkey and normally a machine-learning container. Decision: an opt-in compose profile
+`photos` with machine learning off (no ML container; faces and smart search are disabled), pinned images, memory
+caps of about 1.3 GB in total, an internal network and the web UI on 127.0.0.1:2283 only. The web app reaches it with
+an API key from `web/.env.local`, refuses any `IMMICH_URL` that isn't this laptop, and never sends the key to the
+browser: thumbnails go through `/api/photos` behind the PIN. Photos sent from the phone are also uploaded to Immich
+when it runs (best effort, never blocking the intake). Until Docker runs, System Health and the nervous system show
+Immich as waiting.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

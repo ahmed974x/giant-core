@@ -3,6 +3,7 @@
 import { readdir, stat } from "node:fs/promises";
 import { Socket } from "node:net";
 import path from "node:path";
+import { ping as immichPing } from "@/lib/immich";
 
 const ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "..");
 const DIRECTOR = process.env.OMEGA_DIRECTOR_DIR ?? path.join(ROOT, "services", "director00", "data");
@@ -71,12 +72,13 @@ async function director(): Promise<{ check: Check; backup: Check }> {
 
 export async function GET() {
   const pgUrl = process.env.DIRECTOR_DB_URL ?? "";
-  const [d, caddy, pg, relay, automations] = await Promise.all([
+  const [d, caddy, pg, relay, automations, photos] = await Promise.all([
     director(),
     port("127.0.0.1", 8443),            // Caddy admin refuses fetch() (origin check), so probe the HTTPS listener
     port("127.0.0.1", 5435),
     http(`${RELAY}/healthz`),
     n8n(),
+    immichPing(),
   ]);
   const mem = process.memoryUsage();
   const body: Record<string, Check> = {
@@ -88,6 +90,8 @@ export async function GET() {
     web: { state: "up", detail: `up ${Math.round(process.uptime() / 60)} min · ${Math.round(mem.rss / 1048576)} MB RAM` },
     backup: d.backup,
     n8n: automations,
+    immich: photos ? { state: "up", detail: process.env.IMMICH_URL ?? "" }
+      : { state: process.env.IMMICH_URL ? "down" : "idle", detail: process.env.IMMICH_URL ? "Immich not answering (docker compose --profile photos up -d)" : "waiting for Docker (compose profile photos)" },
   };
   return Response.json({ checkedAt: new Date().toISOString(), checks: body }, { headers: { "Cache-Control": "no-store" } });
 }
