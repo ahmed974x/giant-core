@@ -446,6 +446,17 @@ git-ignored `.env`). Trade-offs: the repository sits on the same disk, so it pro
 not disk loss (an off-site copy is a later step); Phoenix never touches the firewall or anything outside localhost.
 Code: `services/director00/phoenix.py`, `db/director/04-phoenix-events.sql`, `ops/phoenix/`; `director-00 phoenix status`.
 
+**ADR-021 — Truth Layer: credibility before evidence.** Context: GDELT mirrors everything the world's outlets publish,
+including state messaging, satire, opinion and single unconfirmed claims; Director 00 and the Butterfly Engine must
+not act on those as if they were facts. Decision: every GDELT item gets `truth_score = 0.45 reputation + 0.30
+corroboration + 0.25 neutrality − penalties` with explicit flags. Reputation comes from a curated, reviewed tier list
+(`services/truth/sources.json`, no external API); corroboration from GDELT `NumSources` or, for GKG articles,
+other-domain articles sharing two specific entities; neutrality from GDELT tone/polarity and loaded-language patterns
+in headlines and URLs; opinion pages are penalised. Below 0.7 an item is `unverified`: stored and visible with its
+flags, excluded from entity search by default and from Butterfly live evidence. Scores live in `truth_scores`.
+Trade-offs: strict by design (single reports wait for a second source; ~11% of a live GKG batch passed); the tier list
+is opinion about editorial process and must be reviewed like code; no article text is read. Pure standard library.
+
 ## Mapping to the current codebase
 
 Already built in this repo (branch `omega/stability-restructure`):

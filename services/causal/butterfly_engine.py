@@ -26,6 +26,7 @@ refuter and graph steps are implemented here in NumPy. See README.md.
 
 import argparse
 import json
+import sys
 import math
 import os
 import time
@@ -36,6 +37,9 @@ from pathlib import Path
 import numpy as np
 
 from flight_to_safety import ols
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "truth"))
+import truth_layer  # noqa: E402
 
 OUT = Path(__file__).with_name("out") / "butterfly"
 WEB = os.environ.get("OMEGA_WEB_URL", "http://127.0.0.1:3100")
@@ -125,8 +129,9 @@ def _km(lat1, lon1, lat2, lon2) -> float:
 
 
 def live_signals(lat: float, lon: float) -> dict[str, list[dict]]:
-    """Storms, quakes and conflict events happening now near the anomaly, from the web app's public-feed routes."""
-    found: dict[str, list[dict]] = {"storm": [], "earthquake": [], "conflict": []}
+    """Storms, quakes and conflict events happening now near the anomaly, from the web app's public-feed routes.
+    Conflict reports pass the Truth Layer first (ADR-021): only items scoring >= 0.7 count as evidence."""
+    found: dict[str, list[dict]] = {"storm": [], "earthquake": [], "conflict": [], "unverified": []}
     try:
         for h in _get_json(f"{WEB}/api/hazards").get("hazards", []):
             key = "storm" if h["kind"] == "severeStorms" else "earthquake" if h["kind"] == "earthquake" else None
@@ -137,7 +142,9 @@ def live_signals(lat: float, lon: float) -> dict[str, list[dict]]:
     try:
         for e in _get_json(f"{WEB}/api/events").get("events", []):
             if e["category"] == "conflict" and _km(lat, lon, e["lat"], e["lon"]) <= LIVE_RADIUS_KM["conflict"]:
-                found["conflict"].append({"title": e["place"], "km": round(_km(lat, lon, e["lat"], e["lon"])), "source": "GDELT", "url": e["url"]})
+                t = truth_layer.score(truth_layer.Item(id=str(e["id"]), url=e["url"], tone=e.get("tone", 0), num_sources=e.get("sources")))
+                hit = {"title": e["place"], "km": round(_km(lat, lon, e["lat"], e["lon"])), "source": "GDELT", "url": e["url"], "truth": t["score"]}
+                found["conflict" if truth_layer.usable(t) else "unverified"].append(hit)
     except Exception:
         pass
     return found
@@ -218,7 +225,9 @@ def trace(anomaly: dict, rets: dict[str, np.ndarray] | None = None, live: dict[s
             ev = test_market_edge(c, e, rets, rng)
         elif live is not None and NODES[c].get("live"):
             hits = live.get(NODES[c]["live"], [])
-            ev = (Evidence("live", 1.4, f"observed now: {len(hits)} within {LIVE_RADIUS_KM[NODES[c]['live']]} km", {"examples": hits[:3]})
+            held = len(live.get("unverified", [])) if NODES[c]["live"] == "conflict" else 0
+            held_note = f"; {held} unverified report(s) ignored" if held else ""
+            ev = (Evidence("live", 1.4, f"observed now: {len(hits)} within {LIVE_RADIUS_KM[NODES[c]['live']]} km{held_note}", {"examples": hits[:3]})
                   if hits else Evidence("live", 0.7, f"not observed within {LIVE_RADIUS_KM[NODES[c]['live']]} km right now"))
         evidence[(c, e)] = ev
         return ev

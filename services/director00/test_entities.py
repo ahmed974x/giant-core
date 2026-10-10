@@ -55,13 +55,16 @@ def test_parse_tags_sentiment_and_drops_rarely_named_people():
 def test_upsert_is_idempotent_and_search_finds_entities(store):
     rows = ent.parse_gkg(SAMPLE)
     assert store.upsert(rows) == 4 and store.upsert(rows) == 0
-    hits = store.search("hormuz")
+    store.save_truth(ent.score_batch(rows))
+    assert store.search("hormuz") == []                                     # unknown single-source outlet: unverified, hidden
+    hits = store.search("hormuz", include_unverified=True)
     assert {h["gkg_id"].split("-")[-1] for h in hits} == {"1", "2"}
-    assert [h["sentiment"] for h in store.search("iea")][:2] == ["negative", "positive"] or len(store.search("iea")) == 2
-    assert len(store.who("Jane Minister")) == 4
+    assert len(store.search("iea", include_unverified=True)) == 2
+    assert len(store.who("Jane Minister", include_unverified=True)) == 4
+    assert all(h["truth_status"] == "unverified" and "source:unknown" in h["truth_flags"] for h in hits)
 
 
 def test_purge_removes_rows_past_retention(store):
     store.upsert(ent.parse_gkg(SAMPLE))
     assert store.purge() == 1 and store.count() == 3
-    assert all("suez" not in " ".join(h["locations"]).lower() for h in store.who("jane minister"))
+    assert all("suez" not in " ".join(h["locations"]).lower() for h in store.who("jane minister", include_unverified=True))

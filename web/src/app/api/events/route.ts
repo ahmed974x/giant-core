@@ -4,7 +4,7 @@
 import { fetchCsv, latestUrl, stampOf } from "@/lib/gdelt";
 
 export type WorldEvent = { id: string; lat: number; lon: number; place: string; category: string; code: string; quad: number;
-  goldstein: number; tone: number; mentions: number; url: string; at: string };
+  goldstein: number; tone: number; mentions: number; sources: number; url: string; at: string };
 
 const KEEP_FILES = 4;
 const files = new Map<string, WorldEvent[]>(); // export URL -> parsed events
@@ -31,7 +31,7 @@ function parse(csv: string, stamp: string): WorldEvent[] {
     if (seen.has(url)) continue; // one story often yields several coded events; show it once
     seen.add(url);
     out.push({ id: c[0], lat, lon, place: c[52], code: c[26], category: category(c[28]), quad: Number(c[29]),
-      goldstein: Number(c[30]), mentions: Number(c[31]), tone: Math.round(Number(c[34]) * 10) / 10, url, at: stamp });
+      goldstein: Number(c[30]), mentions: Number(c[31]), sources: Number(c[32]) || 1, tone: Math.round(Number(c[34]) * 10) / 10, url, at: stamp });
   }
   return out;
 }
