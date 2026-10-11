@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import AskDirector from "./AskDirector";
+import DeepResearch from "./DeepResearch";
 import { relayJson } from "@/lib/relay";
 import type { BrainJob } from "@/lib/types";
 
@@ -55,6 +56,8 @@ export default function Research() {
         <p className="mt-1 text-sm text-muted">{t("hint")}</p>
         <Link href="/atlas" className="mt-3 inline-block rounded-lg border border-line px-3 py-1.5 text-sm text-accent hover:border-accent">{ta("open")}</Link>
       </div>
+
+      <DeepResearch />
 
       <AskDirector />
 

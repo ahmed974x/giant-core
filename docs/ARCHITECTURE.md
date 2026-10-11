@@ -767,3 +767,27 @@ New for OMEGA PRIME: **PostGIS + Redis**, the five **ingest MCP servers**, and t
 seeded choke-points), **Redis**, and `services/geo-api` (FastAPI, localizes by `?lang`/`Accept-Language`,
 demo fallback, tested) — all under `--profile geo`, reached through the relay at `/geo/*`. Internationalization
 is built in from the schema up, per v1.2 of this design.
+
+**ADR-050 — Deep Research: a Perplexity-style, multi-agent answer engine on free, open sources.** On 2026-10-11 Ahmad
+asked for "open-source deep research" with free information sources, built into the site, after sharing a
+multi-agent graph (planner, scouts, merge, dedupe, cite check, writer, verify). Decision:
+- **Native pipeline, no new container.** Open-source references were weighed: Vane/Perplexica (MIT), GPT Researcher
+  (Apache-2.0), Stanford STORM (MIT), LangChain open_deep_research (MIT), dzhng/deep-research (MIT). Each adds a Python
+  or Docker service on a 7 GB laptop and duplicates SearXNG/Cortex we already run. We keep their ideas (planner +
+  parallel executors from GPT Researcher, perspective sub-questions from STORM, breadth/depth gap loop from
+  deep-research, SearXNG + citations from Perplexica) in ~600 lines of TypeScript inside `web/src/lib/deep-research/`.
+- **Graph.** planner → scouts (SearXNG, Wikipedia ar/en, OpenAlex, arXiv, Hacker News, GDELT; all keyless, official
+  APIs) → merge (reciprocal rank fusion) → dedupe (canonical URL + MinHash) → read (top pages via the ADR-026 local
+  reader, Firecrawl forced off so research never spends its quota) → rank (BM25 passages) → [deep: gap planner and a
+  second scout wave] → writer → cite check → verify. Models are used only for planning and writing.
+- **Models.** Cortex `omega/oracle` then `omega/free-smart` (needs `OMEGA_GATEWAY_TOKEN`), then local Ollama
+  (`qwen2.5:3b`). With no model at all the writer turns extractive (quoted evidence with citations), never empty.
+- **Trust.** Every sentence is checked against the passage it cites (token overlap with Arabic normalisation and light
+  stemming). Citations to non-existent sources are removed, a claim backed by a different source is re-attributed,
+  weak/unsupported/uncited claims are marked on the page, and a confidence score (support + domain diversity) is shown.
+  Decision aid only; nothing here trades or writes.
+- **Not built:** CAPTCHA solving or anti-bot bypass (seen in one of his screenshots). Against site terms and not
+  needed: every source is an official API or the self-hosted SearXNG.
+- **Surface.** `POST /api/deep-research` streams NDJSON (same-origin, two runs at a time); the Search screen shows the
+  live agent graph (horizontal on desktop, vertical constellation on phone), a dispatch log, the plan, the answer with
+  clickable [n] citations, and source cards. Details and setup: `docs/DEEP-RESEARCH.md`.

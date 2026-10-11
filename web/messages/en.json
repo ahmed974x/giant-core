@@ -685,5 +685,25 @@
     },
     "wipe": "This page clears itself in {s} s.",
     "safety": "The link works once, for 10 minutes. Keys are encrypted on the laptop, never logged, and cleared from this page as soon as you tap save."
+  },
+  "deep": {
+    "title": "Deep Research",
+    "hint": "Agents plan, search six free open sources, read the pages, rank the evidence, then write an answer where every sentence is tied to its source and checked.",
+    "placeholder": "Ask anything… e.g. How would a Hormuz closure move oil prices?",
+    "go": "Research",
+    "working": "Agents working…",
+    "quick": "Quick",
+    "deep": "Deep",
+    "depth": "Research depth",
+    "tooShort": "Type at least three characters.",
+    "error": "Research failed",
+    "confidence": "Confidence",
+    "stats": "{sources} sources from {domains} sites, {read} pages read, {secs}s",
+    "extractive": "Extractive mode: no language model",
+    "audit": "Show verification",
+    "legend": "Dotted amber: weak support. Wavy red: source does not back the sentence. Grey: sentence without a source.",
+    "sources": "Sources",
+    "quote": "Passage used",
+    "disclaimer": "Decision aid only. Open the source and check it yourself before acting."
   }
 }
