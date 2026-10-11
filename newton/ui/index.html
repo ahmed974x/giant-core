@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مخ نيوتن</title>
+<style>
+:root{--bg:#05070d;--panel:#0b1020cc;--line:#1d2a4a;--txt:#dfe7ff;--mut:#7d8bb0;--acc:#5cf2ff;--acc2:#b388ff;--bad:#ff6b8b}
+html{background:#05070d}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(1200px 600px at 80% -10%,#1a1050 0,transparent 60%),radial-gradient(900px 500px at 0% 110%,#003a4a 0,transparent 60%),var(--bg);color:var(--txt);font:15px/1.6 system-ui,"Segoe UI",Tahoma,sans-serif;padding:16px}
+h1{margin:0 0 4px;font-size:26px;letter-spacing:.5px}h1 span{color:var(--acc)}p.sub{margin:0 0 16px;color:var(--mut)}
+.orbits{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.orbits button{background:transparent;color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer;font:inherit}
+.orbits button.on{border-color:var(--acc);box-shadow:0 0 18px #5cf2ff55;color:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;max-width:760px;backdrop-filter:blur(8px)}
+label{display:block;color:var(--mut);font-size:13px;margin:8px 0 2px}
+input,select,textarea{width:100%;background:#060a16;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;direction:ltr}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.go{margin-top:14px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#05070d;border:0;border-radius:14px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:16px}
+#out{margin-top:16px}.big{font-size:28px;color:var(--acc);font-weight:700}
+.k{color:var(--mut);font-size:13px}.f{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;background:#060a16;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;overflow:auto;font-size:12px}
+.err{color:var(--bad)}a{color:var(--acc2)}ul{margin:4px 0;padding-inline-start:18px}
+[hidden]{display:none}
+</style>
+</head>
+<body>
+<h1>مخ <span>نيوتن</span></h1>
+<p class="sub">عالم رياضيات وفيزياء. كل جواب يطلع مع المدخلات والمعادلة والمصدر عشان تتأكد بعينك.</p>
+<div class="orbits" id="tabs">
+  <button data-t="ship" class="on">🚢 متى توصل السفينة</button>
+  <button data-t="road">🚗 متى توصل السيارة</button>
+  <button data-t="distance">🌍 المسافة بين نقطتين</button>
+  <button data-t="calc">∑ حاسبة دقيقة</button>
+  <button data-t="kinematics">F=ma حركة</button>
+</div>
+<div class="card">
+  <form id="f-ship" data-tool="ship_eta">
+    <div class="row"><div><label>خط عرض السفينة</label><input name="lat" value="29.10" required></div><div><label>خط طول السفينة</label><input name="lon" value="48.60" required></div></div>
+    <div class="row"><div><label>خط عرض الوجهة (الجزيرة)</label><input name="dest_lat" value="29.38"></div><div><label>خط طول الوجهة</label><input name="dest_lon" value="48.33"></div></div>
+    <div class="row"><div><label>السرعة (عقدة، من AIS)</label><input name="speed_kn" value="12"></div><div><label>تيار البحر</label><select name="use_currents"><option value="0">بدون</option><option value="1">جيب التيار الحي</option></select></div></div>
+  </form>
+  <form id="f-road" data-tool="road_eta" hidden>
+    <div class="row"><div><label>من: خط العرض</label><input name="lat" value="29.3759"></div><div><label>من: خط الطول</label><input name="lon" value="47.9774"></div></div>
+    <div class="row"><div><label>إلى: خط العرض</label><input name="dest_lat" value="29.0769"></div><div><label>إلى: خط الطول</label><input name="dest_lon" value="48.0838"></div></div>
+    <div class="row"><div><label>الزحمة</label><select name="traffic_factor"><option value="1">فاضي</option><option value="1.3">متوسط</option><option value="1.7">زحمة</option></select></div><div><label>الوسيلة</label><select name="profile"><option value="driving">سيارة</option><option value="cycling">دراجة</option><option value="walking">مشي</option></select></div></div>
+  </form>
+  <form id="f-distance" data-tool="distance" hidden>
+    <div class="row"><div><label>نقطة 1: عرض</label><input name="lat1" value="29.3759"></div><div><label>نقطة 1: طول</label><input name="lon1" value="47.9774"></div></div>
+    <div class="row"><div><label>نقطة 2: عرض</label><input name="lat2" value="25.2854"></div><div><label>نقطة 2: طول</label><input name="lon2" value="51.5310"></div></div>
+  </form>
+  <form id="f-calc" data-tool="calc" hidden>
+    <label>المعادلة (مثال: integrate(sin(x)^2,(x,0,pi)) أو sqrt(2))</label><input name="expression" value="sqrt(2)">
+    <label>عدد الخانات</label><input name="digits" value="30">
+  </form>
+  <form id="f-kinematics" data-tool="kinematics" hidden>
+    <p class="k">عط أي 3 قيم (بالمتر والثانية) ونيوتن يطلع الباقي.</p>
+    <div class="row"><div><label>s المسافة (م)</label><input name="s"></div><div><label>t الزمن (ث)</label><input name="t"></div></div>
+    <div class="row"><div><label>u السرعة البداية (م/ث)</label><input name="u" value="0"></div><div><label>v السرعة النهاية (م/ث)</label><input name="v" value="27.78"></div></div>
+    <label>a التسارع (م/ث²)</label><input name="a" value="3">
+  </form>
+  <button class="go" id="go">احسب</button>
+  <div id="out"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);let cur="ship";
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll("form").forEach(f=>f.hidden=f.id!=="f-"+b.dataset.t);cur=b.dataset.t;$("#out").innerHTML=""});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function args(f){const o={};for(const el of f.elements){if(!el.name||el.value==="")continue;const v=el.value.trim();o[el.name]=el.name==="expression"||el.name==="profile"?v:el.name==="use_currents"?v==="1":Number(v)}return o}
+function links(r){const ev=(r.evidence||[]).map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.slice(0,80))}…</a></li>`).join("");
+ const as=(r.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("");
+ let map="";if(r.inputs&&r.inputs.to){const[a,b]=r.inputs.from,[c,d]=r.inputs.to;map=`<p><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/directions?route=${a}%2C${b}%3B${c}%2C${d}">افتح المسار على الخريطة</a></p>`}
+ return (as?`<p class="k">الفرضيات</p><ul>${as}</ul>`:"")+(ev?`<p class="k">المصدر الخام</p><ul>${ev}</ul>`:"")+map}
+function show(t,r){let h="";
+ if(t==="ship_eta"||t==="road_eta"){h=`<div class="k">الوصول (UTC)</div><div class="big">${esc(r.arrive_utc.replace("T"," ").replace("+00:00",""))}</div><p>المدة ${esc(r.duration)} · المسافة ${t==="ship_eta"?esc(r.distance_nm)+" ميل بحري":esc(r.road_distance_km)+" كم"}</p><div class="f">${esc(r.formula)}</div>`}
+ else if(t==="distance"){h=`<div class="big">${(r.distance_km).toFixed(3)} كم</div><p>${(r.distance_nm).toFixed(3)} ميل بحري · الاتجاه ${r.initial_bearing!=null?r.initial_bearing.toFixed(2)+"°":"-"}</p>`}
+ else if(t==="calc"){h=`<div class="big" dir="ltr">${esc(r.decimal||r.exact)}</div><p class="k">القيمة الدقيقة</p><div class="f">${esc(r.exact)}</div>`}
+ else if(t==="kinematics"){h=(r.solutions.length?r.solutions.map(s=>`<div class="f">${esc(JSON.stringify(s))}</div>`).join(""):"<p>ما في حل فيزيائي</p>")+`<p class="k">${esc(r.note)}</p>`}
+ $("#out").innerHTML=h+links(r)+`<details><summary class="k">كل الأرقام</summary><div class="f">${esc(JSON.stringify(r,null,2))}</div></details>`}
+$("#go").onclick=async()=>{const f=$("#f-"+cur),t=f.dataset.tool;$("#out").innerHTML='<p class="k">نيوتن يحسب…</p>';
+ try{const res=await fetch("api/"+t,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(args(f))});const j=await res.json();
+ if(!j.ok)throw new Error(j.error);show(t,j.result)}catch(e){$("#out").innerHTML=`<p class="err">${esc(e.message)}</p>`}};
+</script>
+</body>
+</html>
