@@ -1,0 +1,74 @@
+/* NABD landing draft (ADR-071). Plain CSS, no framework, no external requests. */
+:root {
+  --bg: #0A0E1A; --card: rgba(26, 31, 53, .72); --line: rgba(124, 58, 237, .28);
+  --text: #E6E8F0; --muted: #9AA3BD; --gold: #F5B301; --purple: #7C3AED; --cyan: #06B6D4;
+  --danger: #EF4444; --success: #10B981;
+  --ar: "Cairo", "Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif;
+  --en: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text); line-height: 1.7;
+  font-family: var(--en);
+  background-image:
+    radial-gradient(60rem 40rem at 85% -10%, rgba(124, 58, 237, .22), transparent 60%),
+    radial-gradient(50rem 35rem at -10% 30%, rgba(6, 182, 212, .14), transparent 60%);
+  background-attachment: fixed;
+}
+html[lang="ar"] body { font-family: var(--ar); }
+a { color: var(--cyan); }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+
+header { padding: 20px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.brand { font-weight: 700; font-size: 1.25rem; letter-spacing: .04em; display: flex; align-items: center; gap: 10px; }
+.pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 0 rgba(245, 179, 1, .6); animation: pulse 2.4s infinite; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 12px rgba(245, 179, 1, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 179, 1, 0); } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } html { scroll-behavior: auto; } }
+nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: .95rem; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover, nav a:focus { color: var(--text); }
+.lang { border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--text) !important; }
+
+.hero { padding: 56px 0 40px; }
+.hero h1 { font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.25; margin: 0 0 16px; }
+.hero h1 em { font-style: normal; color: var(--gold); }
+.hero p { color: var(--muted); font-size: 1.1rem; max-width: 40rem; margin: 0; }
+
+section { padding: 36px 0; }
+section > h2 { font-size: 1.6rem; margin: 0 0 6px; }
+section > .lead { color: var(--muted); margin: 0 0 22px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: border-color .3s, transform .3s;
+}
+.card:hover { border-color: rgba(6, 182, 212, .55); transform: translateY(-2px); }
+.card h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--gold); }
+.card p, .card li { color: var(--text); opacity: .9; margin: 0; }
+.card ul { margin: 8px 0 0; padding-inline-start: 1.2em; }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .95rem; }
+th, td { padding: 10px 12px; text-align: start; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; background: rgba(124, 58, 237, .08); }
+td.num { white-space: nowrap; font-family: var(--mono); direction: ltr; unicode-bidi: isolate; }
+td.base { color: var(--success); font-weight: 600; }
+.verdict { margin-top: 16px; border-inline-start: 3px solid var(--danger); padding-block: 4px; padding-inline: 14px 0; }
+.verdict strong { color: var(--danger); }
+.note { color: var(--muted); font-size: .9rem; margin-top: 12px; }
+code { font-family: var(--mono); font-size: .9em; background: rgba(255, 255, 255, .06); padding: 1px 6px; border-radius: 6px; }
+
+.waitlist { text-align: center; }
+.btn {
+  display: inline-block; margin-top: 10px; padding: 12px 28px; border-radius: 999px; font-weight: 700; text-decoration: none;
+  color: #0A0E1A; background: var(--gold); box-shadow: 0 0 24px rgba(245, 179, 1, .35); transition: box-shadow .3s;
+}
+.btn:hover, .btn:focus { box-shadow: 0 0 36px rgba(245, 179, 1, .6); }
+.todo { display: inline-block; margin-inline-start: 8px; font-family: var(--mono); font-size: .75rem; color: var(--danger); border: 1px dashed var(--danger); border-radius: 6px; padding: 0 6px; }
+
+footer { padding: 32px 0 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); margin-top: 24px; }
+footer p { margin: 6px 0; }
+.btn-off { cursor: default; opacity: .85; box-shadow: none; }
