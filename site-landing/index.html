@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>نبض NABD</title>
-  <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، مع حساب تدريب وهمي، ونشر صريح لما لم ينجح.">
-  <!-- DRAFT (ADR-071): not published. TODO before publishing: domain, legal review, waitlist link. -->
-  <meta name="robots" content="noindex">
+  <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، مع حساب تدريب وهمي.">
   <link rel="alternate" hreflang="en" href="en.html">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -16,7 +14,6 @@
     <div class="brand"><span class="pulse" aria-hidden="true"></span>نبض · NABD</div>
     <nav aria-label="أقسام الصفحة">
       <a href="#what">ماذا يفعل</a>
-      <a href="#tested">ماذا اختبرنا</a>
       <a href="#waitlist">قائمة الانتظار</a>
       <a class="lang" href="en.html" hreflang="en" lang="en">English</a>
     </nav>
@@ -24,7 +21,7 @@
 
   <div class="hero">
     <h1>افهم ما يحدث في الأسواق، <em>بأدلة لا بمزاعم.</em></h1>
-    <p>نبض مجموعة أدوات بحث وتعلّم تعمل على بيانات عامة ومفتوحة، مع حساب تدريب بأموال وهمية. وننشر ما اختبرناه، بما فيه ما فشل.</p>
+    <p>نبض مجموعة أدوات بحث وتعلّم تعمل على بيانات عامة ومفتوحة، مع حساب تدريب بأموال وهمية.</p>
   </div>
 
   <section id="what" aria-labelledby="what-h">
@@ -56,41 +53,19 @@
         <p>حسابات دقيقة للمسافات وأوقات الوصول والمعادلات. كل جواب يعرض المدخلات والمعادلة والافتراضات وروابط الدليل، حتى تتحقق بنفسك.</p>
       </article>
     </div>
-    <p class="note">البيانات من مصادر عامة ومجانية أو مفتوحة الترخيص فقط، ضمن شروط استخدامها. <span class="todo">TODO: تأكيد قائمة الميزات قبل النشر</span></p>
+    <p class="note">البيانات من مصادر عامة ومجانية أو مفتوحة الترخيص فقط، ضمن شروط استخدامها.</p>
   </section>
 
-  <section id="tested" aria-labelledby="tested-h">
-    <h2 id="tested-h">ماذا اختبرنا</h2>
-    <p class="lead">سؤال: هل مؤشرات مستوحاة من الفيزياء (Hurst وLyapunov ونسبة شبيهة بـ Reynolds) تحذّر من الأزمات أفضل من التذبذب العادي لآخر 20 يوماً؟ الجواب: لا.</p>
-    <div class="table-scroll">
-      <table>
-        <caption class="note" style="caption-side: bottom; text-align: start;">المقياس ROC AUC: ‏0.5 = مثل رمي العملة، والأعلى أفضل. الهدف: أسوأ 10% من التراجعات خلال الـ20 يوم تداول التالية. بين القوسين: فترة ثقة 95%.</caption>
-        <thead>
-          <tr><th>الأصل</th><th>الفترة</th><th>Hurst</th><th>Lyapunov</th><th>Reynolds*</th><th>تذبذب 20 يوم (المرجع)</th><th>VIX (المرجع)</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>S&amp;P 500</td><td class="num">2000–2018</td><td class="num">0.466 [0.36, 0.57]</td><td class="num">0.494 [0.37, 0.63]</td><td class="num">0.502 [0.43, 0.56]</td><td class="num base">0.731 [0.64, 0.82]</td><td class="num base">0.743 [0.66, 0.82]</td></tr>
-          <tr><td>نفط WTI</td><td class="num">1987–2026</td><td class="num">0.452 [0.39, 0.52]</td><td class="num">0.510 [0.44, 0.58]</td><td class="num">0.528 [0.47, 0.58]</td><td class="num base">0.691 [0.61, 0.75]</td><td>—</td></tr>
-          <tr><td>Bitcoin</td><td class="num">2011–2026</td><td class="num">0.556 [0.46, 0.63]</td><td class="num">0.444 [0.32, 0.56]</td><td class="num">0.633 [0.54, 0.72]</td><td class="num base">0.687 [0.60, 0.75]</td><td>—</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="verdict">
-      <p><strong>النتيجة: فشل.</strong> ولا مؤشر من الثلاثة تفوّق على التذبذب العادي. العتبات المشهورة (Reynolds فوق 2000 أو 4000) لم تتحقق ولا يوماً واحداً على أي أصل، وLyapunov فوق الصفر كان صحيحاً 100% من الأيام، حتى على بيانات عشوائية مخلوطة، فلا يحمل أي معلومة.</p>
-      <p>أفضل نتيجة كانت Reynolds* على Bitcoin، فاختبرناه مرة أخيرة على بيانات 2023–2026 بقاعدة نجاح محددة قبل التشغيل. النتيجة <span class="num" dir="ltr">AUC 0.329 [0.269, 0.452]</span>، أي أسوأ من رمي العملة. أغلقنا الملف ولم نربط هذه المؤشرات بأي شاشة.</p>
-    </div>
-    <p class="note">بيانات يومية مجانية فقط، ونافذة واحدة لكل مؤشر اختيرت قبل التشغيل. التفاصيل الكاملة وطريقة الإعادة في <code>physics_lab/results/REPORT.md</code> وسجل القرار ADR-065. <span class="todo">TODO: رابط عام للتقرير</span></p>
-  </section>
 
   <section id="waitlist" class="waitlist" aria-labelledby="waitlist-h">
     <h2 id="waitlist-h">قائمة الانتظار</h2>
-    <p class="lead">نبض قيد البناء. سجّل لتعرف متى يفتح.</p>
-    <a class="btn" href="#TODO-waitlist">انضم لقائمة الانتظار</a><span class="todo">TODO: رابط النموذج</span>
+    <p class="lead">نبض قيد البناء. نموذج التسجيل سيُضاف هنا قريباً.</p>
+    <span class="btn btn-off" aria-disabled="true">قائمة الانتظار تفتح قريباً</span>
   </section>
 
   <footer>
-    <p>نبض أداة بحث وتعلّم. لا يقدّم نصيحة استثمارية، ولا ينفّذ أي أوامر حقيقية. <span class="todo">TODO: مراجعة قانونية للنص</span></p>
-    <p>نبض · NABD <span class="todo">TODO: الدومين وبيانات التواصل</span></p>
+    <p>نبض أداة بحث وتعلّم. لا يقدّم نصيحة استثمارية، ولا ينفّذ أي أوامر حقيقية.</p>
+    <p>نبض · NABD</p>
   </footer>
 </div>
 </body>

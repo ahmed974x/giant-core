@@ -1,6 +1,6 @@
 # ADR-071: NABD landing page, local draft
 
-- Status: Proposed (draft only; not published)
+- Status: Accepted; published 2026-10-15 on GitHub Pages from branch gh-pages (Ahmad approved at 23:47Z)
 - Date: 2026-10-15
 - Decider: Ahmad (asked for Phase 1 "Landing Page" on 2026-10-15)
 
@@ -25,3 +25,8 @@ Wording avoids trade-call, performance and promise language.
 - Open items are marked `TODO` in the pages: waitlist link, domain and contact, legal review of the disclaimer,
   public link to the physics report (it lives on branch `claude/project-thread-huo78r`, not merged), and a final
   check of the feature list.
+
+## Addendum 2026-10-15: published
+Ahmad approved publishing (Hero + What NABD does + Waitlist placeholder only). The public version drops the
+"What we tested" section, the TODO markers and `noindex`; the waitlist is a disabled "opens soon" button with no
+form. Served from an orphan branch `gh-pages` holding only the page files, so `main` is unchanged.
