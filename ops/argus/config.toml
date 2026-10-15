@@ -1,0 +1,66 @@
+# Argus settings for OMEGA PRIME / NABD (ADR-070). Copy to %USERPROFILE%\.argus\config.toml
+# Lists below REPLACE Argus's defaults, so the defaults are kept here and extended.
+
+[capture]
+max_side = 2000
+max_side_multi = 1280
+grid = false
+cursor_marker = true
+
+[look]
+mark_freshness_seconds = 120
+
+[hotkeys]
+mark = "ctrl+alt+s"
+pause = "ctrl+alt+p"
+
+[privacy]
+retention_days = 7
+redact_notifications = true
+# Programs whose windows are always blacked out (exe names, any case).
+redact_apps = [
+  # password managers / 2FA (Argus defaults)
+  "1Password.exe", "Bitwarden.exe", "KeePass.exe", "KeePassXC.exe", "Dashlane.exe",
+  "LastPass.exe", "NordPass.exe", "ProtonPass.exe", "Proton Pass.exe", "Enpass.exe",
+  "RoboForm.exe", "keeperpasswordmanager.exe", "Authy Desktop.exe",
+  # messengers (Argus defaults)
+  "WhatsApp.exe", "WhatsApp.Root.exe", "Signal.exe", "Telegram.exe", "Messenger.exe",
+  "PhoneExperienceHost.exe", "Viber.exe",
+  # crypto wallets (NABD)
+  "Exodus.exe", "Electrum.exe", "Ledger Live.exe", "Trezor Suite.exe", "Atomic Wallet.exe",
+  "Guarda.exe", "Coinomi.exe", "Wasabi Wallet.exe", "Sparrow.exe", "Bitcoin-Qt.exe",
+  "Trust Wallet.exe", "SafePal.exe", "Phantom.exe", "Rabby Wallet.exe",
+  # email (NABD)
+  "OUTLOOK.EXE", "olk.exe", "HxOutlook.exe", "thunderbird.exe", "Spark.exe", "Mailbird.exe", "eM Client.exe",
+]
+# Regexes (case-insensitive) on browser tab titles.
+redact_browser_titles = [
+  '\bwhatsapp\b', '\bmessenger\b', '\bmessages for web\b', '\bgoogle messages\b',
+  '\btelegram web\b', '\binstagram\b.*\b(direct|chats?|messages)\b',
+  '\bbank(ing)?\b', '\bcredit union\b', '\bchase\b', '\bwells fargo\b',
+  '\bcapital one\b', '\bciti(bank)?\b', '\bamerican express\b', '\bamex\b',
+  '\bpaypal\b', '\bvenmo\b', '\bzelle\b', '\bcash app\b', '\brobinhood\b',
+  '\bfidelity\b', '\bschwab\b', '\bvanguard\b', '\bcoinbase\b', '\bbinance\b',
+  '\bsofi\b', '\bturbotax\b',
+  # Gulf banks / KNET (NABD)
+  '\bknet\b', '\bnbk\b', '\bkfh\b', '\bboubyan\b', '\bwarba\b', '\bgulf bank\b', 'بنك', 'بيتك',
+  # email in the browser (NABD)
+  '\bgmail\b', '\boutlook\b', '\binbox\b', '\bmail\b', '\bproton ?mail\b', 'البريد', 'الوارد',
+]
+# Regexes (case-insensitive) on EVERY window title, browser tabs included.
+redact_titles = [
+  '\b1password\b', '\bbitwarden\b', '\blastpass\b', '\bkeepass(xc)?\b',
+  '\bdashlane\b', '\bnordpass\b', '\bproton pass\b',
+  # OMEGA PRIME secret windows (NABD)
+  'رمز الموقع', '\bkeys? ?vault\b', 'خزنة', 'المفاتيح', '\bsecrets?\b', 'dotenvx', '\.env\b',
+  # PIN / password anywhere in a title (NABD)
+  '\bpin\b', 'password', 'passcode', '\botp\b', 'رمز ?(الدخول|التحقق|سري)', 'كلمة (السر|المرور)',
+  # crypto wallets, incl. browser extensions (NABD)
+  '\bwallet\b', 'محفظ', '\bmetamask\b', '\bphantom\b', '\bexodus\b', '\bledger\b', '\btrezor\b',
+  '\belectrum\b', '\brabby\b', '\bseed phrase\b', '\brecovery phrase\b', '\bprivate key\b',
+]
+browsers = [
+  "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "vivaldi.exe",
+  "arc.exe", "zen.exe", "librewolf.exe", "waterfox.exe", "floorp.exe", "chromium.exe",
+  "thorium.exe", "comet.exe", "dia.exe", "iexplore.exe",
+]
