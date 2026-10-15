@@ -1,0 +1,35 @@
+{
+  "period": [
+    "2023-01-01",
+    "2026-05-03"
+  ],
+  "days": 1219,
+  "stress_cutoff_from_pre2023": -0.248,
+  "stress_days": 14,
+  "auc": {
+    "reynolds": {
+      "auc": 0.329,
+      "ci95": [
+        0.269,
+        0.452
+      ]
+    },
+    "reynolds_novol": {
+      "auc": 0.383,
+      "ci95": [
+        0.321,
+        0.51
+      ]
+    },
+    "vol20": {
+      "auc": 0.284,
+      "ci95": [
+        0.175,
+        0.459
+      ]
+    }
+  },
+  "passes": false,
+  "reynolds_max": 33.59,
+  "days_reynolds_gt_2000": 0
+}

@@ -32,3 +32,14 @@ No trading, order execution, money movement, Director 00 wiring, or outbound mes
 - If revisited, start from Re* on Bitcoin (only above-chance result) and require it to beat
   volatility out of sample before any further phase.
 - Data: Coin Metrics community data is CC BY-NC 4.0, so these results are for personal research only.
+
+## Addendum 2026-10-15: Bitcoin Reynolds* 2023-2026 test, file closed
+Ahmad's rule: record Re* as a secondary signal if it shows real value on Bitcoin 2023-2026,
+otherwise close the file for good. Pass rule fixed before running: AUC CI lower bound > 0.5 and
+AUC above 20-day volatility; stress cutoff (-24.8% forward 20-day drawdown) taken from pre-2023 data.
+Result (`physics_lab/oos_btc.py`, `results/oos_btc_2023_2026.json`): 1,219 days, 14 stress days,
+Re* AUC 0.329 [0.269, 0.452], Re* without volume 0.383 [0.321, 0.510], max Re* 33.6, zero days > 2000.
+The CI is wholly below 0.5, so high Re* came before fewer large drawdowns, not more. With only 14
+stress days the sample is small, but it fails the pre-set rule.
+Decision: Re* is not a secondary signal. The physics-signal file is closed. physics_lab stays as a
+research tool only; it is not wired to Director 00, any screen, or trading.

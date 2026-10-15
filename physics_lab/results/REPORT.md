@@ -74,3 +74,8 @@ SHA-256 of each downloaded file is in `metrics.json` -> `sources`.
 Daily closes only (no order book, so no real liquidity density or spread). One window length per
 signal (252 / 20 days), chosen before running, not tuned. Overlapping 20-day targets inflate
 naive significance; that is why the CIs use block bootstrap.
+
+## Follow-up: Bitcoin Reynolds* 2023-2026 / اختبار أخير
+Stress cutoff from pre-2023 data (-24.8%). 1,219 days, 14 stress days.
+Re* AUC 0.329 [0.269, 0.452]; without volume 0.383 [0.321, 0.510]; 20d vol 0.284 [0.175, 0.459].
+Pass rule (CI above 0.5 and beats volatility) failed. File closed; see ADR-065 addendum.
