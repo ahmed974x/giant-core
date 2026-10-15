@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NABD نبض</title>
+  <meta name="description" content="NABD: open research and learning tools for understanding markets, with a made-up-money practice account and plain reporting of what did not work.">
+  <!-- DRAFT (ADR-071): not published. TODO before publishing: domain, legal review, waitlist link. -->
+  <meta name="robots" content="noindex">
+  <link rel="alternate" hreflang="ar" href="index.html">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="pulse" aria-hidden="true"></span>NABD · نبض</div>
+    <nav aria-label="Page sections">
+      <a href="#what">What it does</a>
+      <a href="#tested">What we tested</a>
+      <a href="#waitlist">Waitlist</a>
+      <a class="lang" href="index.html" hreflang="ar" lang="ar">العربية</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>Understand what moves markets, <em>with evidence, not claims.</em></h1>
+    <p>NABD is a set of research and learning tools built on public, open data, with a practice account in made-up money. We publish what we test, including what failed.</p>
+  </div>
+
+  <section id="what" aria-labelledby="what-h">
+    <h2 id="what-h">What NABD does</h2>
+    <p class="lead">This is what exists today. Nothing here connects to a real trading account.</p>
+    <div class="grid">
+      <article class="card">
+        <h3>Practice account</h3>
+        <p>Practise with a made-up balance. Every order is priced at the live public price plus a 0.1% fee and 0.05% slippage, so the result stays close to reality.</p>
+        <ul>
+          <li>It never touches an exchange's trading API, holds no exchange keys and moves no money.</li>
+          <li>Every number is rebuilt from an event log, so it can be audited.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Strategy lab</h3>
+        <p>Five classic strategy types: trend, mean reversion, breakout, momentum and news. Each is tested on real historical candles with the same fee and slippage.</p>
+        <ul>
+          <li>Results describe the past; they are not a promise.</li>
+          <li>The furthest it goes is a trial on the practice account.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Deep Research</h3>
+        <p>Ask in Arabic or English. It searches free open sources, reads the pages, writes an answer with a source link for each claim, and checks whether the source actually supports it.</p>
+      </article>
+      <article class="card">
+        <h3>Newton, the maths engine</h3>
+        <p>Exact distances, arrival times and equations. Every answer shows its inputs, formula, assumptions and evidence links, so you can check it yourself.</p>
+      </article>
+    </div>
+    <p class="note">Data comes only from public, free or open-licensed sources, used within their terms. <span class="todo">TODO: confirm feature list before publishing</span></p>
+  </section>
+
+  <section id="tested" aria-labelledby="tested-h">
+    <h2 id="tested-h">What we tested</h2>
+    <p class="lead">Question: do physics-inspired indicators (Hurst, Lyapunov and a Reynolds-style ratio) warn of crises better than plain 20-day volatility? Answer: no.</p>
+    <div class="table-scroll">
+      <table>
+        <caption class="note" style="caption-side: bottom; text-align: start;">Score is ROC AUC: 0.5 = a coin flip, higher is better. Target: the worst 10% of drawdowns over the next 20 trading days. Brackets: 95% confidence interval.</caption>
+        <thead>
+          <tr><th>Asset</th><th>Period</th><th>Hurst</th><th>Lyapunov</th><th>Reynolds*</th><th>20-day volatility (baseline)</th><th>VIX (baseline)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>S&amp;P 500</td><td class="num">2000–2018</td><td class="num">0.466 [0.36, 0.57]</td><td class="num">0.494 [0.37, 0.63]</td><td class="num">0.502 [0.43, 0.56]</td><td class="num base">0.731 [0.64, 0.82]</td><td class="num base">0.743 [0.66, 0.82]</td></tr>
+          <tr><td>WTI oil</td><td class="num">1987–2026</td><td class="num">0.452 [0.39, 0.52]</td><td class="num">0.510 [0.44, 0.58]</td><td class="num">0.528 [0.47, 0.58]</td><td class="num base">0.691 [0.61, 0.75]</td><td>—</td></tr>
+          <tr><td>Bitcoin</td><td class="num">2011–2026</td><td class="num">0.556 [0.46, 0.63]</td><td class="num">0.444 [0.32, 0.56]</td><td class="num">0.633 [0.54, 0.72]</td><td class="num base">0.687 [0.60, 0.75]</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="verdict">
+      <p><strong>Result: failed.</strong> None of the three indicators beat plain volatility. The well-known thresholds (Reynolds above 2000 or 4000) were never reached on any asset, and Lyapunov above zero held on 100% of days, even on shuffled random data, so it carries no information.</p>
+      <p>The best result was Reynolds* on Bitcoin, so we gave it one last test on 2023–2026 data with a pass rule fixed before running. It scored <span class="num">AUC 0.329 [0.269, 0.452]</span>, worse than a coin flip. The file is closed, and none of these indicators is wired to any screen.</p>
+    </div>
+    <p class="note">Free daily data only, one window per indicator chosen before running. Full numbers and how to reproduce them: <code>physics_lab/results/REPORT.md</code> and decision record ADR-065. <span class="todo">TODO: public link to the report</span></p>
+  </section>
+
+  <section id="waitlist" class="waitlist" aria-labelledby="waitlist-h">
+    <h2 id="waitlist-h">Waitlist</h2>
+    <p class="lead">NABD is still being built. Join to hear when it opens.</p>
+    <a class="btn" href="#TODO-waitlist">Join the waitlist</a><span class="todo">TODO: form link</span>
+  </section>
+
+  <footer>
+    <p>NABD is a research and learning tool. It does not give investment advice and places no real orders. <span class="todo">TODO: legal review of this wording</span></p>
+    <p>NABD · نبض <span class="todo">TODO: domain and contact details</span></p>
+  </footer>
+</div>
+</body>
+</html>
