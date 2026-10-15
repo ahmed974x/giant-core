@@ -352,7 +352,7 @@
     <section class="node n-n8n" data-link="n8nState">
       <div class="node-head">
         <div class="node-title">N8N SYSTEM<span class="ar" lang="ar">نظام الأتمتة n8n</span></div>
-        <div class="node-tag">LOCAL · 5678</div>
+        <div class="node-tag" id="n8nTag">LOCAL · 5678</div>
       </div>
       <div class="metric" id="n8nStateText">—</div>
       <div class="sub">Workflow automation control plane · <span class="ar" lang="ar">مراقبة الحالة فقط، بدون تشغيل</span></div>
@@ -364,7 +364,7 @@
     <section class="node n-newton" data-link="newtonState">
       <div class="node-head">
         <div class="node-title">NEWTON CORE<span class="ar" lang="ar">محرك نيوتن</span></div>
-        <div class="node-tag">LOCAL · 8095</div>
+        <div class="node-tag" id="newtonTag">LOCAL · 8095</div>
       </div>
       <div class="metric" id="newtonStateText">—</div>
       <div class="sub">Pre-flight health gate for computational tasks · <span class="ar" lang="ar">فحص إلزامي قبل أي مهمة</span></div>
@@ -406,6 +406,11 @@ const CONFIG = {
     "&current=temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code&timezone=Asia%2FKuwait",
   n8nHealth: "http://localhost:5678/healthz",
   newtonHealth: "http://127.0.0.1:8095/api/health",
+  // OMEGA Core API checks n8n and Newton server-side, so no CORS is needed from them.
+  // Same origin when this page is served by the API at /ops/.
+  coreHealth: location.pathname.startsWith("/ops/")
+    ? "/api/v1/health/services"
+    : "http://127.0.0.1:8000/api/v1/health/services",
   btcRefreshMs: 10000,
   weatherRefreshMs: 600000,
   systemRefreshMs: 15000
@@ -565,9 +570,31 @@ async function loadWeather() {
   }
 }
 
-async function loadN8n() {
+// Reads the Core API once per cycle; null when it is not running (then each widget probes directly).
+async function readCore() {
+  try {
+    return await safeFetch(CONFIG.coreHealth, 5000);
+  } catch {
+    return null;
+  }
+}
+
+// Maps one Core API service entry onto the same shape probe() returns.
+function fromCore(core, name) {
+  const s = core && core.services && core.services[name];
+  if (!s || typeof s.status !== "string") return null;
+  if (s.status === "online") {
+    return { level: "verified", data: name === "newton" ? { ok: true, tools: Array.isArray(s.tools) ? s.tools : [] } : { status: "ok" } };
+  }
+  if (s.status === "degraded") return { level: "verified", data: {} };
+  return { level: "down", reason: String(s.reason || "unreachable") };
+}
+
+async function loadN8n(core) {
   setState("n8nState", "checking", "SCANNING", "فحص");
-  const r = await probe(CONFIG.n8nHealth);
+  const viaCore = fromCore(core, "n8n");
+  $("n8nTag").textContent = viaCore ? "LOCAL · 5678 · VIA CORE" : "LOCAL · 5678";
+  const r = viaCore || await probe(CONFIG.n8nHealth);
   if (r.level === "verified" && r.data && r.data.status === "ok") {
     setMetric("n8nStateText", "ONLINE");
     setState("n8nState", "online", "WORKFLOW ENGINE ACTIVE", "محرك الأتمتة يعمل");
@@ -585,9 +612,11 @@ async function loadN8n() {
 
 // Newton gate: open ONLY when /api/health is read and says ok:true.
 // "Port answers but body unreadable" keeps the gate closed.
-async function loadNewton() {
+async function loadNewton(core) {
   setState("newtonState", "checking", "PRE-FLIGHT", "فحص ما قبل التشغيل");
-  const r = await probe(CONFIG.newtonHealth);
+  const viaCore = fromCore(core, "newton");
+  $("newtonTag").textContent = viaCore ? "LOCAL · 8095 · VIA CORE" : "LOCAL · 8095";
+  const r = viaCore || await probe(CONFIG.newtonHealth);
   const healthy = r.level === "verified" && r.data && r.data.ok === true;
   newtonGate.open = healthy;
   newtonGate.checkedAt = Date.now();
@@ -636,10 +665,15 @@ function renderNewtonGate() {
 
 // Any future Newton task must await this first; it re-checks if the last result is older than one cycle.
 async function requireNewton() {
-  if (!newtonGate.open || Date.now() - newtonGate.checkedAt > CONFIG.systemRefreshMs) await loadNewton();
+  if (!newtonGate.open || Date.now() - newtonGate.checkedAt > CONFIG.systemRefreshMs) await loadNewton(await readCore());
   return newtonGate.open;
 }
 window.OMEGA = Object.freeze({ requireNewton, gate: () => ({ open: newtonGate.open, checkedAt: newtonGate.checkedAt }) });
+
+async function loadSystems() {
+  const core = await readCore();
+  await Promise.allSettled([loadN8n(core), loadNewton(core)]);
+}
 
 const STATE_IDS = ["btcState", "weatherState", "n8nState", "newtonState"];
 
@@ -686,7 +720,7 @@ async function boot() {
   window.addEventListener("resize", drawSynapses);
 
   // Each loader catches its own errors, so one dead source never blocks the others.
-  await Promise.allSettled([loadBtc(), loadWeather(), loadN8n(), loadNewton()]);
+  await Promise.allSettled([loadBtc(), loadWeather(), loadSystems()]);
   refreshGlobal();
 
   setInterval(async () => {
@@ -701,7 +735,7 @@ async function boot() {
   }, CONFIG.weatherRefreshMs);
 
   setInterval(async () => {
-    await Promise.allSettled([loadN8n(), loadNewton()]);
+    await loadSystems();
     refreshGlobal();
   }, CONFIG.systemRefreshMs);
 }

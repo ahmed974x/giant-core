@@ -29,6 +29,10 @@ The gate opens only when the browser actually reads `/api/health` and it returns
 
 **Known limitation:** Newton's current `http_api.py` sends no `Access-Control-Allow-Origin` header, so a browser page cannot read its health reply. The dashboard detects this ("port answers, gate stays closed") instead of showing a false READY. To open the gate, Newton's `/api/health` response needs `Access-Control-Allow-Origin` set to the dashboard origin (e.g. `http://127.0.0.1:8787`, or `null` for a double-clicked file). n8n has the same limitation; for n8n the dashboard shows ONLINE / "port responding", which is enough for a status light.
 
+## With the Core API · مع Core API
+
+When `omega-core-api` runs on `127.0.0.1:8000`, the page asks it for n8n and Newton health first (tags show `VIA CORE`), which solves the CORS limitation above without touching Newton. Open it through the API at http://127.0.0.1:8000/ops/omega-ops-room.html. If the API is not running, the page falls back to probing each service directly.
+
 ## Security · الأمان
 
 - Read-only: no trading, no workflow execution, no remote commands.
