@@ -1,0 +1,5 @@
+# Director 00 (Python 3.14). Pure-Python where possible: pg8000 avoids native Postgres drivers.
+langgraph==1.2.14
+langgraph-checkpoint-sqlite==3.1.1
+pg8000==1.31.5
+numpy==2.5.3

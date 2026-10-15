@@ -1,0 +1,899 @@
+{
+  "app": {
+    "name": "OMEGA PRIME",
+    "tagline": "Global logistics & market intelligence",
+    "switchLang": "العربية",
+    "demo": "Demo data: relay offline",
+    "live": "Live"
+  },
+  "nav": {
+    "company": "Company",
+    "market": "Market",
+    "research": "Research",
+    "earth": "Earth",
+    "send": "Send",
+    "atlas": "Atlas",
+    "network": "Network",
+    "library": "Library",
+    "more": "More screens",
+    "review": "Review",
+    "command": "Command"
+  },
+  "company": {
+    "title": "Operations overview",
+    "services": "Service health",
+    "checked": "Checked {time}",
+    "never": "not checked yet",
+    "kpis": {
+      "nodes": "Watched choke-points",
+      "alerts": "Recent alerts",
+      "symbols": "Tracked markets",
+      "news": "Scored headlines"
+    },
+    "state": {
+      "ok": "Up",
+      "down": "Down",
+      "unknown": "Unknown"
+    },
+    "health": {
+      "title": "System health",
+      "failed": "Health check unreachable.",
+      "items": {
+        "director": "Director 00",
+        "caddy": "Caddy (phone HTTPS)",
+        "database": "Memory database",
+        "relay": "Relay",
+        "web": "Web app",
+        "backup": "Last backup",
+        "n8n": "n8n automations (MCP)",
+        "immich": "Immich photos"
+      },
+      "state": {
+        "up": "OK",
+        "down": "Down",
+        "idle": "Attention",
+        "unknown": "Not set up"
+      }
+    },
+    "inbox": {
+      "title": "Approval inbox (Director 00)",
+      "pin": "PIN",
+      "readonly": "read-only: no PIN set on the laptop",
+      "empty": "Nothing waiting for you.",
+      "low": "low risk",
+      "high": "HIGH RISK",
+      "needsConfirm": "type the phrase to confirm",
+      "remember": "Remember",
+      "notify": "Notify",
+      "approve": "Approve",
+      "confirm": "Confirm",
+      "reject": "Reject",
+      "code": "Rejection reason",
+      "offline": "Web app unreachable",
+      "failed": "Failed",
+      "escalated": "High risk: type the confirmation phrase to finish.",
+      "done": {
+        "executed": "Done: approved and executed.",
+        "rejected": "Rejected and logged.",
+        "failed": "Approved, but an action failed."
+      },
+      "codes": {
+        "USER-005": "Not now",
+        "RISK-001": "Too risky",
+        "COMPLIANCE-002": "Against policy"
+      }
+    },
+    "phoenix": {
+      "title": "Self-healing (Phoenix)",
+      "lastRun": "last check {when}",
+      "never": "not run yet",
+      "quiet": "No incidents: everything stayed healthy.",
+      "actions": {
+        "detect": "checked",
+        "restart": "restarted",
+        "restore": "restored from backup",
+        "recover": "recovered",
+        "backup": "backup",
+        "notify": "notified"
+      },
+      "results": {
+        "ok": "ok",
+        "down": "down",
+        "failed": "failed",
+        "skipped": "skipped"
+      }
+    },
+    "alerts": {
+      "title": "Phone alerts",
+      "pin": "PIN",
+      "offline": "The laptop can't be reached.",
+      "failed": "That didn't work.",
+      "status": {
+        "on": "On",
+        "off": "Off",
+        "unsupported": "Not available here",
+        "blocked": "Blocked"
+      },
+      "lead": "A notification on this phone when Director 00 has something waiting for your approval, or when Phoenix restarts or loses a service. Alerts are encrypted end to end.",
+      "unsupported": "Open OMEGA from the installed app over HTTPS to turn alerts on. On iPhone this needs iOS 16.4 or later and OMEGA added to the home screen.",
+      "blockedHelp": "Notifications are blocked for OMEGA. Allow them in the phone's settings for this site, then come back.",
+      "denied": "Notifications weren't allowed.",
+      "on": "Turn on alerts",
+      "off": "Turn off",
+      "test": "Send a test",
+      "onMsg": "Alerts are on. A test notification is on its way.",
+      "offMsg": "Alerts are off on this phone.",
+      "testMsg": "Test sent."
+    }
+  },
+  "market": {
+    "title": "Markets & anomalies",
+    "prices": "Latest prices",
+    "symbol": "Market",
+    "close": "Close",
+    "time": "Time",
+    "anomalies": "Anomalies",
+    "none": "No anomalies yet. They appear here the moment the relay pushes one.",
+    "news": "Headline sentiment",
+    "noNews": "No scored headlines yet.",
+    "chart": "Price chart",
+    "chartError": "Market data is unreachable right now.",
+    "sweeper": {
+      "title": "Profit Sweeper",
+      "lead": "How much gain your rules would set aside into a reserve. It only proposes: approving records the plan, and you make any sale yourself on your exchange.",
+      "pin": "PIN",
+      "offline": "The laptop can't be reached.",
+      "failed": "Couldn't build the plan.",
+      "noPositions": "No positions yet. Copy services/sweeper/positions.example.json to services/director00/data/positions.json on the laptop and fill in your holdings. It stays on the laptop.",
+      "cols": {
+        "symbol": "Pair",
+        "value": "Value",
+        "gain": "Gain",
+        "sweep": "Sweep",
+        "why": ""
+      },
+      "reasons": {
+        "sweep": "sweep",
+        "below-threshold": "below your threshold",
+        "too-small": "too small",
+        "loss": "at a loss",
+        "no-price": "no price"
+      },
+      "total": "Plan: move {amount} into {reserve}",
+      "propose": "Send plan for approval",
+      "sent": "Sent. The plan is waiting in your approval inbox.",
+      "openInbox": "Open the inbox",
+      "safety": "OMEGA never trades or moves money; it has no exchange keys.",
+      "rules": "Review the rules"
+    },
+    "paper": {
+      "title": "Paper trading",
+      "badge": "Play money",
+      "lead": "Practice at live market prices with a made-up account that starts at 10,000 USDT. Every order pays fees and slippage, and nothing reaches an exchange.",
+      "pin": "PIN",
+      "offline": "Couldn't reach the laptop.",
+      "failed": "The order didn't go through.",
+      "badAmount": "Enter a valid USD amount.",
+      "equity": "Account value",
+      "return": "Return",
+      "cash": "Cash",
+      "realized": "Realized",
+      "pair": "Pair",
+      "side": "Side",
+      "buy": "Buy",
+      "sell": "Sell",
+      "amount": "Amount (USDT)",
+      "placeBuy": "Paper buy",
+      "placeSell": "Paper sell",
+      "sellAll": "Sell all",
+      "costs": "0.1% fee and 0.05% slippage on every order; the smallest order is 10 USDT.",
+      "bought": "Bought {qty} {symbol} at {price} (paper).",
+      "sold": "Sold {qty} {symbol} at {price} (paper).",
+      "noPrices": "Live prices aren't available right now, so holdings are shown at cost.",
+      "cols": {
+        "pair": "Pair",
+        "qty": "Qty",
+        "avg": "Avg cost",
+        "price": "Price",
+        "value": "Value",
+        "gain": "Gain"
+      },
+      "history": "Order history ({n})",
+      "safety": "OMEGA never trades real money and holds no exchange keys.",
+      "reset": "Start a new account",
+      "resetConfirm": "Start a new paper account with 10,000 USDT? The old history stays on file.",
+      "resetDone": "New paper account started."
+    },
+    "oil": {
+      "title": "Oil Watch",
+      "lead": "Two bots read open data, Baltic oil-tanker traffic and fires near Gulf oil sites, and turn them into one signal.",
+      "loading": "Reading...",
+      "level": {
+        "calm": "Calm",
+        "watch": "Watch",
+        "alert": "Alert",
+        "learning": "Learning"
+      },
+      "tankerBot": "Tanker bot (Baltic)",
+      "toRu": "bound for Russian oil ports",
+      "moving": "moving",
+      "noAis": "Ship data is unavailable right now.",
+      "fireBot": "Fire bot (Gulf oil sites)",
+      "noFires": "No fires near the sites.",
+      "noFirms": "NASA FIRMS key is not working.",
+      "reason": {
+        "site-fire": "{site}: {value} fires vs a normal of {normal}",
+        "tankers-up": "{value} tankers bound for Russia vs a normal of {normal}: exports up",
+        "tankers-down": "{value} tankers bound for Russia vs a normal of {normal}: exports down"
+      },
+      "learningHint": "Records a reading an hour to learn what is normal; {n} of the 6 needed so far.",
+      "safety": "Signals to support a decision only. They never open a real trade.",
+      "seeOnGlobe": "See it on the globe",
+      "hormuz": "Tankers in the Strait of Hormuz (of all ships)",
+      "hormuzOff": "needs a working AISStream key"
+    },
+    "pulse": {
+      "title": "World Pulse",
+      "lead": "A bot that reads official open alerts, GDACS disasters (UN and EU), USGS earthquakes and GDELT news conflict, and shows which assets each event usually pushes.",
+      "loading": "Reading...",
+      "asset": {
+        "oil": "Oil",
+        "gas": "Gas",
+        "gold": "Gold",
+        "usd": "USD",
+        "btc": "Bitcoin",
+        "stocks": "Stocks",
+        "grain": "Grain",
+        "shipping": "Shipping"
+      },
+      "kind": {
+        "earthquake": "Earthquake",
+        "cyclone": "Cyclone",
+        "flood": "Flood",
+        "volcano": "Volcano",
+        "wildfire": "Wildfire",
+        "drought": "Drought",
+        "conflict": "Conflict",
+        "disaster": "Disaster"
+      },
+      "region": {
+        "gulf": "Gulf and Middle East",
+        "us-gulf-coast": "US refining coast",
+        "black-sea": "Black Sea",
+        "east-asia": "East Asia",
+        "russia": "Russia",
+        "world": "World"
+      },
+      "seeOnGlobe": "See it on the globe",
+      "source": "Source ({src})",
+      "quiet": "No major events right now.",
+      "more": "Show all ({n})",
+      "less": "Show fewer",
+      "safety": "Directions are rules of thumb from how markets usually react, not forecasts. They never open a trade."
+    },
+    "strategies": {
+      "title": "Trading strategies",
+      "lead": "Five strategy types, each backtested on real past prices, with today's signal. Try any signal on the paper account.",
+      "pair": "Pair",
+      "interval": "Interval",
+      "iv": {
+        "1h": "1 hour",
+        "4h": "4 hours",
+        "1d": "1 day"
+      },
+      "loading": "Calculating...",
+      "unreachable": "Market data is unavailable right now.",
+      "name": {
+        "trend": "Trend following",
+        "meanrev": "Mean reversion",
+        "breakout": "Breakout",
+        "momentum": "Momentum (MACD)",
+        "news": "News-driven"
+      },
+      "how": {
+        "trend": "Buys when the 20 average crosses above the 50 average, exits when it crosses below.",
+        "meanrev": "Buys when RSI drops under 30 (oversold), sells when it recovers above 55.",
+        "breakout": "Buys a break above the 20-bar high, exits below the 10-bar low.",
+        "momentum": "Buys when the MACD line crosses above its signal line.",
+        "news": "Follows World Pulse's lean for gold and Bitcoin."
+      },
+      "vsHold": "vs holding",
+      "trades": "trades",
+      "liveOnly": "Live signal only (news lean {lean}); no backtest.",
+      "sig": {
+        "buy": "Buy",
+        "sell": "Sell",
+        "hold": "Wait"
+      },
+      "tryPaper": "Try on paper",
+      "needPin": "Enter your PIN in Paper trading below first.",
+      "sent": "Done: {name} signal placed on the paper account.",
+      "failed": "It didn't go through.",
+      "basis": "Backtest on the last {bars} candles ({iv}), with a 0.1% fee and 0.05% slippage.",
+      "safety": "Past results don't guarantee the future. Nothing here opens a real trade."
+    }
+  },
+  "research": {
+    "title": "Research",
+    "hint": "Ask the Brain anything. Six agents plan, research, design, critique and synthesize an answer.",
+    "placeholder": "e.g. How would a Hormuz slowdown move Brent and gold this week?",
+    "ask": "Ask",
+    "asking": "Working…",
+    "steps": "Agent steps",
+    "answer": "Answer",
+    "error": "The Brain is not reachable. Start the stack with docker compose up -d.",
+    "tooShort": "Write at least 3 characters.",
+    "causal": {
+      "title": "Causal graph",
+      "subtitle": "Butterfly Engine: why did it happen?",
+      "anomaly": "Anomaly",
+      "place": "Where",
+      "trace": "Trace causes",
+      "running": "Tracing…",
+      "error": "The Butterfly Engine could not run (services/causal/.venv).",
+      "empty": "No trace yet. Pick an anomaly and press Trace causes.",
+      "anomalies": {
+        "gold": "Gold price spike",
+        "btc": "Bitcoin price spike",
+        "oil": "Oil price move",
+        "ship": "Ship delay / deviation",
+        "congestion": "Port congestion"
+      },
+      "places": {
+        "none": "Anywhere",
+        "hormuz": "Strait of Hormuz",
+        "suez": "Suez Canal",
+        "bab-el-mandeb": "Bab-el-Mandeb",
+        "malacca": "Strait of Malacca",
+        "panama": "Panama Canal",
+        "jebel-ali": "Jebel Ali"
+      },
+      "evidence": {
+        "data": "tested on market data",
+        "live": "observed live nearby",
+        "prior": "prior only"
+      },
+      "confidence": "Confidence",
+      "scenarios": {
+        "title": "Scenarios",
+        "subtitle": "Monte Carlo over the causes, after a Bayesian update on the evidence",
+        "tail": "tail risk",
+        "legend": "Bar length = probability; brighter = more confident; range = 10th to 90th percentile of the move."
+      }
+    },
+    "director": {
+      "title": "Ask Director 00",
+      "lead": "Runs on this laptop, no Docker needed. \"Why\" questions answer at once with the Butterfly Engine; anything that would change memory or send something waits in your approval inbox.",
+      "placeholder": "Why did oil move near Hormuz? · remember: …",
+      "pin": "PIN",
+      "ask": "Ask",
+      "asking": "Thinking…",
+      "confidence": "Confidence {pct}%",
+      "recalled": "From memory",
+      "waiting": "This became a proposal and is waiting for your approval.",
+      "openInbox": "Open the inbox",
+      "offline": "The laptop can't be reached.",
+      "failed": "Director 00 couldn't answer."
+    }
+  },
+  "earth": {
+    "title": "Earth",
+    "nodes": "Logistics nodes",
+    "alerts": "Live alerts",
+    "noAlerts": "Quiet. Fast-path alerts stream in here.",
+    "types": {
+      "strait": "Strait",
+      "canal": "Canal",
+      "port": "Port"
+    },
+    "basemap": "Base map",
+    "layers": {
+      "satellite": "Satellite",
+      "map": "Map"
+    },
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "radar": "Live radar",
+    "terrain": "3D terrain",
+    "feeds": {
+      "flights": "Flights (ADS-B)",
+      "ships": "Ships (AIS)",
+      "cams": "Public webcams",
+      "hazards": "Hazards (USGS, NASA)",
+      "events": "World events (GDELT)",
+      "gkg": "News hotspots (GKG)",
+      "sats": "Satellites (CelesTrak)",
+      "mil": "Military aircraft (adsb.lol)",
+      "launches": "Rocket launches (Launch Library)"
+    },
+    "needsKey": "needs free key",
+    "myLocation": "My location",
+    "locationDenied": "not allowed",
+    "pop": {
+      "type": "Type",
+      "reg": "Reg",
+      "alt": "Altitude",
+      "ground": "on ground",
+      "speed": "Speed",
+      "heading": "Heading",
+      "kind": "Type",
+      "magnitude": "Magnitude",
+      "when": "When",
+      "source": "Source",
+      "tone": "Tone",
+      "reports": "Reports",
+      "persons": "People",
+      "orgs": "Organisations",
+      "themes": "Themes",
+      "satGroup": "Group",
+      "period": "Orbit",
+      "launch": "Launch ID",
+      "camNews": "Around this camera",
+      "camQuiet": "No recorded events near it right now.",
+      "military": "Military aircraft",
+      "provider": "Provider",
+      "pad": "Launch pad",
+      "status": "Status"
+    },
+    "subtitle": "Live 3D globe: aircraft, ships, public webcams and day/night, from open data.",
+    "tabs": {
+      "cams": "Cameras",
+      "flights": "Flights",
+      "ships": "Ships",
+      "nodes": "Nodes",
+      "alerts": "Alerts",
+      "hazards": "Hazards",
+      "events": "Events"
+    },
+    "openLive": "Open live",
+    "close": "Close",
+    "loading": "Loading…",
+    "liveTag": "Live",
+    "empty": {
+      "cams": "No public webcams in this view yet.",
+      "flights": "No aircraft in this view. Zoom into a region.",
+      "ships": "No ships in this view yet.",
+      "hazards": "No active hazards reported.",
+      "events": "No geolocated events in the last hour yet."
+    },
+    "keyHint": "Add the free key in web/.env.local, then restart the app.",
+    "fx": {
+      "night": "Day/night",
+      "spin": "Spin",
+      "ar": "AR",
+      "arDenied": "AR blocked"
+    },
+    "gl": {
+      "title": "3D view paused",
+      "body": "The browser could not start WebGL2 (the graphics card was busy or reset). Reload to try again; closing other heavy tabs helps.",
+      "reload": "Reload"
+    },
+    "hazardKinds": {
+      "earthquake": "Earthquake",
+      "wildfires": "Wildfire",
+      "volcanoes": "Volcano",
+      "severeStorms": "Storm",
+      "floods": "Flood",
+      "drought": "Drought",
+      "dustHaze": "Dust/haze",
+      "landslides": "Landslide",
+      "tempExtremes": "Extreme heat/cold",
+      "firePixel": "VIIRS fire pixel",
+      "cyclone": "Cyclone"
+    },
+    "openSource": "Open source article",
+    "eventKinds": {
+      "conflict": "Conflict",
+      "protest": "Protest",
+      "tension": "Tension",
+      "cooperation": "Cooperation",
+      "other": "Event"
+    },
+    "filterKinds": "Filter event types",
+    "gkgTitle": "In the news now (GDELT GKG)",
+    "firms": {
+      "missing": "NASA FIRMS fire pixels: key not configured. Add NASA_FIRMS_KEY to web/.env.local.",
+      "error": "NASA FIRMS is unreachable or the key was refused; other hazards still update."
+    },
+    "truth": {
+      "onlyVerified": "Verified only ({n} of {total})"
+    },
+    "satGroups": {
+      "stations": "Space station",
+      "visual": "Naked-eye satellite",
+      "weather": "Weather satellite",
+      "gps-ops": "GPS satellite"
+    }
+  },
+  "severity": {
+    "watch": "Watch",
+    "high": "High"
+  },
+  "send": {
+    "title": "Send to Director 00",
+    "lead": "A note, task, link or file from your phone. It waits in the approval inbox until you approve it; nothing runs on its own.",
+    "kind": "What are you sending",
+    "kinds": {
+      "note": "Note",
+      "task": "Task",
+      "link": "Link"
+    },
+    "url": "Link",
+    "comment": "Why it matters (optional)",
+    "taskText": "What needs doing",
+    "noteText": "Your note",
+    "attach": "Attach a photo, PDF, Word, Excel or PowerPoint file",
+    "remove": "Remove",
+    "fileHint": "Up to 8 MB",
+    "pin": "PIN",
+    "submit": "Send",
+    "sending": "Sending…",
+    "sent": "Sent. Waiting for your approval as",
+    "openInbox": "Open the inbox",
+    "offline": "The laptop can't be reached. Check you're on the same Wi-Fi.",
+    "failed": "Sending failed",
+    "safety": "Files are checked by their contents and stored only; they are never opened or run.",
+    "library": "Open your library"
+  },
+  "atlas": {
+    "title": "Awesome atlas",
+    "lead": "{total} curated awesome-lists of open-source tools and resources, searchable offline.",
+    "updated": "Updated {date}.",
+    "search": "Search: machine learning, security, Python…",
+    "all": "All",
+    "empty": "No list matches. Try a broader word.",
+    "keep": "Send to inbox",
+    "credit": "From sindresorhus/awesome (CC0). Lists link to GitHub; nothing is installed from here.",
+    "open": "Find tools in the Awesome atlas"
+  },
+  "network": {
+    "title": "Nervous system",
+    "lead": "Every part of OMEGA as one network: {nodes} parts, {edges} connections.",
+    "status": "Now: {up} healthy, {down} down, {key} waiting for a key.",
+    "search": "Find a part…",
+    "atlas": "Show atlas categories",
+    "reset": "Reset view",
+    "pick": "Click any node to see what it does and what it connects to.",
+    "open": "Open",
+    "links": "Connections ({n})",
+    "kinds": {
+      "core": "Core",
+      "screen": "Screens",
+      "service": "Services",
+      "store": "Data stores",
+      "infra": "Infrastructure",
+      "mcp": "Claude tools",
+      "feed": "Data feeds",
+      "atlas": "Atlas categories"
+    },
+    "states": {
+      "up": "Healthy",
+      "idle": "Idle",
+      "down": "Down",
+      "unknown": "Unknown",
+      "needs-key": "Needs a key",
+      "static": "Always on"
+    },
+    "out": {
+      "uses": "uses",
+      "calls": "calls",
+      "guards": "approves",
+      "shows": "shows",
+      "feeds": "feeds",
+      "stores": "writes to",
+      "heals": "watches",
+      "depends": "runs"
+    },
+    "in": {
+      "uses": "used by",
+      "calls": "called by",
+      "guards": "approved by",
+      "shows": "shown in",
+      "feeds": "fed by",
+      "stores": "written by",
+      "heals": "watched by",
+      "depends": "runs on"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "lead": "Everything you sent from the phone. Word, Excel and PowerPoint open right here; photos live in Immich.",
+    "pin": "PIN",
+    "needPin": "Enter your PIN to open the library.",
+    "tabs": {
+      "documents": "Documents",
+      "photos": "Photos"
+    },
+    "exportExcel": "Ledger to Excel",
+    "exportWord": "Ledger to Word",
+    "empty": "Nothing yet. Files you send from the phone appear here.",
+    "pick": "Pick a file to preview it.",
+    "loading": "Opening…",
+    "truncated": "Showing the first 200 rows and 30 columns.",
+    "slide": "Slide {n}",
+    "noPreview": "No preview for this type. It's stored safely in the inbox folder on the laptop.",
+    "offline": "The laptop can't be reached.",
+    "failed": "Couldn't open that.",
+    "noPhotos": "Immich is running but has no photos yet. Photos you send from the phone will land here.",
+    "types": {
+      "word": "Word",
+      "excel": "Excel",
+      "powerpoint": "PowerPoint",
+      "pdf": "PDF",
+      "image": "Photo",
+      "text": "Text",
+      "file": "File"
+    },
+    "immich": {
+      "not-configured": {
+        "title": "Photos are waiting for Docker",
+        "body": "Immich needs Docker. Once Docker runs: docker compose --profile photos up -d, create an API key in Immich, and add IMMICH_API_KEY to web/.env.local. Photos you send from then on are stored here too."
+      },
+      "offline": {
+        "title": "Immich isn't answering",
+        "body": "It is configured but not running. Start it with: docker compose --profile photos up -d"
+      },
+      "misconfigured": {
+        "title": "Immich address is not allowed",
+        "body": "IMMICH_URL must point at this laptop (127.0.0.1) so the API key never leaves it."
+      },
+      "error": {
+        "title": "Immich returned an error",
+        "body": "Check that the API key in web/.env.local is still valid."
+      }
+    },
+    "exportSlides": "Briefing to PowerPoint"
+  },
+  "review": {
+    "title": "Review",
+    "lead": "The judgement calls OMEGA runs on. Approve each one when it looks right; if it changes later, it shows as changed until you look again.",
+    "pin": "PIN",
+    "needPin": "Enter your PIN to open the review.",
+    "offline": "The laptop can't be reached.",
+    "failed": "Couldn't load the review.",
+    "approve": "Looks right",
+    "saved": "I saved it",
+    "approved": "Approved {date}",
+    "changed": "Changed since your review",
+    "notYet": "Not reviewed yet",
+    "sources": {
+      "title": "News source trust",
+      "lead": "How much the Truth Layer trusts each kind of outlet before other sources confirm a story. A story needs 0.7 or more to show as verified.",
+      "count": "{n} sites",
+      "tiers": {
+        "wire": "News agencies",
+        "record": "Major newspapers",
+        "public": "Public broadcasters",
+        "official": "Official sources",
+        "specialist": "Trade and data press",
+        "state_controlled": "State-controlled media",
+        "satire": "Satire",
+        "unknown": "Anything not listed"
+      }
+    },
+    "butterfly": {
+      "title": "Butterfly Engine assumptions",
+      "lead": "Starting numbers for the cause-and-effect scenarios. They are judgement, not fitted from data, so every probability depends on them.",
+      "keys": {
+        "root_prior": "Chance any one root cause is active",
+        "data_supports": "Data supports a link",
+        "data_refutes": "Data contradicts a link",
+        "live_seen": "Seen live nearby",
+        "live_not_seen": "Not seen live",
+        "prior_only": "No data yet",
+        "runs": "Simulation runs"
+      }
+    },
+    "restic": {
+      "title": "Backup password",
+      "lead": "Backups are encrypted with RESTIC_PASSWORD from giant-core/.env on the laptop. Without it they can't be restored. Save it in a password manager, then confirm here."
+    },
+    "sweeper": {
+      "title": "Profit Sweeper rules",
+      "lead": "When a position is up at least the threshold, this share of the gain is proposed for the reserve, if the amount is worth a transaction. You can edit them here; each edit needs your approval again.",
+      "keys": {
+        "min_gain_pct": "Sweep when gain is at least",
+        "sweep_share": "Share of the gain to set aside",
+        "min_sweep_usd": "Smallest sweep",
+        "reserve": "Reserve currency"
+      },
+      "edit": "Edit rules",
+      "save": "Save rules",
+      "cancel": "Cancel",
+      "afterSave": "After saving, approve the new version below.",
+      "units": {
+        "min_gain_pct": "%",
+        "sweep_share": "% of the gain",
+        "min_sweep_usd": "amount"
+      }
+    },
+    "keys": {
+      "title": "Data keys",
+      "lead": "Free keys that switch on extra live data. Put them in web/.env.local on the laptop, then tap the button: they load without a restart and each one is tested.",
+      "test": "Load and test keys",
+      "testing": "Testing…",
+      "failed": "Couldn't test the keys.",
+      "set": "Filled in",
+      "empty": "Empty",
+      "signup": "Get a key",
+      "where": "Keys stay on the laptop. This screen never shows their values.",
+      "verdict": {
+        "ok": "Working",
+        "invalid": "Rejected by the service",
+        "unreachable": "Couldn't confirm",
+        "not-set": "Empty"
+      }
+    }
+  },
+  "pulse": {
+    "live": "Live",
+    "local": "Local",
+    "search": "Command (Ctrl+K)",
+    "inbox": "{n} waiting for approval"
+  },
+  "command": {
+    "title": "Command Center",
+    "lead": "Everything at a glance. Tell Director 00 what you need from one place.",
+    "loading": "Loading…",
+    "cards": {
+      "earth": {
+        "title": "Earth",
+        "stat": "{events} events · {hazards} hazards · {planes} planes over the Gulf",
+        "ships": "{n} ships tracked",
+        "noShips": "Ships appear once the AIS key is added"
+      },
+      "market": {
+        "title": "Market",
+        "detail": "Charts, prices and the Profit Sweeper. Opens the full Market screen."
+      },
+      "network": {
+        "title": "Nervous system",
+        "stat": "{nodes} parts · {edges} connections",
+        "down": "{n} part(s) down: open to see which",
+        "allOk": "Every running part is answering"
+      },
+      "docs": {
+        "title": "Library",
+        "stat": "{n} files",
+        "private": "Private: enter your PIN in the command bar",
+        "detail": "Word, Excel and PowerPoint open in place; briefings land here at 07:00."
+      }
+    },
+    "docs": {
+      "locked": "Enter your PIN in the command bar once to see your latest files here.",
+      "empty": "Nothing yet.",
+      "types": {
+        "word": "Word",
+        "excel": "Excel",
+        "powerpoint": "PowerPoint",
+        "pdf": "PDF",
+        "image": "Photo",
+        "text": "Text",
+        "file": "File"
+      },
+      "export": {
+        "xlsx": "Ledger → Excel",
+        "docx": "Ledger → Word",
+        "pptx": "Briefing → PowerPoint"
+      }
+    },
+    "bar": {
+      "title": "Command bar",
+      "placeholder": "Ask Director 00… add a screen, analyse gold, show the reports",
+      "pin": "PIN",
+      "voice": "Dictate",
+      "attach": "Attach a file",
+      "propose": "Propose",
+      "execute": "Execute",
+      "thinking": "Thinking…",
+      "sending": "Sending…",
+      "enterHint": "propose",
+      "ctrlEnterHint": "execute (after your approval)",
+      "queued": "Sent for your approval as",
+      "openInbox": "Open the inbox",
+      "confidence": "Confidence {pct}%",
+      "offline": "The laptop can't be reached.",
+      "failed": "Director 00 couldn't take that.",
+      "noVoice": "Voice input isn't available in this browser.",
+      "examples": {
+        "0": "Why did gold move near Hormuz?",
+        "1": "Add a screen for crypto",
+        "2": "Show me the performance report",
+        "3": "Alert me when Bitcoin hits 100k"
+      }
+    },
+    "status": {
+      "director": "Director: {n} pending",
+      "phoenix": "Phoenix",
+      "phoenixState": {
+        "ok": "OK",
+        "down": "attention",
+        "unknown": "—"
+      },
+      "memory": "Memory: {n}",
+      "live": "Live",
+      "local": "Local only",
+      "updated": "Updated {s}s ago",
+      "loading": "Checking…"
+    },
+    "keys": {
+      "command": "command bar",
+      "screens": "screens",
+      "close": "close"
+    }
+  },
+  "vault": {
+    "title": "Keys Vault",
+    "lead": "Paste your keys here. The laptop stores them encrypted and tests them.",
+    "status": {
+      "checking": "Checking the link…",
+      "ok": "Connected to the laptop · link valid",
+      "expired": "This link has expired. Ask for a new one.",
+      "used": "This link was already used.",
+      "missing": "No vault link is open on the laptop.",
+      "wrong": "This link is not valid.",
+      "offline": "Can't reach the laptop. Are you on the home Wi-Fi?"
+    },
+    "paste": "Paste",
+    "pin": "PIN",
+    "save": "Save and encrypt",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "offline": "Can't reach the laptop.",
+    "failed": "Saving failed.",
+    "noClipboard": "The browser didn't allow pasting. Long-press the field and paste instead.",
+    "verdict": {
+      "ok": "WORKING",
+      "invalid": "REJECTED",
+      "unreachable": "COULDN'T CONFIRM",
+      "not-set": "empty"
+    },
+    "wipe": "This page clears itself in {s} s.",
+    "safety": "The link works once, for 10 minutes. Keys are encrypted on the laptop, never logged, and cleared from this page as soon as you tap save."
+  },
+  "oracle": {
+    "title": "Oracle",
+    "free": "Free",
+    "pin": "PIN",
+    "lead": "Ask anything. It searches Google, Bing and others, reads OMEGA's live signals, and answers with sources, using free open-source models.",
+    "placeholder": "What do you want to know?",
+    "ask": "Ask",
+    "thinking": "Thinking...",
+    "working": "Sources found; the model is writing the answer...",
+    "offline": "Couldn't reach the laptop.",
+    "samples": {
+      "s1": "What is happening in the Strait of Hormuz today?",
+      "s2": "Why is gold moving?",
+      "s3": "Latest oil price news"
+    },
+    "by": "Answered by {model}",
+    "noModel": "The model did not answer; search results only",
+    "untrusted": "Sources come from the web; check them before relying on them.",
+    "tagline": "Searches the web, reads OMEGA's signals, answers with sources",
+    "steps": {
+      "searching": "Searching the web",
+      "thinking": "Thinking and writing",
+      "done": "Answer ready"
+    }
+  },
+  "deep": {
+    "title": "Deep Research",
+    "hint": "Agents plan, search six free open sources, read the pages, rank the evidence, then write an answer where every sentence is tied to its source and checked.",
+    "placeholder": "Ask anything… e.g. How would a Hormuz closure move oil prices?",
+    "go": "Research",
+    "working": "Agents working…",
+    "quick": "Quick",
+    "deep": "Deep",
+    "depth": "Research depth",
+    "tooShort": "Type at least three characters.",
+    "error": "Research failed",
+    "confidence": "Confidence",
+    "stats": "{sources} sources from {domains} sites, {read} pages read, {secs}s",
+    "extractive": "Extractive mode: no language model",
+    "audit": "Show verification",
+    "legend": "Dotted amber: weak support. Wavy red: source does not back the sentence. Grey: sentence without a source.",
+    "sources": "Sources",
+    "quote": "Passage used",
+    "disclaimer": "Decision aid only. Open the source and check it yourself before acting."
+  }
+}

@@ -1,0 +1,392 @@
+[
+  {
+    "id": "omegaSentinel01",
+    "name": "OMEGA · Market Sentinel",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Asia/Kuwait",
+      "saveDataSuccessExecution": "none",
+      "saveDataErrorExecution": "all"
+    },
+    "nodes": [
+      {
+        "id": "s1",
+        "name": "Every minute",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "name": "Plan requests",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Which pairs the Sentinel watches. Keep in sync with OMEGA_SYMBOLS in .env (the relay's allowlist).\nconst SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];\n// First production run back-fills ~16h so the 24h baseline is useful immediately; after that,\n// a few candles per minute self-heal short gaps. Upserts make repeats harmless.\nconst mem = $getWorkflowStaticData('global');\nconst limit = mem.backfilled ? 5 : 1000;   // the Heartbeat node sets the flag once a store succeeds\nreturn SYMBOLS.map(symbol => ({ json: { symbol, limit } }));\n"
+        }
+      },
+      {
+        "id": "s3",
+        "name": "Binance klines",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          440,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "https://api.binance.com/api/v3/klines",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "symbol",
+                "value": "={{ $json.symbol }}"
+              },
+              {
+                "name": "interval",
+                "value": "1m"
+              },
+              {
+                "name": "limit",
+                "value": "={{ $json.limit }}"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 15000,
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "s4",
+        "name": "Closed candles",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          660,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Binance kline: [openTime, o, h, l, c, v, closeTime, quoteVol, trades, ...]. Keep CLOSED candles only.\nconst plan = $('Plan requests').all();\nconst now = Date.now();\nconst candles = [];\nconst summary = [];\n$input.all().forEach((item, i) => {\n  const symbol = plan[i].json.symbol;\n  const rows = JSON.parse(item.json.data);\n  if (!Array.isArray(rows)) throw new Error(`Binance returned no klines for ${symbol}`);\n  const closed = rows.filter(k => Number(k[6]) < now);\n  for (const k of closed) {\n    candles.push({ s: symbol, t: Number(k[0]), o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], q: +k[7], n: Number(k[8]) });\n  }\n  const last = closed[closed.length - 1];\n  if (last) summary.push({ symbol, close: +last[4], ts: new Date(Number(last[0])).toISOString() });\n});\nif (!candles.length) throw new Error('No closed candles to store');\nreturn [{ json: { candles, summary } }];\n"
+        }
+      },
+      {
+        "id": "s5",
+        "name": "Store + detect (Timescale)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          880,
+          0
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT * FROM market.ingest($1::jsonb);",
+          "options": {
+            "queryReplacement": "={{ [JSON.stringify($json.candles)] }}"
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "omegaTimescale",
+            "name": "OMEGA Timescale (sentinel_writer)"
+          }
+        },
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "id": "s6",
+        "name": "Heartbeat",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          -120
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// One heartbeat per run: the Constellation animates Binance → n8n → Timescale → Ops Room on this.\n$getWorkflowStaticData('global').backfilled = true;   // memory now holds a baseline\nconst anomalies = $input.all().filter(i => i.json.id !== undefined).length;\nconst src = $('Closed candles').first().json;\nreturn [{ json: { symbols: src.summary, stored: src.candles.length, anomalies } }];\n"
+        }
+      },
+      {
+        "id": "s7",
+        "name": "Pulse Ops Room",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1320,
+          -120
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://relay:8080/ingest/pulse",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json) }}",
+          "options": {
+            "timeout": 5000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "omegaRelayAuth",
+            "name": "OMEGA relay token"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "id": "s8",
+        "name": "Anomaly?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          100
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "number",
+                  "operation": "exists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "s9",
+        "name": "Flare Ops Room",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1320,
+          20
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://relay:8080/ingest/anomaly",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ id: $json.id, ts: $json.ts, symbol: $json.symbol, kind: $json.kind, severity: $json.severity, price: $json.price, value: $json.value, baseline: $json.baseline, zscore: $json.zscore, reason: $json.reason }) }}",
+          "options": {
+            "timeout": 5000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "omegaRelayAuth",
+            "name": "OMEGA relay token"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "id": "s10",
+        "name": "Format Telegram",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1320,
+          200
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// One Telegram message per symbol per run, however many rules fired (HTML parse mode, all text escaped).\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst LABEL = { price_shock: 'Price shock', volume_spike: 'Volume spike', drawdown_1h: '1h drawdown' };\nconst bySymbol = {};\nfor (const { json: a } of $input.all()) (bySymbol[a.symbol] ||= []).push(a);\nreturn Object.entries(bySymbol).map(([symbol, list]) => {\n  const high = list.some(a => a.severity === 'high');\n  const a0 = list[0];\n  const when = new Date(a0.ts).toLocaleString('en-GB', { timeZone: 'Asia/Kuwait', hour12: false });\n  const p = Number(a0.price);\n  const price = p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: p >= 100 ? 2 : 4 });\n  const lines = list.map(a => `${a.severity === 'high' ? '▲' : '•'} <b>${esc(LABEL[a.kind] || a.kind)}</b>: ${esc(a.reason)}`);\n  const text = `${high ? '🔴' : '🟠'} <b>OMEGA SENTINEL · ${esc(symbol)}</b> · ${high ? 'HIGH' : 'WATCH'}\\n` +\n    `${lines.join('\\n')}\\nPrice <code>${esc(price)}</code>\\n<i>${esc(when)} Kuwait</i>`;\n  return { json: { symbol, text } };\n});\n"
+        }
+      },
+      {
+        "id": "s11",
+        "name": "Telegram → Architect",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1540,
+          200
+        ],
+        "parameters": {
+          "chatId": "__TELEGRAM_CHAT_ID__",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": true
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "omegaTelegram",
+            "name": "OMEGA Telegram bot"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000,
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Every minute": {
+        "main": [
+          [
+            {
+              "node": "Plan requests",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Plan requests": {
+        "main": [
+          [
+            {
+              "node": "Binance klines",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Binance klines": {
+        "main": [
+          [
+            {
+              "node": "Closed candles",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Closed candles": {
+        "main": [
+          [
+            {
+              "node": "Store + detect (Timescale)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Store + detect (Timescale)": {
+        "main": [
+          [
+            {
+              "node": "Heartbeat",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Anomaly?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Heartbeat": {
+        "main": [
+          [
+            {
+              "node": "Pulse Ops Room",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Anomaly?": {
+        "main": [
+          [
+            {
+              "node": "Flare Ops Room",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Format Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Format Telegram": {
+        "main": [
+          [
+            {
+              "node": "Telegram → Architect",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {}
+  }
+]

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "omega-sentinel",
+  "display_name": "OMEGA Sentinel",
+  "version": "0.2.0",
+  "description": "Read-only window into your local OMEGA PRIME: market, alerts, world events, ships, oil signals, strategies, and private web search.",
+  "long_description": "Lets Claude query the OMEGA stack and site running on this machine. Every tool is read-only and talks only to 127.0.0.1: the relay, the OMEGA web app (public routes, no PIN) and the private SearXNG search, which reaches Google, Bing, DuckDuckGo, Brave and Wikipedia without any key. It holds no API keys and cannot place orders, approve proposals or write anything. Web results are untrusted content.",
+  "author": {
+    "name": "ahmed974x",
+    "url": "https://github.com/ahmed974x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahmed974x/giant-core"
+  },
+  "license": "Apache-2.0",
+  "icon": "icon.png",
+  "keywords": [
+    "crypto",
+    "market",
+    "alerts",
+    "omega",
+    "timescale",
+    "search",
+    "osint",
+    "oil"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "OMEGA_URL": "${user_config.omega_url}",
+        "OMEGA_SITE_URL": "${user_config.site_url}",
+        "OMEGA_SEARCH_URL": "${user_config.search_url}"
+      }
+    }
+  },
+  "user_config": {
+    "omega_url": {
+      "type": "string",
+      "title": "OMEGA relay URL",
+      "description": "Where the OMEGA dashboard runs on this machine. Must be 127.0.0.1 or localhost.",
+      "default": "http://127.0.0.1:8088",
+      "required": true
+    },
+    "site_url": {
+      "type": "string",
+      "title": "OMEGA site URL",
+      "description": "The OMEGA web app on this machine. Must be 127.0.0.1 or localhost.",
+      "default": "http://127.0.0.1:3100",
+      "required": true
+    },
+    "search_url": {
+      "type": "string",
+      "title": "SearXNG URL",
+      "description": "The private SearXNG search on this machine. Must be 127.0.0.1 or localhost.",
+      "default": "http://127.0.0.1:8890",
+      "required": true
+    }
+  },
+  "tools": [
+    {
+      "name": "sentinel_market_snapshot",
+      "description": "Latest price, 1h/24h change and 24h volume per tracked pair"
+    },
+    {
+      "name": "sentinel_list_alerts",
+      "description": "Detected price shocks, volume spikes and drawdowns, filterable"
+    },
+    {
+      "name": "sentinel_price_history",
+      "description": "Summarised price curve and stats for one pair over up to 7 days"
+    },
+    {
+      "name": "sentinel_system_status",
+      "description": "Health of relay, n8n, PostgREST and Timescale"
+    },
+    {
+      "name": "omega_world_pulse",
+      "description": "Market-moving events with asset leans and source URLs"
+    },
+    {
+      "name": "omega_hazards",
+      "description": "Earthquakes, wildfires, fire pixels and cyclones"
+    },
+    {
+      "name": "omega_oil_watch",
+      "description": "Tanker flow and Gulf oil-site fire signal"
+    },
+    {
+      "name": "omega_news_hotspots",
+      "description": "Places most in the news this hour"
+    },
+    {
+      "name": "omega_director_inbox",
+      "description": "Proposals waiting for approval (read-only)"
+    },
+    {
+      "name": "omega_ships",
+      "description": "Live ships near a point"
+    },
+    {
+      "name": "omega_flights",
+      "description": "Live aircraft near a point"
+    },
+    {
+      "name": "omega_candles",
+      "description": "Price candles for BTC, ETH, SOL, gold"
+    },
+    {
+      "name": "omega_strategies",
+      "description": "Strategy backtests and today's signals"
+    },
+    {
+      "name": "web_search",
+      "description": "Private web search via SearXNG (Google, Bing, DDG...)"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "market_brief",
+      "description": "Short briefing on the market and the alerts that matter",
+      "arguments": [
+        "hours"
+      ],
+      "text": "Brief me on the last ${arguments.hours} hours using the OMEGA Sentinel tools."
+    }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  }
+}

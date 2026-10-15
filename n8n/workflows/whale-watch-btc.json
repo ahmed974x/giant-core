@@ -1,0 +1,384 @@
+[
+  {
+    "id": "omegaWhaleBtc01",
+    "name": "OMEGA · Whale Watch BTC",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Asia/Kuwait",
+      "saveDataSuccessExecution": "none",
+      "saveDataErrorExecution": "all"
+    },
+    "nodes": [
+      {
+        "id": "b1",
+        "name": "Every minute",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "b2",
+        "name": "Plan",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          220,
+          0
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT chain.plan('btc') AS plan;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "omegaTimescale",
+            "name": "OMEGA Timescale (sentinel_writer)"
+          }
+        },
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "id": "b3",
+        "name": "BTC tip",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          440,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "__OMEGA_BTC_API__/latestblock",
+          "options": {
+            "timeout": 15000,
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "b4",
+        "name": "Pick blocks",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          660,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Blocks to read this run: everything after the cursor, at most 2 per run (each is several MB).\n// A fresh install starts at the current tip; it does not replay history.\nconst plan = $('Plan').first().json.plan;\nconst tip = Number(JSON.parse($input.first().json.data).height);\nif (!plan || !plan.ready) return [];          // Market Sentinel has no BTC price yet\nif (!Number.isInteger(tip)) throw new Error('No tip height from the BTC source');\nconst MAX = 2;\nconst from = plan.cursor == null ? tip : Number(plan.cursor) + 1;\nconst through = Math.min(tip, from + MAX - 1);\nconst out = [];\nfor (let h = from; h <= through; h++) out.push({ json: { height: h } });\nreturn out;\n"
+        }
+      },
+      {
+        "id": "b5",
+        "name": "BTC block",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          880,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=__OMEGA_BTC_API__/block-height/{{ $json.height }}?format=json",
+          "options": {
+            "timeout": 60000,
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "b6",
+        "name": "Whale candidates",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// UTXO maths: a tx \"moves\" the sum of outputs that do NOT return to one of its own input addresses\n// (change). Coinbase is skipped. Only moves above the store floor (from chain.plan) leave n8n.\nconst plan = $('Plan').first().json.plan;\nconst floorSats = Math.floor(plan.assets.find(a => a.asset === 'BTC').floor * 1e8);\nconst heights = $('Pick blocks').all().map(i => i.json.height);\nconst btc = sats => `${Math.floor(sats / 1e8)}.${String(sats % 1e8).padStart(8, '0')}`;\nconst transfers = [];\nlet through = null;\n$input.all().forEach((item, k) => {\n  const want = heights[k];\n  const block = (JSON.parse(item.json.data).blocks || []).find(b => b.main_chain && b.height === want);\n  if (!block) throw new Error(`Block ${want} missing from the BTC source`);\n  for (const tx of block.tx || []) {\n    const ins = tx.inputs || [];\n    if (!ins.length || !ins[0].prev_out) continue;                       // coinbase\n    const from = new Map();\n    for (const i of ins) if (i.prev_out && i.prev_out.addr) from.set(i.prev_out.addr, (from.get(i.prev_out.addr) || 0) + i.prev_out.value);\n    if (!from.size) continue;\n    const outs = (tx.out || []).filter(o => o.addr && o.value > 0 && !from.has(o.addr)).sort((a, b) => b.value - a.value);\n    const sats = outs.reduce((s, o) => s + o.value, 0);\n    if (!outs.length || sats < floorSats) continue;\n    transfers.push({\n      h: tx.hash, i: 0, a: 'BTC', q: btc(sats), t: block.time * 1000, b: block.height,\n      f: [...from.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]).slice(0, 20),\n      o: [...new Set(outs.map(o => o.addr))].slice(0, 20),\n    });\n  }\n  through = Math.max(through ?? 0, block.height);\n});\nreturn [{ json: { through, transfers } }];\n"
+        }
+      },
+      {
+        "id": "b7",
+        "name": "Store + judge (Timescale)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1320,
+          0
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT * FROM chain.ingest('btc', $1::bigint, $2::jsonb);",
+          "options": {
+            "queryReplacement": "={{ [$json.through, JSON.stringify($json.transfers)] }}"
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "omegaTimescale",
+            "name": "OMEGA Timescale (sentinel_writer)"
+          }
+        },
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "id": "b8",
+        "name": "Whale?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1540,
+          0
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "number",
+                  "operation": "exists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "b9",
+        "name": "Flare Constellation",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1760,
+          -100
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://relay:8080/ingest/whale",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ id: $json.id, ts: $json.ts, chain: $json.chain, block: $json.block, tx_hash: $json.tx_hash, asset: $json.asset, amount: $json.amount, usd_value: $json.usd_value, from_addr: $json.from_addr, to_addr: $json.to_addr, from_entity: $json.from_entity, to_entity: $json.to_entity, verdict: $json.verdict, severity: $json.severity, reason: $json.reason }) }}",
+          "options": {
+            "timeout": 5000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "omegaRelayAuth",
+            "name": "OMEGA relay token"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "id": "b10",
+        "name": "Format Telegram",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1760,
+          100
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "language": "javaScript",
+          "jsCode": "// Telegram gets severity HIGH only; the Constellation gets everything. HTML parse mode, all text escaped.\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst LINK = { btc: h => `https://mempool.space/tx/${h}`, eth: h => `https://etherscan.io/tx/${h}` };\nreturn $input.all().filter(i => i.json.severity === 'high').map(({ json: w }) => {\n  const when = new Date(w.ts).toLocaleString('en-GB', { timeZone: 'Asia/Kuwait', hour12: false });\n  const text = `🐋 <b>OMEGA WHALE · ${esc(String(w.chain).toUpperCase())}</b> · HIGH\\n${esc(w.reason)}\\n` +\n    `<a href=\"${esc(LINK[w.chain](w.tx_hash))}\">View transaction</a>\\n<i>${esc(when)} Kuwait</i>`;\n  return { json: { text } };\n});\n"
+        }
+      },
+      {
+        "id": "b11",
+        "name": "Telegram → Architect",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1980,
+          100
+        ],
+        "parameters": {
+          "chatId": "__TELEGRAM_CHAT_ID__",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": true
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "omegaTelegram",
+            "name": "OMEGA Telegram bot"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000,
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Every minute": {
+        "main": [
+          [
+            {
+              "node": "Plan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Plan": {
+        "main": [
+          [
+            {
+              "node": "BTC tip",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "BTC tip": {
+        "main": [
+          [
+            {
+              "node": "Pick blocks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pick blocks": {
+        "main": [
+          [
+            {
+              "node": "BTC block",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "BTC block": {
+        "main": [
+          [
+            {
+              "node": "Whale candidates",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whale candidates": {
+        "main": [
+          [
+            {
+              "node": "Store + judge (Timescale)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Store + judge (Timescale)": {
+        "main": [
+          [
+            {
+              "node": "Whale?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whale?": {
+        "main": [
+          [
+            {
+              "node": "Flare Constellation",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Format Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Telegram": {
+        "main": [
+          [
+            {
+              "node": "Telegram → Architect",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {}
+  }
+]

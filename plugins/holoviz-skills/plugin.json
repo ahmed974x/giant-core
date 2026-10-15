@@ -1,0 +1,10 @@
+{
+  "id": "holoviz-skills",
+  "name": "HoloViz skills",
+  "kind": "skill",
+  "version": "1.0.0",
+  "description": "Official Panel, Panel Material UI, hvPlot and Param agent skills that guide Claude when building dashboards.",
+  "entry": ".claude/skills/panel/SKILL.md",
+  "requires": [],
+  "enabled": true
+}

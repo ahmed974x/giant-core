@@ -1,0 +1,14 @@
+{
+  "id": "whale-watch",
+  "name": "Whale Watch",
+  "kind": "workflow",
+  "version": "1.0.0",
+  "description": "BTC and ETH blocks scanned for transfers of $50M or more, labelled and alerted.",
+  "entry": "n8n/workflows/whale-watch-btc.json",
+  "requires": [
+    "n8n",
+    "timescale",
+    "relay"
+  ],
+  "enabled": true
+}

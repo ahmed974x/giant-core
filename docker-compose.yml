@@ -1,0 +1,718 @@
+# OMEGA · Pre-Cog Syndicate — one local stack
+#
+#   timescale    memory core: 1-min candles (hypertable) + anomaly detection in SQL
+#   db-migrate   one-shot on every `up`: applies any db/init script an older volume has not seen yet
+#   postgrest    read-only API over the api.* views
+#   n8n          every minute: Binance klines → Timescale → pulse/anomaly → relay + Telegram
+#                every 10 min: free RSS news + Fear & Greed → Timescale → scored by cortex → relay + Telegram
+#                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
+#   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
+#   geo          PostGIS: logistics nodes + vessel geometry, bilingual (AR/EN)   (--profile geo)
+#   redis        hot cache + pub/sub for live map and tickers                     (--profile geo)
+#   agents       workforce: Sentinel, Analyst, Scout (asks before adding any tool)
+#   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
+#   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
+#                every call's latency/tokens/outcome remembered in Timescale
+#   ollama       open-source local LLM (MIT): the free, quota-less last link of every Cortex chain
+#   workstation  Giant Core Streamlit app   (optional: --profile workstation)
+#
+# LOW-RAM LAPTOP MODE (default): every service has a hard memory + CPU cap, and the local LLM
+# (ollama) is opt-in with --profile llm so a normal `up` stays around 1.5 GB. Pair this with
+# ops/wslconfig.example copied to %UserProfile%\.wslconfig so the whole Docker VM is capped too.
+#   core only   docker compose up -d
+#   with LLM    docker compose --profile llm up -d
+#   + Studio    docker compose --profile studio up -d   (Panel analytics, http://localhost:5006)
+#   + neural    docker compose --profile ml up -d       (PyTorch forecaster, ~400 MB RAM)
+#   + geo       docker compose --profile geo up -d      (PostGIS + Redis, ~600 MB RAM)
+#   + speed     docker compose --profile speed up -d    (Redis Streams + maritime speed layer, ~500 MB RAM)
+#   + metrics   docker compose --profile metrics up -d  (Prometheus :9090 + Grafana :3000, ~500 MB RAM)
+#   + cloud     docker compose --profile cloud up -d    (Supabase mirror; needs SUPABASE_* in .env)
+#
+# Everything published binds to 127.0.0.1. Only n8n, cortex and ollama (model pulls) can reach the internet.
+#   Dashboard  http://localhost:8088      n8n editor  http://localhost:5678
+#   Cortex     http://localhost:8089/v1   (OpenAI-compatible, Bearer OMEGA_GATEWAY_TOKEN)
+#   Workstation http://localhost:8501     (with --profile workstation)
+
+name: omega
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: { max-size: "5m", max-file: "3" }
+
+x-n8n-env: &n8n-env
+  N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+  OMEGA_RELAY_TOKEN: ${OMEGA_RELAY_TOKEN:?set OMEGA_RELAY_TOKEN in .env}
+  OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}   # seeded as n8n's Cortex credential
+  SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
+  POSTGRES_DB: ${POSTGRES_DB:-omega}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+  OMEGA_BTC_API: ${OMEGA_BTC_API:-https://blockchain.info}
+  OMEGA_ETH_RPC_URL: ${OMEGA_ETH_RPC_URL:-https://ethereum-rpc.publicnode.com}
+  GENERIC_TIMEZONE: ${TZ:-Asia/Kuwait}
+  TZ: ${TZ:-Asia/Kuwait}
+  N8N_HOST: localhost
+  N8N_PORT: "5678"
+  N8N_PROTOCOL: http
+  N8N_LISTEN_ADDRESS: 0.0.0.0
+  N8N_SECURE_COOKIE: "false"          # plain http on localhost
+  # Lock-down
+  N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
+  N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+  NODES_EXCLUDE: '["n8n-nodes-base.executeCommand","n8n-nodes-base.ssh","n8n-nodes-base.localFileTrigger","n8n-nodes-base.readWriteFile"]'
+  N8N_RUNNERS_ENABLED: "true"
+  N8N_DIAGNOSTICS_ENABLED: "false"
+  N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+  N8N_TEMPLATES_ENABLED: "false"
+  N8N_PERSONALIZATION_ENABLED: "false"
+  N8N_HIRING_BANNER_ENABLED: "false"
+  # Housekeeping
+  EXECUTIONS_DATA_PRUNE: "true"
+  EXECUTIONS_DATA_MAX_AGE: "168"
+
+services:
+  timescale:
+    image: timescale/timescaledb:2.17.2-pg16
+    <<: *hardening
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      POSTGRES_USER: omega_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
+      PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+      TZ: UTC
+      TIMESCALEDB_TELEMETRY: "off"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    networks: [db]
+    shm_size: 128m
+    mem_limit: ${TIMESCALE_MEM_LIMIT:-640m}
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omega_admin -d ${POSTGRES_DB:-omega}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Postgres runs db/init only when it creates an empty volume. This brings an existing volume up to
+  # date: every script skips itself once its schema exists, so it is a no-op on a current stack.
+  db-migrate:
+    image: timescale/timescaledb:2.17.2-pg16
+    <<: *hardening
+    cap_drop: ["ALL"]
+    restart: "no"
+    user: postgres
+    read_only: true
+    depends_on:
+      timescale: { condition: service_healthy }
+    entrypoint: ["sh", "/db/migrate.sh"]
+    environment:
+      PGHOST: timescale
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      POSTGRES_USER: omega_admin
+      SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
+      PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+    volumes:
+      - ./db:/db:ro
+    networks: [db]
+    mem_limit: 128m
+    cpus: 0.5
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      timescale: { condition: service_healthy }
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${PGRST_DB_PASSWORD}@timescale:5432/${POSTGRES_DB:-omega}
+      PGRST_DB_SCHEMAS: api
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_DB_MAX_ROWS: "3000"
+      PGRST_ADMIN_SERVER_PORT: "3001"
+      PGRST_OPENAPI_MODE: disabled
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?set PGRST_JWT_SECRET in .env}   # only cortex signs with it
+    networks: [db, core]
+    mem_limit: 128m
+    cpus: 0.5
+
+  n8n-init:
+    image: n8nio/n8n:${N8N_VERSION:-2.42.6}
+    <<: *hardening
+    cap_drop: ["ALL"]
+    restart: "no"
+    environment: *n8n-env
+    entrypoint: ["/bin/sh", "/seed/init.sh"]
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/seed:ro
+    network_mode: none
+    mem_limit: 384m
+    cpus: 0.5
+
+  n8n:
+    image: n8nio/n8n:${N8N_VERSION:-2.42.6}
+    <<: *hardening
+    cap_drop: ["ALL"]
+    depends_on:
+      n8n-init: { condition: service_completed_successfully }
+      db-migrate: { condition: service_completed_successfully }
+      relay: { condition: service_healthy }
+    environment: *n8n-env
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "127.0.0.1:5678:5678"
+    networks: [egress, db, core]
+    mem_limit: ${N8N_MEM_LIMIT:-768m}
+    cpus: 1.0
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5678/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  relay:
+    image: node:22.12.0-alpine
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "node"
+    read_only: true
+    tmpfs: ["/tmp:size=8m"]
+    working_dir: /app
+    command: ["node", "server.js"]
+    environment:
+      OMEGA_RELAY_TOKEN: ${OMEGA_RELAY_TOKEN:?set OMEGA_RELAY_TOKEN in .env}
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      N8N_HEALTH_URL: http://n8n:5678/healthz
+      PGRST_URL: http://postgrest:3000
+      PGRST_ADMIN_URL: http://postgrest:3001
+      CORTEX_URL: http://cortex:8090
+      QUANT_URL: http://quant:8091
+      NEURAL_URL: http://neural:8092
+      AGENTS_URL: http://agents:8093
+      GEOAPI_URL: http://geo-api:8094
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
+      TZ: ${TZ:-Asia/Kuwait}
+    volumes:
+      - ./services/relay:/app:ro
+      - ./dashboard:/srv/dashboard:ro    # directory mounts survive editors that replace files
+    ports:
+      - "127.0.0.1:8088:8080"
+    networks: [core, edge]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  cortex:
+    build: { context: ./services/cortex }
+    image: omega-cortex:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      postgrest: { condition: service_started }
+    environment:
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
+      PGRST_URL: http://postgrest:3000
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?set PGRST_JWT_SECRET in .env}
+      OMEGA_PROVIDERS_FILE: /config/providers.json
+      OMEGA_ALLOW_ANON_PROVIDERS: ${OMEGA_ALLOW_ANON_PROVIDERS:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-${MODEL_API_KEY:-}}   # MODEL_API_KEY works as an alias
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-}
+      CLAUDE_EFFORT: ${CLAUDE_EFFORT:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}   # ADR-058: free, open-weight, no input retention
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ZAI_API_KEY: ${ZAI_API_KEY:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      LLM7_API_KEY: ${LLM7_API_KEY:-}
+      OMEGA_LOCAL_LLM_URL: ${OMEGA_LOCAL_LLM_URL-http://ollama:11434/v1}   # set empty to switch the local model off
+      OMEGA_LOCAL_MODEL: ${OMEGA_LOCAL_MODEL:-qwen2.5:3b}
+      TZ: ${TZ:-Asia/Kuwait}
+    volumes:
+      - ./services/cortex/config:/config:ro     # edit providers.json, then: docker compose kill -s HUP cortex
+    ports:
+      - "127.0.0.1:8089:8090"
+    networks: [egress, core]
+    mem_limit: 192m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  # Private metasearch (ADR-055): keyless web search for the local model, the Oracle panel and Claude's MCP.
+  # Bound to 127.0.0.1; results are untrusted data. Light enough (~150 MB) to run with the core stack.
+  searxng:
+    image: searxng/searxng:${SEARXNG_VERSION:-latest}
+    <<: *hardening
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "SETGID", "SETUID"]
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+      SEARXNG_BASE_URL: http://127.0.0.1:8890/
+    volumes:
+      - ./services/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    ports:
+      - "127.0.0.1:8890:8080"
+    networks: [egress, core]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+
+  # Open-source LLM runtime. Pulls OMEGA_LOCAL_MODEL once into a volume; afterwards it runs offline.
+  # Opt-in (--profile llm) and never restarted automatically: a 3B model on a 7 GB laptop is the
+  # heaviest thing here, so it only runs when asked; while it runs it stays loaded (ADR-058) to skip the reload wait.
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.34.4}
+    <<: *hardening
+    profiles: ["llm"]
+    restart: "no"
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"          # ADR-058: stay loaded while the llm profile runs (no reload wait per question)
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0      # about half the KV memory, very little quality loss
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_CONTEXT_LENGTH: "2048"
+      OLLAMA_NOPRUNE: "1"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks: [egress, core]          # egress only to pull models
+    mem_limit: ${OLLAMA_MEM_LIMIT:-2560m}
+    cpus: ${OLLAMA_CPUS:-2}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ollama-pull:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.34.4}
+    profiles: ["llm"]
+    restart: "no"
+    depends_on:
+      ollama: { condition: service_healthy }
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OMEGA_LOCAL_MODEL:-qwen2.5:3b}"]
+    networks: [core]
+    mem_limit: 256m
+    cpus: 0.5
+
+  workstation:
+    profiles: ["workstation"]
+    build: { context: ./services/workstation }
+    <<: *hardening
+    cap_drop: ["ALL"]
+    volumes:
+      - workstation_plugins:/app/plugins
+    ports:
+      - "127.0.0.1:8501:8501"
+    networks: [edge]
+    mem_limit: 512m
+    cpus: 1.0
+
+  # OMEGA Quant: stdlib risk engine (volatility, z-score, tail odds, drawdown, correlation) every minute.
+  quant:
+    build: { context: ./services/quant }
+    image: omega-quant:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      TZ: ${TZ:-Asia/Kuwait}
+    networks: [core]
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8091/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # OMEGA PRIME geospatial store (Phase 1). PostGIS for vessel/node geometry + bilingual (AR/EN) metadata.
+  # Opt-in (--profile geo); hardened like the rest: secret from .env, 127.0.0.1 only, capped.
+  geo:
+    image: postgis/postgis:16-3.4
+    profiles: ["geo"]
+    <<: *hardening
+    environment:
+      POSTGRES_USER: omega_geo
+      POSTGRES_PASSWORD: ${GEO_DB_PASSWORD:?set GEO_DB_PASSWORD in .env}
+      POSTGRES_DB: omega_geo
+      TZ: UTC
+    volumes:
+      - geo_data:/var/lib/postgresql/data
+      - ./db/geo:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"          # local inspection only; never the LAN
+    networks: [db, core]
+    shm_size: 128m
+    mem_limit: ${GEO_MEM_LIMIT:-512m}
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omega_geo -d omega_geo"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Director 00 long-term memory: Postgres + pgvector (agent_memories) and the approval ledger.
+  # Opt-in (--profile director); tuned small for the 7 GB laptop: 256 MB cap, tiny shared buffers, no internet.
+  memory:
+    image: pgvector/pgvector:0.8.6-pg17
+    profiles: ["director"]
+    <<: *hardening
+    environment:
+      POSTGRES_USER: omega_director
+      POSTGRES_PASSWORD: ${DIRECTOR_DB_PASSWORD:?set DIRECTOR_DB_PASSWORD in .env}
+      POSTGRES_DB: omega_memory
+      TZ: UTC
+    command: ["postgres", "-c", "shared_buffers=32MB", "-c", "work_mem=4MB", "-c", "maintenance_work_mem=32MB",
+              "-c", "max_connections=20", "-c", "effective_cache_size=96MB"]
+    volumes:
+      - director_memory:/var/lib/postgresql/data
+      - ./db/director:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5435:5432"          # Director 00 runs on the host; never the LAN
+    networks: [db, edge]
+    shm_size: 64m
+    mem_limit: ${DIRECTOR_DB_MEM_LIMIT:-256m}
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omega_director -d omega_memory"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # SwissPipe (OpenObserve, Apache-2.0, Rust): a ~30 MB workflow runner evaluated beside n8n (ADR 015).
+  # Opt-in (--profile swisspipe); n8n stays the default. UI/API on localhost:3700, admin login from .env.
+  swisspipe:
+    image: public.ecr.aws/zinclabs/swisspipe:0.9.49
+    profiles: ["swisspipe"]
+    <<: *hardening
+    environment:
+      SP_USERNAME: ${SWISSPIPE_USERNAME:?set SWISSPIPE_USERNAME in .env}
+      SP_PASSWORD: ${SWISSPIPE_PASSWORD:?set SWISSPIPE_PASSWORD in .env}
+      DATABASE_URL: sqlite:data/swisspipe.db?mode=rwc
+      PORT: "3700"
+    volumes:
+      - swisspipe_data:/app/data
+    ports:
+      - "127.0.0.1:3700:3700"          # local only; workflows reach the relay over the core network
+    networks: [core, egress, edge]
+    mem_limit: ${SWISSPIPE_MEM_LIMIT:-64m}
+    cpus: 0.25
+
+  # Redis: hot cache (latest vessel/flight position) + pub/sub fan-out for WebSockets (Phase 1-3).
+  redis:
+    image: redis:7.4-alpine
+    profiles: ["geo", "speed"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "redis"
+    read_only: true
+    command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    tmpfs: ["/data:size=16m"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [core]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  # OMEGA PRIME geo-api (Phase 1): bilingual (AR/EN) FastAPI over the PostGIS logistics nodes.
+  geo-api:
+    profiles: ["geo"]
+    build: { context: ./services/geo-api }
+    image: omega-geo-api:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      geo: { condition: service_healthy }
+    environment:
+      OMEGA_GEO_DSN: postgresql://omega_geo:${GEO_DB_PASSWORD:?set GEO_DB_PASSWORD in .env}@geo:5432/omega_geo
+      TZ: ${TZ:-Asia/Kuwait}
+    networks: [db, core]
+    mem_limit: 192m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8094/geo/healthz',timeout=3).status==200 else 1)"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+
+  # OMEGA speed layer (Phase 3): AIS → Redis Streams → Polars/DuckDB fast path → ONNX slow path → alerts.
+  # Live aisstream.io when AISSTREAM_API_KEY is set, otherwise a paced mock replay. Metrics on :9108.
+  maritime:
+    profiles: ["speed"]
+    build: { context: ./services/maritime-agent }
+    image: omega-maritime:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=32m"]
+    depends_on:
+      redis: { condition: service_healthy }
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OMEGA_STREAM_MAXLEN: "2000"
+      OMEGA_API_URL: http://relay:8080
+      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY:-}
+      MARITIME_DB_PATH: /data/maritime.sqlite
+    volumes:
+      - maritime_data:/data
+    networks: [core, egress]          # egress: the aisstream.io WebSocket
+    mem_limit: ${MARITIME_MEM_LIMIT:-384m}
+    cpus: 1.0
+    pids_limit: 64
+
+  # Speed metrics (opt-in: --profile metrics). Prometheus scrapes maritime:9108; Grafana shows "OMEGA · Speed Layer".
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    profiles: ["metrics"]
+    <<: *hardening
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=7d"]
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [core, edge]
+    mem_limit: 256m
+    cpus: 0.5
+
+  grafana:
+    image: grafana/grafana-oss:12.0.0
+    profiles: ["metrics"]
+    <<: *hardening
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [core, edge]
+    mem_limit: 256m
+    cpus: 0.5
+
+  # OMEGA workforce: Sentinel (health), Analyst (market brief via Cortex), Scout (open-source tool research,
+  # proposals wait for an answer in the Ops Room). Standard library Python, ~30 MB.
+  agents:
+    image: python:3.12-alpine
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "1000"
+    read_only: true
+    working_dir: /app
+    command: ["python", "server.py"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      CORTEX_URL: http://cortex:8090
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
+      OMEGA_AGENTS_DB: /data/agents.sqlite
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./services/agents:/app:ro
+      - agents_data:/data
+    networks: [core, egress]          # egress: GitHub's public search API for the Scout
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+
+  # OMEGA Neural (opt-in: --profile ml): PyTorch forecaster, next-hour direction probability + volatility,
+  # scored walk-forward. CPU only, one thread, retrains every 6 h.
+  neural:
+    profiles: ["ml"]
+    build: { context: ./services/neural }
+    image: omega-neural:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=64m"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      OMEGA_NEURAL_MODEL: /data/neural.pt
+    volumes:
+      - neural_data:/data
+    networks: [core]
+    mem_limit: ${NEURAL_MEM_LIMIT:-768m}
+    cpus: 1.0
+    pids_limit: 64
+
+  # Supabase cloud mirror (opt-in: --profile cloud). Copies public market signals to public.omega_* tables.
+  cloud-sync:
+    profiles: ["cloud"]
+    image: node:22.12.0-alpine
+    <<: *hardening
+    cap_drop: ["ALL"]
+    user: "node"
+    read_only: true
+    working_dir: /app
+    command: ["node", "sync.js"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
+    volumes:
+      - ./services/cloud-sync:/app:ro
+    networks: [core, egress]
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 32
+
+  # OMEGA Studio: Panel + Material UI deep-analysis app over the relay's read-only /api.
+  studio:
+    profiles: ["studio"]
+    build: { context: ./services/studio }
+    image: omega-studio:local
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=32m", "/home/omega:size=16m"]
+    depends_on:
+      relay: { condition: service_healthy }
+    environment:
+      OMEGA_API_URL: http://relay:8080
+      OMEGA_SYMBOLS: ${OMEGA_SYMBOLS:-BTCUSDT,ETHUSDT,SOLUSDT}
+      OMEGA_VAULT_PATH: /data/omega.duckdb      # DuckDB vault: long-range history, survives restarts
+      TZ: ${TZ:-Asia/Kuwait}
+    volumes:
+      - vault_data:/data
+    ports:
+      - "127.0.0.1:5006:5006"
+    networks: [core, edge]
+    mem_limit: ${STUDIO_MEM_LIMIT:-512m}
+    cpus: 1.0
+
+  # Immich (AGPL-3.0) photo library, ADR-030. Opt-in: docker compose --profile photos up -d.
+  # Sized for the 7 GB laptop: machine learning (faces, smart search) is off, so no ML container runs;
+  # the three containers are capped at about 1.3 GB together. Web UI and API on localhost:2283 only.
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v3.3.1
+    profiles: ["photos"]
+    <<: *hardening
+    environment:
+      DB_HOSTNAME: immich-db
+      DB_USERNAME: immich
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD:?set IMMICH_DB_PASSWORD in .env}
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
+      IMMICH_MACHINE_LEARNING_ENABLED: "false"
+      IMMICH_WORKERS_INCLUDE: api,microservices
+      TZ: UTC
+    volumes:
+      - ${IMMICH_UPLOAD_LOCATION:-./data/immich}:/data
+    ports:
+      - "127.0.0.1:2283:2283"          # the web app talks to it on loopback; never the LAN
+    networks: [photos, edge]
+    depends_on: [immich-db, immich-redis]
+    mem_limit: ${IMMICH_MEM_LIMIT:-900m}
+    cpus: 1.0
+
+  immich-db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    profiles: ["photos"]
+    <<: *hardening
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD:?set IMMICH_DB_PASSWORD in .env}
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - immich_db:/var/lib/postgresql/data
+    networks: [photos]
+    shm_size: 128m
+    mem_limit: ${IMMICH_DB_MEM_LIMIT:-320m}
+    cpus: 0.5
+
+  immich-redis:
+    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
+    profiles: ["photos"]
+    <<: *hardening
+    networks: [photos]
+    mem_limit: 96m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+networks:
+  db:       # timescale <-> postgrest, n8n. No internet.
+    internal: true
+  core:     # n8n, postgrest <-> relay. No internet.
+    internal: true
+  egress:   # the way out: n8n to Binance, news feeds, Telegram and public BTC/ETH endpoints; cortex to the LLM providers
+  edge:     # carries 127.0.0.1 port publishes
+  photos:   # Immich server <-> its database and cache. No internet.
+    internal: true
+
+volumes:
+  immich_db:
+  maritime_data:
+  prometheus_data:
+  grafana_data:
+  geo_data:
+  director_memory:
+  swisspipe_data:
+  agents_data:
+  neural_data:
+  vault_data:
+  ollama_models:
+  timescale_data:
+  n8n_data:
+  workstation_plugins:

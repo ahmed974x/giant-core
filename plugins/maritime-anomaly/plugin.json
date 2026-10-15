@@ -1,0 +1,10 @@
+{
+  "id": "maritime-anomaly",
+  "name": "Maritime agent",
+  "kind": "tool",
+  "version": "1.2.0",
+  "description": "Maritime speed layer: AIS (aisstream.io or mock) \u2192 Redis Streams (Arrow) \u2192 Polars/DuckDB fast path (~20 ms) \u2192 ONNX + async Director 00 slow path \u2192 localized alerts; Prometheus metrics.",
+  "entry": "services/maritime-agent/pipeline.py",
+  "requires": [],
+  "enabled": true
+}

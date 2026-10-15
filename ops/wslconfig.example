@@ -1,0 +1,11 @@
+# OMEGA PRIME: hard cap for Docker Desktop's WSL2 VM on a 7 GB laptop.
+# Without this, WSL2 may take up to 50% of RAM plus page cache, which froze the machine.
+# Apply after editing:  wsl --shutdown   (then start Docker Desktop again)
+[wsl2]
+memory=4GB
+processors=2
+swap=4GB
+
+[experimental]
+autoMemoryReclaim=gradual
+sparseVhd=true

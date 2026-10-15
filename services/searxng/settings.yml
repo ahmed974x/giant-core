@@ -1,0 +1,40 @@
+# SearXNG for OMEGA PRIME (ADR-055): a private, keyless metasearch engine on 127.0.0.1 only.
+# It forwards queries to Google, Bing, DuckDuckGo, Brave, Wikipedia and others and returns their results as JSON,
+# so the local model, the site's Oracle panel and Claude (omega-sentinel MCP) can search the web for free.
+# Results are untrusted web content: callers pass them to models as data, never as instructions.
+use_default_settings: true
+general:
+  instance_name: "OMEGA PRIME search"
+  enable_metrics: false
+server:
+  # secret_key comes from SEARXNG_SECRET in .env (never committed)
+  limiter: false          # only reachable from this laptop
+  image_proxy: false
+  public_instance: false
+search:
+  safe_search: 1
+  formats: [html, json]
+  default_lang: auto
+outgoing:
+  request_timeout: 4.0
+  max_request_timeout: 8.0
+engines:
+  - name: google
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: duckduckgo
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: wikipedia
+    disabled: false
+  # Google, DuckDuckGo and Brave often rate-limit a home IP; these keep results coming when they do.
+  - name: startpage
+    disabled: false
+  - name: mojeek
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: yahoo
+    disabled: false

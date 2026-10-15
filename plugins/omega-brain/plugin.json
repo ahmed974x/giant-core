@@ -1,0 +1,13 @@
+{
+  "id": "omega-brain",
+  "name": "The Brain",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "Search bar \u2192 memory, planner, researcher, designer, critic and synthesizer agents on open-weight models; learns from every request.",
+  "entry": "services/agents/brain.py",
+  "requires": [
+    "relay",
+    "cortex"
+  ],
+  "enabled": true
+}

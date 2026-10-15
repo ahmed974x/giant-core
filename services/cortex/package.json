@@ -1,0 +1,11 @@
+{
+  "name": "omega-cortex-gateway",
+  "private": true,
+  "description": "OMEGA Cortex: one OpenAI-compatible endpoint over Claude and the free LLM tiers, with failover and performance memory.",
+  "main": "server.js",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.js", "test": "node --test test/*.test.js" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0"
+  }
+}

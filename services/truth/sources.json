@@ -1,0 +1,29 @@
+{
+  "_about": "Curated source reputation for the Truth Layer (ADR-021). Editable opinion, not ground truth: tiers describe editorial process and independence, not politics. Unknown domains get the 'unknown' prior. Review this list in code review like any other rule.",
+  "tiers": {
+    "wire":            {"score": 0.92, "about": "news agencies with published correction policies, syndicated to many outlets"},
+    "record":          {"score": 0.85, "about": "large newsrooms with named editors and correction policies"},
+    "public":          {"score": 0.80, "about": "publicly funded broadcasters with editorial-independence charters"},
+    "official":        {"score": 0.78, "about": "primary sources: governments, agencies and international bodies speaking for themselves"},
+    "specialist":      {"score": 0.80, "about": "trade and data publications in shipping, energy and markets"},
+    "state_controlled":{"score": 0.40, "about": "outlets directed by a state or party without editorial independence"},
+    "satire":          {"score": 0.05, "about": "satire or parody; never a factual source"},
+    "unknown":         {"score": 0.55, "about": "not in this list"}
+  },
+  "domains": {
+    "reuters.com": "wire", "apnews.com": "wire", "afp.com": "wire", "bloomberg.com": "wire", "aa.com.tr": "wire",
+    "wam.ae": "official", "spa.gov.sa": "official", "qna.org.qa": "official", "kuna.net.kw": "official",
+    "nytimes.com": "record", "washingtonpost.com": "record", "wsj.com": "record", "ft.com": "record", "theguardian.com": "record",
+    "economist.com": "record", "lemonde.fr": "record", "thenationalnews.com": "record", "arabnews.com": "record",
+    "aawsat.com": "record", "asharq.com": "record", "thehindu.com": "record", "scmp.com": "record", "straitstimes.com": "record",
+    "bbc.co.uk": "public", "bbc.com": "public", "dw.com": "public", "france24.com": "public", "nhk.or.jp": "public",
+    "aljazeera.com": "public", "aljazeera.net": "public", "voanews.com": "public", "abc.net.au": "public", "cbc.ca": "public",
+    "un.org": "official", "imo.org": "official", "iea.org": "official", "opec.org": "official", "usgs.gov": "official",
+    "nasa.gov": "official", "noaa.gov": "official", "who.int": "official", "europa.eu": "official",
+    "lloydslist.com": "specialist", "tradewindsnews.com": "specialist", "splash247.com": "specialist",
+    "gcaptain.com": "specialist", "argusmedia.com": "specialist", "spglobal.com": "specialist", "hellenicshippingnews.com": "specialist",
+    "rt.com": "state_controlled", "sputnikglobe.com": "state_controlled", "sputniknews.com": "state_controlled",
+    "presstv.ir": "state_controlled", "globaltimes.cn": "state_controlled", "kcna.kp": "state_controlled", "tasnimnews.com": "state_controlled",
+    "theonion.com": "satire", "babylonbee.com": "satire", "thedailymash.co.uk": "satire"
+  }
+}

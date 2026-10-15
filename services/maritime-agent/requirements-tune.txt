@@ -1,0 +1,3 @@
+-r requirements.txt
+# Offline threshold tuning (ADR 007): writes a proposal, never changes the running rules.
+optuna==5.0.0

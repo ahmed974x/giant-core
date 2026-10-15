@@ -1,0 +1,1649 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OMEGA Ops Room</title>
+<style>
+:root {
+  --void: #04060c;
+  --panel: rgba(10, 15, 30, 0.78);
+  --panel-solid: #0b1122;
+  --ink: #eef3fb;
+  --ink-2: #b4c0d4;
+  --ink-3: #74829a;
+  --line: rgba(140, 170, 230, 0.16);
+  --line-2: rgba(140, 170, 230, 0.28);
+  /* full-colour accents: one per panel so the eye finds each block instantly */
+  --cyan: #22d3ee;
+  --violet: #a78bfa;
+  --magenta: #f472b6;
+  --amber: #fbbf24;
+  --lime: #a3e635;
+  --flow: #38bdf8;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --crit: #fb7185;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Segoe UI Variable", "Segoe UI", ui-sans-serif, -apple-system, Inter, Roboto, sans-serif;
+  --sans-ar: "Tajawal", "Cairo", "Segoe UI", "Noto Sans Arabic", "Dubai", system-ui, sans-serif;
+  --r: 16px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink); font: 14px/1.5 var(--sans); }
+body {
+  overflow: hidden;
+  display: grid; grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(1100px 700px at 50% 45%, rgba(56, 189, 248, 0.10), transparent 65%),
+    radial-gradient(800px 600px at 8% 100%, rgba(167, 139, 250, 0.12), transparent 60%),
+    radial-gradient(700px 500px at 100% 0%, rgba(244, 114, 182, 0.09), transparent 60%),
+    var(--void);
+}
+canvas#sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; z-index: 0; }
+canvas#sky.dragging { cursor: grabbing; }
+
+/* ── top bar ── */
+#brand { position: relative; z-index: 2; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(4, 6, 12, 0.92), rgba(4, 6, 12, 0.55)); backdrop-filter: blur(10px); }
+#brand .logo { display: flex; align-items: center; gap: 12px; }
+#brand .orb { width: 30px; height: 30px; border-radius: 50%; background: conic-gradient(from 200deg, var(--cyan), var(--violet), var(--magenta), var(--cyan)); box-shadow: 0 0 22px rgba(167, 139, 250, 0.55); position: relative; }
+#brand .orb::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--void); }
+#brand .mark { margin: 0; font: 700 22px/1 var(--sans); letter-spacing: 0.28em; background: linear-gradient(90deg, var(--cyan), var(--violet) 55%, var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#brand .sub { margin: 3px 0 0; font: 600 10.5px var(--mono); letter-spacing: 0.22em; color: var(--ink-3); }
+#brand .meta { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font: 12px var(--mono); color: var(--ink-2); }
+#clock { font: 600 15px var(--mono); color: var(--ink); letter-spacing: 0.06em; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line-2); font: 700 11px var(--mono); letter-spacing: 0.12em; color: var(--ink-2); background: rgba(255, 255, 255, 0.03); }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
+.chip.live { color: var(--ok); border-color: rgba(52, 211, 153, 0.45); }
+.chip.live i { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.chip.demo { color: var(--amber); border-color: rgba(251, 191, 36, 0.45); }
+.chip.demo i { background: var(--warn); }
+.chip.down { color: var(--crit); border-color: rgba(251, 113, 133, 0.5); }
+.chip.down i { background: var(--crit); }
+button.chip { cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+button.chip:hover { color: var(--ink); border-color: var(--cyan); }
+button.chip.on { color: var(--void); background: var(--cyan); border-color: var(--cyan); }
+#mtoggle.on { background: var(--amber); border-color: var(--amber); }
+#ctoggle.on { background: var(--violet); border-color: var(--violet); }
+#xtoggle.on { background: var(--lime); border-color: var(--lime); }
+a.chip { text-decoration: none; color: var(--magenta); border-color: rgba(244, 114, 182, 0.5); }
+a.chip:hover { color: var(--void); background: var(--magenta); }
+#lite.on { background: var(--ink-2); border-color: var(--ink-2); }
+#lang { font-weight: 800; }
+html[dir="rtl"] body { font-family: var(--sans-ar); }
+html[dir="rtl"] .mark, html[dir="rtl"] #clock, html[dir="rtl"] #bq { font-family: var(--sans); }  /* brand/clock/search stay Latin-friendly */
+html[dir="rtl"] .panel h2, html[dir="rtl"] #brand .sub { letter-spacing: 0; }  /* Arabic must not be letter-spaced */
+
+/* ── Brain: search bar + thinking drawer ── */
+#bform { flex: 1 1 380px; max-width: 620px; display: flex; gap: 8px; align-items: center; margin: 0 8px; }
+#bq { flex: 1; min-width: 0; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(4, 6, 12, 0.75);
+      color: var(--ink); font: 14px var(--sans); transition: border-color .2s, box-shadow .2s; }
+#bq:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2), 0 0 24px rgba(34, 211, 238, 0.15); }
+#bgo { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; cursor: pointer; font: 700 11.5px var(--mono); letter-spacing: 0.12em; color: var(--void);
+       background: linear-gradient(90deg, var(--cyan), var(--violet) 60%, var(--magenta)); }
+#bgo:disabled { opacity: 0.55; cursor: progress; }
+#brainp { --accent: var(--violet); position: fixed; z-index: 6; top: 76px; left: 50%; transform: translateX(-50%); width: min(780px, calc(100vw - 32px));
+          max-height: calc(100vh - 120px); background: rgba(8, 12, 26, 0.96); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+#brainp h2 button { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; cursor: pointer; font: 700 11px var(--mono); }
+#breq { font-size: 15px; color: var(--ink); }
+#bsteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+#bsteps li { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.02); }
+#bsteps .h { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; font: 700 12px var(--mono); letter-spacing: 0.06em; cursor: pointer; }
+#bsteps .h i { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-3); }
+#bsteps li.working .h i { background: var(--violet); box-shadow: 0 0 12px var(--violet); animation: throb 1s ease-in-out infinite; }
+#bsteps li.done .h i { background: var(--ok); } #bsteps li.failed .h i { background: var(--crit); } #bsteps li.skipped .h i { background: var(--ink-3); }
+#bsteps .h small { color: var(--ink-3); font-weight: 500; }
+#bsteps .o { margin-top: 6px; white-space: pre-wrap; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); max-height: 180px; overflow: auto; }
+#bsteps li:not(.open) .o { display: none; }
+#banswer { white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: var(--ink); padding: 12px 14px; border-radius: 12px;
+           background: linear-gradient(135deg, rgba(34, 211, 238, 0.07), rgba(167, 139, 250, 0.08)); border: 1px solid rgba(167, 139, 250, 0.25); }
+#banswer:empty { display: none; }
+#bmeta { font: 11px var(--mono); color: var(--ink-3); }
+@keyframes throb { 50% { transform: scale(1.5); } }
+
+/* ── layout: left column · open stage (constellation) · right column ── */
+#deck { position: relative; z-index: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 360px) 1fr minmax(310px, 380px); gap: 16px; padding: 16px; pointer-events: none; }
+.col { min-height: 0; display: flex; flex-direction: column; gap: 16px; pointer-events: auto; }
+#stage { min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+#stage > * { pointer-events: auto; }
+
+.panel { --accent: var(--cyan); position: relative; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35); overflow: hidden; }
+.panel::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent 85%); }
+.panel h2 { margin: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 700 12px var(--mono); letter-spacing: 0.18em; color: var(--accent); }
+.panel h2 .count { color: var(--ink-3); font-weight: 600; letter-spacing: 0.06em; }
+.scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.empty { padding: 12px 14px; font-size: 13px; color: var(--ink-3); }
+
+/* ── cortex ── */
+#cortex { --accent: var(--violet); flex: 1 1 50%; }
+#csum { margin-top: -4px; font: 12px var(--mono); color: var(--ink-3); }
+#cprov { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font: 12.5px var(--mono); min-height: 40px; flex: 0 1 auto; }
+#cprov li { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 8px; align-items: baseline; color: var(--ink-2); padding: 3px 0; border-bottom: 1px dashed rgba(140, 170, 230, 0.08); }
+#cprov li b { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+#cprov li .n { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cprov li.off { opacity: 0.45; }
+#cprov li .m { color: var(--ink-3); text-align: right; }
+.c-routes { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill, .c-routes button, #csend, #focus button, .swap { font: 700 11px var(--mono); letter-spacing: 0.08em; color: var(--ink-2); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 11px; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.c-routes button:hover, #focus button:hover, .swap:hover { color: var(--ink); border-color: var(--accent, var(--cyan)); }
+.c-routes button.on { color: var(--void); background: var(--violet); border-color: var(--violet); }
+#cform { display: flex; gap: 8px; align-items: flex-end; }
+#cq { flex: 1; resize: none; min-height: 42px; max-height: 120px; background: rgba(4, 6, 12, 0.7); color: var(--ink); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; font: 14px/1.4 var(--sans); }
+#cq:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18); }
+#csend { color: var(--void); background: var(--violet); border-color: var(--violet); padding: 10px 14px; }
+#csend:hover { filter: brightness(1.12); }
+#cout { font-size: 14px; line-height: 1.55; white-space: pre-wrap; max-height: 28vh; color: var(--ink); padding: 10px 12px; border-radius: 12px; background: rgba(167, 139, 250, 0.07); border: 1px solid rgba(167, 139, 250, 0.18); }
+#cout:empty { display: none; }
+#cmeta { font: 11.5px var(--mono); color: var(--ink-3); }
+#cmeta:empty { display: none; }
+
+/* ── quant (stdlib risk engine) ── */
+#quant { --accent: var(--flow); flex: 0 0 auto; }
+#qtable { width: 100%; border-collapse: collapse; font: 12.5px var(--mono); }
+#qtable th { text-align: right; font-weight: 600; color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.08em; padding: 0 0 6px; }
+#qtable th:first-child, #qtable td:first-child { text-align: left; }
+#qtable td { text-align: right; padding: 5px 0; border-top: 1px dashed rgba(140, 170, 230, 0.1); }
+#qtable td b { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.reg { font: 700 10px var(--mono); letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; color: var(--void); }
+.reg.calm { background: var(--ok); } .reg.normal { background: var(--ink-2); } .reg.turbulent { background: var(--crit); }
+#qcorr { display: flex; gap: 6px; flex-wrap: wrap; font: 11px var(--mono); color: var(--ink-2); }
+#qcorr span { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); }
+#qmeta { font: 11px var(--mono); color: var(--ink-3); }
+
+/* ── agents (workforce + proposals) ── */
+#agents { --accent: var(--magenta); flex: 1 1 34%; }
+#aroster { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+#aroster li { display: grid; grid-template-columns: 10px 1fr auto; gap: 4px 8px; align-items: baseline; font-size: 12.5px; }
+#aroster li > i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+#aroster li.ok > i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+#aroster li.bad > i { background: var(--crit); }
+#aroster b { font: 700 11.5px var(--mono); letter-spacing: 0.06em; color: var(--ink); }
+#aroster .s { grid-column: 2 / 4; color: var(--ink-2); font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#aroster .e { font: 10.5px var(--mono); color: var(--ink-3); }
+#aprops { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#aprops li { padding: 9px 11px; border-radius: 12px; border: 1px solid var(--line); background: rgba(244, 114, 182, 0.04); }
+#aprops .p-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+#aprops a { color: var(--ink); font-weight: 600; font-size: 13px; text-decoration: none; overflow-wrap: anywhere; }
+#aprops a:hover { color: var(--magenta); }
+#aprops .p-why { margin-top: 3px; font-size: 12px; color: var(--ink-2); }
+#aprops .p-cost { font: 10.5px var(--mono); color: var(--ink-3); margin-top: 2px; }
+#aprops .p-act { display: flex; gap: 6px; margin-top: 7px; }
+#aprops button { font: 700 10.5px var(--mono); letter-spacing: 0.08em; border-radius: 999px; padding: 4px 11px; cursor: pointer; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); }
+#aprops button.add { background: var(--magenta); border-color: var(--magenta); color: var(--void); }
+#aprops button:hover { filter: brightness(1.15); color: var(--ink); }
+.ahead { font: 700 10.5px var(--mono); letter-spacing: 0.14em; color: var(--ink-3); margin: 10px 0 6px; }
+
+/* ── modules (plugin registry) ── */
+#modules { --accent: var(--lime); flex: 1 1 30%; }
+#xlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#xlist li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 9px 11px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+#xlist li.off { opacity: 0.5; }
+.kind { grid-row: span 2; align-self: start; font: 700 10px var(--mono); letter-spacing: 0.1em; padding: 3px 8px; border-radius: 999px; color: var(--void); background: var(--k, var(--ink-3)); text-transform: uppercase; }
+.x-name { font-weight: 600; font-size: 13.5px; }
+.x-desc { grid-column: 2; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.x-req { grid-column: 2; font: 11px var(--mono); color: var(--ink-3); }
+
+/* ── focus chart (bottom of the stage) ── */
+#focus { --accent: var(--cyan); width: min(640px, 100%); margin: 0 auto; }
+#focus .f-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+#focus h3 { margin: 0; font: 700 14px var(--mono); letter-spacing: 0.12em; color: var(--cyan); }
+#focus .f-sub { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-2); }
+#focus .f-big { font: 600 28px/1.1 var(--mono); text-align: right; }
+#focus .f-chg { font: 700 12px var(--mono); text-align: right; }
+#chartWrap { position: relative; height: 150px; }
+#chart { width: 100%; height: 100%; display: block; cursor: crosshair; }
+#ctip { position: absolute; top: 0; pointer-events: none; padding: 6px 9px; border-radius: 10px; background: rgba(4, 6, 12, 0.94); border: 1px solid var(--line-2); font: 12px var(--mono); color: var(--ink); white-space: nowrap; opacity: 0; transition: opacity .12s; }
+#focus .f-foot { display: flex; gap: 8px; flex-wrap: wrap; }
+#focus button.on { color: var(--void); background: var(--cyan); border-color: var(--cyan); }
+
+/* ── anomaly / whale stream (one slot, swap chips) ── */
+#stream { --accent: var(--magenta); }
+#whales { --accent: var(--cyan); }
+#stream, #whales { flex: 1 1 36%; }
+body:not(.show-whales) #whales, body.show-whales #stream { display: none; }
+#stream ol, #whales ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+#stream li, #whales li { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); cursor: pointer; transition: border-color .2s, background .2s; border-left: 3px solid var(--ink-3); }
+#stream li.high, #whales li.high { border-left-color: var(--crit); }
+#stream li.watch, #whales li.watch { border-left-color: var(--warn); }
+#stream li:hover, #stream li.sel, #whales li:hover, #whales li.sel { border-color: var(--accent); background: rgba(255, 255, 255, 0.05); }
+#stream li.empty, #whales li.empty { cursor: default; border-left-color: var(--line); }
+li.fresh { animation: arrive 1.2s ease-out; }
+@keyframes arrive { from { opacity: 0; transform: translateY(-10px); box-shadow: 0 0 0 2px var(--crit); } }
+.a-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.a-sym { font: 700 13px var(--mono); letter-spacing: 0.04em; }
+.a-sym b { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
+.a-time { margin-top: 4px; font: 11.5px var(--mono); color: var(--ink-3); }
+.a-reason { margin: 6px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.sev { font: 700 10.5px var(--mono); letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.sev.high { color: var(--void); background: var(--crit); }
+.sev.watch { color: var(--void); background: var(--warn); }
+.w-usd { font: 600 20px var(--mono); color: var(--cyan); }
+.w-route { margin: 5px 0 0; font: 12.5px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.w-verdict { margin: 3px 0 0; font-size: 13px; color: var(--ink-2); }
+.w-foot { margin-top: 5px; display: flex; justify-content: space-between; font: 11.5px var(--mono); color: var(--ink-3); }
+.w-foot a { color: var(--cyan); text-decoration: none; }
+.w-foot a:hover { text-decoration: underline; }
+.swap.ping { color: var(--void); background: var(--amber); border-color: var(--amber); }
+
+/* ── news mood ── */
+#mood { --accent: var(--amber); flex: 1 1 30%; }
+#mood h2 span:last-child { letter-spacing: 0.04em; color: var(--ink-3); font-weight: 600; }
+.m-top { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; padding: 10px 12px; border-radius: 12px; background: rgba(251, 191, 36, 0.06); border: 1px solid rgba(251, 191, 36, 0.16); }
+.m-score { font: 600 32px/1 var(--mono); }
+.m-label { font: 700 11px var(--mono); letter-spacing: 0.14em; margin-top: 6px; }
+.m-sub { font: 11.5px var(--mono); color: var(--ink-3); margin-top: 3px; }
+.m-fg { text-align: right; font: 700 10.5px var(--mono); letter-spacing: 0.1em; color: var(--ink-3); }
+.m-fg strong { display: block; font: 600 24px/1.1 var(--mono); color: var(--ink); letter-spacing: 0; }
+.m-fg svg { display: block; margin: 4px 0 0 auto; }
+#msyms { display: flex; gap: 6px; flex-wrap: wrap; }
+#msyms span { font: 700 11px var(--mono); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+#mlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; min-height: 40px; }
+#mlist li { display: grid; grid-template-columns: 8px 1fr; gap: 10px; align-items: start; }
+#mlist li > i { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+#mlist a { color: var(--ink); text-decoration: none; font-size: 13.5px; line-height: 1.4; }
+#mlist a:hover { color: var(--amber); }
+#mlist .m-meta { font: 11px var(--mono); color: var(--ink-3); margin-top: 2px; }
+#mlist .hi { color: var(--crit); font-weight: 700; }
+
+/* ── status bar ── */
+#pulse { position: relative; z-index: 2; display: flex; gap: 22px; align-items: center; flex-wrap: wrap; padding: 8px 20px; border-top: 1px solid var(--line); background: rgba(4, 6, 12, 0.85); font: 12px var(--mono); color: var(--ink-3); }
+#pulse strong { color: var(--ink); font-weight: 600; }
+#phealth { margin-left: auto; }
+
+#tip { position: fixed; z-index: 5; pointer-events: none; padding: 9px 12px; border-radius: 12px; background: rgba(4, 6, 12, 0.95); border: 1px solid var(--line-2); font-size: 13px; opacity: 0; transition: opacity .12s; max-width: 280px; }
+#tip b { font: 700 11.5px var(--mono); letter-spacing: 0.1em; display: block; margin-bottom: 3px; color: var(--cyan); }
+#tip span { color: var(--ink-2); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 1100px) {
+  #deck { grid-template-columns: minmax(280px, 320px) 1fr minmax(280px, 330px); gap: 12px; padding: 12px; }
+}
+/* phone / narrow: one scrolling column, constellation as the backdrop */
+@media (max-width: 860px) {
+  body { overflow: auto; height: auto; min-height: 100%; }
+  #deck { grid-template-columns: 1fr; padding: 12px 16px; }
+  #stage { order: -1; min-height: 52vh; }
+  .col { display: contents; }
+  .panel { max-height: 70vh; }
+  #brand { padding: 10px 16px; }
+  #brand .meta { margin-left: 0; }
+  #bform { order: 3; flex-basis: 100%; max-width: none; margin: 0; }
+  #phealth { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { li.fresh { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-label="Neural constellation of the OMEGA stack. Nodes are services and market pairs; light travelling along links is data flowing."></canvas>
+
+<header id="brand">
+  <div class="logo"><div class="orb" aria-hidden="true"></div><div><p class="mark">OMEGA</p><p class="sub">PRE-COG SYNDICATE · OPS ROOM</p></div></div>
+  <form id="bform" role="search" autocomplete="off">
+    <input id="bq" type="search" maxlength="4000" placeholder="Ask, design or change anything… the Brain plans, researches and designs" aria-label="Ask the Brain">
+    <button id="bgo" type="submit">THINK</button>
+  </form>
+  <div class="meta">
+    <span id="link" class="chip"><i></i><span>CONNECTING</span></span>
+    <span id="clock">--:--:--</span><span>KUWAIT</span>
+    <button id="ctoggle" class="chip on" type="button" aria-controls="cortex" aria-expanded="true">CORTEX</button>
+    <button id="xtoggle" class="chip on" type="button" aria-controls="modules" aria-expanded="true">MODULES</button>
+    <button id="mtoggle" class="chip on" type="button" aria-controls="mood" aria-expanded="true">NEWS</button>
+    <a id="studio" class="chip" href="http://localhost:5006" target="_blank" rel="noopener" title="Deep analysis in OMEGA Studio (docker compose --profile studio up -d)">STUDIO ↗</a>
+    <button id="lang" class="chip" type="button" title="العربية / English">ع</button>
+    <button id="lite" class="chip" type="button" aria-pressed="false" title="Stop the 3D animation to save CPU and battery">LITE</button>
+  </div>
+</header>
+
+<main id="deck">
+  <aside class="col" aria-label="Intelligence">
+    <section id="cortex" class="panel" aria-label="Cortex LLM gateway">
+      <h2><span>CORTEX · LLM GATEWAY</span></h2>
+      <div id="csum">—</div>
+      <ul id="cprov" class="scroll"><li class="off"><span></span><span class="n">waiting for the gateway…</span></li></ul>
+      <div class="c-routes" id="croutes">
+        <button data-route="omega/fast" class="on" title="Free tiers only, re-ranked by measured speed and success">FAST · FREE</button>
+        <button data-route="omega/smart" title="Claude first, strongest free models as failover">SMART · CLAUDE</button>
+        <button data-route="omega/free-smart" title="Strongest free models only">SMART · FREE</button>
+        <button data-route="omega/local" title="Open-source model inside the stack: nothing leaves this machine">LOCAL · PRIVATE</button>
+      </div>
+      <form id="cform"><textarea id="cq" rows="1" placeholder="Ask the Cortex…" aria-label="Prompt"></textarea><button id="csend" type="submit">SEND</button></form>
+      <div id="cout" class="scroll" aria-live="polite"></div>
+      <div id="cmeta"></div>
+    </section>
+
+    <section id="quant" class="panel" aria-label="Quant risk engine">
+      <h2><span>QUANT · RISK ENGINE</span><span class="count" id="qsrc">—</span></h2>
+      <table id="qtable"><thead><tr><th>PAIR</th><th title="EWMA volatility, annualised">VOL</th><th>REGIME</th><th title="Newest 5-min return vs the last 24h">Z</th><th>24H</th></tr></thead><tbody><tr><td colspan="5" class="empty">Waiting for the engine…</td></tr></tbody></table>
+      <div id="qcorr"></div>
+      <div id="qmeta">stdlib · EWMA λ 0.94 · 5-min bars · 48h</div>
+    </section>
+
+    <section id="modules" class="panel" aria-label="Modules">
+      <h2><span>MODULES · PLUGINS</span><span class="count" id="xcount">—</span></h2>
+      <ul id="xlist" class="scroll"><li class="empty">Loading the plugin registry…</li></ul>
+    </section>
+  </aside>
+
+  <section id="stage" aria-label="Constellation">
+    <section id="focus" class="panel" aria-live="polite">
+      <div class="f-head">
+        <div><h3 id="ftitle">BTCUSDT</h3><p class="f-sub" id="fsub">5-minute closes · last 48h</p></div>
+        <div><div class="f-big" id="fbig">—</div><div class="f-chg" id="fchg">&nbsp;</div></div>
+      </div>
+      <div id="chartWrap"><canvas id="chart" role="img" aria-label="Price chart"></canvas><div id="ctip"></div></div>
+      <div class="f-foot" id="fsyms"></div>
+      <table class="sr" id="ftable"></table>
+    </section>
+  </section>
+
+  <aside class="col" aria-label="Signals">
+    <section id="stream" class="panel" aria-label="Anomaly stream">
+      <h2><span>ANOMALY STREAM</span><span><button class="swap" data-show="whales">WHALES ▸</button> <span class="count" id="acount">0</span></span></h2>
+      <ol id="alist" class="scroll"><li class="empty">No anomalies yet. The Sentinel needs about an hour of memory before z-score rules arm.</li></ol>
+    </section>
+
+    <section id="whales" class="panel" aria-label="Whale stream">
+      <h2><span>WHALES · ≥ $50M</span><span><button class="swap" data-show="anomalies">ANOMALIES ▸</button> <span class="count" id="wcount">0</span></span></h2>
+      <ol id="wlist" class="scroll"><li class="empty">No whale transfers yet. Bitcoin is read block by block (about every 10 minutes); Ethereum every minute.</li></ol>
+    </section>
+
+    <section id="mood" class="panel" aria-label="News sentiment">
+      <h2><span>NEWS MOOD</span><span id="mmeta">—</span></h2>
+      <div class="m-top">
+        <div><div class="m-score" id="mscore">—</div><div class="m-label" id="mlabel">WAITING FOR HEADLINES</div><div class="m-sub" id="msub">market · last 24h</div></div>
+        <div class="m-fg" title="Crypto Fear &amp; Greed Index (alternative.me), last 30 days">FEAR &amp; GREED<strong id="fgv">—</strong><span id="fgl"></span><span id="fgspark"></span></div>
+      </div>
+      <div id="msyms"></div>
+      <ol id="mlist" class="scroll"><li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li></ol>
+    </section>
+
+    <section id="agents" class="panel" aria-label="Agent workforce">
+      <h2><span>AGENTS · WORKFORCE</span><span class="count" id="apending">—</span></h2>
+      <div class="scroll">
+        <ul id="aroster"><li class="empty">Waiting for the workforce…</li></ul>
+        <p class="ahead">PROPOSALS · YOUR CALL</p>
+        <ol id="aprops"><li class="empty">No proposals yet. The Scout researches open-source tools once a day.</li></ol>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<footer id="pulse">
+  <div>MEMORY <strong id="pmem">—</strong></div>
+  <div>LAST PULSE <strong id="pago">waiting</strong></div>
+  <div id="phealth">—</div>
+</footer>
+
+<section id="brainp" class="panel" aria-label="The Brain" aria-live="polite" hidden>
+  <h2><span>THE BRAIN · AGENT WEB</span><button type="button" id="bclose" aria-label="Close">✕</button></h2>
+  <div id="breq"></div>
+  <ol id="bsteps" class="scroll"></ol>
+  <div id="banswer" class="scroll"></div>
+  <div id="bmeta"></div>
+</section>
+
+<div id="tip"></div>
+
+<script>
+"use strict";
+// ───────────────────────────── config ─────────────────────────────
+const SYM_COLOR = { BTCUSDT: "#f59e0b", ETHUSDT: "#818cf8", SOLUSDT: "#2dd4bf" };   // amber / indigo / teal: distinct under CVD
+const FALLBACK_COLORS = ["#f59e0b", "#818cf8", "#2dd4bf"];
+const CSS = getComputedStyle(document.documentElement);
+const C = k => CSS.getPropertyValue(k).trim();
+const FLOW = C("--flow"), OK = C("--ok"), WARN = C("--warn"), CRIT = C("--crit"), INK = C("--ink"), INK2 = C("--ink-2"), INK3 = C("--ink-3");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const params = new URLSearchParams(location.search);
+const FORCE_DEMO = location.protocol === "file:" || params.has("demo");
+const KIND_LABEL = { price_shock: "PRICE SHOCK", volume_spike: "VOLUME SPIKE", drawdown_1h: "1H DRAWDOWN" };
+const ASSET_COLOR = { BTC: "#f59e0b", WBTC: "#f59e0b", ETH: "#818cf8", WETH: "#818cf8", STETH: "#818cf8", USDT: "#2dd4bf", USDC: "#2dd4bf" };
+const VERDICT_LABEL = {
+  to_exchange: "Into an exchange · sell pressure", from_exchange: "Out of an exchange · accumulation",
+  exchange_shuffle: "Exchange to exchange", mint: "Fresh stablecoin mint", burn: "Stablecoin burn",
+  issuer_out: "Issuer release · new supply", unknown: "Unlabelled wallets",
+};
+const CHAIN_NODE = { btc: "btcnet", eth: "ethnet" };
+const EXPLORER = { btc: h => `https://mempool.space/tx/${h}`, eth: h => `https://etherscan.io/tx/${h}` };
+
+// ───────────────────────────── state ─────────────────────────────
+const state = {
+  mode: "connecting",              // live | demo | down
+  symbols: [],
+  latest: {},                      // symbol -> {close, change_1h_pct, change_24h_pct}
+  anomalies: [],                   // newest first
+  whales: [],                      // newest first
+  status: { relay: "unknown", n8n: "unknown", postgrest: "unknown", timescale: "unknown", btc_chain: "unknown", eth_chain: "unknown", cortex: "unknown" },
+  lastPulse: null,
+  focus: { type: "symbol", symbol: "BTCUSDT" },
+};
+
+// ───────────────────────────── graph model ─────────────────────────────
+const nodes = new Map();
+const edges = [];
+function addNode(n) {
+  if (nodes.has(n.id)) return nodes.get(n.id);
+  const r = 160;
+  n.x = (Math.random() - 0.5) * r; n.y = (Math.random() - 0.5) * r; n.z = (Math.random() - 0.5) * r;
+  n.vx = n.vy = n.vz = 0; n.size = n.size || 1; n.flare = 0;
+  nodes.set(n.id, n); return n;
+}
+function addEdge(a, b, len = 120, faint = false) { edges.push({ a, b, len, faint }); }
+function removeNode(id) {
+  nodes.delete(id);
+  for (let i = edges.length - 1; i >= 0; i--) if (edges[i].a === id || edges[i].b === id) edges.splice(i, 1);
+}
+
+[
+  { id: "binance",   label: "BINANCE",   role: "Market source · 1-minute klines", ext: true },
+  { id: "n8n",       label: "N8N",       role: "Orchestrator · runs every minute", health: "n8n" },
+  { id: "timescale", label: "TIMESCALE", role: "Memory core · hypertable + SQL anomaly detection", health: "timescale", size: 1.5 },
+  { id: "postgrest", label: "POSTGREST", role: "Read-only API over the memory core", health: "postgrest" },
+  { id: "relay",     label: "RELAY",     role: "Authenticated inbox · live stream to this room", health: "relay" },
+  { id: "ops",       label: "OPS ROOM",  role: "You are here", size: 1.2 },
+  { id: "telegram",  label: "TELEGRAM",  role: "Anomaly alerts to the Architect", ext: true },
+  { id: "cortex",    label: "CORTEX",    role: "LLM gateway · Claude + free tiers, failover, performance memory", health: "cortex", size: 1.3 },
+  { id: "news",      label: "NEWS WIRE", role: "Free RSS headlines + Fear & Greed · every 10 minutes, scored by the Cortex", ext: true },
+  { id: "btcnet",    label: "BITCOIN",   role: "Whale Watch · confirmed blocks, change-adjusted", health: "btc_chain" },
+  { id: "ethnet",    label: "ETHEREUM",  role: "Whale Watch · ETH + USDT/USDC/WETH/WBTC/stETH transfers", health: "eth_chain" },
+].forEach(addNode);
+addEdge("btcnet", "n8n", 140); addEdge("ethnet", "n8n", 140);
+addEdge("binance", "n8n", 130); addEdge("n8n", "timescale", 120); addEdge("timescale", "postgrest", 110);
+addEdge("postgrest", "relay", 110); addEdge("n8n", "relay", 140); addEdge("relay", "ops", 110); addEdge("n8n", "telegram", 150);
+addEdge("relay", "cortex", 120); addEdge("cortex", "postgrest", 150, true);
+addEdge("news", "n8n", 140); addEdge("n8n", "cortex", 160, true);
+
+// LLM providers orbit the Cortex; only switched-on ones appear.
+const LLM_STATE = { ok: "ok", cooling: "degraded", degraded: "degraded", off: "down" };
+function setProviders(list) {
+  const want = new Set(list.filter(p => p.enabled).map(p => "llm-" + p.id));
+  for (const n of [...nodes.values()]) if (n.llm && !want.has(n.id)) removeNode(n.id);
+  for (const p of list) {
+    if (!p.enabled) continue;
+    const id = "llm-" + p.id;
+    const role = `${p.label}${p.paid ? " · paid" : p.local ? " · open source, on this machine" : " · free tier"} · ${p.state}` +
+      (p.calls_24h ? ` · ${p.calls_24h} calls/24h, ${Math.round(p.success_24h * 100)}% ok` : "") +
+      (p.trains_on_prompts ? " · may train on prompts" : "");
+    const n = nodes.get(id) || addNode({ id, label: p.label.toUpperCase(), llm: true, size: p.paid ? 1.15 : 0.8 });
+    if (!edges.some(e => e.a === id)) { addEdge(id, "cortex", p.paid ? 80 : 95); const c = nodes.get("cortex"), r = () => (Math.random() - 0.5) * 60; n.x = c.x + r(); n.y = c.y + r(); n.z = c.z + r(); }
+    n.role = role; n.llmState = LLM_STATE[p.state] || "unknown"; n.label = p.label.toUpperCase();
+  }
+}
+
+function setSymbols(list) {
+  state.symbols = list;
+  list.forEach((s, i) => {
+    if (!SYM_COLOR[s]) SYM_COLOR[s] = FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+    if (nodes.has(s)) return;
+    addNode({ id: s, label: s.replace(/USDT$/, ""), role: `${s} · 1-minute candles`, sym: s, size: 1.1 });
+    addEdge(s, "binance", 90); addEdge(s, "timescale", 170, true);
+  });
+  renderSymButtons();
+}
+
+// ───────────────────────────── physics ─────────────────────────────
+function healthOf(n) { if (n.llm) return n.llmState; return n.health ? state.status[n.health] : n.ext ? (state.status.n8n === "down" ? "unknown" : "ok") : "ok"; }
+function step() {
+  const arr = [...nodes.values()];
+  for (let i = 0; i < arr.length; i++) {
+    const a = arr[i];
+    for (let j = i + 1; j < arr.length; j++) {
+      const b = arr[j];
+      let dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+      const d2 = dx * dx + dy * dy + dz * dz + 25, f = 9000 / d2, d = Math.sqrt(d2);
+      dx /= d; dy /= d; dz /= d;
+      a.vx += dx * f; a.vy += dy * f; a.vz += dz * f; b.vx -= dx * f; b.vy -= dy * f; b.vz -= dz * f;
+    }
+  }
+  for (const e of edges) {
+    const a = nodes.get(e.a), b = nodes.get(e.b); if (!a || !b) continue;
+    const down = healthOf(a) === "down" || healthOf(b) === "down";
+    const rest = e.len * (down ? 2.6 : 1);
+    let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1, f = (d - rest) * (down ? 0.004 : 0.012);
+    dx /= d; dy /= d; dz /= d;
+    a.vx += dx * f; a.vy += dy * f; a.vz += dz * f; b.vx -= dx * f; b.vy -= dy * f; b.vz -= dz * f;
+  }
+  for (const n of arr) {
+    const g = healthOf(n) === "down" ? 0.0003 : 0.0016;
+    n.vx -= n.x * g; n.vy -= n.y * g; n.vz -= n.z * g;
+    n.vx *= 0.86; n.vy *= 0.86; n.vz *= 0.86;
+    n.x += n.vx; n.y += n.vy; n.z += n.vz;
+    n.flare *= 0.965;
+  }
+}
+
+// ───────────────────────────── camera ─────────────────────────────
+const sky = document.getElementById("sky"), ctx = sky.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+const cam = { yaw: 0.6, pitch: -0.25, dist: 620, zoom: 1, auto: REDUCED ? 0 : 0.0016 };
+const view = { cx: 0, cy: 0, w: 1, h: 1 };     // the open stage the constellation is framed in
+function resize() {
+  DPR = Math.min(1.5, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  sky.width = W * DPR; sky.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const st = document.getElementById("stage").getBoundingClientRect(), fh = document.getElementById("focus").getBoundingClientRect().height;
+  const wide = W > 860;
+  view.w = wide ? st.width : W; view.h = wide ? Math.max(200, st.height - fh - 16) : Math.max(220, st.height);
+  view.cx = wide ? st.left + st.width / 2 : W / 2; view.cy = wide ? st.top + view.h / 2 : st.top + view.h / 2;
+}
+addEventListener("resize", resize); resize();
+function project(p) {
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const x1 = p.x * cy - p.z * sy, z1 = p.x * sy + p.z * cy;
+  const y2 = p.y * cp - z1 * sp, z2 = p.y * sp + z1 * cp;
+  const z = z2 + cam.dist, s = 820 / Math.max(60, z);
+  return { x: view.cx + x1 * s, y: view.cy + y2 * s, s, z };
+}
+
+// keep the whole constellation framed at any screen size (the core nodes, not drifting dead ones)
+function fitCamera() {
+  let R = 1;
+  for (const n of nodes.values()) if (!n.anomaly && !n.whale && healthOf(n) !== "down") R = Math.max(R, Math.hypot(n.x, n.y, n.z));
+  const target = Math.max(200, R * 820 / (0.46 * Math.max(160, Math.min(view.w, view.h)) * cam.zoom)) + R;
+  if (Number.isFinite(target)) cam.dist += (target - cam.dist) * 0.04;
+  if (!Number.isFinite(cam.dist)) cam.dist = 620;
+}
+
+// stars: fixed far field, parallax with yaw
+const stars = Array.from({ length: 260 }, () => ({ a: Math.random() * Math.PI * 2, e: (Math.random() - 0.5) * 1.6, r: Math.random() * 1.2 + 0.2, t: Math.random() * 6 }));
+
+// agents on the web: the Brain's thinking pipeline, then the background workforce
+const WEB_AGENTS = [
+  { id: "memory", label: "MEMORY", brain: true }, { id: "planner", label: "PLANNER", brain: true }, { id: "researcher", label: "RESEARCHER", brain: true },
+  { id: "designer", label: "DESIGNER", brain: true }, { id: "critic", label: "CRITIC", brain: true }, { id: "synthesizer", label: "SYNTHESIZER", brain: true },
+  { id: "sentinel", label: "SENTINEL" }, { id: "analyst", label: "ANALYST" }, { id: "scout", label: "SCOUT" },
+];
+const brainView = { status: {} };
+
+// spider web: radial threads + sagging rings around the stage centre, with synapse pulses on the threads
+function drawWeb(now) {
+  const N = 12, RINGS = 6, R = Math.min(view.w, view.h) * 0.62, rot = cam.yaw * 0.3;
+  const pt = (k, r) => { const a = rot + k / N * Math.PI * 2; return [view.cx + Math.cos(a) * r, view.cy + Math.sin(a) * r * 0.82]; };
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(167,139,250,0.10)";
+  for (let k = 0; k < N; k++) { const [x, y] = pt(k, R); ctx.beginPath(); ctx.moveTo(view.cx, view.cy); ctx.lineTo(x, y); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(34,211,238,0.08)";
+  for (let j = 1; j <= RINGS; j++) {
+    const r = R * j / RINGS; ctx.beginPath();
+    for (let k = 0; k <= N; k++) {
+      const [x, y] = pt(k, r);
+      if (!k) { ctx.moveTo(x, y); continue; }
+      const [mx, my] = pt(k - 0.5, r * 0.9);                        // threads sag toward the hub
+      ctx.quadraticCurveTo(mx, my, x, y);
+    }
+    ctx.stroke();
+  }
+  // the agents sit on the outer ring; the one thinking glows and receives light from the agent before it
+  ctx.font = "700 10px ui-monospace, Menlo, monospace"; ctx.textBaseline = "middle";
+  WEB_AGENTS.forEach((a, i) => {
+    const [x, y] = pt(i * N / WEB_AGENTS.length, R * 0.96);
+    const st = brainView.status[a.id], active = st === "working";
+    const col = a.brain ? (active ? "#a78bfa" : st === "done" ? "#34d399" : "rgba(167,139,250,0.55)") : "rgba(244,114,182,0.6)";
+    if (active && !lite) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 26); g.addColorStop(0, "rgba(167,139,250,0.55)"); g.addColorStop(1, "transparent");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+      const prev = WEB_AGENTS[i - 1];
+      if (prev && prev.brain) {                                         // helping hand: light runs from the previous agent
+        const [px, py] = pt((i - 1) * N / WEB_AGENTS.length, R * 0.96), t = (now / 900) % 1;
+        ctx.strokeStyle = "rgba(167,139,250,0.35)"; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
+        ctx.fillStyle = "#22d3ee"; ctx.beginPath(); ctx.arc(px + (x - px) * t, py + (y - py) * t, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, active ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = active ? 1 : 0.7; ctx.fillStyle = active ? "#eef3fb" : "#b4c0d4";
+    ctx.textAlign = x < view.cx ? "right" : "left"; ctx.fillText(a.label, x + (x < view.cx ? -9 : 9), y);
+    ctx.globalAlpha = 1;
+  });
+  ctx.textAlign = "left";
+  if (lite) return;
+  for (let k = 0; k < N; k += 3) {                                  // synapse pulses running outward
+    const t = ((now / 2600) + k / N) % 1, [x, y] = pt(k + 0.5 * Math.sin(now / 9000), R * t);
+    ctx.globalAlpha = 0.5 * (1 - t); ctx.fillStyle = "#22d3ee";
+    ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ───────────────────────────── particles & flares ─────────────────────────────
+const particles = [];
+function emit(path, color, speed = 0.018, size = 2.2) {
+  if (path.some(id => !nodes.has(id))) return;
+  particles.push({ path, seg: 0, t: 0, color, speed, size, trail: [] });
+}
+function flare(id, color, amt = 1) { const n = nodes.get(id); if (n) { n.flare = Math.max(n.flare, amt); n.flareColor = color; } }
+
+// ───────────────────────────── render ─────────────────────────────
+function healthColor(h) { return h === "down" ? CRIT : h === "degraded" ? WARN : h === "unknown" ? INK3 : OK; }
+function nodeColor(n) { return n.sym ? SYM_COLOR[n.sym] : n.anomaly ? (n.severity === "high" ? CRIT : WARN) : n.whale ? (n.ghost ? INK3 : n.color) : n.id === "ops" ? FLOW : healthColor(healthOf(n)); }
+let hover = null, lastFrame = performance.now();
+const P = new Map();
+
+let lite = false;
+try { lite = localStorage.getItem("omega.lite") === "1"; } catch { /* storage may be blocked */ }
+function draw(now) {
+  requestAnimationFrame(draw);
+  if (now - lastFrame < (lite ? 1000 : 33)) return;
+  const dt = Math.min(50, now - lastFrame); lastFrame = now;
+  if (!dragging && !lite) cam.yaw += cam.auto * dt / 16;
+  step();
+  fitCamera();
+  ctx.clearRect(0, 0, W, H);
+
+  // stars
+  for (const s of stars) {
+    const x = ((s.a + cam.yaw * 0.15) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2) * W;
+    const y = H / 2 + s.e * H * 0.6 + cam.pitch * 40;
+    ctx.globalAlpha = 0.25 + 0.25 * Math.sin(now / 1400 + s.t);
+    ctx.fillStyle = "#b8c8e6"; ctx.fillRect(x, y, s.r, s.r);
+  }
+  ctx.globalAlpha = 1;
+  drawWeb(now);
+
+  P.clear();
+  for (const n of nodes.values()) P.set(n.id, project(n));
+
+  // edges
+  for (const e of edges) {
+    const a = P.get(e.a), b = P.get(e.b); if (!a || !b) continue;
+    const down = healthOf(nodes.get(e.a)) === "down" || healthOf(nodes.get(e.b)) === "down";
+    const depth = Math.max(0.15, Math.min(1, 900 / (a.z + b.z)));
+    ctx.strokeStyle = down ? CRIT : "#8fb4e0";
+    ctx.globalAlpha = (e.faint ? 0.08 : 0.22) * depth * (down ? 1.6 : 1);
+    ctx.lineWidth = e.faint ? 0.7 : 1.1;
+    ctx.setLineDash(down ? [3, 6] : []);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+  // particles
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.t += p.speed * dt / 16;
+    if (p.t >= 1) {
+      flare(p.path[p.seg + 1], p.color, 0.35);
+      p.seg++; p.t = 0;
+      if (p.seg >= p.path.length - 1) { particles.splice(i, 1); continue; }
+    }
+    const a = nodes.get(p.path[p.seg]), b = nodes.get(p.path[p.seg + 1]);
+    if (!a || !b) { particles.splice(i, 1); continue; }
+    const k = p.t * p.t * (3 - 2 * p.t);
+    const q = project({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k });
+    p.trail.push(q); if (p.trail.length > 14) p.trail.shift();
+    for (let j = 0; j < p.trail.length; j++) {
+      const t = p.trail[j], f = j / p.trail.length;
+      ctx.globalAlpha = f * 0.55; ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(t.x, t.y, p.size * q.s * f, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, 10 * q.s);
+    g.addColorStop(0, p.color); g.addColorStop(1, "transparent");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, 10 * q.s, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  // nodes, far to near
+  const order = [...nodes.values()].sort((a, b) => P.get(b.id).z - P.get(a.id).z);
+  for (const n of order) {
+    const q = P.get(n.id), col = nodeColor(n);
+    const r = (n.anomaly ? 3.2 : 5.5) * n.size * q.s;
+    const fade = n.anomaly || n.whale ? Math.max(n.ghost || n.anomaly ? 0.15 : 0.55, 1 - (Date.now() - n.born) / n.ttl) : 1;
+    ctx.globalAlpha = fade;
+    // halo
+    const halo = r * (3.2 + n.flare * 5);
+    const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, halo);
+    g.addColorStop(0, hexA(n.flare > 0.05 && n.flareColor ? n.flareColor : col, 0.35 + n.flare * 0.4));
+    g.addColorStop(1, "transparent");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, halo, 0, Math.PI * 2); ctx.fill();
+    // core with surface ring
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#05070d"; ctx.lineWidth = 2; ctx.stroke();
+    if (n.id === hover || (state.focus.type === "symbol" && n.sym === state.focus.symbol)) {
+      ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(q.x, q.y, r + 5, 0, Math.PI * 2); ctx.stroke();
+    }
+    // shockwave
+    if (n.shock) {
+      const age = (now - n.shock.t0) / 1600;
+      if (age > 1) n.shock = null;
+      else {
+        ctx.strokeStyle = hexA(n.shock.color, 1 - age); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(q.x, q.y, r + age * 70 * q.s, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+    // label (text wears ink, not series colour)
+    const fs = Math.max(9, Math.min(13, 10.5 * q.s));
+    ctx.font = `600 ${fs}px ui-monospace, Menlo, monospace`;
+    ctx.fillStyle = n.anomaly || n.whale ? INK2 : INK; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(n.label, q.x + r + 8, q.y - (n.sym ? 7 : 0));
+    if (n.sym && state.latest[n.sym]) {
+      const L = state.latest[n.sym];
+      ctx.font = `${fs}px ui-monospace, Menlo, monospace`; ctx.fillStyle = INK2;
+      const ch = L.change_1h_pct;
+      ctx.fillText(`${fmtPrice(L.close)}  ${ch == null ? "" : (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "% 1h"}`, q.x + r + 8, q.y + 8);
+    } else if (!n.anomaly && !n.whale && n.id !== "ops" && healthOf(n) !== "ok") {
+      ctx.font = `${fs - 1}px ui-monospace, Menlo, monospace`; ctx.fillStyle = healthColor(healthOf(n));
+      ctx.fillText(healthOf(n).toUpperCase(), q.x + r + 8, q.y + 12);
+    }
+  }
+  ctx.globalAlpha = 1;
+  expireAnomalyNodes(); expireWhaleNodes();
+}
+
+function hexA(hex, a) {
+  const h = hex.replace("#", ""); const v = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16);
+  return `rgba(${v >> 16 & 255},${v >> 8 & 255},${v & 255},${Math.max(0, Math.min(1, a))})`;
+}
+function fmtPrice(v) { return v == null ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: v >= 100 ? 2 : 4, minimumFractionDigits: v >= 100 ? 2 : 2 }); }
+function fmtTime(iso, withDate) {
+  return new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuwait", hour: "2-digit", minute: "2-digit", hour12: false, ...(withDate ? { day: "2-digit", month: "short" } : {}) });
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+// ───────────────────────────── interaction ─────────────────────────────
+let dragging = false, lastX = 0, lastY = 0, moved = 0;
+sky.addEventListener("pointerdown", e => { dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; sky.setPointerCapture(e.pointerId); sky.classList.add("dragging"); });
+sky.addEventListener("pointermove", e => {
+  if (dragging) {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY; moved += Math.abs(dx) + Math.abs(dy);
+    cam.yaw += dx * 0.005; cam.pitch = Math.max(-1.2, Math.min(1.2, cam.pitch + dy * 0.005));
+    lastX = e.clientX; lastY = e.clientY; return;
+  }
+  const n = pick(e.clientX, e.clientY); hover = n ? n.id : null;
+  const tip = document.getElementById("tip");
+  if (n) {
+    const h = healthOf(n);
+    tip.innerHTML = `<b>${esc(n.anomaly ? KIND_LABEL[n.kind] + " · " + n.parent : n.label)}</b><span>${esc(n.role)}</span>` +
+      (n.health ? `<br><span>Status: ${esc(h)}</span>` : "");
+    tip.style.left = Math.min(W - 270, e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.style.opacity = 1;
+  } else tip.style.opacity = 0;
+});
+sky.addEventListener("pointerup", e => {
+  dragging = false; sky.classList.remove("dragging");
+  if (moved < 6) { const n = pick(e.clientX, e.clientY); if (n?.sym) focusSymbol(n.sym); else if (n?.anomaly) focusAnomaly(n.aid); else if (n?.whale && n.wid) focusWhale(n.wid); }
+});
+sky.addEventListener("wheel", e => { e.preventDefault(); cam.zoom = Math.max(0.4, Math.min(2.5, cam.zoom * (1 - e.deltaY * 0.001))); }, { passive: false });
+function pick(x, y) {
+  let best = null, bd = 22 * 22;
+  for (const n of nodes.values()) { const q = P.get(n.id); if (!q) continue; const d = (q.x - x) ** 2 + (q.y - y) ** 2; if (d < bd) { bd = d; best = n; } }
+  return best;
+}
+
+// ───────────────────────────── events → visuals ─────────────────────────────
+function onPulse(p) {
+  state.lastPulse = p;
+  for (const s of p.symbols) {
+    state.latest[s.symbol] = { ...(state.latest[s.symbol] || {}), close: s.close };
+    emit([s.symbol, "binance", "n8n", "timescale"], SYM_COLOR[s.symbol] || FLOW, 0.02, 2);
+  }
+  setTimeout(() => emit(["n8n", "relay", "ops"], FLOW, 0.024, 2.4), 900);
+  setTimeout(() => emit(["timescale", "postgrest", "relay", "ops"], FLOW, 0.02, 1.6), 1400);
+  renderPulse();
+  refreshLatest();
+  if (state.focus.type === "symbol") loadFocus();
+}
+function onAnomaly(a, fresh = true) {
+  if (state.anomalies.some(x => x.id === a.id)) return;
+  state.anomalies.unshift(a); state.anomalies.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
+  state.anomalies.length = Math.min(state.anomalies.length, 40);
+  if (fresh) {
+    const col = a.severity === "high" ? CRIT : WARN;
+    const sym = nodes.get(a.symbol);
+    if (sym) sym.shock = { t0: performance.now(), color: col };
+    flare(a.symbol, col, 1);
+    emit(["timescale", "n8n", "telegram"], col, 0.016, 2.8);
+    setTimeout(() => emit(["n8n", "relay", "ops"], col, 0.02, 2.8), 500);
+    spawnAnomalyNode(a);
+  }
+  renderStream(fresh ? a.id : null);
+}
+function spawnAnomalyNode(a) {
+  const id = "anom-" + a.id;
+  if (nodes.has(id) || !nodes.has(a.symbol)) return;
+  const parent = nodes.get(a.symbol);
+  const n = addNode({ id, label: KIND_LABEL[a.kind], role: a.reason, anomaly: true, kind: a.kind, severity: a.severity, parent: a.symbol, aid: a.id, born: Date.now(), ttl: 15 * 60 * 1000, size: 1 });
+  n.x = parent.x + 10; n.y = parent.y + 10; n.z = parent.z;
+  addEdge(id, a.symbol, 55);
+  const sats = [...nodes.values()].filter(x => x.anomaly).sort((x, y) => x.born - y.born);
+  while (sats.length > 8) removeNode(sats.shift().id);
+}
+function fmtUsd(v) { return v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : `$${(v / 1e6).toFixed(1)}M`; }
+function fmtAmt(v) { return Number(v).toLocaleString("en-US", { maximumFractionDigits: v >= 1000 ? 0 : 2 }); }
+function shortAddr(a) { return a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a; }
+function sideLabel(w, side) {
+  if (side === "from" && w.verdict === "mint") return "MINT";
+  if (side === "to" && w.verdict === "burn") return "BURN";
+  return w[`${side}_entity`] || shortAddr(w[`${side}_addr`]);
+}
+function onWhale(w, fresh = true) {
+  if (state.whales.some(x => x.id === w.id)) return;
+  state.whales.unshift(w); state.whales.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
+  state.whales.length = Math.min(state.whales.length, 40);
+  if (fresh) {
+    const col = ASSET_COLOR[w.asset] || FLOW, sev = w.severity === "high" ? CRIT : WARN, net = CHAIN_NODE[w.chain];
+    const a = whaleNode(w, "from"), b = whaleNode(w, "to");
+    const size = Math.min(4.2, 2.2 + Math.log10(Math.max(1, w.usd_value / 5e7)) * 1.6);
+    if (a && b) {
+      emit([a, b], col, 0.008, size);
+      setTimeout(() => { const n = nodes.get(b); if (n) n.shock = { t0: performance.now(), color: sev }; flare(b, sev, 1); }, 1600);
+    }
+    flare(net, col, 0.8);
+    emit([net, "n8n", "timescale"], col, 0.02, 2.4);
+    setTimeout(() => emit(["n8n", "relay", "ops"], sev, 0.02, 2.6), 700);
+    if (w.severity === "high") setTimeout(() => emit(["timescale", "n8n", "telegram"], sev, 0.016, 2.6), 400);
+  }
+  renderWhales(fresh ? w.id : null);
+  markWhaleSeen(fresh);
+}
+// One node per wallet/entity. Labelled entities linger and darken slowly; unlabelled wallets are ghosts.
+function whaleNode(w, side) {
+  const ent = side === "from" && w.verdict === "mint" ? "MINT" : side === "to" && w.verdict === "burn" ? "BURN" : w[`${side}_entity`];
+  const id = "whale-" + w.chain + "-" + (ent || w[`${side}_addr`]);
+  const net = nodes.get(CHAIN_NODE[w.chain]);
+  if (!net) return null;
+  let n = nodes.get(id);
+  if (!n) {
+    n = addNode({ id, label: (ent || shortAddr(w[`${side}_addr`])).toUpperCase(), whale: true, ghost: !ent,
+                  color: ASSET_COLOR[w.asset] || FLOW, size: ent ? 1 : 0.7 });
+    n.x = net.x + (Math.random() - 0.5) * 40; n.y = net.y + (Math.random() - 0.5) * 40; n.z = net.z + (Math.random() - 0.5) * 40;
+    addEdge(id, net.id, ent ? 110 : 80, true);
+  }
+  n.born = Date.now(); n.ttl = (ent ? 6 * 60 : 20) * 60 * 1000; n.wid = w.id;
+  n.role = `${fmtUsd(w.usd_value)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")} · ${VERDICT_LABEL[w.verdict] || w.verdict}`;
+  const list = [...nodes.values()].filter(x => x.whale).sort((x, y) => x.born - y.born);
+  while (list.length > 12) removeNode(list.shift().id);
+  return id;
+}
+function expireWhaleNodes() { for (const n of nodes.values()) if (n.whale && Date.now() - n.born > n.ttl) removeNode(n.id); }
+function expireAnomalyNodes() { for (const n of nodes.values()) if (n.anomaly && Date.now() - n.born > n.ttl) removeNode(n.id); }
+function onStatus(s) {
+  const prev = state.status; state.status = { ...state.status, ...s };
+  const NODE_OF = { btc_chain: "btcnet", eth_chain: "ethnet" };
+  for (const k of ["n8n", "postgrest", "timescale", "relay", "btc_chain", "eth_chain", "cortex"]) {
+    const id = NODE_OF[k] || k;
+    if (prev[k] !== state.status[k] && state.status[k] === "down") flare(id, CRIT, 1);
+    if (prev[k] === "down" && state.status[k] === "ok") flare(id, OK, 1);
+  }
+  renderPulse();
+}
+
+// ───────────────────────────── HUD ─────────────────────────────
+function setLink(mode) {
+  state.mode = mode;
+  const el = document.getElementById("link");
+  el.className = "chip " + (mode === "live" ? "live" : mode === "demo" ? "demo" : mode === "down" ? "down" : "");
+  el.querySelector("span").textContent = { live: "LIVE", demo: "DEMO DATA", down: "RECONNECTING", connecting: "CONNECTING" }[mode];
+}
+function renderStream(freshId) {
+  const ol = document.getElementById("alist");
+  document.getElementById("acount").textContent = state.anomalies.length;
+  if (!state.anomalies.length) return;
+  ol.innerHTML = state.anomalies.slice(0, 20).map(a => `
+    <li class="${esc(a.severity)}${a.id === freshId ? " fresh" : ""}${state.focus.type === "anomaly" && state.focus.id === a.id ? " sel" : ""}" data-id="${esc(a.id)}" tabindex="0">
+      <div class="a-top"><span class="a-sym"><b style="background:${SYM_COLOR[a.symbol] || INK3}"></b>${esc(a.symbol)}</span>
+        <span class="sev ${esc(a.severity)}">${a.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${esc(KIND_LABEL[a.kind] || a.kind)}</span></div>
+      <p class="a-reason">${esc(a.reason)}</p>
+      <div class="a-time">${esc(fmtTime(a.ts, true))} · ${esc(fmtPrice(a.price))}</div>
+    </li>`).join("");
+}
+// Arrivals are scrambled hex that resolve into the readable line (skipped for reduced motion).
+function decrypt(el, text) {
+  if (REDUCED || !el) { if (el) el.textContent = text; return; }
+  const HEX = "0123456789abcdef", t0 = performance.now(), D = 1100;
+  (function tick(now) {
+    const k = Math.min(1, (now - t0) / D), keep = Math.floor(text.length * k);
+    el.textContent = text.slice(0, keep) + [...text.slice(keep)].map(c => c === " " ? " " : HEX[Math.random() * 16 | 0]).join("");
+    if (k < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+function renderWhales(freshId) {
+  const ol = document.getElementById("wlist");
+  document.getElementById("wcount").textContent = state.whales.length;
+  if (!state.whales.length) return;
+  ol.innerHTML = state.whales.slice(0, 20).map(w => `
+    <li class="${esc(w.severity)}${w.id === freshId ? " fresh" : ""}${state.focus.type === "whale" && state.focus.id === w.id ? " sel" : ""}" data-id="${esc(w.id)}" tabindex="0">
+      <div class="a-top"><span class="w-usd">${esc(fmtUsd(w.usd_value))}</span>
+        <span class="sev ${esc(w.severity)}">${w.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${esc(w.chain.toUpperCase())}</span></div>
+      <p class="w-route"><span class="a-sym"><b style="background:${ASSET_COLOR[w.asset] || INK3}"></b></span><span data-route>${esc(`${fmtAmt(w.amount)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")}`)}</span></p>
+      <p class="w-verdict">${esc(VERDICT_LABEL[w.verdict] || w.verdict)}</p>
+      <div class="w-foot"><span>${esc(fmtTime(w.ts, true))} · block ${esc(w.block)}</span><a href="${esc(EXPLORER[w.chain](w.tx_hash))}" target="_blank" rel="noopener noreferrer">tx ↗</a></div>
+    </li>`).join("");
+  if (freshId != null) { const li = ol.querySelector(`li[data-id="${Number(freshId)}"] [data-route]`); if (li) decrypt(li, li.textContent); }
+}
+for (const [ev, ok] of [["click", () => true], ["keydown", e => e.key === "Enter"]]) {
+  document.getElementById("wlist").addEventListener(ev, e => {
+    if (!ok(e) || e.target.closest("a")) return;
+    const li = e.target.closest("li[data-id]"); if (li) focusWhale(Number(li.dataset.id));
+  });
+}
+// Whales arriving while the anomaly stream is showing light up its WHALES chip with a count.
+let unseenWhales = 0;
+function markWhaleSeen(fresh) {
+  const showing = document.body.classList.contains("show-whales");
+  unseenWhales = showing ? 0 : unseenWhales + (fresh ? 1 : 0);
+  const chip = document.querySelector('.swap[data-show="whales"]');
+  chip.textContent = unseenWhales ? `WHALES · ${unseenWhales} NEW ▸` : "WHALES ▸";
+  chip.classList.toggle("ping", unseenWhales > 0);
+}
+for (const b of document.querySelectorAll(".swap")) b.addEventListener("click", () => {
+  document.body.classList.toggle("show-whales", b.dataset.show === "whales"); markWhaleSeen(false);
+});
+
+document.getElementById("alist").addEventListener("click", e => { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); });
+document.getElementById("alist").addEventListener("keydown", e => { if (e.key === "Enter") { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); } });
+
+function renderSymButtons() {
+  document.getElementById("fsyms").innerHTML = state.symbols.map(s =>
+    `<button data-sym="${esc(s)}" class="${state.focus.type === "symbol" && state.focus.symbol === s ? "on" : ""}">${esc(s.replace(/USDT$/, ""))}</button>`).join("");
+}
+document.getElementById("fsyms").addEventListener("click", e => { const b = e.target.closest("button[data-sym]"); if (b) focusSymbol(b.dataset.sym); });
+
+function renderPulse() {
+  const p = state.lastPulse;
+  document.getElementById("pmem").textContent = p ? `+${p.stored} candles · ${p.anomalies} anomal${p.anomalies === 1 ? "y" : "ies"}` : "—";
+  const s = state.status;
+  const NAME = { btc_chain: "BTC", eth_chain: "ETH" };
+  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest", "cortex", "btc_chain", "eth_chain"].map(k =>
+    `<span style="color:${healthColor(s[k])}">${s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"}</span> ${NAME[k] || k.toUpperCase()}`).join("&nbsp;&nbsp;");
+}
+setInterval(() => {
+  const p = state.lastPulse;
+  document.getElementById("pago").textContent = p ? `${Math.max(0, Math.round((Date.now() - Date.parse(p.at)) / 1000))}s ago` : "waiting";
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Kuwait", hour12: false });
+}, 1000);
+
+// ───────────────────────────── focus chart ─────────────────────────────
+let series = [], marks = [], chartColor = FLOW;
+function focusSymbol(sym) { state.focus = { type: "symbol", symbol: sym }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
+function focusAnomaly(id) { const a = state.anomalies.find(x => x.id === id); if (!a) return; state.focus = { type: "anomaly", id, a }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
+function focusWhale(id) { const w = state.whales.find(x => x.id === id); if (!w) return; state.focus = { type: "whale", id, w }; renderSymButtons(); renderStream(); renderWhales(); loadFocus(); }
+
+async function loadFocus() {
+  const f = state.focus;
+  if (f.type === "symbol") {
+    document.getElementById("ftitle").textContent = f.symbol;
+    document.getElementById("fsub").textContent = "5-minute closes · last 48h";
+    const L = state.latest[f.symbol] || {};
+    document.getElementById("fbig").textContent = fmtPrice(L.close);
+    const ch = L.change_24h_pct;
+    const chEl = document.getElementById("fchg");
+    chEl.textContent = ch == null ? "" : `${ch >= 0 ? "▲" : "▼"} ${Math.abs(ch).toFixed(2)}% 24h`;
+    chEl.style.color = ch == null ? INK2 : ch >= 0 ? OK : CRIT;
+    const rows = await data.candles5m(f.symbol);
+    series = rows.map(r => ({ t: Date.parse(r.ts), v: r.close }));
+    marks = state.anomalies.filter(a => a.symbol === f.symbol).map(a => ({ t: Date.parse(a.ts), sev: a.severity, label: KIND_LABEL[a.kind] }));
+    chartColor = SYM_COLOR[f.symbol] || FLOW;
+  } else if (f.type === "whale") {
+    // Replay the pair that prices this asset around the block, with the transfer marked.
+    const w = f.w, sym = ["BTC", "WBTC"].includes(w.asset) ? "BTCUSDT" : "ETHUSDT";
+    document.getElementById("ftitle").textContent = `${w.chain.toUpperCase()} WHALE · ${w.asset}`;
+    document.getElementById("fsub").textContent = `${sideLabel(w, "from")} → ${sideLabel(w, "to")} · ${sym} ±60 min around block ${w.block}`;
+    document.getElementById("fbig").textContent = fmtUsd(w.usd_value);
+    const chEl = document.getElementById("fchg");
+    chEl.textContent = VERDICT_LABEL[w.verdict] || w.verdict; chEl.style.color = w.severity === "high" ? CRIT : WARN;
+    const rows = await data.candlesAround(sym, w.ts);
+    series = rows.map(r => ({ t: Date.parse(r.ts), v: r.close }));
+    marks = [{ t: Date.parse(w.ts), sev: w.severity, label: `WHALE ${fmtUsd(w.usd_value)}` }];
+    chartColor = ASSET_COLOR[w.asset] || FLOW;
+  } else {
+    const a = f.a;
+    document.getElementById("ftitle").textContent = `${a.symbol} · ${KIND_LABEL[a.kind]}`;
+    document.getElementById("fsub").textContent = `Replay · 1-minute closes ±60 min around ${fmtTime(a.ts, true)}`;
+    document.getElementById("fbig").textContent = fmtPrice(a.price);
+    const chEl = document.getElementById("fchg");
+    chEl.textContent = a.severity === "high" ? "▲ HIGH" : "● WATCH"; chEl.style.color = a.severity === "high" ? CRIT : WARN;
+    const rows = await data.candlesAround(a.symbol, a.ts);
+    series = rows.map(r => ({ t: Date.parse(r.ts), v: r.close }));
+    marks = [{ t: Date.parse(a.ts), sev: a.severity, label: KIND_LABEL[a.kind] }];
+    chartColor = SYM_COLOR[a.symbol] || FLOW;
+  }
+  drawChart();
+  document.getElementById("ftable").innerHTML = "<tr><th>time</th><th>close</th></tr>" +
+    series.slice(-60).map(p => `<tr><td>${new Date(p.t).toISOString()}</td><td>${p.v}</td></tr>`).join("");
+  document.getElementById("chart").setAttribute("aria-label", `${document.getElementById("ftitle").textContent}: ${series.length} points`);
+}
+
+const chart = document.getElementById("chart"), cctx = chart.getContext("2d"), ctip = document.getElementById("ctip");
+let chartHover = null;
+function chartGeom() {
+  const w = chart.clientWidth, h = chart.clientHeight, pad = { l: 4, r: 74, t: 8, b: 18 };
+  const ts = series.map(p => p.t), vs = series.map(p => p.v);
+  const t0 = Math.min(...ts), t1 = Math.max(...ts);
+  let v0 = Math.min(...vs), v1 = Math.max(...vs); const m = (v1 - v0) * 0.08 || v1 * 0.001; v0 -= m; v1 += m;
+  return { w, h, pad, X: t => pad.l + (t - t0) / ((t1 - t0) || 1) * (w - pad.l - pad.r), Y: v => pad.t + (1 - (v - v0) / ((v1 - v0) || 1)) * (h - pad.t - pad.b), v0, v1, t0, t1 };
+}
+function drawChart() {
+  const d = Math.min(2, devicePixelRatio || 1);
+  chart.width = chart.clientWidth * d; chart.height = chart.clientHeight * d; cctx.setTransform(d, 0, 0, d, 0, 0);
+  const w = chart.clientWidth, h = chart.clientHeight;
+  cctx.clearRect(0, 0, w, h);
+  if (series.length < 2) { cctx.fillStyle = INK3; cctx.font = "12px ui-monospace, monospace"; cctx.fillText("Not enough memory yet for this view.", 4, h / 2); return; }
+  const g = chartGeom();
+  // recessive grid: 3 lines + right-side value labels
+  cctx.font = "10px ui-monospace, monospace"; cctx.textBaseline = "middle"; cctx.textAlign = "left";
+  for (let i = 0; i <= 2; i++) {
+    const v = g.v0 + (g.v1 - g.v0) * (i / 2), y = g.Y(v);
+    cctx.strokeStyle = "rgba(130,170,220,0.10)"; cctx.lineWidth = 1; cctx.beginPath(); cctx.moveTo(g.pad.l, y); cctx.lineTo(w - g.pad.r, y); cctx.stroke();
+    cctx.fillStyle = INK3; cctx.textAlign = "right"; cctx.fillText(fmtPrice(v), w - 2, y);
+  }
+  cctx.textAlign = "left"; cctx.textBaseline = "alphabetic"; cctx.fillStyle = INK3;
+  cctx.fillText(fmtTime(new Date(g.t0).toISOString(), true), g.pad.l, h - 3);
+  cctx.textAlign = "right"; cctx.fillText(fmtTime(new Date(g.t1).toISOString(), true), w - g.pad.r, h - 3);
+  // area + line
+  const grad = cctx.createLinearGradient(0, g.pad.t, 0, h - g.pad.b);
+  grad.addColorStop(0, hexA(chartColor, 0.22)); grad.addColorStop(1, hexA(chartColor, 0));
+  cctx.beginPath(); series.forEach((p, i) => i ? cctx.lineTo(g.X(p.t), g.Y(p.v)) : cctx.moveTo(g.X(p.t), g.Y(p.v)));
+  cctx.lineTo(g.X(series[series.length - 1].t), h - g.pad.b); cctx.lineTo(g.X(series[0].t), h - g.pad.b); cctx.closePath();
+  cctx.fillStyle = grad; cctx.fill();
+  cctx.beginPath(); series.forEach((p, i) => i ? cctx.lineTo(g.X(p.t), g.Y(p.v)) : cctx.moveTo(g.X(p.t), g.Y(p.v)));
+  cctx.strokeStyle = chartColor; cctx.lineWidth = 2; cctx.lineJoin = "round"; cctx.stroke();
+  // anomaly markers: vertical tick + ringed dot (status colour + label in tooltip)
+  for (const m of marks) {
+    if (m.t < g.t0 || m.t > g.t1) continue;
+    const near = series.reduce((b, p) => Math.abs(p.t - m.t) < Math.abs(b.t - m.t) ? p : b, series[0]);
+    const x = g.X(m.t), y = g.Y(near.v), col = m.sev === "high" ? CRIT : WARN;
+    cctx.strokeStyle = hexA(col, 0.4); cctx.setLineDash([2, 3]); cctx.beginPath(); cctx.moveTo(x, g.pad.t); cctx.lineTo(x, h - g.pad.b); cctx.stroke(); cctx.setLineDash([]);
+    cctx.beginPath(); cctx.arc(x, y, 4.5, 0, Math.PI * 2); cctx.fillStyle = col; cctx.fill(); cctx.strokeStyle = "#0a0f1b"; cctx.lineWidth = 2; cctx.stroke();
+  }
+  // crosshair
+  if (chartHover) {
+    const p = chartHover, x = g.X(p.t), y = g.Y(p.v);
+    cctx.strokeStyle = "rgba(226,233,244,0.35)"; cctx.lineWidth = 1; cctx.beginPath(); cctx.moveTo(x, g.pad.t); cctx.lineTo(x, h - g.pad.b); cctx.stroke();
+    cctx.beginPath(); cctx.arc(x, y, 4, 0, Math.PI * 2); cctx.fillStyle = chartColor; cctx.fill(); cctx.strokeStyle = "#0a0f1b"; cctx.lineWidth = 2; cctx.stroke();
+  }
+}
+chart.addEventListener("pointermove", e => {
+  if (series.length < 2) return;
+  const g = chartGeom(), x = e.offsetX;
+  const p = series.reduce((b, q) => Math.abs(g.X(q.t) - x) < Math.abs(g.X(b.t) - x) ? q : b, series[0]);
+  chartHover = p; drawChart();
+  const mk = marks.find(m => Math.abs(g.X(m.t) - g.X(p.t)) < 6);
+  ctip.innerHTML = `${esc(fmtTime(new Date(p.t).toISOString(), true))} · <b>${esc(fmtPrice(p.v))}</b>${mk ? `<br><span style="color:${mk.sev === "high" ? CRIT : WARN}">${mk.sev === "high" ? "▲" : "●"} ${esc(mk.label)}</span>` : ""}`;
+  ctip.style.opacity = 1; ctip.style.left = Math.max(0, Math.min(chart.clientWidth - 160, g.X(p.t) + 10)) + "px";
+});
+chart.addEventListener("pointerleave", () => { chartHover = null; ctip.style.opacity = 0; drawChart(); });
+addEventListener("resize", () => drawChart());
+
+// ───────────────────────────── cortex console ─────────────────────────────
+const cortex = { route: "omega/fast", providers: [], perf: [], history: [], busy: false };
+function fmtMs(v) { return v == null ? "—" : v >= 1000 ? (v / 1000).toFixed(1) + "s" : Math.round(v) + "ms"; }
+function renderCortex() {
+  const perfBy = {};
+  for (const r of cortex.perf) {                                     // per provider: calls-weighted roll-up of its models
+    const a = perfBy[r.provider] ||= { calls: 0, ok: 0, p50: [], tokens: 0 };
+    a.calls += Number(r.calls); a.ok += Number(r.success_rate) * Number(r.calls);
+    if (r.p50_ms != null) a.p50.push([Number(r.p50_ms), Number(r.calls)]);
+    a.tokens += Number(r.prompt_tokens) + Number(r.completion_tokens);
+  }
+  const list = [...cortex.providers].sort((a, b) => (b.enabled - a.enabled) || ((perfBy[b.id]?.calls || 0) - (perfBy[a.id]?.calls || 0)));
+  const on = list.filter(p => p.enabled).length;
+  let calls = 0, tokens = 0; for (const a of Object.values(perfBy)) { calls += a.calls; tokens += a.tokens; }
+  document.getElementById("csum").textContent = cortex.providers.length ? `${on}/${list.length} live · ${calls} calls · ${tokens.toLocaleString("en-US")} tokens / 24h` : "gateway not reachable";
+  if (!list.length) return;
+  document.getElementById("cprov").innerHTML = list.map(p => {
+    const a = perfBy[p.id];
+    const p50 = a && a.p50.length ? a.p50.reduce((s, [v, w]) => s + v * w, 0) / a.p50.reduce((s, [, w]) => s + w, 0) : null;
+    const col = !p.enabled ? INK3 : healthColor(LLM_STATE[p.state]);
+    const right = !p.enabled ? (p.anonymous || /anon/i.test(p.reason || "") ? "keyless · off" : "no key") : a ? `${Math.round(a.ok / a.calls * 100)}% · ${fmtMs(p50)}` : "no calls yet";
+    return `<li class="${p.enabled ? "" : "off"}" title="${esc(p.enabled ? p.models.join(", ") : p.reason || "off")}"><span><b style="background:${col}"></b></span>` +
+      `<span class="n">${esc(p.label)}${p.paid ? " ◆" : p.local ? " ⌂" : ""}</span><span class="m">${a ? esc(a.calls) + "×" : ""}</span><span class="m">${right}</span></li>`;
+  }).join("");
+}
+async function refreshCortex() {
+  try { const j = await cortexData.providers(); cortex.providers = j.providers || []; setProviders(cortex.providers); } catch { cortex.providers = []; setProviders([]); }
+  try { cortex.perf = await cortexData.perf(); } catch { cortex.perf = []; }
+  renderCortex();
+}
+function onCortex(ev) {
+  for (const a of ev.attempts || []) if (!a.ok) flare("llm-" + a.provider, CRIT, 0.9);
+  if (ev.provider) {
+    emit(["ops", "relay", "cortex", "llm-" + ev.provider], FLOW, 0.026, 2.2);
+    setTimeout(() => emit(["llm-" + ev.provider, "cortex", "relay", "ops"], OK, 0.026, 2.4), 700);
+    setTimeout(() => emit(["cortex", "postgrest"], INK2, 0.02, 1.4), 900);
+    flare("llm-" + ev.provider, OK, 1);
+  }
+  clearTimeout(cortex.t); cortex.t = setTimeout(refreshCortex, 1500);
+}
+document.getElementById("croutes").addEventListener("click", e => {
+  const b = e.target.closest("button[data-route]"); if (!b) return;
+  cortex.route = b.dataset.route;
+  for (const x of document.querySelectorAll("#croutes button")) x.classList.toggle("on", x === b);
+});
+const cq = document.getElementById("cq");
+cq.addEventListener("input", () => { cq.style.height = "auto"; cq.style.height = Math.min(120, cq.scrollHeight) + "px"; });
+cq.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("cform").requestSubmit(); } });
+document.getElementById("cform").addEventListener("submit", async e => {
+  e.preventDefault();
+  const q = cq.value.trim(); if (!q || cortex.busy) return;
+  cortex.busy = true; cq.value = ""; cq.style.height = "auto";
+  const out = document.getElementById("cout"), meta = document.getElementById("cmeta");
+  out.textContent = "…"; meta.textContent = `${cortex.route} · routing`;
+  emit(["ops", "relay", "cortex"], FLOW, 0.03, 2);
+  const messages = [...cortex.history.slice(-8), { role: "user", content: q }];
+  try {
+    const j = await cortexData.chat(cortex.route, messages);
+    if (j.error) throw new Error(j.error.message || j.error);
+    const answer = j.choices[0].message.content, o = j.omega || {};
+    out.textContent = answer;                                      // model text is never parsed as HTML
+    cortex.history.push({ role: "user", content: q }, { role: "assistant", content: answer });
+    const failed = (o.attempts || []).filter(a => a.called && !a.ok).length;
+    meta.textContent = `${o.provider_label || o.provider} · ${j.model.split(":").slice(1).join(":")} · ${fmtMs(o.latency_ms)} · ${j.usage?.total_tokens ?? "?"} tok${failed ? ` · ${failed} failover${failed > 1 ? "s" : ""}` : ""}`;
+    if (state.mode === "demo") onCortex({ ok: true, provider: o.provider, attempts: (o.attempts || []).filter(a => a.called) });
+  } catch (err) {
+    out.textContent = ""; meta.textContent = `No answer: ${err.message}`;
+    flare("cortex", CRIT, 1);
+  } finally { cortex.busy = false; }
+});
+document.getElementById("ctoggle").addEventListener("click", e => {
+  const panel = document.getElementById("cortex"), open = panel.hidden;
+  panel.hidden = !open; e.currentTarget.classList.toggle("on", open); e.currentTarget.setAttribute("aria-expanded", String(open));
+});
+
+// ───────────────────────────── news mood ─────────────────────────────
+const mood = { now: [], news: [], fg: [], fresh: new Set(), servedBy: null };
+const moodColor = v => v == null ? INK3 : v >= 0.2 ? OK : v <= -0.2 ? CRIT : INK2;
+const moodLabel = v => v == null ? "NO SCORED HEADLINES" : v >= 0.5 ? "STRONGLY BULLISH" : v >= 0.2 ? "BULLISH" : v <= -0.5 ? "STRONGLY BEARISH" : v <= -0.2 ? "BEARISH" : "NEUTRAL";
+const signed = (v, d = 2) => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+function ago(iso) {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`;
+}
+function renderMood() {
+  const by = Object.fromEntries(mood.now.map(r => [r.scope, r]));
+  const m = by.MARKET, score = m && m.score_24h != null ? Number(m.score_24h) : null;
+  const el = document.getElementById("mscore");
+  el.textContent = signed(score); el.style.color = moodColor(score);
+  const lab = document.getElementById("mlabel"); lab.textContent = moodLabel(score); lab.style.color = moodColor(score);
+  const prev = m && m.score_prev_24h != null ? Number(m.score_prev_24h) : null;
+  document.getElementById("msub").textContent = m
+    ? `market · 24h · ${m.n_24h} headlines${m.high_impact_24h > 0 ? ` · ${m.high_impact_24h} high impact` : ""}${prev != null && score != null ? ` · ${signed(score - prev)} vs prior day` : ""}`
+    : "market · last 24h";
+  document.getElementById("msyms").innerHTML = state.symbols.map(sym => {
+    const base = sym.replace(/USDT$/, ""), r = by[base], v = r && r.score_24h != null ? Number(r.score_24h) : null;
+    return `<span title="${esc(r ? `${r.n_24h} headlines in 24h · ${r.bullish_24h} bullish · ${r.bearish_24h} bearish` : "no headlines in 24h")}">${esc(base)} <b style="color:${moodColor(v)}">${esc(signed(v))}</b></span>`;
+  }).join("");
+  const fg = mood.fg.length ? mood.fg[mood.fg.length - 1] : null;
+  document.getElementById("fgv").textContent = fg ? fg.value : "—";
+  document.getElementById("fgv").style.color = fg ? (fg.value >= 55 ? OK : fg.value <= 45 ? CRIT : INK) : INK;
+  document.getElementById("fgl").textContent = fg ? fg.label.toUpperCase() : "";
+  const pts = mood.fg.slice(-30);
+  document.getElementById("fgspark").innerHTML = pts.length > 1 ? `<svg width="74" height="18" viewBox="0 0 74 18" aria-hidden="true"><polyline fill="none" stroke="${INK2}" stroke-width="1.2" points="${pts.map((p, i) => `${(i / (pts.length - 1) * 72 + 1).toFixed(1)},${(17 - p.value / 100 * 16).toFixed(1)}`).join(" ")}"/></svg>` : "";
+  const list = [...mood.news].sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at)).slice(0, 20);
+  document.getElementById("mmeta").textContent = mood.servedBy ? `scored by ${mood.servedBy.split(":")[0]}` : list.length ? `${list.length} recent` : "—";
+  document.getElementById("mlist").innerHTML = list.length ? list.map(n => {
+    const href = /^https?:\/\//.test(n.url) ? n.url : "#";
+    const tags = [n.source, ago(n.published_at), (n.symbols || []).join(" ") || "market"];
+    return `<li class="${mood.fresh.has(n.id) ? "fresh" : ""}"><i style="background:${moodColor(Number(n.sentiment))}" title="${esc(`${n.label} ${signed(Number(n.sentiment))}`)}"></i><div>` +
+      `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(n.rationale || n.title)}">${esc(n.title)}</a>` +
+      `<div class="m-meta">${esc(tags.join(" · "))} · ${n.impact === "high" ? '<span class="hi">HIGH IMPACT</span>' : esc(n.impact)}${n.scored_by === "lexicon" ? " · keywords" : ""}</div></div></li>`;
+  }).join("") : '<li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li>';
+  mood.fresh.clear();
+  const nn = nodes.get("news"); if (nn) nn.role = `Free RSS headlines + Fear & Greed · market mood ${signed(score)} (${moodLabel(score).toLowerCase()})`;
+}
+async function refreshMood() {
+  const [now, news, fg] = await Promise.all([newsData.now().catch(() => null), newsData.news().catch(() => null), newsData.fg().catch(() => null)]);
+  if (now) mood.now = now; if (news) mood.news = news; if (fg) mood.fg = fg;
+  renderMood();
+}
+function onNews(ev, fresh = true) {
+  const known = new Set(mood.news.map(n => n.id));
+  for (const n of ev.items || []) if (!known.has(n.id)) { mood.news.push(n); if (fresh) mood.fresh.add(n.id); }
+  if (ev.served_by) mood.servedBy = ev.served_by;
+  if (fresh) {
+    const avg = (ev.items || []).reduce((s, n) => s + Number(n.sentiment), 0) / Math.max(1, (ev.items || []).length);
+    emit(["news", "n8n", "timescale"], FLOW, 0.02, 2);
+    setTimeout(() => emit(["n8n", "cortex"], INK2, 0.022, 2.2), 600);
+    setTimeout(() => emit(["cortex", "n8n", "relay", "ops"], moodColor(avg), 0.022, 2.4), 1300);
+    flare("news", moodColor(avg), 1);
+    for (const n of ev.items || []) for (const s of n.symbols || []) if (nodes.has(s + "USDT") && n.impact !== "low") flare(s + "USDT", moodColor(Number(n.sentiment)), 0.8);
+  }
+  if (state.mode === "live") { clearTimeout(mood.t); mood.t = setTimeout(refreshMood, 1200); }
+  renderMood();
+}
+document.getElementById("mtoggle").addEventListener("click", e => {
+  const panel = document.getElementById("mood"), open = panel.hidden;
+  panel.hidden = !open; e.currentTarget.classList.toggle("on", open); e.currentTarget.setAttribute("aria-expanded", String(open));
+});
+
+// ───────────────────────────── data sources ─────────────────────────────
+const api = async path => { const r = await fetch(path, { headers: { Accept: "application/json" } }); if (!r.ok) throw new Error(r.status); return r.json(); };
+const live = {
+  candles5m: s => api(`/api/candles_5m?symbol=eq.${encodeURIComponent(s)}&order=ts.asc`).catch(() => []),
+  candlesAround: (s, ts) => {
+    const t = Date.parse(ts), a = new Date(t - 3600e3).toISOString(), b = new Date(t + 3600e3).toISOString();
+    return api(`/api/candles?symbol=eq.${encodeURIComponent(s)}&ts=gte.${a}&ts=lte.${b}&order=ts.asc`).catch(() => []);
+  },
+};
+let data = live;
+let cortexData = {
+  providers: () => api("/llm/providers"),
+  perf: () => api("/api/llm_perf"),
+  chat: async (route, messages) => {
+    const r = await fetch("/llm/chat", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ route, messages }) });
+    const j = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+    if (!r.ok && !j.error) j.error = `HTTP ${r.status}`;
+    return j;
+  },
+};
+let newsData = {
+  now: () => api("/api/sentiment_now"),
+  news: () => api("/api/news?order=published_at.desc&limit=30"),
+  fg: () => api("/api/fear_greed?order=ts.asc"),
+};
+let latestTimer = 0;
+function refreshLatest() {
+  if (state.mode !== "live") return;
+  clearTimeout(latestTimer);
+  latestTimer = setTimeout(async () => {
+    try { for (const r of await api("/api/latest")) state.latest[r.symbol] = r; } catch { /* memory core may be down; status shows it */ }
+    if (state.focus.type === "symbol") { const L = state.latest[state.focus.symbol]; if (L) document.getElementById("fbig").textContent = fmtPrice(L.close); }
+  }, 300);
+}
+
+function connectLive() {
+  const es = new EventSource("/events");
+  let gotHello = false;
+  const giveUp = setTimeout(() => { if (!gotHello) { es.close(); startDemo(); } }, 5000);
+  es.addEventListener("hello", async e => {
+    gotHello = true; clearTimeout(giveUp); setLink("live");
+    const h = JSON.parse(e.data);
+    setSymbols(h.symbols || []);
+    if (!state.symbols.includes(state.focus.symbol)) state.focus.symbol = state.symbols[0];
+    onStatus(h.status || {});
+    if (h.pulse) { state.lastPulse = h.pulse; renderPulse(); }
+    try { for (const a of await api("/api/anomalies?order=ts.desc&limit=20")) onAnomaly(a, false); } catch { (h.recent || []).forEach(a => onAnomaly(a, false)); }
+    try { for (const r of await api("/api/latest")) state.latest[r.symbol] = r; } catch { /* shown via status */ }
+    try { for (const w of await api("/api/whales?order=ts.desc&limit=20")) onWhale(w, false); } catch { (h.whales || []).forEach(w => onWhale(w, false)); }
+    renderStream(); renderWhales(); loadFocus(); refreshCortex();
+    (h.news || []).forEach(n => onNews({ items: [n] }, false));
+    refreshMood();
+  });
+  es.addEventListener("news", e => onNews(JSON.parse(e.data)));
+  es.addEventListener("cortex", e => onCortex(JSON.parse(e.data)));
+  es.addEventListener("pulse", e => onPulse(JSON.parse(e.data)));
+  es.addEventListener("anomaly", e => onAnomaly(JSON.parse(e.data)));
+  es.addEventListener("whale", e => onWhale(JSON.parse(e.data)));
+  es.addEventListener("status", e => onStatus(JSON.parse(e.data)));
+  es.onerror = () => { if (gotHello) { setLink("down"); onStatus({ relay: "down" }); } };
+  es.onopen = () => { if (gotHello) { setLink("live"); onStatus({ relay: "ok" }); } };
+}
+
+// ───────────────────────────── demo mode (file:// or ?demo) ─────────────────────────────
+function startDemo() {
+  setLink("demo");
+  const syms = ["BTCUSDT", "ETHUSDT", "SOLUSDT"], base = { BTCUSDT: 62000, ETHUSDT: 2450, SOLUSDT: 148 };
+  setSymbols(syms);
+  const hist = {};
+  const now = Date.now();
+  for (const s of syms) {
+    let p = base[s]; hist[s] = [];
+    for (let t = now - 48 * 3600e3; t <= now; t += 60e3) { p *= 1 + (Math.random() - 0.5) * 0.0016 + Math.sin(t / 5e6) * 0.0001; hist[s].push({ ts: new Date(t).toISOString(), close: p }); }
+    const h = hist[s], c = h[h.length - 1].close;
+    state.latest[s] = { close: c, change_1h_pct: (c / h[h.length - 61].close - 1) * 100, change_24h_pct: (c / h[h.length - 1441].close - 1) * 100 };
+  }
+  data = {
+    candles5m: async s => hist[s].filter((_, i) => i % 5 === 0),
+    candlesAround: async (s, ts) => { const t = Date.parse(ts); return hist[s].filter(r => Math.abs(Date.parse(r.ts) - t) <= 3600e3); },
+  };
+  onStatus({ relay: "ok", n8n: "ok", postgrest: "ok", timescale: "ok", cortex: "ok", btc_chain: "ok", eth_chain: "ok" });
+  const demoProv = [
+    { id: "anthropic", label: "Claude", paid: true, enabled: true, state: "ok", models: ["claude-opus-5-5"] },
+    { id: "groq", label: "Groq", enabled: true, state: "ok", models: ["openai/gpt-oss-120b"] },
+    { id: "gemini", label: "Google Gemini", enabled: true, state: "ok", trains_on_prompts: true, models: ["gemini-2.5-flash"] },
+    { id: "cloudflare", label: "Cloudflare Workers AI", enabled: true, state: "cooling", models: ["@cf/meta/llama-3.3-70b-instruct-fp8-fast"] },
+    { id: "nvidia", label: "NVIDIA NIM", enabled: true, state: "ok", models: ["openai/gpt-oss-20b"] },
+    { id: "openrouter", label: "OpenRouter", enabled: false, reason: "set OPENROUTER_API_KEY", models: ["openrouter/free"] },
+    { id: "kilo", label: "Kilo Code", enabled: false, reason: "anonymous: off", models: ["kilo-auto/free"] },
+    { id: "local", label: "Local · Ollama", local: true, enabled: true, state: "ok", models: ["llama3.2:3b"] },
+  ];
+  const demoPerf = [
+    { provider: "groq", model: "openai/gpt-oss-120b", calls: 142, success_rate: 0.98, p50_ms: 420, prompt_tokens: 61000, completion_tokens: 23000 },
+    { provider: "gemini", model: "gemini-2.5-flash", calls: 37, success_rate: 0.95, p50_ms: 1150, prompt_tokens: 18000, completion_tokens: 9100 },
+    { provider: "anthropic", model: "claude-opus-5-5", calls: 12, success_rate: 1, p50_ms: 6800, prompt_tokens: 15000, completion_tokens: 7400 },
+    { provider: "cloudflare", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast", calls: 20, success_rate: 0.7, p50_ms: 900, prompt_tokens: 6000, completion_tokens: 2100 },
+    { provider: "local", model: "llama3.2:3b", calls: 6, success_rate: 1, p50_ms: 3900, prompt_tokens: 2100, completion_tokens: 900 },
+    { provider: "nvidia", model: "openai/gpt-oss-20b", calls: 9, success_rate: 1, p50_ms: 1600, prompt_tokens: 3000, completion_tokens: 1400 },
+  ];
+  cortexData = {
+    providers: async () => ({ providers: demoProv }),
+    perf: async () => demoPerf,
+    chat: async (route, messages) => {
+      await new Promise(r => setTimeout(r, 900));
+      const provider = route === "omega/smart" ? "anthropic" : route === "omega/local" ? "local" : "groq";
+      const label = { anthropic: "Claude", local: "Local · Ollama", groq: "Groq" }[provider];
+      return { model: { anthropic: "anthropic:claude-opus-5-5", local: "local:llama3.2:3b", groq: "groq:openai/gpt-oss-120b" }[provider],
+        choices: [{ message: { content: `Demo mode: no model was called. In the live stack this goes to ${route} and the answer for "${messages.at(-1).content.slice(0, 80)}" lands here.` } }],
+        usage: { total_tokens: 64 },
+        omega: { provider, provider_label: label, latency_ms: provider === "anthropic" ? 6200 : 410, attempts: route === "omega/fast" ? [{ provider: "cloudflare", called: true, ok: false }, { provider, called: true, ok: true }] : [{ provider, called: true, ok: true }] } };
+    },
+  };
+  refreshCortex();
+  quantDemo = () => demoQuant(hist); refreshQuant();
+  agentsDemo = demoAgents(); refreshAgents();
+  const demoNews = [
+    ["CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"],
+    ["Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"],
+    ["Cointelegraph", "Ethereum core devs lock the date for the next network upgrade", ["ETH"], 0.38, "medium"],
+    ["The Block", "Major exchange pauses withdrawals after a hot-wallet exploit", [], -0.84, "high"],
+    ["CryptoSlate", "Analysts split on whether funding rates signal an overheated market", ["BTC", "ETH"], -0.08, "low"],
+    ["Bitcoin Magazine", "Sovereign fund discloses a bitcoin position in its quarterly filing", ["BTC"], 0.55, "medium"],
+    ["Decrypt", "Memecoin volumes cool as traders rotate into majors", [], 0.12, "low"],
+  ];
+  let nid = 1;
+  const mkNews = ([source, title, symbols, sentiment, impact], agoMin) => ({ id: nid++, published_at: new Date(Date.now() - agoMin * 60e3).toISOString(),
+    source, title, url: "https://example.com/demo-" + nid, symbols, sentiment, relevance: 0.8, impact,
+    label: sentiment >= 0.2 ? "bullish" : sentiment <= -0.2 ? "bearish" : "neutral", rationale: "Demo headline", scored_by: "groq:openai/gpt-oss-120b" });
+  const recomputeMood = () => {
+    const scopes = {};
+    for (const n of mood.news) for (const sc of ["MARKET", ...n.symbols]) {
+      const w = n.relevance * { low: 1, medium: 2, high: 3 }[n.impact], a = scopes[sc] ||= { scope: sc, sw: 0, w: 0, n_24h: 0, bullish_24h: 0, bearish_24h: 0, high_impact_24h: 0 };
+      a.sw += n.sentiment * w; a.w += w; a.n_24h++; if (n.label === "bullish") a.bullish_24h++; if (n.label === "bearish") a.bearish_24h++; if (n.impact === "high") a.high_impact_24h++;
+    }
+    return Object.values(scopes).map(a => ({ ...a, score_24h: a.sw / a.w, score_prev_24h: a.scope === "MARKET" ? 0.05 : null }));
+  };
+  const fgDemo = Array.from({ length: 30 }, (_, i) => { const v = Math.round(50 + 18 * Math.sin(i / 5) + (Math.random() - 0.5) * 8); return { ts: new Date(Date.now() - (29 - i) * 864e5).toISOString(), value: v, label: v >= 75 ? "Extreme Greed" : v >= 55 ? "Greed" : v <= 25 ? "Extreme Fear" : v <= 45 ? "Fear" : "Neutral" }; });
+  newsData = { now: async () => recomputeMood(), news: async () => mood.news, fg: async () => fgDemo };
+  demoNews.slice(0, 5).forEach((n, i) => onNews({ items: [mkNews(n, 25 + i * 70)], served_by: "groq:openai/gpt-oss-120b" }, false));
+  refreshMood();
+  let dn = 5;
+  setInterval(() => { onNews({ items: [mkNews(demoNews[dn++ % demoNews.length], 0)], served_by: "groq:openai/gpt-oss-120b" }); refreshMood(); }, 21000);
+  let id = 1;
+  const reasons = {
+    price_shock: () => `Down 1-min move -${(1 + Math.random() * 2).toFixed(2)}% (z=-${(4 + Math.random() * 3).toFixed(1)}) vs 24h baseline`,
+    volume_spike: () => `Volume x${(5 + Math.random() * 6).toFixed(1)} the 24h average (z=${(4 + Math.random() * 5).toFixed(1)})`,
+    drawdown_1h: () => `-${(2 + Math.random() * 2).toFixed(2)}% below the 1h high`,
+  };
+  const fire = (fresh = true, ago = 0) => {
+    const s = syms[Math.floor(Math.random() * 3)], kinds = Object.keys(reasons), k = kinds[Math.floor(Math.random() * 3)];
+    const h = hist[s], r = h[Math.max(0, h.length - 1 - Math.floor(ago / 60e3))];
+    onAnomaly({ id: id++, ts: r.ts, symbol: s, kind: k, severity: Math.random() < 0.35 ? "high" : "watch", price: r.close, reason: reasons[k]() }, fresh);
+  };
+  for (let i = 0; i < 4; i++) fire(false, (i + 1) * 3.3 * 3600e3);
+  // simulated whales: amounts, labels and addresses are made up
+  const hexs = n => Array.from({ length: n }, () => "0123456789abcdef"[Math.random() * 16 | 0]).join("");
+  const WHALES = [
+    { chain: "eth", asset: "USDT", from_entity: null, to_entity: "Binance", verdict: "to_exchange" },
+    { chain: "btc", asset: "BTC", from_entity: "Coinbase", to_entity: null, verdict: "from_exchange" },
+    { chain: "eth", asset: "USDC", from_entity: null, to_entity: null, verdict: "mint" },
+    { chain: "eth", asset: "ETH", from_entity: null, to_entity: null, verdict: "unknown" },
+    { chain: "btc", asset: "BTC", from_entity: null, to_entity: "Bitfinex", verdict: "to_exchange" },
+    { chain: "eth", asset: "WETH", from_entity: "Kraken", to_entity: "Binance", verdict: "exchange_shuffle" },
+  ];
+  let wid = 1, blk = { btc: 917000, eth: 23500000 };
+  const whale = (fresh = true, ago = 0) => {
+    const k = WHALES[Math.floor(Math.random() * WHALES.length)], usd = 5e7 * (1 + Math.random() * 3) ** 1.5;
+    const px = { BTC: base.BTCUSDT, ETH: base.ETHUSDT, WETH: base.ETHUSDT }[k.asset] || 1;
+    const addr = () => k.chain === "btc" ? "bc1q" + hexs(38) : "0x" + hexs(40);
+    const w = { id: wid++, ts: new Date(Date.now() - ago).toISOString(), chain: k.chain, block: blk[k.chain]++, tx_hash: (k.chain === "eth" ? "0x" : "") + hexs(64),
+      asset: k.asset, amount: usd / px, usd_value: usd, from_addr: k.verdict === "mint" ? "0x" + "0".repeat(40) : addr(), to_addr: addr(),
+      from_entity: k.from_entity, to_entity: k.to_entity, verdict: k.verdict,
+      severity: ["to_exchange", "from_exchange", "mint"].includes(k.verdict) || usd >= 2.5e8 ? "high" : "watch" };
+    onWhale(w, fresh);
+  };
+  for (let i = 0; i < 3; i++) whale(false, (i + 1) * 2.1 * 3600e3);
+  setTimeout(() => whale(), 3000);
+  setInterval(() => { if (Math.random() < 0.5) whale(); }, 14000);
+  renderStream(); renderWhales(); loadFocus();
+  setInterval(() => {
+    const symbols = syms.map(s => {
+      const h = hist[s], last = h[h.length - 1], close = last.close * (1 + (Math.random() - 0.5) * 0.002);
+      h.push({ ts: new Date().toISOString(), close }); h.shift(); state.latest[s].close = close;
+      return { symbol: s, close, ts: new Date().toISOString() };
+    });
+    onPulse({ symbols, stored: 3, anomalies: 0, at: new Date().toISOString() });
+    if (Math.random() < 0.18) fire();
+  }, 5000);
+  // show the self-healing drift once: PostgREST drops out, then rejoins
+  setTimeout(() => onStatus({ postgrest: "down", timescale: "unknown" }), 20000);
+  setTimeout(() => onStatus({ postgrest: "ok", timescale: "ok" }), 32000);
+}
+
+// ───────────────────────────── quant (stdlib risk engine) ─────────────────────────────
+function renderQuant(q) {
+  const body = document.querySelector("#qtable tbody");
+  document.getElementById("qsrc").textContent = q && q.source ? q.source.toUpperCase() : "—";
+  const rows = q ? Object.entries(q.pairs || {}).filter(([, p]) => p) : [];
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="5" class="empty">Quant engine not reachable.</td></tr>'; document.getElementById("qcorr").innerHTML = ""; return; }
+  const sgn = v => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2);
+  body.innerHTML = rows.map(([sym, p]) => {
+    const m = p.momentum_pct?.["24h"], z = p.zscore;
+    return `<tr title="${esc(`realised vol ${p.vol_ann_pct}% · tail odds ${p.tail_prob} · max drawdown ${p.max_drawdown_pct}%`)}">` +
+      `<td><b style="background:${SYM_COLOR[sym] || INK3}"></b>${esc(sym.replace(/USDT$/, ""))}</td>` +
+      `<td>${esc(p.ewma_vol_ann_pct?.toFixed(1))}%</td><td><span class="reg ${esc(p.regime)}">${esc(p.regime.toUpperCase())}</span></td>` +
+      `<td style="color:${Math.abs(z) >= 3 ? CRIT : Math.abs(z) >= 2 ? WARN : INK}">${esc(sgn(z))}</td>` +
+      `<td style="color:${m == null ? INK3 : m >= 0 ? OK : CRIT}">${esc(sgn(m))}%</td></tr>`;
+  }).join("");
+  document.getElementById("qcorr").innerHTML = Object.entries(q.correlations || {}).map(([k, v]) =>
+    `<span title="Correlation of 5-min returns">${esc(k.replace(/USDT/g, ""))} <b style="color:${v == null ? INK3 : v >= 0.7 ? WARN : INK}">${v == null ? "—" : v.toFixed(2)}</b></span>`).join("");
+}
+// Demo: the same metrics computed in the browser from the simulated history.
+function demoQuant(hist) {
+  const pairs = {}, rets = {};
+  for (const [s, rows] of Object.entries(hist)) {
+    const c = rows.filter((_, i) => i % 5 === 0).map(r => r.close), r = c.slice(1).map((v, i) => Math.log(v / c[i]));
+    rets[s] = r;
+    const mean = r.reduce((a, b) => a + b, 0) / r.length, sd = Math.sqrt(r.reduce((a, b) => a + (b - mean) ** 2, 0) / (r.length - 1));
+    let ew = 0; for (const x of r) ew = 0.94 * ew + 0.06 * x * x;
+    const ann = Math.sqrt(365 * 288), base = r.slice(-289, -1), bm = base.reduce((a, b) => a + b, 0) / base.length;
+    const bs = Math.sqrt(base.reduce((a, b) => a + (b - bm) ** 2, 0) / (base.length - 1)), z = (r.at(-1) - bm) / bs;
+    const evol = Math.sqrt(ew) * ann * 100, vol = sd * ann * 100;
+    pairs[s] = { ewma_vol_ann_pct: evol, vol_ann_pct: +vol.toFixed(2), regime: evol > vol * 1.5 ? "turbulent" : evol < vol * 0.7 ? "calm" : "normal",
+      zscore: z, tail_prob: "—", max_drawdown_pct: "—", momentum_pct: { "24h": (c.at(-1) / c.at(-289) - 1) * 100 } };
+  }
+  const syms = Object.keys(rets).sort(), correlations = {};
+  for (let i = 0; i < syms.length; i++) for (let j = i + 1; j < syms.length; j++) {
+    const a = rets[syms[i]], b = rets[syms[j]], n = Math.min(a.length, b.length), ma = a.reduce((x, y) => x + y, 0) / a.length, mb = b.reduce((x, y) => x + y, 0) / b.length;
+    let sab = 0, saa = 0, sbb = 0; for (let k = 0; k < n; k++) { sab += (a[k] - ma) * (b[k] - mb); saa += (a[k] - ma) ** 2; sbb += (b[k] - mb) ** 2; }
+    correlations[`${syms[i]}/${syms[j]}`] = sab / Math.sqrt(saa * sbb);
+  }
+  return { source: "demo", pairs, correlations };
+}
+let quantDemo = null;
+async function refreshQuant() {
+  if (quantDemo) return renderQuant(quantDemo());
+  try { renderQuant(await api("/quant")); } catch { renderQuant(null); }
+}
+
+// ───────────────────────────── agents (workforce + proposals) ─────────────────────────────
+let agentsDemo = null;
+const GITHUB_URL = /^https:\/\/github\.com\//;
+function renderAgents(a) {
+  const roster = document.getElementById("aroster"), props = document.getElementById("aprops");
+  if (!a) { roster.innerHTML = '<li class="empty">Agents service not reachable.</li>'; return; }
+  roster.innerHTML = a.agents.map(g => `<li class="${g.last ? (g.last.ok ? "ok" : "bad") : ""}"><i></i><b>${esc(g.title.toUpperCase())}</b>` +
+    `<span class="e">every ${g.every_min >= 60 ? Math.round(g.every_min / 60) + "h" : g.every_min + "m"}</span>` +
+    `<span class="s" title="${esc(g.last ? g.last.summary : g.role)}">${esc(g.last ? g.last.summary : g.role)}</span></li>`).join("");
+  document.getElementById("apending").textContent = `${a.proposals.length} waiting`;
+  props.innerHTML = a.proposals.length ? a.proposals.slice(0, 8).map(p => `<li data-id="${esc(p.id)}">` +
+    `<div class="p-top"><a href="${esc(GITHUB_URL.test(p.url) ? p.url : "#")}" target="_blank" rel="noopener noreferrer">${esc(p.title)}</a><span class="reg normal">${esc(Math.round(p.score))}</span></div>` +
+    `<div class="p-why">${esc(p.reasons[0])} · ${esc(p.reasons[1] || "")}</div><div class="p-cost">${esc(p.cost)}</div>` +
+    `<div class="p-act"><button class="add" data-d="approved">ADD</button><button data-d="skipped">SKIP</button></div></li>`).join("")
+    : '<li class="empty">Nothing waiting. The Scout researches open-source tools once a day.</li>';
+}
+async function refreshAgents() {
+  if (agentsDemo) return renderAgents(agentsDemo);
+  try { renderAgents(await api("/agents")); } catch { renderAgents(null); }
+}
+document.getElementById("aprops").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-d]"); if (!b) return;
+  const id = b.closest("li").dataset.id, decision = b.dataset.d;
+  if (agentsDemo) { agentsDemo.proposals = agentsDemo.proposals.filter(p => p.id !== id); return renderAgents(agentsDemo); }
+  b.disabled = true;
+  const r = await fetch("/agents/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, decision }) }).catch(() => null);
+  if (!r || !r.ok) b.disabled = false;
+  refreshAgents();
+});
+function demoAgents() {
+  const ago = m => ({ ok: 1, at: new Date(Date.now() - m * 60e3).toISOString() });
+  const lib = "library · check its RAM use before installing";
+  return {
+    agents: [
+      { name: "sentinel", title: "Sentinel · watchdog", every_min: 2, role: "", last: { ...ago(1), summary: "All systems nominal." } },
+      { name: "analyst", title: "Analyst · market brief", every_min: 15, role: "", last: { ...ago(6), summary: "BTC sits in a normal-volatility regime; SOL is the most active pair after a 1h drawdown. BTC and ETH still move together, so holding both diversifies little." } },
+      { name: "scout", title: "Scout · tool research", every_min: 1440, role: "", last: { ...ago(180), summary: "Reviewed 57 repositories, 23 new proposals waiting for your answer." } },
+    ],
+    proposals: [
+      { id: "nixtla/statsforecast", title: "Nixtla/statsforecast", url: "https://github.com/Nixtla/statsforecast", score: 85.5, reasons: ["helps: faster forecasting, faster data", "4,922 stars · Apache-2.0 · updated 1 d ago"], cost: lib },
+      { id: "sktime/sktime", title: "sktime/sktime", url: "https://github.com/sktime/sktime", score: 81, reasons: ["helps: faster forecasting, smarter models", "10,062 stars · BSD-3-Clause · updated 4 d ago"], cost: lib },
+      { id: "amazon-science/chronos-forecasting", title: "amazon-science/chronos-forecasting", url: "https://github.com/amazon-science/chronos-forecasting", score: 79.2, reasons: ["helps: faster forecasting", "6,018 stars · Apache-2.0 · updated 3 d ago"], cost: lib },
+      { id: "apache/spark", title: "apache/spark", url: "https://github.com/apache/spark", score: 52, reasons: ["helps: faster data, streaming", "44,148 stars · Apache-2.0 · updated 0 d ago"], cost: "needs a JVM (~0.5–1 GB RAM)" },
+    ],
+  };
+}
+
+// ───────────────────────────── the Brain (search bar → agent web) ─────────────────────────────
+const brainEl = { panel: document.getElementById("brainp"), req: document.getElementById("breq"), steps: document.getElementById("bsteps"),
+  answer: document.getElementById("banswer"), meta: document.getElementById("bmeta"), go: document.getElementById("bgo"), q: document.getElementById("bq") };
+const openSteps = new Set();
+function renderBrain(job) {
+  brainEl.panel.hidden = false;
+  brainEl.req.textContent = job.request;
+  brainView.status = Object.fromEntries(job.steps.map(s => [s.agent, s.status]));
+  brainEl.steps.innerHTML = job.steps.map(s => `<li class="${esc(s.status)}${openSteps.has(s.agent) || s.status === "working" ? " open" : ""}" data-a="${esc(s.agent)}">` +
+    `<div class="h"><i></i><span>${esc(s.title.toUpperCase())} <small>· ${esc(s.role)}</small></span><small>${esc(s.status)}${s.ms != null ? " · " + esc(fmtMs(s.ms)) : ""}</small></div>` +
+    `<div class="o">${esc(typeof s.output === "string" ? s.output : s.output == null ? "" : JSON.stringify(s.output, null, 1))}</div></li>`).join("");
+  brainEl.answer.textContent = job.answer || "";                       // model text is never parsed as HTML
+  brainEl.meta.textContent = `${job.status.toUpperCase()}${job.intent ? " · intent " + job.intent : ""} · open-weight models first · the Brain proposes, it never edits the site by itself`;
+}
+brainEl.steps.addEventListener("click", e => {
+  const li = e.target.closest("li[data-a]"); if (!li) return;
+  openSteps.has(li.dataset.a) ? openSteps.delete(li.dataset.a) : openSteps.add(li.dataset.a); li.classList.toggle("open");
+});
+document.getElementById("bclose").addEventListener("click", () => { brainEl.panel.hidden = true; brainView.status = {}; });
+addEventListener("keydown", e => { if (e.key === "Escape") { brainEl.panel.hidden = true; brainView.status = {}; } });
+
+function demoBrain(request) {
+  const steps = [
+    ["memory", "Memory", "Recalls what was learned before", "Demo: 2 related memories. LESSON: every new POST route needs a rate limit."],
+    ["planner", "Planner", "Classifies the request and plans it", `Intent: design\nGoal: ${request}\nPlan:\n1. Map what exists\n2. Research proven patterns\n3. Draft the design\n4. Review cost and security`],
+    ["researcher", "Researcher", "Gathers evidence from the system, memory and GitHub", "[installed modules] 14 plugins · [risk engine] 3 pairs live · [github] curated tools from awesome-python"],
+    ["designer", "Designer", "Designs the solution", "Layout, components and states drafted on the 3-column grid with one accent per panel."],
+    ["critic", "Critic", "Reviews security, cost and gaps", "No new ports; stays inside the CSP; adds ~0 MB RAM.\nLESSON: keep features inside the existing relay."],
+    ["synthesizer", "Synthesizer", "Writes the final answer", ""],
+  ];
+  const job = { request, status: "running", intent: "design", answer: null, steps: steps.map(([agent, title, role]) => ({ agent, title, role, status: "waiting", output: null, ms: null })) };
+  let i = 0;
+  const tick = () => {
+    if (i > 0) Object.assign(job.steps[i - 1], { status: "done", output: steps[i - 1][3] || "Answer written.", ms: 700 + i * 180 });
+    if (i < steps.length) { job.steps[i].status = "working"; i++; renderBrain(job); setTimeout(tick, 900); return; }
+    job.status = "done";
+    job.answer = `Demo mode: no model was called.\n\nIn the live stack the six agents above would research and design "${request}" with free open-weight models, review it for security and RAM cost, and remember the lesson for next time.`;
+    renderBrain(job); brainEl.go.disabled = false; setTimeout(() => { brainView.status = {}; }, 4000);
+  };
+  tick();
+}
+document.getElementById("bform").addEventListener("submit", async e => {
+  e.preventDefault();
+  const request = brainEl.q.value.trim();
+  if (request.length < 3 || brainEl.go.disabled) return;
+  brainEl.go.disabled = true; openSteps.clear();
+  if (state.mode === "demo") return demoBrain(request);
+  try {
+    const r = await fetch("/brain/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+    const poll = async () => {
+      const job = await api(`/brain/jobs/${encodeURIComponent(j.id)}`);
+      renderBrain(job);
+      if (job.status === "done") { brainEl.go.disabled = false; setTimeout(() => { brainView.status = {}; }, 4000); }
+      else setTimeout(poll, 1200);
+    };
+    poll();
+  } catch (err) {
+    brainEl.panel.hidden = false; brainEl.req.textContent = request; brainEl.steps.innerHTML = "";
+    brainEl.answer.textContent = `The Brain is not reachable: ${err.message}`; brainEl.meta.textContent = ""; brainEl.go.disabled = false;
+  }
+});
+
+// ───────────────────────────── modules (plugin registry) ─────────────────────────────
+const KIND_COLOR = { workflow: "var(--cyan)", tool: "var(--lime)", skill: "var(--violet)", mcp: "var(--magenta)", provider: "var(--amber)", panel: "var(--flow)" };
+const DEMO_PLUGINS = [
+  { id: "market-sentinel", name: "Market Sentinel", kind: "workflow", description: "Binance 1-min candles, pulse and anomaly detection.", requires: ["n8n", "timescale"], enabled: true },
+  { id: "news-sentiment", name: "News Sentiment", kind: "workflow", description: "RSS news and Fear & Greed, scored by Cortex.", requires: ["n8n", "cortex"], enabled: true },
+  { id: "omega-agents", name: "OMEGA Workforce", kind: "tool", description: "Sentinel, Analyst and Scout agents; the Scout asks before adding any tool.", requires: ["relay"], enabled: true },
+  { id: "omega-quant", name: "OMEGA Quant", kind: "tool", description: "stdlib risk engine: volatility, z-scores, tail odds, correlation.", requires: ["relay"], enabled: true },
+  { id: "omega-sentinel-mcp", name: "OMEGA Sentinel MCP", kind: "mcp", description: "Lets Claude query the market memory.", requires: ["postgrest"], enabled: true },
+];
+function renderModules(list) {
+  document.getElementById("xcount").textContent = `${list.filter(p => p.enabled !== false).length}/${list.length} on`;
+  document.getElementById("xlist").innerHTML = list.length ? list.map(p =>
+    `<li class="${p.enabled === false ? "off" : ""}"><span class="kind" style="--k:${KIND_COLOR[p.kind] || "var(--ink-3)"}">${esc(p.kind)}</span>` +
+    `<span class="x-name">${esc(p.name)}</span><span class="x-desc">${esc(p.description)}</span>` +
+    `${(p.requires || []).length ? `<span class="x-req">needs ${esc(p.requires.join(" · "))}</span>` : ""}</li>`).join("")
+    : '<li class="empty">No plugins registered. Run python scripts/plugins.py.</li>';
+}
+async function loadModules() {
+  if (FORCE_DEMO) return renderModules(DEMO_PLUGINS);
+  try { renderModules((await api("/plugins.json")).plugins || []); } catch { renderModules([]); }
+}
+function bindToggle(btn, panelId) {
+  document.getElementById(btn).addEventListener("click", e => {
+    const panel = document.getElementById(panelId), open = panel.hidden;
+    panel.hidden = !open; e.currentTarget.classList.toggle("on", open); e.currentTarget.setAttribute("aria-expanded", String(open));
+    resize();
+  });
+}
+bindToggle("xtoggle", "modules");
+const liteBtn = document.getElementById("lite");
+function setLite(on) {
+  lite = on; liteBtn.classList.toggle("on", on); liteBtn.setAttribute("aria-pressed", String(on));
+  try { localStorage.setItem("omega.lite", on ? "1" : "0"); } catch { /* fine without it */ }
+}
+liteBtn.addEventListener("click", () => setLite(!lite));
+// ───────────────────────────── bilingual (AR / EN, RTL / LTR) ─────────────────────────────
+// A curated dictionary of the UI's visible strings. Keyed by the English source text; the element's
+// English is saved in data-en the first time we switch, so EN restores exactly. Live data stays as-is.
+const AR = {
+  "PRE-COG SYNDICATE · OPS ROOM": "نقابة ما قبل الإدراك · غرفة العمليات",
+  "CORTEX": "النواة", "MODULES": "الوحدات", "NEWS": "الأخبار", "STUDIO ↗": "الاستوديو ↗", "LITE": "خفيف",
+  "CORTEX · LLM GATEWAY": "النواة · بوابة النماذج", "MODULES · PLUGINS": "الوحدات · الإضافات",
+  "QUANT · RISK ENGINE": "التحليل · محرك المخاطر", "AGENTS · WORKFORCE": "الوكلاء · فريق العمل",
+  "ANOMALY STREAM": "تدفّق الشذوذ", "WHALES · ≥ $50M": "الحيتان · ≥ 50 مليون", "NEWS MOOD": "مزاج الأخبار",
+  "THE BRAIN · AGENT WEB": "العقل · شبكة الوكلاء", "PROPOSALS · YOUR CALL": "مقترحات · قرارك",
+  "FAST · FREE": "سريع · مجاني", "SMART · CLAUDE": "ذكي · كلود", "SMART · FREE": "ذكي · مجاني", "LOCAL · PRIVATE": "محلي · خاص",
+  "SEND": "إرسال", "THINK": "فكّر", "PAIR": "الزوج", "VOL": "التذبذب", "REGIME": "الحالة", "24H": "24س",
+  "MEMORY": "الذاكرة", "LAST PULSE": "آخر نبضة", "KUWAIT": "الكويت",
+  "Ask the Cortex…": "اسأل النواة…",
+  "Ask, design or change anything… the Brain plans, researches and designs": "اسأل أو صمّم أو عدّل أي شيء… العقل يخطّط ويبحث ويصمّم",
+};
+const I18N_SEL = "#brand .sub, .meta button, #cortex h2 span:first-child, #modules h2 span:first-child, " +
+  "#quant h2 span:first-child, #agents h2 span:first-child, #stream h2 span:first-child, #whales h2 span:first-child, " +
+  "#mood h2 span:first-child, #brainp h2 span:first-child, .ahead, #croutes button, #csend, #bgo, " +
+  "#qtable thead th, #pulse strong, #brand .meta > span:nth-child(3)";
+let lang = "en";
+try { lang = localStorage.getItem("omega.lang") === "ar" ? "ar" : "en"; } catch { /* storage may be blocked */ }
+function applyLang(next) {
+  lang = next;
+  const html = document.documentElement;
+  html.lang = lang; html.dir = lang === "ar" ? "rtl" : "ltr";
+  document.getElementById("lang").textContent = lang === "ar" ? "EN" : "ع";
+  for (const el of document.querySelectorAll(I18N_SEL)) {
+    if (el.id === "lang") continue;                      // the toggle manages its own label
+    if (!el.dataset.en) el.dataset.en = el.textContent.trim();
+    const src = el.dataset.en;
+    el.textContent = lang === "ar" ? (AR[src] || src) : src;
+  }
+  const cq = document.getElementById("cq"), bq = document.getElementById("bq");
+  if (cq) cq.placeholder = lang === "ar" ? AR["Ask the Cortex…"] : "Ask the Cortex…";
+  if (bq) bq.placeholder = lang === "ar" ? AR[bq.dataset.en || (bq.dataset.en = bq.placeholder)] || bq.placeholder : (bq.dataset.en || bq.placeholder);
+  try { localStorage.setItem("omega.lang", lang); } catch { /* fine without it */ }
+}
+document.getElementById("lang").addEventListener("click", () => applyLang(lang === "ar" ? "en" : "ar"));
+applyLang(lang);
+
+setLite(lite);
+
+// ───────────────────────────── boot ─────────────────────────────
+renderPulse();
+resize();
+loadModules();
+setInterval(refreshQuant, 60000);
+setInterval(refreshAgents, 60000);
+if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshAgents(); }, 1500);
+if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshQuant(); }, 1500);
+if (FORCE_DEMO) startDemo(); else connectLive();
+setInterval(() => { if (state.mode !== "connecting") refreshCortex(); }, 30000);
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

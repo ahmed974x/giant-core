@@ -1,0 +1,16 @@
+{
+  "name": "tools-quality",
+  "version": "1.0.0",
+  "description": "OMEGA code-quality tooling: Ruff (Python) + Biome (JS/TS). Dev-only, not shipped.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15"
+  },
+  "private": true
+}

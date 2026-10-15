@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "penpot": {
+      "command": "npx",
+      "args": ["-y", "@zcubekr/penpot-mcp-server@1.0.0"],
+      "env": {
+        "PENPOT_API_URL": "${PENPOT_API_URL}",
+        "PENPOT_ACCESS_TOKEN": "${PENPOT_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

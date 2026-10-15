@@ -1,0 +1,10 @@
+{
+  "id": "awesome-research",
+  "name": "awesome-research skill",
+  "kind": "skill",
+  "version": "1.0.0",
+  "description": "Claude skill: research trusted free tools and open-weight models through the curated awesome lists, then ask.",
+  "entry": ".claude/skills/awesome-research/SKILL.md",
+  "requires": [],
+  "enabled": true
+}

@@ -1,0 +1,232 @@
+{
+  "uid": "omega-speed",
+  "title": "OMEGA \u00b7 Speed Layer",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "tags": [
+    "omega",
+    "speed"
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Ingest latency (stream \u2192 consumer)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(omega_ingest_latency_ms_bucket[1m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(omega_ingest_latency_ms_bucket[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Fast path per batch (Polars + DuckDB)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(omega_fast_path_ms_bucket[1m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(omega_fast_path_ms_bucket[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI inference (ONNX)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(omega_inference_ms_bucket[1m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(omega_inference_ms_bucket[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "End-to-end decision (event \u2192 alert)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(omega_decision_ms_bucket[1m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(omega_decision_ms_bucket[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "P",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Alerts per minute by type",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(omega_alerts_total[1m])) by (type) * 60",
+          "legendFormat": "{{type}}",
+          "refId": "{",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Sub-agent call time (Director 00)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "omega-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(omega_api_ms_bucket[1m])) by (le, agent))",
+          "legendFormat": "{{agent}} p95",
+          "refId": "{",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "omega-prom"
+          }
+        }
+      ]
+    }
+  ]
+}

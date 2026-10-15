@@ -1,0 +1,3 @@
+@echo off
+rem Director 00 command line: director-00 ask "..." | pending | approve | confirm | reject | phoenix status | ...
+"%~dp0.venv\Scripts\python.exe" "%~dp0cli.py" %*

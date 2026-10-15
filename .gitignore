@@ -1,0 +1,20 @@
+.env
+__pycache__/
+services/workstation/plugins/
+.venv/
+node_modules/
+tools-quality/.venv/
+tools-quality/node_modules/
+services/maritime-agent/data/
+
+# Immich photo library
+data/immich/
+
+# Secrets (ADR-042): encrypted env files and dotenvx private keys never enter Git
+.env.local
+.env*.local
+*.env.keys
+.env.keys
+
+# Local server logs
+*.log

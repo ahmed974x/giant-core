@@ -1,0 +1,10 @@
+{
+  "id": "workstation",
+  "name": "Giant Core Workstation",
+  "kind": "tool",
+  "version": "1.0.0",
+  "description": "Streamlit code workstation: static analysis and sandboxed runs of Python plugins.",
+  "entry": "services/workstation",
+  "requires": [],
+  "enabled": true
+}

@@ -1,0 +1,44 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": {
+		"includes": [
+			"services/**/*.js",
+			"mcp/**/*.ts",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/*.min.js",
+			"!vendor",
+			"!tools",
+			"!omega-graph"
+		]
+	},
+	"formatter": { "enabled": false },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"security": {
+				"noGlobalEval": "error",
+				"noDangerouslySetInnerHtml": "error"
+			},
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noConsole": { "level": "off", "options": { "allow": ["log"] } },
+				"noRedundantUseStrict": "off"
+			},
+			"style": { "noParameterAssign": "off", "useNodejsImportProtocol": "warn" }
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/test/**", "**/*.test.js"],
+			"linter": {
+				"rules": {
+					"correctness": { "noUnusedFunctionParameters": "off" },
+					"suspicious": { "noTemplateCurlyInString": "off" }
+				}
+			}
+		}
+	]
+}

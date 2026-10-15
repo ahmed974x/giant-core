@@ -1,0 +1,227 @@
+{
+  "plugins": [
+    {
+      "id": "awesome-research",
+      "name": "awesome-research skill",
+      "kind": "skill",
+      "version": "1.0.0",
+      "description": "Claude skill: research trusted free tools and open-weight models through the curated awesome lists, then ask.",
+      "entry": ".claude/skills/awesome-research/SKILL.md",
+      "requires": [],
+      "enabled": true
+    },
+    {
+      "id": "code-quality",
+      "name": "Code quality gate",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Ruff (Python) + Biome (JS/TS) lint and security, a committed-secrets scan and plugin validation, in one scripts/quality.sh command and a CI job.",
+      "entry": "scripts/quality.sh",
+      "requires": [],
+      "enabled": true
+    },
+    {
+      "id": "cortex-providers",
+      "name": "Cortex LLM routes",
+      "kind": "provider",
+      "version": "1.0.0",
+      "description": "Claude and free LLM tiers behind one OpenAI-compatible endpoint with failover.",
+      "entry": "services/cortex/config/providers.json",
+      "requires": [
+        "cortex"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "geo-api",
+      "name": "Geo-API (bilingual)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "FastAPI over PostGIS logistics nodes; localizes by ?lang or Accept-Language (Arabic/English), with search and nearest-node queries.",
+      "entry": "services/geo-api/app.py",
+      "requires": [
+        "geo"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "geo-postgis",
+      "name": "Geo store (PostGIS)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "PostGIS database: logistics_nodes with bilingual JSONB names, spatial + full-text indexes, seeded choke-points.",
+      "entry": "db/geo/01-postgis.sql",
+      "requires": [],
+      "enabled": true
+    },
+    {
+      "id": "holoviz-skills",
+      "name": "HoloViz skills",
+      "kind": "skill",
+      "version": "1.0.0",
+      "description": "Official Panel, Panel Material UI, hvPlot and Param agent skills that guide Claude when building dashboards.",
+      "entry": ".claude/skills/panel/SKILL.md",
+      "requires": [],
+      "enabled": true
+    },
+    {
+      "id": "maritime-anomaly",
+      "name": "Maritime agent",
+      "kind": "tool",
+      "version": "1.2.0",
+      "description": "Maritime speed layer: AIS (aisstream.io or mock) → Redis Streams (Arrow) → Polars/DuckDB fast path (~20 ms) → ONNX + async Director 00 slow path → localized alerts; Prometheus metrics.",
+      "entry": "services/maritime-agent/pipeline.py",
+      "requires": [],
+      "enabled": true
+    },
+    {
+      "id": "market-sentinel",
+      "name": "Market Sentinel",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "Every minute: Binance 1-min candles into Timescale, pulse and anomaly detection, relay and Telegram alerts.",
+      "entry": "n8n/workflows/market-sentinel.json",
+      "requires": [
+        "n8n",
+        "timescale",
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "news-sentiment",
+      "name": "News Sentiment",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "Every 10 minutes: free RSS news and Fear & Greed, scored by Cortex, stored and pushed live.",
+      "entry": "n8n/workflows/news-sentiment.json",
+      "requires": [
+        "n8n",
+        "cortex",
+        "timescale"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-agents",
+      "name": "OMEGA Workforce",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Sentinel, Analyst and Scout agents: health watch, market brief, and open-source tool research that asks before adding anything.",
+      "entry": "services/agents/workforce.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-brain",
+      "name": "The Brain",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Search bar → memory, planner, researcher, designer, critic and synthesizer agents on open-weight models; learns from every request.",
+      "entry": "services/agents/brain.py",
+      "requires": [
+        "relay",
+        "cortex"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-neural",
+      "name": "OMEGA Neural (PyTorch)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Tiny PyTorch net: next-hour up-probability and volatility, calibrated and scored walk-forward.",
+      "entry": "services/neural/model.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-quant",
+      "name": "OMEGA Quant",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "stdlib risk engine: EWMA and realised volatility, regime, z-score with tail odds, momentum, drawdown, cross-pair correlation.",
+      "entry": "services/quant/quant.js",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-sentinel-mcp",
+      "name": "OMEGA Sentinel MCP",
+      "kind": "mcp",
+      "version": "1.0.0",
+      "description": "MCP server that lets Claude query the market memory (candles, anomalies, whales, news).",
+      "entry": "mcp/omega-sentinel",
+      "requires": [
+        "postgrest"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-studio",
+      "name": "OMEGA Studio",
+      "kind": "panel",
+      "version": "1.0.0",
+      "description": "Panel + Material UI analytics app: price with anomalies, volume, exchange flow, news mood, sortable tables.",
+      "entry": "services/studio/app.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "omega-vault",
+      "name": "OMEGA Vault (DuckDB)",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "In-process DuckDB archive of candles, anomalies, whales and news with daily roll-ups beyond the live 48 h window.",
+      "entry": "services/studio/vault.py",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "supabase-mirror",
+      "name": "Supabase cloud mirror",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Copies anomalies, whales, news and engine snapshots to Supabase (RLS, Realtime).",
+      "entry": "services/cloud-sync/sync.js",
+      "requires": [
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "whale-watch",
+      "name": "Whale Watch",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "description": "BTC and ETH blocks scanned for transfers of $50M or more, labelled and alerted.",
+      "entry": "n8n/workflows/whale-watch-btc.json",
+      "requires": [
+        "n8n",
+        "timescale",
+        "relay"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "workstation",
+      "name": "Giant Core Workstation",
+      "kind": "tool",
+      "version": "1.0.0",
+      "description": "Streamlit code workstation: static analysis and sandboxed runs of Python plugins.",
+      "entry": "services/workstation",
+      "requires": [],
+      "enabled": true
+    }
+  ]
+}
