@@ -1,0 +1,506 @@
+{
+  "design": {
+    "w_long": 252,
+    "w_short": 20,
+    "horizon": 20,
+    "stress_q": 0.1,
+    "seed": 7
+  },
+  "sources": {
+    "vix": {
+      "url": "https://raw.githubusercontent.com/datasets/finance-vix/main/data/vix-daily.csv",
+      "sha256": "570e05630c9a5e7350d0c3dbe3acc58e793cb5248181ab0e949c121cc082fb83",
+      "bytes": 482200
+    },
+    "sp500": {
+      "url": "pip package arch, arch.data.sp500 (Yahoo Finance ^GSPC)",
+      "version": "8.0.0"
+    },
+    "wti": {
+      "url": "https://raw.githubusercontent.com/datasets/oil-prices/main/data/wti-daily.csv",
+      "sha256": "1f2f5b7ed1956086886e6ba5f693c1e11941e094e36c9b8e6cff108e12f7ede7",
+      "bytes": 170689,
+      "dropped_nonpositive_days": 1
+    },
+    "btc": {
+      "url": "https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv",
+      "sha256": "06495ff8e643432e6948b7b4686ce44fc106217287dabdc1b38351d9ddec46c3",
+      "bytes": 2482497
+    }
+  },
+  "assets": {
+    "sp500": {
+      "rows_evaluated": 4759,
+      "from": "2000-01-03",
+      "to": "2018-11-29",
+      "stress_cutoff_fwd_dd": -0.0733,
+      "base_rate": 0.1,
+      "auc": {
+        "hurst": {
+          "auc": 0.466,
+          "ci95": [
+            0.363,
+            0.571
+          ],
+          "n": 4759
+        },
+        "lyapunov": {
+          "auc": 0.494,
+          "ci95": [
+            0.366,
+            0.632
+          ],
+          "n": 4759
+        },
+        "reynolds": {
+          "auc": 0.502,
+          "ci95": [
+            0.432,
+            0.563
+          ],
+          "n": 4759
+        },
+        "vol20": {
+          "auc": 0.731,
+          "ci95": [
+            0.643,
+            0.821
+          ],
+          "n": 4759
+        },
+        "vix": {
+          "auc": 0.743,
+          "ci95": [
+            0.656,
+            0.821
+          ],
+          "n": 4759
+        }
+      },
+      "null_band_95": {
+        "hurst": [
+          0.353,
+          0.672
+        ],
+        "lyapunov": [
+          0.243,
+          0.289
+        ]
+      },
+      "share_days_above_null": {
+        "hurst": 0.0,
+        "lyapunov": 0.0
+      },
+      "claimed_thresholds": {
+        "hurst>0.6": {
+          "days": 35,
+          "share_of_days": 0.0074,
+          "stress_rate_when_true": 0.0571
+        },
+        "hurst<0.5": {
+          "days": 3834,
+          "share_of_days": 0.8056,
+          "stress_rate_when_true": 0.1033
+        },
+        "lyapunov>0": {
+          "days": 4759,
+          "share_of_days": 1.0,
+          "stress_rate_when_true": 0.1
+        },
+        "lyapunov>null97.5": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        },
+        "reynolds>2000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        },
+        "reynolds>4000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        }
+      },
+      "reynolds_observed": {
+        "p50": 3.111,
+        "p99": 11.639,
+        "max": 17.364
+      },
+      "events": [
+        {
+          "event": "Lehman Brothers bankruptcy filing",
+          "date": "2008-09-15",
+          "source": "SEC/Lehman Ch.11 filing, S.D.N.Y. 08-13555",
+          "signal_day": "2008-09-12",
+          "hurst": 0.4158,
+          "hurst_pct_hist": 32.1,
+          "hurst_max_pct_60d": 70.9,
+          "lyapunov": 0.2655,
+          "lyapunov_pct_hist": 88.0,
+          "lyapunov_max_pct_60d": 88.8,
+          "reynolds": 2.6015,
+          "reynolds_pct_hist": 43.1,
+          "reynolds_max_pct_60d": 99.8,
+          "vol20": 0.2344,
+          "vol20_pct_hist": 84.0,
+          "vol20_max_pct_60d": 88.4,
+          "vix": 25.66
+        },
+        {
+          "event": "First trading day after US AAA downgrade",
+          "date": "2011-08-08",
+          "source": "S&P Global press release 2011-08-05",
+          "signal_day": "2011-08-05",
+          "hurst": 0.5308,
+          "hurst_pct_hist": 92.0,
+          "hurst_max_pct_60d": 97.3,
+          "lyapunov": 0.242,
+          "lyapunov_pct_hist": 27.1,
+          "lyapunov_max_pct_60d": 71.8,
+          "reynolds": 8.6726,
+          "reynolds_pct_hist": 94.5,
+          "reynolds_max_pct_60d": 95.6,
+          "vol20": 0.2286,
+          "vol20_pct_hist": 78.3,
+          "vol20_max_pct_60d": 78.3,
+          "vix": 32.0
+        },
+        {
+          "event": "'Volmageddon' VIX spike",
+          "date": "2018-02-05",
+          "source": "CBOE VIX data, this dataset",
+          "signal_day": "2018-02-02",
+          "hurst": 0.4805,
+          "hurst_pct_hist": 71.9,
+          "hurst_max_pct_60d": 94.2,
+          "lyapunov": 0.2671,
+          "lyapunov_pct_hist": 93.7,
+          "lyapunov_max_pct_60d": 95.6,
+          "reynolds": 1.9968,
+          "reynolds_pct_hist": 32.4,
+          "reynolds_max_pct_60d": 99.9,
+          "vol20": 0.1206,
+          "vol20_pct_hist": 40.3,
+          "vol20_max_pct_60d": 40.3,
+          "vix": 17.31
+        }
+      ]
+    },
+    "wti": {
+      "rows_evaluated": 9244,
+      "from": "1987-02-10",
+      "to": "2026-09-08",
+      "stress_cutoff_fwd_dd": -0.1486,
+      "base_rate": 0.1001,
+      "auc": {
+        "hurst": {
+          "auc": 0.452,
+          "ci95": [
+            0.389,
+            0.523
+          ],
+          "n": 9244
+        },
+        "lyapunov": {
+          "auc": 0.51,
+          "ci95": [
+            0.438,
+            0.579
+          ],
+          "n": 9244
+        },
+        "reynolds": {
+          "auc": 0.528,
+          "ci95": [
+            0.468,
+            0.579
+          ],
+          "n": 9244
+        },
+        "vol20": {
+          "auc": 0.691,
+          "ci95": [
+            0.611,
+            0.754
+          ],
+          "n": 9244
+        }
+      },
+      "null_band_95": {
+        "hurst": [
+          0.366,
+          0.69
+        ],
+        "lyapunov": [
+          0.24,
+          0.288
+        ]
+      },
+      "share_days_above_null": {
+        "hurst": 0.0,
+        "lyapunov": 0.0
+      },
+      "claimed_thresholds": {
+        "hurst>0.6": {
+          "days": 212,
+          "share_of_days": 0.0229,
+          "stress_rate_when_true": 0.1132
+        },
+        "hurst<0.5": {
+          "days": 7020,
+          "share_of_days": 0.7594,
+          "stress_rate_when_true": 0.1071
+        },
+        "lyapunov>0": {
+          "days": 9244,
+          "share_of_days": 1.0,
+          "stress_rate_when_true": 0.1001
+        },
+        "lyapunov>null97.5": {
+          "days": 3,
+          "share_of_days": 0.0003,
+          "stress_rate_when_true": 0.0
+        },
+        "reynolds>2000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        },
+        "reynolds>4000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        }
+      },
+      "reynolds_observed": {
+        "p50": 3.096,
+        "p99": 11.652,
+        "max": 21.366
+      },
+      "events": [
+        {
+          "event": "Oil crash begins after 2008-07-11 record",
+          "date": "2008-07-14",
+          "source": "EIA RWTC series, this dataset",
+          "signal_day": "2008-07-11",
+          "hurst": 0.4892,
+          "hurst_pct_hist": 79.5,
+          "hurst_max_pct_60d": 92.8,
+          "lyapunov": 0.2515,
+          "lyapunov_pct_hist": 39.4,
+          "lyapunov_max_pct_60d": 97.5,
+          "reynolds": 2.6355,
+          "reynolds_pct_hist": 45.4,
+          "reynolds_max_pct_60d": 98.7,
+          "vol20": 0.3441,
+          "vol20_pct_hist": 51.1,
+          "vol20_max_pct_60d": 77.0
+        },
+        {
+          "event": "OPEC declines to cut output (meeting 2014-11-27)",
+          "date": "2014-11-28",
+          "source": "OPEC 166th meeting communique",
+          "signal_day": "2014-11-26",
+          "hurst": 0.4826,
+          "hurst_pct_hist": 70.8,
+          "hurst_max_pct_60d": 95.3,
+          "lyapunov": 0.2592,
+          "lyapunov_pct_hist": 60.4,
+          "lyapunov_max_pct_60d": 87.6,
+          "reynolds": 6.7947,
+          "reynolds_pct_hist": 87.9,
+          "reynolds_max_pct_60d": 96.7,
+          "vol20": 0.2564,
+          "vol20_pct_hist": 31.2,
+          "vol20_max_pct_60d": 45.7
+        },
+        {
+          "event": "Saudi-Russia price war + COVID crash",
+          "date": "2020-03-09",
+          "source": "EIA RWTC series, this dataset",
+          "signal_day": "2020-03-06",
+          "hurst": 0.5173,
+          "hurst_pct_hist": 80.2,
+          "hurst_max_pct_60d": 88.9,
+          "lyapunov": 0.2483,
+          "lyapunov_pct_hist": 35.5,
+          "lyapunov_max_pct_60d": 40.5,
+          "reynolds": 6.5247,
+          "reynolds_pct_hist": 85.1,
+          "reynolds_max_pct_60d": 99.9,
+          "vol20": 0.5199,
+          "vol20_pct_hist": 85.2,
+          "vol20_max_pct_60d": 85.2
+        },
+        {
+          "event": "WTI settles below zero",
+          "date": "2020-04-20",
+          "source": "EIA RWTC series (-37.63)",
+          "signal_day": "2020-04-17",
+          "hurst": 0.5651,
+          "hurst_pct_hist": 92.3,
+          "hurst_max_pct_60d": 100.0,
+          "lyapunov": 0.2412,
+          "lyapunov_pct_hist": 21.1,
+          "lyapunov_max_pct_60d": 53.7,
+          "reynolds": 2.134,
+          "reynolds_pct_hist": 35.2,
+          "reynolds_max_pct_60d": 99.9,
+          "vol20": 2.3434,
+          "vol20_pct_hist": 99.8,
+          "vol20_max_pct_60d": 100.0
+        }
+      ]
+    },
+    "btc": {
+      "rows_evaluated": 5517,
+      "from": "2011-03-27",
+      "to": "2026-05-03",
+      "stress_cutoff_fwd_dd": -0.2285,
+      "base_rate": 0.1001,
+      "auc": {
+        "hurst": {
+          "auc": 0.556,
+          "ci95": [
+            0.462,
+            0.626
+          ],
+          "n": 5517
+        },
+        "lyapunov": {
+          "auc": 0.444,
+          "ci95": [
+            0.324,
+            0.559
+          ],
+          "n": 5517
+        },
+        "reynolds": {
+          "auc": 0.633,
+          "ci95": [
+            0.54,
+            0.717
+          ],
+          "n": 5517
+        },
+        "vol20": {
+          "auc": 0.687,
+          "ci95": [
+            0.597,
+            0.753
+          ],
+          "n": 5517
+        }
+      },
+      "null_band_95": {
+        "hurst": [
+          0.349,
+          0.682
+        ],
+        "lyapunov": [
+          0.255,
+          0.306
+        ]
+      },
+      "share_days_above_null": {
+        "hurst": 0.011,
+        "lyapunov": 0.0
+      },
+      "claimed_thresholds": {
+        "hurst>0.6": {
+          "days": 482,
+          "share_of_days": 0.0874,
+          "stress_rate_when_true": 0.1411
+        },
+        "hurst<0.5": {
+          "days": 2640,
+          "share_of_days": 0.4785,
+          "stress_rate_when_true": 0.0833
+        },
+        "lyapunov>0": {
+          "days": 5517,
+          "share_of_days": 1.0,
+          "stress_rate_when_true": 0.1001
+        },
+        "lyapunov>null97.5": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        },
+        "reynolds>2000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        },
+        "reynolds>4000": {
+          "days": 0,
+          "share_of_days": 0.0,
+          "stress_rate_when_true": null
+        }
+      },
+      "reynolds_observed": {
+        "p50": 4.585,
+        "p99": 257.996,
+        "max": 1577.931
+      },
+      "events": [
+        {
+          "event": "COVID 'Black Thursday'",
+          "date": "2020-03-12",
+          "source": "Coin Metrics PriceUSD, this dataset",
+          "signal_day": "2020-03-11",
+          "hurst": 0.5119,
+          "hurst_pct_hist": 54.2,
+          "hurst_max_pct_60d": 86.2,
+          "lyapunov": 0.2422,
+          "lyapunov_pct_hist": 25.4,
+          "lyapunov_max_pct_60d": 34.0,
+          "reynolds": 9.4441,
+          "reynolds_pct_hist": 64.7,
+          "reynolds_max_pct_60d": 72.7,
+          "vol20": 0.4978,
+          "vol20_pct_hist": 43.5,
+          "vol20_max_pct_60d": 52.2
+        },
+        {
+          "event": "Terra/LUNA UST de-peg",
+          "date": "2022-05-09",
+          "source": "Terraform Labs / SEC v. Terraform complaint 2023",
+          "signal_day": "2022-05-08",
+          "hurst": 0.5072,
+          "hurst_pct_hist": 50.4,
+          "hurst_max_pct_60d": 55.7,
+          "lyapunov": 0.2559,
+          "lyapunov_pct_hist": 56.5,
+          "lyapunov_max_pct_60d": 70.1,
+          "reynolds": 4.6996,
+          "reynolds_pct_hist": 44.5,
+          "reynolds_max_pct_60d": 58.6,
+          "vol20": 0.4969,
+          "vol20_pct_hist": 42.2,
+          "vol20_max_pct_60d": 73.5
+        },
+        {
+          "event": "FTX liquidity crisis",
+          "date": "2022-11-08",
+          "source": "SEC v. Bankman-Fried complaint 2022-12-13",
+          "signal_day": "2022-11-07",
+          "hurst": 0.5615,
+          "hurst_pct_hist": 78.0,
+          "hurst_max_pct_60d": 84.1,
+          "lyapunov": 0.2647,
+          "lyapunov_pct_hist": 72.7,
+          "lyapunov_max_pct_60d": 74.2,
+          "reynolds": 4.0682,
+          "reynolds_pct_hist": 40.3,
+          "reynolds_max_pct_60d": 64.6,
+          "vol20": 0.3107,
+          "vol20_pct_hist": 17.0,
+          "vol20_max_pct_60d": 62.9
+        }
+      ]
+    }
+  }
+}
