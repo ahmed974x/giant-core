@@ -8,6 +8,7 @@ import DocsMini from "./DocsMini";
 import MiniCard from "./MiniCard";
 import Particles from "./Particles";
 import StatusBar from "./StatusBar";
+import { usePulse } from "@/lib/status";
 
 // The heavy, browser-only pieces load after the page shell: WebGL globe, chart, network canvas.
 const EarthMini = dynamic(() => import("./EarthMini"), { ssr: false, loading: () => <div className="size-full animate-pulse" /> });
@@ -26,6 +27,7 @@ export default function CommandCenter() {
   const [quote, setQuote] = useState<{ price: number; change24h: number } | null>(null);
   const [net, setNet] = useState<{ nodes: number; edges: number; down: number } | null>(null);
   const [docs, setDocs] = useState<number | null>(null);
+  const pulse = usePulse();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -72,10 +74,25 @@ export default function CommandCenter() {
   return (
     <div className="relative -mt-2 space-y-4 pb-24 sm:pb-20">
       <Particles />
-      <div className="text-center">
+      <header className="hero-glow text-center">
         <h1 className="bg-gradient-to-r from-brass via-[#FCD34D] to-brass bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("lead")}</p>
-      </div>
+        <p className="mx-auto mt-1 max-w-xl text-sm text-muted">{t("lead")}</p>
+      </header>
+
+      {/* Four headline numbers from the same live feeds as the cards below, so the top of the page reads at a glance. */}
+      <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {[
+          { k: "btc", v: quote ? f.number(quote.price, { maximumFractionDigits: 0 }) : "—", tone: quote && quote.change24h < 0 ? "text-pink" : "text-brass" },
+          { k: "nodes", v: net ? `${net.nodes - net.down}/${net.nodes}` : "—", tone: net && net.down > 0 ? "text-warn" : "text-good" },
+          { k: "events", v: earth ? f.number(earth.events) : "—", tone: "text-accent" },
+          { k: "alerts", v: pulse.pending ? f.number(pulse.pending) : "0", tone: pulse.pending ? "text-brass" : "text-muted" },
+        ].map(({ k, v, tone }) => (
+          <div key={k} className="panel px-3.5 py-2.5">
+            <dt className="text-[11px] uppercase tracking-wide text-muted">{t(`kpi.${k}`)}</dt>
+            <dd className={`num mt-0.5 text-lg font-semibold ${tone}`} dir="ltr">{v}</dd>
+          </div>
+        ))}
+      </dl>
 
       {/* Phones: the command bar comes first, then the cards in one column. Wider: cards above and below the bar. */}
       <div className="sm:hidden"><CommandBar /></div>
