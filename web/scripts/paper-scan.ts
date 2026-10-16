@@ -2,10 +2,11 @@
 // `phoenix.py paper-scan`, or by hand: npm run paper:scan
 // Proposals only: it queues proposals, writes the briefing file and pushes one phone alert. It never records a fill;
 // that happens only when Ahmad taps Approve on the Market screen.
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { broadcast, loadStore } from "../src/lib/alerts.ts";
 import { directorData } from "../src/lib/director.ts";
-import { briefingEmail } from "../src/lib/mailer.ts";
+import { briefingEmail, type BriefingConfig } from "../src/lib/mailer.ts";
 import { loadEvents, replay } from "../src/lib/paper.ts";
 import { briefingText, loadProposalEvents, proposalSize, replayProposals, scan, topProposals, writeBriefing } from "../src/lib/paper-proposals.ts";
 
@@ -23,7 +24,8 @@ const rows = replayProposals(await loadProposalEvents(data), now);
 const size = proposalSize(replay(await loadEvents(data)), now);
 const text = briefingText(rows, size, site, now);
 const file = await writeBriefing(data, text, now);
-const email = briefingEmail(text);              // placeholder: reports what it would do, sends nothing (ADR-075)
+const config = JSON.parse(await readFile(path.join(web, "config", "briefing-email.json"), "utf8")) as BriefingConfig;
+const email = briefingEmail(text, process.env, now, config);   // placeholder: reports what it would do, sends nothing (ADR-075)
 const top = topProposals(rows);
 
 const push = path.join(data, "push"), store = await loadStore(push);

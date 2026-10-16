@@ -23,6 +23,8 @@ sign-up and profiles now, NextAuth or Clerk, and a daily briefing email to a pro
 - **Briefing email** (`web/src/lib/mailer.ts`): works out the message and reports why it would not send; there is
   no transport. It needs `BRIEFING_EMAIL_TO` (the project address, not Ahmad's personal one), a sender, and
   `BRIEFING_EMAIL_APPROVED=yes` after Ahmad approves a test send; sending code is added only then.
+  The project sender is a non-secret setting in `web/config/briefing-email.json` (`sender`, confirmed by Ahmad
+  2026-10-16 02:15Z, exact spelling to re-check before a test send). An env variable overrides it. Sending stays off.
 - Not deployed or exposed: the web app still listens on 127.0.0.1 behind Tailscale + PIN (ADR-063).
 
 ## Consequences

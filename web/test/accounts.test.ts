@@ -81,11 +81,21 @@ test("every paper and profile handler checks who is asking", () => {
 
 test("the briefing email is a placeholder: nothing is sent without an address, a sender and an approved test", async () => {
   assert.equal(briefingEmail("x", {}).send, false);
-  assert.match((briefingEmail("x", { BRIEFING_EMAIL_TO: "ops@example.org" }) as { reason: string }).reason, /no mail sender/);
+  assert.match((briefingEmail("x", { BRIEFING_EMAIL_TO: "ops@example.org" }) as { reason: string }).reason, /no sender address/);
+  const withSender = briefingEmail("x", { BRIEFING_EMAIL_TO: "ops@example.org" }, new Date(), { sender: "project@example.org" });
+  assert.match((withSender as { reason: string }).reason, /no mail transport/);
+  assert.equal(briefingEmail("x", { BRIEFING_EMAIL_TO: "ops@example.org", BRIEFING_SMTP_URL: "smtp://example.org" }, new Date(), { sender: "project@example.org" }).send, false);
   const ready = { BRIEFING_EMAIL_TO: "ops@example.org", BRIEFING_EMAIL_FROM: "omega@example.org", BRIEFING_SMTP_URL: "smtp://example.org" };
   assert.match((briefingEmail("x", ready) as { reason: string }).reason, /approve a test send/);
   const plan = briefingEmail("body", { ...ready, BRIEFING_EMAIL_APPROVED: "yes" }, new Date("2026-10-16T06:00:00Z"));
   assert.ok(plan.send && plan.message.subject === "OMEGA paper briefing 2026-10-16");
   await assert.rejects(sendEmail(plan), /not built yet/);
   assert.equal(briefingEmail("x", { ...ready, BRIEFING_EMAIL_TO: "not an address", BRIEFING_EMAIL_APPROVED: "yes" }).send, false);
+});
+
+test("the project sender is stored as a plain setting, never the personal address", () => {
+  const cfg = JSON.parse(readFileSync(path.resolve(import.meta.dirname, "..", "config", "briefing-email.json"), "utf8")) as { sender?: string };
+  assert.match(cfg.sender ?? "", /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/);
+  assert.doesNotMatch(cfg.sender ?? "", /aahmed/i);
+  assert.equal(briefingEmail("x", { BRIEFING_EMAIL_TO: "ops@example.org" }, new Date(), cfg).send, false, "sender alone never sends");
 });

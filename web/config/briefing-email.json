@@ -1,0 +1,5 @@
+{
+  "_note": "Non-secret project settings for the briefing email (ADR-075). Sending is still disabled: it needs BRIEFING_EMAIL_TO, BRIEFING_SMTP_URL and BRIEFING_EMAIL_APPROVED=yes (set in web/.env.local) and an explicit test-send approval from Ahmad.",
+  "sender": "nabdxxxxx@gmail.com",
+  "sender_status": "confirmed by Ahmad 2026-10-16 02:15Z; exact spelling to be re-checked before any test send"
+}
