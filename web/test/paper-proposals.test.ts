@@ -4,8 +4,9 @@ import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { loadEvents, replay, type PaperEvent } from "../src/lib/paper.ts";
-import { appendProposalEvent, approve, loadProposalEvents, makeProposal, MAX_DRIFT, PROPOSAL_TTL_MS, PROPOSAL_USD, proposalsFromSignals,
-  reject, replayProposals, validId, type ProposalEvent } from "../src/lib/paper-proposals.ts";
+import { appendProposalEvent, approve, approveAndRecord, briefingText, loadProposalEvents, makeProposal, MAX_DRIFT, PROPOSAL_TTL_MS, PROPOSAL_USD,
+  proposalSize, proposalsFromSignals, reject, replayProposals, scan, topProposals, validId, writeBriefing, type ProposalEvent } from "../src/lib/paper-proposals.ts";
+import { appendEvent, fillOrder } from "../src/lib/paper.ts";
 import type { Result } from "../src/lib/strategies.ts";
 
 const at = new Date("2026-10-15T12:00:00Z");
@@ -82,12 +83,16 @@ test("the queue log is append-only JSON lines beside the paper ledger, and scann
   await appendProposalEvent(dir, { type: "proposed", ...p });
   assert.equal((await loadProposalEvents(dir)).length, 1);
   assert.deepEqual(await loadEvents(dir), [], "the paper ledger is untouched by a proposal");
-  // In the route, the paper ledger is written only inside the approve branch.
-  const route = readFileSync(path.resolve(import.meta.dirname, "..", "src/app/api/paper/proposals/route.ts"), "utf8");
-  const writes = [...route.matchAll(/appendEvent\(/g)].length;
-  assert.equal(writes, 1, "one place writes fills");
-  const approveBranch = route.slice(route.indexOf('body?.action === "approve"'), route.indexOf('body?.action === "reject"'));
-  assert.ok(approveBranch.includes("appendEvent("), "that place is the approve branch");
+  // The paper ledger is written in exactly one place, approveAndRecord(); the route and the daily scan never call it.
+  const lib = readFileSync(path.resolve(import.meta.dirname, "..", "src/lib/paper-proposals.ts"), "utf8");
+  assert.equal([...lib.matchAll(/appendEvent\(/g)].length, 1, "one place writes fills");
+  const fn = lib.slice(lib.indexOf("export async function approveAndRecord"), lib.indexOf("export function topProposals"));
+  assert.ok(fn.includes("appendEvent("), "that place is approveAndRecord");
+  for (const f of ["src/app/api/paper/proposals/route.ts", "scripts/paper-scan.ts"]) {
+    const src = readFileSync(path.resolve(import.meta.dirname, "..", f), "utf8");
+    assert.ok(!/appendEvent\(|fillOrder\(/.test(src), `${f} must not write fills directly`);
+  }
+  assert.ok(!readFileSync(path.resolve(import.meta.dirname, "..", "scripts/paper-scan.ts"), "utf8").includes("approveAndRecord"), "the daily scan never approves");
 });
 
 test("both paper routes are PIN-guarded, and no trading code ships on the public landing page", () => {
@@ -103,4 +108,49 @@ test("both paper routes are PIN-guarded, and no trading code ships on the public
     const src = readFileSync(path.join(landing, f), "utf8");
     for (const bad of [/\/api\/paper/, /\/api\/strategies/, /\/api\/director/, /\/api\/sweeper/]) assert.ok(!bad.test(src), `site-landing/${f} must not contain ${bad}`);
   }
+});
+
+test("buy size follows 14 days of closed paper trades, only after 5 of them, and stays between 50 and 200", () => {
+  const day = (d: number) => new Date(at.getTime() - d * 24 * 3600_000);
+  const trades = (n: number, exitPrice: number, ago = 1) => {
+    let log: PaperEvent[] = [start];
+    for (let i = 0; i < n; i++) {
+      log.push({ type: "fill", ...fillOrder(replay(log), { symbol: "BTCUSDT", side: "buy", usd: 100 }, 100, day(ago)) });
+      log.push({ type: "fill", ...fillOrder(replay(log), { symbol: "BTCUSDT", side: "sell" }, exitPrice, day(ago)) });
+    }
+    return replay(log);
+  };
+  assert.deepEqual(proposalSize(replay([start]), at), { usd: 100, closed: 0, returnPct: null });
+  assert.equal(proposalSize(trades(4, 120), at).usd, 100, "4 winning trades are not enough to resize");
+  assert.equal(proposalSize(trades(5, 120), at).usd, 200);
+  assert.equal(proposalSize(trades(5, 80), at).usd, 50);
+  assert.equal(proposalSize(trades(5, 101), at).usd, 100, "inside +/-5% keeps 100");
+  assert.equal(proposalSize(trades(5, 120, 20), at).usd, 100, "trades older than 14 days don't count");
+  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 10_000, evidence }, at).usd, 200, "a proposal can't exceed the cap");
+  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 1, evidence }, at).usd, 50);
+});
+
+test("the daily scan only queues proposals; the briefing lists the top 3 with numbers and raw-data links", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "omega-scan-"));
+  await appendEvent(dir, start);
+  const added = await scan(dir, async symbol => ({ price: 100, results: symbol === "SOLUSDT" ? [] : results }), at);
+  assert.equal(added.length, 6, "two buy signals on three symbols; SOL had none");
+  assert.equal(replay(await loadEvents(dir)).fills.length, 0, "scanning recorded nothing on paper");
+  assert.equal((await scan(dir, async () => ({ price: 100, results }), at)).length, 2, "a rescan adds only the missing symbol");
+  const rows = replayProposals(await loadProposalEvents(dir), at);
+  const top = topProposals(rows);
+  assert.equal(top.length, 3);
+  assert.equal(top[0].evidence.source, "strategy:trend 1d", "a backtest edge ranks above none");
+  const text = briefingText(rows, proposalSize(replay(await loadEvents(dir)), at), "http://127.0.0.1:3100", at);
+  assert.match(text, /Paper only/);
+  assert.match(text, /## 1\. BUY BTCUSDT 100 USDT/);
+  assert.match(text, /Raw data: https:\/\/data-api\.binance\.vision\/api\/v3\/klines\?symbol=BTCUSDT/);
+  assert.match(text, /backtestReturnPct 12/);
+  assert.equal(text.match(/^## /gm)?.length, 3);
+  const file = await writeBriefing(dir, text, at);
+  assert.equal(readFileSync(file, "utf8"), text);
+  // Approving one records exactly one fill.
+  const fill = await approveAndRecord(dir, top[0].id, async () => 100, "web:Ahmad", at);
+  assert.equal(replay(await loadEvents(dir)).fills.length, 1);
+  assert.equal(fill.usd, 100);
 });

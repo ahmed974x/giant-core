@@ -1,17 +1,14 @@
 // Paper proposal queue (ADR-073). GET: pending and recent proposals. POST: scan (build proposals from today's strategy
 // signals), approve (fill one on paper) or reject. Everything needs the PIN, and approve is the only path that writes a
-// fill: it runs once per tap, for one proposal. Made-up USDT only; nothing here can reach an exchange or move money.
+// fill (approveAndRecord): it runs once per tap, for one proposal. Made-up USDT only; nothing here can reach an exchange or move money.
 import { directorData, makeThrottle } from "@/lib/director";
 import { guard } from "@/lib/guard";
 import { fetchPrices } from "@/lib/sweeper";
-import { appendEvent, loadEvents, replay, serial } from "@/lib/paper";
-import { appendProposalEvent, approve, loadProposalEvents, proposalsFromSignals, reject, replayProposals, validId } from "@/lib/paper-proposals";
-import type { Result } from "@/lib/strategies";
+import { serial } from "@/lib/paper";
+import { appendProposalEvent, approveAndRecord, loadProposalEvents, reject, replayProposals, scan, validId } from "@/lib/paper-proposals";
 import { GET as strategiesGET } from "../../strategies/route";
 
 const throttle = makeThrottle();
-const SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT"];
-const INTERVAL = "1d";
 const BY = "web:Ahmad";
 
 async function rows() {
@@ -32,35 +29,14 @@ export async function POST(req: Request) {
   const dir = directorData();
   try {
     if (body?.action === "scan") {
-      const added = await serial(async () => {
-        const account = replay(await loadEvents(dir));
-        let pending = replayProposals(await loadProposalEvents(dir));
-        let n = 0;
-        for (const symbol of SYMBOLS) {
-          const r = await strategiesGET(new Request(`http://local/api/strategies?symbol=${symbol}&interval=${INTERVAL}`));
-          if (!r.ok) continue;
-          const j = await r.json() as { price?: number; results?: Result[] };
-          if (!(Number(j.price) > 0) || !j.results) continue;
-          for (const p of proposalsFromSignals({ symbol, interval: INTERVAL, price: Number(j.price), results: j.results, account, pending })) {
-            await appendProposalEvent(dir, { type: "proposed", ...p });
-            n++;
-          }
-          pending = replayProposals(await loadProposalEvents(dir));
-        }
-        return n;
+      const added = await scan(dir, async (symbol, interval) => {
+        const r = await strategiesGET(new Request(`http://local/api/strategies?symbol=${symbol}&interval=${interval}`));
+        return r.ok ? r.json() : null;
       });
-      return Response.json({ ok: true, added, ...(await rows()) });
+      return Response.json({ ok: true, added: added.length, ...(await rows()) });
     }
     if (body?.action === "approve") {
-      const id = validId(body.id);
-      const fill = await serial(async () => {
-        const row = replayProposals(await loadProposalEvents(dir)).find(r => r.id === id);
-        const prices = row ? await fetchPrices([row.symbol]).catch(() => ({} as Record<string, number>)) : {};
-        const { fill, event } = approve(row, replay(await loadEvents(dir)), row ? prices[row.symbol] : NaN, BY);
-        await appendEvent(dir, { type: "fill", ...fill });
-        await appendProposalEvent(dir, event);
-        return fill;
-      });
+      const fill = await approveAndRecord(dir, validId(body.id), async s => (await fetchPrices([s]))[s], BY);
       return Response.json({ ok: true, fill, ...(await rows()) });
     }
     if (body?.action === "reject") {

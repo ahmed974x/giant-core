@@ -19,7 +19,8 @@
     "secrets:check": "node scripts/secrets.mjs check",
     "secrets:test": "node scripts/secrets.mjs test",
     "secrets:backup": "node scripts/secrets.mjs backup",
-    "keys:vault": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/keys-vault.mjs"
+    "keys:vault": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/keys-vault.mjs",
+    "paper:scan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/paper-scan.ts"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "1.75.1",

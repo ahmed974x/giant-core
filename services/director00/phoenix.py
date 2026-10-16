@@ -412,15 +412,15 @@ def _table_counts(path: Path) -> dict:
             con.close()
 
 
-def run_briefing() -> int:
-    """The 07:00 scheduled task (ADR-037): run web/scripts/briefing.ts with no console window."""
+def run_briefing(name: str = "briefing.ts", kind: str = "morning") -> int:
+    """The 07:00 scheduled task (ADR-037), and the 09:00 paper scan (ADR-073): run a web script with no console window."""
     node = shutil.which("node") or "node"
-    script = CORE / "web" / "scripts" / "briefing.ts"
+    script = CORE / "web" / "scripts" / name
     r = subprocess.run([node, "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", str(script)], cwd=str(CORE / "web"),
                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
                        creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
     log = EventLog(DATA / "phoenix.sqlite")
-    log.add("briefing", "morning", "ok" if r.returncode == 0 else "failed", (r.stdout if r.returncode == 0 else r.stderr)[-480:])
+    log.add("briefing", kind, "ok" if r.returncode == 0 else "failed", (r.stdout if r.returncode == 0 else r.stderr)[-480:])
     return r.returncode
 
 
@@ -454,6 +454,9 @@ def main(argv: list[str]) -> int:
     if cmd == "briefing":                               # the 07:00 task (ADR-037)
         load_env()
         return run_briefing()
+    if cmd == "paper-scan":                             # the 09:00 paper proposals task (ADR-073); never fills
+        load_env()
+        return run_briefing("paper-scan.ts", "paper")
     if cmd == "drill":                                  # weekly restore drill (ADR-038)
         load_env()
         out = restore_drill(Restic(), EventLog(DATA / "phoenix.sqlite"))

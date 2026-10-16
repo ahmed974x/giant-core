@@ -2,13 +2,17 @@
 // paper account until Ahmad approves that one proposal on the screen. There is no auto-approve path: scanning only
 // ever appends "proposed" events, and a fill is written only by approve(), which the PIN-guarded route calls on a tap.
 // Every proposal carries the numbers it was based on and a link to the raw data, so it can be checked by eye.
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
-import { fillOrder, type Account, type Fill, type Side } from "./paper.ts";
+import { appendEvent, fillOrder, loadEvents, replay, serial, type Account, type Fill, type Side } from "./paper.ts";
 import type { Result } from "./strategies.ts";
 
-export const PROPOSAL_USD = 100;              // size of a proposed paper buy
+export const PROPOSAL_USD = 100;              // default size of a proposed paper buy
+export const SIZE_MIN = 50, SIZE_MAX = 200;   // the resize rule never leaves this band
+export const SIZE_WINDOW_MS = 14 * 24 * 3600_000;
+export const SIZE_MIN_TRADES = 5;             // fewer closed trades than this is luck, not a result: keep 100
+export const SIZE_STEP_PCT = 5;
 export const PROPOSAL_TTL_MS = 24 * 3600_000; // evidence older than a day is stale: the proposal can't be approved
 export const MAX_DRIFT = 0.03;                // refuse approval if the price moved more than 3% since the proposal
 
@@ -47,7 +51,7 @@ export function makeProposal(input: { symbol: string; side: Side; usd?: number; 
   if (!SYMBOL.test(symbol)) throw new Error("pick a USDT pair, like BTCUSDT");
   if (input.side !== "buy" && input.side !== "sell") throw new Error("side must be buy or sell");
   return { id: randomBytes(6).toString("hex"), at: now.toISOString(), symbol, side: input.side,
-    ...(input.side === "buy" ? { usd: Number(input.usd ?? PROPOSAL_USD) } : {}), evidence: validEvidence(input.evidence) };
+    ...(input.side === "buy" ? { usd: Math.min(SIZE_MAX, Math.max(SIZE_MIN, Number(input.usd ?? PROPOSAL_USD))) } : {}), evidence: validEvidence(input.evidence) };
 }
 
 /** Rebuild the queue from its log. A pending proposal past its TTL reads as expired. */
@@ -65,8 +69,21 @@ export function replayProposals(events: ProposalEvent[], now = new Date()): Row[
   return [...rows.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
 
+/** Buy size from paper results only (Ahmad, 2026-10-16): over the last 14 days of closed paper trades, +5% or better
+ *  doubles it to 200 USDT, -5% or worse halves it to 50 USDT, otherwise 100. Needs SIZE_MIN_TRADES closed trades. */
+export function proposalSize(account: Account, now = new Date()): { usd: number; closed: number; returnPct: number | null } {
+  const since = now.getTime() - SIZE_WINDOW_MS;
+  const sells = account.fills.filter(f => f.side === "sell" && Date.parse(f.at) >= since);
+  const basis = sells.reduce((s, f) => s + (f.usd - f.fee - f.realized), 0);
+  const realized = sells.reduce((s, f) => s + f.realized, 0);
+  const returnPct = basis > 0 ? Math.round((realized / basis) * 10_000) / 100 : null;
+  if (sells.length < SIZE_MIN_TRADES || returnPct == null) return { usd: PROPOSAL_USD, closed: sells.length, returnPct };
+  const usd = returnPct >= SIZE_STEP_PCT ? 200 : returnPct <= -SIZE_STEP_PCT ? 50 : PROPOSAL_USD;
+  return { usd: Math.min(SIZE_MAX, Math.max(SIZE_MIN, usd)), closed: sells.length, returnPct };
+}
+
 /** Turn today's strategy signals into proposals. Skips holds, sells of coins not held, and anything already pending. */
-export function proposalsFromSignals(o: { symbol: string; interval: string; price: number; results: Result[]; account: Account; pending: Row[] },
+export function proposalsFromSignals(o: { symbol: string; interval: string; price: number; results: Result[]; account: Account; pending: Row[]; usd?: number },
   now = new Date()): Proposal[] {
   const held = new Set(o.account.holdings.map(h => h.symbol));
   const klines = `https://data-api.binance.vision/api/v3/klines?symbol=${o.symbol}&interval=${o.interval}&limit=500`;
@@ -78,7 +95,7 @@ export function proposalsFromSignals(o: { symbol: string; interval: string; pric
     if (o.pending.some(p => p.status === "pending" && p.symbol === o.symbol && p.side === r.signal && p.evidence.source === source)) continue;
     const summary: Record<string, number | string> = { ...r.reason };
     if (r.backtest) Object.assign(summary, { backtestReturnPct: r.backtest.returnPct, buyHoldPct: r.backtest.buyHoldPct, maxDrawdownPct: r.backtest.maxDrawdownPct });
-    out.push(makeProposal({ symbol: o.symbol, side: r.signal, usd: PROPOSAL_USD, evidence: {
+    out.push(makeProposal({ symbol: o.symbol, side: r.signal, usd: o.usd ?? PROPOSAL_USD, evidence: {
       source, summary, url: r.id === "news" ? "/api/worldpulse" : klines, observed_price: o.price, observed_at: now.toISOString() } }, now));
   }
   return out;
@@ -118,4 +135,79 @@ export async function loadProposalEvents(dataDir: string): Promise<ProposalEvent
 export async function appendProposalEvent(dataDir: string, e: ProposalEvent): Promise<void> {
   await mkdir(path.dirname(proposalsPath(dataDir)), { recursive: true });
   await appendFile(proposalsPath(dataDir), JSON.stringify(e) + "\n");
+}
+
+export const SCAN_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT"];
+export const SCAN_INTERVAL = "1d";
+export type Signals = { price?: number; results?: Result[] } | null;
+
+/** Scan today's signals and queue proposals. Writes only "proposed" events; it never touches the paper ledger. */
+export async function scan(dataDir: string, getSignals: (symbol: string, interval: string) => Promise<Signals>, now = new Date()): Promise<Proposal[]> {
+  return serial(async () => {
+    const account = replay(await loadEvents(dataDir));
+    const { usd } = proposalSize(account, now);
+    let pending = replayProposals(await loadProposalEvents(dataDir), now);
+    const added: Proposal[] = [];
+    for (const symbol of SCAN_SYMBOLS) {
+      const j = await getSignals(symbol, SCAN_INTERVAL).catch(() => null);
+      if (!j || !(Number(j.price) > 0) || !j.results) continue;
+      for (const p of proposalsFromSignals({ symbol, interval: SCAN_INTERVAL, price: Number(j.price), results: j.results, account, pending, usd }, now)) {
+        await appendProposalEvent(dataDir, { type: "proposed", ...p });
+        added.push(p);
+      }
+      pending = replayProposals(await loadProposalEvents(dataDir), now);
+    }
+    return added;
+  });
+}
+
+/** Ahmad tapped Approve: fill this one proposal on paper. The only code path that writes a fill from a proposal. */
+export async function approveAndRecord(dataDir: string, id: string, getPrice: (symbol: string) => Promise<number>, by: string,
+  now = new Date()): Promise<Fill> {
+  return serial(async () => {
+    const row = replayProposals(await loadProposalEvents(dataDir), now).find(r => r.id === id);
+    const price = row ? await getPrice(row.symbol).catch(() => NaN) : NaN;
+    const { fill, event } = approve(row, replay(await loadEvents(dataDir)), price, by, now);
+    await appendEvent(dataDir, { type: "fill", ...fill });
+    await appendProposalEvent(dataDir, event);
+    return fill;
+  });
+}
+
+/** Rank pending proposals for the briefing: best backtest edge over buy-and-hold first; no backtest goes last. */
+export function topProposals(rows: Row[], n = 3): Row[] {
+  const edge = (r: Row) => {
+    const s = r.evidence.summary, a = Number(s.backtestReturnPct), b = Number(s.buyHoldPct);
+    return Number.isFinite(a) && Number.isFinite(b) ? a - b : -Infinity;
+  };
+  return rows.filter(r => r.status === "pending").sort((x, y) => edge(y) - edge(x) || y.at.localeCompare(x.at)).slice(0, n);
+}
+
+/** The daily briefing: top proposals with their numbers and raw-data links. A decision aid; nothing is executed. */
+export function briefingText(rows: Row[], size: ReturnType<typeof proposalSize>, siteUrl: string, now = new Date()): string {
+  const top = topProposals(rows);
+  const link = (u: string) => (u.startsWith("/") ? siteUrl.replace(/\/$/, "") + u : u);
+  const lines = [
+    `# OMEGA paper briefing ${now.toISOString().slice(0, 10)}`, "",
+    "Paper only. Nothing is recorded until you tap Approve on the Market screen.", "",
+    `Buy size: ${size.usd} USDT (${size.closed} closed paper trades in 14 days${size.returnPct == null ? "" : `, ${size.returnPct}%`}).`, "",
+  ];
+  if (!top.length) lines.push("No proposals waiting today.");
+  top.forEach((r, i) => {
+    lines.push(`## ${i + 1}. ${r.side.toUpperCase()} ${r.symbol}${r.usd != null ? ` ${r.usd} USDT` : " (all held)"}`,
+      `- Source: ${r.evidence.source} at ${r.evidence.observed_price}`,
+      `- Numbers: ${Object.entries(r.evidence.summary).map(([k, v]) => `${k} ${v}`).join(", ")}`,
+      `- Raw data: ${link(r.evidence.url)}`, "");
+  });
+  lines.push(`Approve or reject: ${siteUrl.replace(/\/$/, "")}/ar/market`);
+  return lines.join("\n") + "\n";
+}
+
+export const briefingPath = (dataDir: string, now = new Date()) => path.join(dataDir, "paper", "briefings", `${now.toISOString().slice(0, 10)}.md`);
+
+export async function writeBriefing(dataDir: string, text: string, now = new Date()): Promise<string> {
+  const file = briefingPath(dataDir, now);
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, text);
+  return file;
 }
