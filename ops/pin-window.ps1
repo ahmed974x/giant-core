@@ -55,7 +55,7 @@ $result.Size = New-Object System.Drawing.Size(500, 80)
 $red = [System.Drawing.Color]::FromArgb(239, 68, 68)
 
 $save.Add_Click({
-  if ($p1.Text.Trim() -ne $p2.Text.Trim()) { $result.ForeColor = $red; $result.Text = 'الرمزين مو نفس بعض. اكتبهم من جديد.'; return }
+  if ($p1.Text.Trim() -ne $p2.Text.Trim()) { $result.ForeColor = $red; $result.Text = 'الرمزان غير متطابقين. أعد كتابتهما.'; return }
   $save.Enabled = $false; $result.ForeColor = [System.Drawing.Color]::White; $result.Text = 'جاري الحفظ...'; $form.Refresh()
   $payload = @{ pin = $p1.Text.Trim() } | ConvertTo-Json -Compress
   $psi = New-Object System.Diagnostics.ProcessStartInfo

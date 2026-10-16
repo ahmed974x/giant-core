@@ -56,8 +56,8 @@ function Test-Shape($box, $hint, $kind) {
   $v = $box.Text.Trim()
   if (-not $v) { $hint.Text = 'فاضية (ما بتتغيّر)'; $hint.ForeColor = $grey; return $true }
   $n = $v.Length
-  if ($v -match '\s') { $hint.Text = "فيها مسافات أو كلام زيادة ($n حرف). انسخ المفتاح بس."; $hint.ForeColor = $red; return $false }
-  if ($n -eq 32 -and $v -cmatch '[A-Z_]' -and $v -cmatch '[a-z]') { $hint.Text = "هذا شكله رمز رابط الإيميل، مو مفتاح ($n حرف)."; $hint.ForeColor = $red; return $false }
+  if ($v -match '\s') { $hint.Text = "يحتوي على مسافات أو نص زائد ($n حرف). انسخ المفتاح فقط."; $hint.ForeColor = $red; return $false }
+  if ($n -eq 32 -and $v -cmatch '[A-Z_]' -and $v -cmatch '[a-z]') { $hint.Text = "هذا شكل رمز رابط البريد، وليس مفتاحاً ($n حرف)."; $hint.ForeColor = $red; return $false }
   if ($kind -eq 'groq') {
     if ($v -cmatch '^gsk_[A-Za-z0-9]{40,64}$') { $hint.Text = "$n حرف ✓ شكله مفتاح Groq"; $hint.ForeColor = $green; return $true }
     $hint.Text = "$n حرف ✗ مفتاح Groq يبدأ بـ gsk_ وطوله حوالي 56"; $hint.ForeColor = $red; return $false
@@ -72,11 +72,11 @@ function Test-Shape($box, $hint, $kind) {
   }
   if ($kind -eq 'nasa') {
     if ($v -match '^[0-9a-fA-F]{32}$') { $hint.Text = "32 حرف ✓ شكله مفتاح NASA صحيح"; $hint.ForeColor = $green; return $true }
-    $hint.Text = "$n حرف ✗ مو شكل مفتاح NASA (لازم 32 حرف أرقام وحروف a-f)"; $hint.ForeColor = $red; return $false
+    $hint.Text = "$n حرف ✗ ليس شكل مفتاح NASA (يلزم 32 حرفاً من الأرقام وحروف a-f)"; $hint.ForeColor = $red; return $false
   }
   if ($v -match '^[0-9a-fA-F]{40}$') { $hint.Text = "40 حرف ✓ شكله مفتاح AISStream"; $hint.ForeColor = $green; return $true }
   if ($v -match '^[0-9a-fA-F-]{30,64}$') { $hint.Text = "$n حرف، ممكن يكون المفتاح. نجرّبه."; $hint.ForeColor = $grey; return $true }
-  $hint.Text = "$n حرف ✗ مو شكل مفتاح AISStream"; $hint.ForeColor = $red; return $false
+  $hint.Text = "$n حرف ✗ ليس شكل مفتاح AISStream"; $hint.ForeColor = $red; return $false
 }
 $firms.Add_TextChanged({ [void](Test-Shape $firms $firmsHint 'nasa') })
 $ais.Add_TextChanged({ [void](Test-Shape $ais $aisHint 'ais') })
@@ -87,7 +87,7 @@ $cer.Add_TextChanged({ [void](Test-Shape $cer $cerHint 'cerebras') })
 [void](Test-Shape $firms $firmsHint 'nasa'); [void](Test-Shape $ais $aisHint 'ais'); [void](Test-Shape $groq $groqHint 'groq'); [void](Test-Shape $gem $gemHint 'gemini')
 
 $show = New-Object System.Windows.Forms.CheckBox
-$show.Text = 'أظهر اللي لصقته (تتأكد إنه المفتاح بس)'
+$show.Text = 'أظهر ما لصقته (تحقّق من أنه المفتاح فقط)'
 $show.Location = New-Object System.Drawing.Point(20, 500); $show.Size = New-Object System.Drawing.Size(500, 20)
 $show.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $show.Add_CheckedChanged({ foreach ($b in @($firms, $ais, $groq, $cer, $gem)) { $b.UseSystemPasswordChar = -not $show.Checked } })
@@ -105,7 +105,7 @@ $result.Size = New-Object System.Drawing.Size(500, 110)
 
 $save.Add_Click({
   if (-not (Test-Shape $firms $firmsHint 'nasa') -or -not (Test-Shape $ais $aisHint 'ais') -or -not (Test-Shape $groq $groqHint 'groq') -or -not (Test-Shape $gem $gemHint 'gemini') -or -not (Test-Shape $cer $cerHint 'cerebras')) {
-    $result.ForeColor = $red; $result.Text = 'ما حفظت شي: فيه خانة مكتوب تحتها بالأحمر. صحّحها أو فضّها.'; return
+    $result.ForeColor = $red; $result.Text = 'لم يُحفظ شيء: توجد خانة مكتوب تحتها بالأحمر. صحّحها أو أفرغها.'; return
   }
   if (-not $firms.Text.Trim() -and -not $ais.Text.Trim() -and -not $groq.Text.Trim() -and -not $gem.Text.Trim() -and -not $cer.Text.Trim()) { $result.ForeColor = $red; $result.Text = 'الخانتين فاضيات.'; return }
   $save.Enabled = $false; $result.ForeColor = [System.Drawing.Color]::White; $result.Text = 'جاري الحفظ والفحص...'
