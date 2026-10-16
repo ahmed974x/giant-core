@@ -72,10 +72,10 @@ export default function CommandCenter() {
   return (
     <div className="relative -mt-2 space-y-4 pb-24 sm:pb-20">
       <Particles />
-      <div className="text-center">
+      <header className="hero-glow text-center">
         <h1 className="bg-gradient-to-r from-brass via-[#FCD34D] to-brass bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("lead")}</p>
-      </div>
+        <p className="mx-auto mt-1 max-w-xl text-sm text-muted">{t("lead")}</p>
+      </header>
 
       {/* Phones: the command bar comes first, then the cards in one column. Wider: cards above and below the bar. */}
       <div className="sm:hidden"><CommandBar /></div>

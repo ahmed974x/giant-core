@@ -67,6 +67,10 @@ body { font-family: var(--font-sans); min-height: 100dvh; }
 .glow-purple { border-color: rgba(124, 58, 237, 0.5); box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.18), 0 10px 40px -12px rgba(124, 58, 237, 0.4); }
 .glow-orange { border-color: rgba(249, 115, 22, 0.55); box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2), 0 10px 40px -12px rgba(249, 115, 22, 0.45); }
 .glow-green { border-color: rgba(16, 185, 129, 0.45); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 10px 40px -12px rgba(16, 185, 129, 0.35); }
+/* Home hero: a soft gold-and-purple glow behind the title, so the screen has a focal point above the cards. */
+.hero-glow { position: relative; isolation: isolate; padding-block: 0.5rem; }
+.hero-glow::before { content: ""; position: absolute; inset: -20% 10% auto; height: 140%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(245, 179, 1, 0.14), rgba(124, 58, 237, 0.08) 55%, transparent 75%); filter: blur(10px); }
 .command-ring { position: relative; }
 .command-ring::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
   background: linear-gradient(135deg, rgba(245, 179, 1, 0.8), rgba(124, 58, 237, 0.7), rgba(6, 182, 212, 0.7));
