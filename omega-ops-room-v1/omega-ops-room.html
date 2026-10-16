@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="no-referrer" />
+<title>OMEGA OPS ROOM</title>
+<!--
+  OMEGA Ops Room v1.0.0 · local-first, read-only operations surface.
+  No backend, no build step, no framework, no credentials, no trading actions.
+  Data: Binance public market data · Open-Meteo · local n8n /healthz · local Newton /api/health.
+-->
+<style>
+  :root {
+    --void: #04060a;
+    --deep: #070b12;
+    --neural: #0b1220;
+    --cyan: #00e5ff;
+    --violet: #8b5cff;
+    --lime: #7dff9b;
+    --amber: #ffb84d;
+    --red: #ff4d6d;
+    --text: #d8e6f2;
+    --muted: #6d7f92;
+    --line: rgba(0, 229, 255, 0.16);
+    --glow: 0 0 24px rgba(0, 229, 255, 0.18);
+    --ar: "Segoe UI", "Noto Sans Arabic", Tahoma, "Geeza Pro", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(0,229,255,.10), transparent 32%),
+      radial-gradient(circle at 82% 12%, rgba(139,92,255,.12), transparent 34%),
+      radial-gradient(circle at 65% 85%, rgba(125,255,155,.07), transparent 30%),
+      var(--void);
+    color: var(--text);
+    font-family: "Segoe UI", Inter, system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0,229,255,.08) 0 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(139,92,255,.08) 0 1px, transparent 1px);
+    background-size: 180px 180px, 240px 240px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ar { font-family: var(--ar); direction: rtl; unicode-bidi: isolate; }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 34px 28px 60px;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+  }
+
+  .brand h1 {
+    font-size: clamp(28px, 4vw, 46px);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, var(--cyan), var(--violet), var(--lime));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .brand h1 .ar { letter-spacing: 0; font-size: .55em; margin-inline-start: 14px; }
+
+  .brand p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--line);
+    background: rgba(7, 11, 18, 0.82);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: var(--glow);
+  }
+  .status-pill .ar { letter-spacing: 0; color: var(--muted); }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--amber);
+    color: var(--amber);
+    box-shadow: 0 0 12px currentColor;
+  }
+  .dot.online { background: var(--lime); color: var(--lime); }
+  .dot.offline { background: var(--red); color: var(--red); }
+  .dot.locked { background: var(--violet); color: var(--violet); }
+
+  /* ---------- non-grid neural field ---------- */
+  .neural-field {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 34px 40px;
+    padding: 10px 0 30px;
+  }
+
+  #synapses {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: visible;
+  }
+  #synapses path {
+    fill: none;
+    stroke-width: 1.4;
+    stroke-dasharray: 3 7;
+    animation: flow 2.6s linear infinite;
+    opacity: .55;
+  }
+  @keyframes flow { to { stroke-dashoffset: -40; } }
+
+  .core {
+    position: relative;
+    z-index: 1;
+    order: 3;
+    flex: 0 0 170px;
+    height: 170px;
+    margin: 40px 10px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: radial-gradient(circle, rgba(0,229,255,.22), rgba(139,92,255,.10) 55%, transparent 70%);
+    border: 1px solid var(--line);
+    box-shadow: 0 0 60px rgba(0,229,255,.15), inset 0 0 40px rgba(139,92,255,.18);
+    animation: breathe 5s ease-in-out infinite;
+  }
+  .core b { display: block; font-size: 30px; letter-spacing: 4px; color: var(--cyan); }
+  .core span { display: block; font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+  @keyframes breathe { 50% { box-shadow: 0 0 90px rgba(0,229,255,.25), inset 0 0 50px rgba(139,92,255,.28); } }
+
+  .node {
+    position: relative;
+    z-index: 1;
+    flex: 0 1 360px;
+    min-height: 230px;
+    border: 1px solid var(--line);
+    border-radius: 26px 26px 26px 8px;
+    background: linear-gradient(145deg, rgba(11,18,32,.92), rgba(4,6,10,.94));
+    padding: 24px;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: border-color .4s;
+  }
+  /* organic drift: each neuron sits off the baseline */
+  .node.n-btc     { order: 1; transform: translateY(18px); border-radius: 26px 26px 8px 26px; }
+  .node.n-weather { order: 2; transform: translateY(-14px); }
+  .node.n-n8n     { order: 4; transform: translateY(26px); border-radius: 8px 26px 26px 26px; }
+  .node.n-newton  { order: 5; transform: translateY(-8px); }
+  .node.n-tools   { order: 6; flex-basis: 520px; min-height: 0; transform: translateX(-40px); border-radius: 26px 8px 26px 26px; }
+
+  .node[data-state="online"]  { border-color: rgba(125,255,155,.28); }
+  .node[data-state="offline"] { border-color: rgba(255,77,109,.30); }
+  .node[data-state="locked"]  { border-color: rgba(139,92,255,.32); }
+
+  .node::after {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(0,229,255,.08) 70deg, transparent 150deg, rgba(139,92,255,.08) 230deg, transparent 320deg);
+    animation: orbit 14s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  .node > * { position: relative; z-index: 1; }
+
+  .node-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .node-title { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan); }
+  .node-title .ar { display: block; letter-spacing: 0; font-size: 13px; color: var(--muted); margin-top: 4px; text-align: start; }
+  .node-tag {
+    font-size: 10px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    border-radius: 999px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .metric { font-size: clamp(30px, 4vw, 44px); font-weight: 700; letter-spacing: 1px; }
+  .metric small { font-size: 16px; color: var(--muted); margin-left: 6px; }
+  .metric.stale { opacity: .45; }
+
+  .sub { margin-top: 10px; color: var(--muted); font-size: 12px; letter-spacing: 1px; line-height: 1.6; }
+
+  .pulse-line { margin-top: 22px; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: .5; }
+
+  .state {
+    margin-top: 18px;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .state .ar { letter-spacing: 0; text-transform: none; font-size: 12px; opacity: .85; }
+  .state.online { color: var(--lime); }
+  .state.offline { color: var(--red); }
+  .state.checking { color: var(--amber); }
+  .state.locked { color: var(--violet); }
+
+  .why { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.5; min-height: 1em; }
+
+  .spark { position: absolute; right: 18px; bottom: 18px; width: 90px; height: 46px; opacity: .55; }
+
+  /* Newton tools: disabled until the health gate is open */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--text);
+    background: rgba(0,229,255,.05);
+  }
+  .gated[aria-disabled="true"] { opacity: .35; filter: grayscale(1); pointer-events: none; user-select: none; }
+  .gate-link {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--cyan);
+  }
+
+  .footer {
+    margin-top: 34px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+    line-height: 1.7;
+  }
+  .footer a { color: var(--cyan); text-decoration: none; }
+
+  @media (max-width: 820px) {
+    .shell { padding: 22px 16px 40px; }
+    .neural-field { gap: 18px; }
+    .neural-field > .node { flex: 1 1 100%; transform: none; }
+    .core { order: 0; flex-basis: 120px; height: 120px; margin: 0 auto 6px; }
+    .core b { font-size: 22px; }
+    #synapses { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      <h1>OMEGA OPS ROOM <span class="ar" lang="ar">غرفة العمليات</span></h1>
+      <p>Local Neural Operations Surface · v1.0 · <span class="ar" lang="ar">سطح تشغيل محلي للقراءة فقط</span></p>
+    </div>
+    <div class="status-pill" role="status" aria-live="polite">
+      <span id="globalDot" class="dot"></span>
+      <span id="globalStatus">SYSTEM INITIALIZING</span>
+      <span id="globalStatusAr" class="ar" lang="ar">جاري تشغيل النظام</span>
+    </div>
+  </header>
+
+  <main class="neural-field" id="field">
+    <svg id="synapses" aria-hidden="true"></svg>
+
+    <div class="core" id="core" aria-hidden="true">
+      <div><b>Ω</b><span id="coreCount">0 / 4</span></div>
+    </div>
+
+    <section class="node n-btc" data-link="btcState">
+      <div class="node-head">
+        <div class="node-title">BTC / USDT<span class="ar" lang="ar">بيتكوين / تيذر</span></div>
+        <div class="node-tag">BINANCE · PUBLIC</div>
+      </div>
+      <div class="metric" id="btcPrice">—</div>
+      <div class="sub" id="btcUpdated">Awaiting market feed… · <span class="ar" lang="ar">بانتظار بيانات السوق</span></div>
+      <div class="pulse-line"></div>
+      <div class="state" id="btcState"><span class="dot"></span> CONNECTING</div>
+      <svg class="spark" viewBox="0 0 100 50" aria-hidden="true">
+        <polyline id="btcSpark" fill="none" stroke="#00e5ff" stroke-width="2" points="" />
+      </svg>
+    </section>
+
+    <section class="node n-weather" data-link="weatherState">
+      <div class="node-head">
+        <div class="node-title">KUWAIT WEATHER<span class="ar" lang="ar">طقس الكويت</span></div>
+        <div class="node-tag">OPEN-METEO</div>
+      </div>
+      <div class="metric" id="weatherTemp">—<small>°C</small></div>
+      <div class="sub" id="weatherWind">Wind: — km/h · <span class="ar" lang="ar">الرياح: — كم/س</span></div>
+      <div class="sub" id="weatherSky"></div>
+      <div class="pulse-line"></div>
+      <div class="state" id="weatherState"><span class="dot"></span> CONNECTING</div>
+    </section>
+
+    <section class="node n-n8n" data-link="n8nState">
+      <div class="node-head">
+        <div class="node-title">N8N SYSTEM<span class="ar" lang="ar">نظام الأتمتة n8n</span></div>
+        <div class="node-tag" id="n8nTag">LOCAL · 5678</div>
+      </div>
+      <div class="metric" id="n8nStateText">—</div>
+      <div class="sub">Workflow automation control plane · <span class="ar" lang="ar">مراقبة الحالة فقط، بدون تشغيل</span></div>
+      <div class="pulse-line"></div>
+      <div class="state" id="n8nState"><span class="dot"></span> CHECKING</div>
+      <div class="why" id="n8nWhy"></div>
+    </section>
+
+    <section class="node n-newton" data-link="newtonState">
+      <div class="node-head">
+        <div class="node-title">NEWTON CORE<span class="ar" lang="ar">محرك نيوتن</span></div>
+        <div class="node-tag" id="newtonTag">LOCAL · 8095</div>
+      </div>
+      <div class="metric" id="newtonStateText">—</div>
+      <div class="sub">Pre-flight health gate for computational tasks · <span class="ar" lang="ar">فحص إلزامي قبل أي مهمة</span></div>
+      <div class="pulse-line"></div>
+      <div class="state" id="newtonState"><span class="dot"></span> CHECKING</div>
+      <div class="why" id="newtonWhy"></div>
+    </section>
+
+    <section class="node n-tools" data-link="newtonState">
+      <div class="node-head">
+        <div class="node-title">NEWTON TOOLS<span class="ar" lang="ar">أدوات نيوتن</span></div>
+        <div class="node-tag" id="gateTag">GATE · LOCKED</div>
+      </div>
+      <div id="newtonTools" class="gated" aria-disabled="true">
+        <div class="chips" id="toolChips"><span class="chip">calc</span><span class="chip">solve</span><span class="chip">kinematics</span><span class="chip">distance</span><span class="chip">ship_eta</span><span class="chip">road_eta</span></div>
+        <a class="gate-link" id="newtonOpen" href="http://127.0.0.1:8095/" target="_blank" rel="noopener" tabindex="-1">Open Newton console ↗ · <span class="ar" lang="ar">افتح نيوتن</span></a>
+      </div>
+      <div class="sub" id="gateNote">Disabled until Newton passes its health check. · <span class="ar" lang="ar">معطّلة حتى ينجح فحص نيوتن.</span></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>LOCAL-FIRST · NO CREDENTIALS · READ-ONLY OPERATIONS · <span class="ar" lang="ar">محلي · بدون مفاتيح · قراءة فقط · لا تداول</span></div>
+    <div>
+      Market data: Binance Public Market Data ·
+      Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// Public, keyless endpoints only. Never add API keys, trading keys or wallet credentials here.
+const CONFIG = {
+  btcUrl: "https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT",
+  weatherUrl:
+    "https://api.open-meteo.com/v1/forecast?latitude=29.3759&longitude=47.9774" +
+    "&current=temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code&timezone=Asia%2FKuwait",
+  n8nHealth: "http://localhost:5678/healthz",
+  newtonHealth: "http://127.0.0.1:8095/api/health",
+  // OMEGA Core API checks n8n and Newton server-side, so no CORS is needed from them.
+  // Same origin when this page is served by the API at /ops/.
+  coreHealth: location.pathname.startsWith("/ops/")
+    ? "/api/v1/health/services"
+    : "http://127.0.0.1:8000/api/v1/health/services",
+  btcRefreshMs: 10000,
+  weatherRefreshMs: 600000,
+  systemRefreshMs: 15000
+};
+
+const btcHistory = [];
+let btcLast = null;
+const newtonGate = { open: false, checkedAt: 0, tools: [] };
+
+const $ = id => document.getElementById(id);
+
+// Builds "<dot> EN · AR" without innerHTML so nothing from the network is ever parsed as markup.
+function setState(id, state, label, labelAr) {
+  const el = $(id);
+  el.className = "state " + state;
+  const dot = document.createElement("span");
+  dot.className = "dot " + state;
+  const ar = document.createElement("span");
+  ar.className = "ar";
+  ar.lang = "ar";
+  ar.textContent = labelAr || "";
+  el.replaceChildren(dot, document.createTextNode(" " + label + " · "), ar);
+  const node = el.closest(".node");
+  if (node) node.dataset.state = state;
+}
+
+function setMetric(id, value, unit) {
+  const el = $(id);
+  el.classList.remove("stale");
+  if (unit) {
+    const small = document.createElement("small");
+    small.textContent = unit;
+    el.replaceChildren(document.createTextNode(value), small);
+  } else {
+    el.textContent = value;
+  }
+}
+
+function setBilingual(id, en, ar) {
+  const span = document.createElement("span");
+  span.className = "ar";
+  span.lang = "ar";
+  span.textContent = ar;
+  $(id).replaceChildren(document.createTextNode(en + " · "), span);
+}
+
+function setGlobal(state, label, labelAr) {
+  $("globalDot").className = "dot " + state;
+  $("globalStatus").textContent = label;
+  $("globalStatusAr").textContent = labelAr;
+}
+
+async function safeFetch(url, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, cache: "no-store", credentials: "omit" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Local services (n8n, Newton) may not send CORS headers. A normal fetch then fails even
+// though the service is up. probe() separates the three cases:
+//   verified -> body read and returned
+//   opaque   -> port answers, but the browser may not read the body (CORS)
+//   down     -> refused, timed out or HTTP error
+async function probe(url, timeoutMs = 4000) {
+  try {
+    return { level: "verified", data: await safeFetch(url, timeoutMs) };
+  } catch (err) {
+    if (err && err.name === "AbortError") return { level: "down", reason: "timeout" };
+    if (err && /^HTTP /.test(err.message)) return { level: "down", reason: err.message };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(url, { mode: "no-cors", signal: controller.signal, cache: "no-store", credentials: "omit" });
+    return { level: "opaque" };
+  } catch (err) {
+    return { level: "down", reason: err && err.name === "AbortError" ? "timeout" : "unreachable" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadBtc() {
+  setState("btcState", "checking", "SYNCING", "مزامنة");
+  try {
+    const data = await safeFetch(CONFIG.btcUrl);
+    const price = parseFloat(data && data.price);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid price");
+
+    btcLast = price;
+    btcHistory.push(price);
+    if (btcHistory.length > 30) btcHistory.shift();
+
+    setMetric("btcPrice", price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "USDT");
+    const t = new Date().toLocaleTimeString("en-GB");
+    setBilingual("btcUpdated", "Updated " + t, "آخر تحديث " + t);
+
+    const min = Math.min(...btcHistory);
+    const max = Math.max(...btcHistory);
+    const range = max - min || 1;
+    const points = btcHistory.map((value, index) => {
+      const x = (index / Math.max(btcHistory.length - 1, 1)) * 100;
+      const y = 45 - ((value - min) / range) * 38;
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    $("btcSpark").setAttribute("points", btcHistory.length > 1 ? points : "");
+    setState("btcState", "online", "LIVE FEED", "بث مباشر");
+  } catch {
+    if (btcLast === null) {
+      setMetric("btcPrice", "OFFLINE");
+    } else {
+      $("btcPrice").classList.add("stale"); // keep the last good price, clearly dimmed
+    }
+    setState("btcState", "offline", "FEED UNAVAILABLE", "البيانات غير متاحة");
+  }
+}
+
+// WMO weather codes, as returned by Open-Meteo.
+function describeSky(code) {
+  if (code === 0) return ["Clear sky", "صافٍ"];
+  if (code <= 3) return ["Partly cloudy", "غائم جزئياً"];
+  if (code === 45 || code === 48) return ["Fog", "ضباب"];
+  if (code >= 51 && code <= 57) return ["Drizzle", "رذاذ"];
+  if (code >= 61 && code <= 67) return ["Rain", "مطر"];
+  if (code >= 71 && code <= 77) return ["Snow", "ثلج"];
+  if (code >= 80 && code <= 82) return ["Showers", "زخات مطر"];
+  if (code >= 95) return ["Thunderstorm", "عاصفة رعدية"];
+  return ["—", "—"];
+}
+
+async function loadWeather() {
+  setState("weatherState", "checking", "SYNCING", "مزامنة");
+  try {
+    const data = await safeFetch(CONFIG.weatherUrl);
+    const cur = data && data.current;
+    const temp = Number(cur && cur.temperature_2m);
+    const wind = Number(cur && cur.wind_speed_10m);
+    if (!Number.isFinite(temp) || !Number.isFinite(wind)) throw new Error("Invalid weather payload");
+
+    setMetric("weatherTemp", temp.toFixed(1), "°C");
+    setBilingual("weatherWind", "Wind: " + wind.toFixed(0) + " km/h", "الرياح: " + wind.toFixed(0) + " كم/س");
+    const hum = Number(cur.relative_humidity_2m);
+    const [skyEn, skyAr] = describeSky(Number(cur.weather_code));
+    setBilingual("weatherSky",
+      skyEn + (Number.isFinite(hum) ? " · Humidity " + hum + "%" : ""),
+      skyAr + (Number.isFinite(hum) ? " · الرطوبة " + hum + "%" : ""));
+    setState("weatherState", "online", "ATMOSPHERE LINKED", "متصل");
+  } catch {
+    setMetric("weatherTemp", "—", "°C");
+    setState("weatherState", "offline", "WEATHER OFFLINE", "الطقس غير متاح");
+  }
+}
+
+// Reads the Core API once per cycle; null when it is not running (then each widget probes directly).
+async function readCore() {
+  try {
+    return await safeFetch(CONFIG.coreHealth, 5000);
+  } catch {
+    return null;
+  }
+}
+
+// Maps one Core API service entry onto the same shape probe() returns.
+function fromCore(core, name) {
+  const s = core && core.services && core.services[name];
+  if (!s || typeof s.status !== "string") return null;
+  if (s.status === "online") {
+    return { level: "verified", data: name === "newton" ? { ok: true, tools: Array.isArray(s.tools) ? s.tools : [] } : { status: "ok" } };
+  }
+  if (s.status === "degraded") return { level: "verified", data: {} };
+  return { level: "down", reason: String(s.reason || "unreachable") };
+}
+
+async function loadN8n(core) {
+  setState("n8nState", "checking", "SCANNING", "فحص");
+  const viaCore = fromCore(core, "n8n");
+  $("n8nTag").textContent = viaCore ? "LOCAL · 5678 · VIA CORE" : "LOCAL · 5678";
+  const r = viaCore || await probe(CONFIG.n8nHealth);
+  if (r.level === "verified" && r.data && r.data.status === "ok") {
+    setMetric("n8nStateText", "ONLINE");
+    setState("n8nState", "online", "WORKFLOW ENGINE ACTIVE", "محرك الأتمتة يعمل");
+    $("n8nWhy").textContent = "";
+  } else if (r.level === "verified" || r.level === "opaque") {
+    setMetric("n8nStateText", "ONLINE");
+    setState("n8nState", "online", "PORT RESPONDING", "المنفذ يستجيب");
+    setBilingual("n8nWhy", "Reachable; the browser cannot read the health body (CORS).", "يستجيب، لكن المتصفح لا يقرأ تفاصيل الفحص.");
+  } else {
+    setMetric("n8nStateText", "OFFLINE");
+    setState("n8nState", "offline", "N8N NOT REACHABLE", "n8n لا يستجيب");
+    setBilingual("n8nWhy", "Reason: " + r.reason, "السبب: " + (r.reason === "timeout" ? "انتهت المهلة" : "لا يوجد اتصال"));
+  }
+}
+
+// Newton gate: open ONLY when /api/health is read and says ok:true.
+// "Port answers but body unreadable" keeps the gate closed.
+async function loadNewton(core) {
+  setState("newtonState", "checking", "PRE-FLIGHT", "فحص ما قبل التشغيل");
+  const viaCore = fromCore(core, "newton");
+  $("newtonTag").textContent = viaCore ? "LOCAL · 8095 · VIA CORE" : "LOCAL · 8095";
+  const r = viaCore || await probe(CONFIG.newtonHealth);
+  const healthy = r.level === "verified" && r.data && r.data.ok === true;
+  newtonGate.open = healthy;
+  newtonGate.checkedAt = Date.now();
+  newtonGate.tools = healthy && Array.isArray(r.data.tools) ? r.data.tools.map(String) : [];
+
+  if (healthy) {
+    setMetric("newtonStateText", "READY");
+    setState("newtonState", "online", "NEWTON HEALTHY", "نيوتن سليم");
+    $("newtonWhy").textContent = "";
+  } else {
+    setMetric("newtonStateText", "LOCKED");
+    setState("newtonState", r.level === "down" ? "offline" : "locked", "HEALTH GATE FAILED", "فشل فحص السلامة");
+    if (r.level === "opaque") {
+      setBilingual("newtonWhy",
+        "Port answers, but the browser cannot read /api/health (no CORS header). Gate stays closed.",
+        "المنفذ يستجيب لكن المتصفح لا يقرأ الفحص. البوابة تبقى مغلقة.");
+    } else if (r.level === "verified") {
+      setBilingual("newtonWhy", "Health response did not report ok:true.", "رد الفحص لم يؤكد السلامة.");
+    } else {
+      setBilingual("newtonWhy", "Reason: " + r.reason, "السبب: " + (r.reason === "timeout" ? "انتهت المهلة" : "لا يوجد اتصال"));
+    }
+  }
+  renderNewtonGate();
+}
+
+function renderNewtonGate() {
+  const open = newtonGate.open;
+  $("newtonTools").setAttribute("aria-disabled", open ? "false" : "true");
+  $("newtonOpen").tabIndex = open ? 0 : -1;
+  $("gateTag").textContent = open ? "GATE · OPEN" : "GATE · LOCKED";
+  $("newtonTools").closest(".node").dataset.state = open ? "online" : "locked";
+  if (open && newtonGate.tools.length) {
+    $("toolChips").replaceChildren(...newtonGate.tools.map(name => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = name;
+      return chip;
+    }));
+  }
+  setBilingual("gateNote",
+    open ? "Health check passed. Tools are read-only listings in v1; tasks run in the Newton console."
+         : "Disabled until Newton passes its health check.",
+    open ? "نجح الفحص. الأدوات للعرض فقط في هذا الإصدار."
+         : "معطّلة حتى ينجح فحص نيوتن.");
+}
+
+// Any future Newton task must await this first; it re-checks if the last result is older than one cycle.
+async function requireNewton() {
+  if (!newtonGate.open || Date.now() - newtonGate.checkedAt > CONFIG.systemRefreshMs) await loadNewton(await readCore());
+  return newtonGate.open;
+}
+window.OMEGA = Object.freeze({ requireNewton, gate: () => ({ open: newtonGate.open, checkedAt: newtonGate.checkedAt }) });
+
+async function loadSystems() {
+  const core = await readCore();
+  await Promise.allSettled([loadN8n(core), loadNewton(core)]);
+}
+
+const STATE_IDS = ["btcState", "weatherState", "n8nState", "newtonState"];
+
+function refreshGlobal() {
+  const states = STATE_IDS.map(id => $(id).className);
+  const up = states.filter(s => s.includes("online")).length;
+  $("coreCount").textContent = up + " / " + states.length;
+  if (up === states.length) {
+    setGlobal("online", "ALL SYSTEMS NOMINAL", "كل الأنظمة تعمل");
+  } else if (states.some(s => s.includes("offline") || s.includes("locked"))) {
+    setGlobal("offline", "PARTIAL SYSTEM DEGRADATION", "تراجع جزئي في الأنظمة");
+  } else {
+    setGlobal("", "SYSTEM INITIALIZING", "جاري تشغيل النظام");
+  }
+  drawSynapses();
+}
+
+// Draws the links from the Ω core to each node, colored by that node's state.
+const STROKE = { online: "#7dff9b", offline: "#ff4d6d", locked: "#8b5cff", checking: "#ffb84d" };
+function drawSynapses() {
+  const svg = $("synapses");
+  const field = $("field").getBoundingClientRect();
+  const c = $("core").getBoundingClientRect();
+  const cx = c.left + c.width / 2 - field.left;
+  const cy = c.top + c.height / 2 - field.top;
+  const ns = "http://www.w3.org/2000/svg";
+  const paths = [...document.querySelectorAll(".node")].map(node => {
+    const r = node.getBoundingClientRect();
+    const x = Math.min(Math.max(cx, r.left - field.left), r.right - field.left);
+    const y = Math.min(Math.max(cy, r.top - field.top), r.bottom - field.top);
+    const mx = (cx + x) / 2 + (y - cy) * 0.18;
+    const my = (cy + y) / 2 - (x - cx) * 0.18;
+    const p = document.createElementNS(ns, "path");
+    p.setAttribute("d", `M${cx.toFixed(1)},${cy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
+    p.setAttribute("stroke", STROKE[node.dataset.state] || "#00e5ff");
+    return p;
+  });
+  svg.replaceChildren(...paths);
+}
+
+async function boot() {
+  setGlobal("", "SYSTEM INITIALIZING", "جاري تشغيل النظام");
+  drawSynapses();
+  window.addEventListener("resize", drawSynapses);
+
+  // Each loader catches its own errors, so one dead source never blocks the others.
+  await Promise.allSettled([loadBtc(), loadWeather(), loadSystems()]);
+  refreshGlobal();
+
+  setInterval(async () => {
+    if (document.hidden) return; // no market polling while the tab is in the background
+    await loadBtc();
+    refreshGlobal();
+  }, CONFIG.btcRefreshMs);
+
+  setInterval(async () => {
+    await loadWeather();
+    refreshGlobal();
+  }, CONFIG.weatherRefreshMs);
+
+  setInterval(async () => {
+    await loadSystems();
+    refreshGlobal();
+  }, CONFIG.systemRefreshMs);
+}
+
+boot();
+</script>
+</body>
+</html>
