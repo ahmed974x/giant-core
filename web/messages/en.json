@@ -316,7 +316,7 @@
       "title": "Trade proposals",
       "badge": "Paper only",
       "lead": "OMEGA reads today's strategy signals and proposes paper trades. Nothing is recorded until you approve each one. Every proposal shows the numbers behind it and a link to the raw data.",
-      "needPin": "Enter your PIN in the paper account above first.",
+      "needPin": "Enter your PIN in the paper account above, or sign in from the Account page.",
       "scan": "Scan signals",
       "scanned": "{n, plural, =0 {No new proposals.} one {1 new proposal.} other {# new proposals.}}",
       "empty": "No proposals waiting.",
@@ -923,5 +923,20 @@
     "sources": "Sources",
     "quote": "Passage used",
     "disclaimer": "Decision aid only. Open the source and check it yourself before acting."
+  },
+  "account": {
+    "title": "Account",
+    "lead": "Sign in to get your own paper trading account and proposal queue. Play money only.",
+    "off": "Accounts are off on this server. The owner keeps using the site PIN.",
+    "signInWith": "Sign in with {provider}",
+    "name": "Display name",
+    "country": "Country (two letters)",
+    "language": "Language",
+    "save": "Save profile",
+    "saved": "Profile saved.",
+    "failed": "Couldn't save the profile.",
+    "toPaper": "Go to paper trading",
+    "signOut": "Sign out",
+    "safety": "OMEGA keeps no password, no email and no payment details. Your paper account uses made-up USDT and never reaches an exchange."
   }
 }

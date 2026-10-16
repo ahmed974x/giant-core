@@ -95,10 +95,10 @@ test("the queue log is append-only JSON lines beside the paper ledger, and scann
   assert.ok(!readFileSync(path.resolve(import.meta.dirname, "..", "scripts/paper-scan.ts"), "utf8").includes("approveAndRecord"), "the daily scan never approves");
 });
 
-test("both paper routes are PIN-guarded, and no trading code ships on the public landing page", () => {
+test("both paper routes check the PIN or a sign-in, and no trading code ships on the public landing page", () => {
   for (const f of ["src/app/api/paper/route.ts", "src/app/api/paper/proposals/route.ts"]) {
     const src = readFileSync(path.resolve(import.meta.dirname, "..", f), "utf8");
-    assert.equal([...src.matchAll(/export async function (GET|POST)/g)].length, [...src.matchAll(/const blocked = guard\(/g)].length, `${f}: every handler checks the PIN`);
+    assert.equal([...src.matchAll(/export async function (GET|POST)/g)].length, [...src.matchAll(/const who = await access\(/g)].length, `${f}: every handler checks access`);
   }
   // The public site (GitHub Pages, site-landing/) is static marketing copy; it must never call the private trading API.
   const landing = path.resolve(import.meta.dirname, "..", "..", "site-landing");

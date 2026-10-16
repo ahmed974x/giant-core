@@ -14,17 +14,22 @@ export default function PaperProposals() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { try { setPin(sessionStorage.getItem("omega-pin") ?? ""); } catch { /* storage blocked */ } }, []);
+  useEffect(() => {
+    const read = () => { try { setPin(sessionStorage.getItem("omega-pin") ?? ""); } catch { /* storage blocked */ } };
+    read();
+    window.addEventListener("omega-pin-set", read);   // the PIN was typed in the paper account panel
+    return () => window.removeEventListener("omega-pin-set", read);
+  }, []);
   const load = useCallback(async () => {
-    if (pin.length < 6) return;
-    const r = await fetch("/api/paper/proposals", { headers: { "x-omega-pin": pin }, cache: "no-store" }).catch(() => null);
+    if (pin.length > 0 && pin.length < 6) return;
+    const r = await fetch("/api/paper/proposals", { headers: pin ? { "x-omega-pin": pin } : {}, cache: "no-store" }).catch(() => null);
     if (r?.ok) setData(await r.json());
   }, [pin]);
   useEffect(() => { load(); }, [load]);
 
   const send = async (payload: Record<string, unknown>, done: (j: Record<string, unknown>) => string) => {
     setBusy(true); setMsg(null);
-    const r = await fetch("/api/paper/proposals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, ...payload }) }).catch(() => null);
+    const r = await fetch("/api/paper/proposals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(pin ? { pin } : {}), ...payload }) }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : { error: t("offline") };
     if (r?.ok) { setData(j); setMsg({ ok: true, text: done(j) }); window.dispatchEvent(new Event("omega-paper-changed")); }
     else setMsg({ ok: false, text: j.error ?? t("failed") });
@@ -39,11 +44,11 @@ export default function PaperProposals() {
       <div className="flex flex-wrap items-center gap-2">
         <h2 id="proposals-title" className="font-semibold">{t("title")}</h2>
         <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs text-accent">{t("badge")}</span>
-        <button disabled={busy || pin.length < 6} onClick={() => send({ action: "scan" }, j => t("scanned", { n: Number(j.added ?? 0) }))}
+        <button disabled={busy || !data} onClick={() => send({ action: "scan" }, j => t("scanned", { n: Number(j.added ?? 0) }))}
           className="ms-auto rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-40">{t("scan")}</button>
       </div>
       <p className="mt-1 text-sm text-muted">{t("lead")}</p>
-      {pin.length < 6 && <p className="mt-2 text-xs text-muted">{t("needPin")}</p>}
+      {!data && <p className="mt-2 text-xs text-muted">{t("needPin")}</p>}
       {msg && <p role="status" className={`mt-3 rounded-md px-3 py-2 text-sm ${msg.ok ? "bg-good/10 text-good" : "bg-bad/10 text-bad"}`}>{msg.text}</p>}
 
       {data && data.pending.length === 0 && <p className="mt-3 text-sm text-muted">{t("empty")}</p>}

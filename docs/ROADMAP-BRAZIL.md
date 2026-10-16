@@ -48,7 +48,36 @@ pasted, but not confirmed.
 4. Real money: only after a lawyer's written answer (Kuwait CMA + Brazil), a broker account Ahmad opens himself,
    and Ahmad's written approval. Out of scope today.
 
-## 4. Open questions for Ahmad
+## 4. Questions the lawyer must answer for the "SaaS tool" model
+
+Ahmad's model (2026-10-16): a global web app; each user links their own broker account; OMEGA gives signals; the
+user executes in their own account; OMEGA never holds or moves user money; legal entity possibly in Brazil. Real
+trading stays off until a lawyer approves this structure in writing. None of the answers below is known; all are
+**unverified** until the lawyer replies.
+
+1. **Signals as advice.** If OMEGA publishes or sends buy/sell signals to the public or to paying users, is that
+   investment advice, securities analysis or consulting, **regardless of who executes the trade**? In Brazil
+   (CVM 19/20, plus any rule on automated or "robo" recommendations), in Kuwait (CMA, Law 7/2010), and in each
+   country users sign up from.
+2. **Personalisation.** Does it change the answer if signals are the same for everyone versus tailored to the
+   user's profile, balance or risk settings?
+3. **Educational label.** Does calling the product "educational" or "a tool", with disclaimers, change its
+   classification? (Earlier finding: an "educational" label is not an exemption in Kuwait; to confirm.)
+4. **Linking broker accounts.** If users connect their broker by API key and OMEGA only reads data, or places orders
+   only after the user taps approve, is OMEGA then an intermediary, an order-routing service or a portfolio manager
+   (CVM 21)? Is read-only access treated differently from order placement?
+5. **Entity and licences.** Which entity and which licence or registration (if any) does a Brazilian company need to
+   sell this to users in Brazil, Kuwait and elsewhere? Does a foreign owner need a local director or partner?
+6. **Marketing.** Can past backtest or paper results be shown publicly, and with what warnings?
+7. **Data protection.** What do LGPD (Brazil) and Kuwait data rules require for user accounts, even with no email
+   or payment data stored, and where may servers be located?
+8. **Payments.** Which payment providers accept this business category (Paddle and Lemon Squeezy prohibit trading
+   signals, verified 2026-10-15)?
+9. **Market data licences.** May B3 (or exchange) data be redistributed to users inside the app?
+10. **Liability.** What terms of use and disclaimers are required, and does the user approving every trade reduce
+    OMEGA's liability for losses?
+
+## 5. Open questions for Ahmad
 - Which Brazilian broker, and will it accept a Kuwait resident?
 - Is the ProfitDLL licence (Windows-only, paid, Nelógica) acceptable, given the "free/open-source" preference?
 - Which historical B3 data source is allowed for backtests?

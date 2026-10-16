@@ -22,11 +22,12 @@ export default function PaperTrading() {
 
   useEffect(() => { try { setPin(sessionStorage.getItem("omega-pin") ?? ""); } catch { /* storage blocked */ } }, []);
   const load = useCallback(async () => {
-    if (pin.length < 6) return;
-    const r = await fetch("/api/paper", { headers: { "x-omega-pin": pin }, cache: "no-store" }).catch(() => null);
+    if (pin.length > 0 && pin.length < 6) return;
+    // No PIN: a signed-in user (ADR-075) still gets their own paper account; otherwise the server says to sign in.
+    const r = await fetch("/api/paper", { headers: pin ? { "x-omega-pin": pin } : {}, cache: "no-store" }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : {};
-    if (r?.ok) { setData(j); try { sessionStorage.setItem("omega-pin", pin); } catch { /* storage blocked */ } }
-    else setMsg({ ok: false, text: j.error ?? t("offline") });
+    if (r?.ok) { setData(j); setMsg(null); if (pin) { try { sessionStorage.setItem("omega-pin", pin); } catch { /* storage blocked */ } window.dispatchEvent(new Event("omega-pin-set")); } }
+    else if (pin || r?.status !== 401) setMsg({ ok: false, text: j.error ?? t("offline") });
   }, [pin, t]);
   useEffect(() => {
     load(); const id = setInterval(load, 30_000);
@@ -36,7 +37,7 @@ export default function PaperTrading() {
 
   const send = async (payload: Record<string, unknown>) => {
     setBusy(true); setMsg(null);
-    const r = await fetch("/api/paper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, ...payload }) }).catch(() => null);
+    const r = await fetch("/api/paper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(pin ? { pin } : {}), ...payload }) }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : { error: t("offline") };
     if (r?.ok) setData(j.account);
     setBusy(false);
