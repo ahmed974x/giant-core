@@ -39,7 +39,7 @@ const DASHBOARD = "/srv/dashboard/index.html";
 const PLUGINS = "/srv/dashboard/plugins.json";   // built by scripts/plugins.py
 const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_perf", "llm_perf_1h", "llm_calls",
   "news", "sentiment_now", "sentiment_1h", "fear_greed", "sentiment_vs_price", "whales", "whale_feeds",
-  "nerve_agents", "nerve_events", "nerve_chain"]);
+  "nerve_agents", "nerve_events", "nerve_chain", "mem_stats", "mem_facts", "mem_calibration"]);
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
 const MAX_NEWS_BODY = 96 * 1024;

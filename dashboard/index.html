@@ -378,6 +378,7 @@ li.fresh { animation: arrive 1.2s ease-out; }
         <ol id="aprops"><li class="empty">No proposals yet. The Scout researches open-source tools once a day.</li></ol>
         <p class="ahead">NERVOUS SYSTEM</p>
         <div id="nchain" class="n-chain">—</div>
+        <div id="nmem" class="n-chain"></div>
         <ul id="nagents"><li class="empty">Waiting for the nervous system…</li></ul>
         <ol id="nevents"></ol>
       </div>
@@ -1515,6 +1516,9 @@ function renderNerve(n) {
   const c = n.chain[0] || {};
   chain.className = "n-chain " + (c.ok ? "ok" : "bad");
   chain.textContent = c.ok ? `✓ event chain intact · ${c.checked} checked` : `✗ event chain broken at #${c.broken_at}`;
+  const m = (n.mem || [])[0];
+  document.getElementById("nmem").textContent = m ? `memory · ${m.facts} facts · ${m.superseded} superseded · ${m.episodes} episodes` +
+    (m.last_sleep ? ` · last sleep ${new Date(m.last_sleep).toLocaleDateString()}` : "") : "";
   list.innerHTML = n.agents.map(a => `<li class="${a.status === "paused" ? "paused" : ""}" title="${esc(a.disclosure_en)}">` +
     `<i></i>${esc(lang === "ar" ? a.name_ar : a.name_en)}${a.queued ? ` · ${esc(a.queued)}` : ""}</li>`).join("");
   evs.innerHTML = n.events.map(e => `<li class="${e.kind.startsWith("guard.") ? "guard" : ""}"><span class="t">${esc(new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` +
@@ -1523,10 +1527,10 @@ function renderNerve(n) {
 async function refreshNerve() {
   if (nerveDemo) return renderNerve(nerveDemo);
   try {
-    const [agents, events, chain] = await Promise.all([
+    const [agents, events, chain, mem] = await Promise.all([
       api("/api/nerve_agents?select=id,name_ar,name_en,status,queued,disclosure_en&order=id"),
-      api("/api/nerve_events?limit=8"), api("/api/nerve_chain")]);
-    renderNerve({ agents, events, chain });
+      api("/api/nerve_events?limit=8"), api("/api/nerve_chain"), api("/api/mem_stats").catch(() => [])]);
+    renderNerve({ agents, events, chain, mem });
   } catch { renderNerve(null); }
 }
 function demoNerve() {
@@ -1535,6 +1539,7 @@ function demoNerve() {
   const at = m => new Date(Date.now() - m * 60e3).toISOString();
   return {
     chain: [{ ok: true, checked: 42, broken_at: null }],
+    mem: [{ facts: 18, superseded: 3, episodes: 64, last_sleep: at(9 * 60) }],
     agents: names.map(([id, ar, en]) => ({ id, name_ar: ar, name_en: en, status: "active", queued: id === "maha" ? 1 : 0, disclosure_en: `I am ${en}, an AI agent.` })),
     events: [
       { ts: at(1), kind: "task.sent", agent: "hakeem" }, { ts: at(2), kind: "tool.call", agent: "maha" },

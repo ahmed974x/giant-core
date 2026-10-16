@@ -10,6 +10,7 @@
 #   geo          PostGIS: logistics nodes + vessel geometry, bilingual (AR/EN)   (--profile geo)
 #   redis        Valkey: hot cache + pub/sub for live map and tickers             (--profile geo)
 #   agents       workforce: Sentinel, Analyst, Scout (asks before adding any tool)
+#   ameen        memory keeper: local embeddings + nightly memory sleep              (--profile memory)
 #   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
 #                every call's latency/tokens/outcome remembered in Timescale
@@ -83,6 +84,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
       PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}          # optional: login for the memory keeper (--profile memory)
       TZ: UTC
       TIMESCALEDB_TELEMETRY: "off"
     volumes:
@@ -118,6 +120,7 @@ services:
       POSTGRES_USER: omega_admin
       SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
       PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}
     volumes:
       - ./db:/db:ro
     networks: [db]
@@ -565,6 +568,29 @@ services:
       - ./services/agents:/app:ro
       - agents_data:/data
     networks: [core, egress]          # egress: GitHub's public search API for the Scout
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+
+  # أمين, the memory keeper (opt-in: --profile memory; ADR-080): fills embeddings on the laptop (hashing by default,
+  # or a local Ollama model) and runs the nightly memory sleep. Logs in as `ameen` (mem_keeper): functions only.
+  ameen:
+    build: ./services/ameen
+    profiles: ["memory"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      AMEEN_SLEEP_HOUR: ${AMEEN_SLEEP_HOUR:-0}            # 00:00 UTC = 03:00 Kuwait
+      AMEEN_EMBED_URL: ${AMEEN_EMBED_URL:-}               # e.g. http://ollama:11434/v1 (local only); empty = hashing
+      AMEEN_EMBED_MODEL: ${AMEEN_EMBED_MODEL:-}
+      AMEEN_EMBED_DIM: ${AMEEN_EMBED_DIM:-384}
+    networks: [db, core]              # db: memory functions; core: local Ollama. No internet.
     mem_limit: 96m
     cpus: 0.25
     pids_limit: 32
