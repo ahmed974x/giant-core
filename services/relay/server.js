@@ -254,7 +254,7 @@ function brainAsk(req, res) {
   }, 16384);
 }
 
-// ── Static pages (the second brain ADR-081, the offices and guide ADR-084), their vendored libraries, and the mind API proxy ──
+// ── Static pages (the second brain ADR-081, the offices and guide ADR-084, the one-brain page ADR-086), their vendored libraries, and the mind API proxy ──
 const PAGE_FILES = {
   "/mind": ["mind/index.html", "text/html; charset=utf-8"],
   "/mind/vendor/sigma.min.js": ["mind/vendor/sigma.min.js", "application/javascript; charset=utf-8"],
@@ -262,6 +262,7 @@ const PAGE_FILES = {
   "/mind/vendor/3d-force-graph.min.js": ["mind/vendor/3d-force-graph.min.js", "application/javascript; charset=utf-8"],
   "/offices": ["offices/index.html", "text/html; charset=utf-8"],
   "/offices/guide": ["offices/guide.html", "text/html; charset=utf-8"],
+  "/brain": ["brain/index.html", "text/html; charset=utf-8"],
 };
 const MIND_POST = { "/mind/api/capture": "/capture", "/mind/api/dump": "/dump", "/mind/api/decide": "/decide",
                     "/mind/api/search": "/search", "/mind/api/think": "/think" };
