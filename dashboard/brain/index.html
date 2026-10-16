@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>العقل الواحد · OMEGA</title>
+<style>
+  :root {
+    --bg: #05070d; --panel: rgba(12, 18, 32, .86); --line: rgba(120, 180, 255, .16);
+    --text: #e6f1ff; --muted: #8aa0bd; --accent: #5ee7ff; --warn: #ffb36b; --bad: #ff6b8a;
+  }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #05070d; } }
+  :root[data-theme="dark"] { --bg: #05070d; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    background: radial-gradient(circle at 20% 0%, rgba(94,231,255,.10), transparent 40%); }
+  header { padding: 18px 16px 6px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; color: var(--accent); font-weight: 600; }
+  nav a { color: var(--muted); text-decoration: none; margin-inline-start: 12px; border-bottom: 1px dashed var(--line); }
+  main { padding: 8px 16px 40px; max-width: 760px; margin: 0 auto; }
+  .notice { border: 1px solid rgba(255,179,107,.45); background: rgba(255,179,107,.07); border-radius: 12px;
+    padding: 10px 14px; margin: 10px 0 14px; color: var(--warn); }
+  .notice small { color: var(--muted); display: block; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 90px; background: #0a1020; color: var(--text);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px; font: inherit; resize: vertical; }
+  button { margin-top: 10px; background: transparent; color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 12px; padding: 8px 18px; font: inherit; cursor: pointer; }
+  button[disabled] { opacity: .5; cursor: default; }
+  .answer { white-space: pre-wrap; margin-top: 14px; }
+  .label { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .cite { display: inline-block; font-size: 13px; color: var(--accent); border: 1px solid var(--line); border-radius: 8px;
+    padding: 0 8px; margin: 4px 4px 0 0; text-decoration: none; }
+  .msg { color: var(--bad); font-size: 14px; min-height: 1.2em; }
+  .muted { color: var(--muted); font-size: 14px; }
+  @media (max-width: 420px) { main { padding: 8px 12px 40px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>العقل الواحد</h1>
+  <nav aria-label="الصفحات"><a href="/mind">الخريطة</a><a href="/offices">المكاتب</a><a href="/offices/guide">دليل نورة</a></nav>
+</header>
+<main>
+  <div class="notice" role="note">
+    أنت تتحدث مع وكيل ذكاء اصطناعي محلي. يجيب فقط من ملاحظاتك، ويذكر أرقامها. ليس بنكاً، ولا ينفذ شيئاً بدلاً منك.
+    <small>You are talking to a local AI agent. It answers only from your own notes and cites them. Not a bank; it acts for no one.</small>
+  </div>
+  <section class="panel">
+    <textarea id="q" placeholder="اسأل عقلك..." aria-label="سؤالك"></textarea>
+    <button id="ask">اسأل</button>
+    <div class="msg" id="msg" role="status"></div>
+    <div id="out"></div>
+  </section>
+  <p class="muted">الإجابات من عقلك الثاني فقط (ملاحظاتك). لا يُرسل شيء إلى مزود خارجي. كل رقم يفتح دليله.</p>
+</main>
+<script>
+(() => {
+  "use strict";
+  const DEMO = new URLSearchParams(location.search).has("demo");
+  const $ = id => document.getElementById(id);
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function render(r) {
+    const out = $("out");
+    out.replaceChildren();
+    out.appendChild(el("div", "label", "الجواب"));
+    out.appendChild(el("div", "answer", String(r.answer ?? "")));
+    const cites = Array.isArray(r.cites) ? r.cites : [];
+    if (cites.length) {
+      out.appendChild(el("div", "label", "المصادر (افتح الدليل)"));
+      const box = el("div");
+      cites.forEach(n => {
+        const a = el("a", "cite", "[#" + n + "]");
+        a.href = "/mind/api/evidence/" + encodeURIComponent(n);
+        a.target = "_blank";
+        a.rel = "noopener";
+        box.appendChild(a);
+      });
+      out.appendChild(box);
+    }
+    if (r.next_question) out.appendChild(el("div", "label", "سؤال يساعدك تكمل: " + r.next_question));
+  }
+  async function ask() {
+    const q = $("q").value.trim();
+    if (!q) return;
+    $("msg").textContent = "";
+    $("ask").disabled = true;
+    try {
+      if (DEMO) {
+        render({ answer: "من ملاحظاتك:\n- مصباح يتبع الكتاب [#3]", cites: [3], next_question: "وش أصغر خطوة تقدر تسويها اليوم؟" });
+        return;
+      }
+      const res = await fetch("/mind/api/think", {
+        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      render(await res.json());
+    } catch (err) {
+      $("msg").textContent = "ما قدر يجاوب الآن: " + err.message;
+    } finally {
+      $("ask").disabled = false;
+    }
+  }
+  $("ask").addEventListener("click", ask);
+})();
+</script>
+</body>
+</html>
