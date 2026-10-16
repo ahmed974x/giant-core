@@ -174,6 +174,17 @@ html[dir="rtl"] .panel h2, html[dir="rtl"] #brand .sub { letter-spacing: 0; }  /
 #aprops button.add { background: var(--magenta); border-color: var(--magenta); color: var(--void); }
 #aprops button:hover { filter: brightness(1.15); color: var(--ink); }
 .ahead { font: 700 10.5px var(--mono); letter-spacing: 0.14em; color: var(--ink-3); margin: 10px 0 6px; }
+/* ── nervous system (ADR-079): registry, hash-chained event log ── */
+.n-chain { font: 11px var(--mono); color: var(--ink-3); margin-bottom: 6px; }
+.n-chain.ok { color: var(--ok); } .n-chain.bad { color: var(--crit); }
+#nagents { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+#nagents li { font: 11px var(--mono); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+#nagents li i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-inline-end: 5px; background: var(--ok); }
+#nagents li.paused i { background: var(--crit); } #nagents li.paused { color: var(--crit); }
+#nevents { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 11px var(--mono); }
+#nevents li { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; color: var(--ink-2); }
+#nevents .k { color: var(--magenta); } #nevents .t { color: var(--ink-3); }
+#nevents li.guard .k { color: var(--crit); }
 
 /* ── modules (plugin registry) ── */
 #modules { --accent: var(--lime); flex: 1 1 30%; }
@@ -365,6 +376,11 @@ li.fresh { animation: arrive 1.2s ease-out; }
         <ul id="aroster"><li class="empty">Waiting for the workforce…</li></ul>
         <p class="ahead">PROPOSALS · YOUR CALL</p>
         <ol id="aprops"><li class="empty">No proposals yet. The Scout researches open-source tools once a day.</li></ol>
+        <p class="ahead">NERVOUS SYSTEM</p>
+        <div id="nchain" class="n-chain">—</div>
+        <div id="nmem" class="n-chain"></div>
+        <ul id="nagents"><li class="empty">Waiting for the nervous system…</li></ul>
+        <ol id="nevents"></ol>
       </div>
     </section>
   </aside>
@@ -1320,6 +1336,7 @@ function startDemo() {
   refreshCortex();
   quantDemo = () => demoQuant(hist); refreshQuant();
   agentsDemo = demoAgents(); refreshAgents();
+  nerveDemo = demoNerve(); refreshNerve();
   const demoNews = [
     ["CoinDesk", "Spot bitcoin ETFs log a fifth straight day of inflows", ["BTC"], 0.62, "high"],
     ["Decrypt", "Solana validators push a fix after a brief block-production stall", ["SOL"], -0.35, "medium"],
@@ -1491,6 +1508,46 @@ function demoAgents() {
   };
 }
 
+// ───────────────────────────── nervous system (ADR-079) ─────────────────────────────
+let nerveDemo = null;
+function renderNerve(n) {
+  const chain = document.getElementById("nchain"), list = document.getElementById("nagents"), evs = document.getElementById("nevents");
+  if (!n) { chain.className = "n-chain"; chain.textContent = "nervous system not reachable"; return; }
+  const c = n.chain[0] || {};
+  chain.className = "n-chain " + (c.ok ? "ok" : "bad");
+  chain.textContent = c.ok ? `✓ event chain intact · ${c.checked} checked` : `✗ event chain broken at #${c.broken_at}`;
+  const m = (n.mem || [])[0];
+  document.getElementById("nmem").textContent = m ? `memory · ${m.facts} facts · ${m.superseded} superseded · ${m.episodes} episodes` +
+    (m.last_sleep ? ` · last sleep ${new Date(m.last_sleep).toLocaleDateString()}` : "") : "";
+  list.innerHTML = n.agents.map(a => `<li class="${a.status === "paused" ? "paused" : ""}" title="${esc(a.disclosure_en)}">` +
+    `<i></i>${esc(lang === "ar" ? a.name_ar : a.name_en)}${a.queued ? ` · ${esc(a.queued)}` : ""}</li>`).join("");
+  evs.innerHTML = n.events.map(e => `<li class="${e.kind.startsWith("guard.") ? "guard" : ""}"><span class="t">${esc(new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` +
+    `<span class="k">${esc(e.kind)}</span><span>${esc(e.agent)}</span></li>`).join("");
+}
+async function refreshNerve() {
+  if (nerveDemo) return renderNerve(nerveDemo);
+  try {
+    const [agents, events, chain, mem] = await Promise.all([
+      api("/api/nerve_agents?select=id,name_ar,name_en,status,queued,disclosure_en&order=id"),
+      api("/api/nerve_events?limit=8"), api("/api/nerve_chain"), api("/api/mem_stats").catch(() => [])]);
+    renderNerve({ agents, events, chain, mem });
+  } catch { renderNerve(null); }
+}
+function demoNerve() {
+  const names = [["hakeem", "عبدالله", "Abdullah"], ["maha", "مها", "Maha"], ["ameen", "أمين", "Ameen"], ["salem", "سالم", "Salem"], ["rashid", "راشد", "Rashid"],
+    ["fahd", "فهد", "Fahd"], ["noura", "نورة", "Noura"], ["badr", "بدر", "Badr"], ["haris", "حارس", "Haris"], ["khazen", "خازن", "Khazen"]];
+  const at = m => new Date(Date.now() - m * 60e3).toISOString();
+  return {
+    chain: [{ ok: true, checked: 42, broken_at: null }],
+    mem: [{ facts: 18, superseded: 3, episodes: 64, last_sleep: at(9 * 60) }],
+    agents: names.map(([id, ar, en]) => ({ id, name_ar: ar, name_en: en, status: "active", queued: id === "maha" ? 1 : 0, disclosure_en: `I am ${en}, an AI agent.` })),
+    events: [
+      { ts: at(1), kind: "task.sent", agent: "hakeem" }, { ts: at(2), kind: "tool.call", agent: "maha" },
+      { ts: at(3), kind: "guard.refused", agent: "system" }, { ts: at(5), kind: "signal.price_move", agent: "salem" },
+    ],
+  };
+}
+
 // ───────────────────────────── the Brain (search bar → agent web) ─────────────────────────────
 const brainEl = { panel: document.getElementById("brainp"), req: document.getElementById("breq"), steps: document.getElementById("bsteps"),
   answer: document.getElementById("banswer"), meta: document.getElementById("bmeta"), go: document.getElementById("bgo"), q: document.getElementById("bq") };
@@ -1599,7 +1656,7 @@ const AR = {
   "CORTEX · LLM GATEWAY": "النواة · بوابة النماذج", "MODULES · PLUGINS": "الوحدات · الإضافات",
   "QUANT · RISK ENGINE": "التحليل · محرك المخاطر", "AGENTS · WORKFORCE": "الوكلاء · فريق العمل",
   "ANOMALY STREAM": "تدفّق الشذوذ", "WHALES · ≥ $50M": "الحيتان · ≥ 50 مليون", "NEWS MOOD": "مزاج الأخبار",
-  "THE BRAIN · AGENT WEB": "العقل · شبكة الوكلاء", "PROPOSALS · YOUR CALL": "مقترحات · قرارك",
+  "THE BRAIN · AGENT WEB": "العقل · شبكة الوكلاء", "PROPOSALS · YOUR CALL": "مقترحات · قرارك", "NERVOUS SYSTEM": "الجهاز العصبي",
   "FAST · FREE": "سريع · مجاني", "SMART · CLAUDE": "ذكي · كلود", "SMART · FREE": "ذكي · مجاني", "LOCAL · PRIVATE": "محلي · خاص",
   "SEND": "إرسال", "THINK": "فكّر", "PAIR": "الزوج", "VOL": "التذبذب", "REGIME": "الحالة", "24H": "24س",
   "MEMORY": "الذاكرة", "LAST PULSE": "آخر نبضة", "KUWAIT": "الكويت",
@@ -1639,7 +1696,9 @@ resize();
 loadModules();
 setInterval(refreshQuant, 60000);
 setInterval(refreshAgents, 60000);
+setInterval(refreshNerve, 30000);
 if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshAgents(); }, 1500);
+if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshNerve(); }, 1500);
 if (!FORCE_DEMO) setTimeout(() => { if (state.mode === "live") refreshQuant(); }, 1500);
 if (FORCE_DEMO) startDemo(); else connectLive();
 setInterval(() => { if (state.mode !== "connecting") refreshCortex(); }, 30000);

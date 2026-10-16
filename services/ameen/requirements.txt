@@ -1,0 +1,2 @@
+# Pure-Python Postgres driver (same choice as Director 00): no native build, small image.
+pg8000==1.31.5

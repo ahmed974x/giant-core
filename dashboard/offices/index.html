@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>المكاتب · OMEGA</title>
+<style>
+  :root {
+    --bg: #05070d; --panel: rgba(12, 18, 32, .86); --line: rgba(120, 180, 255, .16);
+    --text: #e6f1ff; --muted: #8aa0bd; --accent: #5ee7ff; --warn: #ffb36b; --bad: #ff6b8a; --ok: #6bffb0;
+  }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #05070d; } }
+  :root[data-theme="dark"] { --bg: #05070d; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    background: radial-gradient(circle at 15% 10%, rgba(94,231,255,.10), transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(107,255,176,.07), transparent 38%); }
+  header { padding: 18px 16px 8px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; color: var(--accent); font-weight: 600; letter-spacing: .02em; }
+  nav a { color: var(--muted); text-decoration: none; margin-inline-start: 12px; border-bottom: 1px dashed var(--line); }
+  nav a:hover { color: var(--text); }
+  main { padding: 8px 16px 40px; max-width: 1100px; margin: 0 auto; }
+  .notice { border: 1px solid rgba(255,179,107,.45); background: rgba(255,179,107,.07); border-radius: 12px;
+    padding: 10px 14px; margin: 10px 0 16px; color: var(--warn); }
+  .notice small { color: var(--muted); display: block; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 0 24px rgba(94,231,255,.05); position: relative; }
+  .card.paused { border-color: rgba(255,107,138,.55); }
+  .head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .name { font-size: 18px; font-weight: 600; }
+  .en { color: var(--muted); font-size: 13px; }
+  .badge { font-size: 12px; border-radius: 999px; padding: 1px 9px; border: 1px solid; white-space: nowrap; }
+  .badge.active { color: var(--ok); border-color: rgba(107,255,176,.5); }
+  .badge.paused { color: var(--bad); border-color: rgba(255,107,138,.6); }
+  .role { margin: 8px 0; color: var(--text); }
+  .label { font-size: 12px; color: var(--accent); margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .chip { font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; color: var(--text); }
+  .chip.no { color: var(--bad); border-color: rgba(255,107,138,.35); text-decoration: line-through; }
+  .disc { font-size: 13px; color: var(--muted); margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .why { color: var(--bad); font-size: 13px; margin-top: 6px; }
+  .err { color: var(--bad); padding: 12px; }
+  h2 { font-size: 15px; color: var(--accent); margin: 26px 0 8px; font-weight: 600; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (max-width: 420px) { main { padding: 8px 12px 40px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>المكاتب · الوكلاء</h1>
+  <nav aria-label="الصفحات"><a href="/mind">العقل الثاني</a><a href="/offices/guide">دليل نورة</a></nav>
+</header>
+<main>
+  <div class="notice" role="note">
+    أنت تتحدث مع وكلاء ذكاء اصطناعي. لا أحد منهم بنك، ولا يملك أموالك، ولا ينفذ صفقات حقيقية، ولا يوافق على شيء بدلاً منك.
+    <small>You are talking to AI agents. None of them is a bank, holds your money, places real orders, or approves anything for you.</small>
+  </div>
+  <p class="en" id="status">جارٍ تحميل المكاتب...</p>
+  <section class="grid" id="offices" aria-live="polite"></section>
+</main>
+<script>
+(() => {
+  "use strict";
+  const DEMO = new URLSearchParams(location.search).has("demo");
+  // Demo fixture: the same columns as api.nerve_agents, for a page without the database.
+  const DEMO_ROWS = [
+    { id: "hakeem", name_ar: "عبدالله", name_en: "Abdullah", role: "Planner: turns a goal into a plan, assigns steps, merges results",
+      disclosure_ar: "أنا عبدالله، وكيل ذكاء اصطناعي متخصص في التخطيط وتنسيق الوكلاء. أنا هنا لمساعدتك.",
+      disclosure_en: "I am Abdullah, an AI agent specialised in planning and coordinating the agents. I am here to help you.",
+      tools: ["registry.read", "events.read", "queue.send", "memory.search", "brain.read", "loop.run"], cannot: ["market tools", "proposals", "money"],
+      container: "agent-core", status: "active", queued: 0, last_seen: null },
+    { id: "fahd", name_ar: "فهد", name_en: "Fahd", role: "Proposal clerk: packs a checked idea into a proposal with its evidence",
+      disclosure_ar: "أنا فهد، وكيل ذكاء اصطناعي متخصص في تجهيز المقترحات الورقية. أنا هنا لمساعدتك.",
+      disclosure_en: "I am Fahd, an AI agent specialised in preparing paper proposals. I am here to help you.",
+      tools: ["proposals.add", "proposals.read", "paper.read"], cannot: ["approve", "record a fill", "send an order", "money"],
+      container: "agent-core", status: "active", queued: 1, last_seen: null },
+    { id: "haris", name_ar: "حارس", name_en: "Haris", role: "Sentinel and immune system: health, injection watch, pause",
+      disclosure_ar: "أنا حارس، وكيل ذكاء اصطناعي يراقب صحة النظام ويوقف الوكلاء عند الخطر. أنا هنا لمساعدتك.",
+      disclosure_en: "I am Haris, an AI agent that watches system health and pauses agents on danger. I am here to help you.",
+      tools: ["health.read", "agents.pause"], cannot: ["resume an agent (only the owner)"],
+      container: "agent-core", status: "paused", paused_by: "haris", paused_reason: "tainted input (demo)", queued: 0, last_seen: null }
+  ];
+
+  const esc = s => String(s ?? "");
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function chips(list, cls) {
+    const box = el("div", "chips");
+    (list || []).forEach(t => box.appendChild(el("span", "chip " + cls, esc(t))));
+    return box;
+  }
+  function card(a) {
+    const c = el("article", "card" + (a.status === "paused" ? " paused" : ""));
+    const head = el("div", "head");
+    const who = el("div");
+    who.appendChild(el("div", "name", esc(a.name_ar)));
+    who.appendChild(el("div", "en", esc(a.name_en) + " · " + esc(a.id)));
+    head.appendChild(who);
+    head.appendChild(el("span", "badge " + (a.status === "paused" ? "paused" : "active"),
+                        a.status === "paused" ? "متوقف" : "نشط"));
+    c.appendChild(head);
+    c.appendChild(el("p", "role", esc(a.role)));
+    if (a.status === "paused") {
+      c.appendChild(el("p", "why", "متوقف" + (a.paused_by ? " بواسطة " + esc(a.paused_by) : "") +
+                                   (a.paused_reason ? ": " + esc(a.paused_reason) : "") + ". لا يستأنفه إلا المالك."));
+    }
+    c.appendChild(el("div", "label", "الأدوات"));
+    c.appendChild(chips(a.tools, ""));
+    c.appendChild(el("div", "label", "ممنوع عليه"));
+    c.appendChild(chips(a.cannot, "no"));
+    c.appendChild(el("div", "meta", "المكان: " + esc(a.container) + " · في الطابور: " + esc(a.queued ?? 0) +
+                                     (a.last_seen ? " · آخر نشاط: " + new Date(a.last_seen).toLocaleString("ar") : "")));
+    c.appendChild(el("p", "disc", esc(a.disclosure_ar)));
+    return c;
+  }
+  function render(rows) {
+    const box = document.getElementById("offices");
+    box.replaceChildren();
+    rows.forEach(a => box.appendChild(card(a)));
+    document.getElementById("status").textContent = rows.length + " وكلاء · " +
+      rows.filter(a => a.status === "paused").length + " متوقف";
+  }
+  function fail(msg) {
+    const box = document.getElementById("offices");
+    box.replaceChildren(el("p", "err", msg));
+    document.getElementById("status").textContent = "";
+  }
+
+  if (DEMO) { render(DEMO_ROWS); return; }
+  fetch("/api/nerve_agents?order=id", { headers: { Accept: "application/json" } })
+    .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(render)
+    .catch(() => fail("تعذر تحميل المكاتب الآن. حاول بعد قليل."));
+})();
+</script>
+</body>
+</html>

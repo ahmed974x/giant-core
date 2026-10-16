@@ -8,8 +8,9 @@
 #                Whale Watch: BTC + ETH blocks → Timescale → >= $50M transfers → relay + Telegram
 #   relay        authenticated inbox, SSE fan-out, /api proxy, serves the Neural Constellation
 #   geo          PostGIS: logistics nodes + vessel geometry, bilingual (AR/EN)   (--profile geo)
-#   redis        hot cache + pub/sub for live map and tickers                     (--profile geo)
+#   redis        Valkey: hot cache + pub/sub for live map and tickers             (--profile geo)
 #   agents       workforce: Sentinel, Analyst, Scout (asks before adding any tool)
+#   ameen        memory keeper: local embeddings + nightly memory sleep              (--profile memory)
 #   quant        stdlib risk engine: volatility, z-score + tail odds, drawdown, cross-pair correlation
 #   cortex       LLM gateway: Claude + free tiers behind one OpenAI-compatible endpoint, failover,
 #                every call's latency/tokens/outcome remembered in Timescale
@@ -83,6 +84,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
       PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}          # optional: login for the memory keeper (--profile memory)
       TZ: UTC
       TIMESCALEDB_TELEMETRY: "off"
     volumes:
@@ -118,6 +120,7 @@ services:
       POSTGRES_USER: omega_admin
       SENTINEL_DB_PASSWORD: ${SENTINEL_DB_PASSWORD:?set SENTINEL_DB_PASSWORD in .env}
       PGRST_DB_PASSWORD: ${PGRST_DB_PASSWORD:?set PGRST_DB_PASSWORD in .env}
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}
     volumes:
       - ./db:/db:ro
     networks: [db]
@@ -202,6 +205,8 @@ services:
       NEURAL_URL: http://neural:8092
       AGENTS_URL: http://agents:8093
       GEOAPI_URL: http://geo-api:8094
+      MIND_URL: http://mind:8097
+      LOOP_URL: http://loop:8098
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -435,15 +440,17 @@ services:
     mem_limit: ${SWISSPIPE_MEM_LIMIT:-64m}
     cpus: 0.25
 
-  # Redis: hot cache (latest vessel/flight position) + pub/sub fan-out for WebSockets (Phase 1-3).
+  # Valkey (BSD-3, same protocol and commands as Redis; ADR-079): hot cache (latest vessel/flight position)
+  # + pub/sub fan-out for WebSockets + the agents' fast lane. The service keeps the name `redis` so REDIS_URL
+  # stays redis://redis:6379 for every client.
   redis:
-    image: redis:7.4-alpine
+    image: valkey/valkey:8.1.10-alpine
     profiles: ["geo", "speed"]
     <<: *hardening
     cap_drop: ["ALL"]
-    user: "redis"
+    user: "valkey"
     read_only: true
-    command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    command: ["valkey-server", "--appendonly", "no", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
     tmpfs: ["/data:size=16m"]
     ports:
       - "127.0.0.1:6379:6379"
@@ -452,7 +459,7 @@ services:
     cpus: 0.5
     pids_limit: 64
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -566,6 +573,82 @@ services:
     mem_limit: 96m
     cpus: 0.25
     pids_limit: 32
+
+  # أمين, the memory keeper (opt-in: --profile memory; ADR-080): fills embeddings on the laptop (hashing by default,
+  # or a local Ollama model) and runs the nightly memory sleep. Logs in as `ameen` (mem_keeper): functions only.
+  ameen:
+    build: ./services/ameen
+    profiles: ["memory"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      AMEEN_SLEEP_HOUR: ${AMEEN_SLEEP_HOUR:-0}            # 00:00 UTC = 03:00 Kuwait
+      AMEEN_EMBED_URL: ${AMEEN_EMBED_URL:-}               # e.g. http://ollama:11434/v1 (local only); empty = hashing
+      AMEEN_EMBED_MODEL: ${AMEEN_EMBED_MODEL:-}
+      AMEEN_EMBED_DIM: ${AMEEN_EMBED_DIM:-384}
+    networks: [db, core]              # db: memory functions; core: local Ollama. No internet.
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 32
+
+  # The second brain (ADR-081, opt-in: --profile mind): atomises notes, suggests links, names themes, runs the
+  # rescue functions and writes a nightly Markdown export. Local only: no internet, no cloud model by default.
+  mind:
+    build: { context: ./services, dockerfile: mind/Dockerfile }
+    profiles: ["mind"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=8m"]
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}           # the same `ameen` login as the memory keeper
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      MIND_NIGHT_HOUR: ${MIND_NIGHT_HOUR:-2}              # 02:00 UTC
+      MIND_EXPORT_DIR: /export
+      AMEEN_EMBED_URL: ${AMEEN_EMBED_URL:-}               # local URL only (checked in code); empty = hashing
+      AMEEN_EMBED_MODEL: ${AMEEN_EMBED_MODEL:-}
+      AMEEN_EMBED_DIM: ${AMEEN_EMBED_DIM:-384}
+    volumes:
+      - ./data/brain-export:/export                       # your Markdown copy (gitignored); open it in Obsidian or Foam
+    networks: [db, core]              # db: brain functions; core: the relay and local embeddings. No internet.
+    mem_limit: 160m
+    cpus: 0.25
+    pids_limit: 48
+
+  # The brain loop (ADR-082, opt-in: --profile loop): hakeem plans, researches (SearXNG, keyless), critiques and
+  # answers, every step checkpointed in Postgres. Answers only: it cannot add a proposal. No internet.
+  loop:
+    build: { context: ./services, dockerfile: loop/Dockerfile }
+    profiles: ["loop"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=8m"]
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      HAKEEM_DB_PASSWORD: ${HAKEEM_DB_PASSWORD:-}          # the planner's login (created by 08-loop.sh)
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      SEARXNG_URL: http://searxng:8080
+      CORTEX_URL: ${LOOP_CORTEX_URL:-}                      # empty = extractive answers only (no key needed)
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:-}
+      LOOP_MAX_STEPS: ${LOOP_MAX_STEPS:-12}
+      LOOP_MAX_TOKENS: ${LOOP_MAX_TOKENS:-6000}
+      LOOP_MAX_ROUNDS: ${LOOP_MAX_ROUNDS:-2}
+    networks: [db, core]
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 48
 
   # OMEGA Neural (opt-in: --profile ml): PyTorch forecaster, next-hour direction probability + volatility,
   # scored walk-forward. CPU only, one thread, retrains every 6 h.

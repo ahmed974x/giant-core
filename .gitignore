@@ -7,6 +7,9 @@ tools-quality/.venv/
 tools-quality/node_modules/
 services/maritime-agent/data/
 
+# The second brain's Markdown export (ADR-081): the owner's private notes never enter Git
+data/brain-export/
+
 # Immich photo library
 data/immich/
 
