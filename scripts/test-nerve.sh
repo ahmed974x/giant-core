@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the agents' database layer (db/init/05 to 08), its tests (db/test/*_test.sql), the memory keeper (services/ameen),
+# Runs the agents database layer (db/init/05 to 10), its tests (db/test/*_test.sql), the memory keeper (services/ameen),
 # the second brain worker (services/mind) and the brain loop (services/loop) against a throw-away Postgres (no Docker).
 #   scripts/test-nerve.sh            needs initdb/pg_ctl on PATH, or PG_BIN=/usr/lib/postgresql/16/bin
 # The cluster lives in a temp folder and is removed afterwards.
@@ -22,8 +22,8 @@ export PGHOST=$TMP PGUSER=omega_admin POSTGRES_USER=omega_admin POSTGRES_DB=omeg
 psql -q -v ON_ERROR_STOP=1 -d omega_test -c "CREATE ROLE web_anon NOLOGIN; CREATE SCHEMA api;"
 
 export AMEEN_DB_PASSWORD=test-only HAKEEM_DB_PASSWORD=test-only   # creates the ameen and hakeem logins
-for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh db/init/08-loop.sh db/init/09-market.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
-for t in nerve memory brain loop market; do
+for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh db/init/08-loop.sh db/init/09-market.sh db/init/10-vault.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
+for t in nerve memory brain loop market vault; do
   psql -q -o /dev/null -v ON_ERROR_STOP=1 -d omega_test -f "db/test/${t}_test.sql" 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
 done
 
