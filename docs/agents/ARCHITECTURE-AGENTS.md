@@ -407,7 +407,7 @@ learns his taste.
 
 Every phase: one commit, one ADR, tests, a report "Phase N complete. Ready for Phase N+1."
 
-**Progress:** phase 1 built 2026-10-16 (ADR-079): `db/init/05-nerve.sh`, tests in `scripts/test-nerve.sh`, Ops Room block, Valkey. Phase 1 uses plain Postgres queues with pgmq semantics instead of the pgmq extension, so the Timescale image needs nothing new. Phase 2 built 2026-10-16 (ADR-080): `db/init/06-memory.sh`, worker `services/ameen`. Embeddings are stored as `real[]` with an SQL cosine because the Timescale image has no pgvector; pgvector stays the upgrade path. Phase 3 built 2026-10-16 (ADR-081): `db/init/07-brain.sh`, worker `services/mind`, the `/mind` map and its relay routes. Think with me is extractive for now (it cites the owner's atoms); local-model phrasing is the next step.
+**Progress:** phase 1 built 2026-10-16 (ADR-079): `db/init/05-nerve.sh`, tests in `scripts/test-nerve.sh`, Ops Room block, Valkey. Phase 1 uses plain Postgres queues with pgmq semantics instead of the pgmq extension, so the Timescale image needs nothing new. Phase 2 built 2026-10-16 (ADR-080): `db/init/06-memory.sh`, worker `services/ameen`. Embeddings are stored as `real[]` with an SQL cosine because the Timescale image has no pgvector; pgvector stays the upgrade path. Phase 4 built 2026-10-16 (ADR-082): `db/init/08-loop.sh`, worker `services/loop` (checkpoints in Postgres, budgets enforced in SQL, extractive answers by default, LangGraph not used: see the ADR). Phase 3 built 2026-10-16 (ADR-081): `db/init/07-brain.sh`, worker `services/mind`, the `/mind` map and its relay routes. Think with me is extractive for now (it cites the owner's atoms); local-model phrasing is the next step.
 
 ## 14. Open-source research
 

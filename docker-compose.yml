@@ -206,6 +206,7 @@ services:
       AGENTS_URL: http://agents:8093
       GEOAPI_URL: http://geo-api:8094
       MIND_URL: http://mind:8097
+      LOOP_URL: http://loop:8098
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -620,6 +621,32 @@ services:
       - ./data/brain-export:/export                       # your Markdown copy (gitignored); open it in Obsidian or Foam
     networks: [db, core]              # db: brain functions; core: the relay and local embeddings. No internet.
     mem_limit: 160m
+    cpus: 0.25
+    pids_limit: 48
+
+  # The brain loop (ADR-082, opt-in: --profile loop): hakeem plans, researches (SearXNG, keyless), critiques and
+  # answers, every step checkpointed in Postgres. Answers only: it cannot add a proposal. No internet.
+  loop:
+    build: { context: ./services, dockerfile: loop/Dockerfile }
+    profiles: ["loop"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=8m"]
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      HAKEEM_DB_PASSWORD: ${HAKEEM_DB_PASSWORD:-}          # the planner's login (created by 08-loop.sh)
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      SEARXNG_URL: http://searxng:8080
+      CORTEX_URL: ${LOOP_CORTEX_URL:-}                      # empty = extractive answers only (no key needed)
+      OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:-}
+      LOOP_MAX_STEPS: ${LOOP_MAX_STEPS:-12}
+      LOOP_MAX_TOKENS: ${LOOP_MAX_TOKENS:-6000}
+      LOOP_MAX_ROUNDS: ${LOOP_MAX_ROUNDS:-2}
+    networks: [db, core]
+    mem_limit: 128m
     cpus: 0.25
     pids_limit: 48
 

@@ -34,6 +34,7 @@ const NEURAL_URL = process.env.NEURAL_URL || "http://neural:8092";
 const AGENTS_URL = process.env.AGENTS_URL || "http://agents:8093";
 const GEOAPI_URL = process.env.GEOAPI_URL || "http://geo-api:8094";
 const MIND_URL = process.env.MIND_URL || "http://mind:8097";
+const LOOP_URL = process.env.LOOP_URL || "http://loop:8098";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
@@ -262,6 +263,7 @@ const MIND_FILES = {
 };
 const MIND_POST = { "/mind/api/capture": "/capture", "/mind/api/dump": "/dump", "/mind/api/decide": "/decide",
                     "/mind/api/search": "/search", "/mind/api/think": "/think" };
+const LOOP_ASK = "/loop/api/ask";
 const MIND_GET = /^\/mind\/api\/(graph|digest|evidence\/\d{1,12})$/;
 
 function mindFile(res, rel) {
@@ -307,11 +309,21 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://relay");
 
   const LIMITS = { "/llm/chat": 12, "/brain/ask": 6, "/agents/decide": 30,
-                   "/mind/api/capture": 30, "/mind/api/dump": 10, "/mind/api/decide": 60, "/mind/api/search": 60, "/mind/api/think": 12 };
+                   "/loop/api/ask": 6, "/mind/api/capture": 30, "/mind/api/dump": 10, "/mind/api/decide": 60, "/mind/api/search": 60, "/mind/api/think": 12 };
   if (req.method === "POST" && LIMITS[url.pathname] && !allow(req, LIMITS[url.pathname])) return send(res, 429, { error: "too many requests, slow down" });
   if (req.method === "POST" && url.pathname === "/llm/chat") return chat(req, res);
   if (req.method === "POST" && url.pathname === "/agents/decide") return decide(req, res);
   if (req.method === "POST" && url.pathname === "/brain/ask") return brainAsk(req, res);
+  if (req.method === "POST" && url.pathname === LOOP_ASK) {
+    if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
+    return readJson(req, res, body => {
+      if (!body || typeof body.question !== "string" || body.question.length < 3 || body.question.length > 4000) return send(res, 400, { error: "question must be 3-4000 characters" });
+      return fetch(`${LOOP_URL}/run`, { method: "POST", signal: AbortSignal.timeout(120000), headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: body.question }) })
+        .then(async r => send(res, r.status, await r.text()))
+        .catch(() => send(res, 503, { error: "brain loop not running (docker compose --profile loop up -d)" }));
+    }, MAX_MIND_BODY);
+  }
   if (req.method === "POST" && MIND_POST[url.pathname]) {
     if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
     return readJson(req, res, body => {

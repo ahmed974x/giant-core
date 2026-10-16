@@ -17,7 +17,7 @@ SET client_min_messages = notice;
 
 -- Logins named after the agents: guard_session needs session_user = the agent id.
 CREATE ROLE fahd LOGIN IN ROLE nerve_agent;
-CREATE ROLE hakeem LOGIN IN ROLE nerve_agent;
+-- hakeem already exists (08-loop.sh creates it when HAKEEM_DB_PASSWORD is set)
 
 -- ── Toolbelts: only أمين writes; hakeem may read; fahd and salem may not touch the brain ──
 SELECT pg_temp.check((SELECT 'brain.write' = ANY (tools) AND 'brain.link' = ANY (tools) AND 'brain.read' = ANY (tools) FROM nerve.agents WHERE id = 'ameen'),

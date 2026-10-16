@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs the agents' database layer (db/init/05-nerve.sh, 06-memory.sh, 07-brain.sh), its tests (db/test/*_test.sql),
-# the memory keeper (services/ameen) and the second brain worker (services/mind) against a throw-away Postgres (no Docker).
+# Runs the agents' database layer (db/init/05 to 08), its tests (db/test/*_test.sql), the memory keeper (services/ameen),
+# the second brain worker (services/mind) and the brain loop (services/loop) against a throw-away Postgres (no Docker).
 #   scripts/test-nerve.sh            needs initdb/pg_ctl on PATH, or PG_BIN=/usr/lib/postgresql/16/bin
 # The cluster lives in a temp folder and is removed afterwards.
 set -euo pipefail
@@ -21,14 +21,15 @@ export PGHOST=$TMP PGUSER=omega_admin POSTGRES_USER=omega_admin POSTGRES_DB=omeg
 # What 01-sentinel.sh normally provides: the PostgREST role and the api schema.
 psql -q -v ON_ERROR_STOP=1 -d omega_test -c "CREATE ROLE web_anon NOLOGIN; CREATE SCHEMA api;"
 
-export AMEEN_DB_PASSWORD=test-only              # creates the ameen login used by the worker test
-for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
-for t in nerve memory brain; do
+export AMEEN_DB_PASSWORD=test-only HAKEEM_DB_PASSWORD=test-only   # creates the ameen and hakeem logins
+for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh db/init/08-loop.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
+for t in nerve memory brain loop; do
   psql -q -o /dev/null -v ON_ERROR_STOP=1 -d omega_test -f "db/test/${t}_test.sql" 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
 done
 
 # The memory keeper and the second brain's worker against the same database (skipped when the test libraries are missing).
 if python3 -c "import pg8000, pytest, networkx" 2>/dev/null; then
+  LOOP_TEST_SOCKET="$TMP/.s.PGSQL.5432" python3 -m pytest -q -p no:cacheprovider services/loop
   AMEEN_TEST_SOCKET="$TMP/.s.PGSQL.5432" AMEEN_DB_USER=ameen python3 -m pytest -q -p no:cacheprovider services/ameen
   MIND_TEST_SOCKET="$TMP/.s.PGSQL.5432" python3 -m pytest -q -p no:cacheprovider services/mind
 else
