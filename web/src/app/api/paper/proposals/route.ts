@@ -5,8 +5,7 @@ import { directorData, makeThrottle } from "@/lib/director";
 import { access } from "@/lib/accounts";
 import { currentUserKey } from "@/lib/auth";
 import { fetchPrices } from "@/lib/sweeper";
-import { serial } from "@/lib/paper";
-import { appendProposalEvent, approveAndRecord, loadProposalEvents, reject, replayProposals, scan, validId } from "@/lib/paper-proposals";
+import { approveAndRecord, loadProposalEvents, rejectAndRecord, replayProposals, scan, validId } from "@/lib/paper-proposals";
 import { GET as strategiesGET } from "../../strategies/route";
 
 const throttle = makeThrottle();
@@ -40,11 +39,7 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, fill, ...(await rows(dir)) });
     }
     if (body?.action === "reject") {
-      const id = validId(body.id);
-      await serial(async () => {
-        const row = replayProposals(await loadProposalEvents(dir)).find(r => r.id === id);
-        await appendProposalEvent(dir, reject(row, BY, body.reason));
-      });
+      await rejectAndRecord(dir, validId(body.id), BY, body.reason);
       return Response.json({ ok: true, ...(await rows(dir)) });
     }
     return Response.json({ error: "action must be scan, approve or reject" }, { status: 400 });

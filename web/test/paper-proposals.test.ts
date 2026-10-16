@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { loadEvents, replay, type PaperEvent } from "../src/lib/paper.ts";
-import { appendProposalEvent, approve, approveAndRecord, briefingText, loadProposalEvents, makeProposal, MAX_DRIFT, PROPOSAL_TTL_MS, PROPOSAL_USD,
+import { appendAudit, appendProposalEvent, approve, approveAndRecord, briefingText, loadAudit, rejectAndRecord, scan as scanQueue, loadProposalEvents, makeProposal, MAX_DRIFT, PROPOSAL_TTL_MS, PROPOSAL_USD,
   proposalSize, proposalsFromSignals, reject, replayProposals, scan, topProposals, validId, writeBriefing, type ProposalEvent } from "../src/lib/paper-proposals.ts";
 import { appendEvent, fillOrder } from "../src/lib/paper.ts";
 import type { Result } from "../src/lib/strategies.ts";
@@ -34,16 +34,16 @@ test("signals become proposals with their numbers and a link to the raw data; ho
 });
 
 test("a proposal without evidence, source or price is refused", () => {
-  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", evidence: { ...evidence, url: "" } }), /link to its evidence/);
-  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", evidence: { ...evidence, url: "javascript:alert(1)" } }), /link to its evidence/);
-  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", evidence: { ...evidence, source: "" } }), /source/);
-  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", evidence: { ...evidence, observed_price: 0 } }), /price it saw/);
-  assert.throws(() => makeProposal({ symbol: "BTC-EUR", side: "buy", evidence }), /USDT pair/);
+  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", reasoning: "test", evidence: { ...evidence, url: "" } }), /link to its evidence/);
+  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", reasoning: "test", evidence: { ...evidence, url: "javascript:alert(1)" } }), /link to its evidence/);
+  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", reasoning: "test", evidence: { ...evidence, source: "" } }), /source/);
+  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", reasoning: "test", evidence: { ...evidence, observed_price: 0 } }), /price it saw/);
+  assert.throws(() => makeProposal({ symbol: "BTC-EUR", side: "buy", reasoning: "test", evidence }), /USDT pair/);
   assert.throws(() => validId("../etc"), /invalid proposal id/);
 });
 
 test("nothing is recorded until approval; approval fills once on paper and can't be repeated", () => {
-  const p = makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 100, evidence }, at);
+  const p = makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 100, reasoning: "test", evidence }, at);
   const log: ProposalEvent[] = [{ type: "proposed", ...p }];
   const [row] = replayProposals(log, at);
   assert.equal(row.status, "pending");
@@ -60,7 +60,7 @@ test("nothing is recorded until approval; approval fills once on paper and can't
 });
 
 test("stale, drifted and rejected proposals can't be approved", () => {
-  const p = makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 100, evidence }, at);
+  const p = makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 100, reasoning: "test", evidence }, at);
   const log: ProposalEvent[] = [{ type: "proposed", ...p }];
   const acc = replay([start]);
   const later = new Date(at.getTime() + PROPOSAL_TTL_MS + 1);
@@ -79,7 +79,7 @@ test("stale, drifted and rejected proposals can't be approved", () => {
 
 test("the queue log is append-only JSON lines beside the paper ledger, and scanning never writes a fill", async () => {
   const dir = mkdtempSync(path.join(tmpdir(), "omega-proposals-"));
-  const p = makeProposal({ symbol: "ETHUSDT", side: "buy", evidence }, at);
+  const p = makeProposal({ symbol: "ETHUSDT", side: "buy", reasoning: "test", evidence }, at);
   await appendProposalEvent(dir, { type: "proposed", ...p });
   assert.equal((await loadProposalEvents(dir)).length, 1);
   assert.deepEqual(await loadEvents(dir), [], "the paper ledger is untouched by a proposal");
@@ -126,8 +126,8 @@ test("buy size follows 14 days of closed paper trades, only after 5 of them, and
   assert.equal(proposalSize(trades(5, 80), at).usd, 50);
   assert.equal(proposalSize(trades(5, 101), at).usd, 100, "inside +/-5% keeps 100");
   assert.equal(proposalSize(trades(5, 120, 20), at).usd, 100, "trades older than 14 days don't count");
-  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 10_000, evidence }, at).usd, 200, "a proposal can't exceed the cap");
-  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 1, evidence }, at).usd, 50);
+  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 10_000, reasoning: "test", evidence }, at).usd, 200, "a proposal can't exceed the cap");
+  assert.equal(makeProposal({ symbol: "BTCUSDT", side: "buy", usd: 1, reasoning: "test", evidence }, at).usd, 50);
 });
 
 test("the daily scan only queues proposals; the briefing lists the top 3 with numbers and raw-data links", async () => {
@@ -153,4 +153,40 @@ test("the daily scan only queues proposals; the briefing lists the top 3 with nu
   const fill = await approveAndRecord(dir, top[0].id, async () => 100, "web:Ahmad", at);
   assert.equal(replay(await loadEvents(dir)).fills.length, 1);
   assert.equal(fill.usd, 100);
+});
+
+test("every proposal, decision and rejection is in the audit log with the data seen, the reasoning, the time and who decided", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "omega-audit-"));
+  await appendEvent(dir, start);
+  const added = await scanQueue(dir, async symbol => ({ price: 100, results: symbol === "BTCUSDT" ? results : [] }), at);
+  assert.equal(added.length, 2);
+  let audit = await loadAudit(dir);
+  assert.deepEqual(audit.map(a => [a.action, a.actor, a.symbol, a.side]), [["proposed", "system:scan", "BTCUSDT", "buy"], ["proposed", "system:scan", "BTCUSDT", "buy"]]);
+  const trendLine = audit.find(a => a.data.source === "strategy:trend 1d")!;
+  assert.equal(trendLine.data.observed_price, 100, "the price the system saw is recorded");
+  assert.deepEqual(trendLine.data.summary, { sma20: 101, sma50: 99, backtestReturnPct: 12, buyHoldPct: 8, maxDrawdownPct: -9 });
+  assert.match(trendLine.reasoning, /trend rule on 1d candles says BUY \(sma20 101, sma50 99\)/, trendLine.reasoning);
+
+  const rows = replayProposals(await loadProposalEvents(dir), at);
+  const [first, second] = topProposals(rows);
+  const fill = await approveAndRecord(dir, first.id, async () => 100, "web:Ahmad", at);
+  await rejectAndRecord(dir, second.id, "web:Ahmad", "not convinced", at);
+  audit = await loadAudit(dir);
+  const ok = audit.find(a => a.action === "approved")!;
+  assert.deepEqual([ok.actor, ok.fill_id, ok.price_at_decision, ok.id], ["web:Ahmad", fill.id, 100, first.id]);
+  assert.equal(ok.reasoning, first.reasoning, "the approved entry keeps the reasoning it was approved on");
+  const no = audit.find(a => a.action === "rejected")!;
+  assert.deepEqual([no.actor, no.reason, no.id], ["web:Ahmad", "not convinced", second.id]);
+  assert.equal(audit.length, 4, "two proposals, one approval, one rejection");
+  // Nothing about a decision can be recorded twice, and a rejected proposal can't be approved afterwards.
+  await assert.rejects(rejectAndRecord(dir, first.id, "web:Ahmad", "late", at), /already approved/);
+  assert.equal((await loadAudit(dir)).length, 4, "a refused decision leaves no audit line");
+  // The audit log is append-only: appending adds, never rewrites.
+  await appendAudit(dir, { ...audit[0], action: "proposed" });
+  assert.equal((await loadAudit(dir)).length, 5);
+  assert.equal(audit[0].action, "proposed");
+});
+
+test("a proposal without its reasoning is refused", () => {
+  assert.throws(() => makeProposal({ symbol: "BTCUSDT", side: "buy", evidence, reasoning: "  " }), /needs its reasoning/);
 });

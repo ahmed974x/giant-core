@@ -23,7 +23,8 @@ export type Evidence = {
   observed_price: number;
   observed_at: string;
 };
-export type Proposal = { id: string; at: string; symbol: string; side: Side; usd?: number; evidence: Evidence };
+// reasoning: the rule that fired, in plain words, so the audit log shows why the system proposed this (ADR-076).
+export type Proposal = { id: string; at: string; symbol: string; side: Side; usd?: number; evidence: Evidence; reasoning: string };
 export type ProposalEvent =
   | ({ type: "proposed" } & Proposal)
   | { type: "approved"; id: string; at: string; by: string; fill_id: string; price: number }
@@ -46,12 +47,15 @@ export function validEvidence(e: unknown): Evidence {
   return { source: x.source.slice(0, 80), summary: x.summary, url, observed_price: Number(x.observed_price), observed_at: String(x.observed_at ?? "") };
 }
 
-export function makeProposal(input: { symbol: string; side: Side; usd?: number; evidence: unknown }, now = new Date()): Proposal {
+export function makeProposal(input: { symbol: string; side: Side; usd?: number; evidence: unknown; reasoning?: string }, now = new Date()): Proposal {
   const symbol = String(input.symbol ?? "").toUpperCase();
   if (!SYMBOL.test(symbol)) throw new Error("pick a USDT pair, like BTCUSDT");
   if (input.side !== "buy" && input.side !== "sell") throw new Error("side must be buy or sell");
+  const reasoning = String(input.reasoning ?? "").trim().slice(0, 300);
+  if (!reasoning) throw new Error("a proposal needs its reasoning");
   return { id: randomBytes(6).toString("hex"), at: now.toISOString(), symbol, side: input.side,
-    ...(input.side === "buy" ? { usd: Math.min(SIZE_MAX, Math.max(SIZE_MIN, Number(input.usd ?? PROPOSAL_USD))) } : {}), evidence: validEvidence(input.evidence) };
+    ...(input.side === "buy" ? { usd: Math.min(SIZE_MAX, Math.max(SIZE_MIN, Number(input.usd ?? PROPOSAL_USD))) } : {}),
+    evidence: validEvidence(input.evidence), reasoning };
 }
 
 /** Rebuild the queue from its log. A pending proposal past its TTL reads as expired. */
@@ -95,7 +99,9 @@ export function proposalsFromSignals(o: { symbol: string; interval: string; pric
     if (o.pending.some(p => p.status === "pending" && p.symbol === o.symbol && p.side === r.signal && p.evidence.source === source)) continue;
     const summary: Record<string, number | string> = { ...r.reason };
     if (r.backtest) Object.assign(summary, { backtestReturnPct: r.backtest.returnPct, buyHoldPct: r.backtest.buyHoldPct, maxDrawdownPct: r.backtest.maxDrawdownPct });
-    out.push(makeProposal({ symbol: o.symbol, side: r.signal, usd: o.usd ?? PROPOSAL_USD, evidence: {
+    const why = Object.entries(r.reason).map(([k, v]) => `${k} ${v}`).join(", ");
+    const reasoning = `${r.id} rule on ${o.interval} candles says ${r.signal.toUpperCase()}${why ? ` (${why})` : ""}`;
+    out.push(makeProposal({ symbol: o.symbol, side: r.signal, usd: o.usd ?? PROPOSAL_USD, reasoning, evidence: {
       source, summary, url: r.id === "news" ? "/api/worldpulse" : klines, observed_price: o.price, observed_at: now.toISOString() } }, now));
   }
   return out;
@@ -126,6 +132,25 @@ export const validId = (id: unknown): string => {
 // Lives beside the paper ledger, in Director 00's git-ignored data folder.
 export const proposalsPath = (dataDir: string) => path.join(dataDir, "paper", "proposals.jsonl");
 
+// Audit log (ADR-076): one line for every proposal, decision and rejection, with what the system saw, why it proposed,
+// the price at the moment of the decision, and who decided. Append-only, next to the proposal queue.
+export type AuditEntry = {
+  at: string; id: string; symbol: string; side: Side; action: "proposed" | "approved" | "rejected"; actor: string;
+  data: Evidence; reasoning: string; price_at_decision?: number; fill_id?: string; reason?: string;
+};
+export const auditPath = (dataDir: string) => path.join(dataDir, "paper", "audit.jsonl");
+
+export async function appendAudit(dataDir: string, e: AuditEntry): Promise<void> {
+  await mkdir(path.dirname(auditPath(dataDir)), { recursive: true });
+  await appendFile(auditPath(dataDir), JSON.stringify(e) + "\n");
+}
+
+export async function loadAudit(dataDir: string): Promise<AuditEntry[]> {
+  let raw = "";
+  try { raw = await readFile(auditPath(dataDir), "utf8"); } catch { return []; }
+  return raw.split("\n").filter(Boolean).flatMap(l => { try { return [JSON.parse(l) as AuditEntry]; } catch { return []; } });
+}
+
 export async function loadProposalEvents(dataDir: string): Promise<ProposalEvent[]> {
   let raw = "";
   try { raw = await readFile(proposalsPath(dataDir), "utf8"); } catch { return []; }
@@ -153,6 +178,8 @@ export async function scan(dataDir: string, getSignals: (symbol: string, interva
       if (!j || !(Number(j.price) > 0) || !j.results) continue;
       for (const p of proposalsFromSignals({ symbol, interval: SCAN_INTERVAL, price: Number(j.price), results: j.results, account, pending, usd }, now)) {
         await appendProposalEvent(dataDir, { type: "proposed", ...p });
+        await appendAudit(dataDir, { at: p.at, id: p.id, symbol: p.symbol, side: p.side, action: "proposed", actor: "system:scan",
+          data: p.evidence, reasoning: p.reasoning });
         added.push(p);
       }
       pending = replayProposals(await loadProposalEvents(dataDir), now);
@@ -170,7 +197,20 @@ export async function approveAndRecord(dataDir: string, id: string, getPrice: (s
     const { fill, event } = approve(row, replay(await loadEvents(dataDir)), price, by, now);
     await appendEvent(dataDir, { type: "fill", ...fill });
     await appendProposalEvent(dataDir, event);
+    await appendAudit(dataDir, { at: now.toISOString(), id: row!.id, symbol: row!.symbol, side: row!.side, action: "approved", actor: by,
+      data: row!.evidence, reasoning: row!.reasoning, price_at_decision: price, fill_id: fill.id });
     return fill;
+  });
+}
+
+/** Ahmad tapped Reject: record it with the same audit detail. Nothing is filled. */
+export async function rejectAndRecord(dataDir: string, id: string, by: string, reason: unknown, now = new Date()): Promise<void> {
+  await serial(async () => {
+    const row = replayProposals(await loadProposalEvents(dataDir), now).find(r => r.id === id);
+    const event = reject(row, by, reason, now);
+    await appendProposalEvent(dataDir, event);
+    await appendAudit(dataDir, { at: now.toISOString(), id: row!.id, symbol: row!.symbol, side: row!.side, action: "rejected", actor: by,
+      data: row!.evidence, reasoning: row!.reasoning, reason: event.type === "rejected" ? event.reason : "" });
   });
 }
 
