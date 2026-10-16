@@ -23,7 +23,7 @@ CREATE ROLE fahd LOGIN IN ROLE nerve_agent;
 SELECT pg_temp.check((SELECT 'brain.write' = ANY (tools) AND 'brain.link' = ANY (tools) AND 'brain.read' = ANY (tools) FROM nerve.agents WHERE id = 'ameen'),
                      'ameen holds read, write and link');
 SELECT pg_temp.check((SELECT 'brain.read' = ANY (tools) AND NOT ('brain.write' = ANY (tools)) FROM nerve.agents WHERE id = 'hakeem'),
-                     'Hakeem may read the brain but not write it');
+                     'Abdullah may read the brain but not write it');
 SELECT pg_temp.check(NOT EXISTS (SELECT 1 FROM nerve.agents WHERE id IN ('fahd', 'salem', 'maha', 'rashid', 'noura', 'badr', 'haris', 'khazen')
                                  AND tools && ARRAY['brain.read', 'brain.write', 'brain.link']), 'no other agent holds a brain tool');
 SELECT pg_temp.check(pg_temp.fails($$INSERT INTO nerve.agents (id, name_ar, name_en, role, disclosure_ar, disclosure_en, tools, container)

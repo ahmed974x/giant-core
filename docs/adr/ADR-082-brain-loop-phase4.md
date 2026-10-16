@@ -14,7 +14,7 @@ ADR-081) give the event log, the gateway, the memory keeper and the second brain
     (`loop.resume`).
   - A step past a budget stops the run as `incomplete`; the database records it, and the last checkpoint keeps what the
     run had. A secret in a checkpoint fails the run and nothing is stored.
-- **Who runs it.** Only حكيم (the planner) holds `loop.run` (sole holder). Maha and Badr have no database tool in
+- **Who runs it.** Only عبدالله (the planner) holds `loop.run` (sole holder). Maha and Badr have no database tool in
   this phase: their steps are functions the planner's runner calls (search and critique). The design had them as
   separate agents with separate prompts; the separation of prompts and roles is kept in code, and the
   database-level separation (who may write a checkpoint) is kept by the sole-holder rule.

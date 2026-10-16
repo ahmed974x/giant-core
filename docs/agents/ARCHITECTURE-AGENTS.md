@@ -23,7 +23,7 @@ one phase at a time after Ahmad approves each phase. Date: 2026-10-16.
 صلاحيتها ومصدرها)، وذاكرة مهارات (طرق نجحت). كل ليلة «نوم» يرتّب الذاكرة: يلخّص، يحذف المكرر، ويكشف التناقض.
 وكل توقع يقوله وكيل يُسجَّل ويُحاسَب عليه لاحقاً، فيتعلم النظام من أخطائه ويعرف أي وكيل يُصدَّق أكثر.
 
-**الوكلاء:** حكيم (المخطط والمنسق)، مها (البحث العميق)، أمين (حارس الذاكرة)، سالم (محلل السوق)، راشد (المخاطر +
+**الوكلاء:** عبدالله (المخطط والمنسق)، مها (البحث العميق)، أمين (حارس الذاكرة)، سالم (محلل السوق)، راشد (المخاطر +
 وحدة RR)، فهد (يجهّز المقترحات فقط)، نورة (شرح للمبتدئين)، بدر (الناقد والمدقق)، حارس (صحة النظام والأمان)،
 خازن (الخزينة الورقية). كل واحد يقول في أول كلامه إنه وكيل ذكاء اصطناعي.
 
@@ -77,7 +77,7 @@ flowchart TB
     UI["Site: agent offices + approval queue"]
   end
   subgraph Brain["Brains (slow path, LLM)"]
-    H["حكيم Planner"] --> M["مها Researcher"]
+    H["عبدالله Planner"] --> M["مها Researcher"]
     H --> S["سالم Analyst"]
     S --> R["راشد Risk + RR unit"]
     R --> F["فهد Proposal clerk"]
@@ -121,7 +121,7 @@ do). The existing four agents keep the names and profiles in `docs/AGENTS-PROFIL
 
 | Agent | Role | Toolbelt (MCP allow-list) | Computer (container, network) | Cannot |
 |---|---|---|---|---|
-| **حكيم** Hakeem, planner | Turns a goal into a plan (task graph), assigns steps, merges results, decides "done" | `registry.read`, `queue.send`, `memory.search`, `events.read` | `agent-core`, no internet | Call any market or money tool |
+| **عبدالله** Abdullah, planner | Turns a goal into a plan (task graph), assigns steps, merges results, decides "done" | `registry.read`, `queue.send`, `memory.search`, `events.read` | `agent-core`, no internet | Call any market or money tool |
 | **مها** Maha, researcher | Deep research: search, read, cross-check, cite | `searxng.search`, `deep_research.run`, `web.read` (text only), `memory.search` | `agent-research`, egress to an allow-list of public sources only | Act on what it reads; fetched text is tainted |
 | **أمين** Ameen, librarian | Writes, merges, dates and forgets memories; runs the nightly "sleep" | `memory.*` (only writer of semantic memory) | `agent-core`, no internet | Delete the event log; it only marks memories superseded |
 | **سالم** Salem, analyst | Reads signals and strategies; explains with numbers | `strategies.read`, `market.read`, `newton.*`, `worldpulse.read` | `agent-core`, no internet (data via local APIs) | Add proposals; state forecasts as facts |
@@ -134,7 +134,7 @@ do). The existing four agents keep the names and profiles in `docs/AGENTS-PROFIL
 
 The existing workforce agents (Sentinel, Analyst, Scout in `services/agents/workforce.py`) and the six-step Brain
 (`services/agents/brain.py`) become the first members: Sentinel → حارس, Analyst → سالم's background brief, Scout →
-a skill of مها, and the Brain's Planner/Researcher/Designer/Critic/Synthesizer steps map onto حكيم/مها/بدر.
+a skill of مها, and the Brain's Planner/Researcher/Designer/Critic/Synthesizer steps map onto عبدالله/مها/بدر.
 
 ## 4. The brain loop
 
@@ -356,7 +356,7 @@ learns his taste.
   their dates, instead of silently replacing it.
 - **Decision journal.** A `decision` node records what he expected; it links to the calibration ledger (section 7),
   so later he sees how his own predictions turned out.
-- **Think with me.** A chat mode where حكيم answers only from his own graph (plus research on request), cites the
+- **Think with me.** A chat mode where عبدالله answers only from his own graph (plus research on request), cites the
   nodes it used, highlights the path on the map, and asks the next question instead of lecturing.
 
 ### 12.3 Graph view (the map in his screenshot)
@@ -399,8 +399,8 @@ learns his taste.
 |---|---|---|
 | 1 Nervous system | `nerve.events` (hash chain), pgmq queues, registry with Agent Cards, tool gateway skeleton, Valkey swap, office page that shows the event stream | Nothing (no keys, no LLM) |
 | 2 Memory | Tiers + hybrid retrieval + write gate + أمين + nightly sleep | Nothing |
-| 3 Second brain | Capture box, atomiser and linker (local model), clusters, graph view (sigma.js 2D + 3D mode), brain dump, loop detector, daily collision, Markdown export. "Think with me" answers from the local model here; حكيم joins it in phase 4 | Nothing (local model only). Moved here by Ahmad 2026-10-16 |
-| 4 Brain loop | LangGraph loop with Postgres checkpoints for حكيم + مها + بدر; budgets; answers only, no proposals | Free Groq/Cerebras keys already pending (Oracle phase 2) |
+| 3 Second brain | Capture box, atomiser and linker (local model), clusters, graph view (sigma.js 2D + 3D mode), brain dump, loop detector, daily collision, Markdown export. "Think with me" answers from the local model here; عبدالله joins it in phase 4 | Nothing (local model only). Moved here by Ahmad 2026-10-16 |
+| 4 Brain loop | LangGraph loop with Postgres checkpoints for عبدالله + مها + بدر; budgets; answers only, no proposals | Free Groq/Cerebras keys already pending (Oracle phase 2) |
 | 5 Market agents | سالم, راشد + RR unit, فهد → `proposals.add`; two-key rule; calibration ledger | Merge of the paper-trading MVP first |
 | 6 Offices + guide | Agent office pages, نورة, disclosure banner in every chat, حارس immune + pause | Nothing |
 | 7 Vault | Paper double-entry Vault, reconciliation, statements, wallet view | Licence review answers before any non-paper use |
@@ -562,6 +562,6 @@ Vault) · sigma.js + graphology + 3d-force-graph, networkx, Foam-style Markdown 
 ## 15. Open decisions for Ahmad
 
 1. **RR meaning:** risk/reward unit as written in section 8? (inferred)
-2. **Agent names** for the six new agents (حكيم, مها, أمين, بدر, حارس, خازن): keep or rename.
+2. **Agent names** for the six new agents (عبدالله, مها, أمين, بدر, حارس, خازن): keep or rename.
 3. **Phase 1 go:** nervous system + Valkey swap, no keys and no LLM needed.
 4. ~~Second brain timing~~: decided 2026-10-16, phase 3 right after memory.

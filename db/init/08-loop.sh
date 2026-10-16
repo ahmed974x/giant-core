@@ -3,7 +3,7 @@
 #   loop.runs         one row per run: the goal (never in the event log), budgets, counters, the report
 #   loop.checkpoints  one row per step, append-only: the state after each node, so a run resumes after a restart
 # Budgets are enforced here, not in Python: a step past max_steps or max_tokens stops the run as 'incomplete'.
-# Only حكيم (the planner, who runs the loop) holds loop.run. It cannot add a proposal: proposals.add belongs to فهد.
+# Only عبدالله (the planner, who runs the loop) holds loop.run. It cannot add a proposal: proposals.add belongs to فهد.
 # The answer a run produces is an answer, never an order; nothing here can write to the proposal queue.
 set -eu
 

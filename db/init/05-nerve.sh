@@ -92,9 +92,9 @@ END $$;
 CREATE TRIGGER agents_toolbelt BEFORE INSERT OR UPDATE ON nerve.agents FOR EACH ROW EXECUTE FUNCTION nerve.check_toolbelt();
 
 INSERT INTO nerve.agents (id, name_ar, name_en, role, disclosure_ar, disclosure_en, tools, cannot, container) VALUES
-  ('hakeem', 'حكيم', 'Hakeem', 'Planner: turns a goal into a plan, assigns steps, merges results',
-   'أنا حكيم، وكيل ذكاء اصطناعي متخصص في التخطيط وتنسيق الوكلاء. أنا هنا لمساعدتك.',
-   'I am Hakeem, an AI agent specialised in planning and coordinating the agents. I am here to help you.',
+  ('hakeem', 'عبدالله', 'Abdullah', 'Planner: turns a goal into a plan, assigns steps, merges results',
+   'أنا عبدالله، وكيل ذكاء اصطناعي متخصص في التخطيط وتنسيق الوكلاء. أنا هنا لمساعدتك.',
+   'I am Abdullah, an AI agent specialised in planning and coordinating the agents. I am here to help you.',
    '{registry.read,events.read,queue.send,memory.search}', '{market tools,proposals,money}', 'agent-core'),
   ('maha', 'مها', 'Maha', 'Researcher: search, read, cross-check and cite',
    'أنا مها، وكيلة ذكاء اصطناعي متخصصة في البحث العميق. أنا هنا لمساعدتك.',

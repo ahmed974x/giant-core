@@ -67,9 +67,9 @@
   const DEMO = new URLSearchParams(location.search).has("demo");
   // Demo fixture: the same columns as api.nerve_agents, for a page without the database.
   const DEMO_ROWS = [
-    { id: "hakeem", name_ar: "حكيم", name_en: "Hakeem", role: "Planner: turns a goal into a plan, assigns steps, merges results",
-      disclosure_ar: "أنا حكيم، وكيل ذكاء اصطناعي متخصص في التخطيط وتنسيق الوكلاء. أنا هنا لمساعدتك.",
-      disclosure_en: "I am Hakeem, an AI agent specialised in planning and coordinating the agents. I am here to help you.",
+    { id: "hakeem", name_ar: "عبدالله", name_en: "Abdullah", role: "Planner: turns a goal into a plan, assigns steps, merges results",
+      disclosure_ar: "أنا عبدالله، وكيل ذكاء اصطناعي متخصص في التخطيط وتنسيق الوكلاء. أنا هنا لمساعدتك.",
+      disclosure_en: "I am Abdullah, an AI agent specialised in planning and coordinating the agents. I am here to help you.",
       tools: ["registry.read", "events.read", "queue.send", "memory.search", "brain.read", "loop.run"], cannot: ["market tools", "proposals", "money"],
       container: "agent-core", status: "active", queued: 0, last_seen: null },
     { id: "fahd", name_ar: "فهد", name_en: "Fahd", role: "Proposal clerk: packs a checked idea into a proposal with its evidence",
