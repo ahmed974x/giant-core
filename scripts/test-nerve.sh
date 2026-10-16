@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs the agents' database layer (db/init/05-nerve.sh, 06-memory.sh), its tests (db/test/*_test.sql) and the
-# memory keeper worker (services/ameen) against a throw-away Postgres (no Docker needed).
+# Runs the agents' database layer (db/init/05-nerve.sh, 06-memory.sh, 07-brain.sh), its tests (db/test/*_test.sql),
+# the memory keeper (services/ameen) and the second brain worker (services/mind) against a throw-away Postgres (no Docker).
 #   scripts/test-nerve.sh            needs initdb/pg_ctl on PATH, or PG_BIN=/usr/lib/postgresql/16/bin
 # The cluster lives in a temp folder and is removed afterwards.
 set -euo pipefail
@@ -22,14 +22,15 @@ export PGHOST=$TMP PGUSER=omega_admin POSTGRES_USER=omega_admin POSTGRES_DB=omeg
 psql -q -v ON_ERROR_STOP=1 -d omega_test -c "CREATE ROLE web_anon NOLOGIN; CREATE SCHEMA api;"
 
 export AMEEN_DB_PASSWORD=test-only              # creates the ameen login used by the worker test
-for f in db/init/05-nerve.sh db/init/06-memory.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
-for t in nerve memory; do
+for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
+for t in nerve memory brain; do
   psql -q -o /dev/null -v ON_ERROR_STOP=1 -d omega_test -f "db/test/${t}_test.sql" 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
 done
 
-# The memory keeper worker against the same database (skipped when pg8000/pytest are not installed).
-if python3 -c "import pg8000, pytest" 2>/dev/null; then
+# The memory keeper and the second brain's worker against the same database (skipped when the test libraries are missing).
+if python3 -c "import pg8000, pytest, networkx" 2>/dev/null; then
   AMEEN_TEST_SOCKET="$TMP/.s.PGSQL.5432" AMEEN_DB_USER=ameen python3 -m pytest -q -p no:cacheprovider services/ameen
+  MIND_TEST_SOCKET="$TMP/.s.PGSQL.5432" python3 -m pytest -q -p no:cacheprovider services/mind
 else
-  echo "skip: services/ameen tests need pg8000 and pytest (pip install -r services/ameen/requirements-dev.txt)"
+  echo "skip: services/ameen and services/mind tests need pg8000, networkx and pytest (pip install -r services/mind/requirements-dev.txt)"
 fi

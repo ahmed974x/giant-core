@@ -205,6 +205,7 @@ services:
       NEURAL_URL: http://neural:8092
       AGENTS_URL: http://agents:8093
       GEOAPI_URL: http://geo-api:8094
+      MIND_URL: http://mind:8097
       OMEGA_GATEWAY_TOKEN: ${OMEGA_GATEWAY_TOKEN:?set OMEGA_GATEWAY_TOKEN in .env}
       TZ: ${TZ:-Asia/Kuwait}
     volumes:
@@ -594,6 +595,33 @@ services:
     mem_limit: 96m
     cpus: 0.25
     pids_limit: 32
+
+  # The second brain (ADR-081, opt-in: --profile mind): atomises notes, suggests links, names themes, runs the
+  # rescue functions and writes a nightly Markdown export. Local only: no internet, no cloud model by default.
+  mind:
+    build: { context: ./services, dockerfile: mind/Dockerfile }
+    profiles: ["mind"]
+    <<: *hardening
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: ["/tmp:size=8m"]
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+    environment:
+      AMEEN_DB_HOST: timescale
+      AMEEN_DB_PASSWORD: ${AMEEN_DB_PASSWORD:-}           # the same `ameen` login as the memory keeper
+      POSTGRES_DB: ${POSTGRES_DB:-omega}
+      MIND_NIGHT_HOUR: ${MIND_NIGHT_HOUR:-2}              # 02:00 UTC
+      MIND_EXPORT_DIR: /export
+      AMEEN_EMBED_URL: ${AMEEN_EMBED_URL:-}               # local URL only (checked in code); empty = hashing
+      AMEEN_EMBED_MODEL: ${AMEEN_EMBED_MODEL:-}
+      AMEEN_EMBED_DIM: ${AMEEN_EMBED_DIM:-384}
+    volumes:
+      - ./data/brain-export:/export                       # your Markdown copy (gitignored); open it in Obsidian or Foam
+    networks: [db, core]              # db: brain functions; core: the relay and local embeddings. No internet.
+    mem_limit: 160m
+    cpus: 0.25
+    pids_limit: 48
 
   # OMEGA Neural (opt-in: --profile ml): PyTorch forecaster, next-hour direction probability + volatility,
   # scored walk-forward. CPU only, one thread, retrains every 6 h.

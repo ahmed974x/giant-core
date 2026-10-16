@@ -33,6 +33,7 @@ const QUANT_URL = process.env.QUANT_URL || "http://quant:8091";
 const NEURAL_URL = process.env.NEURAL_URL || "http://neural:8092";
 const AGENTS_URL = process.env.AGENTS_URL || "http://agents:8093";
 const GEOAPI_URL = process.env.GEOAPI_URL || "http://geo-api:8094";
+const MIND_URL = process.env.MIND_URL || "http://mind:8097";
 const GATEWAY_TOKEN = process.env.OMEGA_GATEWAY_TOKEN || "";
 const SYMBOLS = new Set((process.env.OMEGA_SYMBOLS || "BTCUSDT,ETHUSDT,SOLUSDT").split(",").map(s => s.trim()).filter(Boolean));
 const DASHBOARD = "/srv/dashboard/index.html";
@@ -43,6 +44,7 @@ const API_VIEWS = new Set(["latest", "candles", "candles_5m", "anomalies", "llm_
 const MAX_BODY = 8192;
 const MAX_CHAT_BODY = 64 * 1024;
 const MAX_NEWS_BODY = 96 * 1024;
+const MAX_MIND_BODY = 40 * 1024;
 const CHAT_ROUTES = new Set(["omega/fast", "omega/smart", "omega/free-smart", "omega/open", "omega/local", "claude"]);
 const KEEP = 50;
 const STATUS_EVERY_MS = 15000;
@@ -251,6 +253,44 @@ function brainAsk(req, res) {
   }, 16384);
 }
 
+// ── The second brain (ADR-081): /mind page, vendored libraries, and a same-origin proxy to the mind API ──
+const MIND_FILES = {
+  "/mind": ["index.html", "text/html; charset=utf-8"],
+  "/mind/vendor/sigma.min.js": ["vendor/sigma.min.js", "application/javascript; charset=utf-8"],
+  "/mind/vendor/graphology.umd.min.js": ["vendor/graphology.umd.min.js", "application/javascript; charset=utf-8"],
+  "/mind/vendor/3d-force-graph.min.js": ["vendor/3d-force-graph.min.js", "application/javascript; charset=utf-8"],
+};
+const MIND_POST = { "/mind/api/capture": "/capture", "/mind/api/dump": "/dump", "/mind/api/decide": "/decide",
+                    "/mind/api/search": "/search", "/mind/api/think": "/think" };
+const MIND_GET = /^\/mind\/api\/(graph|digest|evidence\/\d{1,12})$/;
+
+function mindFile(res, rel) {
+  const [file, type] = MIND_FILES[rel];
+  fs.readFile(`/srv/dashboard/mind/${file}`, (err, data) => {
+    if (err) return send(res, 404, { error: "mind page not mounted" });
+    res.writeHead(200, {
+      ...SEC_HEADERS,
+      "Content-Type": type,
+      // The page loads only its own vendored scripts (no CDN) and talks back to this relay only.
+      "Content-Security-Policy": rel === "/mind"
+        ? "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; " +
+          "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+        : "default-src 'none'",
+    });
+    res.end(data);
+  });
+}
+
+function mindProxy(res, method, target, body) {
+  return fetch(`${MIND_URL}${target}`, {
+    method, signal: AbortSignal.timeout(method === "GET" ? 8000 : 60000),
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+    .then(async r => send(res, r.status, await r.text()))
+    .catch(() => send(res, 503, { error: "second brain not running (docker compose --profile mind up -d)" }));
+}
+
 // The Agents panel answers a proposal (approved | skipped). Same-origin JSON only, like the console.
 function decide(req, res) {
   if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
@@ -266,11 +306,19 @@ function decide(req, res) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://relay");
 
-  const LIMITS = { "/llm/chat": 12, "/brain/ask": 6, "/agents/decide": 30 };
+  const LIMITS = { "/llm/chat": 12, "/brain/ask": 6, "/agents/decide": 30,
+                   "/mind/api/capture": 30, "/mind/api/dump": 10, "/mind/api/decide": 60, "/mind/api/search": 60, "/mind/api/think": 12 };
   if (req.method === "POST" && LIMITS[url.pathname] && !allow(req, LIMITS[url.pathname])) return send(res, 429, { error: "too many requests, slow down" });
   if (req.method === "POST" && url.pathname === "/llm/chat") return chat(req, res);
   if (req.method === "POST" && url.pathname === "/agents/decide") return decide(req, res);
   if (req.method === "POST" && url.pathname === "/brain/ask") return brainAsk(req, res);
+  if (req.method === "POST" && MIND_POST[url.pathname]) {
+    if (!sameOrigin(req) || !/^application\/json\b/.test(req.headers["content-type"] || "")) return send(res, 403, { error: "forbidden" });
+    return readJson(req, res, body => {
+      if (!body || typeof body !== "object" || Array.isArray(body)) return send(res, 400, { error: "invalid body" });
+      return mindProxy(res, "POST", MIND_POST[url.pathname], body);
+    }, MAX_MIND_BODY);
+  }
 
   if (req.method === "POST" && url.pathname.startsWith("/ingest/")) {
     if (!authorised(req)) return send(res, 401, { error: "unauthorised" });
@@ -311,6 +359,9 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method !== "GET") return send(res, 405, { error: "method not allowed" });
+
+  if (MIND_FILES[url.pathname]) return mindFile(res, url.pathname);
+  if (MIND_GET.test(url.pathname)) return mindProxy(res, "GET", url.pathname.slice("/mind/api".length), undefined);
 
   if (url.pathname.startsWith("/api/")) {
     const view = url.pathname.slice(5);

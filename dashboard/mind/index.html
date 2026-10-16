@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>العقل الثاني · OMEGA</title>
+<style>
+  :root {
+    --bg: #05070d; --panel: rgba(12, 18, 32, .86); --line: rgba(120, 180, 255, .16);
+    --text: #e6f1ff; --muted: #8aa0bd; --accent: #5ee7ff; --warn: #ffb36b; --bad: #ff6b8a; --ok: #6bffb0;
+  }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #05070d; } }
+  :root[data-theme="dark"] { --bg: #05070d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  header { padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; }
+  main { display: grid; gap: 12px; padding: 0 16px 32px; grid-template-columns: 1fr; }
+  @media (min-width: 980px) { main { grid-template-columns: 360px 1fr 360px; align-items: start; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px;
+          backdrop-filter: blur(6px); min-width: 0; }
+  textarea, input[type=text], input[type=search], select {
+    width: 100%; background: #0a1020; color: var(--text); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; font: inherit; }
+  textarea { min-height: 90px; resize: vertical; }
+  button { background: linear-gradient(135deg, #1b3a66, #15607a); color: var(--text); border: 1px solid var(--line);
+           border-radius: 12px; padding: 9px 14px; font: inherit; cursor: pointer; min-height: 40px; }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 13px; cursor: pointer;
+          background: transparent; color: var(--muted); min-height: 32px; }
+  .chip[aria-pressed="true"] { color: var(--text); border-color: var(--accent); box-shadow: 0 0 12px rgba(94,231,255,.25); }
+  #map { height: 62vh; min-height: 360px; border-radius: 18px; border: 1px solid var(--line); overflow: hidden;
+         background: radial-gradient(circle at 30% 20%, #0c1a35 0%, #05070d 70%); position: relative; }
+  #map3d { height: 62vh; min-height: 360px; border-radius: 18px; border: 1px solid var(--line); overflow: hidden; display: none; }
+  .mapbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .legend { font-size: 12px; color: var(--muted); }
+  .item { border-top: 1px solid var(--line); padding: 8px 0; }
+  .item:first-child { border-top: 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-size: 12px; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; margin-inline-start: 4px; }
+  .dash { border-style: dashed; color: var(--warn); }
+  .msg { font-size: 13px; min-height: 1.4em; margin-top: 6px; }
+  .msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+  #evidence { white-space: pre-wrap; word-break: break-word; background: #070c18; border-radius: 12px; padding: 10px; font-size: 14px; max-height: 240px; overflow: auto; }
+  a { color: var(--accent); }
+  .srow { display: flex; gap: 8px; align-items: center; }
+  .srow input[type=range] { flex: 1; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>العقل الثاني <span class="sub">· second brain</span></h1>
+    <div class="sub">خريطة أفكارك الخاصة. محلية، ما تطلع لأي سحابة، وكل نقطة تفتح دليلها الأصلي.</div>
+  </div>
+  <div class="sub" id="status">…</div>
+</header>
+
+<main>
+  <!-- Capture, dump, think -->
+  <section class="card" aria-label="capture">
+    <h2>فرّغ راسك</h2>
+    <textarea id="capture-text" placeholder="اكتب أي شي: فكرة، سؤال، مهمة، خوف… كما هو. ما تحتاج عنوان ولا وسوم."></textarea>
+    <div class="row">
+      <button id="btn-capture">احفظ الفكرة</button>
+      <button id="btn-dump" class="ghost">تفريغ كامل (dump)</button>
+    </div>
+    <div class="msg" id="capture-msg"></div>
+
+    <h2 style="margin-top:14px">فكّر معي</h2>
+    <textarea id="think-text" placeholder="اسأل عقلك. يجاوب فقط من ملاحظاتك، ويذكر أرقامها."></textarea>
+    <div class="row"><button id="btn-think">اسأل عقلي</button></div>
+    <div class="msg" id="think-msg"></div>
+    <div id="think-out" class="item muted"></div>
+  </section>
+
+  <!-- The map -->
+  <section class="card" aria-label="map">
+    <div class="mapbar">
+      <div class="chips" id="type-chips"></div>
+      <div class="row" style="margin:0">
+        <button id="btn-2d" class="chip" aria-pressed="true">2D</button>
+        <button id="btn-3d" class="chip" aria-pressed="false">3D</button>
+      </div>
+    </div>
+    <div class="srow">
+      <input type="search" id="search" placeholder="ابحث بالكلمات أو بالمعنى…" aria-label="search">
+      <button id="btn-search" class="ghost">ابحث</button>
+    </div>
+    <div class="row">
+      <select id="cluster-filter" aria-label="theme"><option value="">كل المواضيع</option></select>
+      <button id="btn-suggest" class="chip" aria-pressed="false">أظهر الاقتراحات</button>
+      <button id="btn-mine" class="chip" aria-pressed="false">روابطي فقط</button>
+    </div>
+    <div class="srow" style="margin-top:8px">
+      <span class="muted" id="time-label">الكل</span>
+      <input type="range" id="time" min="0" max="100" value="100" aria-label="time">
+    </div>
+    <div id="map" role="img" aria-label="brain map"></div>
+    <div id="map3d"></div>
+    <div class="legend" style="margin-top:6px">
+      نقطة واحدة = فكرة واحدة · اللون = الموضوع · الحجم = عدد الروابط · Shift + نقرة على نقطتين = أقصر مسار · الخط البرتقالي = اقتراح ينتظر قرارك
+    </div>
+  </section>
+
+  <!-- Focus, evidence, rescue -->
+  <section class="card" aria-label="details">
+    <h2>التفاصيل والدليل</h2>
+    <div id="detail" class="muted">اختر نقطة من الخريطة لترى الدليل الأصلي وروابطها.</div>
+    <div id="evidence" class="hidden"></div>
+    <div id="links"></div>
+
+    <h2 style="margin-top:16px">تنفيس الأفكار</h2>
+    <div id="digest" class="muted">…</div>
+  </section>
+</main>
+
+<script src="/mind/vendor/graphology.umd.min.js"></script>
+<script src="/mind/vendor/sigma.min.js"></script>
+<script src="/mind/vendor/3d-force-graph.min.js"></script>
+<script>
+(() => {
+  "use strict";
+  const DEMO = location.search.includes("demo");
+  const TYPES = { idea: "•", question: "؟", task: "✓", fact: "◆", worry: "⚠", decision: "✦", quote: "❝", source: "🔗" };
+  const TYPE_AR = { idea: "فكرة", question: "سؤال", task: "مهمة", fact: "حقيقة", worry: "قلق", decision: "قرار", quote: "اقتباس", source: "مصدر" };
+  const PALETTE = ["#5ee7ff", "#a78bfa", "#6bffb0", "#ffb36b", "#ff6b8a", "#7dd3fc", "#f0abfc", "#fde68a", "#86efac", "#fca5a5"];
+  const state = { data: null, graph: null, renderer: null, g3: null, mode2d: true, types: new Set(Object.keys(TYPES)),
+                  cluster: "", mine: false, suggest: true, cutoff: Infinity, selected: null, path: [], hits: new Set(),
+                  search: "", positions: new Map() };
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs = {}, kids = []) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) { if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v); }
+    for (const k of [].concat(kids)) if (k != null) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+    return n;
+  };
+  const say = (id, text, ok) => { const m = $(id); m.textContent = text; m.className = "msg " + (ok === false ? "err" : ok ? "ok" : ""); };
+
+  // ── Data: the relay's mind API, or a demo graph for ?demo (no data leaves the page) ──
+  async function api(path, body) {
+    if (DEMO) return demoApi(path, body);
+    const r = await fetch(`/mind/api/${path}`, body === undefined ? { cache: "no-store" } :
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+    return j;
+  }
+
+  function demoApi(path, body) {
+    const now = Date.now(), day = 864e5;
+    if (path === "graph") {
+      if (!state.demoGraph) state.demoGraph = demoGraph(now, day);
+      return Promise.resolve(JSON.parse(JSON.stringify(state.demoGraph)));
+    }
+    if (path === "digest") return Promise.resolve({ loops: [{ ids: [2, 9, 14], days: 4, versions: ["ماذا لو ما نجح المحرك؟", "المحرك ممكن يفشل", "خايف من المحرك"], question: "وش الاختبار اللي يحسم هذا؟" }],
+      collision: { a: { id: 3, text: "مصباح يتبع الكتاب" }, b: { id: 21, text: "قياس الضوء في الغرفة" }, question: "ماذا لو ارتبط «مصباح يتبع الكتاب» بـ «قياس الضوء»؟ ما الجسر بينهما؟" }, open_suggestions: 4 });
+    if (path.startsWith("evidence/")) {
+      const n = state.demoGraph.nodes.find(x => String(x.id) === path.split("/")[1]);
+      return Promise.resolve({ raw: "ملاحظة أصلية (تجريبي): " + n.text, source: "text", captured_at: n.captured_at, cloud_ok: false });
+    }
+    if (path === "capture" || path === "dump") {
+      const atoms = body.text.split(/\n|[.؟!]/).map(s => s.trim()).filter(Boolean).map(t => ({ id: Math.floor(Math.random() * 1e6), text: t, type: "idea" }));
+      const base = state.demoGraph.nodes.length;
+      atoms.forEach((a, i) => { a.id = base + i + 1; state.demoGraph.nodes.push({ ...a, cluster: 0, captured_at: new Date().toISOString(), source: "text", degree: 0 }); });
+      return Promise.resolve({ raw_id: 1, atoms, suggested_links: 0, themes: [], questions: [], next_actions: [], parked: [] });
+    }
+    if (path === "decide") {
+      const e = state.demoGraph.edges.find(x => x.id === body.edge);
+      if (e) e.state = body.decision;
+      return Promise.resolve({ ok: true });
+    }
+    if (path === "search") return Promise.resolve(state.demoGraph.nodes.filter(n => n.text.includes(body.query)).slice(0, 20).map(n => ({ id: n.id, text: n.text, type: n.type, cluster: n.cluster, score: 1 })));
+    if (path === "think") return Promise.resolve({ answer: "من ملاحظاتك:\n- مصباح يتبع الكتاب [#3]", cites: [3], next_question: "وش أصغر خطوة تقدر تسويها اليوم عن هذا؟" });
+    return Promise.reject(new Error("demo: unknown"));
+  }
+
+  function demoGraph(now, day) {
+    const words = ["مصباح يتبع الكتاب", "نموذج أولي بمستشعر رخيص", "قياس الضوء في الغرفة", "هل يقدر المحرك يشتغل؟", "خايف من الميزانية",
+      "قررت أبدأ بنموذج صغير", "Brent may break 90", "#oil ينزل إذا الطلب ضعف", "ماذا لو نربط الضوء بالنوم؟", "لازم أتصل بالمورد",
+      "فكرة: تطبيق لتتبع الأفكار", "المحرك ممكن يفشل", "الذاكرة تحتاج مراجعة يومية", "كتاب عن الانتباه", "الانتباه يتعب بسرعة",
+      "أحتاج أعرف السعر الحالي", "حس بالقلق قبل النوم", "القلق يقل إذا كتبته", "مشروع الأثاث الذكي", "رف يتحرك بالصوت"];
+    const types = ["idea", "idea", "question", "idea", "worry", "decision", "fact", "fact", "question", "task", "idea", "worry", "idea", "source", "idea", "question", "worry", "idea", "idea", "idea"];
+    const nodes = words.map((t, i) => ({ id: i + 1, text: t, type: types[i], cluster: i % 4, entities: [], captured_at: new Date(now - (i * 1.3) * day).toISOString(), source: "text", degree: 0 }));
+    const pairs = [[1, 2, "leads_to", "accepted"], [3, 2, "similar_to", "suggested"], [5, 19, "similar_to", "suggested"], [9, 1, "similar_to", "accepted"],
+      [4, 8, "answers", "suggested"], [13, 12, "similar_to", "accepted"], [11, 16, "contradicts", "suggested"], [17, 18, "mentions", "accepted"], [20, 14, "similar_to", "suggested"], [6, 10, "leads_to", "accepted"]];
+    const edges = pairs.map(([s, d, t, st], i) => ({ id: i + 1, src: s, dst: d, type: t, state: st, origin: st === "accepted" ? "human" : "machine", confidence: 0.6, why: "demo" }));
+    return { nodes, edges, clusters: [0, 1, 2, 3].map(k => ({ key: k, name: ["مصباح · كتاب", "قلق · ميزانية", "سؤال · محرك", "أفكار · ذاكرة"][k], size: 5 })), settings: { similar_min: 0.55 } };
+  }
+
+  // ── Layout: a small deterministic force layout (no extra library) ──
+  function layout(nodes, edges) {
+    const pos = new Map();
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    nodes.forEach((n, i) => {
+      const a = (i / Math.max(nodes.length, 1)) * Math.PI * 2 + (n.cluster || 0) * 0.7;
+      pos.set(n.id, { x: Math.cos(a) * (1 + rnd() * 0.3) * (1 + (n.cluster || 0) * 0.1), y: Math.sin(a) * (1 + rnd() * 0.3) });
+    });
+    if (nodes.length > 900) return pos;
+    const k = 2 / Math.sqrt(Math.max(nodes.length, 1));
+    for (let it = 0; it < 120; it++) {
+      const disp = new Map(nodes.map(n => [n.id, { x: 0, y: 0 }]));
+      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+        const a = pos.get(nodes[i].id), b = pos.get(nodes[j].id);
+        const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy + 1e-4, f = (k * k * 2) / d2;
+        const d = disp.get(nodes[i].id), e = disp.get(nodes[j].id);
+        d.x += dx * f; d.y += dy * f; e.x -= dx * f; e.y -= dy * f;
+      }
+      for (const ed of edges) {
+        const a = pos.get(ed.src), b = pos.get(ed.dst); if (!a || !b) continue;
+        const dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy) + 1e-4, f = d / k * 0.2;
+        const da = disp.get(ed.src), db = disp.get(ed.dst);
+        da.x -= dx / d * f; da.y -= dy / d * f; db.x += dx / d * f; db.y += dy / d * f;
+      }
+      const t = 0.15 * (1 - it / 120) + 0.01;
+      for (const n of nodes) { const p = pos.get(n.id), d = disp.get(n.id), m = Math.sqrt(d.x * d.x + d.y * d.y) + 1e-6, s = Math.min(m, t) / m; p.x += d.x * s; p.y += d.y * s; }
+    }
+    return pos;
+  }
+
+  // ── Rendering ──
+  function visibleSet() {
+    const d = state.data, cut = state.cutoff, ids = new Set();
+    for (const n of d.nodes) {
+      if (!state.types.has(n.type)) continue;
+      if (state.cluster !== "" && String(n.cluster) !== state.cluster) continue;
+      if (Date.parse(n.captured_at) > cut) continue;
+      ids.add(n.id);
+    }
+    return ids;
+  }
+  function visibleEdges(ids) {
+    return state.data.edges.filter(e => ids.has(e.src) && ids.has(e.dst) && e.state !== "rejected" &&
+      (state.suggest || e.state === "accepted") && (!state.mine || e.origin === "human"));
+  }
+  const colorOf = n => n.cluster == null ? "#6b7a90" : PALETTE[n.cluster % PALETTE.length];
+  const labelOf = n => (TYPES[n.type] || "•") + " " + n.text.slice(0, 28);
+
+  function draw() {
+    if (!state.data) return;
+    const ids = visibleSet(), vis = state.data.nodes.filter(n => ids.has(n.id));
+    const edges = visibleEdges(ids);
+    const deg = new Map(); for (const e of edges) { deg.set(e.src, (deg.get(e.src) || 0) + 1); deg.set(e.dst, (deg.get(e.dst) || 0) + 1); }
+    if (state.data.nodes.some(n => !state.positions.has(n.id))) state.positions = layout(state.data.nodes, state.data.edges);
+    if (!state.mode2d) { fillClusters(); $("status").textContent = `${vis.length} فكرة · ${edges.length} رابط · ${state.data.clusters.length} موضوع`; return draw3d(vis, edges); }
+    const g = new graphology.Graph();
+    for (const n of vis) {
+      const p = state.positions.get(n.id) || { x: 0, y: 0 };
+      g.addNode(String(n.id), { x: p.x, y: p.y, size: 3 + Math.min(deg.get(n.id) || 0, 8) * 1.2, color: colorOf(n), label: labelOf(n) });
+    }
+    for (const e of edges) {
+      if (!g.hasNode(String(e.src)) || !g.hasNode(String(e.dst))) continue;
+      const color = e.state === "suggested" ? "rgba(255,179,107,.5)" : e.type === "contradicts" ? "rgba(255,107,138,.75)" : "rgba(120,180,255,.35)";
+      g.addEdge(String(e.src), String(e.dst), { size: e.state === "suggested" ? 1 : 1.6, color, edgeType: e.state === "suggested" ? "dashed" : "solid", e: e.id });
+    }
+    state.graph = g;
+    if (state.renderer) state.renderer.kill();
+    state.renderer = new Sigma(g, $("map"), { renderLabels: true, labelRenderedSizeThreshold: 5, labelColor: { color: "#cfe6ff" },
+      labelSize: 12, defaultEdgeColor: "rgba(120,180,255,.35)", allowInvalidContainer: true });
+    state.renderer.setSetting("nodeReducer", (node, data) => {
+      const sel = state.selected, lit = state.hits.has(Number(node)) || state.path.includes(Number(node)) || node === String(sel) ||
+        (sel != null && g.hasEdge(String(sel), node));
+      const focused = sel != null || state.hits.size || state.path.length;
+      return focused && !lit ? { ...data, color: "rgba(90,110,140,.25)", label: "" } : data;
+    });
+    state.renderer.on("clickNode", ({ node, event }) => onNode(Number(node), !!(event && event.original && event.original.shiftKey)));
+    $("status").textContent = `${vis.length} فكرة · ${edges.length} رابط · ${state.data.clusters.length} موضوع`;
+    fillClusters();
+  }
+
+  // Selection, search and path only change what is lit: refresh the reducers, do not rebuild the map.
+  function repaint() { if (state.mode2d && state.renderer) state.renderer.refresh(); else draw(); }
+
+  function draw3d(vis, edges) {
+    if (!window.ForceGraph3D) return;
+    if (!state.g3) {
+      state.g3 = ForceGraph3D()($("map3d")).backgroundColor("#05070d").nodeLabel(n => n.name)
+        .onNodeClick(n => onNode(n.id, false));
+    }
+    state.g3.graphData({
+      nodes: vis.map(n => ({ id: n.id, name: labelOf(n), color: colorOf(n), val: 1 + (n.entities || []).length })),
+      links: edges.map(e => ({ source: e.src, target: e.dst, color: e.state === "suggested" ? "#ffb36b" : "#5a7aa5" })),
+    });
+  }
+
+  function fillClusters() {
+    const sel = $("cluster-filter"), keep = sel.value;
+    sel.replaceChildren(el("option", { value: "", text: "كل المواضيع" }));
+    for (const c of state.data.clusters) sel.append(el("option", { value: String(c.key), text: `${c.name} (${c.size})` }));
+    sel.value = keep;
+  }
+
+  function fillTypes() {
+    const box = $("type-chips"); box.replaceChildren();
+    for (const t of Object.keys(TYPES)) {
+      const b = el("button", { class: "chip", "aria-pressed": String(state.types.has(t)), text: `${TYPES[t]} ${TYPE_AR[t]}` });
+      b.addEventListener("click", () => { state.types.has(t) ? state.types.delete(t) : state.types.add(t); b.setAttribute("aria-pressed", String(state.types.has(t))); draw(); });
+      box.append(b);
+    }
+  }
+
+  // ── Selection, evidence, links, focus and path ──
+  async function onNode(id, shift) {
+    if (shift && state.selected != null && state.selected !== id) {
+      state.path = shortestPath(state.selected, id);
+      say("capture-msg", state.path.length ? `المسار: ${state.path.length} خطوات` : "ما فيه مسار بين النقطتين الحين", !!state.path.length);
+      return repaint();
+    }
+    state.path = []; state.selected = id; state.hits = new Set();
+    const n = state.data.nodes.find(x => x.id === id); if (!n) return;
+    $("detail").replaceChildren(el("strong", { text: `${TYPES[n.type]} ${TYPE_AR[n.type]}` }), el("div", { text: n.text }),
+      el("div", { class: "muted", text: `${new Date(n.captured_at).toLocaleString("ar")} · ${n.source || "text"}` }));
+    const ev = $("evidence"); ev.classList.remove("hidden"); ev.textContent = "…";
+    api(`evidence/${id}`).then(e => { ev.textContent = e.raw + (e.source_url ? `\n\n${e.source_url}` : ""); }).catch(() => { ev.textContent = "الدليل غير متوفر"; });
+    renderLinks(id); repaint();
+  }
+
+  function renderLinks(id) {
+    const box = $("links"); box.replaceChildren();
+    const mine = state.data.edges.filter(e => (e.src === id || e.dst === id) && e.state !== "rejected");
+    if (!mine.length) { box.append(el("div", { class: "muted", text: "ما لها روابط بعد." })); return; }
+    for (const e of mine) {
+      const other = state.data.nodes.find(n => n.id === (e.src === id ? e.dst : e.src));
+      const row = el("div", { class: "item" }, [el("div", {}, [e.type, el("span", { class: "tag", text: e.origin === "human" ? "أنت" : "اقتراح" }),
+        e.state === "suggested" ? el("span", { class: "tag dash", text: "ينتظر" }) : null]),
+        el("div", { class: "muted", text: other ? other.text.slice(0, 120) : "" }), el("div", { class: "muted", text: e.why || "" })]);
+      if (e.state === "suggested") {
+        const ok = el("button", { text: "أقبل" }), no = el("button", { class: "ghost", text: "أرفض" });
+        ok.addEventListener("click", () => decide(e.id, "accepted"));
+        no.addEventListener("click", () => decide(e.id, "rejected"));
+        row.append(el("div", { class: "row" }, [ok, no]));
+      }
+      box.append(row);
+    }
+  }
+
+  async function decide(edge, decision) {
+    try {
+      await api("decide", { edge, decision });
+      await load();
+      if (state.selected != null) renderLinks(state.selected);
+    } catch (err) { say("capture-msg", "ما قدرت أسجل القرار: " + err.message, false); }
+  }
+
+  function shortestPath(a, b) {
+    const adj = new Map();
+    for (const e of visibleEdges(visibleSet())) {
+      if (!adj.has(e.src)) adj.set(e.src, []); if (!adj.has(e.dst)) adj.set(e.dst, []);
+      adj.get(e.src).push(e.dst); adj.get(e.dst).push(e.src);
+    }
+    const prev = new Map([[a, null]]), queue = [a];
+    while (queue.length) {
+      const cur = queue.shift();
+      if (cur === b) break;
+      for (const nx of adj.get(cur) || []) if (!prev.has(nx)) { prev.set(nx, cur); queue.push(nx); }
+    }
+    if (!prev.has(b)) return [];
+    const path = []; for (let cur = b; cur != null; cur = prev.get(cur)) path.unshift(cur);
+    return path;
+  }
+
+  // ── Loading and the owner's actions ──
+  async function load() {
+    try {
+      state.data = await api("graph");
+      const ts = state.data.nodes.map(n => Date.parse(n.captured_at)).filter(Number.isFinite);
+      state.min = Math.min(...ts, Date.now()); state.max = Math.max(...ts, Date.now());
+      applyTime();
+      fillTypes(); draw();
+      $("status").title = "";
+    } catch (err) {
+      $("status").textContent = "العقل غير متصل الحين (docker compose --profile mind up -d)";
+      $("digest").textContent = "";
+    }
+    loadDigest();
+  }
+
+  function applyTime() {
+    const v = Number($("time").value) / 100;
+    state.cutoff = Number.isFinite(state.min) ? state.min + (state.max - state.min) * v : Infinity;
+    $("time-label").textContent = v >= 1 ? "الكل" : new Date(state.cutoff).toLocaleDateString("ar");
+  }
+
+  async function loadDigest() {
+    const box = $("digest"); box.replaceChildren();
+    try {
+      const d = await api("digest");
+      if (!d.loops.length && !d.collision) box.textContent = "هادئ اليوم. ما فيه حلقات ولا تصادم جديد.";
+      for (const lp of d.loops) box.append(el("div", { class: "item" }, [
+        el("div", {}, [el("span", { class: "tag dash", text: "حلقة" }), ` رجعت لك ${lp.days} أيام`]),
+        ...lp.versions.map(v => el("div", { class: "muted", text: "· " + v })),
+        el("div", {}, [el("strong", { text: "سؤال يحسمها: " }), lp.question])]));
+      if (d.collision) box.append(el("div", { class: "item" }, [el("span", { class: "tag", text: "تصادم اليوم" }), el("div", { text: d.collision.question })]));
+      box.append(el("div", { class: "muted", text: `اقتراحات تنتظر قرارك: ${d.open_suggestions}` }));
+    } catch (err) { box.textContent = "التقرير ما يتحمّل الحين."; }
+  }
+
+  $("btn-capture").addEventListener("click", async () => {
+    const text = $("capture-text").value.trim(); if (!text) return;
+    try {
+      const r = await api("capture", { text });
+      say("capture-msg", r.refused ? "ما حفظته: يشبه مفتاح سري" : `انحفظ: ${(r.atoms || []).length} فكرة · ${r.suggested_links || 0} اقتراح رابط`, !r.refused);
+      if (!r.refused) { $("capture-text").value = ""; state.positions = new Map(); await load(); }
+    } catch (err) { say("capture-msg", "ما انحفظ: " + err.message, false); }
+  });
+  $("btn-dump").addEventListener("click", async () => {
+    const text = $("capture-text").value.trim(); if (!text) return;
+    try {
+      const r = await api("dump", { text });
+      const box = $("capture-msg"); box.className = "msg ok"; box.replaceChildren(
+        el("div", { text: "تم الترتيب:" }),
+        ...(r.themes || []).map(t => el("div", { class: "muted", text: "• " + t.title })),
+        ...(r.next_actions || []).map(t => el("div", { text: "← " + t.text })),
+        el("div", { class: "muted", text: `مركونة: ${(r.parked || []).length}` }));
+      $("capture-text").value = ""; state.positions = new Map(); await load();
+    } catch (err) { say("capture-msg", "ما ترتب: " + err.message, false); }
+  });
+  $("btn-think").addEventListener("click", async () => {
+    const q = $("think-text").value.trim(); if (!q) return;
+    try {
+      const r = await api("think", { question: q });
+      const out = $("think-out"); out.replaceChildren(el("div", { text: r.answer }),
+        r.next_question ? el("div", {}, [el("strong", { text: "السؤال الجاي: " }), r.next_question]) : null);
+      state.hits = new Set(r.cites || []); repaint();
+    } catch (err) { say("think-msg", "ما قدر يجاوب: " + err.message, false); }
+  });
+  $("btn-search").addEventListener("click", async () => {
+    const q = $("search").value.trim();
+    if (!q) { state.hits = new Set(); return repaint(); }
+    try {
+      const rows = await api("search", { query: q });
+      state.hits = new Set(rows.map(r => r.id));
+      say("capture-msg", rows.length ? `لقيت ${rows.length}` : "ما لقيت شي", !!rows.length);
+      repaint();
+    } catch (err) { say("capture-msg", "البحث ما اشتغل: " + err.message, false); }
+  });
+  $("search").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-search").click(); });
+  $("time").addEventListener("input", () => { applyTime(); draw(); });
+  $("cluster-filter").addEventListener("change", e => { state.cluster = e.target.value; draw(); });
+  $("btn-suggest").addEventListener("click", e => { state.suggest = !state.suggest; e.target.setAttribute("aria-pressed", String(state.suggest)); draw(); });
+  $("btn-mine").addEventListener("click", e => { state.mine = !state.mine; e.target.setAttribute("aria-pressed", String(state.mine)); draw(); });
+  $("btn-2d").addEventListener("click", () => setMode(true));
+  $("btn-3d").addEventListener("click", () => setMode(false));
+
+  function setMode(two) {
+    state.mode2d = two;
+    $("btn-2d").setAttribute("aria-pressed", String(two)); $("btn-3d").setAttribute("aria-pressed", String(!two));
+    $("map").classList.toggle("hidden", !two); $("map3d").style.display = two ? "none" : "block";
+    if (!two && !window.ForceGraph3D) say("capture-msg", "العرض ثلاثي الأبعاد ما تحمّل", false);
+    if (two && state.renderer) state.renderer.refresh();
+    draw();
+  }
+
+  if (DEMO) window.__mind = state;                  // demo only: lets the browser check reach the map
+  load();
+})();
+</script>
+</body>
+</html>
