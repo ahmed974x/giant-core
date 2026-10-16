@@ -734,6 +734,12 @@
   "command": {
     "title": "Command Center",
     "lead": "Everything at a glance. Tell Director 00 what you need from one place.",
+    "kpi": {
+      "btc": "BTC",
+      "nodes": "parts online",
+      "events": "world events",
+      "alerts": "alerts waiting"
+    },
     "loading": "Loading…",
     "cards": {
       "earth": {
