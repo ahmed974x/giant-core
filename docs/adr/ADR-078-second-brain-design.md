@@ -23,5 +23,5 @@ Obsidian-style graph view (screenshot), with search and filters on nodes and lin
   SSPL, BSL, custom-restricted, GPL where an MIT equivalent exists, archived or abandoned projects.
 
 ## Consequences
-- Phase 7 in the plan; can move up to right after the memory phase. No new server and no paid key.
+- Phase 3 in the plan, right after memory (Ahmad's choice, 2026-10-16). No new server and no paid key.
 - Undo: delete section 12 and this ADR.

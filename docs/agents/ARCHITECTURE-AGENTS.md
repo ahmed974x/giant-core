@@ -48,7 +48,7 @@ LangGraph للعقل، Postgres + pgvector + pgmq للجهاز العصبي وا
 لاحقاً للدفتر الورقي. واستبعدت ما ليس مفتوح المصدر فعلاً (Restate بترخيص BSL، و Phoenix بترخيص Elastic) وما توقف
 تطويره (AutoGen). وتنبيه: Redis 7.4 الموجود عندك لم يعد بترخيص مفتوح، والبديل المجاني المطابق هو Valkey.
 
-**الخطة:** 7 مراحل (العقل الثاني هو السابعة، ويمكن تقديمه بعد مرحلة الذاكرة)، كل مرحلة تنتظر موافقتك. الأولى (الجهاز العصبي) لا تحتاج أي ذكاء اصطناعي ولا مفاتيح، وتكلف
+**الخطة:** 7 مراحل: الجهاز العصبي، ثم الذاكرة، ثم العقل الثاني (بقرارك)، كل مرحلة تنتظر موافقتك. الأولى (الجهاز العصبي) لا تحتاج أي ذكاء اصطناعي ولا مفاتيح، وتكلف
 تقريباً 0 ذاكرة إضافية لأنها داخل Postgres الموجود.
 
 ---
@@ -399,11 +399,11 @@ learns his taste.
 |---|---|---|
 | 1 Nervous system | `nerve.events` (hash chain), pgmq queues, registry with Agent Cards, tool gateway skeleton, Valkey swap, office page that shows the event stream | Nothing (no keys, no LLM) |
 | 2 Memory | Tiers + hybrid retrieval + write gate + أمين + nightly sleep | Nothing |
-| 3 Brain loop | LangGraph loop with Postgres checkpoints for حكيم + مها + بدر; budgets; answers only, no proposals | Free Groq/Cerebras keys already pending (Oracle phase 2) |
-| 4 Market agents | سالم, راشد + RR unit, فهد → `proposals.add`; two-key rule; calibration ledger | Merge of the paper-trading MVP first |
-| 5 Offices + guide | Agent office pages, نورة, disclosure banner in every chat, حارس immune + pause | Nothing |
-| 6 Vault | Paper double-entry Vault, reconciliation, statements, wallet view | Licence review answers before any non-paper use |
-| 7 Second brain | Capture box, atomiser and linker (local model), clusters, graph view (sigma.js 2D + 3D mode), brain dump, loop detector, daily collision, Markdown export | Nothing (local model only); can move up to right after phase 2 |
+| 3 Second brain | Capture box, atomiser and linker (local model), clusters, graph view (sigma.js 2D + 3D mode), brain dump, loop detector, daily collision, Markdown export. "Think with me" answers from the local model here; حكيم joins it in phase 4 | Nothing (local model only). Moved here by Ahmad 2026-10-16 |
+| 4 Brain loop | LangGraph loop with Postgres checkpoints for حكيم + مها + بدر; budgets; answers only, no proposals | Free Groq/Cerebras keys already pending (Oracle phase 2) |
+| 5 Market agents | سالم, راشد + RR unit, فهد → `proposals.add`; two-key rule; calibration ledger | Merge of the paper-trading MVP first |
+| 6 Offices + guide | Agent office pages, نورة, disclosure banner in every chat, حارس immune + pause | Nothing |
+| 7 Vault | Paper double-entry Vault, reconciliation, statements, wallet view | Licence review answers before any non-paper use |
 
 Every phase: one commit, one ADR, tests, a report "Phase N complete. Ready for Phase N+1."
 
@@ -562,4 +562,4 @@ Vault) · sigma.js + graphology + 3d-force-graph, networkx, Foam-style Markdown 
 1. **RR meaning:** risk/reward unit as written in section 8? (inferred)
 2. **Agent names** for the six new agents (حكيم, مها, أمين, بدر, حارس, خازن): keep or rename.
 3. **Phase 1 go:** nervous system + Valkey swap, no keys and no LLM needed.
-4. **Second brain timing:** keep it as phase 7, or build it right after memory (phase 2)?
+4. ~~Second brain timing~~: decided 2026-10-16, phase 3 right after memory.

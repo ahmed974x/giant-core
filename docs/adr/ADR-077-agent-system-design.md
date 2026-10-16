@@ -24,6 +24,6 @@ ADR-076); every agent discloses it is an AI (`docs/AGENT-DISCLOSURE.md` on the p
 - Research table: 59 projects checked from their official repositories for licence and last commit on 2026-10-16.
 
 ## Consequences
-- No code changes in this commit. Six phases, each gated on Ahmad's approval, one commit and one ADR each.
-- Phase 4 depends on the paper-trading MVP (ADR-073 to ADR-076) being merged.
+- No code changes in this commit. Seven phases (second brain is phase 3, ADR-078), each gated on Ahmad's approval, one commit and one ADR each.
+- Phase 5 (market agents) depends on the paper-trading MVP (ADR-073 to ADR-076) being merged.
 - Undo: delete the two documents.
