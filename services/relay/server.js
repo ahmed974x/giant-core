@@ -254,27 +254,29 @@ function brainAsk(req, res) {
   }, 16384);
 }
 
-// ── The second brain (ADR-081): /mind page, vendored libraries, and a same-origin proxy to the mind API ──
-const MIND_FILES = {
-  "/mind": ["index.html", "text/html; charset=utf-8"],
-  "/mind/vendor/sigma.min.js": ["vendor/sigma.min.js", "application/javascript; charset=utf-8"],
-  "/mind/vendor/graphology.umd.min.js": ["vendor/graphology.umd.min.js", "application/javascript; charset=utf-8"],
-  "/mind/vendor/3d-force-graph.min.js": ["vendor/3d-force-graph.min.js", "application/javascript; charset=utf-8"],
+// ── Static pages (the second brain ADR-081, the offices and guide ADR-084), their vendored libraries, and the mind API proxy ──
+const PAGE_FILES = {
+  "/mind": ["mind/index.html", "text/html; charset=utf-8"],
+  "/mind/vendor/sigma.min.js": ["mind/vendor/sigma.min.js", "application/javascript; charset=utf-8"],
+  "/mind/vendor/graphology.umd.min.js": ["mind/vendor/graphology.umd.min.js", "application/javascript; charset=utf-8"],
+  "/mind/vendor/3d-force-graph.min.js": ["mind/vendor/3d-force-graph.min.js", "application/javascript; charset=utf-8"],
+  "/offices": ["offices/index.html", "text/html; charset=utf-8"],
+  "/offices/guide": ["offices/guide.html", "text/html; charset=utf-8"],
 };
 const MIND_POST = { "/mind/api/capture": "/capture", "/mind/api/dump": "/dump", "/mind/api/decide": "/decide",
                     "/mind/api/search": "/search", "/mind/api/think": "/think" };
 const LOOP_ASK = "/loop/api/ask";
 const MIND_GET = /^\/mind\/api\/(graph|digest|evidence\/\d{1,12})$/;
 
-function mindFile(res, rel) {
-  const [file, type] = MIND_FILES[rel];
-  fs.readFile(`/srv/dashboard/mind/${file}`, (err, data) => {
+function pageFile(res, rel) {
+  const [file, type] = PAGE_FILES[rel];
+  fs.readFile(`/srv/dashboard/${file}`, (err, data) => {
     if (err) return send(res, 404, { error: "mind page not mounted" });
     res.writeHead(200, {
       ...SEC_HEADERS,
       "Content-Type": type,
       // The page loads only its own vendored scripts (no CDN) and talks back to this relay only.
-      "Content-Security-Policy": rel === "/mind"
+      "Content-Security-Policy": type.startsWith("text/html")
         ? "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; " +
           "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
         : "default-src 'none'",
@@ -372,7 +374,7 @@ const server = http.createServer((req, res) => {
 
   if (req.method !== "GET") return send(res, 405, { error: "method not allowed" });
 
-  if (MIND_FILES[url.pathname]) return mindFile(res, url.pathname);
+  if (PAGE_FILES[url.pathname]) return pageFile(res, url.pathname);
   if (MIND_GET.test(url.pathname)) return mindProxy(res, "GET", url.pathname.slice("/mind/api".length), undefined);
 
   if (url.pathname.startsWith("/api/")) {

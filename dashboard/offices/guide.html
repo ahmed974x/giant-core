@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>دليل نورة · OMEGA</title>
+<style>
+  :root {
+    --bg: #05070d; --panel: rgba(12, 18, 32, .86); --line: rgba(120, 180, 255, .16);
+    --text: #e6f1ff; --muted: #8aa0bd; --accent: #5ee7ff; --warn: #ffb36b;
+  }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #05070d; } }
+  :root[data-theme="dark"] { --bg: #05070d; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.75 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    background: radial-gradient(circle at 80% 5%, rgba(94,231,255,.09), transparent 40%); }
+  header { padding: 18px 16px 6px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; color: var(--accent); font-weight: 600; }
+  nav a { color: var(--muted); text-decoration: none; margin-inline-start: 12px; border-bottom: 1px dashed var(--line); }
+  main { padding: 8px 16px 40px; max-width: 760px; margin: 0 auto; }
+  .notice { border: 1px solid rgba(255,179,107,.45); background: rgba(255,179,107,.07); border-radius: 12px;
+    padding: 10px 14px; margin: 10px 0 16px; color: var(--warn); }
+  .notice small { color: var(--muted); display: block; }
+  p.lead { color: var(--muted); }
+  dl { display: grid; gap: 10px; }
+  .item { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: 0; }
+  dt { font-weight: 600; color: var(--accent); }
+  dd { margin: 4px 0 0; }
+  dd small { color: var(--muted); display: block; }
+  h2 { font-size: 15px; color: var(--accent); margin: 26px 0 8px; font-weight: 600; }
+  @media (max-width: 420px) { main { padding: 8px 12px 40px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>دليل نورة · المصطلحات</h1>
+  <nav aria-label="الصفحات"><a href="/offices">المكاتب</a><a href="/mind">العقل الثاني</a></nav>
+</header>
+<main>
+  <div class="notice" role="note">
+    أنا نورة، وكيل ذكاء اصطناعي يشرح الشاشات والكلمات. لست بنكاً ولا مستشاراً مالياً، ولا أنفذ شيئاً بدلاً منك.
+    <small>I am Noura, an AI agent that explains the screens and terms. I am not a bank or a financial adviser, and I do not act for you.</small>
+  </div>
+  <p class="lead">كلمات تتكرر في المشروع، بالترتيب الذي تحتاجه وأنت تبدأ.</p>
+
+  <h2>الوكلاء</h2>
+  <dl>
+    <div class="item"><dt>وكيل ذكاء اصطناعي (Agent)</dt><dd>برنامج يستخدم نموذج ذكاء اصطناعي، ويعمل ضمن أدوات مسموحة فقط. كل وكيل يقول إنه ذكاء اصطناعي.</dd></div>
+    <div class="item"><dt>حكيم</dt><dd>يحوّل الهدف إلى خطة، ويوزع الخطوات، ويجمع النتائج. يشغّل حلقة البحث.</dd></div>
+    <div class="item"><dt>فهد</dt><dd>يجهّز الفكرة في شكل مقترح ورقي مع دليلها (رابط أو حدث). لا يوافق على شيء.</dd></div>
+    <div class="item"><dt>راشد</dt><dd>يفحص المقترح: هل العائد إلى المخاطرة يبلغ 2 على الأقل؟ هل الحجم داخل الحد؟</dd></div>
+    <div class="item"><dt>حارس</dt><dd>يراقب صحة النظام، ويوقف أي وكيل عند الخطر. لا يعيد تشغيله إلا المالك.</dd></div>
+    <div class="item"><dt>خازن</dt><dd>يحفظ الرصيد الورقي بقيود مزدوجة ويقارن الأرقام. ليس بنكاً.</dd></div>
+  </dl>
+
+  <h2>الكلمات</h2>
+  <dl>
+    <div class="item"><dt>المالك</dt><dd>أنت. القرار النهائي لك وحدك، ولا يستطيع أي وكيل أن يقرر بدلاً منك.</dd></div>
+    <div class="item"><dt>مقترح (Proposal)</dt><dd>فكرة مكتوبة مع دليلها وأرقامها (الدخول والوقف والهدف والحجم). تبقى في الطابور، ولا تُنفذ.</dd></div>
+    <div class="item"><dt>المعادلة الثنائية (Two keys)</dt><dd>لا يكفي أن يقترح فهد. يجب أن يمر المقترح على راشد، ثم تقرر أنت.</dd></div>
+    <div class="item"><dt>العائد إلى المخاطرة (RR)</dt><dd>المسافة من الدخول إلى الهدف، مقسومة على المسافة من الدخول إلى الوقف. مثال: 3 يعني أن الربح المحتمل ثلاثة أضعاف الخسارة المحتملة.</dd></div>
+    <div class="item"><dt>ورقي (Paper)</dt><dd>أرقام على الورق فقط. لا أموال حقيقية، ولا أوامر، ولا مفاتيح منصات. كل "موافقة" هنا موافقة ورقية.</dd></div>
+    <div class="item"><dt>خزينة ورقية (Vault)</dt><dd>سجل قيود مزدوجة لأرقام ورقية. ليست بنكاً، ولا تحفظ أموالاً، ولا تحوّل شيئاً.</dd></div>
+    <div class="item"><dt>سلسلة الأحداث (Hash chain)</dt><dd>سجل لا يُعدَّل: كل حدث مرتبط ببصمة الذي قبله. إذا تغيّر حدث قديم، تنكسر السلسلة وتظهر.</dd></div>
+    <div class="item"><dt>الميزانية (Budget)</dt><dd>حد أقصى للخطوات والرموز في كل تشغيل. إذا وصل إليه، يتوقف التشغيل كـ"غير مكتمل".</dd></div>
+    <div class="item"><dt>نقطة الحفظ (Checkpoint)</dt><dd>لقطة بعد كل خطوة، حتى يستأنف التشغيل بعد إعادة التشغيل دون أن يبدأ من الصفر.</dd></div>
+    <div class="item"><dt>مدخل خارجي موسوم (Tainted)</dt><dd>نص جاء من الإنترنت. يُقرأ ولا يقود أي عملية تكتب أو تقرر.</dd></div>
+    <div class="item"><dt>دليل (Evidence)</dt><dd>رابط عام يقول ما يُدّعى، أو رقم حدث. بدونه لا يُقبل مقترح.</dd></div>
+    <div class="item"><dt>إيقاف (Pause)</dt><dd>مفتاح الطوارئ. يوقف وكيلاً فوراً، ولا يستأنفه إلا المالك.</dd></div>
+    <div class="item"><dt>الإفصاح (Disclosure)</dt><dd>كل وكيل يعرّف نفسه بالعربية والإنجليزية. الوكيل الذي لا يفصح لا يُسجَّل في النظام.</dd></div>
+  </dl>
+</main>
+</body>
+</html>

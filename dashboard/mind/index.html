@@ -14,6 +14,7 @@
   :root[data-theme="dark"] { --bg: #05070d; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  .ai-note { margin: 0 16px 10px; padding: 8px 14px; border: 1px solid rgba(255,179,107,.45); border-radius: 12px; background: rgba(255,179,107,.07); color: var(--warn); font-size: 14px; }
   header { padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
   h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
   h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); font-weight: 600; }
@@ -62,6 +63,7 @@
   </div>
   <div class="sub" id="status">…</div>
 </header>
+<div class="ai-note" role="note">أنت تتحدث مع وكيل ذكاء اصطناعي (العقل الثاني). ليس بنكاً، ولا ينفذ أي شيء بدلاً منك. <span class="sub">You are talking to an AI agent. Not a bank; it acts for no one.</span></div>
 
 <main>
   <!-- Capture, dump, think -->
