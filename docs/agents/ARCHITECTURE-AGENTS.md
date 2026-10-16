@@ -407,6 +407,8 @@ learns his taste.
 
 Every phase: one commit, one ADR, tests, a report "Phase N complete. Ready for Phase N+1."
 
+**Progress:** phase 1 built 2026-10-16 (ADR-079): `db/init/05-nerve.sh`, tests in `scripts/test-nerve.sh`, Ops Room block, Valkey. Phase 1 uses plain Postgres queues with pgmq semantics instead of the pgmq extension, so the Timescale image needs nothing new.
+
 ## 14. Open-source research
 
 Checked 2026-10-16 by cloning each project's official GitHub repository (default branch) and reading its licence
