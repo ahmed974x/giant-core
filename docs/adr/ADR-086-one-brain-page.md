@@ -1,6 +1,6 @@
 # ADR-086: One-brain page (/brain): a local chat that answers from the owner's notes
 
-Date: 2026-10-16 · Status: Proposed (new draft PR, not merged)
+Date: 2026-10-16 · Status: Accepted (merged in PR #17, commit 05b0c83)
 
 ## Context
 Ahmad asked for a one-brain assistant (Claude/ChatGPT-style, free, local-first) and to add it to the site. The design

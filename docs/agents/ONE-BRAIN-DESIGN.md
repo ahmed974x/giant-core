@@ -1,6 +1,6 @@
 # One brain: a free, open-source, local-first assistant that joins the chat style of Claude, ChatGPT and Grok
 
-Status: research and proposal, 2026-10-16 · Not built yet · Draft PR only.
+Status: research and proposal, 2026-10-16 · Partly built: step 1 (`/brain` page, extractive answers, citations, disclosure) is merged; providers, router and tools are not built yet (section 7).
 Ahmad's ask (coordinator relay, 2026-10-16): "research an open-source one-brain (Claude-, ChatGPT-, Grok-style merged,
 free, local-first), propose a design, and add it to the website build". This document is the proposal. The build waits
 for his go.
@@ -50,5 +50,20 @@ existing relay with the same limits (no keys in the browser, no provider called 
 
 ## 6. Next steps (waiting for Ahmad's go)
 1. Verify the LICENSE and last-commit date of the candidates (needs repo access, or his go to add the repos).
-2. Build the `/brain` shell with the local model only, then add providers one by one behind switches.
-3. Add `/brain` to the website build (relay route, banner, compose unchanged).
+2. Add the provider router behind per-provider switches (local model first, then the free tiers only with a key in the vault).
+3. Let `/brain` call the local generator (Qwen via Cortex) for generated answers, keeping the citation check.
+
+## 7. What is built and what is not (checked 2026-10-16)
+| Item | Status | Where |
+|---|---|---|
+| `/brain` page: question box, citations, evidence links, AI disclosure (AR and EN) | Built, merged (PR #17, commit 05b0c83) | `dashboard/brain/index.html`, route in `services/relay/server.js` |
+| Answers from the owner's own notes only, extractive | Built | `/mind/api/think`, ADR-081 |
+| Second brain, memory keeper, brain loop | Built, merged | ADR-081, ADR-080, ADR-082 |
+| Relay route `/brain` under the strict HTML CSP | Built | `PAGE_FILES` in `services/relay/server.js` |
+| Local generated answers (Qwen through Cortex) | Oracle has local Qwen; `/brain` does not call it yet | Oracle phases 1 and 2 (ADR-077 design) |
+| Provider router with per-provider switches (Groq, Cerebras, Gemini) | Not built | design section 4 |
+| Tools (SearXNG search, loop for multi-step questions) from the chat | Not built | design section 4 |
+| Live check of the answer with the mind service running | Not verified here; needs the laptop | `docker compose` mind profile |
+| Candidate licence checks (LibreChat, LobeChat, Jan) | Not verified; no repo access | section 2 |
+
+Nothing in this chat can propose a trade. The paper gate (ADR-083) is still the only route to a proposal.
