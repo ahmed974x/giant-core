@@ -69,7 +69,7 @@
   <!-- Capture, dump, think -->
   <section class="card" aria-label="capture">
     <h2>فرّغ راسك</h2>
-    <textarea id="capture-text" placeholder="اكتب أي شي: فكرة، سؤال، مهمة، خوف… كما هو. ما تحتاج عنوان ولا وسوم."></textarea>
+    <textarea id="capture-text" placeholder="اكتب أي شيء: فكرة، سؤالاً، مهمة، مخاوف… كما هو. لا تحتاج إلى عنوان ولا وسوم."></textarea>
     <div class="row">
       <button id="btn-capture">احفظ الفكرة</button>
       <button id="btn-dump" class="ghost">تفريغ كامل (dump)</button>
@@ -312,7 +312,7 @@
   async function onNode(id, shift) {
     if (shift && state.selected != null && state.selected !== id) {
       state.path = shortestPath(state.selected, id);
-      say("capture-msg", state.path.length ? `المسار: ${state.path.length} خطوات` : "ما فيه مسار بين النقطتين الحين", !!state.path.length);
+      say("capture-msg", state.path.length ? `المسار: ${state.path.length} خطوات` : "لا يوجد مسار بين النقطتين حالياً", !!state.path.length);
       return repaint();
     }
     state.path = []; state.selected = id; state.hits = new Set();
@@ -394,7 +394,7 @@
     const box = $("digest"); box.replaceChildren();
     try {
       const d = await api("digest");
-      if (!d.loops.length && !d.collision) box.textContent = "هادئ اليوم. ما فيه حلقات ولا تصادم جديد.";
+      if (!d.loops.length && !d.collision) box.textContent = "هادئ اليوم. لا توجد حلقات ولا تصادم جديد.";
       for (const lp of d.loops) box.append(el("div", { class: "item" }, [
         el("div", {}, [el("span", { class: "tag dash", text: "حلقة" }), ` رجعت لك ${lp.days} أيام`]),
         ...lp.versions.map(v => el("div", { class: "muted", text: "· " + v })),
@@ -439,7 +439,7 @@
     try {
       const rows = await api("search", { query: q });
       state.hits = new Set(rows.map(r => r.id));
-      say("capture-msg", rows.length ? `لقيت ${rows.length}` : "ما لقيت شي", !!rows.length);
+      say("capture-msg", rows.length ? `عُثر على ${rows.length}` : "لم يُعثر على شيء", !!rows.length);
       repaint();
     } catch (err) { say("capture-msg", "البحث ما اشتغل: " + err.message, false); }
   });

@@ -84,7 +84,7 @@
       });
       out.appendChild(box);
     }
-    if (r.next_question) out.appendChild(el("div", "label", "سؤال يساعدك تكمل: " + r.next_question));
+    if (r.next_question) out.appendChild(el("div", "label", "سؤال يساعدك على الإكمال: " + r.next_question));
   }
   async function ask() {
     const q = $("q").value.trim();
