@@ -93,7 +93,7 @@
     $("ask").disabled = true;
     try {
       if (DEMO) {
-        render({ answer: "من ملاحظاتك:\n- مصباح يتبع الكتاب [#3]", cites: [3], next_question: "وش أصغر خطوة تقدر تسويها اليوم؟" });
+        render({ answer: "من ملاحظاتك:\n- مصباح يتبع الكتاب [#3]", cites: [3], next_question: "ما أصغر خطوة يمكنك تنفيذها اليوم؟" });
         return;
       }
       const res = await fetch("/mind/api/think", {
@@ -103,7 +103,7 @@
       if (!res.ok) throw new Error(String(res.status));
       render(await res.json());
     } catch (err) {
-      $("msg").textContent = "ما قدر يجاوب الآن: " + err.message;
+      $("msg").textContent = "تعذّرت الإجابة الآن: " + err.message;
     } finally {
       $("ask").disabled = false;
     }
