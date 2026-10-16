@@ -116,7 +116,7 @@ SELECT pg_temp.check(pg_temp.fails(format('DELETE FROM prop.proposals WHERE id =
 SELECT pg_temp.check(NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
                                  WHERE n.nspname = 'prop' AND p.proname ~* '(order|fill|trade|exchange|transfer|withdraw|send|buy|sell|pay)'),
                      'no function in the prop schema places, fills or moves anything');
-SELECT pg_temp.check((SELECT count(*) FROM pg_tables WHERE schemaname = 'prop') = 1, 'the prop schema holds one table: the proposals, nothing else');
+SELECT pg_temp.check((SELECT count(*) FROM pg_tables WHERE schemaname = 'prop') = 2, 'the prop schema holds the proposals and the freeze flag, nothing else');
 
 -- ── The queue: rashid reads it, and the public page reads only the view ──
 SET SESSION AUTHORIZATION rashid;

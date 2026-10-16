@@ -37,3 +37,21 @@ review for anything beyond paper is open (launch-drafts/LAWYER-QUESTIONS.md) and
 ## Consequences
 - Suite: 233 checks pass (`scripts/test-nerve.sh`, exit 0), including `db/test/vault_test.sql`.
 - Not live on the laptop: no Docker in the cloud sandbox.
+
+## Completed after review (2026-10-16)
+Ahmad asked to complete phase 7. Checked against section 8 and 9 of the design, four parts were missing and are now built:
+- **Sub-ledgers per strategy or user** (`vault.ledgers`, `vault.open_ledger`): each journal belongs to one book. The
+  owner's book is `owner`. Opening a book is owner-only.
+- **Transfers between books** (`vault.transfer`): money crosses only as two recorded journals through the transfer
+  clearing account. A book cannot overdraw on paper.
+- **Freeze on a difference** (`prop.freeze`, set by `vault.reconcile`): reconciliation freezes new proposals when a
+  journal does not balance, the accounting equation fails, or any book shows negative paper cash. `prop.add` refuses
+  while frozen. The freeze lifts only when a later reconciliation agrees.
+- **Monthly statement** (`vault.monthly_statement`, owner only): one book, one month, every line with its journal id,
+  memo, author and run id. The public `api.vault_statement` carries ledger and month.
+- **Wallet view** (`api.vault_wallet`, public): paper cash per book, realised paper result, counts of open and approved
+  proposals, and whether new proposals are frozen. No titles and no rationale.
+- **Four-eyes** (section 9): agents never prepare an entry, so no agent can approve its own. Posting is the owner's
+  alone. A proposal's maker and checker are already separate (fahd adds, rashid checks, the owner decides).
+
+Suite after this change: 256 checks pass (`scripts/test-nerve.sh`, exit 0).

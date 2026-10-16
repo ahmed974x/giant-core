@@ -31,6 +31,15 @@ CREATE TABLE prop.proposals (
   CHECK (stop < entry AND entry < target)
 );
 
+-- The freeze: خازن's reconciliation sets it when the paper books do not agree (ADR-085). While set, no new proposal is added.
+CREATE TABLE prop.freeze (
+  id         integer PRIMARY KEY CHECK (id = 1),
+  frozen     boolean NOT NULL DEFAULT false,
+  reason     text,
+  changed_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO prop.freeze (id) VALUES (1);
+
 -- A proposal's numbers never change; only its status moves, and each move is one of the steps below.
 CREATE FUNCTION prop.guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -60,6 +69,7 @@ BEGIN
   PERFORM prop.guard_session(p_by);
   gate := nerve.tool_call(p_by, 'proposals.add', 'agent', '{}', p_run);
   IF NOT (gate ->> 'allowed')::boolean THEN RAISE EXCEPTION 'proposal refused: %', gate ->> 'reason'; END IF;
+  IF (SELECT frozen FROM prop.freeze WHERE id = 1) THEN RAISE EXCEPTION 'new proposals are frozen until the paper books reconcile'; END IF;
   IF mem.looks_secret(p_title) OR mem.looks_secret(p_rationale) THEN
     PERFORM nerve._emit('system', 'guard.secret_refused', 'system', jsonb_build_object('agent', p_by, 'where', 'prop.proposals'));
     RAISE WARNING 'refused: looks like a secret (nothing stored)';
