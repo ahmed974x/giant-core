@@ -61,15 +61,50 @@ docker compose --profile director up -d memory
 4. كل مقترح فيه الأرقام ورابط **"الدليل"** للبيانات الخام. افتحه وتأكد بعينك.
 5. اضغط **"موافقة"** على واحد. بيتسجل في الحساب الورقي فوق. اضغط **"رفض"** على ثاني وشوف إنه ما تسجل.
 
-## 5ب. حسابات المستخدمين (اختياري، تقدر تتركه الحين)
+## 5ب. حسابات المستخدمين (اختياري)
 - بدون أي إعداد، **الحسابات تكون مطفية**: أنت تستخدم الرمز مثل العادة، وأي أحد بدون رمز يتم رفضه.
-- صفحة الحساب: http://127.0.0.1:3101/ar/account. بتقول لك "الحسابات مطفية في هذا الخادم".
-- تجربة الحسابات تحتاج تطبيق تسجيل دخول من GitHub أو Google. هذي الخطوة **ما نسويها الحين**. المفاتيح تنحط في `web\.env.local` المشفّر بس، وأبداً ما تنحط في GitHub. لما تقرر نفعّلها، أعطيك الخطوات.
 - للتأكد من الرفض: افتح نافذة PowerShell ثانية واكتب
   ```powershell
   curl.exe http://127.0.0.1:3101/api/paper
   ```
   المفروض يرد: `{"error":"sign in, or enter the PIN"}`
+
+### تفعيل الدخول عن طريق Google (لما تكون جاهز)
+الدخول الأساسي يكون عن طريق Google، و GitHub خيار ثاني نضيفه بعدين. **أنت اللي تسوي الخطوات في Google**، وأنا ما أسوي حساب ولا مفاتيح.
+
+**أ. في Google Cloud** (من المتصفح):
+1. افتح https://console.cloud.google.com وسجّل بإيميل المشروع، مو إيميلك الشخصي.
+2. أنشئ مشروع جديد واسمه مثلاً `NABD Paper`.
+3. روح **APIs & Services ← OAuth consent screen**: اختر **External**، واكتب اسم التطبيق `NABD`، وحط إيميل المشروع كإيميل دعم. خلّه في وضع **Testing**، وأضف إيميلك تحت **Test users**.
+4. روح **APIs & Services ← Credentials ← Create credentials ← OAuth client ID**:
+   - Application type: **Web application**
+   - Authorized redirect URIs، أضف هذا السطر بالضبط:
+     `http://localhost:3101/api/auth/callback/google`
+5. اضغط Create. Google بيعطيك قيمتين:
+   - **Client ID**: ينتهي بـ `.apps.googleusercontent.com`
+   - **Client secret**: يبدأ بـ `GOCSPX-`
+   خلّ الصفحة مفتوحة. **لا ترسل القيمتين لي ولا لأي أحد.**
+
+**ب. حط القيم في ملف الإعدادات المشفّر** (كل أمر يسألك عن القيمة بخانة مخفية، والصقها فيها):
+```powershell
+cd C:\Users\Hp\Desktop\OMEGA_PAPER\web
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+npm run secrets:set -- NEXTAUTH_SECRET
+npm run secrets:set -- NEXTAUTH_URL
+npm run secrets:set -- AUTH_GOOGLE_ID
+npm run secrets:set -- AUTH_GOOGLE_SECRET
+```
+- السطر الأول يطبع نص عشوائي طويل. انسخه والصقه لما يسألك عن `NEXTAUTH_SECRET`.
+- `NEXTAUTH_URL` اكتب فيه بالضبط: `http://localhost:3101`
+- `AUTH_GOOGLE_ID` الصق فيه الـ Client ID، و `AUTH_GOOGLE_SECRET` الصق فيه الـ Client secret.
+- القيم تنحفظ مشفّرة في `web\.env.local` في مجلد التجربة بس، وما تروح GitHub.
+
+**ج. شغّل وجرّب:**
+```powershell
+npm run build
+node scripts\secure-run.mjs start -p 3101 -H 127.0.0.1
+```
+افتح **http://localhost:3101/ar/account** (لازم تكتب `localhost` مو `127.0.0.1`) واضغط **"الدخول عن طريق Google"**. بعد الدخول احفظ ملفك الشخصي، وروح لشاشة السوق بدون ما تكتب الرمز. بيطلع لك حساب ورقي جديد خاص فيك.
 
 ## 6. التقرير اليومي (تجربة يدوية)
 بنافذة PowerShell ثانية، والموقع شغال على 3101:

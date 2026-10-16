@@ -19,6 +19,8 @@ test("accounts stay off until a secret and a provider are both configured", () =
   assert.equal(authEnabled({ NEXTAUTH_SECRET: "x".repeat(32), AUTH_GOOGLE_ID: "id" }), false, "an id without its secret is not a provider");
   assert.equal(authEnabled(on), true);
   assert.deepEqual(configuredProviders(on), ["github"]);
+  assert.deepEqual(configuredProviders({ ...on, AUTH_GOOGLE_ID: "g", AUTH_GOOGLE_SECRET: "gs" }), ["google", "github"], "Google is listed first");
+  assert.equal(authEnabled({ NEXTAUTH_SECRET: "x".repeat(32), AUTH_GOOGLE_ID: "g", AUTH_GOOGLE_SECRET: "gs" }), true, "Google alone is enough");
 });
 
 test("unauthenticated requests to the paper engine are refused", async () => {

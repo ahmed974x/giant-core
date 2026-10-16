@@ -15,9 +15,10 @@ export type Actor = { kind: "owner"; dataDir: string; by: string } | { kind: "us
 
 /** OAuth providers whose id and secret are both set (values come from web/.env.local, never from git). */
 export function configuredProviders(env: Env = process.env): ProviderId[] {
+  // Google is the primary sign-in (Ahmad, 2026-10-16); GitHub is an optional second for developers.
   const out: ProviderId[] = [];
-  if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) out.push("github");
   if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET) out.push("google");
+  if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) out.push("github");
   return out;
 }
 

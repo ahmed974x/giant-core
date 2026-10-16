@@ -1,4 +1,4 @@
-// NextAuth setup (ADR-075). Sign-in only through OAuth providers configured in web/.env.local; sessions are signed
+// NextAuth setup (ADR-075). Sign-in only through OAuth providers (Google first, GitHub optional) configured in web/.env.local; sessions are signed
 // JWT cookies, so there is no user database and no password. Off until NEXTAUTH_SECRET and a provider are set.
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import GitHub from "next-auth/providers/github";
@@ -6,9 +6,9 @@ import Google from "next-auth/providers/google";
 import { authEnabled, configuredProviders, userKey } from "./accounts";
 
 export function authOptions(env = process.env): NextAuthOptions {
-  const providers = configuredProviders(env).map(p => p === "github"
-    ? GitHub({ clientId: env.AUTH_GITHUB_ID!, clientSecret: env.AUTH_GITHUB_SECRET! })
-    : Google({ clientId: env.AUTH_GOOGLE_ID!, clientSecret: env.AUTH_GOOGLE_SECRET! }));
+  const providers = configuredProviders(env).map(p => p === "google"
+    ? Google({ clientId: env.AUTH_GOOGLE_ID!, clientSecret: env.AUTH_GOOGLE_SECRET! })
+    : GitHub({ clientId: env.AUTH_GITHUB_ID!, clientSecret: env.AUTH_GITHUB_SECRET! }));
   return {
     providers,
     secret: env.NEXTAUTH_SECRET,
