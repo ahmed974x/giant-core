@@ -22,8 +22,8 @@ export PGHOST=$TMP PGUSER=omega_admin POSTGRES_USER=omega_admin POSTGRES_DB=omeg
 psql -q -v ON_ERROR_STOP=1 -d omega_test -c "CREATE ROLE web_anon NOLOGIN; CREATE SCHEMA api;"
 
 export AMEEN_DB_PASSWORD=test-only HAKEEM_DB_PASSWORD=test-only   # creates the ameen and hakeem logins
-for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh db/init/08-loop.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
-for t in nerve memory brain loop; do
+for f in db/init/05-nerve.sh db/init/06-memory.sh db/init/07-brain.sh db/init/08-loop.sh db/init/09-market.sh; do sh "$f"; sh "$f"; done   # second run must be a no-op
+for t in nerve memory brain loop market; do
   psql -q -o /dev/null -v ON_ERROR_STOP=1 -d omega_test -f "db/test/${t}_test.sql" 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
 done
 

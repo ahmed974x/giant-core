@@ -45,7 +45,7 @@ INSERT INTO nerve.tools (name, writes, sole_holder, description) VALUES
   ('market.read',       false, NULL,     'Read market prices and candles'),
   ('newton.solve',      false, NULL,     'Ask the Newton math brain'),
   ('worldpulse.read',   false, NULL,     'Read World Pulse events'),
-  ('risk.check',        false, NULL,     'Check a draft proposal against the risk rules'),
+  ('risk.check',        true,  'rashid', 'Check a draft proposal against the risk rules (only the risk manager passes one)'),
   ('rr.compute',        false, NULL,     'Reward/risk ratio and size inside the 50 to 200 USDT band'),
   ('paper.read',        false, NULL,     'Read the paper account and ledger'),
   ('proposals.read',    false, NULL,     'Read the approval queue'),
