@@ -3,12 +3,9 @@
 import { directorData, makeThrottle } from "@/lib/director";
 import { guard } from "@/lib/guard";
 import { fetchPrices } from "@/lib/sweeper";
-import { appendEvent, fillOrder, loadEvents, replay, snapshot, validStart, type Order } from "@/lib/paper";
+import { appendEvent, assertPaper, fillOrder, loadEvents, replay, serial, snapshot, validStart, type Order } from "@/lib/paper";
 
 const throttle = makeThrottle();
-// One write at a time, so two quick taps can't both spend the same paper cash.
-let queue: Promise<unknown> = Promise.resolve();
-const serial = <T,>(fn: () => Promise<T>) => { const p = queue.then(fn, fn); queue = p.catch(() => null); return p; };
 
 async function view() {
   const acc = replay(await loadEvents(directorData()));
@@ -35,11 +32,13 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, account: await view() });
     }
     if (body?.action !== "order") return Response.json({ error: "action must be order or reset" }, { status: 400 });
+    const { pin: _pin, action: _action, ...raw } = body;
+    assertPaper(raw);
     const fill = await serial(async () => {
       const acc = replay(await loadEvents(directorData()));
       const symbol = String(body.symbol ?? "").toUpperCase();
       const prices = await fetchPrices([symbol]).catch(() => ({} as Record<string, number>));
-      const f = fillOrder(acc, { symbol, side: body.side as Order["side"], usd: body.usd, qty: body.qty }, prices[symbol]);
+      const f = fillOrder(acc, { symbol, side: body.side as Order["side"], usd: body.usd, qty: body.qty, mode: "paper" }, prices[symbol]);
       await appendEvent(directorData(), { type: "fill", ...f });
       return f;
     });

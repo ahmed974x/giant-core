@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { appendEvent, FEE, fillOrder, loadEvents, replay, SLIPPAGE, snapshot, validStart, type PaperEvent } from "../src/lib/paper.ts";
+import { appendEvent, assertPaper, FEE, fillOrder, loadEvents, replay, SLIPPAGE, snapshot, validStart, type PaperEvent } from "../src/lib/paper.ts";
 
 const at = new Date("2026-10-10T12:00:00Z");
 const ev = (f: ReturnType<typeof fillOrder>): PaperEvent => ({ type: "fill", ...f });
@@ -72,9 +72,21 @@ test("the log is append-only JSON lines and survives a damaged line", async () =
 });
 
 test("paper trading has no path to a real exchange: no order endpoint, no signing, no keys", () => {
-  for (const f of ["src/lib/paper.ts", "src/app/api/paper/route.ts", "src/components/PaperTrading.tsx"]) {
+  for (const f of ["src/lib/paper.ts", "src/app/api/paper/route.ts", "src/components/PaperTrading.tsx",
+    "src/lib/paper-proposals.ts", "src/app/api/paper/proposals/route.ts", "src/components/PaperProposals.tsx"]) {
     const src = readFileSync(path.resolve(import.meta.dirname, "..", f), "utf8");
     for (const bad of [/api\/v3\/order/i, /X-MBX-APIKEY/i, /createHmac/, /signature=/i, /BINANCE_(API_)?(KEY|SECRET)/i, /\/fapi\//, /withdraw/i])
       assert.ok(!bad.test(src), `${f} must not contain ${bad}`);
   }
+});
+
+test("the engine refuses anything that is not a paper order", () => {
+  const acc = replay([{ type: "reset", at: at.toISOString(), start_usd: 10_000 }]);
+  const ok = { symbol: "BTCUSDT", side: "buy" as const, usd: 100 };
+  assert.equal(fillOrder(acc, { ...ok, mode: "paper" }, 50_000, at).symbol, "BTCUSDT");
+  for (const mode of ["live", "real", "spot", ""])
+    assert.throws(() => fillOrder(acc, { ...ok, mode } as never, 50_000, at), /paper orders only/);
+  for (const k of ["apiKey", "secret", "signature", "exchange", "leverage", "margin", "live", "execute"])
+    assert.throws(() => fillOrder(acc, { ...ok, [k]: "x" } as never, 50_000, at), new RegExp(`"${k}" is not accepted`));
+  assert.throws(() => assertPaper(null), /not a paper order/);
 });

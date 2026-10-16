@@ -311,6 +311,34 @@
       "failed": "It didn't go through.",
       "basis": "Backtest on the last {bars} candles ({iv}), with a 0.1% fee and 0.05% slippage.",
       "safety": "Past results don't guarantee the future. Nothing here opens a real trade."
+    },
+    "proposals": {
+      "title": "Trade proposals",
+      "badge": "Paper only",
+      "lead": "OMEGA reads today's strategy signals and proposes paper trades. Nothing is recorded until you approve each one. Every proposal shows the numbers behind it and a link to the raw data.",
+      "needPin": "Enter your PIN in the paper account above first.",
+      "scan": "Scan signals",
+      "scanned": "{n, plural, =0 {No new proposals.} one {1 new proposal.} other {# new proposals.}}",
+      "empty": "No proposals waiting.",
+      "buy": "Buy",
+      "sell": "Sell",
+      "all": "all held",
+      "evidence": "Evidence",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveConfirm": "Record this on paper: {side} {symbol}?",
+      "approved": "Approved and recorded on paper.",
+      "rejected": "Rejected.",
+      "offline": "Couldn't reach the laptop.",
+      "failed": "That didn't go through.",
+      "history": "Decided ({n})",
+      "status": {
+        "pending": "pending",
+        "approved": "approved",
+        "rejected": "rejected",
+        "expired": "expired"
+      },
+      "safety": "Proposals are a decision aid only. They fill on paper after your tap, expire after 24 hours, and are refused if the price moved more than 3%."
     }
   },
   "research": {

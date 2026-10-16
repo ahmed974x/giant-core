@@ -16,7 +16,7 @@ export type Fill = { id: string; at: string; symbol: string; side: Side; qty: nu
 export type PaperEvent = { type: "reset"; at: string; start_usd: number } | ({ type: "fill" } & Fill);
 export type Holding = { symbol: string; qty: number; avg: number; cost: number };
 export type Account = { start_usd: number; since: string | null; cash: number; holdings: Holding[]; fills: Fill[]; realized: number; fees: number };
-export type Order = { symbol: string; side: Side; usd?: number; qty?: number };
+export type Order = { symbol: string; side: Side; usd?: number; qty?: number; mode?: "paper" };
 export type Marked = Holding & { price: number | null; value: number | null; gain: number | null; gainPct: number | null };
 export type Snapshot = Account & { marked: Marked[]; equity: number; returnPct: number };
 
@@ -58,8 +58,21 @@ export function replay(events: PaperEvent[]): Account {
   return acc;
 }
 
+// Anything that would only make sense for a real exchange order. Their presence alone gets the order refused.
+const LIVE_ONLY = ["apiKey", "api_key", "secret", "signature", "exchange", "leverage", "margin", "live", "real", "execute"];
+
+/** The engine takes paper orders only: a mode other than "paper", or any live-order field, is refused outright. */
+export function assertPaper(order: unknown): void {
+  if (!order || typeof order !== "object") throw new Error("not a paper order");
+  const o = order as Record<string, unknown>;
+  if (o.mode !== undefined && o.mode !== "paper") throw new Error("paper orders only: OMEGA never places real orders");
+  const bad = LIVE_ONLY.find(k => k in o);
+  if (bad) throw new Error(`paper orders only: "${bad}" is not accepted`);
+}
+
 /** Validate an order against the account and the last price; returns the fill or throws a message for the screen. */
 export function fillOrder(acc: Account, order: Order, lastPrice: number, now = new Date()): Fill {
+  assertPaper(order);
   const symbol = String(order.symbol ?? "").toUpperCase();
   if (!SYMBOL.test(symbol)) throw new Error("pick a USDT pair, like BTCUSDT");
   if (order.side !== "buy" && order.side !== "sell") throw new Error("side must be buy or sell");
@@ -120,3 +133,7 @@ export async function appendEvent(dataDir: string, e: PaperEvent): Promise<void>
   await mkdir(path.dirname(ledgerPath(dataDir)), { recursive: true });
   await appendFile(ledgerPath(dataDir), JSON.stringify(e) + "\n");
 }
+
+/** One write at a time across the paper routes, so two quick taps (or an order and an approval) can't spend the same cash. */
+let queue: Promise<unknown> = Promise.resolve();
+export const serial = <T,>(fn: () => Promise<T>): Promise<T> => { const p = queue.then(fn, fn); queue = p.catch(() => null); return p; };

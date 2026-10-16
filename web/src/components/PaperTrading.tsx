@@ -28,7 +28,11 @@ export default function PaperTrading() {
     if (r?.ok) { setData(j); try { sessionStorage.setItem("omega-pin", pin); } catch { /* storage blocked */ } }
     else setMsg({ ok: false, text: j.error ?? t("offline") });
   }, [pin, t]);
-  useEffect(() => { load(); const id = setInterval(load, 30_000); return () => clearInterval(id); }, [load]);
+  useEffect(() => {
+    load(); const id = setInterval(load, 30_000);
+    window.addEventListener("omega-paper-changed", load);   // an approved proposal just filled
+    return () => { clearInterval(id); window.removeEventListener("omega-paper-changed", load); };
+  }, [load]);
 
   const send = async (payload: Record<string, unknown>) => {
     setBusy(true); setMsg(null);

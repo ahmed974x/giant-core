@@ -5,6 +5,7 @@ import LiveBadge from "./LiveBadge";
 import Severity from "./Severity";
 import ProfitSweeper from "./ProfitSweeper";
 import PaperTrading from "./PaperTrading";
+import PaperProposals from "./PaperProposals";
 import OilWatch from "./OilWatch";
 import WorldPulse from "./WorldPulse";
 import Strategies from "./Strategies";
@@ -37,6 +38,8 @@ export default function Market() {
       <ProfitSweeper />
 
       <PaperTrading />
+
+      <PaperProposals />
 
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="panel overflow-hidden lg:col-span-2">
