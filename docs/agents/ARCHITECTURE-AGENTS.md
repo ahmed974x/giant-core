@@ -1,6 +1,6 @@
 # OMEGA / NABD agent system: brains, nervous system, long-term memory
 
-Status: **design only (ADR-077)**. No agent, bus, memory table or UI in this document is built yet. Building starts
+Status: **design only (ADR-077; second brain ADR-078)**. No agent, bus, memory table or UI in this document is built yet. Building starts
 one phase at a time after Ahmad approves each phase. Date: 2026-10-16.
 
 ---
@@ -27,6 +27,14 @@ one phase at a time after Ahmad approves each phase. Date: 2026-10-16.
 وحدة RR)، فهد (يجهّز المقترحات فقط)، نورة (شرح للمبتدئين)، بدر (الناقد والمدقق)، حارس (صحة النظام والأمان)،
 خازن (الخزينة الورقية). كل واحد يقول في أول كلامه إنه وكيل ذكاء اصطناعي.
 
+**العقل الثاني (جديد):** كل فكرة تكتبها أو تقولها أو تلصقها تُحفظ كما هي، ثم يقطّعها أمين إلى أفكار صغيرة ويربطها
+ببعض (تشبه، تدعم، تناقض، تؤدي إلى مهمة) ويجمعها في مجموعات بأسماء. تظهر كلها في **خريطة تفاعلية مثل الصورة**:
+بحث، فلترة بالنوع والتاريخ والمجموعة، شريط زمني تشوف فيه عقلك يكبر، ووضع ثلاثي الأبعاد بشكل «الكوكبة العصبية».
+الروابط التي يقترحها الذكاء الاصطناعي تظهر منقطة حتى تقبلها أنت. وفيه أدوات لزحمة التفكير: «فرّغ راسك» يرتب أفكارك
+في مجموعات مع 3 خطوات تالية فقط، وكشف الأفكار التي تدور في حلقة بلا تقدم، و«تصادم» يومي يربط فكرتين بعيدتين لتوليد
+فكرة جديدة. أفكارك **خاصة**: تُعالج بالنموذج المحلي على جهازك، ولا تُرسل لأي خدمة سحابية إلا فكرة تسمح بها أنت،
+ولا يتحول شيء منها إلى مقترح تداول. وتُصدَّر كل ليلة كملفات Markdown تفتحها في Obsidian أو Logseq، فلا تُحبس عندنا.
+
 **المحفظة ووحدة RR و«نظام البنك السويسري»:** تصميم **ورقي وقراءة فقط**: دفتر قيد مزدوج لا يُمحى، مبدأ «العينين
 الأربع» (من يقترح غير من يوافق)، فصل الحسابات، ومطابقة يومية. **هذا ليس بنكاً**، لا يحفظ أموالاً ولا يحرّكها ولا
 يحمل مفاتيح منصات. أي استخدام حقيقي يحتاج مراجعة ترخيص أولاً (هيئة أسواق المال والبنك المركزي في الكويت، و FINMA
@@ -35,12 +43,12 @@ one phase at a time after Ahmad approves each phase. Date: 2026-10-16.
 **وحدة RR** (فهمتها «المخاطرة إلى العائد»، قل لي إذا قصدت شيئاً آخر): لكل مقترح نقطة دخول ووقف خسارة وهدف، ونسبة
 عائد إلى مخاطرة لا تقل عن 2، وحجم داخل حد 50 إلى 200 USDT، وإلا يُرفض المقترح قبل أن يصلك.
 
-**البحث:** فحصت 59 مشروعاً مفتوح المصدر من مستودعاتها الرسمية (الترخيص وتاريخ آخر تحديث، 2026-10-16). الاختيار:
+**البحث:** فحصت 91 مشروعاً مفتوح المصدر (59 للوكلاء و32 للعقل الثاني والخرائط) من مستودعاتها الرسمية (الترخيص وتاريخ آخر تحديث، 2026-10-16). الاختيار:
 LangGraph للعقل، Postgres + pgvector + pgmq للجهاز العصبي والذاكرة، MCP للأدوات، بطاقات A2A للهويات، و TigerBeetle
 لاحقاً للدفتر الورقي. واستبعدت ما ليس مفتوح المصدر فعلاً (Restate بترخيص BSL، و Phoenix بترخيص Elastic) وما توقف
 تطويره (AutoGen). وتنبيه: Redis 7.4 الموجود عندك لم يعد بترخيص مفتوح، والبديل المجاني المطابق هو Valkey.
 
-**الخطة:** 6 مراحل، كل مرحلة تنتظر موافقتك. الأولى (الجهاز العصبي) لا تحتاج أي ذكاء اصطناعي ولا مفاتيح، وتكلف
+**الخطة:** 7 مراحل (العقل الثاني هو السابعة، ويمكن تقديمه بعد مرحلة الذاكرة)، كل مرحلة تنتظر موافقتك. الأولى (الجهاز العصبي) لا تحتاج أي ذكاء اصطناعي ولا مفاتيح، وتكلف
 تقريباً 0 ذاكرة إضافية لأنها داخل Postgres الموجود.
 
 ---
@@ -289,7 +297,103 @@ What "Swiss-style" means here, all on paper:
 LLM thinking stays on free cloud tiers through Cortex with the local model as fallback, so no new GPU or paid key is
 needed. Exact numbers get measured in phase 1 and replace these estimates.
 
-## 12. Phases (each waits for Ahmad's go)
+## 12. Second brain (العقل الثاني)
+
+Ahmad's brief (2026-10-16): someone who overthinks gets a million ideas a day; the AI should not only file them but
+rescue him from the crowd of thoughts, link them, and, the more he feeds it, become a second mind that thinks with
+him. The answer is a personal knowledge graph that the agents build and query, shown as an interactive map like the
+graph view in his screenshot.
+
+### 12.1 How a thought travels
+
+```mermaid
+flowchart LR
+  C[Capture<br/>text, voice note, link, file, screenshot] --> RAW[(Raw note<br/>kept verbatim)]
+  RAW --> AT[Atomise<br/>one idea per node]
+  AT --> EN[Enrich<br/>embedding, entities, type, mood]
+  EN --> LK[Link<br/>suggested edges with a reason]
+  LK --> CL[Cluster + name<br/>Leiden communities]
+  CL --> G[(Brain graph)]
+  G --> V[Graph view<br/>search, filter, time slider]
+  G --> Q[Ask your brain<br/>answers cite nodes]
+  G --> N[Nightly digest<br/>loops, collisions, next steps]
+```
+
+1. **Capture anywhere, zero friction.** One box on the site and on the phone home screen (paste, type, share a link
+   or screenshot). Voice notes are transcribed on the laptop later (local speech-to-text; no cloud). Nothing is asked
+   at capture time: no folder, no tag, no title.
+2. **Raw is sacred.** The original text is stored verbatim with its time and source and is never edited by an agent.
+   Everything else is derived and can be rebuilt.
+3. **Atomise.** أمين splits a dump into atomic ideas (one claim, question, task or feeling per node), each pointing
+   back to the raw note it came from.
+4. **Enrich.** Each node gets a local embedding, the entities it mentions (people, places, assets, projects), a type
+   (idea, question, task, fact, worry, decision, quote, source) and a time.
+5. **Link, with reasons.** Candidate edges come from four signals: explicit `[[links]]` he typed, semantic
+   similarity (pgvector k-nearest neighbours above a threshold), shared entities, and closeness in time. The local
+   model labels the strongest candidates: `similar_to`, `supports`, `contradicts`, `leads_to` (idea → task),
+   `part_of`, `answers` (fact → question), `derived_from`. Every machine edge stores its confidence and a one-line
+   "why".
+6. **Cluster and name.** Leiden community detection groups the graph into themes; the local model names each theme
+   in Arabic. Clusters are recomputed nightly, so themes appear, merge and split as his thinking changes.
+
+**He stays the owner of his own mind.** Edges he typed are solid. Machine edges show dashed until he taps accept or
+reject; every accept or reject tunes the thresholds (more accepted `similar_to` → lower threshold), so the linker
+learns his taste.
+
+### 12.2 Rescue from overthinking (the features that matter)
+
+- **Brain dump.** He pours out everything in one go; he gets back the dump grouped into 3 to 7 themes, the open
+  questions, at most 3 next actions, and a "parked" list for the rest. Nothing is lost; the noise is just sorted.
+- **Loop detector.** The same idea or worry recurring (high similarity across days) with no new edge, task or decision
+  is a loop. The digest names it gently: "you came back to X five times this week; here are the three versions; one
+  question would settle it".
+- **Worry → question.** A node typed `worry` gets a suggested rewrite as a concrete question that research (مها) or a
+  decision can answer.
+- **Daily collision (serendipity).** Once a day, a random walk picks two distant nodes from different clusters with a
+  plausible bridge and asks "what if these connect?". This is the out-of-the-box engine: new ideas come from
+  unexpected links, not from more of the same.
+- **Contradiction alarm.** A new node that contradicts an older high-confidence one is flagged with both sides and
+  their dates, instead of silently replacing it.
+- **Decision journal.** A `decision` node records what he expected; it links to the calibration ledger (section 7),
+  so later he sees how his own predictions turned out.
+- **Think with me.** A chat mode where حكيم answers only from his own graph (plus research on request), cites the
+  nodes it used, highlights the path on the map, and asks the next question instead of lecturing.
+
+### 12.3 Graph view (the map in his screenshot)
+
+- **Engine:** sigma.js (WebGL) on graphology for the 2D map; it renders thousands of nodes smoothly, and layout
+  (ForceAtlas2) and Leiden clustering run in a web worker so the page never freezes. A **3D "neural constellation"
+  mode** with 3d-force-graph matches the dark neural style of the site (the existing constellation demo).
+- **Look:** dark background; node colour = cluster, size = how connected it is, ring = type; solid edges are his,
+  dashed are suggestions, red for `contradicts`. Labels appear on zoom (level of detail), so the phone shows themes
+  first and ideas as you zoom in.
+- **Search:** one box, both exact (Arabic and English full text) and by meaning (embedding). Results light up on the
+  map and the camera flies to them.
+- **Filters:** by type, cluster, date range, source, edge type, confidence, and "only mine / include suggestions".
+- **Time slider:** replay the graph growing day by day; see when a theme was born.
+- **Focus and path:** click a node to show its neighbourhood (1 to 3 hops) and a side panel with the raw text, its
+  sources and its links (accept / reject buttons); pick two nodes to see the shortest path between them.
+- **Every node opens its evidence:** the raw note, the link, the screenshot or the source page, in line with the
+  "see it with my own eyes" rule.
+
+### 12.4 Storage and privacy
+
+- **Tables** in the existing `memory` Postgres: `brain.raw` (verbatim captures), `brain.nodes` (atoms, type,
+  embedding, cluster, entities), `brain.edges` (from, to, type, origin `human|machine`, confidence, why, state
+  `suggested|accepted|rejected`). Neighbourhood and path queries use recursive SQL; Apache AGE (Apache-2.0, Cypher
+  inside Postgres) is the option if graph queries grow, with no new server.
+- **Two separate graphs.** His second brain is private and separate from the agents' system memory (section 6).
+  Agents can read it only with the `brain.read` permission, only أمين writes suggested edges, and nothing in it can
+  become a trading proposal.
+- **Local by default.** Personal notes are processed by the local model (Qwen via Ollama) on his laptop. A note is
+  sent to a cloud model only if he marks that note "ok for cloud", and then only to providers that do not train on
+  prompts (the `x-omega-private` rule in Cortex). Secrets pasted by mistake are detected and refused before storage.
+- **No lock-in.** Every night the graph is exported as a folder of Markdown files with `[[wikilinks]]` and front
+  matter, readable in Obsidian, Logseq or Foam. If OMEGA disappeared tomorrow, his brain would still be his.
+- **Cost:** the map runs in the browser; heavy work (atomise, link, cluster, name) runs in a nightly batch on the
+  local model, plus a quick pass on capture. No new server, no paid key.
+
+## 13. Phases (each waits for Ahmad's go)
 
 | Phase | Builds | Needs from Ahmad |
 |---|---|---|
@@ -299,10 +403,11 @@ needed. Exact numbers get measured in phase 1 and replace these estimates.
 | 4 Market agents | سالم, راشد + RR unit, فهد → `proposals.add`; two-key rule; calibration ledger | Merge of the paper-trading MVP first |
 | 5 Offices + guide | Agent office pages, نورة, disclosure banner in every chat, حارس immune + pause | Nothing |
 | 6 Vault | Paper double-entry Vault, reconciliation, statements, wallet view | Licence review answers before any non-paper use |
+| 7 Second brain | Capture box, atomiser and linker (local model), clusters, graph view (sigma.js 2D + 3D mode), brain dump, loop detector, daily collision, Markdown export | Nothing (local model only); can move up to right after phase 2 |
 
 Every phase: one commit, one ADR, tests, a report "Phase N complete. Ready for Phase N+1."
 
-## 13. Open-source research
+## 14. Open-source research
 
 Checked 2026-10-16 by cloning each project's official GitHub repository (default branch) and reading its licence
 file and the date of the latest commit. "Last commit" is that date. Verdict is for this project (single 7 GB
@@ -395,15 +500,66 @@ laptop, free and open source first).
 | [freqtrade/freqtrade](https://github.com/freqtrade/freqtrade) | GPL-3.0 | 2026-10-16 | Has live trading built in. Not used |
 | [QuantConnect/Lean](https://github.com/QuantConnect/Lean) | Apache-2.0 | 2026-10-15 | Heavy (.NET). Not used |
 
+### Second brain: graph visualisation
+
+| Project | Licence | Last commit | Verdict |
+|---|---|---|---|
+| [jacomyal/sigma.js](https://github.com/jacomyal/sigma.js) | MIT | 2026-10-16 | **Pick** for the 2D map: WebGL, large graphs, Obsidian-like feel |
+| [graphology/graphology](https://github.com/graphology/graphology) | MIT | 2026-09-02 | **Pick**: graph model under sigma; ships ForceAtlas2, Louvain and Leiden |
+| [vasturiano/3d-force-graph](https://github.com/vasturiano/3d-force-graph) | MIT | 2026-09-29 | **Pick** for the 3D "neural constellation" mode |
+| [vasturiano/force-graph](https://github.com/vasturiano/force-graph) | MIT | 2026-09-29 | Simpler 2D canvas option for small graphs |
+| [cosmograph-org/cosmos](https://github.com/cosmograph-org/cosmos) | MIT | 2026-10-14 | GPU layout for very large graphs (100k+). Later if needed |
+| [cytoscape/cytoscape.js](https://github.com/cytoscape/cytoscape.js) | MIT | 2026-10-15 | Rich analysis API; slower on big graphs. Alternative |
+| [antvis/G6](https://github.com/antvis/G6) | MIT | 2026-10-16 | Full-featured; heavier bundle. Alternative |
+| [reaviz/reagraph](https://github.com/reaviz/reagraph) | Apache-2.0 | 2026-06-25 | React WebGL graphs. Alternative |
+| [visjs/vis-network](https://github.com/visjs/vis-network) | Apache-2.0 or MIT (dual) | 2026-09-13 | Older canvas library. Not picked |
+| [d3/d3-force](https://github.com/d3/d3-force) | ISC | 2023-10-06 | Stable force layout (used by force-graph). Indirect |
+| [xyflow/xyflow](https://github.com/xyflow/xyflow) | MIT | 2026-10-16 | Node editors and flow charts, not knowledge maps. Use for agent-plan diagrams |
+
+### Second brain: apps and AI notebooks (ideas, not installed)
+
+| Project | Licence | Last commit | Verdict |
+|---|---|---|---|
+| [foambubble/foam](https://github.com/foambubble/foam) | MIT | 2026-10-12 | **Pick its Markdown + `[[wikilink]]` format** for the nightly export |
+| [logseq/logseq](https://github.com/logseq/logseq) | AGPL-3.0 | 2026-10-16 | Can open our export; do not embed its code |
+| [silverbulletmd/silverbullet](https://github.com/silverbulletmd/silverbullet) | MIT | 2026-10-16 | Self-hosted Markdown notes; ideas for capture and queries |
+| [TriliumNext/Trilium](https://github.com/TriliumNext/Trilium) | AGPL-3.0 | 2026-10-16 | Hierarchical notes with note maps. Ideas only |
+| [siyuan-note/siyuan](https://github.com/siyuan-note/siyuan) | AGPL-3.0 | 2026-10-13 | Block-based notes + graph. Ideas only |
+| [AppFlowy-IO/AppFlowy](https://github.com/AppFlowy-IO/AppFlowy) | AGPL-3.0 | 2026-06-26 | Notion-like workspace. Not needed |
+| [khoj-ai/khoj](https://github.com/khoj-ai/khoj) | AGPL-3.0 | 2026-08-01 | "Second brain" chat over notes. Ideas for "ask your brain" |
+| [lfnovo/open-notebook](https://github.com/lfnovo/open-notebook) | MIT | 2026-10-04 | Open NotebookLM-style research notebook. Ideas for "think with me" |
+| [Cinnamon/kotaemon](https://github.com/Cinnamon/kotaemon) | Apache-2.0 | 2026-05-30 | Document RAG UI with citations. Ideas |
+| [QuivrHQ/quivr](https://github.com/QuivrHQ/quivr) | MIT | 2026-10-15 | README: V2 rewritten as a content-stream search engine, "evaluation stage". Not used |
+| [MODSetter/SurfSense](https://github.com/MODSetter/SurfSense) | Mixed: Apache-2.0 core, BSL 1.1 in `proprietary/` folders | 2026-10-13 | Mixed licence. Avoid |
+| [reorproject/reor](https://github.com/reorproject/reor) | AGPL-3.0 | 2025-05-13 | Local AI notes with auto-links; inactive 17 months. Idea only |
+| [brianpetro/obsidian-smart-connections](https://github.com/brianpetro/obsidian-smart-connections) | Custom "Smart Plugins License" with competition limits | 2026-10-10 | Not OSI open source. Avoid |
+| [athensresearch/athens](https://github.com/athensresearch/athens) | EPL-1.0 | 2022-12-12 | Abandoned. Avoid |
+| [outline/outline](https://github.com/outline/outline) | BSL 1.1 | 2026-10-15 | Not open source. Avoid |
+
+Obsidian itself (the app in the screenshot is likely its graph view) is free to use but closed source, so it is not
+in the table; our export stays readable by it.
+
+### Second brain: graph storage and algorithms
+
+| Project | Licence | Last commit | Verdict |
+|---|---|---|---|
+| [apache/age](https://github.com/apache/age) | Apache-2.0 | 2026-10-13 | Option: Cypher graph queries inside the existing Postgres |
+| [networkx/networkx](https://github.com/networkx/networkx) | BSD-3-Clause | 2026-10-06 | **Pick** for nightly server-side graph jobs (paths, centrality, random walks) |
+| [lmcinnes/umap](https://github.com/lmcinnes/umap) | BSD-3-Clause | 2026-10-08 | Option: a "meaning map" layout from embeddings |
+| [vtraag/leidenalg](https://github.com/vtraag/leidenalg) | GPL-3.0 | 2026-10-13 | Avoid (GPL); graphology's MIT Leiden does the job |
+| [kuzudb/kuzu](https://github.com/kuzudb/kuzu) | MIT | 2025-10-10 | README says the project is archived. Avoid |
+| [FalkorDB/FalkorDB](https://github.com/FalkorDB/FalkorDB) | SSPL-1.0 | 2026-10-15 | Not OSI open source. Avoid |
+
 ### Final pick
 
 LangGraph (brain loop) · MCP (tools) · A2A Agent Cards (identity) · Postgres + Timescale event log with hash chain ·
 pgmq (queues) · Valkey (fast lane) · pgvector with Graphiti-style bitemporal facts (memory) · Ollama + Cortex free
 tiers (models) · Riskfolio-Lib, PyPortfolioOpt, QuantStats (RR unit) · Postgres double-entry, TigerBeetle later (paper
-Vault). All permissive or PostgreSQL licences except SearXNG (AGPL, used unmodified) and n8n (fair-code, existing).
+Vault) · sigma.js + graphology + 3d-force-graph, networkx, Foam-style Markdown export (second brain). All permissive or PostgreSQL licences except SearXNG (AGPL, used unmodified) and n8n (fair-code, existing).
 
-## 14. Open decisions for Ahmad
+## 15. Open decisions for Ahmad
 
 1. **RR meaning:** risk/reward unit as written in section 8? (inferred)
 2. **Agent names** for the six new agents (حكيم, مها, أمين, بدر, حارس, خازن): keep or rename.
 3. **Phase 1 go:** nervous system + Valkey swap, no keys and no LLM needed.
+4. **Second brain timing:** keep it as phase 7, or build it right after memory (phase 2)?
