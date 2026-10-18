@@ -2,6 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NABD نبض</title>
   <meta name="description" content="NABD: open research and learning tools for understanding markets, with five AI agents, a made-up-money practice account and plain reporting of what did not work.">
@@ -294,12 +295,46 @@
         <span class="status gated">Pending approval</span>
         <h3>Copy-trading portal</h3>
         <p>The portal design is for display only: an audited performance board from real data, risk limits per copier, and an instant stop. It connects to no account and copies no trade.</p>
+        <p><a class="inline-link" href="#calc">Try the interactive profit-split calculator</a> to see how the high-water mark protects a subscriber. Math simulation only.</p>
       </article>
       <article class="card">
         <span class="status closed">Not open</span>
         <h3>When does it open?</h3>
         <p>Managing other people's money and offering public copy trading is a regulated activity in most countries. This section will not open before a legal review, a licence where one is required, and explicit approval from the platform owner.</p>
       </article>
+    </div></div>
+    <div class="panel calc" id="calc" aria-labelledby="calc-h"><div class="card calc-card">
+      <div class="calc-head">
+        <h3 id="calc-h">High-water mark vault calculator</h3>
+        <span class="status design">Simulation only</span>
+      </div>
+      <p>Enter an investment, a fee rate and period returns. The page works out your net profit, the performance fee and the high-water mark for every period. It runs in your browser only: nothing is sent and no money is accepted.</p>
+      <div class="calc-form">
+        <div class="field"><label for="cAmount">Investment</label><input id="cAmount" name="cAmount" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="10000"></div>
+        <div class="field"><label for="cFee">Performance fee %</label><input id="cFee" name="cFee" type="number" inputmode="decimal" step="any" min="0" max="100" autocomplete="off" value="20"></div>
+        <div class="field"><label for="cHurdle">Hurdle per period %</label><input id="cHurdle" name="cHurdle" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="0"></div>
+        <div class="field wide"><label for="cReturns">Period returns %, comma separated</label><input id="cReturns" name="cReturns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="12, -4.2, 4.8, 6, -3, 5"></div>
+      </div>
+      <p class="note">The default returns are made up to explain the formula. They are not a track record and not a promise of return.</p>
+      <dl class="calc-kpis" aria-live="polite">
+        <div><dt>Subscriber net value</dt><dd class="num" id="cNav">—</dd></div>
+        <div><dt>Subscriber net profit</dt><dd class="num" id="cProfit">—</dd></div>
+        <div><dt>Performance fee</dt><dd class="num" id="cFees">—</dd></div>
+        <div><dt>Value before fees</dt><dd class="num" id="cGross">—</dd></div>
+        <div><dt>High-water mark now</dt><dd class="num" id="cHwm">—</dd></div>
+        <div><dt>Periods with no fee thanks to the mark</dt><dd class="num" id="cProtected">—</dd></div>
+      </dl>
+      <svg class="calc-chart" id="cChart" viewBox="0 0 720 240" role="img" aria-label="Cumulative growth: before fees, subscriber net, high-water mark"></svg>
+      <ul class="calc-legend">
+        <li><i class="sw sw-gross"></i>Before fees</li>
+        <li><i class="sw sw-net"></i>Subscriber net</li>
+        <li><i class="sw sw-hwm"></i>High-water mark</li>
+      </ul>
+      <div class="table-wrap"><table class="calc-table" id="cTable">
+        <thead><tr><th scope="col">Period</th><th scope="col">Return %</th><th scope="col">Before fee</th><th scope="col">Fee</th><th scope="col">Subscriber net</th><th scope="col">High-water mark</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <p class="calc-error" id="cError" role="alert" hidden>Enter an amount above zero, a rate between 0 and 100, and at least one return.</p>
     </div></div>
     <div class="gate-banner" role="note">
       <p><strong>We accept no money and no subscriptions today.</strong> There is no public vault and no copy trading. This page only explains the design.</p>
@@ -324,6 +359,7 @@
   </div>
 </footer>
 
+<script src="calc.js" defer></script>
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("themeToggle");

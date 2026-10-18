@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>نبض NABD</title>
   <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، بخمسة وكلاء ذكاء اصطناعي، وحساب تدريب وهمي، ونشر صريح لما لم ينجح.">
@@ -295,12 +296,46 @@
         <span class="status gated">قيد الموافقة</span>
         <h3>بوابة نسخ الصفقات</h3>
         <p>تصميم البوابة جاهز للعرض فقط: لوحة أداء مُدقَّقة من بيانات حقيقية، وحدود مخاطرة لكل ناسخ، وإيقاف فوري. لا تتصل بأي حساب ولا تنسخ أي صفقة.</p>
+        <p><a class="inline-link" href="#calc">جرّب حاسبة تقسيم الأرباح التفاعلية</a> لترى كيف تحمي أعلى قيمة سابقة المشترك. محاكاة رياضية فقط.</p>
       </article>
       <article class="card">
         <span class="status closed">غير مفتوح</span>
         <h3>متى يفتح؟</h3>
         <p>إدارة أموال الآخرين ونسخ الصفقات للعموم نشاط منظَّم في أغلب الدول. لن يفتح هذا القسم قبل مراجعة قانونية، وترخيص حيث يلزم، وموافقة صريحة من صاحب المنصة.</p>
       </article>
+    </div></div>
+    <div class="panel calc" id="calc" aria-labelledby="calc-h"><div class="card calc-card">
+      <div class="calc-head">
+        <h3 id="calc-h">حاسبة خزنة الأرباح بحماية أعلى قيمة</h3>
+        <span class="status design">محاكاة فقط</span>
+      </div>
+      <p>اكتب مبلغ الاستثمار والنسبة وعوائد الفترات، فتحسب الصفحة صافي ربحك وحصة أتعاب الأداء وأعلى قيمة سابقة في كل فترة. الحساب يجري في متصفحك فقط، ولا يُرسل شيء ولا يُقبل أي مال.</p>
+      <div class="calc-form">
+        <div class="field"><label for="cAmount">مبلغ الاستثمار</label><input id="cAmount" name="cAmount" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="10000"></div>
+        <div class="field"><label for="cFee">نسبة أتعاب الأداء %</label><input id="cFee" name="cFee" type="number" inputmode="decimal" step="any" min="0" max="100" autocomplete="off" value="20"></div>
+        <div class="field"><label for="cHurdle">الحد الأدنى للعائد لكل فترة %</label><input id="cHurdle" name="cHurdle" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="0"></div>
+        <div class="field wide"><label for="cReturns">عوائد الفترات %، مفصولة بفاصلة</label><input id="cReturns" name="cReturns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" value="12, -4.2, 4.8, 6, -3, 5"></div>
+      </div>
+      <p class="note">العوائد الافتراضية مختارة لشرح المعادلة، وليست أداءً حقيقياً ولا وعداً بعائد.</p>
+      <dl class="calc-kpis" aria-live="polite">
+        <div><dt>صافي قيمة المشترك</dt><dd class="num" id="cNav">—</dd></div>
+        <div><dt>صافي ربح المشترك</dt><dd class="num" id="cProfit">—</dd></div>
+        <div><dt>حصة أتعاب الأداء</dt><dd class="num" id="cFees">—</dd></div>
+        <div><dt>القيمة قبل الرسوم</dt><dd class="num" id="cGross">—</dd></div>
+        <div><dt>أعلى قيمة سابقة الآن</dt><dd class="num" id="cHwm">—</dd></div>
+        <div><dt>فترات بلا رسوم بفضل الحماية</dt><dd class="num" id="cProtected">—</dd></div>
+      </dl>
+      <svg class="calc-chart" id="cChart" viewBox="0 0 720 240" role="img" aria-label="منحنى النمو التراكمي: قبل الرسوم، صافي المشترك، أعلى قيمة سابقة"></svg>
+      <ul class="calc-legend">
+        <li><i class="sw sw-gross"></i>قبل الرسوم</li>
+        <li><i class="sw sw-net"></i>صافي المشترك</li>
+        <li><i class="sw sw-hwm"></i>أعلى قيمة سابقة</li>
+      </ul>
+      <div class="table-wrap"><table class="calc-table" id="cTable">
+        <thead><tr><th scope="col">الفترة</th><th scope="col">العائد %</th><th scope="col">قبل الرسوم</th><th scope="col">الرسوم</th><th scope="col">صافي المشترك</th><th scope="col">أعلى قيمة</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <p class="calc-error" id="cError" role="alert" hidden>اكتب مبلغاً أكبر من صفر، ونسبة بين 0 و100، وعائداً واحداً على الأقل.</p>
     </div></div>
     <div class="gate-banner" role="note">
       <p><strong>لا نقبل أي أموال أو اشتراكات الآن.</strong> لا توجد محفظة عامة ولا نسخ صفقات. هذه الصفحة تشرح التصميم فقط.</p>
@@ -325,6 +360,7 @@
   </div>
 </footer>
 
+<script src="calc.js" defer></script>
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("themeToggle");

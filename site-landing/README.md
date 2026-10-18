@@ -23,3 +23,7 @@ Execution agent (real trading), public copy-trading vaults and profit sharing, t
 ## The chain section (ADR-088)
 
 `#chain` presents the three finance research agents (Market Researcher, Institutional Model Builder, Earnings Reviewer) and the per-ticker notes.md, as built in `omega-ops-room-v1/the-chain.html`. The investors section adds a copy-trading portal card marked «قيد الموافقة» / "Pending approval" next to the closed profit-split card. Both pages now have a skip link.
+
+## Profit-split calculator (ADR-089)
+
+`#calc` on both pages: enter an investment, fee rate, hurdle and period returns; `calc.js` works out net value, net profit, the performance fee, value before fees, the high-water mark, protected periods, a growth chart and a per-period table. Browser-only math that sends and stores nothing; the page says no money is accepted. The copy-trading card still reads «قيد الموافقة». Both pages carry a strict CSP (`script-src 'self'` + sha256 hashes); run `node scripts/skillspector-audit.mjs --fix site-landing` after editing an inline script.

@@ -1,0 +1,63 @@
+{
+  "allowHosts": [
+    "example.com",
+    "example.org",
+    "www.digitraffic.fi",
+    "aisstream.io",
+    "opensky-network.org",
+    "firms.modaps.eosdis.nasa.gov",
+    "earthquake.usgs.gov",
+    "www.gdacs.org",
+    "www.nhc.noaa.gov",
+    "liikennetilanne.fintraffic.fi",
+    "umferdin.is",
+    "scripts.sil.org"
+  ],
+  "suppress": [
+    {
+      "rule": "SEC-KEY-LITERAL",
+      "path": "services/mind/test_mind.py",
+      "reason": "Fake placeholder key used only to test that the redactor removes key-shaped strings; it is not a real credential."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-ops-room.html",
+      "reason": "Stores theme choice and the AES-GCM vault ciphertext only; the self-check row flags any plaintext key found in localStorage."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/the-chain.html",
+      "reason": "Stores theme choice and the analyst's notes.md draft; no credentials."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "site-landing/index.html",
+      "reason": "Stores the light/dark theme choice only."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "site-landing/en.html",
+      "reason": "Stores the light/dark theme choice only."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "scripts/ui-three-sizes.mjs",
+      "reason": "Test harness sets the theme key inside a throwaway browser context."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "scripts/ui-three-sizes.mjs",
+      "reason": "Reads the ALLOW_NET_ERRORS test switch; no secrets."
+    },
+    {
+      "rule": "SEC-HTTP",
+      "path": "site-landing/fonts/**",
+      "reason": "Plain-text licence files quoting the historical SIL URL; never fetched."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "scripts/omega-data-proxy.mjs",
+      "reason": "Reads port, cache folder and the SEC contact User-Agent; no secrets, never logged or returned to pages."
+    }
+  ]
+}

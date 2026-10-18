@@ -2,6 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I='; style-src 'sha256-6r4c8+WM305d9ZnS/AzmPnvqQLGqGV0KR8FFgzJg7lI='; font-src data:; img-src data: blob: https://s3-eu-west-1.amazonaws.com; connect-src 'self' https://data-api.binance.vision https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -299,6 +300,9 @@
   .log .ev-ok { color: var(--success); font-weight: 700; }
   .empty { color: var(--content-tertiary); font-size: var(--text-footnote); }
 
+  .mt-3 { margin-top: var(--s-3); }
+  .sw-accent { background: var(--accent); } .sw-gold { background: var(--gold); } .sw-violet { background: var(--violet); }
+  .chart-legend i.sw-dot { width: 8px; height: 8px; border-radius: 50%; } .sw-success { background: var(--success); } .sw-danger { background: var(--danger); }
   .footer { margin-top: var(--s-8); padding-top: var(--s-4); border-top: var(--hairline) solid var(--hairline-color); display: flex; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; color: var(--content-tertiary); font-size: var(--text-caption); line-height: 1.7; }
 
   @media (max-width: 640px) {
@@ -313,6 +317,71 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+
+  /* ---------- forms, buttons (Phase 4) ---------- */
+  .mini-h { font-size: var(--text-footnote); font-weight: 800; margin: var(--s-4) 0 var(--s-2); }
+  .mini-h .ar { font-weight: 700; color: var(--content-secondary); }
+  .form-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+  .form-grid { display: grid; gap: var(--s-3); align-items: end; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+  .form-grid .span-2 { grid-column: span 2; }
+  @media (max-width: 640px) { .form-grid .span-2 { grid-column: auto; } }
+  .field { display: grid; gap: var(--s-1); min-width: 0; margin-top: var(--s-2); }
+  .field label { font-size: var(--text-caption); font-weight: 700; color: var(--content-secondary); }
+  .field input {
+    width: 100%; min-height: 40px; padding: var(--s-2) var(--s-3); border-radius: var(--r-inner);
+    border: var(--hairline) solid var(--hairline-color); background: var(--surface-2); color: var(--content-primary);
+    font: inherit; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    transition: border-color var(--dur-fast) var(--ease-apple-fluid);
+  }
+  .field input:hover { border-color: var(--content-tertiary); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 40px; padding: 0 var(--s-4);
+    border-radius: var(--r-pill); border: var(--hairline) solid var(--hairline-color); background: var(--surface); color: var(--content-primary);
+    cursor: pointer; font: inherit; font-size: var(--text-footnote); font-weight: 700; touch-action: manipulation;
+    transition: transform var(--dur-base) var(--ease-spring), border-color var(--dur-fast) var(--ease-apple-fluid);
+  }
+  .btn .ar { font-weight: 600; }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: var(--accent-fill); color: var(--on-accent-fill); border-color: transparent; }
+  .btn.danger { color: var(--danger); }
+  .btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-family: var(--font-mono); font-size: var(--text-caption); background: var(--surface-2); padding: 1px var(--s-1); border-radius: 4px; white-space: normal; overflow-wrap: anywhere; }
+
+  .sev-row { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
+  .sev { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-caption); font-weight: 800; padding: 2px var(--s-3); border-radius: var(--r-pill); border: var(--hairline) solid currentColor; }
+  .sev.critical, .sev.high { color: var(--danger); }
+  .sev.medium { color: var(--warning); }
+  .sev.low { color: var(--content-secondary); }
+  .sev.pass { color: var(--success); }
+  .findings li { grid-template-columns: auto 1fr; }
+  .findings .loc { font-family: var(--font-mono); font-size: var(--text-caption); color: var(--content-secondary); overflow-wrap: anywhere; }
+  .findings code { display: block; margin-top: 2px; }
+  #ssSelf td:last-child .ok { color: var(--success); }
+  #ssSelf td:last-child .bad { color: var(--danger); }
+  #vaultList li { grid-template-columns: 1fr auto; align-items: center; }
+  #vaultList .acts { display: flex; gap: var(--s-1); flex-wrap: wrap; justify-content: flex-end; }
+  #vaultList .btn { min-height: 32px; padding: 0 var(--s-3); font-size: var(--text-caption); }
+  #vaultList .secret { font-family: var(--font-mono); font-size: var(--text-caption); color: var(--content-secondary); overflow-wrap: anywhere; }
+
+  /* ---------- profit split ---------- */
+  .ps-kpis { display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); margin: var(--s-4) 0; }
+  .ps-kpis div { padding: var(--s-3) var(--s-4); border-radius: var(--r-inner); background: var(--surface-2); min-width: 0; }
+  .ps-kpis span { display: block; font-size: var(--text-caption); font-weight: 700; color: var(--content-secondary); }
+  .ps-kpis b { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; font-size: var(--text-title); }
+  .chart .ps-gross { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .chart .ps-net { fill: none; stroke: var(--success); stroke-width: 2; }
+  .chart .ps-hwm { fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .table-scroll { overflow-x: auto; overscroll-behavior-x: contain; margin-top: var(--s-4); border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); }
+  .data-t { width: 100%; border-collapse: collapse; font-size: var(--text-footnote); }
+  .data-t th, .data-t td { padding: var(--s-2) var(--s-3); border-bottom: var(--hairline) solid var(--hairline-color); text-align: end; white-space: nowrap; font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+  .data-t th { background: var(--surface-2); font-family: var(--font-en); font-size: var(--text-caption); color: var(--content-secondary); }
+  .data-t th:first-child, .data-t td:first-child { text-align: start; }
+  .data-t tr:last-child td { border-bottom: 0; }
+  .data-t .neg { color: var(--danger); }
+  .why.bad-text { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -338,7 +407,7 @@
 
   <main>
     <!-- ===== Globe + live KPIs ===== -->
-    <div class="row row-hero" style="margin-top: var(--s-3)">
+    <div class="row row-hero mt-3">
       <section class="card globe-card" aria-labelledby="globeTitle">
         <div class="card-head">
           <div class="card-title" id="globeTitle">Spatial intelligence core<span class="ar" lang="ar">الكرة الحية: نقاط الرصد</span></div>
@@ -409,11 +478,11 @@
         </div>
         <svg class="chart" id="chart" viewBox="0 0 720 280" role="img" aria-label="BTC daily close with 20 and 50 day moving averages"></svg>
         <div class="chart-legend">
-          <span><i style="background: var(--accent)"></i>Close · <span class="ar" lang="ar">الإغلاق</span></span>
-          <span><i style="background: var(--gold)"></i>SMA 20</span>
-          <span><i style="background: var(--violet)"></i>SMA 50</span>
-          <span><i style="background: var(--success); height: 8px; width: 8px; border-radius: 50%"></i>Cross up · <span class="ar" lang="ar">تقاطع صاعد</span></span>
-          <span><i style="background: var(--danger); height: 8px; width: 8px; border-radius: 50%"></i>Cross down · <span class="ar" lang="ar">تقاطع هابط</span></span>
+          <span><i class="sw sw-accent"></i>Close · <span class="ar" lang="ar">الإغلاق</span></span>
+          <span><i class="sw sw-gold"></i>SMA 20</span>
+          <span><i class="sw sw-violet"></i>SMA 50</span>
+          <span><i class="sw sw-dot sw-success"></i>Cross up · <span class="ar" lang="ar">تقاطع صاعد</span></span>
+          <span><i class="sw sw-dot sw-danger"></i>Cross down · <span class="ar" lang="ar">تقاطع هابط</span></span>
         </div>
       </section>
 
@@ -441,7 +510,7 @@
       <p>Status shown is the real state today · <span class="ar" lang="ar">الحالة المعروضة هي الحالة الحقيقية اليوم</span></p>
     </div>
     <div class="row row-5" id="agents"></div>
-    <section class="card" aria-labelledby="chainLinkTitle" style="margin-top: var(--s-3)">
+    <section class="card mt-3" aria-labelledby="chainLinkTitle">
       <div class="card-head">
         <div class="card-title" id="chainLinkTitle">THE CHAIN · finance research<span class="ar" lang="ar">سلسلة الوكلاء الماليين: الباحث، باني النماذج، مراجع الأرباح، notes.md</span></div>
         <span class="tag">RESEARCH ONLY</span>
@@ -505,6 +574,122 @@
         <ul class="log" id="log"><li class="empty">No outages since this page opened · <span class="ar" lang="ar">لا انقطاع منذ فتح الصفحة</span></li></ul>
       </section>
     </div>
+
+    <!-- ===== Digital-asset liquidity ===== -->
+    <div class="section-title">
+      <h2>Digital-asset liquidity<span class="ar" lang="ar">سيولة الأصول الرقمية</span></h2>
+      <p>CoinGecko public API · DefiLlama · free, no keys · <span class="ar" lang="ar">مصادر مجانية بلا مفاتيح</span></p>
+    </div>
+    <div class="row row-4">
+      <section class="card" aria-labelledby="mcapTitle">
+        <div class="card-head">
+          <div class="card-title" id="mcapTitle">Crypto market cap<span class="ar" lang="ar">القيمة السوقية للعملات الرقمية</span></div>
+          <div class="tag">COINGECKO</div>
+        </div>
+        <div class="metric" id="mcapValue">—</div>
+        <div class="sub" id="mcapSub">Total market cap and BTC dominance · <span class="ar" lang="ar">القيمة الكلية وحصة البيتكوين</span></div>
+        <div class="state" id="mcapState"><span class="dot"></span> CHECKING</div>
+      </section>
+      <section class="card" aria-labelledby="tvlTitle">
+        <div class="card-head">
+          <div class="card-title" id="tvlTitle">DeFi total value locked<span class="ar" lang="ar">إجمالي القيمة المقفلة في التمويل اللامركزي</span></div>
+          <div class="tag">DEFILLAMA</div>
+        </div>
+        <div class="metric" id="tvlValue">—</div>
+        <div class="sub" id="tvlSub">30-day change · <span class="ar" lang="ar">التغيّر خلال 30 يوماً</span></div>
+        <div class="state" id="tvlState"><span class="dot"></span> CHECKING</div>
+      </section>
+    </div>
+
+    <!-- ===== Security shield ===== -->
+    <div class="section-title" id="shield">
+      <h2>Security shield · SkillSpector<span class="ar" lang="ar">الدرع الأمني</span></h2>
+      <p>Scans this page live and any files you pick. Nothing leaves this browser · <span class="ar" lang="ar">لا يغادر شيء هذا المتصفح</span></p>
+    </div>
+    <div class="row row-chart">
+      <section class="card" aria-labelledby="ssTitle">
+        <div class="card-head">
+          <div class="card-title" id="ssTitle">SkillSpector scanner<span class="ar" lang="ar">ماسح المخاطر والأدوات الخبيثة</span></div>
+          <div class="tag num" id="ssRules">0 RULES</div>
+        </div>
+        <h3 class="mini-h">This page, right now · <span class="ar" lang="ar">هذه الصفحة الآن</span></h3>
+        <table class="kv" id="ssSelf"><tbody></tbody></table>
+        <h3 class="mini-h">Scan project files or a skill · <span class="ar" lang="ar">افحص ملفات المشروع أو أي مهارة</span></h3>
+        <div class="form-row">
+          <label class="btn" for="ssDir">Pick a folder · <span class="ar" lang="ar">اختر مجلداً</span></label>
+          <input class="sr-only" id="ssDir" name="ssDir" type="file" webkitdirectory multiple />
+          <label class="btn" for="ssFiles">Pick files · <span class="ar" lang="ar">اختر ملفات</span></label>
+          <input class="sr-only" id="ssFiles" name="ssFiles" type="file" multiple />
+          <label class="btn" for="ssReport">Load CLI report · <span class="ar" lang="ar">حمّل تقرير الأداة</span></label>
+          <input class="sr-only" id="ssReport" name="ssReport" type="file" accept=".json,application/json" />
+          <button class="btn" id="ssExport" type="button" disabled>Export JSON · <span class="ar" lang="ar">صدّر</span></button>
+        </div>
+        <p class="why" id="ssStatus" role="status" aria-live="polite">No files scanned yet · <span class="ar" lang="ar">لم تُفحص ملفات بعد</span></p>
+        <div class="sev-row" id="ssCounts"></div>
+        <ul class="log findings" id="ssList"></ul>
+        <p class="sub">Command line: <code class="num">node scripts/skillspector-audit.mjs --strict site-landing omega-ops-room-v1</code></p>
+      </section>
+
+      <section class="card" aria-labelledby="vaultTitle">
+        <div class="card-head">
+          <div class="card-title" id="vaultTitle">Encrypted vault<span class="ar" lang="ar">الخزنة المشفّرة</span></div>
+          <div class="tag" id="vaultTag">AES-GCM 256</div>
+        </div>
+        <p class="sub">Keys and sensitive settings are encrypted on this laptop with a key derived from your passphrase (PBKDF2-SHA256, 600,000 rounds). Only ciphertext is stored. Nothing here places an order. · <span class="ar" lang="ar">يُخزَّن النص المشفّر فقط، ولا شيء هنا ينفّذ صفقة.</span></p>
+        <div id="vaultLocked">
+          <div class="field">
+            <label for="vaultPass">Passphrase (12+ characters) · <span class="ar" lang="ar">عبارة المرور</span></label>
+            <input id="vaultPass" name="vaultPass" type="password" autocomplete="off" spellcheck="false" minlength="12" placeholder="At least 12 characters…" />
+          </div>
+          <div class="form-row">
+            <button class="btn primary" id="vaultOpen" type="button">Unlock · <span class="ar" lang="ar">افتح</span></button>
+            <label class="btn" for="vaultImport">Import backup · <span class="ar" lang="ar">استورد نسخة</span></label>
+            <input class="sr-only" id="vaultImport" name="vaultImport" type="file" accept=".json,application/json" />
+          </div>
+        </div>
+        <div id="vaultUnlocked" hidden>
+          <div class="form-grid">
+            <div class="field"><label for="vaultName">Name · <span class="ar" lang="ar">الاسم</span></label><input id="vaultName" name="vaultName" type="text" autocomplete="off" spellcheck="false" placeholder="Binance read-only key…" /></div>
+            <div class="field"><label for="vaultValue">Secret · <span class="ar" lang="ar">القيمة السرية</span></label><input id="vaultValue" name="vaultValue" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the value…" /></div>
+          </div>
+          <div class="form-row">
+            <button class="btn primary" id="vaultAdd" type="button">Encrypt &amp; save · <span class="ar" lang="ar">شفّر واحفظ</span></button>
+            <button class="btn" id="vaultLock" type="button">Lock now · <span class="ar" lang="ar">اقفل</span></button>
+            <button class="btn" id="vaultBackup" type="button">Download encrypted backup · <span class="ar" lang="ar">نزّل نسخة مشفّرة</span></button>
+            <button class="btn danger" id="vaultWipe" type="button">Delete vault · <span class="ar" lang="ar">احذف الخزنة</span></button>
+          </div>
+          <ul class="log" id="vaultList"></ul>
+        </div>
+        <p class="why" id="vaultStatus" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <!-- ===== Profit split & high-water mark ===== -->
+    <div class="section-title" id="split">
+      <h2>Profit split &amp; high-water mark<span class="ar" lang="ar">حاسبة تقسيم الأرباح وأعلى قيمة سابقة</span></h2>
+      <p>Math simulation only. No money is accepted and no trade is copied · <span class="ar" lang="ar">محاكاة رياضية فقط، لا نقبل أموالاً</span></p>
+    </div>
+    <section class="card" aria-labelledby="splitTitle">
+      <div class="card-head">
+        <div class="card-title" id="splitTitle">High-water mark vault calculator<span class="ar" lang="ar">حاسبة الخزنة بحماية أعلى قيمة</span></div>
+        <div class="tag">SIMULATION</div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="psAmount">Investment · <span class="ar" lang="ar">مبلغ الاستثمار</span></label><input id="psAmount" name="psAmount" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="10000" /></div>
+        <div class="field"><label for="psFee">Performance fee % · <span class="ar" lang="ar">نسبة أتعاب الأداء</span></label><input id="psFee" name="psFee" type="number" inputmode="decimal" step="any" min="0" max="100" autocomplete="off" value="20" /></div>
+        <div class="field"><label for="psHurdle">Hurdle per period % · <span class="ar" lang="ar">الحد الأدنى للعائد لكل فترة</span></label><input id="psHurdle" name="psHurdle" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="0" /></div>
+        <div class="field span-2"><label for="psReturns">Period returns %, comma separated · <span class="ar" lang="ar">عوائد الفترات، مفصولة بفاصلة</span></label><input id="psReturns" name="psReturns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="4, -2.5, 3, 6, -5, 2.5" /></div>
+      </div>
+      <p class="why">Default returns are hypothetical, chosen to show the math. They are not a track record. · <span class="ar" lang="ar">العوائد الافتراضية للشرح فقط وليست أداءً حقيقياً.</span></p>
+      <div class="ps-kpis" id="psKpis"></div>
+      <svg class="chart" id="psChart" viewBox="0 0 720 220" role="img" aria-label="Cumulative growth: before fees, investor net, high-water mark"></svg>
+      <div class="chart-legend">
+        <span><i class="sw sw-accent"></i>Before fees · <span class="ar" lang="ar">قبل الرسوم</span></span>
+        <span><i class="sw sw-success"></i>Investor net · <span class="ar" lang="ar">صافي المستثمر</span></span>
+        <span><i class="sw sw-gold"></i>High-water mark · <span class="ar" lang="ar">أعلى قيمة</span></span>
+      </div>
+      <div class="table-scroll"><table class="data-t" id="psTable"></table></div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -1429,6 +1614,368 @@ function boot() {
 }
 
 boot();
+</script>
+<script>
+
+"use strict";
+// Phase 4 (ADR-089): liquidity feed, SkillSpector shield, AES-GCM vault, profit-split calculator.
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const ar = text => { const s = h("span", "ar", text); s.lang = "ar"; return s; };
+  const nf = (v, d = 2) => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) : "—";
+  const big = v => !Number.isFinite(v) ? "—" : v >= 1e12 ? nf(v / 1e12, 2) + "T" : v >= 1e9 ? nf(v / 1e9, 1) + "B" : nf(v / 1e6, 1) + "M";
+  const stateLine = (id, cls, en, arText) => { const n = $(id); n.className = "state " + cls; n.replaceChildren(h("span", "dot " + cls), document.createTextNode(" " + en + " · "), ar(arText)); };
+  async function getJson(url, ms = 9000) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+    try { const r = await fetch(url, { signal: c.signal, credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+    finally { clearTimeout(t); }
+  }
+
+  /* ===================== liquidity (CoinGecko + DefiLlama) ===================== */
+  const LIQ = { geckoGlobal: "https://api.coingecko.com/api/v3/global", llamaTvl: "https://api.llama.fi/v2/historicalChainTvl", everyMs: 600000 };
+  async function loadLiquidity() {
+    let ok = true;
+    try {
+      const g = (await getJson(LIQ.geckoGlobal)).data;
+      const cap = Number(g.total_market_cap && g.total_market_cap.usd), dom = Number(g.market_cap_percentage && g.market_cap_percentage.btc), chg = Number(g.market_cap_change_percentage_24h_usd);
+      if (!Number.isFinite(cap)) throw new Error("bad payload");
+      $("mcapValue").replaceChildren(document.createTextNode("$" + big(cap)), h("small", "", "USD"));
+      $("mcapSub").replaceChildren(document.createTextNode(`BTC dominance ${nf(dom, 1)}% · 24h ${chg >= 0 ? "+" : ""}${nf(chg, 2)}% · `), ar("حصة البيتكوين وتغيّر 24 ساعة"));
+      stateLine("mcapState", "online", "LIVE", "متصل");
+    } catch { ok = false; stateLine("mcapState", "offline", "UNREACHABLE", "غير متاح"); }
+    try {
+      const pts = await getJson(LIQ.llamaTvl);
+      if (!Array.isArray(pts) || pts.length < 31) throw new Error("bad payload");
+      const last = pts[pts.length - 1], prev = pts[pts.length - 31];
+      const d = (last.tvl / prev.tvl - 1) * 100;
+      $("tvlValue").replaceChildren(document.createTextNode("$" + big(last.tvl)), h("small", "", "USD"));
+      $("tvlSub").replaceChildren(document.createTextNode(`30-day change ${d >= 0 ? "+" : ""}${nf(d, 1)}% · as of ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(last.date * 1000))} · `), ar("التغيّر خلال 30 يوماً"));
+      stateLine("tvlState", "online", "LIVE", "متصل");
+    } catch { ok = false; stateLine("tvlState", "offline", "UNREACHABLE", "غير متاح"); }
+    return ok;
+  }
+  if (typeof schedule === "function") schedule("LIQUIDITY", loadLiquidity, LIQ.everyMs, { pauseHidden: true }); else loadLiquidity();
+
+  /* ===================== SkillSpector (same rules as scripts/skillspector-audit.mjs) ===================== */
+  /* SKILLSPECTOR_RULES_START */
+const RULES = [
+  { id: "SEC-KEY-LITERAL", sev: "critical", re: "(sk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{40,}|csk-[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{35}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{60,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)", flags: "", files: "*", msg: "Secret-shaped literal in a file. Move it to the encrypted vault or an env file outside the repo." },
+  { id: "SEC-PIPE-SHELL", sev: "critical", re: "(curl|wget)[^\\n|]*\\|\\s*(sudo\\s+)?(ba|z)?sh\\b|iwr[^\\n|]*\\|\\s*iex|Invoke-Expression", flags: "i", files: "*", msg: "Downloads and runs code in one step. Review the script and pin it by hash instead." },
+  { id: "SEC-EVAL", sev: "high", re: "(^|[^\\w.$])eval\\s*\\(|new\\s+Function\\s*\\(|(setTimeout|setInterval)\\s*\\(\\s*[\"'`]", flags: "", files: "code", msg: "Runs a string as code. Replace with a direct function call." },
+  { id: "SEC-EXEC", sev: "high", re: "child_process|\\bexecSync\\s*\\(|\\bspawnSync\\s*\\(|\\bos\\.system\\s*\\(|\\bsubprocess\\.(run|Popen|call|check_output)\\s*\\(|Runtime\\.getRuntime\\(\\)\\.exec", flags: "", files: "code", msg: "Starts a process. Inside a skill or plugin this needs a manual review." },
+  { id: "SEC-XSS-SINK", sev: "high", re: "\\.(innerHTML|outerHTML)\\s*=(?!=)|insertAdjacentHTML\\s*\\(|document\\.write(ln)?\\s*\\(|dangerouslySetInnerHTML", flags: "", files: "code", msg: "Writes markup from a string (XSS sink). Use textContent or build nodes." },
+  { id: "SEC-INLINE-HANDLER", sev: "medium", re: "<[a-z][^>]*\\son(click|load|error|mouseover|focus|submit|change|input|keydown|keyup)\\s*=", flags: "i", files: "html", msg: "Inline event handler. A strict CSP blocks it; attach with addEventListener." },
+  { id: "SEC-ENV", sev: "medium", re: "process\\.env\\b|\\bos\\.environ\\b|\\bos\\.getenv\\s*\\(|Deno\\.env", flags: "", files: "code", msg: "Reads environment variables (where API keys usually live)." },
+  { id: "SEC-STORAGE", sev: "medium", re: "\\b(localStorage|sessionStorage|indexedDB)\\b", flags: "", files: "code", msg: "Uses browser storage. Secrets there must be encrypted (AES-GCM vault)." },
+  { id: "SEC-HTTP", sev: "medium", re: "http://(?!127\\.0\\.0\\.1|localhost|0\\.0\\.0\\.0|\\[::1\\]|www\\.w3\\.org|schemas\\.|purl\\.org|ns\\.adobe\\.com)[a-z0-9.-]+", flags: "i", files: "*", msg: "Plain http:// to an outside host. Use https://." },
+  { id: "SEC-HOST", sev: "low", re: "https://([a-z0-9-]+\\.)+[a-z]{2,}", flags: "gi", files: "code", msg: "Outside host not in the allowlist (.skillspector.json allowHosts)." },
+  { id: "SEC-BLANK-REL", sev: "low", re: "<a\\b(?=[^>]*target=\"_blank\")(?![^>]*rel=\"[^\"]*noopener)[^>]*>", flags: "gi", files: "html", msg: "target=_blank without rel=\"noopener noreferrer\" (auto-fixable)." },
+  { id: "SEC-SRI", sev: "high", re: "<script\\b(?=[^>]*\\ssrc=\"https?://)(?![^>]*\\sintegrity=)[^>]*>|<link\\b(?=[^>]*rel=\"stylesheet\")(?=[^>]*href=\"https?://)(?![^>]*\\sintegrity=)[^>]*>", flags: "gi", files: "html", msg: "External script or stylesheet without Subresource Integrity (auto-fixable with --fetch)." },
+  { id: "SEC-PROMPT-INJECTION", sev: "high", re: "ignore (all )?(previous|prior|above) instructions|disregard (the )?(system|previous) prompt|--dangerously-skip-permissions|bypassPermissions|\"defaultMode\"\\s*:\\s*\"bypass", flags: "i", files: "agent", msg: "Instruction-override phrase or permission bypass inside an agent/skill file." },
+];
+const DEFAULT_ALLOW_HOSTS = [
+  "github.com", "raw.githubusercontent.com", "api.github.com", "claude.ai", "claude.com", "anthropic.com", "docs.anthropic.com", "code.claude.com",
+  "api.gdeltproject.org", "www.gdeltproject.org", "data.sec.gov", "www.sec.gov", "sec.gov", "stooq.com",
+  "api.binance.com", "data-api.binance.vision", "api.coingecko.com", "api.llama.fi", "defillama.com",
+  "api.open-meteo.com", "open-meteo.com", "s3-eu-west-1.amazonaws.com", "tfl.gov.uk", "api.tfl.gov.uk",
+  "fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com", "unpkg.com",
+  "developer.mozilla.org", "www.w3.org", "w3c.github.io", "vercel.com", "naturalearthdata.com", "www.naturalearthdata.com",
+];
+/* SKILLSPECTOR_RULES_END */
+  const KEY_RE = () => { const r = RULES.find(x => x.id === "SEC-KEY-LITERAL"); return r ? new RegExp(r.re) : /$^/; };
+  $("ssRules").textContent = `${RULES.length} RULES`;
+  const SEV = ["critical", "high", "medium", "low"];
+  const CODE_EXT = /\.(js|mjs|cjs|ts|tsx|jsx|py|html?|sh|ps1|bat|vue|svelte)$/i, TEXT_EXT = /\.(js|mjs|cjs|ts|tsx|jsx|py|html?|sh|ps1|bat|vue|svelte|md|json|ya?ml|toml|env|txt|css|ini|cfg)$/i;
+  const SKIP = /(^|\/)(\.git|node_modules|\.next|dist|build|__pycache__|\.venv|venv)\//;
+  let lastReport = null;
+
+  async function sha256b64(s) {
+    const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return btoa(String.fromCharCode(...new Uint8Array(d)));
+  }
+  async function scanText(text, rel) {
+    const ext = CODE_EXT.test(rel), html = /\.html?$/i.test(rel);
+    const agent = /(^|\/)(\.claude|plugins|mcp|skills)\//.test(rel) || /(SKILL|AGENTS|CLAUDE)\.md$/.test(rel);
+    const skill = /(^|\/)(\.claude\/skills|plugins|mcp)\//.test(rel);
+    const clean = text.replace(/data:[a-z/+.-]+;base64,[A-Za-z0-9+/=]{200,}/g, m => m.slice(0, 40) + "…")
+      .replace(/\/\* SKILLSPECTOR_RULES_START \*\/[\s\S]*?\/\* SKILLSPECTOR_RULES_END \*\//g, m => m.replace(/[^\n]/g, " "));
+    const lineOf = i => clean.slice(0, i).split("\n").length;
+    const out = [];
+    for (const r of RULES) {
+      const applies = r.files === "*" || (r.files === "code" && ext) || (r.files === "html" && html) || (r.files === "agent" && agent);
+      if (!applies) continue;
+      const re = new RegExp(r.re, r.flags.includes("g") ? r.flags : r.flags + "g");
+      for (const m of clean.matchAll(re)) {
+        if (r.id === "SEC-HOST") { const host = m[0].replace(/^https:\/\//i, "").toLowerCase(); if (DEFAULT_ALLOW_HOSTS.some(a => host === a || host.endsWith("." + a))) continue; }
+        const sev = skill && ["SEC-ENV", "SEC-STORAGE", "SEC-HOST"].includes(r.id) ? "high" : r.sev;
+        out.push({ file: rel, rule: r.id, sev, line: lineOf(m.index), excerpt: r.id === "SEC-KEY-LITERAL" ? `${m[0].slice(0, 6)}… (${m[0].length} chars, masked)` : m[0].slice(0, 80) });
+      }
+    }
+    if (html) {
+      const m = /<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="([^"]+)"/i.exec(text);
+      if (!m) out.push({ file: rel, rule: "SEC-CSP", sev: "high", line: 1, excerpt: "no CSP meta" });
+      else {
+        const csp = m[1], dir = n => (new RegExp(`(?:^|;)\\s*${n}\\s+([^;]*)`, "i").exec(csp) || [])[1] || "";
+        const ss = dir("script-src") || dir("default-src");
+        if (/'unsafe-inline'|'unsafe-eval'/.test(ss)) out.push({ file: rel, rule: "SEC-CSP", sev: "high", line: lineOf(m.index), excerpt: "script-src allows unsafe-*" });
+        for (const s of text.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+          const hsh = `'sha256-${await sha256b64(s[1])}'`;
+          if (!dir("script-src").includes(hsh)) out.push({ file: rel, rule: "SEC-CSP", sev: "high", line: lineOf(s.index), excerpt: "inline script not in CSP hashes" });
+        }
+      }
+    }
+    return out;
+  }
+  function renderFindings(report, label) {
+    lastReport = report;
+    const counts = Object.fromEntries(SEV.map(s => [s, report.findings.filter(f => f.sev === s).length]));
+    const row = $("ssCounts"); row.replaceChildren();
+    for (const s of SEV) row.append(h("span", "sev " + s, `${s.toUpperCase()} ${counts[s]}`));
+    if (!counts.critical && !counts.high) row.append(h("span", "sev pass", "NO CRITICAL / HIGH"));
+    const list = $("ssList"); list.replaceChildren();
+    for (const f of report.findings.slice(0, 200)) {
+      const li = h("li");
+      li.append(h("span", "sev " + f.sev, f.sev.toUpperCase()));
+      const body = h("div"); body.append(h("div", "loc", `${f.rule} · ${f.file}:${f.line}`), h("code", "", f.excerpt));
+      li.append(body); list.append(li);
+    }
+    if (report.findings.length > 200) list.append(h("li", "empty", `Showing 200 of ${report.findings.length}. Export JSON for all.`));
+    $("ssStatus").replaceChildren(document.createTextNode(`${label}: ${report.scanned} files, ${report.findings.length} findings · `), ar(`فُحص ${report.scanned} ملفاً`));
+    $("ssExport").disabled = false;
+  }
+  async function scanFiles(fileList) {
+    const files = [...fileList].filter(f => TEXT_EXT.test(f.name) && f.size < 4 * 1024 * 1024 && !SKIP.test(f.webkitRelativePath || f.name));
+    $("ssStatus").textContent = `Scanning ${files.length} files…`;
+    const findings = [];
+    for (const f of files) {
+      try { findings.push(...await scanText(await f.text(), f.webkitRelativePath || f.name)); } catch (e) { findings.push({ file: f.name, rule: "READ-ERROR", sev: "low", line: 0, excerpt: String(e.message || e) }); }
+    }
+    findings.sort((a, b) => SEV.indexOf(a.sev) - SEV.indexOf(b.sev) || a.file.localeCompare(b.file) || a.line - b.line);
+    renderFindings({ generated: new Date().toISOString(), scanned: files.length, findings }, "Browser scan");
+  }
+  $("ssDir").addEventListener("change", e => scanFiles(e.target.files));
+  $("ssFiles").addEventListener("change", e => scanFiles(e.target.files));
+  $("ssReport").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const r = JSON.parse(await f.text());
+      if (!Array.isArray(r.findings)) throw new Error("not a SkillSpector report");
+      renderFindings({ generated: r.generated, scanned: r.summary ? r.summary.scanned : 0, findings: r.findings }, "CLI report " + (r.generated || ""));
+    } catch (err) { $("ssStatus").textContent = "Could not read that file: " + err.message + ". Pick the JSON written by --json."; }
+  });
+  $("ssExport").addEventListener("click", () => {
+    if (!lastReport) return;
+    const a = h("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(lastReport, null, 2)], { type: "application/json" }));
+    a.download = `skillspector-${new Date().toISOString().slice(0, 10)}.json`; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  });
+
+  // Live self-check of this page.
+  let violations = 0;
+  document.addEventListener("securitypolicyviolation", () => { violations++; selfCheck(); });
+  function plaintextKeys() {
+    const out = [], re = KEY_RE();
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i), v = localStorage.getItem(k) || ""; if (re.test(v)) out.push(k); } } catch (e) {}
+    return out;
+  }
+  function selfCheck() {
+    const metaCsp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    const csp = metaCsp ? metaCsp.content : "";
+    const scriptSrc = (/(?:^|;)\s*script-src\s+([^;]*)/.exec(csp) || [])[1] || "";
+    const extNoSri = [...document.querySelectorAll("script[src],link[rel=stylesheet][href]")].filter(n => { const u = n.src || n.href; return /^https?:/.test(u) && new URL(u).origin !== location.origin && !n.integrity; }).length;
+    let handlers = 0; for (const n of document.querySelectorAll("*")) for (const a of n.attributes) if (/^on/i.test(a.name)) handlers++;
+    const blank = [...document.querySelectorAll('a[target="_blank"]')].filter(a => !/noopener/.test(a.rel)).length;
+    const keys = plaintextKeys();
+    const rows = [
+      ["Content-Security-Policy", "سياسة أمان المحتوى", !!csp && !/'unsafe-inline'|'unsafe-eval'/.test(scriptSrc), csp ? (/'unsafe-/.test(scriptSrc) ? "unsafe script-src" : "strict, hash-pinned") : "missing"],
+      ["CSP violations since load", "مخالفات منذ الفتح", violations === 0, String(violations)],
+      ["External code without SRI", "شيفرة خارجية بلا SRI", extNoSri === 0, String(extNoSri)],
+      ["Inline event handlers", "معالجات أحداث مضمّنة", handlers === 0, String(handlers)],
+      ["target=_blank without noopener", "روابط بلا noopener", blank === 0, String(blank)],
+      ["Secure context (WebCrypto)", "سياق آمن", window.isSecureContext && !!(crypto && crypto.subtle), window.isSecureContext ? "yes" : "no"],
+      ["Plaintext keys in localStorage", "مفاتيح مكشوفة في التخزين", keys.length === 0, keys.length ? keys.join(", ") : "none"],
+    ];
+    const tb = $("ssSelf").tBodies[0]; tb.replaceChildren();
+    for (const [en, arText, ok, val] of rows) {
+      const tr = h("tr"), a = h("td"); a.append(document.createTextNode(en), ar(arText));
+      const b = h("td"); b.append(h("span", ok ? "ok" : "bad", (ok ? "PASS · " : "FLAG · ") + val));
+      tr.append(a, b); tb.append(tr);
+    }
+  }
+  selfCheck();
+
+  /* ===================== AES-GCM 256 vault ===================== */
+  const VKEY = "omega-vault-v1", ITER = 600000, IDLE_MS = 5 * 60 * 1000;
+  const te = new TextEncoder(), td = new TextDecoder();
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  let vaultKey = null, vaultSalt = null, entries = [], idleTimer = null;
+  const vstatus = (en, arText, bad) => { const n = $("vaultStatus"); n.className = "why" + (bad ? " bad-text" : ""); n.replaceChildren(document.createTextNode(en + " · "), ar(arText)); };
+  async function derive(pass, salt) {
+    const base = await crypto.subtle.importKey("raw", te.encode(pass), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  }
+  const readBlob = () => { try { return JSON.parse(localStorage.getItem(VKEY) || "null"); } catch (e) { return null; } };
+  async function persist() {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, vaultKey, te.encode(JSON.stringify(entries)));
+    const blob = { v: 1, kdf: "PBKDF2-SHA256", iter: ITER, cipher: "AES-GCM-256", salt: b64(vaultSalt), iv: b64(iv), ct: b64(ct) };
+    try { localStorage.setItem(VKEY, JSON.stringify(blob)); } catch (e) { vstatus("Could not write to browser storage. Download a backup now.", "تعذر الحفظ، نزّل نسخة الآن", true); return false; }
+    return true;
+  }
+  function lock(reason) {
+    vaultKey = null; entries = []; clearTimeout(idleTimer);
+    $("vaultUnlocked").hidden = true; $("vaultLocked").hidden = false; $("vaultList").replaceChildren();
+    $("vaultTag").textContent = "AES-GCM 256 · LOCKED";
+    vstatus(reason || (readBlob() ? "Locked. Enter your passphrase to open." : "No vault yet. Choose a passphrase to create one."), readBlob() ? "مقفلة" : "لا توجد خزنة بعد");
+  }
+  const touch = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => lock("Locked after 5 minutes without activity."), IDLE_MS); };
+  function renderVault() {
+    const list = $("vaultList"); list.replaceChildren();
+    if (!entries.length) list.append(h("li", "empty", "Empty. Add a key or setting above."));
+    entries.forEach((e, i) => {
+      const li = h("li"), left = h("div"); left.append(h("b", "", e.name), h("div", "secret", "•".repeat(Math.min(24, e.value.length)) + ` · ${e.value.length} chars · added ${e.added}`));
+      const acts = h("div", "acts");
+      const show = h("button", "btn", "Show 10 s"); show.type = "button"; show.setAttribute("aria-label", `Show ${e.name} for 10 seconds`);
+      show.addEventListener("click", () => { touch(); left.lastChild.textContent = e.value; setTimeout(() => { if (left.isConnected) left.lastChild.textContent = "•".repeat(Math.min(24, e.value.length)) + ` · ${e.value.length} chars · added ${e.added}`; }, 10000); });
+      const copy = h("button", "btn", "Copy"); copy.type = "button"; copy.setAttribute("aria-label", `Copy ${e.name}`);
+      copy.addEventListener("click", async () => { touch(); try { await navigator.clipboard.writeText(e.value); vstatus("Copied. Paste it, then clear your clipboard.", "نُسخ"); } catch (err) { vstatus("Clipboard blocked by the browser.", "الحافظة محجوبة", true); } });
+      const del = h("button", "btn danger", "Delete"); del.type = "button"; del.setAttribute("aria-label", `Delete ${e.name}`);
+      del.addEventListener("click", async () => { if (!confirm(`Delete "${e.name}" from the vault?`)) return; entries.splice(i, 1); await persist(); renderVault(); });
+      acts.append(show, copy, del); li.append(left, acts); list.append(li);
+    });
+    const leaks = plaintextKeys();
+    if (leaks.length) {
+      const li = h("li"), msg = h("div"); msg.append(h("b", "", "Plaintext key found in browser storage"), h("div", "secret", leaks.join(", ")));
+      const mv = h("button", "btn primary", "Encrypt & remove plaintext"); mv.type = "button";
+      mv.addEventListener("click", async () => {
+        for (const k of leaks) { try { entries.push({ name: "storage:" + k, value: localStorage.getItem(k) || "", added: new Date().toISOString().slice(0, 10) }); localStorage.removeItem(k); } catch (e) {} }
+        await persist(); renderVault(); selfCheck(); vstatus("Moved into the vault and removed the plaintext copies.", "نُقلت إلى الخزنة");
+      });
+      li.append(msg, mv); list.prepend(li);
+    }
+  }
+  $("vaultOpen").addEventListener("click", async () => {
+    if (!window.isSecureContext || !crypto.subtle) { vstatus("WebCrypto needs a secure page: open this file directly, via 127.0.0.1, or over HTTPS.", "افتح الملف مباشرة أو عبر HTTPS", true); return; }
+    const pass = $("vaultPass").value;
+    if (pass.length < 12) { vstatus("Use at least 12 characters.", "12 حرفاً على الأقل", true); $("vaultPass").focus(); return; }
+    const blob = readBlob();
+    $("vaultOpen").disabled = true; vstatus("Deriving key…", "جارٍ اشتقاق المفتاح");
+    try {
+      if (blob) {
+        vaultSalt = unb64(blob.salt);
+        const key = await derive(pass, vaultSalt);
+        const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(blob.iv) }, key, unb64(blob.ct));
+        vaultKey = key; entries = JSON.parse(td.decode(pt));
+      } else {
+        vaultSalt = crypto.getRandomValues(new Uint8Array(16));
+        vaultKey = await derive(pass, vaultSalt); entries = [];
+        await persist();
+      }
+      $("vaultPass").value = "";
+      $("vaultLocked").hidden = true; $("vaultUnlocked").hidden = false;
+      $("vaultTag").textContent = "AES-GCM 256 · OPEN";
+      vstatus(blob ? "Unlocked." : "Vault created. Only ciphertext is stored.", blob ? "فُتحت" : "أُنشئت الخزنة");
+      renderVault(); touch();
+    } catch (e) {
+      vaultKey = null; vstatus("Wrong passphrase or damaged vault. Nothing was changed.", "عبارة خاطئة، لم يتغيّر شيء", true);
+    } finally { $("vaultOpen").disabled = false; }
+  });
+  $("vaultPass").addEventListener("keydown", e => { if (e.key === "Enter") $("vaultOpen").click(); });
+  $("vaultAdd").addEventListener("click", async () => {
+    if (!vaultKey) return lock();
+    const name = $("vaultName").value.trim(), value = $("vaultValue").value;
+    if (!name || !value) { vstatus("Give it a name and a value.", "اكتب الاسم والقيمة", true); (name ? $("vaultValue") : $("vaultName")).focus(); return; }
+    entries.push({ name, value, added: new Date().toISOString().slice(0, 10) });
+    if (await persist()) { $("vaultName").value = ""; $("vaultValue").value = ""; vstatus(`Saved "${name}" encrypted.`, "حُفظ مشفّراً"); }
+    renderVault(); touch();
+  });
+  $("vaultLock").addEventListener("click", () => lock("Locked."));
+  $("vaultBackup").addEventListener("click", () => {
+    const blob = readBlob(); if (!blob) return;
+    const a = h("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
+    a.download = `omega-vault-encrypted-${new Date().toISOString().slice(0, 10)}.json`; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000); touch();
+  });
+  $("vaultImport").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const b = JSON.parse(await f.text());
+      if (b.v !== 1 || !b.salt || !b.iv || !b.ct) throw new Error("not an OMEGA vault backup");
+      if (readBlob() && !confirm("Replace the current vault with this backup?")) return;
+      localStorage.setItem(VKEY, JSON.stringify(b)); lock("Backup imported. Unlock it with its passphrase.");
+    } catch (err) { vstatus("Could not import: " + err.message, "تعذر الاستيراد", true); }
+    e.target.value = "";
+  });
+  $("vaultWipe").addEventListener("click", () => {
+    if (!confirm("Delete the vault from this browser? Keep an encrypted backup first. This cannot be undone.")) return;
+    try { localStorage.removeItem(VKEY); } catch (e) {}
+    lock("Vault deleted.");
+  });
+  for (const ev of ["pointerdown", "keydown"]) $("vaultUnlocked").addEventListener(ev, () => { if (vaultKey) touch(); });
+  lock();
+
+  /* ===================== profit split with high-water mark ===================== */
+  // fee = rate × max(0, NAV − HWM × (1 + hurdle)),  HWM ← max(HWM, NAV − fee)
+  function simulate(amount, ratePct, hurdlePct, returns) {
+    let nav = amount, hwm = amount, gross = amount, fees = 0;
+    const rows = [{ p: 0, r: 0, gross, before: amount, fee: 0, nav, hwm }];
+    returns.forEach((r, i) => {
+      gross *= 1 + r / 100;
+      const before = nav * (1 + r / 100);
+      const fee = ratePct / 100 * Math.max(0, before - hwm * (1 + hurdlePct / 100));
+      nav = before - fee; fees += fee; hwm = Math.max(hwm, nav);
+      rows.push({ p: i + 1, r, gross, before, fee, nav, hwm });
+    });
+    return { rows, fees, nav, gross };
+  }
+  function drawSplit() {
+    const amount = parseFloat($("psAmount").value), rate = parseFloat($("psFee").value), hurdle = parseFloat($("psHurdle").value) || 0;
+    const returns = $("psReturns").value.split(/[,،\s]+/).map(Number).filter(Number.isFinite).filter(r => r > -100);
+    const kp = $("psKpis"), tbl = $("psTable"), svg = $("psChart");
+    kp.replaceChildren(); tbl.replaceChildren(); while (svg.firstChild) svg.firstChild.remove();
+    if (!(amount > 0) || !(rate >= 0 && rate <= 100) || !returns.length) { kp.append(h("div", "", "Enter an amount, a fee between 0 and 100, and at least one return.")); return; }
+    const S = simulate(amount, rate, hurdle, returns);
+    const kpi = (en, arText, v) => { const d = h("div"); const s = h("span"); s.append(document.createTextNode(en + " · "), ar(arText)); d.append(s, h("b", "", v)); kp.append(d); };
+    kpi("Investor net value", "صافي قيمة المستثمر", nf(S.nav));
+    kpi("Investor net profit", "صافي ربح المستثمر", (S.nav - amount >= 0 ? "+" : "") + nf(S.nav - amount));
+    kpi(`Performance fee (${nf(rate, 1)}%)`, "حصة أتعاب الأداء", nf(S.fees));
+    kpi("Value before fees", "القيمة قبل الرسوم", nf(S.gross));
+    kpi("High-water mark", "أعلى قيمة سابقة", nf(S.rows[S.rows.length - 1].hwm));
+    // chart
+    const NS = "http://www.w3.org/2000/svg", W = 720, H = 220, L = 70, R = 12, T = 12, B = 28;
+    const mk = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
+    const vals = S.rows.flatMap(r => [r.gross, r.nav, r.hwm]), lo = Math.min(...vals), hi = Math.max(...vals), pad = (hi - lo) * 0.1 || amount * 0.05;
+    const x = i => L + i * (W - L - R) / Math.max(1, S.rows.length - 1), y = v => T + (hi + pad - v) / (hi - lo + 2 * pad) * (H - T - B);
+    for (let k = 0; k <= 4; k++) {
+      const v = lo - pad + (hi - lo + 2 * pad) * k / 4;
+      svg.append(mk("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid-line" }));
+      const t = mk("text", { x: L - 8, y: y(v) + 4, class: "axis", "text-anchor": "end" }); t.textContent = nf(v, 0); svg.append(t);
+    }
+    S.rows.forEach((r, i) => { const t = mk("text", { x: x(i), y: H - 8, class: "axis", "text-anchor": "middle" }); t.textContent = "P" + r.p; svg.append(t); });
+    const path = (key, cls, step) => {
+      let d = "";
+      S.rows.forEach((r, i) => { d += (i ? (step ? ` H${x(i)} V${y(r[key])}` : ` L${x(i)} ${y(r[key])}`) : `M${x(0)} ${y(r[key])}`); });
+      svg.append(mk("path", { d, class: cls }));
+    };
+    path("gross", "ps-gross"); path("nav", "ps-net"); path("hwm", "ps-hwm", true);
+    // table
+    const head = h("tr");
+    for (const c of ["Period", "Return %", "Value before fee", "Fee", "Investor net", "High-water mark"]) { const th = h("th", "", c); th.scope = "col"; head.append(th); }
+    const thead = h("thead"); thead.append(head); tbl.append(thead);
+    const body = h("tbody");
+    for (const r of S.rows) {
+      const tr = h("tr");
+      const cells = [r.p ? "P" + r.p : "Start", r.p ? (r.r >= 0 ? "+" : "") + nf(r.r, 2) : "—", nf(r.before), nf(r.fee), nf(r.nav), nf(r.hwm)];
+      cells.forEach((c, j) => { const tdc = h("td", j === 1 && r.r < 0 ? "neg" : "", c); tr.append(tdc); });
+      body.append(tr);
+    }
+    tbl.append(body);
+  }
+  for (const id of ["psAmount", "psFee", "psHurdle", "psReturns"]) $(id).addEventListener("input", drawSplit);
+  drawSplit();
+})();
 </script>
 </body>
 </html>
