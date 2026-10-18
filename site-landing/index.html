@@ -14,6 +14,7 @@
   <script>try { if (localStorage.getItem("nabd-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}</script>
 </head>
 <body>
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
 <div class="topbar">
   <div class="wrap">
     <header class="nav">
@@ -21,6 +22,7 @@
       <nav class="links" aria-label="أقسام الصفحة">
         <a class="sec" href="#agents">الوكلاء</a>
         <a class="sec" href="#world">قراءة العالم</a>
+        <a class="sec" href="#chain">السلسلة</a>
         <a class="sec" href="#tested">ماذا اختبرنا</a>
         <a class="sec" href="#investors">المستثمرون</a>
         <a class="lang-link" href="en.html" hreflang="en" lang="en">English</a>
@@ -33,7 +35,7 @@
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="main" tabindex="-1">
   <div class="hero">
     <span class="eyebrow">مسودة · غير منشورة بعد</span>
     <h1>افهم ما يحدث في الأسواق، <em>بأدلة لا بمزاعم.</em></h1>
@@ -178,6 +180,55 @@
     </div></div>
   </section>
 
+  <section id="chain" aria-labelledby="chain-h">
+    <div class="section-head">
+      <h2 id="chain-h">السلسلة: ثلاثة وكلاء بحث مالي ودفتر واحد</h2>
+      <p class="lead">باحث، ثم باني نماذج، ثم مراجع أرباح، وكل ما يجدونه يُكتب في ملف notes.md لكل سهم. أدوات بحث فقط: لا تنفّذ صفقة ولا تعطي توصية.</p>
+    </div>
+    <div class="panel"><div class="grid grid-2x2">
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span>
+        <span class="status live">يعمل للبحث</span>
+        <h3>باحث السوق</h3>
+        <p>أخبار آخر <span class="num">90</span> يوماً من GDELT المجاني، مصنّفة إلى الشركة والتنظيم والقطاع، مع نطاق المحللين على <span class="num">6</span> أشهر، والثيران مقابل الدببة، وتغيّر صياغة الإدارة.</p>
+        <ul>
+          <li>كل ادعاء بمصدر وتاريخ، وما لا مصدر له يُوسم «تعذر التحقق منها».</li>
+          <li>القراءات الآلية موسومة [INFERENCE]، وقائمة فجوات المعلومات تُحسب تلقائياً.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg></span>
+        <span class="status live">يعمل للبحث</span>
+        <h3>باني النماذج المؤسسية</h3>
+        <p>خمس أوراق: INPUTS و HISTORICALS و PROJECTION و VALUATION (DCF ومقارنات) و SENSITIVITY بمصفوفة ثنائية.</p>
+        <ul>
+          <li>لا رقم مكتوب داخل المعادلات، فكل افتراض في ورقة INPUTS.</li>
+          <li>يُظهر أهم <span class="num">3</span> افتراضات، والمستوى الذي يغيّر السعر <span class="num">30%</span>، وأهم <span class="num">3</span> مخاطر، ويصدّر CSV و Excel.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="M17 15l2 2 3-4"/></svg></span>
+        <span class="status live">يعمل للبحث</span>
+        <h3>مراجع الأرباح</h3>
+        <p>ماذا قيل مقابل التوقعات، وكيف قيل مقارنة بالربع السابق، وأي أسئلة المحللين أُجيبت وأيها تُهرّب منها.</p>
+        <ul>
+          <li>يختبر أطروحتك في <span class="num">3</span> جمل باقتباسات حرفية من النص.</li>
+          <li>يطلب معايير دحض قابلة للقياس قبل أن تعتمد الأطروحة.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></span>
+        <span class="status live">يعمل</span>
+        <h3>دفتر notes.md</h3>
+        <p>ملف تراكمي لكل سهم: رأيك في <span class="num">3</span> جمل، وما قد يثبت خطأك، وآخر مراجعة، وما الذي تغيّر منذها.</p>
+        <ul>
+          <li>كل مراجعة جديدة تسجّل الفرق في رأيك تلقائياً.</li>
+          <li>يبقى في متصفحك، وتنزّله ملف Markdown متى شئت.</li>
+        </ul>
+      </article>
+    </div></div>
+  </section>
+
   <section id="tested" aria-labelledby="tested-h">
     <div class="section-head">
       <h2 id="tested-h">كل رقم يُفحص، حتى لو كانت النتيجة فشلاً</h2>
@@ -218,7 +269,7 @@
       <h2 id="investors-h">المستثمرون وتقسيم الأرباح</h2>
       <p class="lead">النموذج المقترح بسيط وشفاف: لا رسوم ثابتة، ونسبة من الربح فقط فوق أعلى قيمة سابقة للحساب. إذا خسر الحساب، لا رسوم حتى يعوّض الخسارة كاملة.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-2x2">
       <article class="card">
         <h3>المعادلة</h3>
         <p>الرسوم تُحسب في نهاية كل فترة على الربح فوق أعلى قيمة سابقة (High-Water Mark) فقط:</p>
@@ -238,6 +289,12 @@
             <tr><td>نهاية الفترة 3: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
           </tbody>
         </table>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>
+        <span class="status gated">قيد الموافقة</span>
+        <h3>بوابة نسخ الصفقات</h3>
+        <p>تصميم البوابة جاهز للعرض فقط: لوحة أداء مُدقَّقة من بيانات حقيقية، وحدود مخاطرة لكل ناسخ، وإيقاف فوري. لا تتصل بأي حساب ولا تنسخ أي صفقة.</p>
       </article>
       <article class="card">
         <span class="status closed">غير مفتوح</span>

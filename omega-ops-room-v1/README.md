@@ -41,6 +41,20 @@ The gate opens only when the browser actually reads `/api/health` and it returns
 
 When `omega-core-api` runs on `127.0.0.1:8000`, the page asks it for n8n and Newton health first (tags show `VIA CORE`), which solves the CORS limitation above without touching Newton. Open it through the API at http://127.0.0.1:8000/ops/omega-ops-room.html. If the API is not running, the page falls back to probing each service directly.
 
+## THE CHAIN · سلسلة الوكلاء الماليين (ADR-088)
+
+`the-chain.html` sits next to the Ops Room (link in the agents section) and also opens by double-click. Research only: nothing in it trades.
+
+| Step | What it does |
+|---|---|
+| 01 Market Researcher · باحث السوق | 90-day news from GDELT DOC 2.0 (free, keyless) sorted into company / regulatory / sector [INFERENCE]; 6-month analyst range; bulls vs bears; verbatim management quotes and wording shift; Information Gaps. Anything without a source and a date is shown as «تعذر التحقق منها» and kept out of the numbers. |
+| 02 Institutional Model Builder · باني النماذج | INPUTS / HISTORICALS / PROJECTION / VALUATION (DCF + EV/EBITDA and P/E comps) / SENSITIVITY (two-way matrix). No constant outside INPUTS. Top 3 assumptions, the level of each that moves price 30%, top 3 risks. CSV and Excel export. The built-in example is labelled as invented numbers. |
+| 03 Earnings Reviewer · مراجع الأرباح | Actual vs consensus (with sources), forward guidance quoted verbatim, tone vs last quarter, answered vs dodged analyst questions [INFERENCE], 3-sentence thesis test with exact quotes, falsification criteria. |
+| 04 notes.md · دفتر الملاحظات | One cumulative file per ticker (`# [TICKER]`, view in 3 sentences, what could prove me wrong, last review, what changed, chain log). "مراجعة جديدة" records the change since the last review. Download / import `.md`. |
+
+State lives in this browser's `localStorage` under `chain:<TICKER>:*` and `omega-notes:<TICKER>`. Deep link: `the-chain.html?t=AAPL#model`.
+The 24/7 execution agent, copy-trading vault and profit split appear only as locked cards «قيد الموافقة».
+
 ## Design · التصميم
 
 Same tokens as `site-landing/style.css`. Contrast gate: `node audits/verify-contrast.mjs omega-ops-room-v1/omega-ops-room.html` (all pairs WCAG >= 4.5 and APCA Lc >= 60, light, dark and P3). Cairo and JetBrains Mono are embedded (SIL OFL 1.1), so the page still works double-clicked. Every live number uses a monospace font with `tabular-nums`.

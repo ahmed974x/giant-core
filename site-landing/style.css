@@ -163,6 +163,14 @@ body::before {
 }
 
 a { color: var(--accent); text-underline-offset: 0.2em; }
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+a, button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (pointer: fine) { html { overscroll-behavior: none; } }
+main:focus { outline: none; }
+main:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.skip { position: absolute; inset-inline-start: 16px; top: -100px; z-index: 40; padding: 8px 16px; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent-fill); font-weight: 700; text-decoration: none; }
+.skip:focus-visible { top: 12px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-inner); }
 .num, code, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; direction: ltr; unicode-bidi: isolate; }
 .num { white-space: nowrap; }
@@ -267,6 +275,7 @@ html[lang="ar"] .section-head h2 { line-height: 1.4; letter-spacing: 0; }
   background: var(--surface-2); border: var(--hairline) solid var(--hairline-color);
 }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--pad-panel); }
+.grid.grid-2x2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 
 .card {
   position: relative; isolation: isolate;

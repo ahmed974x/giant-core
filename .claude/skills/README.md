@@ -14,3 +14,12 @@ Claude Code loads every folder here automatically when it runs inside this repo.
 | `webapp-testing` | Playwright screenshots and checks of the dashboard running locally |
 
 To update: re-copy the folders from a fresh clone of the source repo named in each row (anthropics/skills unless stated).
+
+## Project skills (written for OMEGA, ADR-088)
+
+| Skill | Use it for |
+|---|---|
+| `omega-design` | Any OMEGA / NABD page: applies `DESIGN.md`, the Vercel Web Interface Guidelines (copy in `omega-design/references/`, MIT) and the three-size browser loop `scripts/ui-three-sizes.mjs` |
+| `omega-finance-chain` | Stock research, valuation models, earnings-call reviews and per-ticker notes.md, following THE CHAIN rules (research only, never trading) |
+
+These hold text rules distilled from taste-skill, web-interface-guidelines, agent-skills and awesome-design-md; no third-party scripts were copied.
