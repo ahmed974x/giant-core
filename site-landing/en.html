@@ -13,6 +13,7 @@
   <script>try { if (localStorage.getItem("nabd-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}</script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="topbar">
   <div class="wrap">
     <header class="nav">
@@ -20,6 +21,7 @@
       <nav class="links" aria-label="Page sections">
         <a class="sec" href="#agents">Agents</a>
         <a class="sec" href="#world">Reading the world</a>
+        <a class="sec" href="#chain">The chain</a>
         <a class="sec" href="#tested">What we tested</a>
         <a class="sec" href="#investors">Investors</a>
         <a class="lang-link" href="index.html" hreflang="ar" lang="ar">العربية</a>
@@ -32,7 +34,7 @@
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="main" tabindex="-1">
   <div class="hero">
     <span class="eyebrow">Draft · not published yet</span>
     <h1>Understand what moves markets, <em>with evidence, not claims.</em></h1>
@@ -177,6 +179,55 @@
     </div></div>
   </section>
 
+  <section id="chain" aria-labelledby="chain-h">
+    <div class="section-head">
+      <h2 id="chain-h">The chain: three finance research agents and one notebook</h2>
+      <p class="lead">A researcher, then a model builder, then an earnings reviewer, and everything they find goes into one notes.md per stock. Research tools only: they never trade and never recommend.</p>
+    </div>
+    <div class="panel"><div class="grid grid-2x2">
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span>
+        <span class="status live">Working for research</span>
+        <h3>Market researcher</h3>
+        <p>The last <span class="num">90</span> days of news from free GDELT, sorted into company, regulatory and sector, plus a <span class="num">6</span>-month analyst range, bulls versus bears, and how management’s wording changed.</p>
+        <ul>
+          <li>Every claim carries a source and a date; anything without one is marked “unverified”.</li>
+          <li>Machine readings are tagged [INFERENCE], and an information-gaps list is built automatically.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg></span>
+        <span class="status live">Working for research</span>
+        <h3>Institutional model builder</h3>
+        <p>Five sheets: INPUTS, HISTORICALS, PROJECTION, VALUATION (DCF and comps) and SENSITIVITY with a two-way matrix.</p>
+        <ul>
+          <li>No number is typed into a formula; every assumption lives in INPUTS.</li>
+          <li>Shows the top <span class="num">3</span> assumptions, the level that moves the price <span class="num">30%</span>, and the top <span class="num">3</span> risks; exports CSV and Excel.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="M17 15l2 2 3-4"/></svg></span>
+        <span class="status live">Working for research</span>
+        <h3>Earnings reviewer</h3>
+        <p>What was said against expectations, how it was said against last quarter, and which analyst questions were answered or dodged.</p>
+        <ul>
+          <li>Tests your <span class="num">3</span>-sentence thesis against exact quotes from the call.</li>
+          <li>Asks for measurable falsification criteria before you rely on the thesis.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></span>
+        <span class="status live">Working</span>
+        <h3>The notes.md notebook</h3>
+        <p>One growing file per stock: your view in <span class="num">3</span> sentences, what could prove you wrong, the last review, and what changed since.</p>
+        <ul>
+          <li>Each new review records how your view changed, automatically.</li>
+          <li>It stays in your browser, and you can download it as Markdown at any time.</li>
+        </ul>
+      </article>
+    </div></div>
+  </section>
+
   <section id="tested" aria-labelledby="tested-h">
     <div class="section-head">
       <h2 id="tested-h">Every number is tested, even when the answer is failure</h2>
@@ -217,7 +268,7 @@
       <h2 id="investors-h">Investors and profit sharing</h2>
       <p class="lead">The proposed model is simple and transparent: no fixed fee, only a share of profit above the account's previous high. If the account loses, no fee is charged until the loss is fully recovered.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-2x2">
       <article class="card">
         <h3>The formula</h3>
         <p>The fee is worked out at the end of each period, on profit above the high-water mark only:</p>
@@ -237,6 +288,12 @@
             <tr><td>End of period 3: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
           </tbody>
         </table>
+      </article>
+      <article class="card">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>
+        <span class="status gated">Pending approval</span>
+        <h3>Copy-trading portal</h3>
+        <p>The portal design is for display only: an audited performance board from real data, risk limits per copier, and an instant stop. It connects to no account and copies no trade.</p>
       </article>
       <article class="card">
         <span class="status closed">Not open</span>

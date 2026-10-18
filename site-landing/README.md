@@ -19,3 +19,7 @@ Preview locally: `python -m http.server 8000 -d site-landing` then open http://1
 ## Gated items (shown on the page as locked, never active)
 
 Execution agent (real trading), public copy-trading vaults and profit sharing, the waitlist form, the domain and the final legal wording. Each needs explicit approval and, for investor money, a legal review first.
+
+## The chain section (ADR-088)
+
+`#chain` presents the three finance research agents (Market Researcher, Institutional Model Builder, Earnings Reviewer) and the per-ticker notes.md, as built in `omega-ops-room-v1/the-chain.html`. The investors section adds a copy-trading portal card marked «قيد الموافقة» / "Pending approval" next to the closed profit-split card. Both pages now have a skip link.
