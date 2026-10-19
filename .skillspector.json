@@ -11,7 +11,9 @@
     "www.nhc.noaa.gov",
     "liikennetilanne.fintraffic.fi",
     "umferdin.is",
-    "scripts.sil.org"
+    "scripts.sil.org",
+    "binance.com",
+    "gdacs.org"
   ],
   "suppress": [
     {
@@ -22,7 +24,7 @@
     {
       "rule": "SEC-STORAGE",
       "path": "omega-ops-room-v1/omega-ops-room.html",
-      "reason": "Stores theme choice and the AES-GCM vault ciphertext only; the self-check row flags any plaintext key found in localStorage."
+      "reason": "Stores theme choice, the AES-GCM vault ciphertext, the paper wallet balances, the SHA-256 receipt chain and a 12-hour cache of public Binance daily candles; no credentials. The self-check row flags any plaintext key found in localStorage."
     },
     {
       "rule": "SEC-STORAGE",
@@ -58,6 +60,131 @@
       "rule": "SEC-ENV",
       "path": "scripts/omega-data-proxy.mjs",
       "reason": "Reads port, cache folder and the SEC contact User-Agent; no secrets, never logged or returned to pages."
+    },
+    {
+      "rule": "SEC-EVAL",
+      "path": "dashboard/mind/vendor/**",
+      "reason": "vendored third-party 3d-force-graph@1.80.1 (MIT, LICENSE-3d-force-graph.txt), not first-party, not edited. The new Function calls are ngraph's code generators, used only with forceEngine('ngraph'); the mind page uses the default d3 engine and its CSP has no 'unsafe-eval', so they cannot run."
+    },
+    {
+      "rule": "SEC-XSS-SINK",
+      "path": "dashboard/mind/vendor/**",
+      "reason": "vendored third-party 3d-force-graph@1.80.1 / d3-selection / preact internals (MIT), not first-party, not edited. The page passes no markup into them; it only gives node labels, which the library writes as text."
+    },
+    {
+      "rule": "SEC-CSP",
+      "path": ".claude/skills/algorithmic-art/**",
+      "reason": "templates/viewer.html is a vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "rule": "SEC-SRI",
+      "path": ".claude/skills/algorithmic-art/**",
+      "reason": "templates/viewer.html (p5.js and Google Fonts from CDNs) is a vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "rule": "SEC-HOST",
+      "path": ".claude/skills/web-artifacts-builder/**",
+      "reason": "scripts/init-artifact.sh links ui.shadcn.com; vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": ".claude/skills/webapp-testing/**",
+      "reason": "scripts/with_server.py starts dev servers for Playwright; vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "services/director00/phoenix.py",
+      "reason": "Every start goes through _run/_spawn: list argv, shell=False, program checked against ALLOWED_PROGRAMS (restic, docker, node, powershell, Docker Desktop), timeouts on every run; restic snapshot ids are checked as hex before use; no user input reaches argv. Tested in test_phoenix.py."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "services/workstation/plugin_manager.py",
+      "reason": "Fixed argv [sys.executable, -I, plugins/merged_plugin.py], shell=False, 10 s timeout, minimal env (no API keys). It runs the plugin code the owner pasted into the local workstation by design; ast-parsed and size-capped before saving."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": ".githooks/check-staged-env.mjs",
+      "reason": "Pre-commit hook: execFileSync('git', [fixed subcommands], 30 s timeout); file names come from git itself; no shell; values are never printed."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/scripts/secrets.mjs",
+      "reason": "Local CLI run by Ahmad: execFileSync(process.execPath, [dotenvx cli, fixed flags]) and spawnSync of fixed Windows programs (clip, explorer.exe) with argv arrays, no shell, timeouts; the key goes to clip on stdin, never as an argument; NAME is checked against ^[A-Z][A-Z0-9_]{1,63}$."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/scripts/keys-form-save.mjs",
+      "reason": "execFileSync('docker', ['compose','up','-d','cortex']) with a fixed argv, no shell, 120 s timeout; keys arrive on stdin, are shape-checked and are never passed as arguments or printed."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/scripts/secure-run.mjs",
+      "reason": "spawn(process.execPath, [dotenvx cli, run, fixed flags, --, process.execPath, next, dev|build|start, ...args]) with no shell; the subcommand is allowlisted; it is the long-lived Next.js server, so no timeout."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/src/app/api/causal/route.ts",
+      "reason": "execFile(fixed venv python, ['butterfly_engine.py', ...]) with no shell and a 120 s timeout; type, asset and place are checked against fixed allowlists (TYPES, ASSETS, PLACES) and the route refuses cross-origin POSTs."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/src/lib/director.ts",
+      "reason": "execFile(fixed venv python, ['cli.py', ...cliArgs]) with no shell, timeout and maxBuffer; cliArgs validates every field (thread id regex, confirm phrase regex, rejection-code allowlist, length caps). Free text lands only in argparse positionals/--reason of subcommands that define no option it could take over."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/src/lib/security/check-secrets.ts",
+      "reason": "execFileSync('git', [fixed args]) with stdio pipe, no shell, 15 s timeout; read-only check of tracked files."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/test/truth.test.ts",
+      "reason": "Test only: execFileSync(venv python, ['-c', fixed parity script]) with test fixtures on stdin; no shell."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "web/e2e/app.e2e.ts",
+      "reason": "End-to-end test only: spawns node (dotenvx encrypt of a throwaway env, next start on 127.0.0.1) and headless Chrome with fixed argv arrays, no shell; nothing user-typed reaches argv."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "mcp/awesome-atlas/server.test.mjs",
+      "reason": "Test only: spawn(process.execPath, [fixed flags, server.mjs]) to talk to the MCP server over stdio; no shell."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "mcp/omega-sentinel/test/server.test.mjs",
+      "reason": "Test only: spawnSync/StdioClientTransport of process.execPath with the built server entry, 5 s timeout, no shell; checks that non-loopback URLs are refused."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "mcp/awesome-atlas/server.mjs",
+      "reason": "Reads AWESOME_ATLAS, an optional path to the public atlas JSON; no secret, never logged or returned."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "mcp/omega-sentinel/src/index.ts",
+      "reason": "Reads OMEGA_URL, OMEGA_SITE_URL and OMEGA_SEARCH_URL: base URLs only, validated as loopback (parseBaseUrl / loopbackUrl); no secrets are read, logged or returned."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "mcp/omega-sentinel/test/server.test.mjs",
+      "reason": "Test only: passes the parent env plus test base URLs (OMEGA_URL, OMEGA_SITE_URL, OMEGA_SEARCH_URL) to the server under test; reads no secret and prints none."
+    },
+    {
+      "rule": "SEC-EVAL",
+      "path": "mcp/omega-sentinel/server/**",
+      "reason": "Git-ignored esbuild output of `npm run build` (mcp/omega-sentinel/.gitignore): the first-party src/ (scanned on its own) bundled with @modelcontextprotocol/sdk, zod and ajv from node_modules. Flagged lines are third-party library code (ajv's code generator, spec links, SDK env defaults); never committed."
+    },
+    {
+      "rule": "SEC-HOST",
+      "path": "mcp/omega-sentinel/server/**",
+      "reason": "Git-ignored esbuild output of `npm run build` (mcp/omega-sentinel/.gitignore): the first-party src/ (scanned on its own) bundled with @modelcontextprotocol/sdk, zod and ajv from node_modules. Flagged lines are third-party library code (ajv's code generator, spec links, SDK env defaults); never committed."
+    },
+    {
+      "rule": "SEC-ENV",
+      "path": "mcp/omega-sentinel/server/**",
+      "reason": "Git-ignored esbuild output of `npm run build` (mcp/omega-sentinel/.gitignore): the first-party src/ (scanned on its own) bundled with @modelcontextprotocol/sdk, zod and ajv from node_modules. Flagged lines are third-party library code (ajv's code generator, spec links, SDK env defaults); never committed."
     }
   ]
 }

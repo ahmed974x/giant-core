@@ -5,6 +5,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const wf = JSON.parse(fs.readFileSync(path.join(__dirname, "../workflows/news-sentiment.json"), "utf8"))[0];
 const nodeCode = name => wf.nodes.find(n => n.name === name).parameters.jsCode;
@@ -14,7 +15,9 @@ function run(name, input = [], refs = {}) {
   const wrap = list => list.map(json => ({ json }));
   const $input = { all: () => wrap(input), first: () => wrap(input)[0] };
   const $ = n => { const l = wrap(refs[n] || []); return { all: () => l, first: () => l[0] }; };
-  const out = new Function("$input", "$", `return (() => {\n${nodeCode(name)}\n})();`)($input, $);
+  // Compiled with node:vm in this realm (same Array/Object/Date as the asserts), named after the node for stack traces.
+  const body = new vm.Script(`(function ($input, $) {\n${nodeCode(name)}\n})`, { filename: `n8n-code-node:${name}` }).runInThisContext();
+  const out = body($input, $);
   return out.map(i => i.json);
 }
 

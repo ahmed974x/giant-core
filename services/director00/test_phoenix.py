@@ -9,9 +9,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-import pytest
-
 import phoenix as px
+import pytest
 
 
 class Flaky:
@@ -40,7 +39,9 @@ def log(tmp_path):
     url = os.environ.get("PHOENIX_TEST_PG_URL")
     if url:
         from memory import PgStore
-        pg = PgStore(url); pg.ensure_schema(); pg.con.run("TRUNCATE phoenix_events")
+        pg = PgStore(url)
+        pg.ensure_schema()
+        pg.con.run("TRUNCATE phoenix_events")
         yield px.EventLog(pg_con=pg.con)
         pg.close()
     else:
@@ -96,8 +97,11 @@ def test_backup_restore_brings_back_a_corrupted_store(tmp_path):
     data.mkdir()
     for name, val in (("director.sqlite", "remember me"), ("checkpoints.sqlite", "ckpt")):
         con = sqlite3.connect(data / name)
-        con.execute("CREATE TABLE t (v TEXT)"); con.execute("INSERT INTO t VALUES (?)", (val,)); con.commit(); con.close()
-    restic = px.Restic(repo=str(tmp_path / "repo"), password="test-only-password")
+        con.execute("CREATE TABLE t (v TEXT)")
+        con.execute("INSERT INTO t VALUES (?)", (val,))
+        con.commit()
+        con.close()
+    restic = px.Restic(repo=str(tmp_path / "repo"), password="test-only-password")  # noqa: S106 - throwaway repo in tmp_path
     assert restic._run("init").returncode == 0 and restic.backup(data)
     (data / "director.sqlite").write_bytes(b"this is not a database")                # simulate corruption
     assert not px._sqlite_ok(data / "director.sqlite")[0]
@@ -115,7 +119,8 @@ def test_notification_goes_to_the_local_webhook_only(log):
     class Hook(BaseHTTPRequestHandler):
         def do_POST(self):
             got.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
-            self.send_response(204); self.end_headers()
+            self.send_response(204)
+            self.end_headers()
 
         def log_message(self, *a):
             pass
@@ -153,16 +158,18 @@ def test_runs_without_a_console_like_the_scheduled_task(monkeypatch, log):
 # ── restore drill (ADR-038) ──
 def _db(path, table, rows=1):
     con = sqlite3.connect(path)
-    con.execute(f"CREATE TABLE {table} (v TEXT)")
-    con.executemany(f"INSERT INTO {table} VALUES (?)", [("x",)] * rows)
-    con.commit(); con.close()
+    con.execute(f"CREATE TABLE {table} (v TEXT)")                                  # table names are test constants
+    con.executemany(f"INSERT INTO {table} VALUES (?)", [("x",)] * rows)  # noqa: S608
+    con.commit()
+    con.close()
 
 
 @pytest.mark.skipif(not px.RESTIC.exists(), reason="tools/restic not installed")
 def test_restore_drill_verifies_a_real_snapshot_without_touching_live_data(tmp_path, log):
-    data = tmp_path / "data"; data.mkdir()
+    data = tmp_path / "data"
+    data.mkdir()
     _db(data / "director.sqlite", "director_approvals", 3)
-    restic = px.Restic(repo=str(tmp_path / "repo"), password="test-only-password")
+    restic = px.Restic(repo=str(tmp_path / "repo"), password="test-only-password")  # noqa: S106 - throwaway repo in tmp_path
     assert restic._run("init").returncode == 0 and restic.backup(data)
     _db(data / "phoenix.sqlite", "phoenix_events")          # created after the snapshot: a warning, not a failure
     before = sorted(p.name for p in data.iterdir())
@@ -178,3 +185,23 @@ def test_restore_drill_fails_loudly_without_a_usable_backup(tmp_path, log):
     out = px.restore_drill(px.Restic(binary=tmp_path / "missing.exe", repo="", password=""), log, tmp_path)
     assert not out["ok"] and "restic not configured" in out["problems"][0]
     assert log.events(1)[0]["result"] == "failed"
+
+
+def test_only_allowlisted_programs_start_and_never_through_a_shell(monkeypatch):
+    calls = []
+    monkeypatch.setattr(px.subprocess, "run", lambda argv, **kw: calls.append((argv, kw)) or px.subprocess.CompletedProcess(argv, 0))
+    px._run([str(Path("tools") / "restic" / "bin" / "restic.exe"), "snapshots"], timeout=5)
+    px._run(["/usr/bin/docker", "info"], timeout=5)
+    assert [c[1]["shell"] for c in calls] == [False, False] and all(c[1]["timeout"] == 5 for c in calls)
+    for bad in (["sh", "-c", "id"], ["cmd.exe", "/c", "dir"], [str(Path("evil") / "python")], [], "docker info"):
+        with pytest.raises(ValueError):
+            px._run(bad, timeout=5)
+    assert len(calls) == 2
+
+
+def test_restore_refuses_a_snapshot_id_that_is_not_restic_hex(monkeypatch, tmp_path):
+    restic = px.Restic(binary=tmp_path / "restic", repo="r", password="")
+    monkeypatch.setattr(restic, "latest", lambda tag="director": {"short_id": "--target=/", "paths": ["/data"]})
+    ran = []
+    monkeypatch.setattr(restic, "_run", lambda *a, **kw: ran.append(a))
+    assert restic.restore_latest(tmp_path / "out") is False and ran == []

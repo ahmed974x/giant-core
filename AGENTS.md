@@ -6,6 +6,7 @@ Read by Codex CLI, Claude Code (through `CLAUDE.md`) and any agent that follows 
 
 - Ahmad (Director 00) approves every irreversible or outward action: merges, production changes, outbound messages, anything that moves money, opens trades or accepts subscribers.
 - Locked until a separate explicit approval and a legal review: real trading, an execution agent, public copy-trading vaults, investor profit split. They appear only as cards marked **«قيد الموافقة»** or as browser-only math simulations that say "no money accepted".
+- The trading desk (ADR-091) is paper only. Adding Binance Testnet orders, an automatic trading loop or a real-account route each needs Ahmad's own explicit approval first; until then they stay disabled options in the UI.
 - No third-party skill, plugin, hook, MCP server or installer is added without Ahmad's approval and a written security review. Taking text rules from a skill is fine; running its scripts is not.
 
 ## 2. Look and feel (summary of DESIGN.md, which is binding)
@@ -41,8 +42,9 @@ Read by Codex CLI, Claude Code (through `CLAUDE.md`) and any agent that follows 
 ## 6. Checks before any commit or PR
 
 ```bash
-# security: must exit 0 (critical or high blocks)
+# security: must exit 0 (critical or high blocks); CI scans the whole repo
 node scripts/skillspector-audit.mjs --strict <changed paths>
+node scripts/skillspector-audit.mjs --strict .
 # after editing any inline <script> or <style>: re-pin CSP hashes, then re-run the line above
 node scripts/skillspector-audit.mjs --fix <changed html paths>
 # contrast gate for every changed stylesheet or page

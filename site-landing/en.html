@@ -295,7 +295,7 @@
         <span class="status gated">Pending approval</span>
         <h3>Copy-trading portal</h3>
         <p>The portal design is for display only: an audited performance board from real data, risk limits per copier, and an instant stop. It connects to no account and copies no trade.</p>
-        <p><a class="inline-link" href="#calc">Try the interactive profit-split calculator</a> to see how the high-water mark protects a subscriber. Math simulation only.</p>
+        <p>Try the <a class="inline-link" href="#calc">profit-split calculator</a> and the <a class="inline-link" href="#safe">locked-base simulator with its receipt ledger</a>. Math simulation only.</p>
       </article>
       <article class="card">
         <span class="status closed">Not open</span>
@@ -336,6 +336,51 @@
       </table></div>
       <p class="calc-error" id="cError" role="alert" hidden>Enter an amount above zero, a rate between 0 and 100, and at least one return.</p>
     </div></div>
+    <div class="panel calc" id="safe" aria-labelledby="safe-h"><div class="card calc-card">
+      <div class="calc-head">
+        <h3 id="safe-h">Safety first: lock any amount, sweep the profit</h3>
+        <span class="status design">Simulation only</span>
+      </div>
+      <p>You pick an amount to lock for trading, such as 20, 50 or 100. Every profit above it moves to a protected vault that never trades: after each winning trade (mode A), or once the balance reaches a target you set (mode B). The math runs in your browser only; nothing is sent and no money is accepted.</p>
+      <div class="calc-form">
+        <div class="field"><label for="sBase">Locked base</label><input id="sBase" name="sBase" type="number" inputmode="decimal" step="any" min="1" autocomplete="off" value="100"></div>
+        <div class="field"><label for="sMode">Sweep mode</label><select id="sMode" name="sMode" autocomplete="off"><option value="every">A · Sweep every profit</option><option value="target">B · Sweep at a target</option></select></div>
+        <div class="field"><label for="sTarget">Target (mode B)</label><input id="sTarget" name="sTarget" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="150"></div>
+        <div class="field wide"><label for="sReturns">Trade returns %, comma separated</label><input id="sReturns" name="sReturns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" value="8, -5, 12, 20, -10, 15, 30"></div>
+      </div>
+      <p class="note">Teaching example, hypothetical numbers. Fees 0.1% each side. The locked base itself can still lose in trading; only swept profit is protected.</p>
+      <dl class="calc-kpis" aria-live="polite">
+        <div><dt>Locked base</dt><dd class="num" id="sLocked">—</dd></div>
+        <div><dt>Trading balance now</dt><dd class="num" id="sTrading">—</dd></div>
+        <div><dt>Protected vault</dt><dd class="num pos" id="sSafe">—</dd></div>
+        <div><dt>Sweeps</dt><dd class="num" id="sSweeps">—</dd></div>
+        <div><dt>Total</dt><dd class="num" id="sTotal">—</dd></div>
+      </dl>
+      <svg class="calc-chart" id="sChart" viewBox="0 0 720 220" role="img" aria-label="Total and protected vault after each trade, with the locked base line"></svg>
+      <ul class="calc-legend">
+        <li><i class="sw sw-gross"></i>Total</li>
+        <li><i class="sw sw-net"></i>Protected vault</li>
+        <li><i class="sw sw-hwm"></i>Locked base</li>
+      </ul>
+      <div class="table-wrap"><table class="calc-table" id="sTable">
+        <thead><tr><th scope="col">Trade</th><th scope="col">Return %</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Swept</th><th scope="col">Vault</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <p class="calc-error" id="sError" role="alert" hidden>Enter an amount above zero, at least one return above −100, and for mode B a target above the locked base.</p>
+      <h3 class="sim-sub" id="ledger-h">SHA-256 receipt ledger <span class="num" id="sLedgerCount">0</span></h3>
+      <p>Every step of the simulation issues a receipt. Each hash covers the receipt and the previous hash, so changing or deleting an old receipt breaks every hash after it. You can also pick a receipt file exported from the Ops Room and check it here on your device.</p>
+      <div class="sim-actions">
+        <button class="btn btn-primary" id="sVerify" type="button">Verify the chain</button>
+        <button class="btn btn-ghost" id="sTamper" type="button">Try tampering with a receipt</button>
+        <input class="sr-only" id="sFile" name="sFile" type="file" accept="application/json,.json" autocomplete="off">
+        <label class="btn btn-ghost" for="sFile">Check a receipt file</label>
+      </div>
+      <p class="sim-status" id="sVerifyOut" role="status" aria-live="polite"></p>
+      <div class="table-wrap"><table class="calc-table" id="sLedger">
+        <thead><tr><th scope="col">#</th><th scope="col">Type</th><th scope="col">Amount</th><th scope="col">Reason</th><th scope="col">SHA-256</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div></div>
     <div class="gate-banner" role="note">
       <p><strong>We accept no money and no subscriptions today.</strong> There is no public vault and no copy trading. This page only explains the design.</p>
     </div>
@@ -360,6 +405,7 @@
 </footer>
 
 <script src="calc.js" defer></script>
+<script src="desk-sim.js" defer></script>
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("themeToggle");

@@ -424,3 +424,20 @@ footer p { margin: var(--s-2) 0; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .card:hover { transform: none; }
 }
+
+/* Locked-base simulator and receipt ledger (ADR-091) */
+.field select {
+  width: 100%; min-height: 44px; padding: var(--s-2) var(--s-3); border-radius: var(--r-inner);
+  border: var(--hairline) solid var(--hairline-color); background: var(--surface-2); color: var(--content-primary); font: inherit;
+}
+.field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+.calc-table td.pos, .calc-kpis dd.pos { color: var(--success); }
+.calc-table td.hash { color: var(--content-secondary); }
+.sim-sub { margin-top: var(--s-8); }
+.sim-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.sim-actions label.btn { cursor: pointer; }
+.sim-actions input[type="file"]:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sim-status { margin: var(--s-3) 0 0; font-size: var(--text-footnote); font-weight: 700; overflow-wrap: anywhere; }
+.sim-status.pos { color: var(--success); }
+.sim-status.neg { color: var(--danger); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
