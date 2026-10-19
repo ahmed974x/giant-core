@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-FqeEIhgYOYbJE+qmdLawGAU3gzLrXsgEuwDRQej3gdw='; style-src 'sha256-ljOEpK6b/bF8YLesGJvTkDEzR0Rv+MdBV7w3dKyQw40='; font-src data:; img-src data: blob:; connect-src https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -206,6 +207,8 @@
   .card h4 { font-size: var(--text-body); margin: var(--s-4) 0 var(--s-2); }
   .lead { color: var(--content-secondary); font-size: var(--text-footnote); max-width: 75ch; }
   .note { color: var(--content-tertiary); font-size: var(--text-caption); margin-top: var(--s-2); }
+  .note code { font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
+  #histSrc a { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
   .grid-2 { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
 
@@ -316,6 +319,10 @@
   .field-chart .mark { stroke: var(--gold); stroke-width: 2; }
   .field-chart .lbl { fill: var(--content-secondary); font-size: 12px; font-family: var(--font-ar); }
   .field-chart .val { fill: var(--content-primary); font-size: 12px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .field-chart .bar-q { fill: var(--tint-accent); stroke: var(--warning); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .field-chart .bar-p { fill: none; stroke: var(--gold); stroke-width: 2; }
+  .field-chart .mid { stroke: var(--content-primary); stroke-width: 2; }
+  .field-chart:empty { display: none; }
 
   /* ---------- notes ---------- */
   .notes-grid { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
@@ -329,6 +336,7 @@
   .md-preview p, .md-preview li { font-size: var(--text-footnote); }
   .md-preview ul, .md-preview ol { padding-inline-start: var(--s-5); }
   .md-preview hr { border: 0; border-top: var(--hairline) solid var(--hairline-color); margin: var(--s-3) 0; }
+  .mt-3 { margin-top: var(--s-3); } .mt-4 { margin-top: var(--s-4); } .span-all { grid-column: 1 / -1; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   .footer { margin-top: var(--s-8); padding-top: var(--s-4); border-top: var(--hairline) solid var(--hairline-color); color: var(--content-tertiary); font-size: var(--text-caption); line-height: 1.8; }
@@ -463,14 +471,57 @@
           <ul class="items" id="anList"></ul>
         </div>
 
+        <div class="card" id="quant">
+          <h3>النطاق الكمي المستنتج <span class="pill inf" translate="no">[INFERENCE - Quant Model]</span></h3>
+          <p class="lead">نطاق محسوب آلياً بجانب تقديرات المحللين اليدوية: محاكاة مونت كارلو لسعر السهم من التقلب التاريخي، ومحاكاة لعدم اليقين في افتراضات DCF من ورقة INPUTS. هذا استنتاج رياضي وليس توصية ولا توقعاً لاتجاه السعر.</p>
+          <div class="form">
+            <div class="field"><label for="qSrc">مصدر التقلب التاريخي</label>
+              <select id="qSrc" name="qSrc"><option value="binance">Binance (عملة رقمية)</option><option value="stooq">Stooq عبر الخادم المحلي (سهم)</option><option value="manual">يدوي</option></select></div>
+            <div class="field"><label for="qSymbol">الرمز في المصدر</label><input id="qSymbol" name="qSymbol" type="text" autocomplete="off" spellcheck="false" class="mono" placeholder="مثل BTCUSDT أو aapl.us…" /></div>
+            <div class="field"><label for="qVol">التقلب السنوي %</label><input id="qVol" name="qVol" type="number" step="any" min="0" inputmode="decimal" autocomplete="off" placeholder="يُملأ من المصدر…" /></div>
+            <div class="field"><label for="qSpot">السعر الحالي</label><input id="qSpot" name="qSpot" type="number" step="any" min="0" inputmode="decimal" autocomplete="off" placeholder="من INPUTS أو المصدر…" /></div>
+            <div class="field"><label for="qDays">الأفق بالأيام</label><input id="qDays" name="qDays" type="number" step="1" min="1" inputmode="numeric" autocomplete="off" value="182" /></div>
+            <div class="field"><label for="qPaths">عدد المسارات</label><input id="qPaths" name="qPaths" type="number" step="1" min="200" max="50000" inputmode="numeric" autocomplete="off" value="5000" /></div>
+            <div class="field"><label for="qSdRate">انحراف WACC والنمو النهائي (نقطة)</label><input id="qSdRate" name="qSdRate" type="number" step="any" min="0" inputmode="decimal" autocomplete="off" value="1" /></div>
+            <div class="field"><label for="qSdOther">انحراف الهامش والنمو (نقطة)</label><input id="qSdOther" name="qSdOther" type="number" step="any" min="0" inputmode="decimal" autocomplete="off" value="2" /></div>
+            <div class="field"><label for="qSeed">البذرة العشوائية</label><input id="qSeed" name="qSeed" type="number" step="1" inputmode="numeric" autocomplete="off" value="42" /></div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="qFetch" type="button">اجلب التقلب التاريخي</button>
+            <button class="btn primary" id="qRun" type="button">احسب النطاق</button>
+            <button class="btn" id="qToNotes" type="button">أرسل إلى notes.md</button>
+            <span class="status-line" id="qStatus" role="status" aria-live="polite"></span>
+          </div>
+          <div class="kpis" id="qKpis"></div>
+          <svg class="field-chart" id="qChart" viewBox="0 0 640 210" direction="ltr" role="img" aria-label="النطاق الكمي مقارنة بنطاق المحللين"></svg>
+          <p class="note">الحركة السعرية: نموذج حركة براونية هندسية بانجراف لوغاريتمي صفري، فالوسيط يساوي السعر الحالي تقريباً. النطاق المجمّع يمزج العيّنتين بالتساوي. كل الأرقام هنا موسومة <span class="pill inf" translate="no">[INFERENCE - Quant Model]</span>.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="crypto">
+          <h3>الأصول الرقمية والسيولة <span class="en" translate="no">COINGECKO · BINANCE · DEFILLAMA</span></h3>
+          <p class="lead">مصادر مجانية بلا مفاتيح. اكتب اسم العملة أو رمزها.</p>
+          <div class="form">
+            <div class="field"><label for="cgQuery">العملة</label><input id="cgQuery" name="cgQuery" type="text" autocomplete="off" spellcheck="false" placeholder="مثل bitcoin أو ETH…" /></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="cgFetch" type="button">اجلب البيانات</button>
+            <button class="btn" id="cgToQuant" type="button" disabled>استخدمها في النطاق الكمي</button>
+            <span class="status-line" id="cgStatus" role="status" aria-live="polite"></span>
+          </div>
+          <div class="kpis" id="cgKpis"></div>
+          <p class="note" id="cgSrc"></p>
+        </div>
+
         <div class="card">
           <h3>الثيران مقابل الدببة <span class="en" translate="no">BULLS VS BEARS</span></h3>
           <p class="lead">حجج كل طرف مع مصدرها. المقترحات الآلية من العناوين موسومة [INFERENCE] حتى تؤكدها.</p>
           <div class="form">
             <div class="field"><label for="bbSide">الطرف</label><select id="bbSide" name="bbSide"><option value="bull">ثور (صاعد)</option><option value="bear">دب (هابط)</option></select></div>
             <div class="field"><label for="bbDate">التاريخ</label><input id="bbDate" name="bbDate" type="date" autocomplete="off" /></div>
-            <div class="field" style="grid-column: 1 / -1"><label for="bbArg">الحجة</label><input id="bbArg" name="bbArg" type="text" autocomplete="off" placeholder="مثل نمو الخدمات يعوّض تباطؤ الأجهزة…" /></div>
-            <div class="field" style="grid-column: 1 / -1"><label for="bbSrc">رابط المصدر</label><input id="bbSrc" name="bbSrc" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…" /></div>
+            <div class="field span-all"><label for="bbArg">الحجة</label><input id="bbArg" name="bbArg" type="text" autocomplete="off" placeholder="مثل نمو الخدمات يعوّض تباطؤ الأجهزة…" /></div>
+            <div class="field span-all"><label for="bbSrc">رابط المصدر</label><input id="bbSrc" name="bbSrc" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…" /></div>
           </div>
           <div class="actions"><button class="btn" id="bbAdd" type="button">أضف الحجة</button><button class="btn" id="bbSuggest" type="button">اقترح من الأخبار</button></div>
           <ul class="items" id="bbList"></ul>
@@ -484,7 +535,7 @@
           <div class="field"><label for="mqWho">المتحدث</label><input id="mqWho" name="mqWho" type="text" autocomplete="off" placeholder="مثل المدير المالي…" /></div>
           <div class="field"><label for="mqDate">التاريخ</label><input id="mqDate" name="mqDate" type="date" autocomplete="off" /></div>
           <div class="field"><label for="mqSrc">رابط المصدر</label><input id="mqSrc" name="mqSrc" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…" /></div>
-          <div class="field" style="grid-column: 1 / -1"><label for="mqText">الاقتباس الحرفي</label><textarea id="mqText" name="mqText" autocomplete="off" placeholder="الصق النص كما قيل…"></textarea></div>
+          <div class="field span-all"><label for="mqText">الاقتباس الحرفي</label><textarea id="mqText" name="mqText" autocomplete="off" placeholder="الصق النص كما قيل…"></textarea></div>
         </div>
         <div class="actions"><button class="btn" id="mqAdd" type="button">أضف الاقتباس</button></div>
         <ul class="items" id="mqList"></ul>
@@ -531,7 +582,10 @@
           <div class="actions">
             <button class="btn" id="histAdd" type="button">أضف سنة</button>
             <button class="btn" id="histRemove" type="button">احذف آخر سنة</button>
+            <button class="btn primary" id="histSec" type="button">اسحب من SEC EDGAR</button>
           </div>
+          <p class="note" id="histSrc"></p>
+          <p class="note">السحب يمر عبر الخادم المحلي <code translate="no">node scripts/omega-data-proxy.mjs</code> لأن SEC لا تسمح بالطلب المباشر من المتصفح. الأرقام بالملايين من نماذج 10-K السنوية مع رقم الإيداع وتاريخه.</p>
           <h4>استيراد CSV</h4>
           <p class="note">الأعمدة بالترتيب: year,revenue,ebit,da,capex,netIncome</p>
           <label class="sr-only" for="histCsv">بيانات CSV</label>
@@ -561,7 +615,7 @@
           </div>
           <h4>مصفوفة ثنائية: قيمة السهم <span class="en" translate="no">(DCF)</span></h4>
           <div class="table-scroll"><table class="data" id="sensTable"></table></div>
-          <div class="grid-2" style="margin-top: var(--s-4)">
+          <div class="grid-2 mt-4">
             <div>
               <h4>أهم 3 افتراضات تحرّك النتيجة</h4>
               <p class="note">تغيير كل افتراض بنسبة «حساسية الترتيب» من INPUTS صعوداً وهبوطاً، والترتيب حسب أثره على السعر.</p>
@@ -601,11 +655,11 @@
           <div class="field"><label for="erConsDate">تاريخ التوقعات</label><input id="erConsDate" name="erConsDate" type="date" autocomplete="off" /></div>
           <div class="field"><label for="erActSrc">مصدر النتائج الفعلية</label><input id="erActSrc" name="erActSrc" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…" /></div>
         </div>
-        <div class="grid-2" style="margin-top: var(--s-3)">
+        <div class="grid-2 mt-3">
           <div class="field"><label for="erNow">نص المكالمة لهذا الربع</label><textarea class="code" id="erNow" name="erNow" autocomplete="off" placeholder="الصق النص. ابدأ الأسئلة بـ Q: أو Analyst: والأجوبة بـ A: …"></textarea></div>
           <div class="field"><label for="erPrev">نص مكالمة الربع السابق</label><textarea class="code" id="erPrev" name="erPrev" autocomplete="off" placeholder="الصق نص الربع السابق للمقارنة…"></textarea></div>
         </div>
-        <div class="field" style="margin-top: var(--s-3)">
+        <div class="field mt-3">
           <label for="erThesis">أطروحتك في 3 جمل</label>
           <textarea id="erThesis" name="erThesis" autocomplete="off" placeholder="الجملة الأولى. الجملة الثانية. الجملة الثالثة…"></textarea>
         </div>
@@ -644,7 +698,7 @@
             <div class="field"><label for="notesPick">الرمز</label><select id="notesPick" name="notesPick"></select></div>
           </div>
           <label class="sr-only" for="notesEditor">محرر notes.md</label>
-          <textarea id="notesEditor" name="notesEditor" autocomplete="off" spellcheck="false" style="margin-top: var(--s-3)"></textarea>
+          <textarea id="notesEditor" name="notesEditor" autocomplete="off" spellcheck="false" class="mt-3"></textarea>
           <div class="actions">
             <button class="btn primary" id="notesReview" type="button">مراجعة جديدة</button>
             <button class="btn" id="notesDownload" type="button">نزّل notes.md</button>
@@ -687,7 +741,7 @@
     const n = document.createElement(tag);
     if (attrs) for (const [k, v] of Object.entries(attrs)) {
       if (v === null || v === undefined || v === false) continue;
-      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v === true ? "" : String(v));
+      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else if (k === "style") n.style.cssText = v; else n.setAttribute(k, v === true ? "" : String(v));
     }
     for (const kid of kids.flat(Infinity)) if (kid !== null && kid !== undefined && kid !== false) n.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
     return n;
@@ -1292,13 +1346,13 @@
   $("mdSample").addEventListener("click", () => {
     model.inputs = { ...SAMPLE.inputs }; model.hist = SAMPLE.hist.map(h => ({ ...h })); model.isSample = true;
     store.set(keyFor("inputs"), model.inputs); store.set(keyFor("hist"), model.hist);
-    buildInputsForm(); buildHistTable(); renderModel();
+    buildInputsForm(); buildHistTable(); renderModel(); dropHistSource();
   });
   $("mdClear").addEventListener("click", () => {
     if (!confirm("تصفير النموذج لهذا الرمز؟ لا يمكن التراجع.")) return;
     model.inputs = blankInputs(); model.hist = []; model.isSample = false;
     store.set(keyFor("inputs"), model.inputs); store.set(keyFor("hist"), model.hist);
-    buildInputsForm(); buildHistTable(); renderModel();
+    buildInputsForm(); buildHistTable(); renderModel(); dropHistSource();
   });
   $("histAdd").addEventListener("click", () => {
     const last = model.hist[model.hist.length - 1];
@@ -1316,7 +1370,7 @@
     }
     if (!rows.length) { setStatus("histStatus", "لم أجد أسطراً صالحة. تأكد من 6 أعمدة رقمية.", "bad"); return; }
     model.hist = rows.sort((a, b) => a.year - b.year); model.isSample = false;
-    store.set(keyFor("hist"), model.hist); buildHistTable(); renderModel();
+    store.set(keyFor("hist"), model.hist); buildHistTable(); renderModel(); dropHistSource();
     setStatus("histStatus", `استُورد ${rows.length} سنوات.`, "ok");
   });
   $("mdToNotes").addEventListener("click", () => {
@@ -1564,6 +1618,267 @@
     setStatus("notesStatus", `استُورد ملف ${t}.`, "ok");
   });
 
+
+  /* ===================== Zero-cost data engine (ADR-089) ===================== */
+  // SEC EDGAR and Stooq send no CORS headers, so they go through scripts/omega-data-proxy.mjs on this laptop.
+  const PROXY = "http://127.0.0.1:8796";
+  async function getJSON(url, ms = 12000) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+    try { const r = await fetch(url, { signal: ctl.signal, cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+    finally { clearTimeout(t); }
+  }
+  async function getText(url, ms = 12000) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+    try { const r = await fetch(url, { signal: ctl.signal, cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.text(); }
+    finally { clearTimeout(t); }
+  }
+  const proxyHint = "شغّل الخادم المحلي: node scripts/omega-data-proxy.mjs";
+
+  /* ---------- SEC EDGAR companyfacts -> HISTORICALS ---------- */
+  const SEC_MAP = {
+    revenue: ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"],
+    ebit: ["OperatingIncomeLoss"],
+    da: ["DepreciationDepletionAndAmortization", "DepreciationAndAmortization", "DepreciationAmortizationAndAccretionNet", "Depreciation"],
+    capex: ["PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets"],
+    netIncome: ["NetIncomeLoss", "ProfitLoss"],
+  };
+  // Annual 10-K values keyed by the fiscal year the period ends in; the latest filing wins.
+  function annualFacts(facts, concepts) {
+    const out = new Map();
+    for (const c of concepts) {
+      const units = facts?.["us-gaap"]?.[c]?.units?.USD; if (!units) continue;
+      for (const f of units) {
+        if (!/^10-K/.test(f.form || "") || !f.start || !f.end) continue;
+        const days = (new Date(f.end) - new Date(f.start)) / 864e5; if (days < 350 || days > 380) continue;
+        const y = Number(f.end.slice(0, 4)), prev = out.get(y);
+        if (!out.has(y) || (prev.concept === c && f.filed > prev.filed)) out.set(y, { val: f.val, accn: f.accn, filed: f.filed, end: f.end, concept: c });
+      }
+    }
+    return out;
+  }
+  function latestShares(j) {
+    const u = j?.facts?.dei?.EntityCommonStockSharesOutstanding?.units?.shares || j?.facts?.["us-gaap"]?.WeightedAverageNumberOfDilutedSharesOutstanding?.units?.shares || [];
+    const last = [...u].sort((a, b) => (a.end < b.end ? -1 : 1)).pop();
+    return last ? { val: last.val, end: last.end } : null;
+  }
+  async function pullSec() {
+    const t = ticker;
+    if (!t) { setStatus("histStatus", "اكتب رمز السهم أعلى الصفحة أولاً.", "bad"); $("ticker").focus(); return; }
+    setStatus("histStatus", `جارٍ السحب من SEC EDGAR لـ ${t}…`);
+    let list;
+    try { list = await getJSON(`${PROXY}/sec/tickers`); }
+    catch (e) { setStatus("histStatus", `تعذر الوصول إلى الخادم المحلي. ${proxyHint}`, "bad"); return; }
+    const hit = Object.values(list).find(r => String(r.ticker).toUpperCase() === t);
+    if (!hit) { setStatus("histStatus", `الرمز ${t} غير موجود في قائمة SEC. الشركات الأمريكية المدرجة فقط.`, "bad"); return; }
+    const cik = String(hit.cik_str).padStart(10, "0");
+    let j;
+    try { j = await getJSON(`${PROXY}/sec/facts/${cik}`, 20000); }
+    catch (e) { setStatus("histStatus", `فشل جلب companyfacts: ${e.message}`, "bad"); return; }
+    const series = Object.fromEntries(Object.entries(SEC_MAP).map(([k, cs]) => [k, annualFacts(j.facts, cs)]));
+    const years = [...series.revenue.keys()].sort((a, b) => a - b).slice(-5);
+    if (!years.length) { setStatus("histStatus", "لا توجد إيرادات سنوية من نموذج 10-K في البيانات.", "bad"); return; }
+    const M = v => v === undefined ? null : Math.round(v / 1e6 * 100) / 100;
+    model.hist = years.map(y => ({ year: y, ...Object.fromEntries(Object.keys(SEC_MAP).map(k => [k, M(series[k].get(y)?.val)])) }));
+    const filings = years.map(y => series.revenue.get(y)).map(f => ({ accn: f.accn, filed: f.filed, end: f.end }));
+    model.histSource = { kind: "SEC EDGAR companyfacts", cik, entity: j.entityName || hit.title, filings, pulled: todayIso() };
+    if (!model.inputs.company) model.inputs.company = j.entityName || hit.title;
+    if (!model.inputs.currency) model.inputs.currency = "USD";
+    const sh = latestShares(j);
+    if (sh && !Number.isFinite(model.inputs.shares)) model.inputs.shares = Math.round(sh.val / 1e6 * 100) / 100;
+    model.isSample = false;
+    store.set(keyFor("hist"), model.hist); store.set(keyFor("hist-src"), model.histSource); store.set(keyFor("inputs"), model.inputs);
+    buildInputsForm(); buildHistTable(); renderHistSource(); renderModel();
+    const gaps = model.hist.flatMap(r => HIST_COLS.filter(([k]) => r[k] === null).map(([, l]) => `${l} ${r.year}`));
+    setStatus("histStatus", `سُحبت ${years.length} سنوات من 10-K لشركة ${model.histSource.entity}.` + (gaps.length ? ` ناقص: ${gaps.slice(0, 4).join("، ")}${gaps.length > 4 ? "…" : ""}، أكمله يدوياً.` : ""), gaps.length ? "" : "ok");
+  }
+  // The SEC source label only describes rows that came from SEC; drop it when the rows are replaced.
+  function dropHistSource() { model.histSource = null; store.set(keyFor("hist-src"), null); renderHistSource(); }
+  function renderHistSource() {
+    const box = clear($("histSrc")), s = model.histSource;
+    if (!s) return;
+    box.append(el("span", { class: "pill ok", text: "مصدر موثّق" }), ` ${s.entity} · CIK ${s.cik} · سُحب ${s.pulled} · `);
+    s.filings.forEach((f, i) => {
+      const href = `https://www.sec.gov/Archives/edgar/data/${Number(s.cik)}/${String(f.accn).replace(/-/g, "")}/`;
+      box.append(i ? " · " : "", el("a", { href, target: "_blank", rel: "noopener noreferrer", class: "num", text: `${f.end.slice(0, 4)}: ${f.accn}` }), el("span", { text: ` (قُدّم ${f.filed})` }));
+    });
+  }
+
+  /* ---------- seeded random numbers ---------- */
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function normalGen(seed) {
+    const u = mulberry32(seed); let spare = null;
+    return () => { if (spare !== null) { const s = spare; spare = null; return s; } let a, b, s; do { a = u() * 2 - 1; b = u() * 2 - 1; s = a * a + b * b; } while (!s || s >= 1); const m = Math.sqrt(-2 * Math.log(s) / s); spare = b * m; return a * m; };
+  }
+  const quantile = (sorted, q) => { if (!sorted.length) return NaN; const i = (sorted.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo); };
+
+  /* ---------- historical volatility ---------- */
+  function annualVol(closes, periodsPerYear) {
+    const r = []; for (let i = 1; i < closes.length; i++) if (closes[i] > 0 && closes[i - 1] > 0) r.push(Math.log(closes[i] / closes[i - 1]));
+    if (r.length < 20) return NaN;
+    const m = r.reduce((a, b) => a + b, 0) / r.length, v = r.reduce((a, b) => a + (b - m) ** 2, 0) / (r.length - 1);
+    return Math.sqrt(v * periodsPerYear) * 100;
+  }
+  let qMeta = null;
+  async function fetchVol() {
+    const src = $("qSrc").value, sym = $("qSymbol").value.trim();
+    if (src === "manual") { setStatus("qStatus", "المصدر يدوي: اكتب التقلب السنوي بنفسك.", ""); $("qVol").focus(); return; }
+    if (!/^[A-Za-z0-9.\-]{2,20}$/.test(sym)) { setStatus("qStatus", "اكتب رمزاً صحيحاً للمصدر.", "bad"); $("qSymbol").focus(); return; }
+    setStatus("qStatus", "جارٍ جلب الأسعار اليومية…");
+    try {
+      let closes, ppy, label;
+      if (src === "binance") {
+        const k = await getJSON(`https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(sym.toUpperCase())}&interval=1d&limit=366`);
+        closes = k.map(r => parseFloat(r[4])); ppy = 365; label = `Binance ${sym.toUpperCase()} · ${closes.length} يوماً`;
+      } else {
+        const csv = await getText(`${PROXY}/stooq/${encodeURIComponent(sym.toLowerCase())}`);
+        const rows = csv.trim().split(/\r?\n/).slice(1).map(l => l.split(",")).filter(c => c.length >= 5);
+        closes = rows.slice(-253).map(c => parseFloat(c[4])); ppy = 252; label = `Stooq ${sym.toLowerCase()} · ${closes.length} جلسة`;
+        if (!closes.length) throw new Error("لا بيانات لهذا الرمز");
+      }
+      const vol = annualVol(closes, ppy);
+      if (!Number.isFinite(vol)) throw new Error("بيانات غير كافية");
+      $("qVol").value = vol.toFixed(2);
+      if (!$("qSpot").value) $("qSpot").value = closes[closes.length - 1];
+      qMeta = { label, at: todayIso(), last: closes[closes.length - 1] };
+      setStatus("qStatus", `التقلب السنوي ${fmt(vol)}% من ${label}.`, "ok");
+    } catch (e) {
+      setStatus("qStatus", `تعذر الجلب: ${e.message}.${src === "stooq" ? " " + proxyHint : ""}`, "bad");
+    }
+  }
+
+  /* ---------- quant-implied range ---------- */
+  let lastQuant = null;
+  function runQuant() {
+    const spot = parseFloat($("qSpot").value) || model.inputs.price, vol = parseFloat($("qVol").value) / 100;
+    const days = Math.max(1, Math.round(parseFloat($("qDays").value) || 182)), paths = Math.min(50000, Math.max(200, Math.round(parseFloat($("qPaths").value) || 5000)));
+    const seed = Math.round(parseFloat($("qSeed").value) || 42), sdR = Math.max(0, parseFloat($("qSdRate").value) || 0), sdO = Math.max(0, parseFloat($("qSdOther").value) || 0);
+    const kp = clear($("qKpis")); clear($("qChart"));
+    const z = normalGen(seed), T = days / 365;
+    let gbm = [];
+    if (spot > 0 && vol > 0) {
+      for (let i = 0; i < paths; i++) gbm.push(spot * Math.exp(vol * Math.sqrt(T) * z()));
+      gbm.sort((a, b) => a - b);
+    }
+    // DCF parameter uncertainty: perturb the assumptions that move value most, keep WACC above terminal growth.
+    let dcf = [], rejected = 0;
+    const I = model.inputs, H = model.H;
+    if (model.result && H && H.length) {
+      const n = Math.min(paths, 4000);
+      for (let i = 0; i < n; i++) {
+        const P = { ...I, wacc: I.wacc + sdR * z(), terminalGrowth: I.terminalGrowth + sdR / 2 * z(), ebitMargin: I.ebitMargin + sdO * z(), growthStart: I.growthStart + sdO * z(), growthEnd: I.growthEnd + sdO / 2 * z() };
+        if (P.wacc - P.terminalGrowth < 0.5 || P.wacc <= 0) { rejected++; continue; }
+        const v = run(P, H).perShare; if (Number.isFinite(v)) dcf.push(v); else rejected++;
+      }
+      dcf.sort((a, b) => a - b);
+    }
+    if (!gbm.length && !dcf.length) { setStatus("qStatus", "يلزم سعر وتقلب، أو نموذج DCF مكتمل في باني النماذج.", "bad"); lastQuant = null; return; }
+    const q3 = a => [quantile(a, 0.1), quantile(a, 0.5), quantile(a, 0.9)];
+    const k = Math.min(gbm.length, dcf.length);
+    // Equal weight: thin each sorted sample to the same size by stride, then merge.
+    const thin = (a, n) => Array.from({ length: n }, (_, i) => a[Math.floor(i * a.length / n)]);
+    const pooled = gbm.length && dcf.length ? [...thin(gbm, k), ...thin(dcf, k)].sort((a, b) => a - b) : (gbm.length ? gbm : dcf);
+    const res = { spot, vol: vol * 100, days, paths, seed, gbm: gbm.length ? q3(gbm) : null, dcf: dcf.length ? q3(dcf) : null, pooled: q3(pooled), dcfN: dcf.length, rejected, src: qMeta };
+    lastQuant = res;
+    const kpi = (label, v, extra) => el("div", { class: "kpi" }, el("span", { text: label }), el("b", { text: v }), extra ? el("span", { text: extra }) : null);
+    const span = r => r ? `${fmt(r[0])} – ${fmt(r[2])}` : "—";
+    kp.append(
+      kpi("النطاق المجمّع P10–P90", span(res.pooled), `الوسيط ${fmt(res.pooled[1])}`),
+      kpi(`مونت كارلو السعر · ${days} يوماً`, span(res.gbm), res.gbm ? `تقلب ${fmt(res.vol)}% · ${paths} مسار` : "يلزم سعر وتقلب"),
+      kpi("مونت كارلو DCF", span(res.dcf), res.dcf ? `${res.dcfN} عيّنة · مرفوضة ${rejected}` : "أكمل باني النماذج"),
+      kpi("السعر الحالي", fmt(spot)));
+    drawQuant(res);
+    setStatus("qStatus", "[INFERENCE - Quant Model] حُسب النطاق." + (res.src ? ` التقلب من ${res.src.label}.` : ""), "ok");
+    store.set(keyFor("quant"), { days, paths, seed, sdR, sdO, src: $("qSrc").value, sym: $("qSymbol").value, vol: $("qVol").value });
+  }
+  function drawQuant(res) {
+    const svgNS = "http://www.w3.org/2000/svg", s = clear($("qChart"));
+    const mk = (tag, a) => { const n = document.createElementNS(svgNS, tag); for (const [k, v] of Object.entries(a)) n.setAttribute(k, v); return n; };
+    const six = Date.now() - 183 * 864e5;
+    const an = research.analysts.filter(a => verified(a.src, a.date) && new Date(a.date).getTime() >= six).map(a => a.target);
+    const bars = [
+      ["المحللون (يدوي، موثّق)", an.length ? [Math.min(...an), Math.max(...an)] : null, an.length ? median(an) : NaN, "bar-r"],
+      ["مونت كارلو السعر P10–P90", res.gbm && [res.gbm[0], res.gbm[2]], res.gbm && res.gbm[1], "bar-q"],
+      ["مونت كارلو DCF P10–P90", res.dcf && [res.dcf[0], res.dcf[2]], res.dcf && res.dcf[1], "bar-q"],
+      ["النطاق المجمّع", [res.pooled[0], res.pooled[2]], res.pooled[1], "bar-p"],
+    ].filter(b => b[1] && b[1].every(Number.isFinite));
+    const all = bars.flatMap(b => b[1]).concat(res.spot > 0 ? [res.spot] : []);
+    const lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * 0.08 || 1;
+    const X0 = 200, X1 = 600, x = v => X0 + (v - lo + pad) / (hi - lo + 2 * pad) * (X1 - X0);
+    bars.forEach(([label, [a, b], mid, cls], i) => {
+      const y = 14 + i * 44;
+      const t = mk("text", { x: 190, y: y + 16, class: "lbl", "text-anchor": "end" }); t.textContent = label; s.append(t);
+      s.append(mk("rect", { x: x(a), y, width: Math.max(2, x(b) - x(a)), height: 24, rx: 6, class: cls }));
+      if (Number.isFinite(mid)) s.append(mk("line", { x1: x(mid), x2: x(mid), y1: y + 3, y2: y + 21, class: "mid" }));
+      const v1 = mk("text", { x: x(a) - 4, y: y + 16, class: "val", "text-anchor": "end" }); v1.textContent = fmt(a); s.append(v1);
+      const v2 = mk("text", { x: x(b) + 4, y: y + 16, class: "val" }); v2.textContent = fmt(b); s.append(v2);
+    });
+    if (res.spot > 0) {
+      s.append(mk("line", { x1: x(res.spot), x2: x(res.spot), y1: 6, y2: 14 + bars.length * 44, class: "mark" }));
+      const t = mk("text", { x: x(res.spot), y: 200, class: "val", "text-anchor": "middle" }); t.textContent = `السعر ${fmt(res.spot)}`; s.append(t);
+    }
+  }
+  function restoreQuant() {
+    const q = store.get(keyFor("quant"), null);
+    const set = (id, v) => { if (v !== undefined && v !== null && v !== "") $(id).value = v; };
+    if (q) { set("qDays", q.days); set("qPaths", q.paths); set("qSeed", q.seed); set("qSdRate", q.sdR); set("qSdOther", q.sdO); set("qSrc", q.src); set("qSymbol", q.sym); set("qVol", q.vol); }
+    $("qSpot").value = Number.isFinite(model.inputs.price) ? model.inputs.price : "";
+    model.histSource = store.get(keyFor("hist-src"), null);
+    renderHistSource(); clear($("qKpis")); clear($("qChart")); lastQuant = null; qMeta = null;
+  }
+  $("histSec").addEventListener("click", pullSec);
+  $("qFetch").addEventListener("click", fetchVol);
+  $("qRun").addEventListener("click", runQuant);
+  $("qToNotes").addEventListener("click", () => {
+    if (!lastQuant) { setStatus("qStatus", "احسب النطاق أولاً.", "bad"); return; }
+    const r = lastQuant, sp = a => a ? `${fmt(a[0])} – ${fmt(a[2])} (وسيط ${fmt(a[1])})` : "غير متاح";
+    appendToNotes("النموذج الكمي", [
+      `- [INFERENCE - Quant Model] النطاق المجمّع P10–P90: ${sp(r.pooled)}`,
+      `- مونت كارلو السعر (${r.days} يوماً، تقلب ${fmt(r.vol)}%، ${r.paths} مسار، بذرة ${r.seed}): ${sp(r.gbm)}`,
+      `- مونت كارلو DCF (${r.dcfN} عيّنة): ${sp(r.dcf)}`,
+      r.src ? `- مصدر التقلب: ${r.src.label} بتاريخ ${r.src.at}` : "- التقلب أُدخل يدوياً",
+    ]);
+    setStatus("qStatus", "أُرسل إلى notes.md.", "ok");
+  });
+
+  /* ---------- digital assets: CoinGecko + Binance + DefiLlama ---------- */
+  let cgLast = null;
+  async function fetchCrypto() {
+    const q = $("cgQuery").value.trim();
+    if (!q) { setStatus("cgStatus", "اكتب اسم العملة أو رمزها.", "bad"); $("cgQuery").focus(); return; }
+    setStatus("cgStatus", "جارٍ الجلب…"); clear($("cgKpis")); clear($("cgSrc")); $("cgToQuant").disabled = true;
+    try {
+      const s = await getJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`);
+      const coin = (s.coins || [])[0]; if (!coin) throw new Error("لا توجد عملة بهذا الاسم");
+      const [p, b, chains] = await Promise.allSettled([
+        getJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coin.id)}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`),
+        getJSON(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${encodeURIComponent(coin.symbol.toUpperCase())}USDT`),
+        getJSON("https://api.llama.fi/v2/chains"),
+      ]);
+      const px = p.status === "fulfilled" ? p.value[coin.id] : null, bt = b.status === "fulfilled" ? b.value : null;
+      const chain = chains.status === "fulfilled" ? chains.value.find(c => c.gecko_id === coin.id) : null;
+      const big = v => Number.isFinite(v) ? (v >= 1e12 ? `$${fmt(v / 1e12)}T` : v >= 1e9 ? `$${fmt(v / 1e9)}B` : `$${fmt(v / 1e6)}M`) : "—";
+      const kpi = (label, v, extra) => el("div", { class: "kpi" }, el("span", { text: label }), el("b", { text: v }), extra ? el("span", { text: extra }) : null);
+      $("cgKpis").append(
+        kpi(`${coin.name} · السعر`, px ? `$${fmt(px.usd, px.usd < 1 ? 4 : 2)}` : "—", px ? `24 ساعة ${pct(px.usd_24h_change)}` : "CoinGecko غير متاح"),
+        kpi("القيمة السوقية", big(px?.usd_market_cap), px ? `حجم 24 ساعة ${big(px.usd_24h_vol)}` : null),
+        kpi("Binance مقابل USDT", bt ? `$${fmt(parseFloat(bt.lastPrice), parseFloat(bt.lastPrice) < 1 ? 4 : 2)}` : "—", bt ? `حجم ${big(parseFloat(bt.quoteVolume))}` : "غير مدرجة"),
+        kpi("القيمة المقفلة في سلسلتها", chain ? big(chain.tvl) : "—", chain ? `DefiLlama · ${chain.name}` : "ليست سلسلة DeFi"));
+      $("cgSrc").append("المصادر: ", el("a", { href: `https://www.coingecko.com/en/coins/${encodeURIComponent(coin.id)}`, target: "_blank", rel: "noopener noreferrer", text: "CoinGecko" }),
+        bt ? " · Binance" : "", chain ? " · DefiLlama" : "", ` · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`);
+      cgLast = { symbol: coin.symbol.toUpperCase() + "USDT", price: px?.usd ?? (bt ? parseFloat(bt.lastPrice) : NaN), onBinance: !!bt };
+      $("cgToQuant").disabled = !cgLast.onBinance;
+      setStatus("cgStatus", "جُلبت البيانات.", "ok");
+    } catch (e) { setStatus("cgStatus", `تعذر الجلب: ${e.message}`, "bad"); }
+  }
+  $("cgFetch").addEventListener("click", fetchCrypto);
+  $("cgQuery").addEventListener("keydown", e => { if (e.key === "Enter") fetchCrypto(); });
+  $("cgToQuant").addEventListener("click", () => {
+    if (!cgLast) return;
+    $("qSrc").value = "binance"; $("qSymbol").value = cgLast.symbol; if (Number.isFinite(cgLast.price)) $("qSpot").value = cgLast.price;
+    $("quant").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    fetchVol().then(runQuant);
+  });
+
   /* ===================== ticker + theme + boot ===================== */
   function setTicker(t) {
     ticker = String(t || "").toUpperCase().replace(/[^A-Z0-9.\-]/g, "").slice(0, 12);
@@ -1571,6 +1886,7 @@
     store.set("chain-last-ticker", ticker);
     loadTickerState();
     buildInputsForm(); buildHistTable(); renderModel(); renderResearch(); renderFalsifiers();
+    restoreQuant();
     for (const id of ["erVsExp", "erTone", "erQa", "erThesisOut"]) clear($(id));
     const le = store.get(keyFor("earnings-last"), null);
     setNode("earnings", le ? "online" : "", le ? `آخر تحليل ${le.at}` : "لم يبدأ");

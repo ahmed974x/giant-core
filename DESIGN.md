@@ -1,6 +1,6 @@
 # DESIGN.md · OMEGA / NABD design system
 
-One design language for every OMEGA surface: `site-landing/` (public NABD portal), `omega-ops-room-v1/omega-ops-room.html` (Ops Room) and `omega-ops-room-v1/the-chain.html` (finance research chain). Decision records: ADR-087 (tokens) and ADR-088 (this file, THE CHAIN, skill rules).
+One design language for every OMEGA surface: `site-landing/` (public NABD portal), `omega-ops-room-v1/omega-ops-room.html` (Ops Room) and `omega-ops-room-v1/the-chain.html` (finance research chain). Decision records: ADR-087 (tokens), ADR-088 (this file, THE CHAIN, skill rules) and ADR-089 (security shield, free data engine, profit-split calculator). Agent rules: `AGENTS.md` and `CLAUDE.md`.
 
 Direction: Apple HIG discipline on a clean white canvas, with Linear's density for data, Stripe's calm hierarchy for money, and Replicate's plain, honest product copy. White "Pure Daylight" is the default; dark is a toggle, never an accident inside a light page.
 
@@ -56,6 +56,7 @@ Rules:
 - No invented data. Market numbers, analyst targets, quotes and performance come from a named source with a date, or they are shown as "تعذر التحقق منها" (unverified). Teaching examples are labelled "مثال تعليمي — أرقام افتراضية" on screen.
 - Heuristic readings (classification, tone, dodge detection, thesis support) carry `[INFERENCE]`.
 - Real trading, public copy-trading vaults and investor profit split appear only as locked cards marked **«قيد الموافقة»** until Ahmad gives a separate explicit approval and legal review is done.
+- The profit-split / high-water-mark calculator (ADR-089) is a math simulation in the browser: it sends nothing, accepts no money and copies no trade, and says so next to the inputs. Quant ranges carry `[INFERENCE - Quant Model]`.
 - Plain, active copy. No "Elevate / Seamless / Unleash / Next-gen", no exclamation marks, no "Oops". Errors say what failed and what to do next. Loading text ends with "…".
 - Free and open-source only. No CAPTCHA solving, no paid data sources.
 
@@ -68,6 +69,14 @@ Rules:
 - `localStorage` is wrapped in try/catch and the page works without it.
 - Every file complete: no TODO, no placeholder, no "rest of code". Syntax check (`node --check` on extracted scripts) and the contrast gate run before a file is called done.
 
-## 8. Where the rules came from
+## 8. Security (ADR-089)
+
+- Every page ships a strict `Content-Security-Policy` meta: `default-src 'none'`, no `'unsafe-inline'` or `'unsafe-eval'`, inline `<script>`/`<style>` pinned by sha256, `object-src 'none'`, `base-uri 'none'`, `form-action 'none'`, `connect-src` listing each data host by name. After editing any inline script or style, run `node scripts/skillspector-audit.mjs --fix <paths>` to re-pin the hashes.
+- No `style="…"` attributes and no `setAttribute("style")` (blocked by the CSP); use classes or `el.style.x`.
+- No `eval`, `new Function`, string timers, `innerHTML` with data, or inline `on*=` handlers. External scripts need SRI (`--fetch` adds it).
+- Secrets never sit in `localStorage` as plaintext. The Ops Room vault encrypts with AES-GCM-256 from a PBKDF2-SHA256 (600,000 rounds) passphrase key; only ciphertext is stored.
+- `node scripts/skillspector-audit.mjs --strict <changed paths>` must exit 0 before any PR. Suppressions live in `.skillspector.json` and each needs a written reason.
+
+## 9. Where the rules came from
 
 Distilled into `.claude/skills/omega-design/SKILL.md` (design) and `.claude/skills/omega-finance-chain/SKILL.md` (finance agents). Sources are listed there with the commit read. Only text rules were taken; no third-party scripts, hooks or installers were added (external-skills policy from the 2026-10-15 security review: `docs/SKILLS-SECURITY-REVIEW.md` on branch `claude/project-thread-gkzfb4`, not merged yet).

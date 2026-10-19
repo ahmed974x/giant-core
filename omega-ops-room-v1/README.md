@@ -55,6 +55,25 @@ When `omega-core-api` runs on `127.0.0.1:8000`, the page asks it for n8n and New
 State lives in this browser's `localStorage` under `chain:<TICKER>:*` and `omega-notes:<TICKER>`. Deep link: `the-chain.html?t=AAPL#model`.
 The 24/7 execution agent, copy-trading vault and profit split appear only as locked cards «قيد الموافقة».
 
+## Phase 4 · الدرع الأمني والبيانات المجانية (ADR-089)
+
+| Section | What it does |
+|---|---|
+| Digital-asset liquidity · سيولة الأصول الرقمية | CoinGecko total market cap + BTC dominance, DefiLlama DeFi TVL with 30-day change. Free, no keys, every 10 min. |
+| Security shield · الدرع الأمني (`#shield`) | SkillSpector in the browser: live self-check of this page and a scanner for any file, folder or skill you pick. Same 13 rules as `scripts/skillspector-audit.mjs`; nothing leaves the browser. |
+| Encrypted vault · الخزنة المشفّرة | AES-GCM-256 with a PBKDF2-SHA256 (600,000 rounds) key from your passphrase. Only ciphertext in `localStorage` (`omega-vault-v1`). Auto-locks after 5 minutes. Moves any plaintext key it finds into the vault. |
+| Profit split & HWM · حاسبة الأرباح (`#split`) | Math simulation only: no money accepted, no trade copied. |
+
+THE CHAIN adds: "اسحب من SEC EDGAR" in HISTORICALS, a digital-asset card (CoinGecko, Binance, DefiLlama) and the Quant-Implied Target Range `[INFERENCE - Quant Model]` next to the analyst range.
+
+SEC EDGAR and Stooq need the local proxy (they send no CORS headers):
+
+```bash
+OMEGA_SEC_UA="Ahmad your@email" node scripts/omega-data-proxy.mjs   # http://127.0.0.1:8796
+```
+
+Every page has a strict, hash-pinned CSP. After editing any inline script or style run `node scripts/skillspector-audit.mjs --fix omega-ops-room-v1`.
+
 ## Design · التصميم
 
 Same tokens as `site-landing/style.css`. Contrast gate: `node audits/verify-contrast.mjs omega-ops-room-v1/omega-ops-room.html` (all pairs WCAG >= 4.5 and APCA Lc >= 60, light, dark and P3). Cairo and JetBrains Mono are embedded (SIL OFL 1.1), so the page still works double-clicked. Every live number uses a monospace font with `tabular-nums`.
