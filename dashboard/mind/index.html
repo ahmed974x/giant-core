@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-JgnWGRwN3rqdxHfobYxX/a6u7YhAE+SZU+BkMZtQ1oY='; style-src 'sha256-2HGyjL5nsHoJwX+L8Dod90lg7O7mm8MuhTzePUc2WlE=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-0/4q5IwejFb2zgHlQwwtwmGHS8ZbXE1kmz/TkRFlZ7M=' 'sha256-9xjtvxMT1ApHlgn9ohbh2FNfvK5Tqtzy94BjfXBeMSY=' 'sha256-yfc2FhpkFR0EAy3T+zDsaAFGXSP9B3ELNvaJKDzNhkk='; connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="icon" href="data:,">
 <title>العقل الثاني · OMEGA</title>
 <style>
@@ -53,7 +54,67 @@
   .srow { display: flex; gap: 8px; align-items: center; }
   .srow input[type=range] { flex: 1; }
   .hidden { display: none !important; }
+  .m-0 { margin: 0; } .mt-6 { margin-top: 6px; } .mt-8 { margin-top: 8px; } .mt-14 { margin-top: 14px; } .mt-16 { margin-top: 16px; }
 </style>
+<!-- 3d-force-graph@1.80.1 (vendor/) injects an empty style element and then these three style sheets when it loads.
+     Byte-identical copies here let `skillspector-audit.mjs --fix` pin their sha256 hashes, so the strict CSP allows the
+     library's own styles without unsafe-inline (ADR-090). Do not edit them; refresh them from the vendor file on upgrade. -->
+<style></style>
+<style>.graph-info-msg {
+  top: 50%;
+  width: 100%;
+  text-align: center;
+  color: lavender;
+  opacity: 0.7;
+  font-size: 22px;
+  position: absolute;
+  font-family: Sans-serif;
+}
+
+.scene-container .clickable {
+  cursor: pointer;
+}
+
+.scene-container .grabbable {
+  cursor: move;
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.scene-container .grabbable:active {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing;
+}</style>
+<style>.float-tooltip-kap {
+  position: absolute;
+  width: max-content; /* prevent shrinking near right edge */
+  max-width: max(50%, 150px);
+  padding: 3px 5px;
+  border-radius: 3px;
+  font: 12px sans-serif;
+  color: #eee;
+  background: rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+</style>
+<style>.scene-nav-info {
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  text-align: center;
+  color: slategrey;
+  opacity: 0.7;
+  font-size: 10px;
+  font-family: sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.scene-container canvas:focus {
+  outline: none;
+}</style>
 </head>
 <body>
 <header>
@@ -76,7 +137,7 @@
     </div>
     <div class="msg" id="capture-msg"></div>
 
-    <h2 style="margin-top:14px">فكّر معي</h2>
+    <h2 class="mt-14">فكّر معي</h2>
     <textarea id="think-text" placeholder="اسأل عقلك. يجاوب فقط من ملاحظاتك، ويذكر أرقامها."></textarea>
     <div class="row"><button id="btn-think">اسأل عقلي</button></div>
     <div class="msg" id="think-msg"></div>
@@ -87,7 +148,7 @@
   <section class="card" aria-label="map">
     <div class="mapbar">
       <div class="chips" id="type-chips"></div>
-      <div class="row" style="margin:0">
+      <div class="row m-0">
         <button id="btn-2d" class="chip" aria-pressed="true">2D</button>
         <button id="btn-3d" class="chip" aria-pressed="false">3D</button>
       </div>
@@ -101,13 +162,13 @@
       <button id="btn-suggest" class="chip" aria-pressed="false">أظهر الاقتراحات</button>
       <button id="btn-mine" class="chip" aria-pressed="false">روابطي فقط</button>
     </div>
-    <div class="srow" style="margin-top:8px">
+    <div class="srow mt-8">
       <span class="muted" id="time-label">الكل</span>
       <input type="range" id="time" min="0" max="100" value="100" aria-label="time">
     </div>
     <div id="map" role="img" aria-label="brain map"></div>
     <div id="map3d"></div>
-    <div class="legend" style="margin-top:6px">
+    <div class="legend mt-6">
       نقطة واحدة = فكرة واحدة · اللون = الموضوع · الحجم = عدد الروابط · Shift + نقرة على نقطتين = أقصر مسار · الخط البرتقالي = اقتراح ينتظر قرارك
     </div>
   </section>
@@ -119,7 +180,7 @@
     <div id="evidence" class="hidden"></div>
     <div id="links"></div>
 
-    <h2 style="margin-top:16px">تنفيس الأفكار</h2>
+    <h2 class="mt-16">تنفيس الأفكار</h2>
     <div id="digest" class="muted">…</div>
   </section>
 </main>

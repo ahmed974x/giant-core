@@ -1,7 +1,7 @@
 // Pre-commit guard (ADR-042). Values are never printed, only file and variable names.
 import { execFileSync } from "node:child_process";
 
-const git = (...a) => execFileSync("git", a, { encoding: "utf8" });
+const git = (...a) => execFileSync("git", a, { encoding: "utf8", timeout: 30_000 });   // fixed program, argv array, no shell
 const staged = git("diff", "--cached", "--name-only", "--diff-filter=ACMR").split("\n").filter(Boolean);
 const problems = [];
 for (const file of staged) {

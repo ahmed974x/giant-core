@@ -2,6 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kAjhUKCDqFL2PnuoyCtov30Sqv0gQs5FoAFqAu50lT0='; style-src 'sha256-q6yffmOHthwOilt/6vbuki1cFOI5lwVXtC/2VAgSBaQ='; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:,">
 <title>مخ نيوتن</title>
 <style>
 :root{--bg:#05070d;--panel:#0b1020cc;--line:#1d2a4a;--txt:#dfe7ff;--mut:#7d8bb0;--acc:#5cf2ff;--acc2:#b388ff;--bad:#ff6b8b}
@@ -61,22 +63,26 @@ input,select,textarea{width:100%;background:#060a16;color:var(--txt);border:1px 
 </div>
 <script>
 const $=s=>document.querySelector(s);let cur="ship";
-document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll("form").forEach(f=>f.hidden=f.id!=="f-"+b.dataset.t);cur=b.dataset.t;$("#out").innerHTML=""});
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// DOM builder (ADR-090): results go in as text or attributes, never parsed as markup.
+function h(tag,props,...kids){const el=document.createElement(tag);for(const[k,v]of Object.entries(props||{})){if(v==null)continue;if(k==="class")el.className=v;else el.setAttribute(k,String(v))}for(const c of kids.flat())if(c!=null&&c!=="")el.append(c instanceof Node?c:String(c));return el}
+const out=(...nodes)=>$("#out").replaceChildren(...nodes);
+const safeUrl=u=>/^https?:\/\//i.test(String(u))?String(u):"#";
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll("form").forEach(f=>f.hidden=f.id!=="f-"+b.dataset.t);cur=b.dataset.t;out()});
 function args(f){const o={};for(const el of f.elements){if(!el.name||el.value==="")continue;const v=el.value.trim();o[el.name]=el.name==="expression"||el.name==="profile"?v:el.name==="use_currents"?v==="1":Number(v)}return o}
-function links(r){const ev=(r.evidence||[]).map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.slice(0,80))}…</a></li>`).join("");
- const as=(r.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("");
- let map="";if(r.inputs&&r.inputs.to){const[a,b]=r.inputs.from,[c,d]=r.inputs.to;map=`<p><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/directions?route=${a}%2C${b}%3B${c}%2C${d}">افتح المسار على الخريطة</a></p>`}
- return (as?`<p class="k">الفرضيات</p><ul>${as}</ul>`:"")+(ev?`<p class="k">المصدر الخام</p><ul>${ev}</ul>`:"")+map}
-function show(t,r){let h="";
- if(t==="ship_eta"||t==="road_eta"){h=`<div class="k">الوصول (UTC)</div><div class="big">${esc(r.arrive_utc.replace("T"," ").replace("+00:00",""))}</div><p>المدة ${esc(r.duration)} · المسافة ${t==="ship_eta"?esc(r.distance_nm)+" ميل بحري":esc(r.road_distance_km)+" كم"}</p><div class="f">${esc(r.formula)}</div>`}
- else if(t==="distance"){h=`<div class="big">${(r.distance_km).toFixed(3)} كم</div><p>${(r.distance_nm).toFixed(3)} ميل بحري · الاتجاه ${r.initial_bearing!=null?r.initial_bearing.toFixed(2)+"°":"-"}</p>`}
- else if(t==="calc"){h=`<div class="big" dir="ltr">${esc(r.decimal||r.exact)}</div><p class="k">القيمة الدقيقة</p><div class="f">${esc(r.exact)}</div>`}
- else if(t==="kinematics"){h=(r.solutions.length?r.solutions.map(s=>`<div class="f">${esc(JSON.stringify(s))}</div>`).join(""):"<p>ما في حل فيزيائي</p>")+`<p class="k">${esc(r.note)}</p>`}
- $("#out").innerHTML=h+links(r)+`<details><summary class="k">كل الأرقام</summary><div class="f">${esc(JSON.stringify(r,null,2))}</div></details>`}
-$("#go").onclick=async()=>{const f=$("#f-"+cur),t=f.dataset.tool;$("#out").innerHTML='<p class="k">نيوتن يحسب…</p>';
+function links(r){const n=[],as=r.assumptions||[],ev=r.evidence||[];
+ if(as.length)n.push(h("p",{class:"k"},"الفرضيات"),h("ul",null,as.map(a=>h("li",null,String(a)))));
+ if(ev.length)n.push(h("p",{class:"k"},"المصدر الخام"),h("ul",null,ev.map(u=>h("li",null,h("a",{href:safeUrl(u),target:"_blank",rel:"noopener noreferrer"},String(u).slice(0,80)+"…")))));
+ if(r.inputs&&r.inputs.to){const[a,b]=r.inputs.from.map(Number),[c,d]=r.inputs.to.map(Number);n.push(h("p",null,h("a",{target:"_blank",rel:"noopener noreferrer",href:`https://www.openstreetmap.org/directions?route=${a}%2C${b}%3B${c}%2C${d}`},"افتح المسار على الخريطة")))}
+ return n}
+function show(t,r){const n=[];
+ if(t==="ship_eta"||t==="road_eta"){n.push(h("div",{class:"k"},"الوصول (UTC)"),h("div",{class:"big"},r.arrive_utc.replace("T"," ").replace("+00:00","")),h("p",null,`المدة ${r.duration} · المسافة ${t==="ship_eta"?r.distance_nm+" ميل بحري":r.road_distance_km+" كم"}`),h("div",{class:"f"},String(r.formula)))}
+ else if(t==="distance"){n.push(h("div",{class:"big"},`${(r.distance_km).toFixed(3)} كم`),h("p",null,`${(r.distance_nm).toFixed(3)} ميل بحري · الاتجاه ${r.initial_bearing!=null?r.initial_bearing.toFixed(2)+"°":"-"}`))}
+ else if(t==="calc"){n.push(h("div",{class:"big",dir:"ltr"},String(r.decimal||r.exact)),h("p",{class:"k"},"القيمة الدقيقة"),h("div",{class:"f"},String(r.exact)))}
+ else if(t==="kinematics"){n.push(...(r.solutions.length?r.solutions.map(s=>h("div",{class:"f"},JSON.stringify(s))):[h("p",null,"ما في حل فيزيائي")]),h("p",{class:"k"},String(r.note)))}
+ out(...n,...links(r),h("details",null,h("summary",{class:"k"},"كل الأرقام"),h("div",{class:"f"},JSON.stringify(r,null,2))))}
+$("#go").onclick=async()=>{const f=$("#f-"+cur),t=f.dataset.tool;out(h("p",{class:"k"},"نيوتن يحسب…"));
  try{const res=await fetch("api/"+t,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(args(f))});const j=await res.json();
- if(!j.ok)throw new Error(j.error);show(t,j.result)}catch(e){$("#out").innerHTML=`<p class="err">${esc(e.message)}</p>`}};
+ if(!j.ok)throw new Error(j.error);show(t,j.result)}catch(e){out(h("p",{class:"err"},String(e.message)))}};
 </script>
 </body>
 </html>

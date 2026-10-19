@@ -32,7 +32,7 @@ const needKey = () => { if (!existsSync(keys)) { console.error(`private key not 
 
 if (cmd === "encrypt") {
   mkdirSync(path.dirname(keys), { recursive: true });
-  execFileSync(process.execPath, [dotenvxCli, "encrypt", "-f", ".env.local", "-fk", keys], { stdio: "ignore" });
+  execFileSync(process.execPath, [dotenvxCli, "encrypt", "-f", ".env.local", "-fk", keys], { stdio: "ignore", timeout: 60_000 });
   console.log(`encrypted web/.env.local; private key: ${keys}`);
 } else if (cmd === "pin") {
   // A new site PIN, typed twice by Ahmad at a hidden prompt. Arabic digits are accepted and stored as 0-9.
@@ -68,19 +68,20 @@ if (cmd === "encrypt") {
   needKey();
   const line = readFileSync(keys, "utf8").split(/\r?\n/).find(l => l.startsWith("DOTENV_PRIVATE_KEY_LOCAL="));
   if (!line) { console.error("no DOTENV_PRIVATE_KEY_LOCAL line in the key file"); process.exit(1); }
-  spawnSync("clip", { input: line, windowsHide: true });
+  // Fixed programs with argument arrays and no shell (ADR-090): clip reads the key on stdin, never as an argument.
+  spawnSync("clip", { input: line, windowsHide: true, timeout: 10_000 });
   console.log("The private key is on the clipboard for 60 seconds. Paste it into a Bitwarden secure note named");
   console.log('"OMEGA web private key" now. Opening Bitwarden...');
-  spawnSync("cmd", ["/c", "start", "", "https://vault.bitwarden.com/#/vault"], { windowsHide: true });
+  spawnSync("explorer.exe", ["https://vault.bitwarden.com/#/vault"], { windowsHide: true, timeout: 10_000 });
   for (let s = 60; s > 0; s -= 10) { process.stdout.write(`  clearing in ${s} s\r`); await new Promise(r => setTimeout(r, 10_000)); }
-  spawnSync("cmd", ["/c", "echo off | clip"], { windowsHide: true });
+  spawnSync("clip", { input: "", windowsHide: true, timeout: 10_000 });   // empty stdin empties the clipboard
   console.log("\nClipboard cleared.");
 } else if (cmd === "check") {
   // Check the file with the secrets decrypted in a child process, the way the server sees them.
   const script = "import('./src/lib/security/check-secrets.ts').then(m=>{const r=m.checkSecrets(process.cwd());for(const f of r.findings)console.log((f.ok?'ok   ':'FAIL ')+f.check+': '+f.detail);process.exit(r.ok?0:1)})";
   try {
     console.log(execFileSync(process.execPath, [dotenvxCli, "run", "-f", ".env.local", "-fk", keys, "--quiet", "--", process.execPath,
-      "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "-e", script], { cwd: web, encoding: "utf8" }).trim());
+      "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "-e", script], { cwd: web, encoding: "utf8", timeout: 60_000 }).trim());
   } catch (e) { console.log(String(e.stdout ?? "").trim()); process.exit(1); }
 } else {
   console.error("usage: secrets.mjs <encrypt | pin | set NAME | test | backup | check>"); process.exit(2);

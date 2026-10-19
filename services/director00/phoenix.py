@@ -16,6 +16,7 @@ listener :8443), backup (latest Restic snapshot younger than PHOENIX_BACKUP_MAX_
 All actions are local and reversible; nothing here reaches the internet.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -26,10 +27,10 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable
 
 import risk
 
@@ -41,10 +42,34 @@ RESTIC = Path(os.environ.get("RESTIC_BINARY", PROJECT / "tools" / "restic" / "bi
 BACKUP_MAX_AGE_H = float(os.environ.get("PHOENIX_BACKUP_MAX_AGE_H", "26"))
 WINDOWS = os.name == "nt"
 DETACHED = (subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if WINDOWS else 0
+NO_WINDOW = subprocess.CREATE_NO_WINDOW if WINDOWS else 0
+
+# Every process Phoenix starts goes through _run / _spawn (ADR-090): argv is a list (never a shell string, shell=False),
+# and the program must be one of these fixed tools. Nothing user-typed reaches an argument list.
+ALLOWED_PROGRAMS = frozenset({"restic", "docker", "node", "powershell", "docker desktop"})
+SNAPSHOT_ID = re.compile(r"[0-9a-f]{8,64}")
+
+
+def _checked_argv(argv: list[str]) -> list[str]:
+    if not argv or not all(isinstance(a, str) for a in argv):
+        raise ValueError("argv must be a non-empty list of strings")
+    name = Path(argv[0]).name.lower()
+    if (name[:-4] if name.endswith(".exe") else name) not in ALLOWED_PROGRAMS:
+        raise ValueError(f"program not on Phoenix's allowlist: {name}")
+    return argv
+
+
+def _run(argv: list[str], *, timeout: float, **kw) -> subprocess.CompletedProcess:
+    return subprocess.run(_checked_argv(argv), shell=False, timeout=timeout, creationflags=NO_WINDOW, **kw)  # noqa: S603 - allowlisted program, list argv, no shell
+
+
+def _spawn(argv: list[str], **kw) -> subprocess.Popen:
+    """Start a long-lived process detached from the watchdog (no timeout by design: it is the service itself)."""
+    return subprocess.Popen(_checked_argv(argv), shell=False, creationflags=DETACHED, **kw)  # noqa: S603 - allowlisted program, list argv, no shell
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def load_env(path: Path = CORE / ".env") -> None:
@@ -108,8 +133,7 @@ class Restic:
 
     def _run(self, *args: str, timeout: int = 300) -> subprocess.CompletedProcess:
         env = {**os.environ, "RESTIC_REPOSITORY": self.repo, "RESTIC_PASSWORD": self.password}
-        return subprocess.run([str(self.binary), *args], env=env, capture_output=True, text=True, timeout=timeout,
-                              creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
+        return _run([str(self.binary), *args], env=env, capture_output=True, text=True, timeout=timeout)
 
     def backup(self, path: Path, tag: str = "director") -> bool:
         return self._run("backup", str(path), "--tag", tag, "--exclude", "backups", "--json").returncode == 0
@@ -128,6 +152,8 @@ class Restic:
         if not snap:
             return False
         src = snap["paths"][0]
+        if not SNAPSHOT_ID.fullmatch(str(snap.get("short_id", ""))):     # restic's own output, checked before use
+            return False
         if re.match(r"^[A-Za-z]:\\", src):                       # C: -> /C/a/b inside the snapshot
             src = "/" + src[0] + src[2:].replace("\\", "/")
         return self._run("restore", f"{snap['short_id']}:{src}", "--target", str(target)).returncode == 0
@@ -170,7 +196,7 @@ def restore_data_dir(restic: Restic, data_dir: Path = DATA) -> bool:
     """Move the current data aside (kept as data/quarantine-<ts>) and bring back the newest Restic snapshot."""
     if not restic.available or not restic.latest():
         return False
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     staging = data_dir.parent / f".phoenix-restore-{stamp}"
     if not restic.restore_latest(staging):
         return False
@@ -204,16 +230,15 @@ def default_services(restic: Restic) -> list[Service]:
         if not docker:
             return False
         # Docker Desktop may not be running at all (after a reboot): start it and wait for the engine first (ADR-040).
-        if subprocess.run([docker, "info"], capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0).returncode != 0:
+        if _run([docker, "info"], capture_output=True, timeout=30).returncode != 0:
             desktop = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DockerDesktop" / "Docker Desktop.exe"
             if WINDOWS and desktop.exists():
-                subprocess.Popen([str(desktop)], creationflags=DETACHED)
+                _spawn([str(desktop)])
                 for _ in range(24):
                     time.sleep(5)
-                    if subprocess.run([docker, "info"], capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW).returncode == 0:
+                    if _run([docker, "info"], capture_output=True, timeout=30).returncode == 0:
                         break
-        r = subprocess.run([docker, "compose", "--profile", "director", "up", "-d", "memory"], cwd=CORE, capture_output=True, timeout=180,
-                           creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
+        r = _run([docker, "compose", "--profile", "director", "up", "-d", "memory"], cwd=CORE, capture_output=True, timeout=180)
         return r.returncode == 0
 
     def web_check():
@@ -223,29 +248,27 @@ def default_services(restic: Restic) -> list[Service]:
             if ok:
                 # Oil Watch (ADR-047) learns its baselines from one reading an hour; this keeps it reading when no one
                 # has the Market screen open. The route itself skips readings less than an hour apart.
-                try:
+                with contextlib.suppress(Exception):                 # best effort; the health answer above decides
                     urllib.request.urlopen("http://127.0.0.1:3100/api/oilwatch", timeout=30).close()
-                except Exception:
-                    pass
             return ok, "http://127.0.0.1:3100"
         except Exception as e:
             return False, f"web app not answering: {type(e).__name__}"
 
     def web_restart():
         # Through dotenvx (ADR-042): .env.local is encrypted, and the server refuses to start without its secrets.
-        runner = CORE / "web" / "scripts" / "secure-run.mjs"
-        if not runner.exists() or not shutil.which("node"):
+        runner, node = CORE / "web" / "scripts" / "secure-run.mjs", shutil.which("node")
+        if not runner.exists() or not node:
             return False
-        subprocess.Popen(["node", str(runner), "start", "-p", "3100", "-H", "127.0.0.1"], cwd=CORE / "web",
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=DETACHED)
+        _spawn([node, str(runner), "start", "-p", "3100", "-H", "127.0.0.1"], cwd=CORE / "web",
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
 
     def caddy_restart():
         script = CORE / "ops" / "caddy" / "start-https.ps1"
         if not WINDOWS or not script.exists():
             return False
-        return subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
-                              capture_output=True, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW).returncode == 0
+        return _run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+                    capture_output=True, timeout=60).returncode == 0
 
     def backup_check():
         if not restic.available:
@@ -253,7 +276,7 @@ def default_services(restic: Restic) -> list[Service]:
         snap = restic.latest()
         if not snap:
             return False, "no snapshot yet"
-        age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(snap["time"].replace("Z", "+00:00"))).total_seconds() / 3600
+        age_h = (datetime.now(UTC) - datetime.fromisoformat(snap["time"].replace("Z", "+00:00"))).total_seconds() / 3600
         return age_h < BACKUP_MAX_AGE_H, f"latest snapshot {snap['short_id']} is {age_h:.1f} h old"
 
     def backup_now():
@@ -325,9 +348,10 @@ class Phoenix:
             self.log.add("phoenix", "notify", "skipped", "notify target is not local; Phoenix never calls out")
             return "skipped"
         try:
-            req = urllib.request.Request(self.notify_url, data=json.dumps({"source": "phoenix", **report}).encode(),
+            # risk.LOCAL above allows only http(s)://127.0.0.1 or localhost, so no file: or custom scheme reaches urlopen.
+            req = urllib.request.Request(self.notify_url, data=json.dumps({"source": "phoenix", **report}).encode(),  # noqa: S310
                                          headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=5) as r:  # noqa: S310
                 result = "ok" if 200 <= r.status < 300 else "failed"
         except Exception:
             result = "failed"
@@ -368,8 +392,8 @@ def restore_drill(restic: Restic, log: "EventLog", data_dir: Path = DATA, scratc
     if snap:
         out["snapshot"] = snap.get("short_id")
         taken = datetime.fromisoformat(snap["time"].replace("Z", "+00:00"))   # restic writes local time with offset
-        out["age_h"] = round((datetime.now(timezone.utc) - taken).total_seconds() / 3600, 1)
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        out["age_h"] = round((datetime.now(UTC) - taken).total_seconds() / 3600, 1)
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         staging = (scratch or data_dir.parent) / f".phoenix-drill-{stamp}"
         try:
             if not restic.restore_latest(staging):
@@ -404,7 +428,8 @@ def _table_counts(path: Path) -> dict:
     try:
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=5)
         names = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
-        return {n: con.execute(f'SELECT count(*) FROM "{n}"').fetchone()[0] for n in names}
+        # Table names come from the file's own sqlite_master and are quoted as identifiers ("" escapes a quote).
+        return {n: con.execute('SELECT count(*) FROM "{}"'.format(n.replace('"', '""'))).fetchone()[0] for n in names}  # noqa: S608
     except sqlite3.DatabaseError:
         return {}
     finally:
@@ -416,9 +441,8 @@ def run_briefing() -> int:
     """The 07:00 scheduled task (ADR-037): run web/scripts/briefing.ts with no console window."""
     node = shutil.which("node") or "node"
     script = CORE / "web" / "scripts" / "briefing.ts"
-    r = subprocess.run([node, "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", str(script)], cwd=str(CORE / "web"),
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
-                       creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0)
+    r = _run([node, "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", str(script)], cwd=str(CORE / "web"),
+             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
     log = EventLog(DATA / "phoenix.sqlite")
     log.add("briefing", "morning", "ok" if r.returncode == 0 else "failed", (r.stdout if r.returncode == 0 else r.stderr)[-480:])
     return r.returncode

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AEED10ctzYfSNwjX58aKohFvl4rMzH4jYec4IIXXy/o='; style-src 'sha256-jkRtz4Q1JbJP5WS1wJpPuj3ccOn6fKehR0jy6Q8CVJg='; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:,">
 <title>OMEGA Ops Room</title>
 <style>
 :root {
@@ -754,7 +756,27 @@ function fmtPrice(v) { return v == null ? "—" : Number(v).toLocaleString("en-U
 function fmtTime(iso, withDate) {
   return new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kuwait", hour: "2-digit", minute: "2-digit", hour12: false, ...(withDate ? { day: "2-digit", month: "short" } : {}) });
 }
-function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+const str = v => String(v ?? "");
+// DOM builder (ADR-090): data only ever lands in textContent / attributes, never in parsed markup.
+// props: class, style {prop: value} (CSSOM, allowed by the strict CSP), any other key -> setAttribute.
+function dom(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "style") for (const [p, val] of Object.entries(v)) { if (p.startsWith("--")) el.style.setProperty(p, val); else el.style[p] = val; }
+    else el.setAttribute(k, String(v));
+  }
+  for (const c of kids.flat()) if (c != null && c !== false && c !== "") el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs, ...kids) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, String(v));
+  el.append(...kids);
+  return el;
+}
 
 // ───────────────────────────── interaction ─────────────────────────────
 let dragging = false, lastX = 0, lastY = 0, moved = 0;
@@ -769,8 +791,8 @@ sky.addEventListener("pointermove", e => {
   const tip = document.getElementById("tip");
   if (n) {
     const h = healthOf(n);
-    tip.innerHTML = `<b>${esc(n.anomaly ? KIND_LABEL[n.kind] + " · " + n.parent : n.label)}</b><span>${esc(n.role)}</span>` +
-      (n.health ? `<br><span>Status: ${esc(h)}</span>` : "");
+    tip.replaceChildren(dom("b", null, str(n.anomaly ? KIND_LABEL[n.kind] + " · " + n.parent : n.label)), dom("span", null, str(n.role)),
+      ...(n.health ? [dom("br"), dom("span", null, `Status: ${str(h)}`)] : []));
     tip.style.left = Math.min(W - 270, e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.style.opacity = 1;
   } else tip.style.opacity = 0;
 });
@@ -894,13 +916,12 @@ function renderStream(freshId) {
   const ol = document.getElementById("alist");
   document.getElementById("acount").textContent = state.anomalies.length;
   if (!state.anomalies.length) return;
-  ol.innerHTML = state.anomalies.slice(0, 20).map(a => `
-    <li class="${esc(a.severity)}${a.id === freshId ? " fresh" : ""}${state.focus.type === "anomaly" && state.focus.id === a.id ? " sel" : ""}" data-id="${esc(a.id)}" tabindex="0">
-      <div class="a-top"><span class="a-sym"><b style="background:${SYM_COLOR[a.symbol] || INK3}"></b>${esc(a.symbol)}</span>
-        <span class="sev ${esc(a.severity)}">${a.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${esc(KIND_LABEL[a.kind] || a.kind)}</span></div>
-      <p class="a-reason">${esc(a.reason)}</p>
-      <div class="a-time">${esc(fmtTime(a.ts, true))} · ${esc(fmtPrice(a.price))}</div>
-    </li>`).join("");
+  ol.replaceChildren(...state.anomalies.slice(0, 20).map(a => dom("li", {
+    class: `${str(a.severity)}${a.id === freshId ? " fresh" : ""}${state.focus.type === "anomaly" && state.focus.id === a.id ? " sel" : ""}`, "data-id": str(a.id), tabindex: "0" },
+    dom("div", { class: "a-top" }, dom("span", { class: "a-sym" }, dom("b", { style: { background: SYM_COLOR[a.symbol] || INK3 } }), str(a.symbol)),
+      dom("span", { class: `sev ${str(a.severity)}` }, `${a.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${str(KIND_LABEL[a.kind] || a.kind)}`)),
+    dom("p", { class: "a-reason" }, str(a.reason)),
+    dom("div", { class: "a-time" }, `${fmtTime(a.ts, true)} · ${fmtPrice(a.price)}`))));
 }
 // Arrivals are scrambled hex that resolve into the readable line (skipped for reduced motion).
 function decrypt(el, text) {
@@ -916,14 +937,15 @@ function renderWhales(freshId) {
   const ol = document.getElementById("wlist");
   document.getElementById("wcount").textContent = state.whales.length;
   if (!state.whales.length) return;
-  ol.innerHTML = state.whales.slice(0, 20).map(w => `
-    <li class="${esc(w.severity)}${w.id === freshId ? " fresh" : ""}${state.focus.type === "whale" && state.focus.id === w.id ? " sel" : ""}" data-id="${esc(w.id)}" tabindex="0">
-      <div class="a-top"><span class="w-usd">${esc(fmtUsd(w.usd_value))}</span>
-        <span class="sev ${esc(w.severity)}">${w.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${esc(w.chain.toUpperCase())}</span></div>
-      <p class="w-route"><span class="a-sym"><b style="background:${ASSET_COLOR[w.asset] || INK3}"></b></span><span data-route>${esc(`${fmtAmt(w.amount)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")}`)}</span></p>
-      <p class="w-verdict">${esc(VERDICT_LABEL[w.verdict] || w.verdict)}</p>
-      <div class="w-foot"><span>${esc(fmtTime(w.ts, true))} · block ${esc(w.block)}</span><a href="${esc(EXPLORER[w.chain](w.tx_hash))}" target="_blank" rel="noopener noreferrer">tx ↗</a></div>
-    </li>`).join("");
+  ol.replaceChildren(...state.whales.slice(0, 20).map(w => dom("li", {
+    class: `${str(w.severity)}${w.id === freshId ? " fresh" : ""}${state.focus.type === "whale" && state.focus.id === w.id ? " sel" : ""}`, "data-id": str(w.id), tabindex: "0" },
+    dom("div", { class: "a-top" }, dom("span", { class: "w-usd" }, fmtUsd(w.usd_value)),
+      dom("span", { class: `sev ${str(w.severity)}` }, `${w.severity === "high" ? "▲ HIGH" : "● WATCH"} · ${w.chain.toUpperCase()}`)),
+    dom("p", { class: "w-route" }, dom("span", { class: "a-sym" }, dom("b", { style: { background: ASSET_COLOR[w.asset] || INK3 } })),
+      dom("span", { "data-route": "" }, `${fmtAmt(w.amount)} ${w.asset} · ${sideLabel(w, "from")} → ${sideLabel(w, "to")}`)),
+    dom("p", { class: "w-verdict" }, str(VERDICT_LABEL[w.verdict] || w.verdict)),
+    dom("div", { class: "w-foot" }, dom("span", null, `${fmtTime(w.ts, true)} · block ${str(w.block)}`),
+      dom("a", { href: EXPLORER[w.chain](w.tx_hash), target: "_blank", rel: "noopener noreferrer" }, "tx ↗")))));
   if (freshId != null) { const li = ol.querySelector(`li[data-id="${Number(freshId)}"] [data-route]`); if (li) decrypt(li, li.textContent); }
 }
 for (const [ev, ok] of [["click", () => true], ["keydown", e => e.key === "Enter"]]) {
@@ -949,8 +971,8 @@ document.getElementById("alist").addEventListener("click", e => { const li = e.t
 document.getElementById("alist").addEventListener("keydown", e => { if (e.key === "Enter") { const li = e.target.closest("li[data-id]"); if (li) focusAnomaly(Number(li.dataset.id)); } });
 
 function renderSymButtons() {
-  document.getElementById("fsyms").innerHTML = state.symbols.map(s =>
-    `<button data-sym="${esc(s)}" class="${state.focus.type === "symbol" && state.focus.symbol === s ? "on" : ""}">${esc(s.replace(/USDT$/, ""))}</button>`).join("");
+  document.getElementById("fsyms").replaceChildren(...state.symbols.map(s =>
+    dom("button", { "data-sym": s, class: state.focus.type === "symbol" && state.focus.symbol === s ? "on" : "" }, s.replace(/USDT$/, ""))));
 }
 document.getElementById("fsyms").addEventListener("click", e => { const b = e.target.closest("button[data-sym]"); if (b) focusSymbol(b.dataset.sym); });
 
@@ -959,8 +981,8 @@ function renderPulse() {
   document.getElementById("pmem").textContent = p ? `+${p.stored} candles · ${p.anomalies} anomal${p.anomalies === 1 ? "y" : "ies"}` : "—";
   const s = state.status;
   const NAME = { btc_chain: "BTC", eth_chain: "ETH" };
-  document.getElementById("phealth").innerHTML = ["n8n", "timescale", "postgrest", "cortex", "btc_chain", "eth_chain"].map(k =>
-    `<span style="color:${healthColor(s[k])}">${s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"}</span> ${NAME[k] || k.toUpperCase()}`).join("&nbsp;&nbsp;");
+  document.getElementById("phealth").replaceChildren(...["n8n", "timescale", "postgrest", "cortex", "btc_chain", "eth_chain"].flatMap((k, i) => [
+    i ? "  " : "", dom("span", { style: { color: healthColor(s[k]) } }, s[k] === "ok" ? "●" : s[k] === "down" ? "✕" : "○"), ` ${NAME[k] || k.toUpperCase()}`]).filter(Boolean));
 }
 setInterval(() => {
   const p = state.lastPulse;
@@ -1014,8 +1036,8 @@ async function loadFocus() {
     chartColor = SYM_COLOR[a.symbol] || FLOW;
   }
   drawChart();
-  document.getElementById("ftable").innerHTML = "<tr><th>time</th><th>close</th></tr>" +
-    series.slice(-60).map(p => `<tr><td>${new Date(p.t).toISOString()}</td><td>${p.v}</td></tr>`).join("");
+  document.getElementById("ftable").replaceChildren(dom("tbody", null, dom("tr", null, dom("th", null, "time"), dom("th", null, "close")),
+    ...series.slice(-60).map(p => dom("tr", null, dom("td", null, new Date(p.t).toISOString()), dom("td", null, str(p.v))))));
   document.getElementById("chart").setAttribute("aria-label", `${document.getElementById("ftitle").textContent}: ${series.length} points`);
 }
 
@@ -1074,7 +1096,8 @@ chart.addEventListener("pointermove", e => {
   const p = series.reduce((b, q) => Math.abs(g.X(q.t) - x) < Math.abs(g.X(b.t) - x) ? q : b, series[0]);
   chartHover = p; drawChart();
   const mk = marks.find(m => Math.abs(g.X(m.t) - g.X(p.t)) < 6);
-  ctip.innerHTML = `${esc(fmtTime(new Date(p.t).toISOString(), true))} · <b>${esc(fmtPrice(p.v))}</b>${mk ? `<br><span style="color:${mk.sev === "high" ? CRIT : WARN}">${mk.sev === "high" ? "▲" : "●"} ${esc(mk.label)}</span>` : ""}`;
+  ctip.replaceChildren(`${fmtTime(new Date(p.t).toISOString(), true)} · `, dom("b", null, fmtPrice(p.v)),
+    ...(mk ? [dom("br"), dom("span", { style: { color: mk.sev === "high" ? CRIT : WARN } }, `${mk.sev === "high" ? "▲" : "●"} ${str(mk.label)}`)] : []));
   ctip.style.opacity = 1; ctip.style.left = Math.max(0, Math.min(chart.clientWidth - 160, g.X(p.t) + 10)) + "px";
 });
 chart.addEventListener("pointerleave", () => { chartHover = null; ctip.style.opacity = 0; drawChart(); });
@@ -1096,14 +1119,16 @@ function renderCortex() {
   let calls = 0, tokens = 0; for (const a of Object.values(perfBy)) { calls += a.calls; tokens += a.tokens; }
   document.getElementById("csum").textContent = cortex.providers.length ? `${on}/${list.length} live · ${calls} calls · ${tokens.toLocaleString("en-US")} tokens / 24h` : "gateway not reachable";
   if (!list.length) return;
-  document.getElementById("cprov").innerHTML = list.map(p => {
+  document.getElementById("cprov").replaceChildren(...list.map(p => {
     const a = perfBy[p.id];
     const p50 = a && a.p50.length ? a.p50.reduce((s, [v, w]) => s + v * w, 0) / a.p50.reduce((s, [, w]) => s + w, 0) : null;
     const col = !p.enabled ? INK3 : healthColor(LLM_STATE[p.state]);
     const right = !p.enabled ? (p.anonymous || /anon/i.test(p.reason || "") ? "keyless · off" : "no key") : a ? `${Math.round(a.ok / a.calls * 100)}% · ${fmtMs(p50)}` : "no calls yet";
-    return `<li class="${p.enabled ? "" : "off"}" title="${esc(p.enabled ? p.models.join(", ") : p.reason || "off")}"><span><b style="background:${col}"></b></span>` +
-      `<span class="n">${esc(p.label)}${p.paid ? " ◆" : p.local ? " ⌂" : ""}</span><span class="m">${a ? esc(a.calls) + "×" : ""}</span><span class="m">${right}</span></li>`;
-  }).join("");
+    return dom("li", { class: p.enabled ? "" : "off", title: str(p.enabled ? p.models.join(", ") : p.reason || "off") },
+      dom("span", null, dom("b", { style: { background: col } })),
+      dom("span", { class: "n" }, `${str(p.label)}${p.paid ? " ◆" : p.local ? " ⌂" : ""}`),
+      dom("span", { class: "m" }, a ? `${str(a.calls)}×` : ""), dom("span", { class: "m" }, right));
+  }));
 }
 async function refreshCortex() {
   try { const j = await cortexData.providers(); cortex.providers = j.providers || []; setProviders(cortex.providers); } catch { cortex.providers = []; setProviders([]); }
@@ -1174,25 +1199,31 @@ function renderMood() {
   document.getElementById("msub").textContent = m
     ? `market · 24h · ${m.n_24h} headlines${m.high_impact_24h > 0 ? ` · ${m.high_impact_24h} high impact` : ""}${prev != null && score != null ? ` · ${signed(score - prev)} vs prior day` : ""}`
     : "market · last 24h";
-  document.getElementById("msyms").innerHTML = state.symbols.map(sym => {
+  document.getElementById("msyms").replaceChildren(...state.symbols.map(sym => {
     const base = sym.replace(/USDT$/, ""), r = by[base], v = r && r.score_24h != null ? Number(r.score_24h) : null;
-    return `<span title="${esc(r ? `${r.n_24h} headlines in 24h · ${r.bullish_24h} bullish · ${r.bearish_24h} bearish` : "no headlines in 24h")}">${esc(base)} <b style="color:${moodColor(v)}">${esc(signed(v))}</b></span>`;
-  }).join("");
+    return dom("span", { title: r ? `${r.n_24h} headlines in 24h · ${r.bullish_24h} bullish · ${r.bearish_24h} bearish` : "no headlines in 24h" },
+      `${base} `, dom("b", { style: { color: moodColor(v) } }, signed(v)));
+  }));
   const fg = mood.fg.length ? mood.fg[mood.fg.length - 1] : null;
   document.getElementById("fgv").textContent = fg ? fg.value : "—";
   document.getElementById("fgv").style.color = fg ? (fg.value >= 55 ? OK : fg.value <= 45 ? CRIT : INK) : INK;
   document.getElementById("fgl").textContent = fg ? fg.label.toUpperCase() : "";
   const pts = mood.fg.slice(-30);
-  document.getElementById("fgspark").innerHTML = pts.length > 1 ? `<svg width="74" height="18" viewBox="0 0 74 18" aria-hidden="true"><polyline fill="none" stroke="${INK2}" stroke-width="1.2" points="${pts.map((p, i) => `${(i / (pts.length - 1) * 72 + 1).toFixed(1)},${(17 - p.value / 100 * 16).toFixed(1)}`).join(" ")}"/></svg>` : "";
+  document.getElementById("fgspark").replaceChildren(...(pts.length > 1 ? [svg("svg", { width: 74, height: 18, viewBox: "0 0 74 18", "aria-hidden": "true" },
+    svg("polyline", { fill: "none", stroke: INK2, "stroke-width": 1.2,
+      points: pts.map((p, i) => `${(i / (pts.length - 1) * 72 + 1).toFixed(1)},${(17 - p.value / 100 * 16).toFixed(1)}`).join(" ") }))] : []));
   const list = [...mood.news].sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at)).slice(0, 20);
   document.getElementById("mmeta").textContent = mood.servedBy ? `scored by ${mood.servedBy.split(":")[0]}` : list.length ? `${list.length} recent` : "—";
-  document.getElementById("mlist").innerHTML = list.length ? list.map(n => {
+  document.getElementById("mlist").replaceChildren(...(list.length ? list.map(n => {
     const href = /^https?:\/\//.test(n.url) ? n.url : "#";
     const tags = [n.source, ago(n.published_at), (n.symbols || []).join(" ") || "market"];
-    return `<li class="${mood.fresh.has(n.id) ? "fresh" : ""}"><i style="background:${moodColor(Number(n.sentiment))}" title="${esc(`${n.label} ${signed(Number(n.sentiment))}`)}"></i><div>` +
-      `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(n.rationale || n.title)}">${esc(n.title)}</a>` +
-      `<div class="m-meta">${esc(tags.join(" · "))} · ${n.impact === "high" ? '<span class="hi">HIGH IMPACT</span>' : esc(n.impact)}${n.scored_by === "lexicon" ? " · keywords" : ""}</div></div></li>`;
-  }).join("") : '<li class="empty">Headlines arrive every 10 minutes, scored by the Cortex.</li>';
+    return dom("li", { class: mood.fresh.has(n.id) ? "fresh" : "" },
+      dom("i", { style: { background: moodColor(Number(n.sentiment)) }, title: `${n.label} ${signed(Number(n.sentiment))}` }),
+      dom("div", null,
+        dom("a", { href, target: "_blank", rel: "noopener noreferrer", title: str(n.rationale || n.title) }, str(n.title)),
+        dom("div", { class: "m-meta" }, `${tags.join(" · ")} · `, n.impact === "high" ? dom("span", { class: "hi" }, "HIGH IMPACT") : str(n.impact),
+          n.scored_by === "lexicon" ? " · keywords" : "")));
+  }) : [dom("li", { class: "empty" }, "Headlines arrive every 10 minutes, scored by the Cortex.")]));
   mood.fresh.clear();
   const nn = nodes.get("news"); if (nn) nn.role = `Free RSS headlines + Fear & Greed · market mood ${signed(score)} (${moodLabel(score).toLowerCase()})`;
 }
@@ -1420,18 +1451,18 @@ function renderQuant(q) {
   const body = document.querySelector("#qtable tbody");
   document.getElementById("qsrc").textContent = q && q.source ? q.source.toUpperCase() : "—";
   const rows = q ? Object.entries(q.pairs || {}).filter(([, p]) => p) : [];
-  if (!rows.length) { body.innerHTML = '<tr><td colspan="5" class="empty">Quant engine not reachable.</td></tr>'; document.getElementById("qcorr").innerHTML = ""; return; }
+  if (!rows.length) { body.replaceChildren(dom("tr", null, dom("td", { colspan: "5", class: "empty" }, "Quant engine not reachable."))); document.getElementById("qcorr").replaceChildren(); return; }
   const sgn = v => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2);
-  body.innerHTML = rows.map(([sym, p]) => {
+  body.replaceChildren(...rows.map(([sym, p]) => {
     const m = p.momentum_pct?.["24h"], z = p.zscore;
-    return `<tr title="${esc(`realised vol ${p.vol_ann_pct}% · tail odds ${p.tail_prob} · max drawdown ${p.max_drawdown_pct}%`)}">` +
-      `<td><b style="background:${SYM_COLOR[sym] || INK3}"></b>${esc(sym.replace(/USDT$/, ""))}</td>` +
-      `<td>${esc(p.ewma_vol_ann_pct?.toFixed(1))}%</td><td><span class="reg ${esc(p.regime)}">${esc(p.regime.toUpperCase())}</span></td>` +
-      `<td style="color:${Math.abs(z) >= 3 ? CRIT : Math.abs(z) >= 2 ? WARN : INK}">${esc(sgn(z))}</td>` +
-      `<td style="color:${m == null ? INK3 : m >= 0 ? OK : CRIT}">${esc(sgn(m))}%</td></tr>`;
-  }).join("");
-  document.getElementById("qcorr").innerHTML = Object.entries(q.correlations || {}).map(([k, v]) =>
-    `<span title="Correlation of 5-min returns">${esc(k.replace(/USDT/g, ""))} <b style="color:${v == null ? INK3 : v >= 0.7 ? WARN : INK}">${v == null ? "—" : v.toFixed(2)}</b></span>`).join("");
+    return dom("tr", { title: `realised vol ${p.vol_ann_pct}% · tail odds ${p.tail_prob} · max drawdown ${p.max_drawdown_pct}%` },
+      dom("td", null, dom("b", { style: { background: SYM_COLOR[sym] || INK3 } }), sym.replace(/USDT$/, "")),
+      dom("td", null, `${str(p.ewma_vol_ann_pct?.toFixed(1))}%`), dom("td", null, dom("span", { class: `reg ${str(p.regime)}` }, p.regime.toUpperCase())),
+      dom("td", { style: { color: Math.abs(z) >= 3 ? CRIT : Math.abs(z) >= 2 ? WARN : INK } }, sgn(z)),
+      dom("td", { style: { color: m == null ? INK3 : m >= 0 ? OK : CRIT } }, `${sgn(m)}%`));
+  }));
+  document.getElementById("qcorr").replaceChildren(...Object.entries(q.correlations || {}).map(([k, v]) =>
+    dom("span", { title: "Correlation of 5-min returns" }, `${k.replace(/USDT/g, "")} `, dom("b", { style: { color: v == null ? INK3 : v >= 0.7 ? WARN : INK } }, v == null ? "—" : v.toFixed(2)))));
 }
 // Demo: the same metrics computed in the browser from the simulated history.
 function demoQuant(hist) {
@@ -1466,16 +1497,17 @@ let agentsDemo = null;
 const GITHUB_URL = /^https:\/\/github\.com\//;
 function renderAgents(a) {
   const roster = document.getElementById("aroster"), props = document.getElementById("aprops");
-  if (!a) { roster.innerHTML = '<li class="empty">Agents service not reachable.</li>'; return; }
-  roster.innerHTML = a.agents.map(g => `<li class="${g.last ? (g.last.ok ? "ok" : "bad") : ""}"><i></i><b>${esc(g.title.toUpperCase())}</b>` +
-    `<span class="e">every ${g.every_min >= 60 ? Math.round(g.every_min / 60) + "h" : g.every_min + "m"}</span>` +
-    `<span class="s" title="${esc(g.last ? g.last.summary : g.role)}">${esc(g.last ? g.last.summary : g.role)}</span></li>`).join("");
+  if (!a) { roster.replaceChildren(dom("li", { class: "empty" }, "Agents service not reachable.")); return; }
+  roster.replaceChildren(...a.agents.map(g => dom("li", { class: g.last ? (g.last.ok ? "ok" : "bad") : "" }, dom("i"), dom("b", null, g.title.toUpperCase()),
+    dom("span", { class: "e" }, `every ${g.every_min >= 60 ? Math.round(g.every_min / 60) + "h" : g.every_min + "m"}`),
+    dom("span", { class: "s", title: str(g.last ? g.last.summary : g.role) }, str(g.last ? g.last.summary : g.role)))));
   document.getElementById("apending").textContent = `${a.proposals.length} waiting`;
-  props.innerHTML = a.proposals.length ? a.proposals.slice(0, 8).map(p => `<li data-id="${esc(p.id)}">` +
-    `<div class="p-top"><a href="${esc(GITHUB_URL.test(p.url) ? p.url : "#")}" target="_blank" rel="noopener noreferrer">${esc(p.title)}</a><span class="reg normal">${esc(Math.round(p.score))}</span></div>` +
-    `<div class="p-why">${esc(p.reasons[0])} · ${esc(p.reasons[1] || "")}</div><div class="p-cost">${esc(p.cost)}</div>` +
-    `<div class="p-act"><button class="add" data-d="approved">ADD</button><button data-d="skipped">SKIP</button></div></li>`).join("")
-    : '<li class="empty">Nothing waiting. The Scout researches open-source tools once a day.</li>';
+  props.replaceChildren(...(a.proposals.length ? a.proposals.slice(0, 8).map(p => dom("li", { "data-id": str(p.id) },
+    dom("div", { class: "p-top" }, dom("a", { href: GITHUB_URL.test(p.url) ? p.url : "#", target: "_blank", rel: "noopener noreferrer" }, str(p.title)),
+      dom("span", { class: "reg normal" }, str(Math.round(p.score)))),
+    dom("div", { class: "p-why" }, `${str(p.reasons[0])} · ${str(p.reasons[1] || "")}`), dom("div", { class: "p-cost" }, str(p.cost)),
+    dom("div", { class: "p-act" }, dom("button", { class: "add", "data-d": "approved" }, "ADD"), dom("button", { "data-d": "skipped" }, "SKIP"))))
+    : [dom("li", { class: "empty" }, "Nothing waiting. The Scout researches open-source tools once a day.")]));
 }
 async function refreshAgents() {
   if (agentsDemo) return renderAgents(agentsDemo);
@@ -1519,10 +1551,11 @@ function renderNerve(n) {
   const m = (n.mem || [])[0];
   document.getElementById("nmem").textContent = m ? `memory · ${m.facts} facts · ${m.superseded} superseded · ${m.episodes} episodes` +
     (m.last_sleep ? ` · last sleep ${new Date(m.last_sleep).toLocaleDateString()}` : "") : "";
-  list.innerHTML = n.agents.map(a => `<li class="${a.status === "paused" ? "paused" : ""}" title="${esc(a.disclosure_en)}">` +
-    `<i></i>${esc(lang === "ar" ? a.name_ar : a.name_en)}${a.queued ? ` · ${esc(a.queued)}` : ""}</li>`).join("");
-  evs.innerHTML = n.events.map(e => `<li class="${e.kind.startsWith("guard.") ? "guard" : ""}"><span class="t">${esc(new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` +
-    `<span class="k">${esc(e.kind)}</span><span>${esc(e.agent)}</span></li>`).join("");
+  list.replaceChildren(...n.agents.map(a => dom("li", { class: a.status === "paused" ? "paused" : "", title: str(a.disclosure_en) },
+    dom("i"), `${str(lang === "ar" ? a.name_ar : a.name_en)}${a.queued ? ` · ${str(a.queued)}` : ""}`)));
+  evs.replaceChildren(...n.events.map(e => dom("li", { class: e.kind.startsWith("guard.") ? "guard" : "" },
+    dom("span", { class: "t" }, new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })),
+    dom("span", { class: "k" }, str(e.kind)), dom("span", null, str(e.agent)))));
 }
 async function refreshNerve() {
   if (nerveDemo) return renderNerve(nerveDemo);
@@ -1556,9 +1589,10 @@ function renderBrain(job) {
   brainEl.panel.hidden = false;
   brainEl.req.textContent = job.request;
   brainView.status = Object.fromEntries(job.steps.map(s => [s.agent, s.status]));
-  brainEl.steps.innerHTML = job.steps.map(s => `<li class="${esc(s.status)}${openSteps.has(s.agent) || s.status === "working" ? " open" : ""}" data-a="${esc(s.agent)}">` +
-    `<div class="h"><i></i><span>${esc(s.title.toUpperCase())} <small>· ${esc(s.role)}</small></span><small>${esc(s.status)}${s.ms != null ? " · " + esc(fmtMs(s.ms)) : ""}</small></div>` +
-    `<div class="o">${esc(typeof s.output === "string" ? s.output : s.output == null ? "" : JSON.stringify(s.output, null, 1))}</div></li>`).join("");
+  brainEl.steps.replaceChildren(...job.steps.map(s => dom("li", { class: `${str(s.status)}${openSteps.has(s.agent) || s.status === "working" ? " open" : ""}`, "data-a": str(s.agent) },
+    dom("div", { class: "h" }, dom("i"), dom("span", null, `${s.title.toUpperCase()} `, dom("small", null, `· ${str(s.role)}`)),
+      dom("small", null, `${str(s.status)}${s.ms != null ? " · " + fmtMs(s.ms) : ""}`)),
+    dom("div", { class: "o" }, typeof s.output === "string" ? s.output : s.output == null ? "" : JSON.stringify(s.output, null, 1)))));
   brainEl.answer.textContent = job.answer || "";                       // model text is never parsed as HTML
   brainEl.meta.textContent = `${job.status.toUpperCase()}${job.intent ? " · intent " + job.intent : ""} · open-weight models first · the Brain proposes, it never edits the site by itself`;
 }
@@ -1607,7 +1641,7 @@ document.getElementById("bform").addEventListener("submit", async e => {
     };
     poll();
   } catch (err) {
-    brainEl.panel.hidden = false; brainEl.req.textContent = request; brainEl.steps.innerHTML = "";
+    brainEl.panel.hidden = false; brainEl.req.textContent = request; brainEl.steps.replaceChildren();
     brainEl.answer.textContent = `The Brain is not reachable: ${err.message}`; brainEl.meta.textContent = ""; brainEl.go.disabled = false;
   }
 });
@@ -1623,11 +1657,11 @@ const DEMO_PLUGINS = [
 ];
 function renderModules(list) {
   document.getElementById("xcount").textContent = `${list.filter(p => p.enabled !== false).length}/${list.length} on`;
-  document.getElementById("xlist").innerHTML = list.length ? list.map(p =>
-    `<li class="${p.enabled === false ? "off" : ""}"><span class="kind" style="--k:${KIND_COLOR[p.kind] || "var(--ink-3)"}">${esc(p.kind)}</span>` +
-    `<span class="x-name">${esc(p.name)}</span><span class="x-desc">${esc(p.description)}</span>` +
-    `${(p.requires || []).length ? `<span class="x-req">needs ${esc(p.requires.join(" · "))}</span>` : ""}</li>`).join("")
-    : '<li class="empty">No plugins registered. Run python scripts/plugins.py.</li>';
+  document.getElementById("xlist").replaceChildren(...(list.length ? list.map(p =>
+    dom("li", { class: p.enabled === false ? "off" : "" }, dom("span", { class: "kind", style: { "--k": KIND_COLOR[p.kind] || "var(--ink-3)" } }, str(p.kind)),
+      dom("span", { class: "x-name" }, str(p.name)), dom("span", { class: "x-desc" }, str(p.description)),
+      (p.requires || []).length ? dom("span", { class: "x-req" }, `needs ${p.requires.join(" · ")}`) : null))
+    : [dom("li", { class: "empty" }, "No plugins registered. Run python scripts/plugins.py.")]));
 }
 async function loadModules() {
   if (FORCE_DEMO) return renderModules(DEMO_PLUGINS);

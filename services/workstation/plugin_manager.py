@@ -7,6 +7,7 @@ to ``plugins/``, and running it in a separate, time-limited Python process.
 from __future__ import annotations
 
 import ast
+import os
 import subprocess
 import sys
 import time
@@ -142,6 +143,14 @@ def merge_plugin_code(code: str) -> Path:
     return MERGED_PLUGIN_PATH
 
 
+def _plugin_env() -> dict[str, str]:
+    """The plugin process gets only what Python needs to start (ADR-090): no API keys or tokens from this service's env."""
+    keep = ("PATH", "SYSTEMROOT", "TEMP", "TMP", "LANG", "LC_ALL")
+    env = {k: v for k, v in os.environ.items() if k.upper() in keep}
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 def run_merged_plugin() -> RunResult:
     """يشغّل الإضافة المحفوظة في عملية بايثون منفصلة ومعزولة بمهلة زمنية."""
     if not MERGED_PLUGIN_PATH.exists():
@@ -150,7 +159,8 @@ def run_merged_plugin() -> RunResult:
     try:
         proc = subprocess.run(  # noqa: S603 - fixed argv (no shell), isolated -I interpreter, time-limited sandbox by design
             [sys.executable, "-I", str(MERGED_PLUGIN_PATH)],
-            cwd=PLUGINS_DIR, capture_output=True, text=True, timeout=RUN_TIMEOUT_S, check=False,
+            cwd=PLUGINS_DIR, capture_output=True, text=True, timeout=RUN_TIMEOUT_S, check=False, shell=False,
+            env=_plugin_env(),
         )
     except subprocess.TimeoutExpired:
         return RunResult(False, "", f"تجاوزت الإضافة المهلة ({RUN_TIMEOUT_S} ثوانٍ) وأُوقفت.",
