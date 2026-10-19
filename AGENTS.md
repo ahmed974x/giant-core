@@ -6,7 +6,7 @@ Read by Codex CLI, Claude Code (through `CLAUDE.md`) and any agent that follows 
 
 - Ahmad (Director 00) approves every irreversible or outward action: merges, production changes, outbound messages, anything that moves money, opens trades or accepts subscribers.
 - Locked until a separate explicit approval and a legal review: real trading, an execution agent, public copy-trading vaults, investor profit split. They appear only as cards marked **«قيد الموافقة»** or as browser-only math simulations that say "no money accepted".
-- The trading desk (ADR-091) is paper only. Adding Binance Testnet orders, an automatic trading loop or a real-account route each needs Ahmad's own explicit approval first; until then they stay disabled options in the UI.
+- The trading desk (ADR-091, ADR-092) is paper only. Ahmad approved the paper-only auto engine on 2026-10-19 with a standing rule: no code that signs or sends an order to any exchange, Binance or Testnet. A Testnet or real-account route needs a new explicit approval, and until then it stays a disabled option in the UI.
 - No third-party skill, plugin, hook, MCP server or installer is added without Ahmad's approval and a written security review. Taking text rules from a skill is fine; running its scripts is not.
 
 ## 2. Look and feel (summary of DESIGN.md, which is binding)
@@ -20,7 +20,7 @@ Read by Codex CLI, Claude Code (through `CLAUDE.md`) and any agent that follows 
 
 ## 3. Honesty
 
-- No invented data. Every market number, target, quote or performance figure has a named source and a date, or it shows "تعذر التحقق منها".
+- No invented data. Every market number, map point, target, quote or performance figure has a named source and a date, or it shows "تعذر التحقق منها".
 - Heuristics carry `[INFERENCE]`; model outputs carry `[INFERENCE - Quant Model]`. Teaching examples and hypothetical returns are labelled on screen.
 - Free and open-source sources only. No paid APIs, no CAPTCHA solving, no anti-bot bypass.
 

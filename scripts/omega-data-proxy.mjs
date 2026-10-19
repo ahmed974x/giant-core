@@ -10,6 +10,11 @@
 //   /sec/tickers            -> https://www.sec.gov/files/company_tickers.json        (cached 24 h)
 //   /sec/facts/<10-digit>   -> https://data.sec.gov/api/xbrl/companyfacts/CIK<cik>.json (cached 12 h)
 //   /stooq/<symbol>         -> https://stooq.com/q/d/l/?s=<symbol>&i=d  daily CSV        (cached 6 h)
+// OSIRIS layers (ADR-092), upstreams without browser CORS or with tight anonymous quotas:
+//   /osiris/aviation        -> OpenSky states over the Gulf and Red Sea box              (cached 15 min)
+//   /osiris/gdacs           -> GDACS current disaster events (GeoJSON)                    (cached 15 min)
+//   /osiris/gdelt           -> GDELT DOC 2.0 headlines on shipping and energy risk (6 h)  (cached 15 min)
+//   /osiris/ais             -> Digitraffic AIS positions, compacted to [lon, lat, sog]    (cached 5 min)
 // Env: OMEGA_PROXY_PORT (default 8796), OMEGA_CACHE_DIR (default ~/.omega/cache/data-proxy).
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
@@ -28,8 +33,23 @@ const ROUTES = [
   { re: /^\/sec\/tickers$/, url: () => "https://www.sec.gov/files/company_tickers.json", ttl: 24 * HOUR, type: "application/json", sec: true },
   { re: /^\/sec\/facts\/(\d{10})$/, url: m => `https://data.sec.gov/api/xbrl/companyfacts/CIK${m[1]}.json`, ttl: 12 * HOUR, type: "application/json", sec: true },
   { re: /^\/stooq\/([a-z0-9.\-^]{1,20})$/, url: m => `https://stooq.com/q/d/l/?s=${encodeURIComponent(m[1])}&i=d`, ttl: 6 * HOUR, type: "text/csv; charset=utf-8", sec: false },
+  { re: /^\/osiris\/aviation$/, url: () => "https://opensky-network.org/api/states/all?lamin=10&lomin=30&lamax=32&lomax=62", ttl: HOUR / 4, type: "application/json", sec: false },
+  { re: /^\/osiris\/gdacs$/, url: () => "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP", ttl: HOUR / 4, type: "application/json", sec: false },
+  { re: /^\/osiris\/gdelt$/, url: () => "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent("(strait OR tanker OR pipeline OR blockade OR refinery OR sanctions) sourcelang:english") + "&mode=artlist&format=json&maxrecords=25&timespan=6h&sort=datedesc", ttl: HOUR / 4, type: "application/json", sec: false },
+  { re: /^\/osiris\/ais$/, url: () => "https://meri.digitraffic.fi/api/ais/v1/locations", ttl: HOUR / 12, type: "application/json", sec: false, transform: compactAis },
 ];
-const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com"]);
+const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi"]);
+
+// Digitraffic returns every vessel in the Baltic as GeoJSON (several MB). The page only needs position and speed.
+function compactAis(buf) {
+  const j = JSON.parse(buf.toString("utf8"));
+  const rows = [];
+  for (const f of j.features || []) {
+    const c = f.geometry && f.geometry.coordinates, p = f.properties || {};
+    if (Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1])) rows.push([+c[0].toFixed(4), +c[1].toFixed(4), Number.isFinite(p.sog) ? p.sog : null]);
+  }
+  return Buffer.from(JSON.stringify({ source: "Digitraffic / Fintraffic AIS (CC BY 4.0)", at: j.dataUpdatedTime || new Date().toISOString(), vessels: rows }));
+}
 
 // CORS only for pages on this machine: file:// (Origin "null"), 127.0.0.1 and localhost on any port.
 const localOrigin = o => o === "null" || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o || "");
@@ -82,7 +102,8 @@ const server = createServer(async (req, res) => {
   const cached = readCache(url, route.ttl);
   if (cached?.fresh) return send(200, cached.body, route.type);
   try {
-    const body = await upstream(route, url);
+    const raw = await upstream(route, url);
+    const body = route.transform ? route.transform(raw) : raw;
     try { writeFileSync(cachePath(url), body); } catch (e) { console.warn("cache write failed:", e.message); }
     console.log(`${new Date().toISOString()} ${path} -> ${body.length} bytes`);
     send(200, body, route.type);

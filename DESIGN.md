@@ -43,13 +43,15 @@ Rules:
 - `--ease-apple-fluid: cubic-bezier(0.32, 0.72, 0, 1)`; spring `linear(...)` (ζ 0.72, 600ms) inside `@supports`.
 - Animate `transform` and `opacity` only, list properties explicitly (never `transition: all`). Press feedback `scale(0.96–0.98)`.
 - `prefers-reduced-motion: reduce` turns all motion off.
-- Glass (`blur(20px) saturate(180%)`) only on fixed or sticky chrome, always with an opaque fallback.
+- Glass (`blur(20px) saturate(180%)`) only on fixed or sticky chrome, always with an opaque fallback. The phone dock (ADR-092) is the one place that uses `blur(40px) saturate(200%)`.
 
 ## 5. Layout and devices
 
 - `100dvh`, never bare `100vh`. `viewport-fit=cover` and `env(safe-area-inset-*)` on edges. No horizontal page scroll at any width; wide tables scroll inside `.table-scroll`.
 - Three sizes are checked on every UI change: **Mobile 390×844 @3x**, **Laptop 1440×900**, **Ultra-wide 2560×1080**, light and dark. Script: `scripts/ui-three-sizes.mjs`.
 - The Ops Room and THE CHAIN must work when double-clicked from disk (`file://`): fonts embedded as base64, no build step, no framework.
+- Ops Room shell (ADR-092): five views (1 Command, 2 OSIRIS, 3 Radar, 4 Receipts & shield, 5 All). Every top-level child of `<main>` carries `data-view="…"`, and a new section must name its views. A segmented control is used at ≥ 768 px, and a floating dock with `safe-area-inset-bottom` below that. The view lives in `?view=N`. The status island shows the two brains, the locked base and the vault in tabular numbers. The install manifest is linked only over http(s).
+- Performance: telemetry arrays are bounded ring buffers (300). Canvases draw on demand and pause under `IntersectionObserver` and `visibilitychange`. The only continuous motion is the ticker marquee, which uses `transform`, pauses on hover and is off under reduced motion.
 
 ## 6. Content and honesty rules (override any skill that says otherwise)
 
@@ -58,6 +60,8 @@ Rules:
 - Real trading, public copy-trading vaults and investor profit split appear only as locked cards marked **«قيد الموافقة»** until Ahmad gives a separate explicit approval and legal review is done.
 - The profit-split / high-water-mark calculator (ADR-089) is a math simulation in the browser: it sends nothing, accepts no money and copies no trade, and says so next to the inputs. Quant ranges carry `[INFERENCE - Quant Model]`.
 - Trading desk (ADR-091): paper only. The person opens every paper trade; no code path sends an order to any exchange. Testnet and real-account modes show as disabled options until Ahmad approves each one. Signals (STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING) carry `[INFERENCE]`, levels and Kelly size carry `[INFERENCE - Quant Model]`, regime matches carry `[INFERENCE - 10Y Fractal Model]`, and the matcher says on screen that Binance history starts 2017-08-17 (2016 is not covered).
+- OSIRIS (ADR-092): every layer names its source. A layer without a live keyless source is shown as OFFLINE or "NO FREE SOURCE", never filled with simulated points. PWSI shows how many components it used and carries `[INFERENCE]`. SAT is a colour style, not imagery.
+- The auto engine is paper only and opens a trade only on the risk judge's OPEN. The court's three lines are rule-based summaries of the numbers on screen.
 - The locked-base simulator says next to its inputs that the base itself can still lose in trading and that only swept profit is protected. The circuit breaker is described as fixed rules, never as a prediction.
 - Plain, active copy. No "Elevate / Seamless / Unleash / Next-gen", no exclamation marks, no "Oops". Errors say what failed and what to do next. Loading text ends with "…".
 - Free and open-source only. No CAPTCHA solving, no paid data sources.

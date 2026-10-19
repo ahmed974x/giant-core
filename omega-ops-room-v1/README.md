@@ -74,18 +74,26 @@ OMEGA_SEC_UA="Ahmad your@email" node scripts/omega-data-proxy.mjs   # http://127
 
 Every page has a strict, hash-pinned CSP. After editing any inline script or style run `node scripts/skillspector-audit.mjs --fix omega-ops-room-v1`.
 
+## Views, OSIRIS and install (ADR-092)
+
+- **Views:** 1 Command, 2 OSIRIS, 3 Radar, 4 Receipts & shield, 5 All. Laptops use the segmented control under the top bar and phones the floating dock. Open a view directly with `?view=2`.
+- **OSIRIS:** seven layers (data core, aviation, alerts, maritime, port pulse, weather grid, seismic) on a 3D or 2D map with DAY, MAP and SAT colour styles and live coordinates. The ticker joins prices, quakes and the Physical Shock Index (PWSI 0–100).
+  - USGS and Open-Meteo load directly.
+  - OpenSky, GDACS, GDELT and Digitraffic AIS need `node scripts/omega-data-proxy.mjs` (no key needed for them).
+- **Install on iPhone:** serve the folder (for example the Tailscale URL), open it in Safari, then Share → Add to Home Screen.
+
 ## Trading desk · غرفة التداول (ADR-091)
 
 Paper only. Nothing on this page sends an order to any exchange.
 
-- **Signal cockpit:** STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING from four weighted pieces of evidence (whales 0.3, contrarian crowd 0.25, 10-year analogues 0.2, quant odds 0.25), with entry, stop (1.5 × ATR 4h), TP1 1.5 R (half off, stop to entry), TP2 3 R, trailing stop (peak − 2 × ATR) and half-Kelly size capped at 25 %.
+- **Signal cockpit:** STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING from five weighted pieces of evidence (whales 0.25, contrarian crowd 0.2, 10-year analogues 0.15, quant odds 0.2, order-flow physics 0.2: microprice, Hawkes intensity, VPIN), a three-agent debate court (bull, red-team bear, risk judge) and a paper-only auto engine, with entry, stop (1.5 × ATR 4h), TP1 1.5 R (half off, stop to entry), TP2 3 R, trailing stop (peak − 2 × ATR) and half-Kelly size capped at 25 %.
 - **Radar:** Binance spot depth (walls, vanished walls, ±1 % imbalance), 4h liquidity sweeps and a Wyckoff phase guess; USDⓈ-M funding z-score, open interest, long/short ratios, taker flow, an estimated liquidation map (assumed leverage mix) and a FOMO gauge read contrarian.
 - **10-year matcher:** Binance daily candles since 2017-08-17 (cached 12 h), seven z-scored features, cosine similarity, the ten closest days at least 30 days apart, and what followed over 30 and 90 days.
 - **Wallet:** lock any amount; sweep every profit above it (A) or at a target (B); optional profit-split share; deposit, withdraw and test-trade buttons; **Emergency stop** closes the paper position at the bid and moves everything to the safe vault.
 - **Circuit breaker:** 60 s move, depth drop against the 15-minute median, vanished walls, day loss, stale data over 20 s. Any one trips the emergency stop while a paper position is open.
 - **Receipts:** every operation is hash-chained with SHA-256 (format in DESIGN.md §6). Verify, export JSON, print one receipt, or start a new chain. The landing page (`site-landing/#safe`) checks exported files with the same rules.
 
-Binance Testnet orders and an automatic trading loop are not built; they wait for Ahmad's approval.
+The auto engine trades paper only. No exchange client or order signing exists in the page (Ahmad's rule, 2026-10-19).
 
 ## Design · التصميم
 

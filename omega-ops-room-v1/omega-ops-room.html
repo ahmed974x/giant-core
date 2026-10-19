@@ -2,10 +2,14 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-79sO9Vm6zKadDYg1FledX0qy8WQ12TwkYHYER0qyzQE='; style-src 'sha256-1fuIggeDoZaRrmnGtEA5k1tEb37OWr+J1ShCMhWpku0='; font-src data:; img-src data: blob: https://s3-eu-west-1.amazonaws.com; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-99ZA80hqFkhj6WMLTa/fURK5ljxYUd5cfuy8hszMBiQ=' 'sha256-PAx3rwNhsKM5YXPlhQsZJ9CMLrwI43Q612+3ZYtV7pg=' 'sha256-P9HefEB2Gy80wIbQNVqmsL96+EwYA0sSMlHFZxHxZXo='; style-src 'sha256-boAx3+ZjnJ79pPhuHX6FFm/BMs8ntL1eRwCcLa6thmw='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="OMEGA" />
 <title>OMEGA OPS ROOM</title>
 <!--
   OMEGA Ops Room v2.0.0 · local-first, read-only operations surface (ADR-087).
@@ -452,6 +456,100 @@
   .card { min-width: 0; }
   code.num { white-space: normal; overflow-wrap: anywhere; }
   .row-3 .kv td:last-child, #dkLevels td:last-child, #cbKv td:last-child { white-space: normal; overflow-wrap: anywhere; }
+
+  /* ---------- OSIRIS (ADR-092) ---------- */
+  :root {
+    --os-day-ocean: oklch(92% 0.035 230); --os-day-land: oklch(74% 0.06 145); --os-day-grid: oklch(84% 0.03 230);
+    --os-map-ocean: var(--sphere-b); --os-map-land: var(--land); --os-map-grid: var(--hairline-color);
+    --os-sat-ocean: oklch(22% 0.045 250); --os-sat-land: oklch(42% 0.06 145); --os-sat-grid: oklch(32% 0.04 250);
+  }
+  .os-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); margin-top: var(--s-3); }
+  .os-rail { display: flex; flex-direction: column; gap: var(--s-1); }
+  .os-layer { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; column-gap: var(--s-2); min-height: 44px; padding: var(--s-1) var(--s-3); border: var(--hairline) solid var(--hairline-color); border-radius: var(--r-inner); background: var(--surface); color: var(--content-secondary); font: inherit; font-size: var(--text-footnote); text-align: start; cursor: pointer; touch-action: manipulation; transition: transform var(--dur-fast) var(--ease-apple-fluid), opacity var(--dur-fast) var(--ease-apple-fluid); }
+  .os-layer > span:first-child { grid-row: span 2; font-size: 18px; line-height: 1; }
+  .os-layer b { font-weight: 700; color: var(--content-primary); }
+  .os-layer .ar { font-size: var(--text-caption); }
+  .os-layer[aria-pressed="true"] { background: var(--surface-2); border-color: var(--accent); }
+  .os-layer[aria-pressed="false"] { opacity: 0.72; }
+  .os-layer:active { transform: scale(0.97); }
+  .os-stage { position: relative; min-width: 0; border-radius: var(--r-inner); overflow: hidden; background: var(--surface-2); }
+  #osMap { display: block; width: 100%; height: clamp(320px, 52vh, 620px); touch-action: none; cursor: grab; }
+  .os-float { position: absolute; inset-inline: var(--s-3); bottom: var(--s-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+  .seg { display: inline-flex; padding: 2px; border-radius: var(--r-pill); background: var(--surface); border: var(--hairline) solid var(--hairline-color); }
+  .seg-btn { min-height: 36px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-pill); background: transparent; color: var(--content-secondary); font: inherit; font-size: var(--text-caption); font-weight: 700; cursor: pointer; white-space: nowrap; touch-action: manipulation; transition: transform var(--dur-fast) var(--ease-apple-fluid); }
+  .seg-btn[aria-pressed="true"] { background: var(--surface-2); color: var(--content-primary); box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.08); }
+  .seg-btn:active { transform: scale(0.96); }
+  .os-coord { padding: var(--s-2) var(--s-3); border-radius: var(--r-pill); background: var(--surface); border: var(--hairline) solid var(--hairline-color); font-size: var(--text-caption); color: var(--content-primary); }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .seg, .os-coord { background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); }
+  }
+  .os-ticker { margin-top: var(--s-3); overflow: hidden; border-radius: var(--r-inner); background: var(--surface-2); }
+  .os-track { display: flex; width: max-content; gap: var(--s-6, 24px); padding: var(--s-2) var(--s-4); font-size: var(--text-footnote); animation: os-marquee 60s linear infinite; }
+  .os-ticker:hover .os-track, .os-ticker:focus-within .os-track { animation-play-state: paused; }
+  .os-track.still { animation: none; }
+  .os-track .tk b { font-weight: 800; }
+  .os-track .tk i { font-style: normal; color: var(--content-secondary); }
+  .os-track .tk i.ok-text { color: var(--success); }
+  .os-track .tk i.bad-text { color: var(--danger); }
+  @keyframes os-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .os-ticker { overflow-x: auto; } .os-track { animation: none; } }
+  .os-panel { min-width: 0; }
+  .os-pwsi { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+  .os-pwsi b { font-size: var(--text-large); font-weight: 800; }
+  .os-pwsi span { font-size: var(--text-footnote); color: var(--content-secondary); }
+  .ok-text { color: var(--success); } .bad-text { color: var(--danger); } .warn-text { color: var(--warning); }
+  .log .ev-warn { color: var(--warning); font-weight: 700; }
+  .log a { overflow-wrap: anywhere; }
+  @media (max-width: 767px) {
+    .os-body { grid-template-columns: minmax(0, 1fr); }
+    .os-rail { flex-direction: row; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: var(--s-1); }
+    .os-layer { flex: none; }
+    #osMap { height: 340px; }
+  }
+
+  /* ---------- App shell: views, island, dock (ADR-092) ---------- */
+  main[data-active="1"] > [data-view]:not([data-view~="1"]) { display: none; }
+  main[data-active="2"] > [data-view]:not([data-view~="2"]) { display: none; }
+  main[data-active="3"] > [data-view]:not([data-view~="3"]) { display: none; }
+  main[data-active="4"] > [data-view]:not([data-view~="4"]) { display: none; }
+  main[data-active="5"] > [data-view]:not([data-view~="5"]) { display: none; }
+  .island { display: inline-flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; justify-content: center; min-width: 0; padding: var(--s-1); border-radius: var(--r-pill); background: var(--content-primary); color: var(--bg); }
+  .isl { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 28px; padding: 0 var(--s-3); border-radius: var(--r-pill); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+  .isl b { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; font-weight: 800; }
+  .views { display: flex; justify-content: center; margin-top: var(--s-2); }
+  .views .seg { max-width: 100%; overflow-x: auto; }
+  .views .seg-btn { min-height: 36px; }
+  .dock { display: none; }
+  @media (max-width: 767px) {
+    .views { display: none; }
+    .island { order: 3; width: 100%; justify-content: space-between; }
+    .shell { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .dock {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+      position: fixed; z-index: 30; left: max(var(--s-3), env(safe-area-inset-left)); right: max(var(--s-3), env(safe-area-inset-right));
+      bottom: max(var(--s-3), env(safe-area-inset-bottom)); padding: var(--s-1); border-radius: 28px;
+      background: var(--surface); border: var(--hairline) solid var(--hairline-color);
+      box-shadow: 0 8px 32px hsl(var(--shadow-color) / 0.08);
+    }
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .dock { background: var(--glass); -webkit-backdrop-filter: blur(40px) saturate(200%); backdrop-filter: blur(40px) saturate(200%); }
+    }
+    .dock button { display: grid; justify-items: center; gap: 2px; min-height: 52px; padding: var(--s-1) 0; border: 0; border-radius: 24px; background: transparent; color: var(--content-secondary); font: inherit; font-size: var(--text-caption); font-weight: 700; cursor: pointer; touch-action: manipulation; transition: transform var(--dur-fast) var(--ease-apple-fluid); }
+    .dock button span:first-child { font-size: 20px; line-height: 1; }
+    .dock button[aria-pressed="true"] { background: var(--surface-2); color: var(--content-primary); }
+    .dock button:active { transform: scale(0.96); }
+  }
+  /* Debate court and order-flow table */
+  .court { list-style: none; display: grid; gap: var(--s-2); }
+  .court li { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border-radius: var(--r-inner); background: var(--surface-2); font-size: var(--text-footnote); border-inline-start: 3px solid var(--hairline-color); }
+  .court li.bull { border-inline-start-color: var(--success); }
+  .court li.bear { border-inline-start-color: var(--danger); }
+  .court li.judge { border-inline-start-color: var(--accent); }
+  .court li.judge.ok b { color: var(--success); }
+  .court li.judge.bad b { color: var(--danger); }
+  .court li span { color: var(--content-secondary); overflow-wrap: anywhere; }
+  #dkFlow td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  .btn[aria-pressed="true"] { outline: 2px solid var(--success); outline-offset: 2px; }
   #printArea { display: none; }
   @media print {
     body > *:not(#printArea) { display: none !important; }
@@ -467,6 +565,12 @@
   <div class="topbar">
     <header class="bar">
       <div class="brand">OMEGA OPS ROOM <span class="ar" lang="ar">غرفة العمليات</span></div>
+      <div class="island" role="group" aria-label="Live status">
+        <span class="isl"><span class="dot checking" id="islOsDot"></span>OSIRIS <b id="islOs">…</b></span>
+        <span class="isl"><span class="dot checking" id="islEngDot"></span>ENGINE <b id="islEng">MANUAL</b></span>
+        <span class="isl">BASE <b id="islBase">0.00</b></span>
+        <span class="isl">VAULT <b id="islSafe">+0.00</b></span>
+      </div>
       <div class="bar-right">
         <div class="status-pill" role="status" aria-live="polite">
           <span id="globalDot" class="dot"></span>
@@ -481,11 +585,66 @@
         </button>
       </div>
     </header>
+    <nav class="views" aria-label="Views"><div class="seg" role="group"><button type="button" class="seg-btn" data-go="1" aria-pressed="false">🎯 Command · <span class="ar" lang="ar">القيادة</span></button><button type="button" class="seg-btn" data-go="2" aria-pressed="false">🌍 OSIRIS · <span class="ar" lang="ar">الكوكب</span></button><button type="button" class="seg-btn" data-go="3" aria-pressed="false">🐋 Radar · <span class="ar" lang="ar">الرادار</span></button><button type="button" class="seg-btn" data-go="4" aria-pressed="false">🧾 Receipts · <span class="ar" lang="ar">الفواتير</span></button><button type="button" class="seg-btn" data-go="5" aria-pressed="false">🖥️ All · <span class="ar" lang="ar">الكل</span></button></div></nav>
   </div>
 
   <main>
+    <!-- ===== OSIRIS global intelligence (ADR-092) ===== -->
+    <div class="section-title" id="osiris" data-view="2 5">
+      <h2>OSIRIS global intelligence<span class="ar" lang="ar">كوكب الاستخبارات المفتوحة</span></h2>
+      <p>Seven layers from free public sources. A layer with no live source says so; nothing is filled in. · <span class="ar" lang="ar">كل طبقة من مصدر عام مجاني، والطبقة بلا مصدر حي تقول ذلك</span></p>
+    </div>
+    <section class="card osiris" aria-labelledby="osTitle" data-view="2 5">
+      <div class="card-head">
+        <div class="card-title" id="osTitle">Planet view<span class="ar" lang="ar">الخريطة الحية</span></div>
+        <div class="tag num" id="osUpdated">—</div>
+      </div>
+      <div class="os-body">
+        <nav class="os-rail" aria-label="OSIRIS layers">
+          <button class="os-layer" type="button" data-layer="core" aria-pressed="true"><span aria-hidden="true">🗄️</span><b>Data core</b><span class="ar" lang="ar">المصادر</span></button>
+          <button class="os-layer" type="button" data-layer="air" aria-pressed="true"><span aria-hidden="true">✈️</span><b>Aviation</b><span class="ar" lang="ar">الطيران</span></button>
+          <button class="os-layer" type="button" data-layer="alerts" aria-pressed="true"><span aria-hidden="true">🔔</span><b>Alerts</b><span class="ar" lang="ar">الإنذارات</span></button>
+          <button class="os-layer" type="button" data-layer="sea" aria-pressed="true"><span aria-hidden="true">🛰️</span><b>Maritime</b><span class="ar" lang="ar">الملاحة والمضائق</span></button>
+          <button class="os-layer" type="button" data-layer="ports" aria-pressed="true"><span aria-hidden="true">📷</span><b>Port pulse</b><span class="ar" lang="ar">نبض الموانئ</span></button>
+          <button class="os-layer" type="button" data-layer="wx" aria-pressed="true"><span aria-hidden="true">⛈️</span><b>Weather grid</b><span class="ar" lang="ar">صدمات الطقس</span></button>
+          <button class="os-layer" type="button" data-layer="quake" aria-pressed="true"><span aria-hidden="true">⚠️</span><b>Seismic</b><span class="ar" lang="ar">الزلازل</span></button>
+        </nav>
+        <div class="os-stage">
+          <canvas id="osMap" role="img" aria-label="OSIRIS map with the active layers. Drag to rotate in 3D. The data core list below describes every point."></canvas>
+          <div class="os-float" role="group" aria-label="Map controls">
+            <div class="seg" role="group" aria-label="Projection">
+              <button type="button" class="seg-btn" data-proj="3d" aria-pressed="true">🌐 3D</button>
+              <button type="button" class="seg-btn" data-proj="2d" aria-pressed="false">🗺️ 2D</button>
+            </div>
+            <div class="seg" role="group" aria-label="Map style">
+              <button type="button" class="seg-btn" data-style="day" aria-pressed="false">☀️ DAY</button>
+              <button type="button" class="seg-btn" data-style="map" aria-pressed="true">🌙 MAP</button>
+              <button type="button" class="seg-btn" data-style="sat" aria-pressed="false">🛰️ SAT</button>
+            </div>
+            <span class="os-coord num" id="osCoord" aria-live="off">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="os-ticker" aria-label="OSIRIS unified ticker"><div class="os-track num" id="osTicker"></div></div>
+      <div class="row row-3 mt-3">
+        <div class="os-panel">
+          <h3 class="mini-h">Physical shock index · <span class="ar" lang="ar">مؤشر الصدمة الفيزيائية</span> <span class="pill-inf">[INFERENCE]</span></h3>
+          <div class="os-pwsi"><b class="num" id="osPwsi">—</b><span id="osPwsiNote">Waiting for sources…</span></div>
+          <table class="kv" id="osParts"><tbody></tbody></table>
+        </div>
+        <div class="os-panel">
+          <h3 class="mini-h">Data core · <span class="ar" lang="ar">حالة المصادر</span></h3>
+          <table class="kv" id="osCore"><tbody></tbody></table>
+        </div>
+        <div class="os-panel">
+          <h3 class="mini-h">Latest alerts · <span class="ar" lang="ar">آخر الإنذارات</span></h3>
+          <ul class="log" id="osAlerts"></ul>
+        </div>
+      </div>
+      <p class="sub">USGS and Open-Meteo load straight in the browser. OpenSky, GDACS, GDELT and Digitraffic AIS need the local proxy (<code class="num">node scripts/omega-data-proxy.mjs</code>), because they send no CORS headers or have tight anonymous limits. No free source gives live ship counts in Hormuz, Bab el-Mandeb, Suez or Malacca, so those four show as reference points. SAT is a colour style, not satellite imagery. · <span class="ar" lang="ar">لا يوجد مصدر مجاني لعدد السفن الحي في المضائق الأربعة، فتظهر نقاط مرجعية.</span></p>
+    </section>
     <!-- ===== Globe + live KPIs ===== -->
-    <div class="row row-hero mt-3">
+    <div data-view="2 5" class="row row-hero mt-3">
       <section class="card globe-card" aria-labelledby="globeTitle">
         <div class="card-head">
           <div class="card-title" id="globeTitle">Spatial intelligence core<span class="ar" lang="ar">الكرة الحية: نقاط الرصد</span></div>
@@ -544,11 +703,11 @@
     </div>
 
     <!-- ===== Chart + quant check ===== -->
-    <div class="section-title">
+    <div data-view="3 5" class="section-title">
       <h2>Market &amp; maths<span class="ar" lang="ar">السوق والرياضيات</span></h2>
       <p>Real public data · educational signals, not orders · <span class="ar" lang="ar">إشارات تعليمية، ليست أوامر</span></p>
     </div>
-    <div class="row row-chart">
+    <div data-view="3 5" class="row row-chart">
       <section class="card" aria-labelledby="chartTitle">
         <div class="card-head">
           <div class="card-title" id="chartTitle">BTC daily close · 120 days<span class="ar" lang="ar">إغلاق بيتكوين اليومي · ١٢٠ يوماً</span></div>
@@ -583,12 +742,12 @@
     </div>
 
     <!-- ===== Agents ===== -->
-    <div class="section-title">
+    <div data-view="4 5" class="section-title">
       <h2>Agent swarm<span class="ar" lang="ar">الوكلاء الخمسة</span></h2>
       <p>Status shown is the real state today · <span class="ar" lang="ar">الحالة المعروضة هي الحالة الحقيقية اليوم</span></p>
     </div>
-    <div class="row row-5" id="agents"></div>
-    <section class="card mt-3" aria-labelledby="chainLinkTitle">
+    <div data-view="4 5" class="row row-5" id="agents"></div>
+    <section data-view="4 5" class="card mt-3" aria-labelledby="chainLinkTitle">
       <div class="card-head">
         <div class="card-title" id="chainLinkTitle">THE CHAIN · finance research<span class="ar" lang="ar">سلسلة الوكلاء الماليين: الباحث، باني النماذج، مراجع الأرباح، notes.md</span></div>
         <span class="tag">RESEARCH ONLY</span>
@@ -598,18 +757,18 @@
     </section>
 
     <!-- ===== Open cameras ===== -->
-    <div class="section-title">
+    <div data-view="2 5" class="section-title">
       <h2>Open cameras<span class="ar" lang="ar">الكاميرات المفتوحة</span></h2>
       <p>Transport for London JamCams, open data, refreshed every 2 minutes · <span class="ar" lang="ar">بيانات مفتوحة، تحديث كل دقيقتين</span></p>
     </div>
-    <div class="row row-4" id="cams"></div>
+    <div data-view="2 5" class="row row-4" id="cams"></div>
 
     <!-- ===== Local systems ===== -->
-    <div class="section-title">
+    <div data-view="4 5" class="section-title">
       <h2>Local systems<span class="ar" lang="ar">الأنظمة المحلية</span></h2>
       <p>Status only, nothing is executed · <span class="ar" lang="ar">مراقبة الحالة فقط</span></p>
     </div>
-    <div class="row row-4">
+    <div data-view="4 5" class="row row-4">
       <section class="card" aria-labelledby="n8nTitle">
         <div class="card-head">
           <div class="card-title" id="n8nTitle">n8n system<span class="ar" lang="ar">نظام الأتمتة n8n</span></div>
@@ -654,11 +813,11 @@
     </div>
 
     <!-- ===== Digital-asset liquidity ===== -->
-    <div class="section-title">
+    <div data-view="3 5" class="section-title">
       <h2>Digital-asset liquidity<span class="ar" lang="ar">سيولة الأصول الرقمية</span></h2>
       <p>CoinGecko public API · DefiLlama · free, no keys · <span class="ar" lang="ar">مصادر مجانية بلا مفاتيح</span></p>
     </div>
-    <div class="row row-4">
+    <div data-view="3 5" class="row row-4">
       <section class="card" aria-labelledby="mcapTitle">
         <div class="card-head">
           <div class="card-title" id="mcapTitle">Crypto market cap<span class="ar" lang="ar">القيمة السوقية للعملات الرقمية</span></div>
@@ -680,11 +839,11 @@
     </div>
 
     <!-- ===== Security shield ===== -->
-    <div class="section-title" id="shield">
+    <div data-view="4 5" class="section-title" id="shield">
       <h2>Security shield · SkillSpector<span class="ar" lang="ar">الدرع الأمني</span></h2>
       <p>Scans this page live and any files you pick. Nothing leaves this browser · <span class="ar" lang="ar">لا يغادر شيء هذا المتصفح</span></p>
     </div>
-    <div class="row row-chart">
+    <div data-view="4 5" class="row row-chart">
       <section class="card" aria-labelledby="ssTitle">
         <div class="card-head">
           <div class="card-title" id="ssTitle">SkillSpector scanner<span class="ar" lang="ar">ماسح المخاطر والأدوات الخبيثة</span></div>
@@ -743,11 +902,11 @@
     </div>
 
     <!-- ===== Profit split & high-water mark ===== -->
-    <div class="section-title" id="split">
+    <div data-view="4 5" class="section-title" id="split">
       <h2>Profit split &amp; high-water mark<span class="ar" lang="ar">حاسبة تقسيم الأرباح وأعلى قيمة سابقة</span></h2>
       <p>Math simulation only. No money is accepted and no trade is copied · <span class="ar" lang="ar">محاكاة رياضية فقط، لا نقبل أموالاً</span></p>
     </div>
-    <section class="card" aria-labelledby="splitTitle">
+    <section data-view="4 5" class="card" aria-labelledby="splitTitle">
       <div class="card-head">
         <div class="card-title" id="splitTitle">High-water mark vault calculator<span class="ar" lang="ar">حاسبة الخزنة بحماية أعلى قيمة</span></div>
         <div class="tag">SIMULATION</div>
@@ -770,11 +929,11 @@
     </section>
 
     <!-- ===== Trading desk (ADR-091) ===== -->
-    <div class="section-title" id="desk">
+    <div data-view="1 5" class="section-title" id="desk">
       <h2>Trading desk<span class="ar" lang="ar">غرفة التداول</span></h2>
-      <p>Paper only. You open each paper trade yourself; no order reaches any exchange · <span class="ar" lang="ar">ورقي فقط، أنت تفتح كل صفقة ولا يصل أي أمر لأي منصة</span></p>
+      <p>Paper only. The auto engine and the manual button open paper trades at live public prices; no order reaches any exchange · <span class="ar" lang="ar">ورقي فقط، ولا يصل أي أمر لأي منصة</span></p>
     </div>
-    <div class="row row-chart">
+    <div data-view="1 5" class="row row-chart">
       <section class="card" aria-labelledby="dkTitle">
         <div class="card-head">
           <div class="card-title" id="dkTitle">Signal cockpit<span class="ar" lang="ar">شاشة القرار</span></div>
@@ -789,6 +948,7 @@
         <div class="form-row">
           <button class="btn primary" id="dkOpen" type="button">Paper-trade this signal · <span class="ar" lang="ar">جرّبها على الورق</span></button>
           <button class="btn" id="dkClose" type="button">Close paper position · <span class="ar" lang="ar">أغلق الصفقة الورقية</span></button>
+          <button class="btn" id="dkAuto" type="button" aria-pressed="false"><span id="dkAutoLabel">Auto paper engine: OFF</span> · <span class="ar" lang="ar">المحرك الورقي الآلي</span></button>
           <button class="btn" id="dkRefresh" type="button">Refresh now · <span class="ar" lang="ar">حدّث</span></button>
         </div>
         <div class="signal-box" id="dkSignalBox">
@@ -798,6 +958,10 @@
         </div>
         <h3 class="mini-h">Four pieces of evidence · <span class="ar" lang="ar">الأدلة الأربعة</span></h3>
         <ul class="evidence" id="dkEvidence"></ul>
+        <h3 class="mini-h">Debate court · <span class="ar" lang="ar">محكمة الوكلاء</span> <span class="pill-inf">[INFERENCE]</span></h3>
+        <ul class="court" id="dkCourt" aria-live="polite"></ul>
+        <h3 class="mini-h">Order-flow physics · <span class="ar" lang="ar">فيزياء السيولة</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+        <table class="kv" id="dkFlow"><tbody></tbody></table>
         <h3 class="mini-h">Levels · <span class="ar" lang="ar">المستويات</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
         <table class="kv" id="dkLevels"><tbody></tbody></table>
         <p class="why" id="dkPosition"></p>
@@ -841,11 +1005,11 @@
       </section>
     </div>
 
-    <div class="section-title">
+    <div data-view="3 5" class="section-title">
       <h2>Crowd psychology radar<span class="ar" lang="ar">رادار علم نفس السوق</span></h2>
       <p>Binance spot and USDⓈ-M futures public data · free, no keys · <span class="pill-inf">[INFERENCE]</span></p>
     </div>
-    <div class="row row-3">
+    <div data-view="3 5" class="row row-3">
       <section class="card" aria-labelledby="whTitle">
         <div class="card-head"><div class="card-title" id="whTitle">Whales &amp; market makers<span class="ar" lang="ar">الحيتان وصناع السوق</span></div><div class="tag">DEPTH · KLINES</div></div>
         <table class="kv" id="whKv"><tbody></tbody></table>
@@ -867,7 +1031,7 @@
       </section>
     </div>
 
-    <div class="row row-chart mt-3">
+    <div data-view="1 3 5" class="row row-chart mt-3">
       <section class="card" aria-labelledby="frTitle">
         <div class="card-head"><div class="card-title" id="frTitle">10-year regime matcher<span class="ar" lang="ar">ذاكرة السنوات العشر</span></div><div class="tag num" id="frAsOf">—</div></div>
         <p class="sub">Today's volatility, momentum, volume and drawdown compared with every day of Binance daily history by cosine similarity. <span class="pill-inf">[INFERENCE - 10Y Fractal Model]</span></p>
@@ -884,12 +1048,14 @@
           <div class="field"><label for="cbDepth">Max depth drop % · <span class="ar" lang="ar">أقصى هبوط للسيولة</span></label><input id="cbDepth" name="cbDepth" type="number" inputmode="decimal" step="any" min="5" max="99" autocomplete="off" value="60" /></div>
           <div class="field"><label for="cbSpoof">Spoof alerts in 5 min · <span class="ar" lang="ar">تنبيهات الحوائط الوهمية</span></label><input id="cbSpoof" name="cbSpoof" type="number" inputmode="numeric" step="1" min="1" autocomplete="off" value="5" /></div>
           <div class="field"><label for="cbDD">Max daily loss % · <span class="ar" lang="ar">أقصى خسارة يومية</span></label><input id="cbDD" name="cbDD" type="number" inputmode="decimal" step="any" min="1" max="90" autocomplete="off" value="10" /></div>
+          <div class="field"><label for="cbPwsi">Max OSIRIS PWSI · <span class="ar" lang="ar">أقصى مؤشر صدمة</span></label><input id="cbPwsi" name="cbPwsi" type="number" inputmode="numeric" step="1" min="10" max="100" autocomplete="off" value="70" /></div>
+          <div class="field"><label for="cbVpin">Max VPIN · <span class="ar" lang="ar">أقصى سمّية سيولة</span></label><input id="cbVpin" name="cbVpin" type="number" inputmode="decimal" step="0.05" min="0.1" max="1" autocomplete="off" value="0.6" /></div>
         </div>
         <table class="kv" id="cbKv"><tbody></tbody></table>
       </section>
     </div>
 
-    <section class="card mt-3" aria-labelledby="rcTitle" id="receipts">
+    <section data-view="4 5" class="card mt-3" aria-labelledby="rcTitle" id="receipts">
       <div class="card-head"><div class="card-title" id="rcTitle">Receipt chain · SHA-256<span class="ar" lang="ar">سلسلة الفواتير الموثقة</span></div><div class="tag num" id="rcCount">0</div></div>
       <p class="sub">Every deposit, lock, fill, sweep, withdrawal and emergency stop issues a receipt. Each hash covers the receipt and the previous hash, so changing or deleting any old receipt breaks every hash after it. · <span class="ar" lang="ar">كل فاتورة مربوطة ببصمة السابقة.</span></p>
       <div class="form-row">
@@ -901,6 +1067,7 @@
       <div class="table-scroll"><table class="data-t" id="rcTable"></table></div>
     </section>
   </main>
+  <nav class="dock" aria-label="Views"><button type="button" data-go="1" aria-pressed="false"><span aria-hidden="true">🎯</span><span>Command</span></button><button type="button" data-go="2" aria-pressed="false"><span aria-hidden="true">🌍</span><span>OSIRIS</span></button><button type="button" data-go="3" aria-pressed="false"><span aria-hidden="true">🐋</span><span>Radar</span></button><button type="button" data-go="4" aria-pressed="false"><span aria-hidden="true">🧾</span><span>Receipts</span></button><button type="button" data-go="5" aria-pressed="false"><span aria-hidden="true">🖥️</span><span>All</span></button></nav>
 
   <footer class="footer">
     <div>LOCAL-FIRST · NO CREDENTIALS · READ-ONLY · NO TRADING · <span class="ar" lang="ar">محلي · بدون مفاتيح · قراءة فقط · لا تداول</span></div>
@@ -2189,8 +2356,9 @@ const DEFAULT_ALLOW_HOSTS = [
 </script>
 <script>
 "use strict";
-// Trading desk (ADR-091): crowd-psychology radar, 10-year regime matcher, signal cockpit,
-// paper wallet with locked base and profit sweep, emergency stop, circuit breaker and a
+// Trading desk (ADR-091, ADR-092): crowd-psychology radar, 10-year regime matcher, order-flow
+// physics (microprice, Hawkes intensity, VPIN), a three-agent debate court, a paper-only auto
+// engine, paper wallet with locked base and profit sweep, emergency stop, circuit breaker and a
 // SHA-256 hash-chained receipt ledger. Paper only: nothing here sends an order anywhere.
 (() => {
   const $ = id => document.getElementById(id);
@@ -2222,6 +2390,8 @@ const DEFAULT_ALLOW_HOSTS = [
     } finally { clearTimeout(t); }
   }
   const SPOT = "https://data-api.binance.vision/api/v3";
+  // Bounded ring buffer: telemetry arrays never grow past n readings.
+  const cap = (arr, n = 300) => { if (arr.length > n) arr.splice(0, arr.length - n); return arr; };
   const FUT = "https://fapi.binance.com";
 
   function kvRows(id, rows) {
@@ -2242,8 +2412,10 @@ const DEFAULT_ALLOW_HOSTS = [
   /* ---------------- market state ---------------- */
   const D = {
     sym: "BTCUSDT", price: NaN, priceAt: 0, depth: null, k4h: [], k1m: [], fut: {},
-    walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, signal: null
+    walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, signal: null,
+    flow: null, flowAt: 0, osiris: null, court: null, auto: false, cooldownUntil: 0
   };
+  document.addEventListener("omega:osiris", e => { D.osiris = e.detail; });
 
   async function loadFast() {
     const [depth, k1m] = await Promise.all([
@@ -2258,10 +2430,15 @@ const DEFAULT_ALLOW_HOSTS = [
     D.priceAt = Date.now();
     D.k1m = k1m.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }));
     D.ticks.push({ t: Date.now(), p: D.price });
-    D.ticks = D.ticks.filter(x => Date.now() - x.t < 120000);
+    D.ticks = cap(D.ticks.filter(x => Date.now() - x.t < 120000));
     trackWalls();
     renderWhale();
-    manage();
+    if (Date.now() - D.flowAt >= 10000) {
+      D.flowAt = Date.now();
+      try { analyseFlow(await getJson(`${SPOT}/aggTrades?symbol=${D.sym}&limit=1000`)); } catch { D.flow = null; }
+    }
+    if (D.quant) decide();
+    await manage();
     breaker();
     $("dkUpdated").textContent = timeFmt.format(new Date()) + " UTC";
     return true;
@@ -2310,12 +2487,50 @@ const DEFAULT_ALLOW_HOSTS = [
       if (!touched && lived >= 10000 && lived <= 300000) D.spoofs.push({ t: now, side: w.side, p: w.p, notional: w.notional });
     }
     D.walls = seen;
-    D.spoofs = D.spoofs.filter(x => now - x.t < 300000);
+    D.spoofs = cap(D.spoofs.filter(x => now - x.t < 300000));
     const within1 = side => side.filter(([p]) => Math.abs(p / D.price - 1) <= 0.01).reduce((s, [p, q]) => s + p * q, 0);
     const bid1 = within1(bids), ask1 = within1(asks);
     D.book = { bid1, ask1, imb: (bid1 - ask1) / Math.max(1, bid1 + ask1) };
     D.depthHist.push({ t: now, d: bid1 + ask1 });
-    D.depthHist = D.depthHist.filter(x => now - x.t < 900000);
+    D.depthHist = cap(D.depthHist.filter(x => now - x.t < 900000));
+  }
+
+  /* ---------------- order-flow physics: microprice, Hawkes intensity, VPIN ---------------- */
+  // Microprice (Stoikov 2018, first-order form): the mid weighted by the opposite queue sizes.
+  // Hawkes: exponential-kernel self-exciting intensity λ(t) = μ + Σ α·β·e^(−β(t−tᵢ)), with μ the
+  // window's mean trade rate, α = 0.5 (branching ratio) and β = 1/3 s⁻¹ (fixed, not fitted).
+  // VPIN (Easley, López de Prado, O'Hara 2012): mean |buy − sell| / volume over 20 equal-volume
+  // buckets, with each trade's side taken from Binance's isBuyerMaker flag instead of bulk classification.
+  function analyseFlow(trades) {
+    if (!Array.isArray(trades) || trades.length < 50 || !D.depth) { D.flow = null; return; }
+    const [bp, bq] = D.depth.bids[0], [ap, aq] = D.depth.asks[0];
+    const mid = (bp + ap) / 2, micro = (bp * aq + ap * bq) / (aq + bq);
+    const t = trades.map(x => x.T / 1000), now = Date.now() / 1000;
+    const span = Math.max(1, t[t.length - 1] - t[0]);
+    const mu = trades.length / span, alpha = 0.5, beta = 1 / 3;
+    let lam = mu * (1 - alpha);
+    for (let i = trades.length - 1; i >= 0; i--) { const dt = now - t[i]; if (dt > 30) break; lam += alpha * beta * Math.exp(-beta * Math.max(0, dt)); }
+    const total = trades.reduce((s, x) => s + +x.q, 0), size = total / 20;
+    const buckets = [];
+    let b = 0, s = 0;
+    for (const x of trades) {
+      let q = +x.q;
+      while (q > 0) {
+        const room = size - (b + s), take = Math.min(q, room);
+        if (x.m) s += take; else b += take;
+        q -= take;
+        if (b + s >= size - 1e-12) { buckets.push(Math.abs(b - s) / size); b = 0; s = 0; }
+      }
+    }
+    const vpin = buckets.length ? buckets.reduce((a, v) => a + v, 0) / buckets.length : NaN;
+    const buyShare = trades.filter(x => !x.m).reduce((a, x) => a + +x.q, 0) / Math.max(1e-12, total);
+    D.flow = { mid, micro, microBps: (micro / mid - 1) * 1e4, lam, mu, hawkes: lam / Math.max(1e-9, mu), vpin, buyShare, n: trades.length, span };
+  }
+  function flowScore() {
+    const f = D.flow;
+    if (!f) return 0;
+    const dir = clamp(f.microBps / 1.5, -1, 1) * 0.6 + clamp((f.buyShare - 0.5) * 4, -1, 1) * 0.4;
+    return clamp(dir * (f.hawkes > 1.5 ? 1 : 0.6), -1, 1);
   }
 
   function analyseWhale() {
@@ -2354,7 +2569,7 @@ const DEFAULT_ALLOW_HOSTS = [
   }
 
   function renderWhale() {
-    if (!D.depth) return;
+    if (!D.depth || !D.book) return;
     const w = D.whale;
     kvRows("whKv", [
       ["Price (spot mid)", "السعر", nf(D.price, D.price < 10 ? 4 : 2)],
@@ -2640,15 +2855,16 @@ const DEFAULT_ALLOW_HOSTS = [
   function decide() {
     if (!D.depth) return;
     const parts = [
-      { en: "Whales & order book", ar: "الحيتان والسجل", w: 0.3, s: whaleScore(), why: D.whale ? `Book ${pct(D.book.imb, 1)} · ${D.whale.phase} · sweep ${D.whale.sweep}` : "Order book only" },
-      { en: "Crowd (contrarian)", ar: "المزاج العكسي", w: 0.25, s: crowdScore(), why: D.crowd ? `FOMO ${nf(D.crowd.fomo, 0)}/100 · ${D.crowd.trapped}` : "Futures data unavailable" },
-      { en: "10-year analogues", ar: "تشابه السنوات", w: 0.2, s: fractalScore(), why: D.fractal ? `Weighted next 30 d ${pct(D.fractal.w30, 1)} · up ${nf(D.fractal.up30 * 100, 0)}%` : "History still loading…" },
-      { en: "Quant odds", ar: "الاحتمال الكمي", w: 0.25, s: quantScore(), why: D.quant ? `P(TP1 before stop) ${nf(D.quant.pWin * 100, 0)}% over ${D.quant.paths} paths` : "Waiting for 4h candles…" }
+      { en: "Whales & order book", ar: "الحيتان والسجل", w: 0.25, s: whaleScore(), why: D.whale ? `Book ${pct(D.book.imb, 1)} · ${D.whale.phase} · sweep ${D.whale.sweep}` : "Order book only" },
+      { en: "Crowd (contrarian)", ar: "المزاج العكسي", w: 0.2, s: crowdScore(), why: D.crowd ? `FOMO ${nf(D.crowd.fomo, 0)}/100 · ${D.crowd.trapped}` : "Futures data unavailable" },
+      { en: "10-year analogues", ar: "تشابه السنوات", w: 0.15, s: fractalScore(), why: D.fractal ? `Weighted next 30 d ${pct(D.fractal.w30, 1)} · up ${nf(D.fractal.up30 * 100, 0)}%` : "History still loading…" },
+      { en: "Quant odds", ar: "الاحتمال الكمي", w: 0.2, s: quantScore(), why: D.quant ? `P(TP1 before stop) ${nf(D.quant.pWin * 100, 0)}% over ${D.quant.paths} paths` : "Waiting for 4h candles…" },
+      { en: "Order-flow physics", ar: "فيزياء السيولة", w: 0.2, s: flowScore(), why: D.flow ? `microprice ${nf(D.flow.microBps, 2)} bps · Hawkes ×${nf(D.flow.hawkes, 2)} · VPIN ${nf(D.flow.vpin, 2)}` : "Waiting for trades…" }
     ];
     const score = parts.reduce((s, p) => s + p.w * p.s, 0);
     const recentSpoofs = D.spoofs.length;
     const sweepAgainst = D.whale && ((score > 0 && D.whale.sweep === "up") || (score < 0 && D.whale.sweep === "down"));
-    const trap = recentSpoofs >= 3 || (sweepAgainst && D.crowd && Math.abs(D.crowd.fz) > 2);
+    const trap = recentSpoofs >= 3 || (sweepAgainst && D.crowd && Math.abs(D.crowd.fz) > 2) || (D.flow && D.flow.vpin > limits().vpin && D.flow.hawkes > 2);
     let sig, cls, ar1;
     if (trap) { sig = "WHALE TRAP WARNING"; cls = "trap"; ar1 = "تحذير: فخ حيتان محتمل"; }
     else if (score >= 0.45) { sig = "STRONG BUY"; cls = "buy"; ar1 = "شراء قوي"; }
@@ -2660,6 +2876,7 @@ const DEFAULT_ALLOW_HOSTS = [
     $("dkSignalBox").className = "signal-box " + cls;
     $("dkSignal").textContent = sig;
     $("dkSignalSub").replaceChildren(document.createTextNode(`Score ${nf(score, 2)} on −1…+1 · `), ar(ar1), document.createTextNode(" "), h("span", "pill-inf", "[INFERENCE]"));
+    renderFlow();
     const x = 20 + (score + 1) / 2 * 360;
     $("dkMeter").replaceChildren(
       sv("rect", { x: 20, y: 14, width: 360, height: 10, rx: 5, class: "track" }),
@@ -2688,7 +2905,68 @@ const DEFAULT_ALLOW_HOSTS = [
         ["Half-Kelly size (cap 25%)", "حجم الصفقة", nf(q.kelly * 100, 1) + "% of locked base"]
       ]);
     }
+    court();
     renderPosition();
+    autoStep();
+  }
+
+  function renderFlow() {
+    const f = D.flow;
+    kvRows("dkFlow", f ? [
+      ["Microprice vs mid", "السعر المجهري", nf(f.micro, f.micro < 10 ? 4 : 2) + " (" + (f.microBps >= 0 ? "+" : "") + nf(f.microBps, 2) + " bps)", f.microBps > 0 ? "ok-text" : f.microBps < 0 ? "bad-text" : ""],
+      ["Hawkes intensity / baseline", "كثافة هوكس", "×" + nf(f.hawkes, 2) + " (" + nf(f.lam, 1) + " vs " + nf(f.mu, 1) + " trades/s)", f.hawkes > 2 ? "bad-text" : ""],
+      ["VPIN, 20 volume buckets", "سمّية السيولة", nf(f.vpin, 3), f.vpin > limits().vpin ? "bad-text" : "ok-text"],
+      ["Aggressive buy share", "نسبة الشراء العدواني", nf(f.buyShare * 100, 1) + "% of " + f.n + " trades / " + nf(f.span, 0) + " s"]
+    ] : [["Trade data", "بيانات الصفقات", "Loading…"]]);
+  }
+
+  /* ---------------- three-agent debate court ---------------- */
+  function court() {
+    const s = D.signal, q = D.quant, lim = limits(), pw = D.osiris && Number.isFinite(D.osiris.pwsi) ? D.osiris.pwsi : NaN;
+    if (!s) return;
+    const sorted = [...s.parts].sort((a, b) => b.s * b.w - a.s * a.w);
+    const best = sorted[0], worst = sorted[sorted.length - 1];
+    const risks = [];
+    if (s.trap) risks.push("whale-trap pattern");
+    if (D.flow && D.flow.vpin > lim.vpin) risks.push(`VPIN ${nf(D.flow.vpin, 2)} above ${nf(lim.vpin, 2)}`);
+    if (pw >= lim.pwsi) risks.push(`OSIRIS PWSI ${nf(pw, 0)} at or above ${nf(lim.pwsi, 0)}`);
+    if (D.crowd && D.crowd.fomo > 70) risks.push(`crowd euphoric (FOMO ${nf(D.crowd.fomo, 0)})`);
+    const bull = best && best.s > 0 ? `${best.en}: ${best.why} (${nf(best.s, 2)})` : "No component argues for a long entry";
+    const bear = risks.length ? risks.join("; ") : worst && worst.s < 0 ? `${worst.en}: ${worst.why} (${nf(worst.s, 2)})` : "No strong counter-argument found";
+    const conf = clamp(Math.abs(s.score) / 0.6, 0, 1) * (risks.length ? 0.5 : 1);
+    const hardStop = (D.flow && D.flow.vpin > lim.vpin) || pw >= lim.pwsi;
+    let verdict, why;
+    if (hardStop) { verdict = W.pos ? "KILL" : "STAND ASIDE"; why = W.pos ? "risk above the safe limit: emergency stop" : "risk above the safe limit: no new entry"; }
+    else if (s.cls !== "buy") { verdict = "STAND ASIDE"; why = s.sig === "HOLD" ? "no edge" : s.sig + ": spot long-only, nothing to open"; }
+    else if (!q || !(q.kelly > 0)) { verdict = "STAND ASIDE"; why = "half-Kelly size is zero"; }
+    else if (risks.length) { verdict = "STAND ASIDE"; why = "the red team's objection stands"; }
+    else { verdict = "OPEN"; why = `paper long, ${nf(q.kelly * 100, 1)}% of the locked base`; }
+    D.court = { verdict, conf, hardStop };
+    const line = (cls, icon, en, a, text) => { const li = h("li", cls); const b = h("b"); b.append(document.createTextNode(icon + " " + en + " · "), ar(a)); li.append(b, h("span", "", text)); return li; };
+    $("dkCourt").replaceChildren(
+      line("bull", "🟢", "Bull agent", "وكيل الفرص", bull),
+      line("bear", "🔴", "Red-team bear", "وكيل الشك والمخاطر", bear),
+      line("judge " + (verdict === "OPEN" ? "ok" : verdict === "KILL" ? "bad" : ""), "⚖️", "Risk judge", "القاضي التنفيذي", `${verdict} · confidence ${nf(conf * 100, 0)}% · Kelly ${q ? nf(q.kelly * 100, 1) : "—"}% · ${why}`));
+    if (verdict === "KILL" && W.pos && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Risk judge: " + bear); }
+  }
+
+  /* ---------------- paper-only auto engine ---------------- */
+  // Opens a paper long when the court says OPEN, then manage() closes it at TP1/TP2/trailing/stop.
+  // Fifteen minutes of cooldown after each close keeps it from churning on the same signal.
+  let autoBusy = false;
+  async function autoStep() {
+    if (!D.auto || autoBusy || W.pos || W.halted || !D.court || D.court.verdict !== "OPEN" || Date.now() < D.cooldownUntil || !(W.active > 0)) return;
+    autoBusy = true;
+    try { await openPaper(true); } finally { autoBusy = false; }
+  }
+  function setAuto(on) {
+    D.auto = !!on;
+    $("dkAuto").setAttribute("aria-pressed", String(D.auto));
+    $("dkAutoLabel").textContent = D.auto ? "Auto paper engine: ON" : "Auto paper engine: OFF";
+    publish();
+  }
+  function publish() {
+    document.dispatchEvent(new CustomEvent("omega:desk", { detail: { auto: D.auto, halted: W.halted, base: W.base, safe: W.safe, pos: !!W.pos, sig: D.signal ? D.signal.sig : "" } }));
   }
 
   /* ---------------- receipts: SHA-256 hash chain ---------------- */
@@ -2782,6 +3060,18 @@ const DEFAULT_ALLOW_HOSTS = [
   const snap = () => ({ cash: W.cash, locked_base: W.base, trading: tradingValue(), safe_vault: W.safe, split: W.split, total: W.cash + tradingValue() + W.safe + W.split });
   const say = (en, arText) => $("wlStatus").replaceChildren(document.createTextNode(en + " · "), ar(arText));
   const FEE = 0.001;
+  // Fill against the live book: walk price levels until the notional (buy) or quantity (sell) is filled.
+  function walk(side, amount) {
+    const levels = side === "buy" ? D.depth.asks : D.depth.bids;
+    let left = amount, qty = 0, quote = 0;
+    for (const [p, q] of levels) {
+      if (side === "buy") { const take = Math.min(left, p * q); qty += take / p; quote += take; left -= take; }
+      else { const take = Math.min(left, q); qty += take; quote += take * p; left -= take; }
+      if (left <= 1e-12) break;
+    }
+    if (left > 1e-9) return null;
+    return { qty, quote, vwap: quote / qty };
+  }
 
   function renderWallet() {
     $("wlBaseOut").textContent = usd(W.base);
@@ -2799,11 +3089,15 @@ const DEFAULT_ALLOW_HOSTS = [
       sv("rect", { x: 20, y: 4, width: Math.max(0, bw), height: 14, rx: 7, class: "r-base" }),
       sv("rect", { x: 20 + bw, y: 4, width: Math.max(0, 360 - bw), height: 14, rx: 7, class: "r-safe" }),
       sv("text", { x: 20, y: 32 }, "base " + nf(W.base, 0)), sv("text", { x: 300, y: 32 }, "safe " + nf(W.safe, 0)));
+    publish();
   }
 
+  // Strict base recovery: only equity above the locked base is swept, and only while flat.
+  // A loss leaves the base short; later profit first refills the base, and only the excess moves.
+  // The safe vault is one-way: no code path here reads W.safe to fund a trade.
   async function sweepCheck(reason) {
     if (W.pos) return;
-    const over = W.active - W.base;
+    const over = Math.max(0, W.active - W.base);
     const due = W.sweepMode === "every" ? over > 0.01 : W.active >= W.target && over > 0.01;
     if (!due) return;
     const before = snap();
@@ -2872,7 +3166,7 @@ const DEFAULT_ALLOW_HOSTS = [
     renderWallet();
   }
 
-  async function openPaper() {
+  async function openPaper(auto) {
     const s = D.signal, q = D.quant;
     if (W.halted) { say("Emergency stop is active. Lock a base again to resume", "الإيقاف الطارئ مفعّل"); return; }
     if (!s || !q) { say("Signal still loading…", "الإشارة قيد التحميل…"); return; }
@@ -2882,29 +3176,33 @@ const DEFAULT_ALLOW_HOSTS = [
     if (!(q.kelly > 0)) { say("Half-Kelly size is zero for these odds", "حجم كيلي صفر"); return; }
     const before = snap();
     const notional = W.active * q.kelly;
-    const px = D.depth.asks[0][0];
-    const qty = notional * (1 - FEE) / px;
+    const fill = walk("buy", notional * (1 - FEE));
+    if (!fill) { say("The visible book is too thin for this size", "السيولة الظاهرة لا تكفي"); return; }
+    const px = fill.vwap, qty = fill.qty;
+    const slip = (px / D.depth.asks[0][0] - 1) * 1e4;
     W.active -= notional;
     W.pos = { qty, entry: px, sl: q.sl, tp1: q.tp1, tp2: q.tp2, atr: q.atr, peak: px, tp1Done: false, at: Date.now() };
     save();
-    await issue("FILL_BUY", notional, before, snap(), `${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly at ask ${nf(px, 2)}`);
-    say(`Paper buy ${nf(qty, 6)} at ${nf(px, 2)}`, "تم فتح صفقة ورقية");
+    await issue("FILL_BUY", notional, before, snap(), `${auto ? "Auto engine: " : ""}${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly; VWAP ${nf(px, 2)} (slippage ${nf(slip, 2)} bps, fee 0.1%)`);
+    say(`Paper buy ${nf(qty, 6)} at ${nf(px, 2)}${auto ? " by the auto engine" : ""}`, "تم فتح صفقة ورقية");
+    publish();
     renderWallet(); renderPosition();
   }
 
   async function closePart(frac, why) {
     if (!W.pos) return;
     const before = snap();
-    const px = D.depth.bids[0][0];
-    const qty = W.pos.qty * frac;
-    const proceeds = qty * px * (1 - FEE);
+    const full = frac >= 0.999 || W.pos.qty * (1 - frac) * D.depth.bids[0][0] < 1;
+    const qty = full ? W.pos.qty : W.pos.qty * frac;
+    const fill = walk("sell", qty) || { qty, quote: qty * D.depth.bids[D.depth.bids.length - 1][0], vwap: D.depth.bids[D.depth.bids.length - 1][0] };
+    const proceeds = fill.quote * (1 - FEE);
     W.active += proceeds;
     W.pos.qty -= qty;
-    if (frac >= 0.999 || W.pos.qty * px < 1) { W.active += W.pos.qty * px * (1 - FEE); W.pos = null; }
+    if (full) { W.pos = null; D.cooldownUntil = Date.now() + 15 * 60e3; }
     save();
-    await issue("FILL_SELL", proceeds, before, snap(), why + ` at bid ${nf(px, 2)}`);
+    await issue("FILL_SELL", proceeds, before, snap(), why + ` at VWAP ${nf(fill.vwap, 2)} (fee 0.1%)`);
     if (!W.pos) await sweepCheck("Sweep after closing the paper position");
-    renderWallet(); renderPosition();
+    renderWallet(); renderPosition(); publish();
   }
 
   let managing = false;
@@ -2933,9 +3231,10 @@ const DEFAULT_ALLOW_HOSTS = [
   async function kill(why) {
     const t0 = performance.now();
     const before = snap();
+    D.auto = false;
     if (W.pos && D.depth) {
-      const px = D.depth.bids[0][0];
-      W.active += W.pos.qty * px * (1 - FEE);
+      const fill = walk("sell", W.pos.qty);
+      W.active += (fill ? fill.quote : W.pos.qty * D.depth.bids[0][0]) * (1 - FEE);
       W.pos = null;
     } else if (W.pos) {
       W.active += W.pos.qty * W.pos.entry * (1 - FEE);
@@ -2952,12 +3251,17 @@ const DEFAULT_ALLOW_HOSTS = [
     await issue("KILL", moved, before, snap(), why + ` (paper state settled in ${nf(ms, 1)} ms)`);
     say(`Emergency stop: ${usd(moved)} moved to the safe vault in ${nf(ms, 1)} ms. Nothing is trading`, "تم الإيقاف الطارئ ونقل المبلغ للمحمية");
     $("cbTag").textContent = "TRIPPED";
+    setAuto(false);
   }
 
   /* ---------------- circuit breaker ---------------- */
   let lastTrip = 0;
+  function limits() {
+    return { move: +$("cbMove").value || 2.5, depth: +$("cbDepth").value || 60, spoof: +$("cbSpoof").value || 5, dd: +$("cbDD").value || 10, pwsi: +$("cbPwsi").value || 70, vpin: +$("cbVpin").value || 0.6 };
+  }
   function breaker() {
-    const lim = { move: +$("cbMove").value || 2.5, depth: +$("cbDepth").value || 60, spoof: +$("cbSpoof").value || 5, dd: +$("cbDD").value || 10 };
+    const lim = limits();
+    const pw = D.osiris && Number.isFinite(D.osiris.pwsi) ? D.osiris.pwsi : NaN;
     const old = D.ticks.find(x => Date.now() - x.t >= 55000) || D.ticks[0];
     const move = old ? Math.abs(D.price / old.p - 1) * 100 : 0;
     const med = median(D.depthHist.map(x => x.d));
@@ -2970,7 +3274,9 @@ const DEFAULT_ALLOW_HOSTS = [
       ["60 s move", "حركة دقيقة", nf(move, 2) + "% / " + nf(lim.move, 1) + "%", move > lim.move],
       ["Depth vs 15-min median", "السيولة مقابل الوسيط", "−" + nf(drop, 0) + "% / " + nf(lim.depth, 0) + "%", drop > lim.depth],
       ["Vanished walls, 5 min", "حوائط وهمية", D.spoofs.length + " / " + lim.spoof, D.spoofs.length >= lim.spoof],
-      ["Day loss", "خسارة اليوم", nf(dd, 1) + "% / " + nf(lim.dd, 0) + "%", dd > lim.dd]
+      ["Day loss", "خسارة اليوم", nf(dd, 1) + "% / " + nf(lim.dd, 0) + "%", dd > lim.dd],
+      ["OSIRIS PWSI", "مؤشر الصدمة", (Number.isFinite(pw) ? nf(pw, 0) : "unverified") + " / " + nf(lim.pwsi, 0), pw >= lim.pwsi],
+      ["VPIN", "سمّية السيولة", (D.flow ? nf(D.flow.vpin, 2) : "—") + " / " + nf(lim.vpin, 2), !!(D.flow && D.flow.vpin > lim.vpin)]
     ];
     kvRows("cbKv", checks.map(([en, a, v, bad]) => [en, a, v, bad ? "bad-text" : "ok-text"]));
     const tripped = checks.find(c => c[3]);
@@ -2991,13 +3297,19 @@ const DEFAULT_ALLOW_HOSTS = [
   $("wlWithdraw").addEventListener("click", withdraw);
   $("wlSim").addEventListener("click", simTrade);
   $("wlKill").addEventListener("click", () => kill("Emergency stop pressed"));
-  $("dkOpen").addEventListener("click", openPaper);
+  $("dkOpen").addEventListener("click", () => openPaper(false));
+  $("dkAuto").addEventListener("click", () => {
+    if (!D.auto && W.halted) { say("Emergency stop is active. Lock a base again to resume", "الإيقاف الطارئ مفعّل"); return; }
+    if (!D.auto && !(W.base > 0)) { say("Lock a base first", "علّق مبلغاً أولاً"); return; }
+    setAuto(!D.auto);
+    say(D.auto ? "Auto paper engine on: it opens paper trades when the risk judge says OPEN" : "Auto paper engine off", D.auto ? "المحرك الورقي الآلي يعمل" : "المحرك الورقي الآلي متوقف");
+  });
   $("dkClose").addEventListener("click", () => W.pos ? closePart(1, "Closed by hand") : say("No paper position open", "لا توجد صفقة"));
   $("dkRefresh").addEventListener("click", () => { loadFast().catch(() => {}); loadSlow().catch(() => {}); });
   $("dkSymbol").addEventListener("change", () => {
     if (W.pos) { $("dkSymbol").value = D.sym; say("Close the paper position before switching market", "أغلق الصفقة قبل تغيير السوق"); return; }
     D.sym = $("dkSymbol").value;
-    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null });
+    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, flow: null, flowAt: 0 });
     loadFast().catch(() => {}); loadSlow().catch(() => {}); runFractal().catch(fractalFail);
   });
   $("rcVerify").addEventListener("click", async () => {
@@ -3013,13 +3325,402 @@ const DEFAULT_ALLOW_HOSTS = [
   });
   const fractalFail = () => state("frState", "offline", "History unreachable, retrying", "تعذر تحميل التاريخ، إعادة المحاولة");
 
-  renderWallet(); renderReceipts(); renderPosition();
+  renderWallet(); renderReceipts(); renderPosition(); setAuto(false);
   const loop = (fn, every) => { const tick = async () => { if (!document.hidden) { try { await fn(); } catch { /* next tick retries */ } } setTimeout(tick, every); }; tick(); };
   loop(loadFast, 5000);
   loop(loadSlow, 60000);
   setInterval(staleGuard, 5000);
   const fr = async () => { try { await runFractal(); } catch { fractalFail(); setTimeout(fr, 60000); } };
   fr();
+})();
+</script>
+<script>
+"use strict";
+// OSIRIS global intelligence (ADR-092): seven map layers from free public sources, a unified ticker
+// and the Physical Shock Index (PWSI). Sources that fail show as offline; nothing is filled in.
+// Publishes {pwsi, coverage, at} on document as the "omega:osiris" event for the trading desk.
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const ar = text => { const s = h("span", "ar", text); s.lang = "ar"; return s; };
+  const nf = (v, d = 1) => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) : "—";
+  const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const RAD = Math.PI / 180;
+  const safeUrl = u => { try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch { return null; } };
+  const store = {
+    get(k, f) { try { const v = localStorage.getItem(k); return v === null ? f : JSON.parse(v); } catch { return f; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked: memory only */ } }
+  };
+  class Ring {
+    constructor(n) { this.n = n; this.a = []; }
+    push(x) { this.a.push(x); if (this.a.length > this.n) this.a.shift(); }
+    last() { return this.a[this.a.length - 1]; }
+    first() { return this.a[0]; }
+    get length() { return this.a.length; }
+  }
+  async function getJson(url, ms = 12000) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: c.signal, cache: "no-store", credentials: "omit" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+  const PROXY = "http://127.0.0.1:8796";
+
+  // Reference geography (facts, not data): chokepoints, energy hubs, Baltic ports covered by Digitraffic.
+  const CHOKE = [
+    { n: "Strait of Hormuz", a: "مضيق هرمز", lat: 26.57, lon: 56.25 },
+    { n: "Bab el-Mandeb", a: "باب المندب", lat: 12.6, lon: 43.33 },
+    { n: "Suez Canal", a: "قناة السويس", lat: 30.0, lon: 32.58 },
+    { n: "Strait of Malacca", a: "مضيق ملقا", lat: 2.5, lon: 101.0 }
+  ];
+  const HUBS = [...CHOKE, { n: "Kuwait City", a: "مدينة الكويت", lat: 29.38, lon: 47.98 }, { n: "Rotterdam", a: "روتردام", lat: 51.95, lon: 4.14 }, { n: "Houston", a: "هيوستن", lat: 29.75, lon: -95.3 }, { n: "Singapore", a: "سنغافورة", lat: 1.26, lon: 103.82 }];
+  const PORTS = [
+    { n: "Helsinki", a: "هلسنكي", lat: 60.16, lon: 24.95 }, { n: "Turku", a: "توركو", lat: 60.43, lon: 22.22 },
+    { n: "Kotka", a: "كوتكا", lat: 60.46, lon: 26.95 }, { n: "Tallinn", a: "تالين", lat: 59.44, lon: 24.76 }
+  ];
+
+  const S = {
+    layers: Object.assign({ core: true, air: true, alerts: true, sea: true, ports: true, wx: true, quake: true }, store.get("omega-osiris-layers", {})),
+    proj: store.get("omega-osiris-proj", "3d") === "2d" ? "2d" : "3d",
+    style: ["day", "map", "sat"].includes(store.get("omega-osiris-style", "map")) ? store.get("omega-osiris-style", "map") : "map",
+    lon0: 48, lat0: 22, w: 0, h: 0, dpr: 1, visible: true, dirty: true, drag: null,
+    quakes: [], wx: [], air: [], gdacs: [], news: [], ais: [], ports: [], prices: [],
+    src: {
+      usgs: { en: "USGS earthquakes (M2.5+, 24 h)", ar: "زلازل USGS", state: "checking", n: 0, at: 0 },
+      meteo: { en: "Open-Meteo, 8 hubs", ar: "الطقس في 8 مراكز", state: "checking", n: 0, at: 0 },
+      binance: { en: "Binance spot tickers", ar: "أسعار باينانس", state: "checking", n: 0, at: 0 },
+      opensky: { en: "OpenSky, Gulf & Red Sea box (proxy)", ar: "الطيران عبر الوسيط", state: "checking", n: 0, at: 0 },
+      gdacs: { en: "GDACS disaster alerts (proxy)", ar: "إنذارات GDACS", state: "checking", n: 0, at: 0 },
+      gdelt: { en: "GDELT headlines, 6 h (proxy)", ar: "عناوين GDELT", state: "checking", n: 0, at: 0 },
+      ais: { en: "Digitraffic AIS, Baltic (proxy)", ar: "سفن البلطيق", state: "checking", n: 0, at: 0 },
+      straits: { en: "Live ships in the 4 straits", ar: "السفن الحية في المضائق", state: "none", n: 0, at: 0 }
+    },
+    pwsiHist: new Ring(300), proxyUp: null
+  };
+
+  /* ---------------- drawing ---------------- */
+  const cv = $("osMap"), ctx = cv.getContext("2d");
+  const land = typeof decodeLand === "function" ? decodeLand() : [];
+  let colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = v => cs.getPropertyValue(v).trim();
+    colors = {
+      ocean: g("--os-" + S.style + "-ocean"), land: g("--os-" + S.style + "-land"), grid: g("--os-" + S.style + "-grid"),
+      danger: g("--danger"), warning: g("--warning"), accent: g("--accent"), gold: g("--gold"), violet: g("--violet"), success: g("--success"), text: g("--content-primary")
+    };
+  }
+  function size() {
+    S.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    S.w = cv.clientWidth; S.h = cv.clientHeight;
+    if (!S.w || !S.h) return;
+    cv.width = Math.round(S.w * S.dpr); cv.height = Math.round(S.h * S.dpr);
+    ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    S.dirty = true; frame();
+  }
+  const R = () => Math.min(S.w, S.h) * 0.46;
+  function project(lat, lon) {
+    if (S.proj === "2d") {
+      const W = Math.min(S.w, S.h * 2), H = W / 2, x0 = (S.w - W) / 2, y0 = (S.h - H) / 2;
+      return [x0 + (lon + 180) / 360 * W, y0 + (90 - lat) / 180 * H];
+    }
+    const p = lat * RAD, l = (lon - S.lon0) * RAD, p0 = S.lat0 * RAD;
+    const cosc = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l);
+    if (cosc < 0) return null;
+    const r = R();
+    return [S.w / 2 + r * Math.cos(p) * Math.sin(l), S.h / 2 - r * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l))];
+  }
+  function unproject(x, y) {
+    if (S.proj === "2d") {
+      const W = Math.min(S.w, S.h * 2), H = W / 2, x0 = (S.w - W) / 2, y0 = (S.h - H) / 2;
+      const lon = (x - x0) / W * 360 - 180, lat = 90 - (y - y0) / H * 180;
+      return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lat, lon] : null;
+    }
+    const r = R(), dx = x - S.w / 2, dy = S.h / 2 - y, rho = Math.hypot(dx, dy);
+    if (rho > r) return null;
+    if (rho < 1e-6) return [S.lat0, S.lon0];
+    const c = Math.asin(rho / r), p0 = S.lat0 * RAD;
+    const lat = Math.asin(Math.cos(c) * Math.sin(p0) + dy * Math.sin(c) * Math.cos(p0) / rho) / RAD;
+    let lon = S.lon0 + Math.atan2(dx * Math.sin(c), rho * Math.cos(c) * Math.cos(p0) - dy * Math.sin(c) * Math.sin(p0)) / RAD;
+    lon = ((lon + 540) % 360) - 180;
+    return [lat, lon];
+  }
+  function dot(lat, lon, r, color, ring) {
+    const p = project(lat, lon);
+    if (!p) return;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+    if (ring) { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke(); } else { ctx.fillStyle = color; ctx.fill(); }
+  }
+  function diamond(lat, lon, r, color) {
+    const p = project(lat, lon);
+    if (!p) return;
+    ctx.beginPath(); ctx.moveTo(p[0], p[1] - r); ctx.lineTo(p[0] + r, p[1]); ctx.lineTo(p[0], p[1] + r); ctx.lineTo(p[0] - r, p[1]); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+  }
+  function draw() {
+    if (!S.w || !S.h) return;
+    ctx.clearRect(0, 0, S.w, S.h);
+    ctx.fillStyle = colors.ocean;
+    if (S.proj === "3d") { ctx.beginPath(); ctx.arc(S.w / 2, S.h / 2, R(), 0, Math.PI * 2); ctx.fill(); }
+    else { const W = Math.min(S.w, S.h * 2), H = W / 2; ctx.fillRect((S.w - W) / 2, (S.h - H) / 2, W, H); }
+    ctx.strokeStyle = colors.grid; ctx.lineWidth = 1;
+    for (let la = -60; la <= 60; la += 30) { ctx.beginPath(); let on = false; for (let lo = -180; lo <= 180; lo += 4) { const p = project(la, lo); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } } ctx.stroke(); }
+    for (let lo = -180; lo < 180; lo += 30) { ctx.beginPath(); let on = false; for (let la = -88; la <= 88; la += 4) { const p = project(la, lo); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } } ctx.stroke(); }
+    ctx.fillStyle = colors.land;
+    const lr = Math.max(1.4, R() / 120);
+    for (const [la, lo] of land) { const p = project(la / RAD, lo / RAD); if (p) { ctx.beginPath(); ctx.arc(p[0], p[1], lr, 0, Math.PI * 2); ctx.fill(); } }
+    if (S.layers.sea) {
+      for (const v of S.ais) dot(v[1], v[0], 1.2, colors.violet);
+      for (const c of CHOKE) diamond(c.lat, c.lon, 6, colors.gold);
+    }
+    if (S.layers.ports) for (const p of S.ports) dot(p.lat, p.lon, 4 + Math.min(8, p.moored / 4), colors.success, true);
+    if (S.layers.air) for (const a of S.air) dot(a.lat, a.lon, 1.6, colors.accent);
+    if (S.layers.wx) for (const w of S.wx) dot(w.lat, w.lon, 4, w.gust >= 60 ? colors.danger : colors.accent, true);
+    if (S.layers.alerts) for (const g of S.gdacs) diamond(g.lat, g.lon, g.level === "Red" ? 8 : 6, g.level === "Red" ? colors.danger : colors.warning);
+    if (S.layers.quake) for (const q of S.quakes) dot(q.lat, q.lon, clamp((q.mag - 2) * 2.4, 2, 16), colors.danger, q.mag < 4.5);
+    S.dirty = false;
+  }
+  let raf = 0;
+  function frame() { if (raf || !S.visible || document.hidden) return; raf = requestAnimationFrame(() => { raf = 0; if (S.dirty) draw(); }); }
+  const redraw = () => { S.dirty = true; frame(); };
+
+  /* ---------------- data ---------------- */
+  const mark = (k, ok, n) => { const s = S.src[k]; s.state = ok ? "online" : "offline"; if (ok) { s.n = n; s.at = Date.now(); } };
+  async function loadQuakes() {
+    try {
+      const j = await getJson("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson");
+      const cut = Date.now() - 86400e3;
+      S.quakes = j.features.filter(f => f.properties.time >= cut && Number.isFinite(f.properties.mag)).slice(0, 300)
+        .map(f => ({ mag: f.properties.mag, place: f.properties.place || "", t: f.properties.time, url: f.properties.url, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }))
+        .sort((a, b) => b.mag - a.mag);
+      mark("usgs", true, S.quakes.length);
+    } catch { mark("usgs", false); }
+  }
+  async function loadWeather() {
+    try {
+      const q = `latitude=${HUBS.map(x => x.lat).join(",")}&longitude=${HUBS.map(x => x.lon).join(",")}&current=temperature_2m,wind_speed_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=UTC`;
+      const j = await getJson("https://api.open-meteo.com/v1/forecast?" + q);
+      const arr = Array.isArray(j) ? j : [j];
+      S.wx = arr.map((x, i) => ({ ...HUBS[i], temp: x.current.temperature_2m, wind: x.current.wind_speed_10m, gust: x.current.wind_gusts_10m }));
+      mark("meteo", true, S.wx.length);
+    } catch { mark("meteo", false); }
+  }
+  async function loadPrices() {
+    try {
+      const syms = encodeURIComponent(JSON.stringify(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]));
+      const j = await getJson("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + syms);
+      S.prices = j.map(x => ({ s: x.symbol.replace("USDT", ""), p: +x.lastPrice, c: +x.priceChangePercent }));
+      mark("binance", true, S.prices.length);
+    } catch { mark("binance", false); }
+  }
+  async function proxyUp() {
+    try { await getJson(PROXY + "/health", 2500); S.proxyUp = true; } catch { S.proxyUp = false; }
+    return S.proxyUp;
+  }
+  async function loadProxy() {
+    if (!(await proxyUp())) { for (const k of ["opensky", "gdacs", "gdelt", "ais"]) S.src[k].state = "offline"; return; }
+    await Promise.all([
+      getJson(PROXY + "/osiris/aviation", 20000).then(j => { S.air = (j.states || []).filter(s => Number.isFinite(s[5]) && Number.isFinite(s[6]) && !s[8]).slice(0, 2000).map(s => ({ lon: s[5], lat: s[6] })); mark("opensky", true, S.air.length); }).catch(() => mark("opensky", false)),
+      getJson(PROXY + "/osiris/gdacs", 20000).then(j => {
+        S.gdacs = (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && ["Orange", "Red"].includes(f.properties.alertlevel))
+          .slice(0, 100).map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], level: f.properties.alertlevel, type: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: f.properties.url && f.properties.url.report }));
+        mark("gdacs", true, S.gdacs.length);
+      }).catch(() => mark("gdacs", false)),
+      getJson(PROXY + "/osiris/gdelt", 20000).then(j => { S.news = (j.articles || []).slice(0, 25).map(a => ({ title: a.title, url: a.url, domain: a.domain, seen: a.seendate })); mark("gdelt", true, S.news.length); }).catch(() => mark("gdelt", false)),
+      getJson(PROXY + "/osiris/ais", 30000).then(j => {
+        const v = Array.isArray(j.vessels) ? j.vessels : [];
+        S.ais = v.length > 6000 ? v.filter((_, i) => i % Math.ceil(v.length / 6000) === 0) : v;
+        const km = (a, b, c, d) => 6371 * 2 * Math.asin(Math.sqrt(Math.sin((c - a) * RAD / 2) ** 2 + Math.cos(a * RAD) * Math.cos(c * RAD) * Math.sin((d - b) * RAD / 2) ** 2));
+        S.ports = PORTS.map(p => {
+          let moored = 0, moving = 0;
+          for (const x of v) { const d = km(p.lat, p.lon, x[1], x[0]); if (d <= 5 && x[2] !== null && x[2] < 0.5) moored++; else if (d <= 15 && x[2] !== null && x[2] >= 0.5) moving++; }
+          return { ...p, moored, moving };
+        });
+        mark("ais", true, v.length);
+      }).catch(() => mark("ais", false))
+    ]);
+  }
+
+  /* ---------------- PWSI ---------------- */
+  function pwsi() {
+    const parts = [];
+    if (S.src.usgs.state === "online") {
+      const top = S.quakes[0], m5 = S.quakes.filter(q => q.mag >= 5).length;
+      parts.push({ en: "Seismic", a: "زلازل", v: clamp(Math.max(top ? (top.mag - 4) / 3 : 0, m5 / 10), 0, 1) * 100, why: top ? `max M${nf(top.mag)} · ${m5} at M5+` : "no M2.5+ in 24 h" });
+    }
+    if (S.src.meteo.state === "online" && S.wx.length) {
+      const g = Math.max(...S.wx.map(w => w.gust || 0)), at = S.wx.find(w => w.gust === g);
+      parts.push({ en: "Weather at hubs", a: "طقس المراكز", v: clamp((g - 40) / 60, 0, 1) * 100, why: `max gust ${nf(g, 0)} km/h${at ? " · " + at.n : ""}` });
+    }
+    if (S.src.gdacs.state === "online") {
+      const red = S.gdacs.filter(g => g.level === "Red").length, orange = S.gdacs.length - red;
+      parts.push({ en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (GDACS)` });
+    }
+    if (!parts.length) return { score: NaN, parts, coverage: 0 };
+    return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length };
+  }
+
+  /* ---------------- render ---------------- */
+  function kv(id, rows) {
+    $(id).tBodies[0].replaceChildren(...rows.map(([en, a, v, cls]) => { const tr = h("tr"); const t = h("td"); t.append(document.createTextNode(en), ar(a)); tr.append(t, h("td", cls || "", v)); return tr; }));
+  }
+  function render() {
+    const P = pwsi();
+    S.pwsiHist.push({ t: Date.now(), v: P.score });
+    $("osPwsi").textContent = Number.isFinite(P.score) ? nf(P.score, 0) : "—";
+    $("osPwsi").className = "num " + (!Number.isFinite(P.score) ? "" : P.score >= 70 ? "bad-text" : P.score >= 40 ? "warn-text" : "ok-text");
+    $("osPwsiNote").replaceChildren(Number.isFinite(P.score)
+      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 3 components with live data`)
+      : ar("تعذر التحقق منها: لا يوجد مصدر حي الآن"));
+    kv("osParts", P.parts.length ? P.parts.map(p => [p.en + " · " + p.why, p.a, nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No component has live data", "لا توجد بيانات حية", "—"]]);
+    const label = { online: "LIVE", offline: "OFFLINE", checking: "CHECKING…", none: "NO FREE SOURCE" };
+    kv("osCore", Object.values(S.src).map(s => [s.en, s.ar, label[s.state] + (s.state === "online" ? " · " + s.n + " · " + clock.format(s.at) + " UTC" : ""), s.state === "online" ? "ok-text" : s.state === "offline" ? "bad-text" : ""]));
+    const items = [];
+    for (const g of S.gdacs.slice(0, 6)) items.push({ t: g.level.toUpperCase() + " " + (g.type || ""), text: g.name, url: g.url, cls: g.level === "Red" ? "ev-fail" : "ev-warn" });
+    for (const n of S.news.slice(0, 8)) items.push({ t: n.domain || "GDELT", text: n.title, url: n.url, cls: "ev-ok" });
+    $("osAlerts").replaceChildren(...(items.length ? items.map(i => {
+      const li = h("li"); li.append(h("time", i.cls, i.t));
+      const u = safeUrl(i.url);
+      if (u) { const a = h("a", "", i.text); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "auto"; li.append(a); } else li.append(h("span", "", i.text));
+      return li;
+    }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", S.proxyUp === false ? "Start the local proxy to load GDACS and GDELT alerts" : "No orange or red alerts right now")); return li; })()]));
+    const tick = [];
+    for (const p of S.prices) tick.push([p.s, nf(p.p, p.p < 10 ? 3 : 2), (p.c >= 0 ? "+" : "") + nf(p.c, 2) + "%", p.c >= 0 ? "ok-text" : "bad-text"]);
+    for (const q of S.quakes.slice(0, 4)) tick.push(["M" + nf(q.mag), q.place.slice(0, 40), clock.format(q.t) + " UTC", q.mag >= 5 ? "bad-text" : ""]);
+    tick.push(["PWSI", Number.isFinite(P.score) ? nf(P.score, 0) + " / 100" : "unverified", P.coverage + "/3 sources", P.score >= 70 ? "bad-text" : ""]);
+    if (S.src.opensky.state === "online") tick.push(["AIR", S.air.length + " aircraft", "Gulf & Red Sea", ""]);
+    const build = () => tick.map(([a, b, c, cls]) => { const s = h("span", "tk"); s.append(h("b", "", a), document.createTextNode(" " + b + " "), h("i", cls, c)); return s; });
+    // The marquee needs a second copy to loop seamlessly; a short ticker stays still instead.
+    const loop = tick.length >= 4;
+    $("osTicker").classList.toggle("still", !loop);
+    $("osTicker").replaceChildren(...build(), ...(loop ? build().map(n => { n.setAttribute("aria-hidden", "true"); return n; }) : []));
+    $("osUpdated").textContent = clock.format(new Date()) + " UTC";
+    document.dispatchEvent(new CustomEvent("omega:osiris", { detail: { pwsi: P.score, coverage: P.coverage, at: Date.now() } }));
+    redraw();
+  }
+
+  /* ---------------- controls ---------------- */
+  for (const b of document.querySelectorAll(".os-layer")) {
+    const k = b.dataset.layer;
+    b.setAttribute("aria-pressed", String(!!S.layers[k]));
+    b.addEventListener("click", () => {
+      S.layers[k] = !S.layers[k];
+      b.setAttribute("aria-pressed", String(S.layers[k]));
+      store.set("omega-osiris-layers", S.layers);
+      if (k === "core") $("osCore").closest(".os-panel").hidden = !S.layers.core;
+      redraw();
+    });
+  }
+  $("osCore").closest(".os-panel").hidden = !S.layers.core;
+  const seg = (attr, key, storeKey) => {
+    const btns = document.querySelectorAll(`[data-${attr}]`);
+    const sync = () => btns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset[attr] === S[key])));
+    btns.forEach(b => b.addEventListener("click", () => { S[key] = b.dataset[attr]; store.set(storeKey, S[key]); sync(); readColors(); redraw(); }));
+    sync();
+  };
+  seg("proj", "proj", "omega-osiris-proj");
+  seg("style", "style", "omega-osiris-style");
+  cv.addEventListener("pointerdown", e => { if (S.proj === "3d") { S.drag = { x: e.clientX, y: e.clientY, lon: S.lon0, lat: S.lat0 }; cv.setPointerCapture(e.pointerId); } });
+  cv.addEventListener("pointermove", e => {
+    const r = cv.getBoundingClientRect();
+    if (S.drag) {
+      S.lon0 = S.drag.lon - (e.clientX - S.drag.x) * 0.4;
+      S.lat0 = clamp(S.drag.lat + (e.clientY - S.drag.y) * 0.4, -70, 70);
+      redraw();
+    }
+    const g = unproject(e.clientX - r.left, e.clientY - r.top);
+    $("osCoord").textContent = g ? `${nf(Math.abs(g[0]), 2)}°${g[0] >= 0 ? "N" : "S"}, ${nf(Math.abs(g[1]), 2)}°${g[1] >= 0 ? "E" : "W"}` : "—";
+  });
+  const endDrag = () => { S.drag = null; };
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("pointerleave", () => { if (!S.drag) $("osCoord").textContent = "—"; });
+  new IntersectionObserver(es => { S.visible = es.some(e => e.isIntersecting); if (S.visible) { size(); } }).observe(cv);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) redraw(); });
+  new ResizeObserver(size).observe(cv);
+  new MutationObserver(() => { readColors(); redraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---------------- schedule ---------------- */
+  readColors(); size(); render();
+  const every = (fn, ms) => { const run = async () => { if (!document.hidden) { await fn(); render(); } setTimeout(run, ms); }; run(); };
+  every(loadQuakes, 5 * 60e3);
+  every(loadWeather, 15 * 60e3);
+  every(loadPrices, 30e3);
+  every(loadProxy, 5 * 60e3);
+})();
+</script>
+<script>
+"use strict";
+// App shell (ADR-092): five views with a segmented control (laptop) and a floating dock (phone),
+// the status island, and the home-screen install links when the page is served over http(s).
+(() => {
+  const $ = id => document.getElementById(id);
+  const nf = v => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v) : "—";
+  const main = document.querySelector("main");
+  const VIEWS = ["1", "2", "3", "4", "5"];
+  const get = () => { try { return localStorage.getItem("omega-view"); } catch { return null; } };
+  const put = v => { try { localStorage.setItem("omega-view", v); } catch { /* storage blocked */ } };
+
+  function show(v, opts = {}) {
+    if (!VIEWS.includes(v)) v = "1";
+    main.dataset.active = v;
+    for (const b of document.querySelectorAll("[data-go]")) b.setAttribute("aria-pressed", String(b.dataset.go === v));
+    put(v);
+    const url = new URL(location.href);
+    url.searchParams.set("view", v);
+    if (!opts.keepHash) url.hash = "";
+    history.replaceState(null, "", url);
+    window.dispatchEvent(new Event("resize"));
+    if (!opts.keepScroll) window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  // A link to an anchor inside a hidden view (for example #shield or #receipts) opens that view first.
+  function follow(hash) {
+    const id = decodeURIComponent((hash || "").slice(1));
+    if (!id) return false;
+    const target = document.getElementById(id);
+    if (!target || !main.contains(target)) return false;
+    let top = target;
+    while (top.parentElement && top.parentElement !== main) top = top.parentElement;
+    const views = (top.dataset.view || "").split(/\s+/);
+    if (!views.includes(main.dataset.active)) show(views[0], { keepHash: true, keepScroll: true });
+    requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+    return true;
+  }
+  for (const b of document.querySelectorAll("[data-go]")) b.addEventListener("click", () => show(b.dataset.go));
+  document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (a && follow(a.getAttribute("href"))) e.preventDefault();
+  });
+  window.addEventListener("hashchange", () => follow(location.hash));
+  const fromUrl = new URL(location.href).searchParams.get("view");
+  show(fromUrl || get() || "1", { keepHash: true });
+  if (location.hash) follow(location.hash);
+
+  // Status island: the two brains, the locked base and the safe vault.
+  const dot = (id, cls) => { $(id).className = "dot " + cls; };
+  document.addEventListener("omega:osiris", e => {
+    const p = e.detail.pwsi;
+    $("islOs").textContent = Number.isFinite(p) ? "PWSI " + Math.round(p) : "UNVERIFIED";
+    dot("islOsDot", !Number.isFinite(p) ? "offline" : p >= 70 ? "offline" : p >= 40 ? "checking" : "online");
+  });
+  document.addEventListener("omega:desk", e => {
+    const d = e.detail;
+    $("islEng").textContent = d.halted ? "STOPPED" : d.auto ? (d.pos ? "AUTO · IN TRADE" : "AUTO") : "MANUAL";
+    dot("islEngDot", d.halted ? "offline" : d.auto ? "online" : "checking");
+    $("islBase").textContent = nf(d.base);
+    $("islSafe").textContent = "+" + nf(d.safe);
+  });
+
+  // Home-screen install. Browsers refuse manifests on file://, so the links are added only over http(s).
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    const link = (rel, href, extra) => { const l = document.createElement("link"); l.rel = rel; l.href = href; Object.assign(l, extra || {}); document.head.append(l); };
+    link("manifest", "manifest.webmanifest");
+    link("apple-touch-icon", "icons/omega-180.png");
+    link("icon", "icons/omega-192.png", { type: "image/png" });
+  }
 })();
 </script>
 </body>
