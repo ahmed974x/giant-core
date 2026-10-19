@@ -2,16 +2,6 @@ name: skillspector
 
 on:
   pull_request:
-    paths:
-      - "site-landing/**"
-      - "omega-ops-room-v1/**"
-      - "scripts/**"
-      - ".claude/skills/omega-*/**"
-      - ".skillspector.json"
-      - "AGENTS.md"
-      - "CLAUDE.md"
-      - "DESIGN.md"
-      - ".github/workflows/skillspector.yml"
   push:
     branches: [main]
 
@@ -26,8 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: SkillSpector strict scan (critical or high fails the job)
-        run: node scripts/skillspector-audit.mjs --strict --json skillspector-report.json site-landing omega-ops-room-v1 scripts .claude/skills/omega-design .claude/skills/omega-finance-chain AGENTS.md CLAUDE.md DESIGN.md
+      - name: SkillSpector strict scan of the whole repo (critical or high fails the job)
+        run: node scripts/skillspector-audit.mjs --strict --json skillspector-report.json .
       - uses: actions/upload-artifact@v4
         if: always()
         with:

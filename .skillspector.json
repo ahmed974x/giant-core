@@ -24,7 +24,7 @@
     {
       "rule": "SEC-STORAGE",
       "path": "omega-ops-room-v1/omega-ops-room.html",
-      "reason": "Stores theme choice and the AES-GCM vault ciphertext only; the self-check row flags any plaintext key found in localStorage."
+      "reason": "Stores theme choice, the AES-GCM vault ciphertext, the paper wallet balances, the SHA-256 receipt chain and a 12-hour cache of public Binance daily candles; no credentials. The self-check row flags any plaintext key found in localStorage."
     },
     {
       "rule": "SEC-STORAGE",

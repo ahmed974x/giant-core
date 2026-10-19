@@ -74,13 +74,26 @@ OMEGA_SEC_UA="Ahmad your@email" node scripts/omega-data-proxy.mjs   # http://127
 
 Every page has a strict, hash-pinned CSP. After editing any inline script or style run `node scripts/skillspector-audit.mjs --fix omega-ops-room-v1`.
 
+## Trading desk · غرفة التداول (ADR-091)
+
+Paper only. Nothing on this page sends an order to any exchange.
+
+- **Signal cockpit:** STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING from four weighted pieces of evidence (whales 0.3, contrarian crowd 0.25, 10-year analogues 0.2, quant odds 0.25), with entry, stop (1.5 × ATR 4h), TP1 1.5 R (half off, stop to entry), TP2 3 R, trailing stop (peak − 2 × ATR) and half-Kelly size capped at 25 %.
+- **Radar:** Binance spot depth (walls, vanished walls, ±1 % imbalance), 4h liquidity sweeps and a Wyckoff phase guess; USDⓈ-M funding z-score, open interest, long/short ratios, taker flow, an estimated liquidation map (assumed leverage mix) and a FOMO gauge read contrarian.
+- **10-year matcher:** Binance daily candles since 2017-08-17 (cached 12 h), seven z-scored features, cosine similarity, the ten closest days at least 30 days apart, and what followed over 30 and 90 days.
+- **Wallet:** lock any amount; sweep every profit above it (A) or at a target (B); optional profit-split share; deposit, withdraw and test-trade buttons; **Emergency stop** closes the paper position at the bid and moves everything to the safe vault.
+- **Circuit breaker:** 60 s move, depth drop against the 15-minute median, vanished walls, day loss, stale data over 20 s. Any one trips the emergency stop while a paper position is open.
+- **Receipts:** every operation is hash-chained with SHA-256 (format in DESIGN.md §6). Verify, export JSON, print one receipt, or start a new chain. The landing page (`site-landing/#safe`) checks exported files with the same rules.
+
+Binance Testnet orders and an automatic trading loop are not built; they wait for Ahmad's approval.
+
 ## Design · التصميم
 
 Same tokens as `site-landing/style.css`. Contrast gate: `node audits/verify-contrast.mjs omega-ops-room-v1/omega-ops-room.html` (all pairs WCAG >= 4.5 and APCA Lc >= 60, light, dark and P3). Cairo and JetBrains Mono are embedded (SIL OFL 1.1), so the page still works double-clicked. Every live number uses a monospace font with `tabular-nums`.
 
 ## Security · الأمان
 
-- Read-only: no trading, no workflow execution, no remote commands. The execution agent and profit-split vault are display-only and gated on explicit approval.
+- No real trading, no workflow execution, no remote commands. The trading desk is paper only; Testnet, auto-trading and real-account modes are disabled until explicit approval.
 - No credentials anywhere in the file; requests use `credentials: "omit"`.
 - Network text is never inserted as HTML (`textContent` only).
 - Future write actions go through an authenticated local gateway (spec section 5), not this page.

@@ -15,7 +15,7 @@ const apca = (t, b) => Math.abs(Number(APCAcontrast(Y(t), Y(b))));
 
 const TEXT = ["content-primary", "content-secondary", "content-tertiary", "accent", "gold", "violet", "success", "warning", "danger"];
 const BGS = ["bg", "surface", "surface-2"];
-const FILLS = [["on-accent-fill", "accent-fill"], ["on-gold-fill", "gold-fill"]];
+const FILLS = [["on-accent-fill", "accent-fill"], ["on-gold-fill", "gold-fill"], ["on-danger-fill", "danger-fill"]];
 
 // Returns the declarations of every block whose selector matches exactly, in source order.
 function blocks(css, selector, insideP3) {

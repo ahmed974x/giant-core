@@ -57,6 +57,8 @@ Rules:
 - Heuristic readings (classification, tone, dodge detection, thesis support) carry `[INFERENCE]`.
 - Real trading, public copy-trading vaults and investor profit split appear only as locked cards marked **«قيد الموافقة»** until Ahmad gives a separate explicit approval and legal review is done.
 - The profit-split / high-water-mark calculator (ADR-089) is a math simulation in the browser: it sends nothing, accepts no money and copies no trade, and says so next to the inputs. Quant ranges carry `[INFERENCE - Quant Model]`.
+- Trading desk (ADR-091): paper only. The person opens every paper trade; no code path sends an order to any exchange. Testnet and real-account modes show as disabled options until Ahmad approves each one. Signals (STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING) carry `[INFERENCE]`, levels and Kelly size carry `[INFERENCE - Quant Model]`, regime matches carry `[INFERENCE - 10Y Fractal Model]`, and the matcher says on screen that Binance history starts 2017-08-17 (2016 is not covered).
+- The locked-base simulator says next to its inputs that the base itself can still lose in trading and that only swept profit is protected. The circuit breaker is described as fixed rules, never as a prediction.
 - Plain, active copy. No "Elevate / Seamless / Unleash / Next-gen", no exclamation marks, no "Oops". Errors say what failed and what to do next. Loading text ends with "…".
 - Free and open-source only. No CAPTCHA solving, no paid data sources.
 
@@ -69,13 +71,16 @@ Rules:
 - `localStorage` is wrapped in try/catch and the page works without it.
 - Every file complete: no TODO, no placeholder, no "rest of code". Syntax check (`node --check` on extracted scripts) and the contrast gate run before a file is called done.
 
+- Receipts (ADR-091): every wallet operation issues a receipt `{invoice, seq, ts (ISO 8601), mode, symbol, type, amount, before, after, reason, prev_hash, hash}`. `hash = SHA-256(JSON of the receipt without "hash", keys sorted, numbers rounded to 8 decimals)` via `crypto.subtle.digest`; the first `prev_hash` is 64 zeros. Export format `{"format":"omega-receipt-chain-v1","receipts":[…]}`. The Ops Room and the landing verifier use the same canonical form, so a file exported from one checks in the other.
+- Glass wallet cards (`.glass`) are the one exception to "glass only on chrome": they sit inside `.wallet`, always over an opaque `--surface-2` fallback outside `@supports (backdrop-filter)`. The emergency-stop button uses `--danger-fill` / `--on-danger-fill`, gated by the contrast check like the other fills.
+
 ## 8. Security (ADR-089)
 
 - Every page ships a strict `Content-Security-Policy` meta: `default-src 'none'`, no `'unsafe-inline'` or `'unsafe-eval'`, inline `<script>`/`<style>` pinned by sha256, `object-src 'none'`, `base-uri 'none'`, `form-action 'none'`, `connect-src` listing each data host by name. After editing any inline script or style, run `node scripts/skillspector-audit.mjs --fix <paths>` to re-pin the hashes.
 - No `style="…"` attributes and no `setAttribute("style")` (blocked by the CSP); use classes or `el.style.x`.
 - No `eval`, `new Function`, string timers, `innerHTML` with data, or inline `on*=` handlers. External scripts need SRI (`--fetch` adds it).
 - Secrets never sit in `localStorage` as plaintext. The Ops Room vault encrypts with AES-GCM-256 from a PBKDF2-SHA256 (600,000 rounds) passphrase key; only ciphertext is stored.
-- `node scripts/skillspector-audit.mjs --strict <changed paths>` must exit 0 before any PR. Suppressions live in `.skillspector.json` and each needs a written reason.
+- `node scripts/skillspector-audit.mjs --strict <changed paths>` must exit 0 before any PR, and CI runs it over the whole repo (ADR-090: 0 critical, 0 high). Suppressions live in `.skillspector.json` and each needs a written reason.
 
 ## 9. Where the rules came from
 

@@ -296,7 +296,7 @@
         <span class="status gated">قيد الموافقة</span>
         <h3>بوابة نسخ الصفقات</h3>
         <p>تصميم البوابة جاهز للعرض فقط: لوحة أداء مُدقَّقة من بيانات حقيقية، وحدود مخاطرة لكل ناسخ، وإيقاف فوري. لا تتصل بأي حساب ولا تنسخ أي صفقة.</p>
-        <p><a class="inline-link" href="#calc">جرّب حاسبة تقسيم الأرباح التفاعلية</a> لترى كيف تحمي أعلى قيمة سابقة المشترك. محاكاة رياضية فقط.</p>
+        <p><a class="inline-link" href="#calc">جرّب حاسبة تقسيم الأرباح</a> و<a class="inline-link" href="#safe">محاكي المبلغ المعلّق وسجل الإيصالات</a>. محاكاة رياضية فقط.</p>
       </article>
       <article class="card">
         <span class="status closed">غير مفتوح</span>
@@ -337,6 +337,51 @@
       </table></div>
       <p class="calc-error" id="cError" role="alert" hidden>اكتب مبلغاً أكبر من صفر، ونسبة بين 0 و100، وعائداً واحداً على الأقل.</p>
     </div></div>
+    <div class="panel calc" id="safe" aria-labelledby="safe-h"><div class="card calc-card">
+      <div class="calc-head">
+        <h3 id="safe-h">الأمان أولاً: علّق أي مبلغ ورحّل الربح</h3>
+        <span class="status design">محاكاة فقط</span>
+      </div>
+      <p>تختار مبلغاً تعلّقه للتداول، مثل 20 أو 50 أو 100. كل ربح فوقه يُرحَّل إلى محفظة محمية لا تتداول: إما بعد كل صفقة رابحة (الطريقة أ)، أو عند وصول الرصيد إلى هدف تحدده (الطريقة ب). الحساب يجري في متصفحك فقط، ولا يُرسل شيء ولا يُقبل أي مال.</p>
+      <div class="calc-form">
+        <div class="field"><label for="sBase">المبلغ المعلّق</label><input id="sBase" name="sBase" type="number" inputmode="decimal" step="any" min="1" autocomplete="off" value="100"></div>
+        <div class="field"><label for="sMode">طريقة الترحيل</label><select id="sMode" name="sMode" autocomplete="off"><option value="every">أ · رحّل كل ربح</option><option value="target">ب · رحّل عند الهدف</option></select></div>
+        <div class="field"><label for="sTarget">الهدف (للطريقة ب)</label><input id="sTarget" name="sTarget" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="150"></div>
+        <div class="field wide"><label for="sReturns">عوائد الصفقات %، مفصولة بفاصلة</label><input id="sReturns" name="sReturns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" value="8, -5, 12, 20, -10, 15, 30"></div>
+      </div>
+      <p class="note">مثال تعليمي — أرقام افتراضية. رسوم 0.1% لكل جهة. المبلغ المعلّق نفسه قد يخسر في التداول؛ المحمي هو الربح المُرحَّل فقط.</p>
+      <dl class="calc-kpis" aria-live="polite">
+        <div><dt>المبلغ المعلّق</dt><dd class="num" id="sLocked">—</dd></div>
+        <div><dt>رصيد التداول الآن</dt><dd class="num" id="sTrading">—</dd></div>
+        <div><dt>المحفظة المحمية</dt><dd class="num pos" id="sSafe">—</dd></div>
+        <div><dt>عدد مرات الترحيل</dt><dd class="num" id="sSweeps">—</dd></div>
+        <div><dt>المجموع</dt><dd class="num" id="sTotal">—</dd></div>
+      </dl>
+      <svg class="calc-chart" id="sChart" viewBox="0 0 720 220" role="img" aria-label="المجموع والمحفظة المحمية بعد كل صفقة، مع خط المبلغ المعلّق"></svg>
+      <ul class="calc-legend">
+        <li><i class="sw sw-gross"></i>المجموع</li>
+        <li><i class="sw sw-net"></i>المحفظة المحمية</li>
+        <li><i class="sw sw-hwm"></i>المبلغ المعلّق</li>
+      </ul>
+      <div class="table-wrap"><table class="calc-table" id="sTable">
+        <thead><tr><th scope="col">الصفقة</th><th scope="col">العائد %</th><th scope="col">قبل</th><th scope="col">بعد</th><th scope="col">مُرحَّل</th><th scope="col">المحمية</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <p class="calc-error" id="sError" role="alert" hidden>اكتب مبلغاً أكبر من صفر، وعائداً واحداً على الأقل أكبر من −100، وهدفاً أكبر من المبلغ المعلّق للطريقة ب.</p>
+      <h3 class="sim-sub" id="ledger-h">سجل الإيصالات الموثّق SHA-256 <span class="num" id="sLedgerCount">0</span></h3>
+      <p>كل خطوة في المحاكاة تصدر إيصالاً، وبصمة كل إيصال تشمل محتواه وبصمة الإيصال السابق، فأي تعديل أو حذف لإيصال قديم يكسر كل ما بعده. تقدر كذلك ترفع ملف إيصالات صدّرته من غرفة العمليات وتفحصه هنا على جهازك.</p>
+      <div class="sim-actions">
+        <button class="btn btn-primary" id="sVerify" type="button">تحقق من السلسلة</button>
+        <button class="btn btn-ghost" id="sTamper" type="button">جرّب التلاعب بإيصال</button>
+        <input class="sr-only" id="sFile" name="sFile" type="file" accept="application/json,.json" autocomplete="off">
+        <label class="btn btn-ghost" for="sFile">افحص ملف إيصالات</label>
+      </div>
+      <p class="sim-status" id="sVerifyOut" role="status" aria-live="polite"></p>
+      <div class="table-wrap"><table class="calc-table" id="sLedger">
+        <thead><tr><th scope="col">#</th><th scope="col">النوع</th><th scope="col">المبلغ</th><th scope="col">السبب</th><th scope="col">SHA-256</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div></div>
     <div class="gate-banner" role="note">
       <p><strong>لا نقبل أي أموال أو اشتراكات الآن.</strong> لا توجد محفظة عامة ولا نسخ صفقات. هذه الصفحة تشرح التصميم فقط.</p>
     </div>
@@ -361,6 +406,7 @@
 </footer>
 
 <script src="calc.js" defer></script>
+<script src="desk-sim.js" defer></script>
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("themeToggle");

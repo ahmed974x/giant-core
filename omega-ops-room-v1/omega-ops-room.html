@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I='; style-src 'sha256-6r4c8+WM305d9ZnS/AzmPnvqQLGqGV0KR8FFgzJg7lI='; font-src data:; img-src data: blob: https://s3-eu-west-1.amazonaws.com; connect-src 'self' https://data-api.binance.vision https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-79sO9Vm6zKadDYg1FledX0qy8WQ12TwkYHYER0qyzQE='; style-src 'sha256-1fuIggeDoZaRrmnGtEA5k1tEb37OWr+J1ShCMhWpku0='; font-src data:; img-src data: blob: https://s3-eu-west-1.amazonaws.com; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -47,6 +47,8 @@
     --on-accent-fill: oklch(100% 0 0);
     --gold-fill: oklch(80% 0.16 82);
     --on-gold-fill: oklch(20% 0.02 265);
+    --danger-fill: oklch(50% 0.19 25);
+    --on-danger-fill: oklch(100% 0 0);
     --tint-accent: oklch(52% 0.14 245 / 0.08);
     --land: oklch(46% 0.025 265 / 0.55);
     --sphere-a: oklch(100% 0 0);
@@ -97,6 +99,8 @@
     --on-accent-fill: oklch(17% 0.012 265);
     --gold-fill: oklch(80% 0.16 82);
     --on-gold-fill: oklch(20% 0.02 265);
+    --danger-fill: oklch(80% 0.12 25);
+    --on-danger-fill: oklch(17% 0.012 265);
     --tint-accent: oklch(78% 0.125 245 / 0.12);
     --land: oklch(86% 0.025 265 / 0.5);
     --sphere-a: oklch(27% 0.03 250);
@@ -106,12 +110,12 @@
     :root {
       --accent: oklch(52% 0.18 245); --gold: oklch(54% 0.135 78); --violet: oklch(55% 0.24 292);
       --success: oklch(52% 0.19 152); --warning: oklch(54% 0.15 62); --danger: oklch(55% 0.23 25);
-      --accent-fill: oklch(52% 0.19 250); --gold-fill: oklch(80% 0.19 82);
+      --accent-fill: oklch(52% 0.19 250); --gold-fill: oklch(80% 0.19 82); --danger-fill: oklch(50% 0.23 25);
     }
     :root[data-theme="dark"] {
       --accent: oklch(78% 0.135 245); --gold: oklch(79% 0.187 78); --violet: oklch(79% 0.13 292);
       --success: oklch(77% 0.19 152); --warning: oklch(79% 0.19 62); --danger: oklch(80% 0.153 25);
-      --accent-fill: oklch(78% 0.135 245); --gold-fill: oklch(80% 0.19 82);
+      --accent-fill: oklch(78% 0.135 245); --gold-fill: oklch(80% 0.19 82); --danger-fill: oklch(80% 0.153 25);
     }
   }
 
@@ -382,6 +386,80 @@
   .data-t tr:last-child td { border-bottom: 0; }
   .data-t .neg { color: var(--danger); }
   .why.bad-text { color: var(--danger); }
+
+  /* ---------- Trading desk (ADR-091) ---------- */
+  .row-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  select { width: 100%; min-height: 40px; padding: var(--s-2) var(--s-3); border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); background: var(--surface-2); color: var(--content-primary); font: inherit; }
+  .pill-inf { display: inline-block; font-family: var(--font-mono); font-size: var(--text-caption); font-weight: 700; color: var(--warning); border: var(--hairline) solid currentColor; border-radius: var(--r-inner); padding: 0 var(--s-1); white-space: nowrap; }
+  .signal-box { margin-top: var(--s-4); padding: var(--s-4); border-radius: var(--r-inner); background: var(--surface-2); }
+  .signal-label { font-family: var(--font-mono); font-size: var(--text-large); font-weight: 800; letter-spacing: 0.02em; }
+  .signal-box.buy .signal-label { color: var(--success); }
+  .signal-box.sell .signal-label { color: var(--danger); }
+  .signal-box.hold .signal-label { color: var(--content-primary); }
+  .signal-box.trap .signal-label { color: var(--warning); }
+  .signal-sub { font-size: var(--text-footnote); color: var(--content-secondary); margin-top: var(--s-1); }
+  .meter { margin-top: var(--s-3); }
+  .meter .track { fill: var(--surface); stroke: var(--hairline-color); }
+  .meter .zero { stroke: var(--content-tertiary); stroke-width: 1; }
+  .meter .knob { fill: var(--accent); }
+  .meter text { fill: var(--content-secondary); font-size: 12px; font-family: var(--font-mono); }
+  .evidence { list-style: none; display: grid; gap: var(--s-2); }
+  .evidence li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-1) var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-inner); background: var(--surface-2); font-size: var(--text-footnote); }
+  .evidence b { font-weight: 700; }
+  .evidence .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+  .evidence .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface); position: relative; overflow: hidden; }
+  .evidence .bar i { position: absolute; top: 0; bottom: 0; left: 50%; display: block; }
+  .evidence .bar i.pos { background: var(--success); }
+  .evidence .bar i.neg { background: var(--danger); }
+  .evidence .why-line { grid-column: 1 / -1; color: var(--content-secondary); }
+  .wl-cards { display: grid; gap: var(--s-2); grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s-2); }
+  @media (max-width: 420px) { .wl-cards { grid-template-columns: minmax(0, 1fr); } }
+  .glass { position: relative; padding: var(--s-3) var(--s-4); border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); background: var(--surface-2); min-width: 0; }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .wallet { background: linear-gradient(160deg, var(--tint-accent), var(--surface) 55%); }
+    .glass { background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06); }
+  }
+  .glass span { display: block; font-size: var(--text-caption); font-weight: 700; color: var(--content-secondary); }
+  .glass b { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; font-size: var(--text-title); margin-top: var(--s-1); }
+  .glass small { display: block; font-size: var(--text-caption); color: var(--content-secondary); margin-top: 2px; }
+  .glass.g-safe b { color: var(--success); }
+  .ratchet { margin-top: var(--s-3); }
+  .ratchet .r-base { fill: var(--accent); }
+  .ratchet .r-safe { fill: var(--success); }
+  .ratchet .r-track { fill: var(--surface-2); }
+  .ratchet text { fill: var(--content-secondary); font-size: 12px; font-family: var(--font-mono); }
+  .kill { display: block; width: 100%; margin-top: var(--s-4); padding: var(--s-4); border: 0; border-radius: var(--r-inner); background: var(--danger-fill); color: var(--on-danger-fill); font: inherit; font-size: var(--text-headline); font-weight: 800; cursor: pointer; text-align: center; touch-action: manipulation; transition: transform var(--dur-base) var(--ease-spring); }
+  .kill small { display: block; font-size: var(--text-caption); font-weight: 600; margin-top: var(--s-1); }
+  .kill .ar { color: inherit; font-weight: 700; }
+  .kill:active { transform: scale(0.98); }
+  .kill:focus-visible { outline: 3px solid var(--danger); outline-offset: 3px; }
+  .liq .l-long { fill: var(--danger); }
+  .liq .l-short { fill: var(--success); }
+  .liq .l-now { stroke: var(--accent); stroke-width: 2; }
+  .liq text, .gauge text { fill: var(--content-secondary); font-size: 11px; font-family: var(--font-mono); }
+  .gauge .g-track { fill: none; stroke: var(--surface-2); stroke-width: 18; }
+  .gauge .g-val { fill: none; stroke-width: 18; stroke-linecap: round; }
+  .gauge .g-val.cold { stroke: var(--success); }
+  .gauge .g-val.mid { stroke: var(--accent); }
+  .gauge .g-val.hot { stroke: var(--danger); }
+  .gauge .g-num { fill: var(--content-primary); font-size: 28px; font-weight: 800; }
+  .data-t td.ok-text { color: var(--success); }
+  .data-t td.bad-text { color: var(--danger); }
+  .data-t .hash { font-size: var(--text-caption); color: var(--content-secondary); }
+  .data-t .btn { min-height: 28px; padding: 0 var(--s-2); font-size: var(--text-caption); }
+  .kv td.ok-text { color: var(--success); }
+  .kv td.bad-text { color: var(--danger); }
+  .card { min-width: 0; }
+  code.num { white-space: normal; overflow-wrap: anywhere; }
+  .row-3 .kv td:last-child, #dkLevels td:last-child, #cbKv td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  #printArea { display: none; }
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block; color: #000; background: #fff; font: 12pt/1.5 system-ui, sans-serif; }
+    #printArea table { border-collapse: collapse; width: 100%; }
+    #printArea td { border-bottom: 1px solid #ccc; padding: 4pt 6pt; vertical-align: top; }
+    #printArea td:last-child { font-family: ui-monospace, monospace; word-break: break-all; }
+  }
 </style>
 </head>
 <body>
@@ -689,6 +767,138 @@
         <span><i class="sw sw-gold"></i>High-water mark · <span class="ar" lang="ar">أعلى قيمة</span></span>
       </div>
       <div class="table-scroll"><table class="data-t" id="psTable"></table></div>
+    </section>
+
+    <!-- ===== Trading desk (ADR-091) ===== -->
+    <div class="section-title" id="desk">
+      <h2>Trading desk<span class="ar" lang="ar">غرفة التداول</span></h2>
+      <p>Paper only. You open each paper trade yourself; no order reaches any exchange · <span class="ar" lang="ar">ورقي فقط، أنت تفتح كل صفقة ولا يصل أي أمر لأي منصة</span></p>
+    </div>
+    <div class="row row-chart">
+      <section class="card" aria-labelledby="dkTitle">
+        <div class="card-head">
+          <div class="card-title" id="dkTitle">Signal cockpit<span class="ar" lang="ar">شاشة القرار</span></div>
+          <div class="tag num" id="dkUpdated">—</div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label for="dkSymbol">Market · <span class="ar" lang="ar">السوق</span></label>
+            <select id="dkSymbol" name="dkSymbol" autocomplete="off"><option value="BTCUSDT">BTC / USDT</option><option value="ETHUSDT">ETH / USDT</option><option value="SOLUSDT">SOL / USDT</option><option value="BNBUSDT">BNB / USDT</option></select></div>
+          <div class="field"><label for="dkMode">Execution mode · <span class="ar" lang="ar">وضع التنفيذ</span></label>
+            <select id="dkMode" name="dkMode" autocomplete="off"><option value="paper">1 · Live-price paper</option><option value="testnet" disabled>2 · Binance Testnet (waiting for approval)</option><option value="live" disabled>3 · Real account (locked, pending approval)</option></select></div>
+        </div>
+        <div class="form-row">
+          <button class="btn primary" id="dkOpen" type="button">Paper-trade this signal · <span class="ar" lang="ar">جرّبها على الورق</span></button>
+          <button class="btn" id="dkClose" type="button">Close paper position · <span class="ar" lang="ar">أغلق الصفقة الورقية</span></button>
+          <button class="btn" id="dkRefresh" type="button">Refresh now · <span class="ar" lang="ar">حدّث</span></button>
+        </div>
+        <div class="signal-box" id="dkSignalBox">
+          <div class="signal-label" id="dkSignal">WAITING</div>
+          <div class="signal-sub" id="dkSignalSub">Loading market data… · <span class="ar" lang="ar">جارٍ تحميل البيانات</span></div>
+          <svg class="chart meter" id="dkMeter" viewBox="0 0 400 44" role="img" aria-label="Combined signal score from -1 (sell) to +1 (buy)"></svg>
+        </div>
+        <h3 class="mini-h">Four pieces of evidence · <span class="ar" lang="ar">الأدلة الأربعة</span></h3>
+        <ul class="evidence" id="dkEvidence"></ul>
+        <h3 class="mini-h">Levels · <span class="ar" lang="ar">المستويات</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+        <table class="kv" id="dkLevels"><tbody></tbody></table>
+        <p class="why" id="dkPosition"></p>
+        <p class="sub">Spot, long-only. Signals are rule-based heuristics on public Binance data with no proven track record; they are not advice. · <span class="ar" lang="ar">إشارات تقديرية وليست نصيحة استثمارية.</span></p>
+      </section>
+
+      <section class="card wallet" aria-labelledby="wlTitle">
+        <div class="card-head">
+          <div class="card-title" id="wlTitle">Wallet &amp; locked base<span class="ar" lang="ar">المحفظة والمبلغ المعلّق</span></div>
+          <div class="tag" id="wlModeTag">PAPER</div>
+        </div>
+        <div class="wl-cards">
+          <div class="glass g-active"><span>Locked base (trading) · <span class="ar" lang="ar">المبلغ المعلّق للتداول</span></span><b class="num" id="wlBaseOut">—</b><small class="num" id="wlActiveOut">—</small></div>
+          <div class="glass g-safe"><span>Protected safe vault · <span class="ar" lang="ar">المحفظة المحمية</span></span><b class="num" id="wlSafe">—</b><small class="num" id="wlSweeps">—</small></div>
+          <div class="glass g-split"><span>Profit-split share · <span class="ar" lang="ar">حصة تقسيم الأرباح</span></span><b class="num" id="wlSplit">—</b><small>simulation · <span class="ar" lang="ar">محاكاة</span></small></div>
+          <div class="glass g-avail"><span>Available · <span class="ar" lang="ar">المتاح</span></span><b class="num" id="wlAvail">—</b><small class="num" id="wlEquity">—</small></div>
+        </div>
+        <svg class="chart ratchet" id="wlBar" viewBox="0 0 400 34" role="img" aria-label="Locked base versus swept profits"></svg>
+        <div class="form-grid">
+          <div class="field"><label for="wlBase">Amount to lock · <span class="ar" lang="ar">المبلغ المراد تعليقه</span></label><input id="wlBase" name="wlBase" type="number" inputmode="decimal" step="any" min="1" autocomplete="off" value="100" /></div>
+          <div class="field"><label for="wlSweepMode">Profit sweep · <span class="ar" lang="ar">طريقة الترحيل</span></label>
+            <select id="wlSweepMode" name="wlSweepMode" autocomplete="off"><option value="every">A · Sweep every profit</option><option value="target">B · Sweep at target</option></select></div>
+          <div class="field"><label for="wlTarget">Target value · <span class="ar" lang="ar">الهدف</span></label><input id="wlTarget" name="wlTarget" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="1000" /></div>
+          <div class="field"><label for="wlSplitPct">Profit-split % · <span class="ar" lang="ar">نسبة تقسيم الأرباح</span></label><input id="wlSplitPct" name="wlSplitPct" type="number" inputmode="decimal" step="any" min="0" max="100" autocomplete="off" value="0" /></div>
+        </div>
+        <div class="form-row">
+          <button class="btn primary" id="wlLock" type="button">Lock base · <span class="ar" lang="ar">علّق وثبّت المبلغ</span></button>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label for="wlAmt">Deposit / withdraw amount · <span class="ar" lang="ar">مبلغ الإيداع أو السحب</span></label><input id="wlAmt" name="wlAmt" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="100" /></div>
+          <div class="field"><label for="wlSimPct">Test trade return % · <span class="ar" lang="ar">عائد صفقة الاختبار</span></label><input id="wlSimPct" name="wlSimPct" type="number" inputmode="decimal" step="any" autocomplete="off" value="35" /></div>
+        </div>
+        <div class="form-row">
+          <button class="btn" id="wlDeposit" type="button">Deposit · <span class="ar" lang="ar">إيداع</span></button>
+          <button class="btn" id="wlWithdraw" type="button">Withdraw from safe vault · <span class="ar" lang="ar">سحب من المحمية</span></button>
+          <button class="btn" id="wlSim" type="button">Simulate a test trade · <span class="ar" lang="ar">جرّب صفقة</span></button>
+        </div>
+        <button class="kill" id="wlKill" type="button">Emergency stop · <span class="ar" lang="ar">إيقاف طارئ وسحب</span><small>Closes the paper position at the live price and moves the base to the safe vault</small></button>
+        <p class="why" id="wlStatus" role="status" aria-live="polite"></p>
+        <p class="sub" id="wlNote">Paper mode: every balance here is a simulation. No money moves. · <span class="ar" lang="ar">وضع ورقي: كل الأرصدة محاكاة ولا تتحرك أموال.</span></p>
+      </section>
+    </div>
+
+    <div class="section-title">
+      <h2>Crowd psychology radar<span class="ar" lang="ar">رادار علم نفس السوق</span></h2>
+      <p>Binance spot and USDⓈ-M futures public data · free, no keys · <span class="pill-inf">[INFERENCE]</span></p>
+    </div>
+    <div class="row row-3">
+      <section class="card" aria-labelledby="whTitle">
+        <div class="card-head"><div class="card-title" id="whTitle">Whales &amp; market makers<span class="ar" lang="ar">الحيتان وصناع السوق</span></div><div class="tag">DEPTH · KLINES</div></div>
+        <table class="kv" id="whKv"><tbody></tbody></table>
+        <h3 class="mini-h">Walls near price · <span class="ar" lang="ar">الحوائط قرب السعر</span></h3>
+        <ul class="log" id="whWalls"></ul>
+        <div class="state" id="whState"><span class="dot"></span> CHECKING</div>
+      </section>
+      <section class="card" aria-labelledby="trTitle">
+        <div class="card-head"><div class="card-title" id="trTitle">Trapped traders &amp; liquidations<span class="ar" lang="ar">المتورطون ومناطق التصفية</span></div><div class="tag">OI · L/S</div></div>
+        <svg class="chart liq" id="trChart" viewBox="0 0 360 260" role="img" aria-label="Estimated liquidation clusters by price"></svg>
+        <table class="kv" id="trKv"><tbody></tbody></table>
+        <div class="state" id="trState"><span class="dot"></span> CHECKING</div>
+      </section>
+      <section class="card" aria-labelledby="foTitle">
+        <div class="card-head"><div class="card-title" id="foTitle">Retail FOMO gauge<span class="ar" lang="ar">مقياس اندفاع الصغار</span></div><div class="tag">FUNDING · RATIO</div></div>
+        <svg class="chart gauge" id="foGauge" viewBox="0 0 240 140" role="img" aria-label="Retail euphoria gauge from fear to euphoria"></svg>
+        <table class="kv" id="foKv"><tbody></tbody></table>
+        <div class="state" id="foState"><span class="dot"></span> CHECKING</div>
+      </section>
+    </div>
+
+    <div class="row row-chart mt-3">
+      <section class="card" aria-labelledby="frTitle">
+        <div class="card-head"><div class="card-title" id="frTitle">10-year regime matcher<span class="ar" lang="ar">ذاكرة السنوات العشر</span></div><div class="tag num" id="frAsOf">—</div></div>
+        <p class="sub">Today's volatility, momentum, volume and drawdown compared with every day of Binance daily history by cosine similarity. <span class="pill-inf">[INFERENCE - 10Y Fractal Model]</span></p>
+        <div class="ps-kpis" id="frKpis"></div>
+        <div class="table-scroll"><table class="data-t" id="frTable"></table></div>
+        <p class="why" id="frNote"></p>
+        <div class="state" id="frState"><span class="dot"></span> CHECKING</div>
+      </section>
+      <section class="card" aria-labelledby="cbTitle">
+        <div class="card-head"><div class="card-title" id="cbTitle">Circuit breaker<span class="ar" lang="ar">القاطع الآلي للطوارئ</span></div><div class="tag" id="cbTag">ARMED</div></div>
+        <p class="sub">Checked on every 5-second tick. Any red line triggers the emergency stop. Rule-based, not a prediction. · <span class="ar" lang="ar">قواعد ثابتة تفحص كل 5 ثوانٍ.</span></p>
+        <div class="form-grid">
+          <div class="field"><label for="cbMove">Max 60 s move % · <span class="ar" lang="ar">أقصى حركة في دقيقة</span></label><input id="cbMove" name="cbMove" type="number" inputmode="decimal" step="any" min="0.1" autocomplete="off" value="2.5" /></div>
+          <div class="field"><label for="cbDepth">Max depth drop % · <span class="ar" lang="ar">أقصى هبوط للسيولة</span></label><input id="cbDepth" name="cbDepth" type="number" inputmode="decimal" step="any" min="5" max="99" autocomplete="off" value="60" /></div>
+          <div class="field"><label for="cbSpoof">Spoof alerts in 5 min · <span class="ar" lang="ar">تنبيهات الحوائط الوهمية</span></label><input id="cbSpoof" name="cbSpoof" type="number" inputmode="numeric" step="1" min="1" autocomplete="off" value="5" /></div>
+          <div class="field"><label for="cbDD">Max daily loss % · <span class="ar" lang="ar">أقصى خسارة يومية</span></label><input id="cbDD" name="cbDD" type="number" inputmode="decimal" step="any" min="1" max="90" autocomplete="off" value="10" /></div>
+        </div>
+        <table class="kv" id="cbKv"><tbody></tbody></table>
+      </section>
+    </div>
+
+    <section class="card mt-3" aria-labelledby="rcTitle" id="receipts">
+      <div class="card-head"><div class="card-title" id="rcTitle">Receipt chain · SHA-256<span class="ar" lang="ar">سلسلة الفواتير الموثقة</span></div><div class="tag num" id="rcCount">0</div></div>
+      <p class="sub">Every deposit, lock, fill, sweep, withdrawal and emergency stop issues a receipt. Each hash covers the receipt and the previous hash, so changing or deleting any old receipt breaks every hash after it. · <span class="ar" lang="ar">كل فاتورة مربوطة ببصمة السابقة.</span></p>
+      <div class="form-row">
+        <button class="btn primary" id="rcVerify" type="button">Verify receipt chain · <span class="ar" lang="ar">تحقق من السلسلة</span></button>
+        <button class="btn" id="rcExport" type="button">Export JSON · <span class="ar" lang="ar">صدّر</span></button>
+        <button class="btn danger" id="rcClear" type="button">Start a new chain · <span class="ar" lang="ar">سلسلة جديدة</span></button>
+      </div>
+      <p class="why" id="rcStatus" role="status" aria-live="polite"></p>
+      <div class="table-scroll"><table class="data-t" id="rcTable"></table></div>
     </section>
   </main>
 
@@ -1975,6 +2185,841 @@ const DEFAULT_ALLOW_HOSTS = [
   }
   for (const id of ["psAmount", "psFee", "psHurdle", "psReturns"]) $(id).addEventListener("input", drawSplit);
   drawSplit();
+})();
+</script>
+<script>
+"use strict";
+// Trading desk (ADR-091): crowd-psychology radar, 10-year regime matcher, signal cockpit,
+// paper wallet with locked base and profit sweep, emergency stop, circuit breaker and a
+// SHA-256 hash-chained receipt ledger. Paper only: nothing here sends an order anywhere.
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const ar = text => { const s = h("span", "ar", text); s.lang = "ar"; return s; };
+  const SVG = "http://www.w3.org/2000/svg";
+  const sv = (tag, attrs, text) => { const n = document.createElementNS(SVG, tag); for (const k in attrs) n.setAttribute(k, String(attrs[k])); if (text !== undefined) n.textContent = text; return n; };
+  const nf = (v, d = 2) => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) : "—";
+  const pct = (v, d = 2) => Number.isFinite(v) ? (v >= 0 ? "+" : "") + nf(v * 100, d) + "%" : "—";
+  const usd = v => nf(v, 2) + " USDT";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+  const sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
+  const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); const i = s.length >> 1; return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2; };
+  const dateFmt = new Intl.DateTimeFormat("en-GB", { year: "numeric", month: "short", day: "2-digit", timeZone: "UTC" });
+  const timeFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" });
+  const store = {
+    get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch { /* storage blocked: memory only */ } }
+  };
+  async function getJson(url, timeoutMs = 8000) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { signal: c.signal, cache: "no-store", credentials: "omit" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+  const SPOT = "https://data-api.binance.vision/api/v3";
+  const FUT = "https://fapi.binance.com";
+
+  function kvRows(id, rows) {
+    $(id).tBodies[0].replaceChildren(...rows.map(([en, arText, value, cls]) => {
+      const tr = h("tr");
+      const a = h("td"); a.append(document.createTextNode(en), ar(arText));
+      const b = h("td", cls || "", value);
+      tr.append(a, b);
+      return tr;
+    }));
+  }
+  function state(id, cls, en, arText) {
+    const n = $(id);
+    n.className = "state " + cls;
+    n.replaceChildren(h("span", "dot " + cls), document.createTextNode(" " + en + " · "), ar(arText));
+  }
+
+  /* ---------------- market state ---------------- */
+  const D = {
+    sym: "BTCUSDT", price: NaN, priceAt: 0, depth: null, k4h: [], k1m: [], fut: {},
+    walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, signal: null
+  };
+
+  async function loadFast() {
+    const [depth, k1m] = await Promise.all([
+      getJson(`${SPOT}/depth?symbol=${D.sym}&limit=1000`),
+      getJson(`${SPOT}/klines?symbol=${D.sym}&interval=1m&limit=5`)
+    ]);
+    const bids = depth.bids.map(([p, q]) => [+p, +q]);
+    const asks = depth.asks.map(([p, q]) => [+p, +q]);
+    if (!bids.length || !asks.length) throw new Error("empty book");
+    D.depth = { bids, asks };
+    D.price = (bids[0][0] + asks[0][0]) / 2;
+    D.priceAt = Date.now();
+    D.k1m = k1m.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }));
+    D.ticks.push({ t: Date.now(), p: D.price });
+    D.ticks = D.ticks.filter(x => Date.now() - x.t < 120000);
+    trackWalls();
+    renderWhale();
+    manage();
+    breaker();
+    $("dkUpdated").textContent = timeFmt.format(new Date()) + " UTC";
+    return true;
+  }
+
+  async function loadSlow() {
+    const s = D.sym;
+    const [k4h, prem, fr, oi, top, glob, taker] = await Promise.all([
+      getJson(`${SPOT}/klines?symbol=${s}&interval=4h&limit=500`),
+      getJson(`${FUT}/fapi/v1/premiumIndex?symbol=${s}`).catch(() => null),
+      getJson(`${FUT}/fapi/v1/fundingRate?symbol=${s}&limit=200`).catch(() => null),
+      getJson(`${FUT}/futures/data/openInterestHist?symbol=${s}&period=1h&limit=72`).catch(() => null),
+      getJson(`${FUT}/futures/data/topLongShortPositionRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
+      getJson(`${FUT}/futures/data/globalLongShortAccountRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
+      getJson(`${FUT}/futures/data/takerlongshortRatio?symbol=${s}&period=1h&limit=48`).catch(() => null)
+    ]);
+    D.k4h = k4h.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
+    D.fut = { prem, fr, oi, top, glob, taker };
+    analyseWhale();
+    renderWhale();
+    analyseCrowd();
+    runQuant();
+    decide();
+    return true;
+  }
+
+  /* ---------------- whales: walls, spoofing, imbalance, sweeps, Wyckoff ---------------- */
+  function trackWalls() {
+    const { bids, asks } = D.depth;
+    const near = side => side.filter(([p]) => Math.abs(p / D.price - 1) <= 0.02);
+    const nb = near(bids), na = near(asks);
+    const sizes = [...nb, ...na].map(([p, q]) => p * q);
+    const med = median(sizes) || 1;
+    const now = Date.now();
+    const seen = new Map();
+    for (const [side, rows] of [["bid", nb], ["ask", na]]) {
+      for (const [p, q] of rows) {
+        const notional = p * q;
+        if (notional >= med * 8 && notional >= 100000) seen.set(side + p, { side, p, notional, first: now });
+      }
+    }
+    for (const [key, w] of D.walls) {
+      if (seen.has(key)) { seen.get(key).first = w.first; continue; }
+      const lived = now - w.first;
+      const touched = w.side === "bid" ? D.price <= w.p * 1.0005 : D.price >= w.p * 0.9995;
+      if (!touched && lived >= 10000 && lived <= 300000) D.spoofs.push({ t: now, side: w.side, p: w.p, notional: w.notional });
+    }
+    D.walls = seen;
+    D.spoofs = D.spoofs.filter(x => now - x.t < 300000);
+    const within1 = side => side.filter(([p]) => Math.abs(p / D.price - 1) <= 0.01).reduce((s, [p, q]) => s + p * q, 0);
+    const bid1 = within1(bids), ask1 = within1(asks);
+    D.book = { bid1, ask1, imb: (bid1 - ask1) / Math.max(1, bid1 + ask1) };
+    D.depthHist.push({ t: now, d: bid1 + ask1 });
+    D.depthHist = D.depthHist.filter(x => now - x.t < 900000);
+  }
+
+  function analyseWhale() {
+    const k = D.k4h;
+    if (k.length < 130) { D.whale = null; return; }
+    const last = k[k.length - 1], prior = k.slice(-21, -1);
+    const hi = Math.max(...prior.map(x => x.h)), lo = Math.min(...prior.map(x => x.l));
+    let sweep = "none";
+    for (const c of k.slice(-3)) {
+      if (c.l < lo && c.c > lo) sweep = "down";
+      if (c.h > hi && c.c < hi) sweep = "up";
+    }
+    const w = k.slice(-120);
+    const rHi = Math.max(...w.map(x => x.h)), rLo = Math.min(...w.map(x => x.l));
+    const pos = (last.c - rLo) / Math.max(1e-9, rHi - rLo);
+    const sma = (n, end) => mean(k.slice(end - n, end).map(x => x.c));
+    const slope = sma(50, k.length) / sma(50, k.length - 10) - 1;
+    const volNow = mean(k.slice(-20).map(x => x.v)), volBefore = mean(k.slice(-80, -20).map(x => x.v));
+    const width = (rHi - rLo) / last.c;
+    let phase, phaseAr, bias;
+    if (Math.abs(slope) < 0.01 && width < 0.25 && pos < 0.4) { phase = "Accumulation"; phaseAr = "تجميع"; bias = 0.5; }
+    else if (Math.abs(slope) < 0.01 && width < 0.25 && pos > 0.6) { phase = "Distribution"; phaseAr = "تصريف"; bias = -0.5; }
+    else if (slope >= 0.01) { phase = "Markup"; phaseAr = "صعود"; bias = 0.3; }
+    else if (slope <= -0.01) { phase = "Markdown"; phaseAr = "هبوط"; bias = -0.3; }
+    else { phase = "Range"; phaseAr = "تذبذب"; bias = 0; }
+    if (sweep === "down") bias += 0.35;
+    if (sweep === "up") bias -= 0.35;
+    D.whale = { sweep, phase, phaseAr, pos, slope, volRatio: volNow / volBefore, bias };
+  }
+
+  function whaleScore() {
+    const imb = D.book ? D.book.imb : 0;
+    const spoofBid = D.spoofs.filter(x => x.side === "bid").length, spoofAsk = D.spoofs.filter(x => x.side === "ask").length;
+    const spoofTilt = clamp((spoofAsk - spoofBid) * 0.1, -0.3, 0.3);
+    return clamp(0.5 * imb * 2 + (D.whale ? D.whale.bias : 0) * 0.6 + spoofTilt, -1, 1);
+  }
+
+  function renderWhale() {
+    if (!D.depth) return;
+    const w = D.whale;
+    kvRows("whKv", [
+      ["Price (spot mid)", "السعر", nf(D.price, D.price < 10 ? 4 : 2)],
+      ["Book imbalance ±1%", "ميزان الطلب والعرض", pct(D.book.imb, 1), D.book.imb > 0.15 ? "ok-text" : D.book.imb < -0.15 ? "bad-text" : ""],
+      ["Bids / asks within 1%", "الطلبات / العروض", nf(D.book.bid1 / 1e6, 2) + "M / " + nf(D.book.ask1 / 1e6, 2) + "M"],
+      ["Vanished walls (5 min)", "حوائط اختفت قبل لمسها", String(D.spoofs.length), D.spoofs.length >= 3 ? "bad-text" : ""],
+      ["Liquidity sweep (4h)", "اصطياد وقف الخسارة", w ? (w.sweep === "down" ? "below lows, reclaimed" : w.sweep === "up" ? "above highs, rejected" : "none") : "—"],
+      ["Wyckoff phase [INFERENCE]", "مرحلة وايكوف", w ? w.phase + " · " + w.phaseAr : "—"]
+    ]);
+    const walls = [...D.walls.values()].sort((a, b) => b.notional - a.notional).slice(0, 6);
+    $("whWalls").replaceChildren(...(walls.length ? walls.map(x => {
+      const li = h("li");
+      li.append(h("time", "num", x.side === "bid" ? "BID" : "ASK"), h("div", "num", nf(x.p, x.p < 10 ? 4 : 2) + " · " + nf(x.notional / 1e3, 0) + "k USDT · " + pct(x.p / D.price - 1, 2)));
+      return li;
+    }) : [(() => { const li = h("li"); li.append(h("time", "num", "—"), h("div", "", "No wall above 8× the median size within 2%")); return li; })()]));
+    state("whState", "online", "LIVE · Binance spot depth", "مباشر");
+  }
+
+  /* ---------------- crowd: funding, OI, long/short, taker, liquidation map, FOMO ---------------- */
+  function analyseCrowd() {
+    const f = D.fut;
+    if (!f.prem || !f.fr || !f.oi || !f.glob || !f.taker) {
+      D.crowd = null;
+      state("trState", "offline", "Futures data unreachable", "تعذر الوصول لبيانات العقود");
+      state("foState", "offline", "Futures data unreachable", "تعذر الوصول لبيانات العقود");
+      return;
+    }
+    const rates = f.fr.map(x => +x.fundingRate);
+    const fNow = +f.prem.lastFundingRate;
+    const fz = (fNow - mean(rates)) / (sd(rates) || 1e-9);
+    const oiv = f.oi.map(x => +x.sumOpenInterestValue);
+    const oiChg24 = oiv[oiv.length - 1] / oiv[Math.max(0, oiv.length - 25)] - 1;
+    const glob = +f.glob[f.glob.length - 1].longShortRatio;
+    const top = f.top ? +f.top[f.top.length - 1].longShortRatio : NaN;
+    const tk = f.taker.slice(-6).map(x => +x.buySellRatio);
+    const taker = mean(tk);
+    const k = D.k4h;
+    const ret7 = k.length > 42 ? k[k.length - 1].c / k[k.length - 43].c - 1 : 0;
+    const fomo = clamp(50 + 12 * fz + 25 * (glob - 1) + 40 * (taker - 1) + 150 * ret7, 0, 100);
+    const pChg24 = k.length > 6 ? k[k.length - 1].c / k[k.length - 7].c - 1 : 0;
+    let trapped = "None clear", trappedAr = "لا يوجد بوضوح", trapBias = 0;
+    if (oiChg24 > 0.03 && pChg24 < -0.02) { trapped = "Late longs under water"; trappedAr = "مشترون متأخرون خاسرون"; trapBias = -0.4; }
+    if (oiChg24 > 0.03 && pChg24 > 0.02) { trapped = "Late shorts under water"; trappedAr = "بائعون متأخرون خاسرون"; trapBias = 0.4; }
+    D.crowd = { fNow, fz, oiChg24, glob, top, taker, fomo, ret7, trapped, trappedAr, trapBias, liq: liqMap(oiv) };
+    renderCrowd();
+  }
+
+  // Liquidation estimate: new open interest from each hourly step is spread across a fixed
+  // leverage mix; each slice liquidates near entry × (1 ∓ 1/lev + mm). Crossed levels are dropped.
+  function liqMap(oiv) {
+    const mix = [[10, 0.35], [25, 0.3], [50, 0.2], [100, 0.15]];
+    const mm = 0.004, bucket = 0.005;
+    const closes = (D.fut.oi || []).map(x => +x.sumOpenInterestValue / Math.max(1e-9, +x.sumOpenInterest));
+    const longR = Math.min(0.8, Math.max(0.2, D.fut.glob ? (+D.fut.glob[D.fut.glob.length - 1].longAccount) : 0.5));
+    const map = new Map();
+    for (let i = 1; i < oiv.length; i++) {
+      const added = oiv[i] - oiv[i - 1];
+      if (added <= 0) continue;
+      const entry = closes[i];
+      for (const [lev, wgt] of mix) {
+        for (const [side, share] of [["long", longR], ["short", 1 - longR]]) {
+          const lp = side === "long" ? entry * (1 - 1 / lev + mm) : entry * (1 + 1 / lev - mm);
+          if (side === "long" && D.price <= lp) continue;
+          if (side === "short" && D.price >= lp) continue;
+          const key = Math.round(Math.log(lp / D.price) / bucket);
+          const cur = map.get(key) || { long: 0, short: 0 };
+          cur[side] += added * wgt * share;
+          map.set(key, cur);
+        }
+      }
+    }
+    return [...map.entries()].map(([k, v]) => ({ p: D.price * Math.exp(k * bucket), long: v.long, short: v.short })).sort((a, b) => b.p - a.p);
+  }
+
+  function crowdScore() {
+    const c = D.crowd;
+    if (!c) return 0;
+    return clamp(-(c.fomo - 50) / 40 + c.trapBias, -1, 1);
+  }
+
+  function renderCrowd() {
+    const c = D.crowd;
+    const svg = $("trChart");
+    const rows = c.liq.filter(x => Math.abs(x.p / D.price - 1) <= 0.12);
+    const W = 360, H = 260, mid = 180;
+    const maxV = Math.max(1, ...rows.map(x => Math.max(x.long, x.short)));
+    const y = p => H / 2 - (Math.log(p / D.price) / 0.12) * (H / 2 - 12);
+    const kids = [sv("line", { x1: 0, x2: W, y1: H / 2, y2: H / 2, class: "l-now" })];
+    for (const r of rows) {
+      const yy = y(r.p);
+      if (r.long > 0) kids.push(sv("rect", { x: mid - (r.long / maxV) * (mid - 40), y: yy - 2, width: (r.long / maxV) * (mid - 40), height: 4, class: "l-long" }));
+      if (r.short > 0) kids.push(sv("rect", { x: mid, y: yy - 2, width: (r.short / maxV) * (mid - 40), height: 4, class: "l-short" }));
+    }
+    kids.push(sv("text", { x: 4, y: 14 }, "+12%"), sv("text", { x: 4, y: H - 4 }, "−12%"), sv("text", { x: 4, y: H / 2 - 4 }, nf(D.price, 0)),
+      sv("text", { x: 44, y: H - 4 }, "longs liq"), sv("text", { x: W - 64, y: 14 }, "shorts liq"));
+    svg.replaceChildren(...kids);
+    const big = [...rows].sort((a, b) => (b.long + b.short) - (a.long + a.short))[0];
+    kvRows("trKv", [
+      ["Open interest, 24 h", "العقود المفتوحة", pct(c.oiChg24, 1)],
+      ["Trapped side [INFERENCE]", "الطرف المتورط", c.trapped + " · " + c.trappedAr, c.trapBias < 0 ? "bad-text" : c.trapBias > 0 ? "ok-text" : ""],
+      ["Top traders long/short", "كبار المتداولين", nf(c.top, 2)],
+      ["Largest liquidation pocket", "أكبر منطقة تصفية", big ? nf(big.p, 0) + " (" + pct(big.p / D.price - 1, 1) + ")" : "—"]
+    ]);
+    state("trState", "checking", "ESTIMATE · leverage mix assumed", "تقدير بافتراض الرافعة");
+    const g = $("foGauge");
+    const a0 = Math.PI, a1 = Math.PI * (1 - c.fomo / 100);
+    const arc = (from, to) => `M ${120 + 90 * Math.cos(from)} ${120 - 90 * Math.sin(from)} A 90 90 0 0 1 ${120 + 90 * Math.cos(to)} ${120 - 90 * Math.sin(to)}`;
+    g.replaceChildren(
+      sv("path", { d: arc(Math.PI, 0.0001), class: "g-track" }),
+      sv("path", { d: arc(a0, Math.min(a0 - 0.0001, a1)), class: "g-val " + (c.fomo < 35 ? "cold" : c.fomo > 65 ? "hot" : "mid") }),
+      sv("text", { x: 120, y: 112, "text-anchor": "middle", class: "g-num" }, nf(c.fomo, 0)),
+      sv("text", { x: 22, y: 136 }, "fear"), sv("text", { x: 180, y: 136 }, "euphoria"));
+    const contrarian = c.fomo > 70 ? ["Crowd euphoric: contrarian caution", "اندفاع زائد: حذر عكسي", "bad-text"]
+      : c.fomo < 30 ? ["Crowd fearful: contrarian opportunity", "خوف زائد: فرصة عكسية", "ok-text"] : ["Neutral crowd", "مزاج محايد", ""];
+    kvRows("foKv", [
+      ["Funding now / z-score", "التمويل الحالي", pct(c.fNow, 4) + " · z " + nf(c.fz, 2)],
+      ["Accounts long/short", "نسبة الحسابات", nf(c.glob, 2)],
+      ["Taker buy/sell (6 h)", "الشراء العدواني", nf(c.taker, 2)],
+      ["Contrarian read [INFERENCE]", "القراءة العكسية", contrarian[0] + " · " + contrarian[1], contrarian[2]]
+    ]);
+    state("foState", "online", "LIVE · Binance USDⓈ-M public data", "مباشر");
+  }
+
+  /* ---------------- 10-year regime matcher ---------------- */
+  const EVENTS = [
+    ["2017-12-17", "2017 cycle top", "قمة دورة 2017"], ["2018-12-15", "2018 bear bottom", "قاع 2018"],
+    ["2020-03-12", "COVID crash", "انهيار كورونا"], ["2021-04-14", "Coinbase listing top", "قمة إدراج كوينبيس"],
+    ["2021-05-19", "May 2021 crash", "انهيار مايو 2021"], ["2021-11-10", "2021 cycle top", "قمة دورة 2021"],
+    ["2022-05-09", "Terra/LUNA collapse", "انهيار لونا"], ["2022-06-13", "Celsius freeze", "تجميد سيلسيوس"],
+    ["2022-11-08", "FTX collapse", "انهيار FTX"], ["2023-03-10", "SVB failure", "إفلاس SVB"],
+    ["2024-01-10", "US spot ETF approval", "اعتماد صناديق ETF"], ["2024-04-20", "Fourth halving", "التنصيف الرابع"],
+    ["2024-11-06", "US election result", "نتيجة الانتخابات الأمريكية"]
+  ].map(([d, en, arText]) => ({ t: Date.parse(d + "T00:00:00Z"), en, ar: arText }));
+
+  async function loadHistory(sym) {
+    const key = "omega-hist-" + sym;
+    const cached = store.get(key, null);
+    if (cached && Date.now() - cached.at < 12 * 3600e3 && Array.isArray(cached.rows) && cached.rows.length > 400) return cached.rows;
+    let start = Date.parse("2017-08-17T00:00:00Z");
+    const rows = [];
+    for (let page = 0; page < 6; page++) {
+      const k = await getJson(`${SPOT}/klines?symbol=${sym}&interval=1d&limit=1000&startTime=${start}`, 15000);
+      if (!k.length) break;
+      for (const x of k) rows.push([x[0], +x[2], +x[3], +x[4], +x[5]]);
+      start = k[k.length - 1][0] + 86400e3;
+      if (k.length < 1000) break;
+    }
+    store.set(key, { at: Date.now(), rows });
+    return rows;
+  }
+
+  function features(rows) {
+    const c = rows.map(r => r[3]), v = rows.map(r => r[4]);
+    const out = [];
+    let gain = 0, loss = 0, ema12 = c[0], ema26 = c[0], sig = 0;
+    for (let i = 0; i < c.length; i++) {
+      if (i > 0) {
+        const ch = c[i] - c[i - 1];
+        gain = (gain * 13 + Math.max(0, ch)) / 14;
+        loss = (loss * 13 + Math.max(0, -ch)) / 14;
+        ema12 += (c[i] - ema12) * (2 / 13);
+        ema26 += (c[i] - ema26) * (2 / 27);
+      }
+      const macd = ema12 - ema26;
+      sig += (macd - sig) * (2 / 10);
+      if (i < 365) { out.push(null); continue; }
+      const lr = [];
+      for (let j = i - 29; j <= i; j++) lr.push(Math.log(c[j] / c[j - 1]));
+      const hi365 = Math.max(...c.slice(i - 364, i + 1));
+      out.push([
+        sd(lr) * Math.sqrt(365),
+        c[i] / c[i - 30] - 1,
+        c[i] / c[i - 90] - 1,
+        100 - 100 / (1 + gain / Math.max(1e-12, loss)),
+        (macd - sig) / c[i],
+        mean(v.slice(i - 29, i + 1)) / Math.max(1e-9, mean(v.slice(i - 179, i + 1))),
+        c[i] / hi365 - 1
+      ]);
+    }
+    return out;
+  }
+
+  async function runFractal() {
+    state("frState", "checking", "Loading daily history…", "جارٍ تحميل التاريخ اليومي…");
+    const rows = await loadHistory(D.sym);
+    const F = features(rows);
+    const idx = F.map((f, i) => f ? i : -1).filter(i => i >= 0);
+    const dims = 7;
+    const mu = [], sg = [];
+    for (let d = 0; d < dims; d++) { const col = idx.map(i => F[i][d]); mu.push(mean(col)); sg.push(sd(col) || 1); }
+    const z = i => F[i].map((x, d) => (x - mu[d]) / sg[d]);
+    const today = idx[idx.length - 1];
+    const zt = z(today);
+    const nt = Math.hypot(...zt);
+    const cands = [];
+    for (const i of idx) {
+      if (i > rows.length - 1 - 90 || today - i < 60) continue;
+      const zi = z(i);
+      const sim = zi.reduce((s, x, d) => s + x * zt[d], 0) / (Math.hypot(...zi) * nt || 1);
+      cands.push({ i, sim });
+    }
+    cands.sort((a, b) => b.sim - a.sim);
+    const picks = [];
+    for (const c of cands) {
+      if (picks.every(p => Math.abs(p.i - c.i) >= 30)) picks.push(c);
+      if (picks.length === 10) break;
+    }
+    const close = rows.map(r => r[3]);
+    const res = picks.map(p => {
+      const t = rows[p.i][0];
+      const ev = EVENTS.filter(e => Math.abs(e.t - t) <= 45 * 86400e3).sort((a, b) => Math.abs(a.t - t) - Math.abs(b.t - t))[0];
+      return { t, sim: p.sim, f30: close[p.i + 30] / close[p.i] - 1, f90: close[p.i + 90] / close[p.i] - 1, ev };
+    });
+    const wsum = res.reduce((s, r) => s + Math.max(0, r.sim), 0) || 1;
+    const w30 = res.reduce((s, r) => s + Math.max(0, r.sim) * r.f30, 0) / wsum;
+    const w90 = res.reduce((s, r) => s + Math.max(0, r.sim) * r.f90, 0) / wsum;
+    const up30 = res.filter(r => r.f30 > 0).length / Math.max(1, res.length);
+    D.fractal = { res, w30, w90, up30, first: rows[0][0], last: rows[rows.length - 1][0] };
+    renderFractal();
+    decide();
+    return true;
+  }
+
+  function renderFractal() {
+    const f = D.fractal;
+    $("frAsOf").textContent = dateFmt.format(f.first) + " → " + dateFmt.format(f.last);
+    const top = f.res[0];
+    const kpi = (en, arText, v) => { const d = h("div"); const s = h("span"); s.append(document.createTextNode(en + " · "), ar(arText)); d.append(s, h("b", "", v)); return d; };
+    $("frKpis").replaceChildren(
+      kpi("Closest match", "أقرب تطابق", top ? dateFmt.format(top.t) : "—"),
+      kpi("Similarity", "نسبة التشابه", top ? nf(top.sim * 100, 1) + "%" : "—"),
+      kpi("Weighted next 30 d", "متوسط 30 يوماً", pct(f.w30, 1)),
+      kpi("Up after 30 d", "صعد بعد 30 يوماً", nf(f.up30 * 100, 0) + "%"));
+    const head = h("tr");
+    for (const t of ["Date", "Match", "Next 30 d", "Next 90 d", "Nearby event"]) head.append(h("th", "", t));
+    const body = f.res.map(r => {
+      const tr = h("tr");
+      tr.append(h("td", "", dateFmt.format(r.t)), h("td", "", nf(r.sim * 100, 1) + "%"),
+        h("td", r.f30 >= 0 ? "ok-text" : "bad-text", pct(r.f30, 1)), h("td", r.f90 >= 0 ? "ok-text" : "bad-text", pct(r.f90, 1)));
+      const e = h("td");
+      if (r.ev) { e.append(document.createTextNode(r.ev.en + " "), ar(r.ev.ar)); } else e.textContent = "—";
+      tr.append(e);
+      return tr;
+    });
+    const thead = h("thead"); thead.append(head);
+    const tbody = h("tbody"); tbody.append(...body);
+    $("frTable").replaceChildren(thead, tbody);
+    $("frNote").replaceChildren(document.createTextNode("Binance daily data starts " + dateFmt.format(f.first) + ", so 2016 is not covered. Past matches show what happened then; they do not promise the same now. · "),
+      ar("بيانات باينانس تبدأ من أغسطس 2017، فسنة 2016 غير مشمولة. التشابه لا يضمن تكرار النتيجة."));
+    state("frState", "online", "MATCHED · " + f.res.length + " analogues", "تمت المطابقة");
+  }
+  function fractalScore() { return D.fractal ? clamp(D.fractal.w30 / 0.15, -1, 1) * 0.6 + (D.fractal.up30 - 0.5) * 0.8 : 0; }
+
+  /* ---------------- quant levels: ATR, bootstrap Monte Carlo, half-Kelly ---------------- */
+  function runQuant() {
+    const k = D.k4h;
+    if (k.length < 60) { D.quant = null; return; }
+    const tr = k.slice(1).map((c, i) => Math.max(c.h - c.l, Math.abs(c.h - k[i].c), Math.abs(c.l - k[i].c)));
+    const atr = mean(tr.slice(-14));
+    const entry = Number.isFinite(D.price) ? D.price : k[k.length - 1].c;
+    const sl = entry - 1.5 * atr, r = entry - sl;
+    const tp1 = entry + 1.5 * r, tp2 = entry + 3 * r;
+    const rets = k.slice(1).map((c, i) => Math.log(c.c / k[i].c)).slice(-300);
+    let seed = 42;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    let hit = 0, stop = 0;
+    for (let p = 0; p < 2000; p++) {
+      let px = entry;
+      for (let b = 0; b < 42; b++) {
+        px *= Math.exp(rets[Math.floor(rnd() * rets.length)]);
+        if (px <= sl) { stop++; break; }
+        if (px >= tp1) { hit++; break; }
+      }
+    }
+    const pWin = hit / Math.max(1, hit + stop);
+    const b = 1.5;
+    const kelly = clamp((pWin * b - (1 - pWin)) / b / 2, 0, 0.25);
+    D.quant = { atr, entry, sl, tp1, tp2, pWin, kelly, paths: 2000 };
+  }
+  function quantScore() { return D.quant ? clamp((D.quant.pWin - 0.4) / 0.2, -1, 1) : 0; }
+
+  /* ---------------- decision ---------------- */
+  function decide() {
+    if (!D.depth) return;
+    const parts = [
+      { en: "Whales & order book", ar: "الحيتان والسجل", w: 0.3, s: whaleScore(), why: D.whale ? `Book ${pct(D.book.imb, 1)} · ${D.whale.phase} · sweep ${D.whale.sweep}` : "Order book only" },
+      { en: "Crowd (contrarian)", ar: "المزاج العكسي", w: 0.25, s: crowdScore(), why: D.crowd ? `FOMO ${nf(D.crowd.fomo, 0)}/100 · ${D.crowd.trapped}` : "Futures data unavailable" },
+      { en: "10-year analogues", ar: "تشابه السنوات", w: 0.2, s: fractalScore(), why: D.fractal ? `Weighted next 30 d ${pct(D.fractal.w30, 1)} · up ${nf(D.fractal.up30 * 100, 0)}%` : "History still loading…" },
+      { en: "Quant odds", ar: "الاحتمال الكمي", w: 0.25, s: quantScore(), why: D.quant ? `P(TP1 before stop) ${nf(D.quant.pWin * 100, 0)}% over ${D.quant.paths} paths` : "Waiting for 4h candles…" }
+    ];
+    const score = parts.reduce((s, p) => s + p.w * p.s, 0);
+    const recentSpoofs = D.spoofs.length;
+    const sweepAgainst = D.whale && ((score > 0 && D.whale.sweep === "up") || (score < 0 && D.whale.sweep === "down"));
+    const trap = recentSpoofs >= 3 || (sweepAgainst && D.crowd && Math.abs(D.crowd.fz) > 2);
+    let sig, cls, ar1;
+    if (trap) { sig = "WHALE TRAP WARNING"; cls = "trap"; ar1 = "تحذير: فخ حيتان محتمل"; }
+    else if (score >= 0.45) { sig = "STRONG BUY"; cls = "buy"; ar1 = "شراء قوي"; }
+    else if (score >= 0.15) { sig = "BUY"; cls = "buy"; ar1 = "شراء"; }
+    else if (score <= -0.45) { sig = "STRONG SELL"; cls = "sell"; ar1 = "بيع قوي"; }
+    else if (score <= -0.15) { sig = "SELL"; cls = "sell"; ar1 = "بيع"; }
+    else { sig = "HOLD"; cls = "hold"; ar1 = "انتظار"; }
+    D.signal = { sig, cls, score, parts, trap };
+    $("dkSignalBox").className = "signal-box " + cls;
+    $("dkSignal").textContent = sig;
+    $("dkSignalSub").replaceChildren(document.createTextNode(`Score ${nf(score, 2)} on −1…+1 · `), ar(ar1), document.createTextNode(" "), h("span", "pill-inf", "[INFERENCE]"));
+    const x = 20 + (score + 1) / 2 * 360;
+    $("dkMeter").replaceChildren(
+      sv("rect", { x: 20, y: 14, width: 360, height: 10, rx: 5, class: "track" }),
+      sv("line", { x1: 200, x2: 200, y1: 10, y2: 28, class: "zero" }),
+      sv("circle", { cx: x, cy: 19, r: 8, class: "knob" }),
+      sv("text", { x: 20, y: 42 }, "−1 sell"), sv("text", { x: 186, y: 42 }, "0"), sv("text", { x: 340, y: 42 }, "+1 buy"));
+    $("dkEvidence").replaceChildren(...parts.map(p => {
+      const li = h("li");
+      const t = h("b"); t.append(document.createTextNode(p.en + " · "), ar(p.ar));
+      const bar = h("span", "bar"); const i = h("i", p.s >= 0 ? "pos" : "neg");
+      i.style.width = Math.abs(p.s) * 50 + "%";
+      if (p.s < 0) i.style.left = (50 - Math.abs(p.s) * 50) + "%";
+      bar.append(i);
+      li.append(t, h("span", "num", nf(p.s, 2) + " × " + nf(p.w, 2)), bar, h("span", "why-line", p.why));
+      return li;
+    }));
+    const q = D.quant;
+    if (q) {
+      const d = q.entry < 10 ? 4 : 2;
+      kvRows("dkLevels", [
+        ["Entry (live mid)", "الدخول", nf(q.entry, d)],
+        ["Stop loss · 1.5 × ATR(4h)", "وقف الخسارة", nf(q.sl, d) + " (" + pct(q.sl / q.entry - 1, 1) + ")", "bad-text"],
+        ["TP1 · 1.5 R, take half", "الهدف الأول", nf(q.tp1, d) + " (" + pct(q.tp1 / q.entry - 1, 1) + ")", "ok-text"],
+        ["TP2 · 3 R", "الهدف الثاني", nf(q.tp2, d) + " (" + pct(q.tp2 / q.entry - 1, 1) + ")", "ok-text"],
+        ["Trailing stop after TP1", "الوقف المتحرك", "peak − 2 × ATR = " + nf(q.atr * 2, d)],
+        ["Half-Kelly size (cap 25%)", "حجم الصفقة", nf(q.kelly * 100, 1) + "% of locked base"]
+      ]);
+    }
+    renderPosition();
+  }
+
+  /* ---------------- receipts: SHA-256 hash chain ---------------- */
+  const RKEY = "omega-receipts-v1";
+  let receipts = store.get(RKEY, []);
+  if (!Array.isArray(receipts)) receipts = [];
+  const GENESIS = "0".repeat(64);
+  const canon = v => {
+    if (typeof v === "number") return Number.isFinite(v) ? Number(v.toFixed(8)) : null;
+    if (Array.isArray(v)) return v.map(canon);
+    if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v).sort()) if (k !== "hash") o[k] = canon(v[k]); return o; }
+    return v;
+  };
+  const sha256 = async text => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))].map(b => b.toString(16).padStart(2, "0")).join("");
+  let chainTail = Promise.resolve();
+  function issue(type, amount, before, after, reason) {
+    chainTail = chainTail.then(async () => {
+      const prev = receipts.length ? receipts[receipts.length - 1].hash : GENESIS;
+      const n = receipts.length + 1;
+      const r = {
+        invoice: "OMG-" + new Date().toISOString().slice(0, 10).replaceAll("-", "") + "-" + String(n).padStart(5, "0"),
+        seq: n, ts: new Date().toISOString(), mode: "paper", symbol: D.sym, type, amount,
+        before, after, reason, prev_hash: prev
+      };
+      r.hash = await sha256(JSON.stringify(canon(r)));
+      receipts.push(r);
+      store.set(RKEY, receipts);
+      renderReceipts();
+    }).catch(() => { $("rcStatus").textContent = "Receipt could not be hashed: this browser blocks WebCrypto here. Open the page from http://127.0.0.1 or file://."; });
+    return chainTail;
+  }
+  async function verifyChain(list) {
+    let prev = GENESIS;
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      if (r.prev_hash !== prev) return { ok: false, at: i, why: "prev_hash does not match the receipt before it" };
+      const hsh = await sha256(JSON.stringify(canon(r)));
+      if (hsh !== r.hash) return { ok: false, at: i, why: "content was changed after it was issued" };
+      prev = r.hash;
+    }
+    return { ok: true, n: list.length, tip: prev };
+  }
+  function renderReceipts() {
+    $("rcCount").textContent = String(receipts.length);
+    const head = h("tr");
+    for (const t of ["#", "Time (UTC)", "Type", "Amount", "Before → after", "Reason", "Hash", ""]) head.append(h("th", "", t));
+    const rows = receipts.slice(-30).reverse().map(r => {
+      const tr = h("tr");
+      const p = h("button", "btn", "Print");
+      p.type = "button";
+      p.setAttribute("aria-label", "Print receipt " + r.invoice);
+      p.addEventListener("click", () => printReceipt(r));
+      const act = h("td"); act.append(p);
+      tr.append(h("td", "", String(r.seq)), h("td", "", r.ts.slice(0, 19).replace("T", " ")), h("td", "", r.type),
+        h("td", "", nf(r.amount, 2)), h("td", "", nf(r.before.total, 2) + " → " + nf(r.after.total, 2)),
+        h("td", "", r.reason), h("td", "hash", r.hash.slice(0, 12) + "…"), act);
+      return tr;
+    });
+    const thead = h("thead"); thead.append(head);
+    const tbody = h("tbody"); tbody.append(...rows);
+    $("rcTable").replaceChildren(thead, tbody);
+  }
+  function receiptTable(r) {
+    const t = h("table");
+    const rows = [["Invoice", r.invoice], ["Issued (ISO 8601)", r.ts], ["Mode", "paper simulation, no money moved"], ["Type", r.type], ["Market", r.symbol],
+      ["Amount", nf(r.amount, 8) + " USDT"], ["Before", JSON.stringify(canon(r.before))], ["After", JSON.stringify(canon(r.after))],
+      ["Reason", r.reason], ["prev_hash", r.prev_hash], ["hash", r.hash]];
+    for (const [k, v] of rows) { const tr = h("tr"); tr.append(h("td", "", k), h("td", "", v)); t.append(tr); }
+    return t;
+  }
+  function printReceipt(r) {
+    let area = $("printArea");
+    if (!area) { area = h("div"); area.id = "printArea"; document.body.append(area); }
+    area.replaceChildren(h("h1", "", "OMEGA receipt " + r.invoice), receiptTable(r),
+      h("p", "", "Check: SHA-256 of the canonical JSON (keys sorted, numbers to 8 decimals, without \"hash\") equals the hash above."));
+    window.print();
+  }
+  function download(name, type, text) {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = h("a"); a.href = url; a.download = name; a.rel = "noopener noreferrer";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  /* ---------------- paper wallet: locked base, sweep, kill switch ---------------- */
+  const WKEY = "omega-desk-wallet-paper";
+  const W = Object.assign({ cash: 1000, base: 0, active: 0, safe: 0, split: 0, sweeps: 0, swept: 0, sweepMode: "every", target: 1000, splitPct: 0, pos: null, dayKey: "", dayStart: 0, halted: false }, store.get(WKEY, {}));
+  const save = () => store.set(WKEY, W);
+  const posValue = () => W.pos && Number.isFinite(D.price) ? W.pos.qty * D.price : 0;
+  const tradingValue = () => W.active + posValue();
+  const snap = () => ({ cash: W.cash, locked_base: W.base, trading: tradingValue(), safe_vault: W.safe, split: W.split, total: W.cash + tradingValue() + W.safe + W.split });
+  const say = (en, arText) => $("wlStatus").replaceChildren(document.createTextNode(en + " · "), ar(arText));
+  const FEE = 0.001;
+
+  function renderWallet() {
+    $("wlBaseOut").textContent = usd(W.base);
+    $("wlActiveOut").textContent = "trading value " + usd(tradingValue());
+    $("wlSafe").textContent = usd(W.safe);
+    $("wlSweeps").textContent = W.sweeps + " sweeps · " + usd(W.swept) + " total";
+    $("wlSplit").textContent = usd(W.split);
+    $("wlAvail").textContent = usd(W.cash);
+    $("wlEquity").textContent = "equity " + usd(snap().total);
+    $("wlModeTag").textContent = W.halted ? "STOPPED" : "PAPER";
+    const total = Math.max(1, W.base + W.safe);
+    const bw = 360 * W.base / total;
+    $("wlBar").replaceChildren(
+      sv("rect", { x: 20, y: 4, width: 360, height: 14, rx: 7, class: "r-track" }),
+      sv("rect", { x: 20, y: 4, width: Math.max(0, bw), height: 14, rx: 7, class: "r-base" }),
+      sv("rect", { x: 20 + bw, y: 4, width: Math.max(0, 360 - bw), height: 14, rx: 7, class: "r-safe" }),
+      sv("text", { x: 20, y: 32 }, "base " + nf(W.base, 0)), sv("text", { x: 300, y: 32 }, "safe " + nf(W.safe, 0)));
+  }
+
+  async function sweepCheck(reason) {
+    if (W.pos) return;
+    const over = W.active - W.base;
+    const due = W.sweepMode === "every" ? over > 0.01 : W.active >= W.target && over > 0.01;
+    if (!due) return;
+    const before = snap();
+    const share = over * clamp(W.splitPct, 0, 100) / 100;
+    W.active -= over;
+    W.split += share;
+    W.safe += over - share;
+    W.sweeps++;
+    W.swept += over;
+    save();
+    await issue("SWEEP", over, before, snap(), reason + (share ? `; ${nf(W.splitPct, 0)}% split share ${nf(share, 2)}` : ""));
+    say(`Swept ${usd(over)} above the locked base to the safe vault`, `تم ترحيل ${nf(over, 2)} فوق المبلغ المعلّق إلى المحفظة المحمية`);
+  }
+
+  async function lockBase() {
+    const amt = +$("wlBase").value;
+    W.sweepMode = $("wlSweepMode").value === "target" ? "target" : "every";
+    W.target = Math.max(0, +$("wlTarget").value || 0);
+    W.splitPct = clamp(+$("wlSplitPct").value || 0, 0, 100);
+    if (W.pos) { say("Close the paper position before changing the base", "أغلق الصفقة الورقية أولاً"); return; }
+    if (!(amt > 0)) { say("Enter an amount above zero", "أدخل مبلغاً أكبر من صفر"); return; }
+    const pool = W.cash + W.active;
+    if (amt > pool) { say(`Only ${usd(pool)} is available. Deposit first`, "الرصيد غير كافٍ، أودع أولاً"); return; }
+    if (W.sweepMode === "target" && W.target <= amt) { say("Target must be above the locked base", "الهدف لازم يكون أكبر من المبلغ المعلّق"); return; }
+    const before = snap();
+    W.cash = pool - amt;
+    W.active = amt;
+    W.base = amt;
+    W.halted = false;
+    save();
+    await issue("LOCK", amt, before, snap(), `Lock base ${nf(amt, 2)}; sweep ${W.sweepMode === "every" ? "every profit" : "at " + nf(W.target, 2)}`);
+    say(`Locked ${usd(amt)}. Sweep: ${W.sweepMode === "every" ? "every profit above the base" : "when trading value reaches " + usd(W.target)}`, "تم تعليق المبلغ وتثبيته");
+    renderWallet();
+  }
+
+  async function deposit() {
+    const amt = +$("wlAmt").value;
+    if (!(amt > 0)) { say("Enter an amount above zero", "أدخل مبلغاً أكبر من صفر"); return; }
+    const before = snap();
+    W.cash += amt; save();
+    await issue("DEPOSIT", amt, before, snap(), "Paper deposit");
+    say(`Added ${usd(amt)} of paper money`, "تم الإيداع الورقي");
+    renderWallet();
+  }
+
+  async function withdraw() {
+    const amt = +$("wlAmt").value;
+    if (!(amt > 0)) { say("Enter an amount above zero", "أدخل مبلغاً أكبر من صفر"); return; }
+    if (amt > W.safe) { say(`The safe vault holds ${usd(W.safe)}`, "المبلغ أكبر من رصيد المحمية"); return; }
+    const before = snap();
+    W.safe -= amt; save();
+    await issue("WITHDRAW", amt, before, snap(), "Paper withdrawal from the safe vault");
+    say(`Withdrew ${usd(amt)} from the safe vault`, "تم السحب من المحمية");
+    renderWallet();
+  }
+
+  async function simTrade() {
+    const r = (+$("wlSimPct").value || 0) / 100;
+    if (!(W.base > 0)) { say("Lock a base first", "علّق مبلغاً أولاً"); return; }
+    if (W.pos) { say("A paper position is open; close it first", "في صفقة ورقية مفتوحة"); return; }
+    const before = snap();
+    const pnl = W.active * r - W.active * FEE * 2;
+    W.active = Math.max(0, W.active + pnl); save();
+    await issue("SIM_TRADE", pnl, before, snap(), `Test trade ${pct(r, 1)} on the trading balance, fees 0.1% each side`);
+    await sweepCheck("Sweep after test trade");
+    renderWallet();
+  }
+
+  async function openPaper() {
+    const s = D.signal, q = D.quant;
+    if (W.halted) { say("Emergency stop is active. Lock a base again to resume", "الإيقاف الطارئ مفعّل"); return; }
+    if (!s || !q) { say("Signal still loading…", "الإشارة قيد التحميل…"); return; }
+    if (W.pos) { say("A paper position is already open", "في صفقة مفتوحة"); return; }
+    if (s.cls !== "buy") { say(`The signal is ${s.sig}. Spot paper trades open on BUY only`, "الإشارة ليست شراء"); return; }
+    if (!(W.active > 0)) { say("Lock a base first", "علّق مبلغاً أولاً"); return; }
+    if (!(q.kelly > 0)) { say("Half-Kelly size is zero for these odds", "حجم كيلي صفر"); return; }
+    const before = snap();
+    const notional = W.active * q.kelly;
+    const px = D.depth.asks[0][0];
+    const qty = notional * (1 - FEE) / px;
+    W.active -= notional;
+    W.pos = { qty, entry: px, sl: q.sl, tp1: q.tp1, tp2: q.tp2, atr: q.atr, peak: px, tp1Done: false, at: Date.now() };
+    save();
+    await issue("FILL_BUY", notional, before, snap(), `${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly at ask ${nf(px, 2)}`);
+    say(`Paper buy ${nf(qty, 6)} at ${nf(px, 2)}`, "تم فتح صفقة ورقية");
+    renderWallet(); renderPosition();
+  }
+
+  async function closePart(frac, why) {
+    if (!W.pos) return;
+    const before = snap();
+    const px = D.depth.bids[0][0];
+    const qty = W.pos.qty * frac;
+    const proceeds = qty * px * (1 - FEE);
+    W.active += proceeds;
+    W.pos.qty -= qty;
+    if (frac >= 0.999 || W.pos.qty * px < 1) { W.active += W.pos.qty * px * (1 - FEE); W.pos = null; }
+    save();
+    await issue("FILL_SELL", proceeds, before, snap(), why + ` at bid ${nf(px, 2)}`);
+    if (!W.pos) await sweepCheck("Sweep after closing the paper position");
+    renderWallet(); renderPosition();
+  }
+
+  let managing = false;
+  async function manage() {
+    if (!W.pos || managing || !D.depth) return;
+    managing = true;
+    try {
+      const p = W.pos, px = D.depth.bids[0][0];
+      p.peak = Math.max(p.peak, px);
+      if (!p.tp1Done && px >= p.tp1) { p.tp1Done = true; p.sl = Math.max(p.sl, p.entry); await closePart(0.5, "TP1 reached, half closed, stop to entry"); }
+      if (W.pos && W.pos.tp1Done) W.pos.sl = Math.max(W.pos.sl, W.pos.peak - 2 * W.pos.atr);
+      if (W.pos && px >= W.pos.tp2) await closePart(1, "TP2 reached");
+      else if (W.pos && px <= W.pos.sl) await closePart(1, W.pos.tp1Done ? "Trailing stop hit" : "Stop loss hit");
+      if (W.pos) save();
+    } finally { managing = false; }
+    renderWallet(); renderPosition();
+  }
+
+  function renderPosition() {
+    const n = $("dkPosition");
+    if (!W.pos) { n.replaceChildren(document.createTextNode("No paper position open. · "), ar("لا توجد صفقة ورقية مفتوحة.")); return; }
+    const p = W.pos, pnl = Number.isFinite(D.price) ? D.price / p.entry - 1 : NaN;
+    n.replaceChildren(document.createTextNode(`Paper long ${nf(p.qty, 6)} from ${nf(p.entry, 2)} · P/L ${pct(pnl, 2)} · stop ${nf(p.sl, 2)}${p.tp1Done ? " (trailing)" : ""} · `), ar("صفقة ورقية مفتوحة"));
+  }
+
+  async function kill(why) {
+    const t0 = performance.now();
+    const before = snap();
+    if (W.pos && D.depth) {
+      const px = D.depth.bids[0][0];
+      W.active += W.pos.qty * px * (1 - FEE);
+      W.pos = null;
+    } else if (W.pos) {
+      W.active += W.pos.qty * W.pos.entry * (1 - FEE);
+      W.pos = null;
+    }
+    const moved = W.active;
+    W.safe += W.active;
+    W.active = 0;
+    W.base = 0;
+    W.halted = true;
+    save();
+    const ms = performance.now() - t0;
+    renderWallet(); renderPosition();
+    await issue("KILL", moved, before, snap(), why + ` (paper state settled in ${nf(ms, 1)} ms)`);
+    say(`Emergency stop: ${usd(moved)} moved to the safe vault in ${nf(ms, 1)} ms. Nothing is trading`, "تم الإيقاف الطارئ ونقل المبلغ للمحمية");
+    $("cbTag").textContent = "TRIPPED";
+  }
+
+  /* ---------------- circuit breaker ---------------- */
+  let lastTrip = 0;
+  function breaker() {
+    const lim = { move: +$("cbMove").value || 2.5, depth: +$("cbDepth").value || 60, spoof: +$("cbSpoof").value || 5, dd: +$("cbDD").value || 10 };
+    const old = D.ticks.find(x => Date.now() - x.t >= 55000) || D.ticks[0];
+    const move = old ? Math.abs(D.price / old.p - 1) * 100 : 0;
+    const med = median(D.depthHist.map(x => x.d));
+    const drop = med ? Math.max(0, 1 - (D.book.bid1 + D.book.ask1) / med) * 100 : 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const eq = snap().total - W.cash;
+    if (W.dayKey !== today) { W.dayKey = today; W.dayStart = eq; save(); }
+    const dd = W.dayStart > 0 ? Math.max(0, 1 - eq / W.dayStart) * 100 : 0;
+    const checks = [
+      ["60 s move", "حركة دقيقة", nf(move, 2) + "% / " + nf(lim.move, 1) + "%", move > lim.move],
+      ["Depth vs 15-min median", "السيولة مقابل الوسيط", "−" + nf(drop, 0) + "% / " + nf(lim.depth, 0) + "%", drop > lim.depth],
+      ["Vanished walls, 5 min", "حوائط وهمية", D.spoofs.length + " / " + lim.spoof, D.spoofs.length >= lim.spoof],
+      ["Day loss", "خسارة اليوم", nf(dd, 1) + "% / " + nf(lim.dd, 0) + "%", dd > lim.dd]
+    ];
+    kvRows("cbKv", checks.map(([en, a, v, bad]) => [en, a, v, bad ? "bad-text" : "ok-text"]));
+    const tripped = checks.find(c => c[3]);
+    if (tripped && W.pos && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Circuit breaker: " + tripped[0]); }
+    else if (!W.halted) $("cbTag").textContent = "ARMED";
+  }
+  function staleGuard() {
+    if (W.pos && D.priceAt && Date.now() - D.priceAt > 20000 && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Circuit breaker: price data stale over 20 s"); }
+  }
+
+  /* ---------------- wiring ---------------- */
+  $("wlBase").value = W.base > 0 ? String(W.base) : $("wlBase").value;
+  $("wlSweepMode").value = W.sweepMode;
+  $("wlTarget").value = String(W.target);
+  $("wlSplitPct").value = String(W.splitPct);
+  $("wlLock").addEventListener("click", lockBase);
+  $("wlDeposit").addEventListener("click", deposit);
+  $("wlWithdraw").addEventListener("click", withdraw);
+  $("wlSim").addEventListener("click", simTrade);
+  $("wlKill").addEventListener("click", () => kill("Emergency stop pressed"));
+  $("dkOpen").addEventListener("click", openPaper);
+  $("dkClose").addEventListener("click", () => W.pos ? closePart(1, "Closed by hand") : say("No paper position open", "لا توجد صفقة"));
+  $("dkRefresh").addEventListener("click", () => { loadFast().catch(() => {}); loadSlow().catch(() => {}); });
+  $("dkSymbol").addEventListener("change", () => {
+    if (W.pos) { $("dkSymbol").value = D.sym; say("Close the paper position before switching market", "أغلق الصفقة قبل تغيير السوق"); return; }
+    D.sym = $("dkSymbol").value;
+    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null });
+    loadFast().catch(() => {}); loadSlow().catch(() => {}); runFractal().catch(fractalFail);
+  });
+  $("rcVerify").addEventListener("click", async () => {
+    const r = await verifyChain(receipts);
+    $("rcStatus").textContent = r.ok ? `Chain intact: ${r.n} receipts, tip ${r.tip.slice(0, 16)}…` : `Chain broken at receipt ${r.at + 1}: ${r.why}`;
+    $("rcStatus").className = "why " + (r.ok ? "ok-text" : "bad-text");
+  });
+  $("rcExport").addEventListener("click", () => download("omega-receipts.json", "application/json", JSON.stringify({ format: "omega-receipt-chain-v1", receipts }, null, 2)));
+  $("rcClear").addEventListener("click", () => {
+    if (!window.confirm("Start a new receipt chain? Export the current one first if you need it. The paper wallet is not changed.")) return;
+    receipts = []; store.set(RKEY, receipts); renderReceipts();
+    $("rcStatus").textContent = "New chain started.";
+  });
+  const fractalFail = () => state("frState", "offline", "History unreachable, retrying", "تعذر تحميل التاريخ، إعادة المحاولة");
+
+  renderWallet(); renderReceipts(); renderPosition();
+  const loop = (fn, every) => { const tick = async () => { if (!document.hidden) { try { await fn(); } catch { /* next tick retries */ } } setTimeout(tick, every); }; tick(); };
+  loop(loadFast, 5000);
+  loop(loadSlow, 60000);
+  setInterval(staleGuard, 5000);
+  const fr = async () => { try { await runFractal(); } catch { fractalFail(); setTimeout(fr, 60000); } };
+  fr();
 })();
 </script>
 </body>
