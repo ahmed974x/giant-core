@@ -1,0 +1,25 @@
+{
+  "id": "./index.html",
+  "name": "NABD · نبض",
+  "short_name": "NABD",
+  "description": "NABD public portal: locked-base paper simulator and SHA-256 receipt verifier. Browser-only math; no money accepted.",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9fafb",
+  "theme_color": "#f9fafb",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["finance", "education"],
+  "icons": [
+    { "src": "icons/nabd.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/nabd-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/nabd-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/nabd-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/nabd-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "English", "url": "en.html", "icons": [{ "src": "icons/nabd-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}
