@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-99ZA80hqFkhj6WMLTa/fURK5ljxYUd5cfuy8hszMBiQ=' 'sha256-PAx3rwNhsKM5YXPlhQsZJ9CMLrwI43Q612+3ZYtV7pg=' 'sha256-P9HefEB2Gy80wIbQNVqmsL96+EwYA0sSMlHFZxHxZXo='; style-src 'sha256-boAx3+ZjnJ79pPhuHX6FFm/BMs8ntL1eRwCcLa6thmw='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-nprJrQqTJfTIgt61FT7SCwKzPCX09GiCQpIwY1lcxKQ=' 'sha256-lxXXCjkBjxIpd1IP+Mh5lAG9g/EvgaHK+wujszZoXww=' 'sha256-uxU+MpO8jBZIzFXuClf8eAiQw/CCRlMGbZzDOT2fz8A='; style-src 'sha256-A50tWuIJLtBHXU6stD4ewxXaY40p7XP55dHK9cKB/6E='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -539,6 +539,40 @@
     .dock button[aria-pressed="true"] { background: var(--surface-2); color: var(--content-primary); }
     .dock button:active { transform: scale(0.96); }
   }
+  /* Live microprice chart, keyboard help (ADR-093) */
+  #lvChart polyline { fill: none; stroke-width: 2; stroke-linejoin: round; }
+  #lvChart .lv-mid { stroke: var(--accent); }
+  #lvChart .lv-micro { stroke: var(--gold); }
+  #lvChart .lv-bid, #lvChart .lv-ask { stroke-width: 1; stroke-dasharray: 4 4; }
+  #lvChart .lv-bid { stroke: var(--success); }
+  #lvChart .lv-ask { stroke: var(--danger); }
+  #lvChart text { fill: var(--content-secondary); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums slashed-zero; }
+  .views { flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+  .kbd-help { font-size: var(--text-caption); color: var(--content-secondary); }
+  .kbd-help kbd { font-family: var(--font-mono); font-size: var(--text-caption); padding: 0 var(--s-1); border-radius: 4px; background: var(--surface-2); color: var(--content-primary); }
+  #dkLearn td:last-child, #whChain td:last-child, #osStraits td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  #osStraitList span { overflow-wrap: anywhere; }
+
+  /* View 5 command wall: four quadrants, one screen high (ADR-093) */
+  .wall { display: none; }
+  @media (min-width: 1280px) {
+    main.walled > :not(.wall) { display: none; }
+    main.walled > .wall {
+      display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 12px;
+      height: calc(100dvh - var(--header-h, 120px) - var(--s-3)); overflow: hidden;
+    }
+    main.walled > .wall.maxed { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .wall.maxed .quad:not(.max) { display: none; }
+    .quad { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-radius: var(--r-card); background: var(--surface-2); padding: var(--s-2); }
+    .quad-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding: var(--s-1) var(--s-2) var(--s-2); }
+    .quad-head h2 { font-size: var(--text-footnote); font-weight: 800; text-wrap: balance; }
+    .quad-head .ar { font-weight: 700; color: var(--content-secondary); margin-inline-start: var(--s-1); }
+    .quad-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; display: grid; gap: var(--s-2); align-content: start; border-radius: calc(var(--r-card) - var(--s-2)); }
+    .quad-body > .card { margin-top: 0; border-radius: calc(var(--r-card) - var(--s-2)); }
+    .quad-body #osMap { height: clamp(240px, 32dvh, 520px); }
+    .wall.maxed .quad-body #osMap { height: clamp(320px, 62dvh, 900px); }
+  }
+
   /* Debate court and order-flow table */
   .court { list-style: none; display: grid; gap: var(--s-2); }
   .court li { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border-radius: var(--r-inner); background: var(--surface-2); font-size: var(--text-footnote); border-inline-start: 3px solid var(--hairline-color); }
@@ -585,7 +619,7 @@
         </button>
       </div>
     </header>
-    <nav class="views" aria-label="Views"><div class="seg" role="group"><button type="button" class="seg-btn" data-go="1" aria-pressed="false">🎯 Command · <span class="ar" lang="ar">القيادة</span></button><button type="button" class="seg-btn" data-go="2" aria-pressed="false">🌍 OSIRIS · <span class="ar" lang="ar">الكوكب</span></button><button type="button" class="seg-btn" data-go="3" aria-pressed="false">🐋 Radar · <span class="ar" lang="ar">الرادار</span></button><button type="button" class="seg-btn" data-go="4" aria-pressed="false">🧾 Receipts · <span class="ar" lang="ar">الفواتير</span></button><button type="button" class="seg-btn" data-go="5" aria-pressed="false">🖥️ All · <span class="ar" lang="ar">الكل</span></button></div></nav>
+    <nav class="views" aria-label="Views"><div class="seg" role="group"><button type="button" class="seg-btn" data-go="1" aria-pressed="false">🎯 Command · <span class="ar" lang="ar">القيادة</span></button><button type="button" class="seg-btn" data-go="2" aria-pressed="false">🌍 OSIRIS · <span class="ar" lang="ar">الكوكب</span></button><button type="button" class="seg-btn" data-go="3" aria-pressed="false">🐋 Radar · <span class="ar" lang="ar">الرادار</span></button><button type="button" class="seg-btn" data-go="4" aria-pressed="false">🧾 Receipts · <span class="ar" lang="ar">الفواتير</span></button><button type="button" class="seg-btn" data-go="5" aria-pressed="false">🖥️ All · <span class="ar" lang="ar">الكل</span></button></div><p class="kbd-help">Keys: <kbd>1</kbd>–<kbd>5</kbd> views · <kbd>K</kbd> emergency stop · <kbd>S</kbd> sweep profit · <kbd>Esc</kbd> restore quadrant · <span class="ar" lang="ar">اختصارات لوحة المفاتيح</span></p></nav>
   </div>
 
   <main>
@@ -641,7 +675,17 @@
           <ul class="log" id="osAlerts"></ul>
         </div>
       </div>
-      <p class="sub">USGS and Open-Meteo load straight in the browser. OpenSky, GDACS, GDELT and Digitraffic AIS need the local proxy (<code class="num">node scripts/omega-data-proxy.mjs</code>), because they send no CORS headers or have tight anonymous limits. No free source gives live ship counts in Hormuz, Bab el-Mandeb, Suez or Malacca, so those four show as reference points. SAT is a colour style, not satellite imagery. · <span class="ar" lang="ar">لا يوجد مصدر مجاني لعدد السفن الحي في المضائق الأربعة، فتظهر نقاط مرجعية.</span></p>
+      <div class="row row-chart mt-3">
+        <div class="os-panel">
+          <h3 class="mini-h">Five straits · <span class="ar" lang="ar">المضائق الخمسة</span></h3>
+          <table class="kv" id="osStraits"><tbody></tbody></table>
+        </div>
+        <div class="os-panel">
+          <h3 class="mini-h">NGA navigation warnings · <span class="ar" lang="ar">الإنذارات الملاحية الرسمية</span></h3>
+          <ul class="log" id="osStraitList"></ul>
+        </div>
+      </div>
+      <p class="sub">USGS and Open-Meteo load straight in the browser. OpenSky, GDACS, GDELT, Digitraffic AIS and the NGA Maritime Safety Information broadcast warnings need the local proxy (<code class="num">start-omega</code> or <code class="num">node scripts/omega-data-proxy.mjs</code>), because they send no CORS headers or have tight anonymous limits. Each NGA warning is sorted into Hormuz, Bab el-Mandeb, Suez, Malacca or Panama by the position in its text or by name. Live ship positions are free only for the Baltic (Digitraffic), so the straits show official warnings and headlines, not ship counts. SAT shows NASA GIBS Blue Marble imagery and falls back to the drawn map when offline. · <span class="ar" lang="ar">المضائق تعرض الإنذارات الملاحية الرسمية من NGA وأخبار GDELT مع المصدر والتاريخ.</span></p>
     </section>
     <!-- ===== Globe + live KPIs ===== -->
     <div data-view="2 5" class="row row-hero mt-3">
@@ -960,6 +1004,8 @@
         <ul class="evidence" id="dkEvidence"></ul>
         <h3 class="mini-h">Debate court · <span class="ar" lang="ar">محكمة الوكلاء</span> <span class="pill-inf">[INFERENCE]</span></h3>
         <ul class="court" id="dkCourt" aria-live="polite"></ul>
+        <h3 class="mini-h">Self-learning court · <span class="ar" lang="ar">المحكمة المتعلمة ذاتياً</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+        <table class="kv" id="dkLearn"><tbody></tbody></table>
         <h3 class="mini-h">Order-flow physics · <span class="ar" lang="ar">فيزياء السيولة</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
         <table class="kv" id="dkFlow"><tbody></tbody></table>
         <h3 class="mini-h">Levels · <span class="ar" lang="ar">المستويات</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
@@ -998,12 +1044,25 @@
           <button class="btn" id="wlDeposit" type="button">Deposit · <span class="ar" lang="ar">إيداع</span></button>
           <button class="btn" id="wlWithdraw" type="button">Withdraw from safe vault · <span class="ar" lang="ar">سحب من المحمية</span></button>
           <button class="btn" id="wlSim" type="button">Simulate a test trade · <span class="ar" lang="ar">جرّب صفقة</span></button>
+          <button class="btn" id="wlSweepNow" type="button">Sweep profit now (S) · <span class="ar" lang="ar">رحّل الربح الآن</span></button>
         </div>
-        <button class="kill" id="wlKill" type="button">Emergency stop · <span class="ar" lang="ar">إيقاف طارئ وسحب</span><small>Closes the paper position at the live price and moves the base to the safe vault</small></button>
+        <button class="kill" id="wlKill" type="button">Emergency stop (K) · <span class="ar" lang="ar">إيقاف طارئ وسحب</span><small>Closes the paper position at the live price and moves the base to the safe vault</small></button>
         <p class="why" id="wlStatus" role="status" aria-live="polite"></p>
         <p class="sub" id="wlNote">Paper mode: every balance here is a simulation. No money moves. · <span class="ar" lang="ar">وضع ورقي: كل الأرصدة محاكاة ولا تتحرك أموال.</span></p>
       </section>
     </div>
+
+    <section data-view="1 3 5" class="card mt-3" aria-labelledby="lvTitle" id="live">
+      <div class="card-head"><div class="card-title" id="lvTitle">Live price &amp; microprice<span class="ar" lang="ar">السعر الحي والسعر المجهري</span></div><div class="tag">5 s · 300 READINGS</div></div>
+      <svg class="chart" id="lvChart" viewBox="0 0 720 220" role="img" aria-label="Live mid price and microprice over the last 300 readings, with the largest order-book walls"></svg>
+      <div class="chart-legend">
+        <span><i class="sw sw-accent"></i>Mid · <span class="ar" lang="ar">منتصف السعر</span></span>
+        <span><i class="sw sw-gold"></i>Microprice · <span class="ar" lang="ar">السعر المجهري</span></span>
+        <span><i class="sw sw-success"></i>Bid wall · <span class="ar" lang="ar">حائط شراء</span></span>
+        <span><i class="sw sw-danger"></i>Ask wall · <span class="ar" lang="ar">حائط بيع</span></span>
+      </div>
+      <p class="sub num" id="lvNow">—</p>
+    </section>
 
     <div data-view="3 5" class="section-title">
       <h2>Crowd psychology radar<span class="ar" lang="ar">رادار علم نفس السوق</span></h2>
@@ -1015,6 +1074,8 @@
         <table class="kv" id="whKv"><tbody></tbody></table>
         <h3 class="mini-h">Walls near price · <span class="ar" lang="ar">الحوائط قرب السعر</span></h3>
         <ul class="log" id="whWalls"></ul>
+        <h3 class="mini-h">On-chain pulse · <span class="ar" lang="ar">نبض البلوكشين</span> <span class="pill-inf">[INFERENCE]</span></h3>
+        <table class="kv" id="whChain"><tbody></tbody></table>
         <div class="state" id="whState"><span class="dot"></span> CHECKING</div>
       </section>
       <section class="card" aria-labelledby="trTitle">
@@ -1066,6 +1127,30 @@
       <p class="why" id="rcStatus" role="status" aria-live="polite"></p>
       <div class="table-scroll"><table class="data-t" id="rcTable"></table></div>
     </section>
+
+    <section data-view="4 5" class="card mt-3" aria-labelledby="cpTitle" id="capsule">
+      <div class="card-head"><div class="card-title" id="cpTitle">📦 Encrypted account capsule<span class="ar" lang="ar">كبسولة الحساب المشفرة بين اللابتوب والآيفون</span></div><div class="tag">AES-GCM 256 · NO SERVER</div></div>
+      <p class="sub">Export the paper wallet (locked base, safe vault), the full SHA-256 receipt chain, the court's learned weights and your notes.md as one encrypted <code class="num">.omega-capsule.json</code> file. Send it to the other device any way you like (AirDrop, cable, USB) and import it there with the same passphrase. The receipt chain is verified before anything is replaced. No API key or vault secret goes in a capsule. · <span class="ar" lang="ar">لا يمر الملف بأي سيرفر، والتشفير يتم داخل المتصفح.</span></p>
+      <div class="form-grid">
+        <div class="field"><label for="cpPass">Capsule passphrase, 12+ characters · <span class="ar" lang="ar">عبارة مرور الكبسولة</span></label><input id="cpPass" name="cpPass" type="password" autocomplete="new-password" minlength="12" /></div>
+        <div class="field"><label for="cpFile">Capsule file to import · <span class="ar" lang="ar">ملف الكبسولة للاستيراد</span></label><input id="cpFile" name="cpFile" type="file" accept=".json,application/json" autocomplete="off" /></div>
+      </div>
+      <div class="form-row">
+        <button class="btn primary" id="cpExport" type="button">📦 Export capsule · <span class="ar" lang="ar">تصدير الكبسولة</span></button>
+        <button class="btn" id="cpImport" type="button">Import capsule · <span class="ar" lang="ar">استيراد الكبسولة</span></button>
+        <span class="tag num" id="cpFp" aria-label="Fingerprint of the last exported capsule">—</span>
+      </div>
+      <p class="why" id="cpStatus" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- ===== View 5 on laptop and ultra-wide: four-quadrant command wall (ADR-093). The shell script moves
+         the cards in on view 5 at 1280 px and up, and puts them back on any other view or width. ===== -->
+    <div class="wall" id="wall" data-view="5" role="region" aria-label="Command wall">
+      <section class="quad" data-q="1" aria-labelledby="q1h"><div class="quad-head"><h2 id="q1h">OSIRIS · PWSI <span class="ar" lang="ar">كوكب الاستخبارات</span></h2><button class="icon-btn quad-max" type="button" aria-pressed="false" aria-label="Maximize quadrant 1, OSIRIS"><span aria-hidden="true">⤢</span></button></div><div class="quad-body"></div></section>
+      <section class="quad" data-q="2" aria-labelledby="q2h"><div class="quad-head"><h2 id="q2h">Live chart · whales · trapped <span class="ar" lang="ar">الشارت والحيتان</span></h2><button class="icon-btn quad-max" type="button" aria-pressed="false" aria-label="Maximize quadrant 2, live chart"><span aria-hidden="true">⤢</span></button></div><div class="quad-body"></div></section>
+      <section class="quad" data-q="3" aria-labelledby="q3h"><div class="quad-head"><h2 id="q3h">Court · Hawkes/VPIN · 10-year memory <span class="ar" lang="ar">المحكمة والفيزياء</span></h2><button class="icon-btn quad-max" type="button" aria-pressed="false" aria-label="Maximize quadrant 3, court"><span aria-hidden="true">⤢</span></button></div><div class="quad-body"></div></section>
+      <section class="quad" data-q="4" aria-labelledby="q4h"><div class="quad-head"><h2 id="q4h">Locked base · safe vault · receipts <span class="ar" lang="ar">الخزنة والفواتير</span></h2><button class="icon-btn quad-max" type="button" aria-pressed="false" aria-label="Maximize quadrant 4, wallet and receipts"><span aria-hidden="true">⤢</span></button></div><div class="quad-body"></div></section>
+    </div>
   </main>
   <nav class="dock" aria-label="Views"><button type="button" data-go="1" aria-pressed="false"><span aria-hidden="true">🎯</span><span>Command</span></button><button type="button" data-go="2" aria-pressed="false"><span aria-hidden="true">🌍</span><span>OSIRIS</span></button><button type="button" data-go="3" aria-pressed="false"><span aria-hidden="true">🐋</span><span>Radar</span></button><button type="button" data-go="4" aria-pressed="false"><span aria-hidden="true">🧾</span><span>Receipts</span></button><button type="button" data-go="5" aria-pressed="false"><span aria-hidden="true">🖥️</span><span>All</span></button></nav>
 
@@ -2413,7 +2498,8 @@ const DEFAULT_ALLOW_HOSTS = [
   const D = {
     sym: "BTCUSDT", price: NaN, priceAt: 0, depth: null, k4h: [], k1m: [], fut: {},
     walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, signal: null,
-    flow: null, flowAt: 0, osiris: null, court: null, auto: false, cooldownUntil: 0
+    flow: null, flowAt: 0, osiris: null, court: null, auto: false, cooldownUntil: 0,
+    tape: [], microHist: [], chain: null
   };
   document.addEventListener("omega:osiris", e => { D.osiris = e.detail; });
 
@@ -2431,11 +2517,15 @@ const DEFAULT_ALLOW_HOSTS = [
     D.k1m = k1m.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }));
     D.ticks.push({ t: Date.now(), p: D.price });
     D.ticks = cap(D.ticks.filter(x => Date.now() - x.t < 120000));
+    const [tbp, tbq] = bids[0], [tap, taq] = asks[0];
+    D.microHist.push({ t: Date.now(), mid: D.price, micro: (tbp * taq + tap * tbq) / (taq + tbq) });
+    cap(D.microHist);
     trackWalls();
     renderWhale();
+    renderLive();
     if (Date.now() - D.flowAt >= 10000) {
       D.flowAt = Date.now();
-      try { analyseFlow(await getJson(`${SPOT}/aggTrades?symbol=${D.sym}&limit=1000`)); } catch { D.flow = null; }
+      try { ingestTrades(await getJson(`${SPOT}/aggTrades?symbol=${D.sym}&limit=${RING}`)); analyseFlow(D.tape); } catch { D.flow = null; }
     }
     if (D.quant) decide();
     await manage();
@@ -2496,25 +2586,58 @@ const DEFAULT_ALLOW_HOSTS = [
   }
 
   /* ---------------- order-flow physics: microprice, Hawkes intensity, VPIN ---------------- */
+  // All three run on a ring buffer of the last 300 public trades (Binance aggTrades, deduplicated by id).
   // Microprice (Stoikov 2018, first-order form): the mid weighted by the opposite queue sizes.
-  // Hawkes: exponential-kernel self-exciting intensity λ(t) = μ + Σ α·β·e^(−β(t−tᵢ)), with μ the
-  // window's mean trade rate, α = 0.5 (branching ratio) and β = 1/3 s⁻¹ (fixed, not fitted).
-  // VPIN (Easley, López de Prado, O'Hara 2012): mean |buy − sell| / volume over 20 equal-volume
-  // buckets, with each trade's side taken from Binance's isBuyerMaker flag instead of bulk classification.
-  function analyseFlow(trades) {
-    if (!Array.isArray(trades) || trades.length < 50 || !D.depth) { D.flow = null; return; }
+  // Hawkes, exponential kernel λ(t) = μ + Σ α·β·e^(−β(t−tᵢ)), recalibrated on every pull by the method of
+  // moments on the window's own trade times (ADR-093):
+  //   λ̄ = 1 / mean inter-arrival time;
+  //   counts in 30 equal bins of width Δ give the Fano factor F = Var/Mean, and a stationary Hawkes
+  //   process has F → 1/(1−α)², so α = 1 − 1/√F (clamped 0…0.95);
+  //   the lag-1 autocorrelation ρ₁ of those counts decays as e^(−β(1−α)Δ), so β = −ln ρ₁ / ((1−α)Δ),
+  //   with ρ₁ clamped to 0.01…0.99 (at the clamp β is a bound, and the table says so);
+  //   μ = λ̄(1−α).
+  // VPIN (Easley, López de Prado, O'Hara 2012): mean |buy − sell| / V over equal-volume buckets, with the
+  // bucket size V = 1/50 of the window's traded volume and each side from Binance's isBuyerMaker flag.
+  const RING = 300;
+  function ingestTrades(trades) {
+    if (!Array.isArray(trades)) return;
+    const seen = new Set(D.tape.map(x => x.a));
+    for (const x of trades) if (Number.isFinite(x.a) && !seen.has(x.a)) D.tape.push({ a: x.a, T: x.T, q: +x.q, p: +x.p, m: !!x.m });
+    D.tape.sort((x, y) => x.a - y.a);
+    cap(D.tape, RING);
+  }
+  function calibrate(tape) {
+    const t = tape.map(x => x.T / 1000);
+    const span = Math.max(1e-3, t[t.length - 1] - t[0]);
+    const gaps = [];
+    for (let i = 1; i < t.length; i++) gaps.push(t[i] - t[i - 1]);
+    const meanGap = Math.max(1e-6, mean(gaps)), cv = sd(gaps) / meanGap, lamBar = 1 / meanGap;
+    const bins = 30, dt = span / bins, counts = new Array(bins).fill(0);
+    for (const x of t) counts[Math.min(bins - 1, Math.floor((x - t[0]) / dt))]++;
+    const m = mean(counts), fano = mean(counts.map(c => (c - m) ** 2)) / Math.max(1e-9, m);
+    const alpha = clamp(1 - 1 / Math.sqrt(Math.max(1, fano)), 0, 0.95);
+    let num = 0, den = 0;
+    for (let i = 0; i < bins; i++) { den += (counts[i] - m) ** 2; if (i) num += (counts[i] - m) * (counts[i - 1] - m); }
+    const rhoRaw = den > 0 ? num / den : 0, rho = clamp(rhoRaw, 0.01, 0.99);
+    const beta = clamp(-Math.log(rho) / ((1 - alpha) * dt), 1e-4, 100);
+    return { lamBar, mu: lamBar * (1 - alpha), alpha, beta, fano, rho: rhoRaw, bound: rhoRaw <= 0.01 || rhoRaw >= 0.99, cv, span, dt };
+  }
+  function analyseFlow(tape) {
+    if (!Array.isArray(tape) || tape.length < 50 || !D.depth) { D.flow = null; return; }
     const [bp, bq] = D.depth.bids[0], [ap, aq] = D.depth.asks[0];
     const mid = (bp + ap) / 2, micro = (bp * aq + ap * bq) / (aq + bq);
-    const t = trades.map(x => x.T / 1000), now = Date.now() / 1000;
-    const span = Math.max(1, t[t.length - 1] - t[0]);
-    const mu = trades.length / span, alpha = 0.5, beta = 1 / 3;
-    let lam = mu * (1 - alpha);
-    for (let i = trades.length - 1; i >= 0; i--) { const dt = now - t[i]; if (dt > 30) break; lam += alpha * beta * Math.exp(-beta * Math.max(0, dt)); }
-    const total = trades.reduce((s, x) => s + +x.q, 0), size = total / 20;
+    const cal = calibrate(tape), now = Date.now() / 1000;
+    let lam = cal.mu;
+    for (let i = tape.length - 1; i >= 0; i--) {
+      const dt = Math.max(0, now - tape[i].T / 1000);
+      if (cal.beta * dt > 30) break;
+      lam += cal.alpha * cal.beta * Math.exp(-cal.beta * dt);
+    }
+    const total = tape.reduce((s, x) => s + x.q, 0), size = total / 50;
     const buckets = [];
     let b = 0, s = 0;
-    for (const x of trades) {
-      let q = +x.q;
+    for (const x of tape) {
+      let q = x.q;
       while (q > 0) {
         const room = size - (b + s), take = Math.min(q, room);
         if (x.m) s += take; else b += take;
@@ -2523,8 +2646,26 @@ const DEFAULT_ALLOW_HOSTS = [
       }
     }
     const vpin = buckets.length ? buckets.reduce((a, v) => a + v, 0) / buckets.length : NaN;
-    const buyShare = trades.filter(x => !x.m).reduce((a, x) => a + +x.q, 0) / Math.max(1e-12, total);
-    D.flow = { mid, micro, microBps: (micro / mid - 1) * 1e4, lam, mu, hawkes: lam / Math.max(1e-9, mu), vpin, buyShare, n: trades.length, span };
+    const buyShare = tape.filter(x => !x.m).reduce((a, x) => a + x.q, 0) / Math.max(1e-12, total);
+    D.flow = { mid, micro, microBps: (micro / mid - 1) * 1e4, lam, mu: cal.mu, lamBar: cal.lamBar, hawkes: lam / Math.max(1e-9, cal.lamBar), cal, vpin, bucket: size, nb: buckets.length, buyShare, n: tape.length, span: cal.span };
+  }
+  function renderLive() {
+    const hs = D.microHist, svg = $("lvChart");
+    if (hs.length < 2) { svg.replaceChildren(sv("text", { x: 20, y: 110 }, "Collecting live readings…")); return; }
+    const vals = hs.flatMap(x => [x.mid, x.micro]);
+    const lo = Math.min(...vals), hi = Math.max(...vals), pad = (hi - lo) * 0.1 || hi * 1e-4;
+    const W = 720, H = 220, x = i => 44 + i / (hs.length - 1) * (W - 56), y = v => 12 + (1 - (v - lo + pad) / (hi - lo + 2 * pad)) * (H - 36);
+    const line = (k, cls) => sv("polyline", { points: hs.map((p, i) => x(i).toFixed(1) + "," + y(p[k]).toFixed(1)).join(" "), class: cls });
+    const kids = [line("mid", "lv-mid"), line("micro", "lv-micro")];
+    const d = D.price < 10 ? 4 : 2;
+    kids.push(sv("text", { x: 4, y: 18 }, nf(hi, d)), sv("text", { x: 4, y: H - 22 }, nf(lo, d)));
+    for (const w of [...D.walls.values()].sort((a, b) => b.notional - a.notional).slice(0, 4)) {
+      if (w.p < lo - pad || w.p > hi + pad) continue;
+      kids.push(sv("line", { x1: 44, x2: W - 12, y1: y(w.p), y2: y(w.p), class: w.side === "bid" ? "lv-bid" : "lv-ask" }));
+    }
+    svg.replaceChildren(...kids);
+    const last = hs[hs.length - 1];
+    $("lvNow").textContent = `mid ${nf(last.mid, d)} · microprice ${nf(last.micro, d)} (${nf((last.micro / last.mid - 1) * 1e4, 2)} bps) · ${hs.length}/300 readings`;
   }
   function flowScore() {
     const f = D.flow;
@@ -2821,7 +2962,8 @@ const DEFAULT_ALLOW_HOSTS = [
       ar("بيانات باينانس تبدأ من أغسطس 2017، فسنة 2016 غير مشمولة. التشابه لا يضمن تكرار النتيجة."));
     state("frState", "online", "MATCHED · " + f.res.length + " analogues", "تمت المطابقة");
   }
-  function fractalScore() { return D.fractal ? clamp(D.fractal.w30 / 0.15, -1, 1) * 0.6 + (D.fractal.up30 - 0.5) * 0.8 : 0; }
+  // No positive-similarity analogue leaves w30 undefined (0/0); the analogue vote then abstains.
+  function fractalScore() { return D.fractal && Number.isFinite(D.fractal.w30) && Number.isFinite(D.fractal.up30) ? clamp(D.fractal.w30 / 0.15, -1, 1) * 0.6 + (D.fractal.up30 - 0.5) * 0.8 : 0; }
 
   /* ---------------- quant levels: ATR, bootstrap Monte Carlo, half-Kelly ---------------- */
   function runQuant() {
@@ -2914,8 +3056,10 @@ const DEFAULT_ALLOW_HOSTS = [
     const f = D.flow;
     kvRows("dkFlow", f ? [
       ["Microprice vs mid", "السعر المجهري", nf(f.micro, f.micro < 10 ? 4 : 2) + " (" + (f.microBps >= 0 ? "+" : "") + nf(f.microBps, 2) + " bps)", f.microBps > 0 ? "ok-text" : f.microBps < 0 ? "bad-text" : ""],
-      ["Hawkes intensity / baseline", "كثافة هوكس", "×" + nf(f.hawkes, 2) + " (" + nf(f.lam, 1) + " vs " + nf(f.mu, 1) + " trades/s)", f.hawkes > 2 ? "bad-text" : ""],
-      ["VPIN, 20 volume buckets", "سمّية السيولة", nf(f.vpin, 3), f.vpin > limits().vpin ? "bad-text" : "ok-text"],
+      ["Hawkes intensity / mean rate", "كثافة هوكس", "×" + nf(f.hawkes, 2) + " (" + nf(f.lam, 2) + " vs " + nf(f.lamBar, 2) + " trades/s)", f.hawkes > 2 ? "bad-text" : ""],
+      ["Hawkes fit μ · α · β (live)", "معايرة هوكس الحية", nf(f.cal.mu, 3) + " /s · " + nf(f.cal.alpha, 3) + " · " + (f.cal.bound ? "≈" : "") + nf(f.cal.beta, 3) + " /s"],
+      ["Fit inputs: Fano · ρ₁ · CV of gaps", "مدخلات المعايرة", nf(f.cal.fano, 2) + " · " + nf(f.cal.rho, 2) + " · " + nf(f.cal.cv, 2)],
+      ["VPIN, bucket V = volume/50", "سمّية السيولة", nf(f.vpin, 3) + " (" + f.nb + " buckets of " + nf(f.bucket, f.bucket < 1 ? 5 : 2) + ")", f.vpin > limits().vpin ? "bad-text" : "ok-text"],
       ["Aggressive buy share", "نسبة الشراء العدواني", nf(f.buyShare * 100, 1) + "% of " + f.n + " trades / " + nf(f.span, 0) + " s"]
     ] : [["Trade data", "بيانات الصفقات", "Loading…"]]);
   }
@@ -2933,6 +3077,13 @@ const DEFAULT_ALLOW_HOSTS = [
     if (D.crowd && D.crowd.fomo > 70) risks.push(`crowd euphoric (FOMO ${nf(D.crowd.fomo, 0)})`);
     const bull = best && best.s > 0 ? `${best.en}: ${best.why} (${nf(best.s, 2)})` : "No component argues for a long entry";
     const bear = risks.length ? risks.join("; ") : worst && worst.s < 0 ? `${worst.en}: ${worst.why} (${nf(worst.s, 2)})` : "No strong counter-argument found";
+    if (D.chain && D.chain.fastest >= 100) risks.push(`on-chain fee spike ${nf(D.chain.fastest, 0)} sat/vB (mempool.space)`);
+    const p = {
+      bull: best && best.s > 0 ? 0.5 + 0.5 * clamp(best.s, 0, 1) : 0.5,
+      bear: 0.5 - 0.5 * clamp(Math.max(worst && worst.s < 0 ? -worst.s : 0, risks.length * 0.25), 0, 1),
+      osiris: Number.isFinite(pw) ? clamp(0.5 - (pw - 40) / 120, 0, 1) : 0.5
+    };
+    const P = AGENTS.reduce((a, [k]) => a + L.w[k] * p[k], 0);
     const conf = clamp(Math.abs(s.score) / 0.6, 0, 1) * (risks.length ? 0.5 : 1);
     const hardStop = (D.flow && D.flow.vpin > lim.vpin) || pw >= lim.pwsi;
     let verdict, why;
@@ -2940,14 +3091,93 @@ const DEFAULT_ALLOW_HOSTS = [
     else if (s.cls !== "buy") { verdict = "STAND ASIDE"; why = s.sig === "HOLD" ? "no edge" : s.sig + ": spot long-only, nothing to open"; }
     else if (!q || !(q.kelly > 0)) { verdict = "STAND ASIDE"; why = "half-Kelly size is zero"; }
     else if (risks.length) { verdict = "STAND ASIDE"; why = "the red team's objection stands"; }
+    else if (!(P > 0.5)) { verdict = "STAND ASIDE"; why = `weighted court P(up) ${nf(P * 100, 0)}% is not above 50%`; }
     else { verdict = "OPEN"; why = `paper long, ${nf(q.kelly * 100, 1)}% of the locked base`; }
-    D.court = { verdict, conf, hardStop };
+    D.court = { verdict, conf, hardStop, p, P };
     const line = (cls, icon, en, a, text) => { const li = h("li", cls); const b = h("b"); b.append(document.createTextNode(icon + " " + en + " · "), ar(a)); li.append(b, h("span", "", text)); return li; };
     $("dkCourt").replaceChildren(
       line("bull", "🟢", "Bull agent", "وكيل الفرص", bull),
       line("bear", "🔴", "Red-team bear", "وكيل الشك والمخاطر", bear),
-      line("judge " + (verdict === "OPEN" ? "ok" : verdict === "KILL" ? "bad" : ""), "⚖️", "Risk judge", "القاضي التنفيذي", `${verdict} · confidence ${nf(conf * 100, 0)}% · Kelly ${q ? nf(q.kelly * 100, 1) : "—"}% · ${why}`));
+      line("judge " + (verdict === "OPEN" ? "ok" : verdict === "KILL" ? "bad" : ""), "⚖️", "Risk judge", "القاضي التنفيذي", `${verdict} · confidence ${nf(conf * 100, 0)}% · weighted P(up) ${nf(P * 100, 0)}% · Kelly ${q ? nf(q.kelly * 100, 1) : "—"}% · ${why}`));
+    renderLearn();
     if (verdict === "KILL" && W.pos && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Risk judge: " + bear); }
+  }
+
+  /* ---------------- Darwinian court: multiplicative-weights learning (ADR-093) ---------------- */
+  // At each paper entry the three voices give P(up): the bull from its strongest argument, the red-team
+  // bear from its strongest objection, OSIRIS from the shock index (PWSI 40 = neutral). When the paper
+  // position is fully closed, y = 1 if it made money after fees, else 0. Each voice loses its Brier score
+  // (p − y)² and its weight becomes w·(1 − η·loss) with η = 0.05, then the weights are normalised
+  // (multiplicative weights update, Littlestone & Warmuth 1994; Arora, Hazan & Kale 2012). The voice that
+  // was closer keeps more weight, so its say in the next weighted P(up) grows. Learning is local to this
+  // browser and travels in the encrypted capsule.
+  const LKEY = "omega-court-learning-v1", ETA = 0.05;
+  const AGENTS = [["bull", "Bull agent", "وكيل الفرص"], ["bear", "Red-team bear", "وكيل الشك والمخاطر"], ["osiris", "OSIRIS shock voice", "صوت مؤشر الصدمة"]];
+  function freshLearning() { return { w: { bull: 1 / 3, bear: 1 / 3, osiris: 1 / 3 }, n: 0, hits: 0, agent: { bull: { n: 0, hit: 0 }, bear: { n: 0, hit: 0 }, osiris: { n: 0, hit: 0 } }, last: [] }; }
+  function validLearning(x) {
+    return !!(x && x.w && x.agent && Array.isArray(x.last) && Number.isFinite(x.n) && Number.isFinite(x.hits) &&
+      AGENTS.every(([k]) => Number.isFinite(x.w[k]) && x.w[k] > 0 && x.agent[k] && Number.isFinite(x.agent[k].n) && Number.isFinite(x.agent[k].hit)));
+  }
+  let L = store.get(LKEY, null);
+  if (!validLearning(L)) L = freshLearning();
+  function learn(pos, proceeds) {
+    if (!pos || !pos.court || !(pos.cost > 0)) return;
+    const y = proceeds > pos.cost ? 1 : 0;
+    for (const [k] of AGENTS) {
+      const pk = clamp(+pos.court.p[k], 0, 1);
+      L.w[k] *= 1 - ETA * (pk - y) ** 2;
+      if (pk !== 0.5) { L.agent[k].n++; if ((pk > 0.5) === (y === 1)) L.agent[k].hit++; }
+    }
+    const sum = AGENTS.reduce((a, [k]) => a + L.w[k], 0);
+    for (const [k] of AGENTS) L.w[k] /= sum;
+    L.n++;
+    if ((pos.court.P > 0.5) === (y === 1)) L.hits++;
+    L.last.push({ ts: new Date().toISOString(), y, P: pos.court.P, pnl: proceeds - pos.cost });
+    cap(L.last, 50);
+    store.set(LKEY, L);
+    renderLearn();
+  }
+  function renderLearn() {
+    const acc = (h, n) => n ? nf(h / n * 100, 1) + "% of " + n : "no closed trade yet";
+    const now = D.court && D.court.p;
+    kvRows("dkLearn", [
+      ...AGENTS.map(([k, en, a]) => [en + " weight", a, nf(L.w[k] * 100, 1) + "% · right " + acc(L.agent[k].hit, L.agent[k].n) + (now ? " · now P(up) " + nf(now[k] * 100, 0) + "%" : ""), "num"]),
+      ["Court Accuracy Score", "معدل دقة المحكمة التراكمي", acc(L.hits, L.n), L.n && L.hits / L.n >= 0.5 ? "ok-text" : L.n ? "bad-text" : ""],
+      ["Learning rate η · rule", "معدل التعلّم", "0.05 · w ← w(1 − η(p − y)²), normalised", "num"]
+    ]);
+  }
+
+  /* ---------------- mempool.space: on-chain fee and whale radar (ADR-093) ---------------- */
+  // Keyless public API with browser CORS. Fees are sat/vB. A whale here is any of the last 10 transactions
+  // seen by mempool.space moving 100 BTC or more. A fastest fee of 100 sat/vB or more is a red-team risk.
+  const MEMPOOL = "https://mempool.space/api";
+  async function loadChain() {
+    try {
+      const [fees, pool, recent] = await Promise.all([
+        getJson(`${MEMPOOL}/v1/fees/recommended`),
+        getJson(`${MEMPOOL}/mempool`).catch(() => null),
+        getJson(`${MEMPOOL}/mempool/recent`).catch(() => null)
+      ]);
+      const whales = (Array.isArray(recent) ? recent : []).filter(t => Number.isFinite(t.value) && t.value >= 100e8).map(t => ({ btc: t.value / 1e8, txid: String(t.txid || "") }));
+      D.chain = {
+        fastest: +fees.fastestFee, half: +fees.halfHourFee, hour: +fees.hourFee, economy: +fees.economyFee, min: +fees.minimumFee,
+        count: pool ? +pool.count : NaN, vmb: pool ? +pool.vsize / 1e6 : NaN, whales, seen: Array.isArray(recent) ? recent.length : 0, at: Date.now()
+      };
+    } catch { D.chain = null; }
+    renderChain();
+  }
+  function renderChain() {
+    const c = D.chain;
+    if (!c) {
+      kvRows("whChain", [["mempool.space", "نبض البلوكشين", "تعذر التحقق منها", "bad-text"]]);
+      return;
+    }
+    kvRows("whChain", [
+      ["Fees fastest · 30 min · 1 h (sat/vB)", "رسوم الشبكة", nf(c.fastest, 0) + " · " + nf(c.half, 0) + " · " + nf(c.hour, 0), c.fastest >= 100 ? "bad-text" : c.fastest >= 30 ? "warn-text" : "ok-text"],
+      ["Mempool backlog", "الطابور غير المؤكد", Number.isFinite(c.count) ? nf(c.count, 0) + " tx · " + nf(c.vmb, 1) + " vMB" : "—"],
+      ["Whale transfers ≥ 100 BTC (last " + c.seen + " tx)", "تحويلات الحيتان", c.whales.length ? c.whales.map(w => nf(w.btc, 0) + " BTC " + w.txid.slice(0, 8) + "…").join(" · ") : "none", c.whales.length ? "warn-text" : ""],
+      ["Source", "المصدر", "mempool.space · " + timeFmt.format(new Date(c.at)) + " UTC"]
+    ]);
   }
 
   /* ---------------- paper-only auto engine ---------------- */
@@ -3181,7 +3411,8 @@ const DEFAULT_ALLOW_HOSTS = [
     const px = fill.vwap, qty = fill.qty;
     const slip = (px / D.depth.asks[0][0] - 1) * 1e4;
     W.active -= notional;
-    W.pos = { qty, entry: px, sl: q.sl, tp1: q.tp1, tp2: q.tp2, atr: q.atr, peak: px, tp1Done: false, at: Date.now() };
+    const ct = D.court && D.court.p ? { p: { ...D.court.p }, P: D.court.P } : null;
+    W.pos = { qty, entry: px, sl: q.sl, tp1: q.tp1, tp2: q.tp2, atr: q.atr, peak: px, tp1Done: false, at: Date.now(), cost: notional, got: 0, court: ct };
     save();
     await issue("FILL_BUY", notional, before, snap(), `${auto ? "Auto engine: " : ""}${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly; VWAP ${nf(px, 2)} (slippage ${nf(slip, 2)} bps, fee 0.1%)`);
     say(`Paper buy ${nf(qty, 6)} at ${nf(px, 2)}${auto ? " by the auto engine" : ""}`, "تم فتح صفقة ورقية");
@@ -3198,9 +3429,12 @@ const DEFAULT_ALLOW_HOSTS = [
     const proceeds = fill.quote * (1 - FEE);
     W.active += proceeds;
     W.pos.qty -= qty;
+    W.pos.got = (W.pos.got || 0) + proceeds;
+    const closed = full ? W.pos : null;
     if (full) { W.pos = null; D.cooldownUntil = Date.now() + 15 * 60e3; }
     save();
     await issue("FILL_SELL", proceeds, before, snap(), why + ` at VWAP ${nf(fill.vwap, 2)} (fee 0.1%)`);
+    if (closed) learn(closed, closed.got);
     if (!W.pos) await sweepCheck("Sweep after closing the paper position");
     renderWallet(); renderPosition(); publish();
   }
@@ -3232,12 +3466,15 @@ const DEFAULT_ALLOW_HOSTS = [
     const t0 = performance.now();
     const before = snap();
     D.auto = false;
+    const closing = W.pos;
     if (W.pos && D.depth) {
       const fill = walk("sell", W.pos.qty);
-      W.active += (fill ? fill.quote : W.pos.qty * D.depth.bids[0][0]) * (1 - FEE);
+      const got = (fill ? fill.quote : W.pos.qty * D.depth.bids[0][0]) * (1 - FEE);
+      W.active += got; closing.got = (closing.got || 0) + got;
       W.pos = null;
     } else if (W.pos) {
-      W.active += W.pos.qty * W.pos.entry * (1 - FEE);
+      const got = W.pos.qty * W.pos.entry * (1 - FEE);
+      W.active += got; closing.got = (closing.got || 0) + got;
       W.pos = null;
     }
     const moved = W.active;
@@ -3249,6 +3486,7 @@ const DEFAULT_ALLOW_HOSTS = [
     const ms = performance.now() - t0;
     renderWallet(); renderPosition();
     await issue("KILL", moved, before, snap(), why + ` (paper state settled in ${nf(ms, 1)} ms)`);
+    if (closing) learn(closing, closing.got);
     say(`Emergency stop: ${usd(moved)} moved to the safe vault in ${nf(ms, 1)} ms. Nothing is trading`, "تم الإيقاف الطارئ ونقل المبلغ للمحمية");
     $("cbTag").textContent = "TRIPPED";
     setAuto(false);
@@ -3287,7 +3525,129 @@ const DEFAULT_ALLOW_HOSTS = [
     if (W.pos && D.priceAt && Date.now() - D.priceAt > 20000 && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Circuit breaker: price data stale over 20 s"); }
   }
 
+  /* ---------------- sweep now (button and S key) ---------------- */
+  // Paper ledger only: moves the paper profit above the locked base into the paper safe vault, with a receipt.
+  async function sweepNow() {
+    if (W.pos) { say("Close the paper position first. Profit is swept only while flat", "أغلق الصفقة الورقية أولاً"); return; }
+    if (!(W.base > 0)) { say("Lock a base first", "علّق مبلغاً أولاً"); return; }
+    const over = Math.max(0, W.active - W.base);
+    if (over <= 0.01) { say(`Nothing above the locked base to sweep: trading ${usd(W.active)}, base ${usd(W.base)}`, "لا يوجد ربح فوق المبلغ المعلّق"); return; }
+    const mode = W.sweepMode;
+    W.sweepMode = "every";
+    try { await sweepCheck("Sweep now, pressed by hand"); } finally { W.sweepMode = mode; save(); }
+    renderWallet();
+  }
+
+  /* ---------------- encrypted state capsule (ADR-093) ---------------- */
+  // Moves the paper desk between laptop and iPhone with no server: one .omega-capsule.json file holding the
+  // paper wallet (locked base, safe vault, open position), the full SHA-256 receipt chain, the court's learned
+  // weights and every THE CHAIN notes.md, encrypted with AES-GCM-256 under a PBKDF2-SHA256 key
+  // (600,000 rounds, random 16-byte salt and 12-byte IV), the same scheme as the Ops Room vault.
+  // The fingerprint is SHA-256 of the ciphertext, so both devices can compare it before importing.
+  // No API key or vault secret is ever put in a capsule.
+  const CAP_FORMAT = "omega-capsule-v1", CAP_ITER = 600000;
+  const te = new TextEncoder(), td = new TextDecoder();
+  const toB64 = buf => { const u = new Uint8Array(buf); let out = ""; for (let i = 0; i < u.length; i += 0x8000) out += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(out); };
+  const fromB64 = str => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+  const hexOf = async bytes => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(b => b.toString(16).padStart(2, "0")).join("");
+  const capSay = (en, arText, bad) => { const n = $("cpStatus"); n.className = "why" + (bad ? " bad-text" : ""); n.replaceChildren(document.createTextNode(en + " · "), ar(arText)); };
+  async function capKey(pass, salt) {
+    const base = await crypto.subtle.importKey("raw", te.encode(pass), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: CAP_ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  }
+  function notesSnapshot() {
+    const out = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("omega-notes")) out[k] = localStorage.getItem(k);
+      }
+    } catch { /* storage blocked: no notes to carry */ }
+    return out;
+  }
+  function capPass() {
+    const pass = $("cpPass").value;
+    if (pass.length < 12) { capSay("Use a passphrase of at least 12 characters", "12 حرفاً على الأقل", true); $("cpPass").focus(); return null; }
+    return pass;
+  }
+  async function exportCapsule() {
+    const pass = capPass();
+    if (!pass) return;
+    $("cpExport").disabled = true;
+    capSay("Encrypting…", "جارٍ التشفير…");
+    try {
+      await chainTail;
+      const payload = { format: "omega-capsule-payload-v1", created: new Date().toISOString(), wallet: W, receipts, court: L, notes: notesSnapshot() };
+      const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await capKey(pass, salt), te.encode(JSON.stringify(payload)));
+      const fingerprint = await hexOf(ct);
+      const file = { format: CAP_FORMAT, created: payload.created, kdf: "PBKDF2-SHA256", iter: CAP_ITER, cipher: "AES-GCM-256", salt: toB64(salt), iv: toB64(iv), ct: toB64(ct), fingerprint, contents: ["paper wallet", "receipt chain", "court weights", "notes.md"] };
+      download("omega-" + payload.created.slice(0, 10) + ".omega-capsule.json", "application/json", JSON.stringify(file, null, 1));
+      $("cpPass").value = "";
+      $("cpFp").textContent = fingerprint.slice(0, 16) + "…";
+      capSay(`Capsule saved: ${receipts.length} receipts, ${Object.keys(payload.notes).length} notes. Fingerprint ${fingerprint.slice(0, 16)}`, "تم حفظ الكبسولة المشفرة");
+    } catch {
+      capSay("Encryption failed: this browser blocks WebCrypto here. Open the page from http://127.0.0.1:8796 or https", "تعذر التشفير", true);
+    } finally { $("cpExport").disabled = false; }
+  }
+  async function importCapsule(fileObj) {
+    const pass = capPass();
+    if (!pass || !fileObj) return;
+    capSay("Checking the capsule…", "جارٍ فحص الكبسولة…");
+    try {
+      if (fileObj.size > 32 * 1024 * 1024) throw new Error("This file is larger than 32 MB, so it is not a capsule");
+      const file = JSON.parse(await fileObj.text());
+      if (!file || file.format !== CAP_FORMAT || file.iter !== CAP_ITER || file.cipher !== "AES-GCM-256") throw new Error("This file is not an OMEGA capsule v1");
+      const ct = fromB64(file.ct);
+      const fp = await hexOf(ct);
+      if (fp !== file.fingerprint) throw new Error("Fingerprint mismatch: the file was changed or damaged");
+      let pt;
+      try { pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(file.iv) }, await capKey(pass, fromB64(file.salt)), ct); }
+      catch { throw new Error("Wrong passphrase, or the file was changed"); }
+      const payload = JSON.parse(td.decode(pt));
+      if (!payload || payload.format !== "omega-capsule-payload-v1" || !payload.wallet || typeof payload.wallet !== "object" || !Array.isArray(payload.receipts)) throw new Error("The capsule content is not in the expected shape");
+      for (const k of ["cash", "base", "active", "safe", "split"]) if (!Number.isFinite(payload.wallet[k])) throw new Error(`The capsule wallet has no valid "${k}"`);
+      const chk = await verifyChain(payload.receipts);
+      if (!chk.ok) throw new Error(`The capsule's receipt chain is broken at receipt ${chk.at + 1}: ${chk.why}`);
+      const court = validLearning(payload.court) ? payload.court : freshLearning();
+      const notes = payload.notes && typeof payload.notes === "object" ? payload.notes : {};
+      const msg = `Replace this device's paper desk with the capsule from ${file.created}?\n\n` +
+        `Locked base ${nf(payload.wallet.base, 2)} · safe vault ${nf(payload.wallet.safe, 2)} · ${payload.receipts.length} receipts (chain verified) · ${Object.keys(notes).length} notes.\n` +
+        `Fingerprint ${fp.slice(0, 16)}. The current paper wallet, receipts and court weights on this device are overwritten.`;
+      if (!window.confirm(msg)) { capSay("Import cancelled. Nothing changed", "أُلغي الاستيراد ولم يتغيّر شيء"); return; }
+      D.auto = false;
+      store.set(WKEY, payload.wallet);
+      store.set(RKEY, payload.receipts);
+      store.set(LKEY, court);
+      try { for (const [k, v] of Object.entries(notes)) if (k.startsWith("omega-notes") && typeof v === "string") localStorage.setItem(k, v); } catch { /* storage blocked */ }
+      $("cpPass").value = "";
+      capSay(`Imported. ${payload.receipts.length} receipts verified. Reloading…`, "تم الاستيراد، جارٍ إعادة التحميل…");
+      $("cpFile").value = "";
+      setTimeout(() => location.reload(), 600);
+    } catch (e) {
+      capSay(e.message || "Import failed", "تعذر الاستيراد ولم يتغيّر شيء", true);
+    }
+  }
+
+  /* ---------------- keyboard: K emergency stop, S sweep profit ---------------- */
+  // Ignored while typing in a field. Physical key codes, so an Arabic keyboard layout works too.
+  const typing = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e.target)) return;
+    if (e.code === "KeyK") { e.preventDefault(); kill("Emergency stop: keyboard K"); }
+    else if (e.code === "KeyS") { e.preventDefault(); sweepNow(); }
+  });
+
   /* ---------------- wiring ---------------- */
+  $("wlSweepNow").addEventListener("click", sweepNow);
+  $("cpExport").addEventListener("click", exportCapsule);
+  const capFile = () => $("cpFile").files && $("cpFile").files[0];
+  $("cpImport").addEventListener("click", () => { if (!capPass()) return; if (capFile()) importCapsule(capFile()); else $("cpFile").click(); });
+  $("cpFile").addEventListener("change", () => {
+    if (!capFile()) return;
+    if ($("cpPass").value.length >= 12) importCapsule(capFile());
+    else capSay("File chosen. Enter the capsule passphrase, then press Import", "اكتب عبارة المرور ثم اضغط استيراد");
+  });
   $("wlBase").value = W.base > 0 ? String(W.base) : $("wlBase").value;
   $("wlSweepMode").value = W.sweepMode;
   $("wlTarget").value = String(W.target);
@@ -3309,7 +3669,7 @@ const DEFAULT_ALLOW_HOSTS = [
   $("dkSymbol").addEventListener("change", () => {
     if (W.pos) { $("dkSymbol").value = D.sym; say("Close the paper position before switching market", "أغلق الصفقة قبل تغيير السوق"); return; }
     D.sym = $("dkSymbol").value;
-    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, flow: null, flowAt: 0 });
+    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, flow: null, flowAt: 0, tape: [], microHist: [] });
     loadFast().catch(() => {}); loadSlow().catch(() => {}); runFractal().catch(fractalFail);
   });
   $("rcVerify").addEventListener("click", async () => {
@@ -3325,10 +3685,11 @@ const DEFAULT_ALLOW_HOSTS = [
   });
   const fractalFail = () => state("frState", "offline", "History unreachable, retrying", "تعذر تحميل التاريخ، إعادة المحاولة");
 
-  renderWallet(); renderReceipts(); renderPosition(); setAuto(false);
+  renderWallet(); renderReceipts(); renderPosition(); renderLearn(); renderChain(); setAuto(false);
   const loop = (fn, every) => { const tick = async () => { if (!document.hidden) { try { await fn(); } catch { /* next tick retries */ } } setTimeout(tick, every); }; tick(); };
   loop(loadFast, 5000);
   loop(loadSlow, 60000);
+  loop(loadChain, 60000);
   setInterval(staleGuard, 5000);
   const fr = async () => { try { await runFractal(); } catch { fractalFail(); setTimeout(fr, 60000); } };
   fr();
@@ -3374,8 +3735,11 @@ const DEFAULT_ALLOW_HOSTS = [
     { n: "Strait of Hormuz", a: "مضيق هرمز", lat: 26.57, lon: 56.25 },
     { n: "Bab el-Mandeb", a: "باب المندب", lat: 12.6, lon: 43.33 },
     { n: "Suez Canal", a: "قناة السويس", lat: 30.0, lon: 32.58 },
-    { n: "Strait of Malacca", a: "مضيق ملقا", lat: 2.5, lon: 101.0 }
+    { n: "Strait of Malacca", a: "مضيق ملقا", lat: 2.5, lon: 101.0 },
+    { n: "Panama Canal", a: "قناة بنما", lat: 9.08, lon: -79.68 }
   ];
+  const STRAIT_KEYS = ["hormuz", "bab", "suez", "malacca", "panama"];
+  const STRAIT_WORDS = [["hormuz"], ["bab el-mandeb", "bab al-mandab", "bab el mandeb"], ["suez"], ["malacca", "singapore strait"], ["panama canal"]];
   const HUBS = [...CHOKE, { n: "Kuwait City", a: "مدينة الكويت", lat: 29.38, lon: 47.98 }, { n: "Rotterdam", a: "روتردام", lat: 51.95, lon: 4.14 }, { n: "Houston", a: "هيوستن", lat: 29.75, lon: -95.3 }, { n: "Singapore", a: "سنغافورة", lat: 1.26, lon: 103.82 }];
   const PORTS = [
     { n: "Helsinki", a: "هلسنكي", lat: 60.16, lon: 24.95 }, { n: "Turku", a: "توركو", lat: 60.43, lon: 22.22 },
@@ -3387,16 +3751,18 @@ const DEFAULT_ALLOW_HOSTS = [
     proj: store.get("omega-osiris-proj", "3d") === "2d" ? "2d" : "3d",
     style: ["day", "map", "sat"].includes(store.get("omega-osiris-style", "map")) ? store.get("omega-osiris-style", "map") : "map",
     lon0: 48, lat0: 22, w: 0, h: 0, dpr: 1, visible: true, dirty: true, drag: null,
-    quakes: [], wx: [], air: [], gdacs: [], news: [], ais: [], ports: [], prices: [],
+    quakes: [], wx: [], air: [], gdacs: [], news: [], ais: [], ports: [], prices: [], straits: [], seaNews: [],
     src: {
       usgs: { en: "USGS earthquakes (M2.5+, 24 h)", ar: "زلازل USGS", state: "checking", n: 0, at: 0 },
-      meteo: { en: "Open-Meteo, 8 hubs", ar: "الطقس في 8 مراكز", state: "checking", n: 0, at: 0 },
+      meteo: { en: "Open-Meteo, 9 hubs", ar: "الطقس في 9 مراكز", state: "checking", n: 0, at: 0 },
       binance: { en: "Binance spot tickers", ar: "أسعار باينانس", state: "checking", n: 0, at: 0 },
       opensky: { en: "OpenSky, Gulf & Red Sea box (proxy)", ar: "الطيران عبر الوسيط", state: "checking", n: 0, at: 0 },
       gdacs: { en: "GDACS disaster alerts (proxy)", ar: "إنذارات GDACS", state: "checking", n: 0, at: 0 },
       gdelt: { en: "GDELT headlines, 6 h (proxy)", ar: "عناوين GDELT", state: "checking", n: 0, at: 0 },
       ais: { en: "Digitraffic AIS, Baltic (proxy)", ar: "سفن البلطيق", state: "checking", n: 0, at: 0 },
-      straits: { en: "Live ships in the 4 straits", ar: "السفن الحية في المضائق", state: "none", n: 0, at: 0 }
+      straits: { en: "NGA navigation warnings, 5 straits (proxy)", ar: "الإنذارات الملاحية في المضائق الخمسة", state: "checking", n: 0, at: 0 },
+      seaNews: { en: "GDELT strait headlines, 24 h (proxy)", ar: "أخبار المضائق", state: "checking", n: 0, at: 0 },
+      gibs: { en: "NASA GIBS Blue Marble (SAT)", ar: "صور ناسا الفضائية", state: "standby", n: 0, at: 0 }
     },
     pwsiHist: new Ring(300), proxyUp: null
   };
@@ -3460,21 +3826,87 @@ const DEFAULT_ALLOW_HOSTS = [
     ctx.beginPath(); ctx.moveTo(p[0], p[1] - r); ctx.lineTo(p[0] + r, p[1]); ctx.lineTo(p[0], p[1] + r); ctx.lineTo(p[0] - r, p[1]); ctx.closePath();
     ctx.fillStyle = color; ctx.fill();
   }
+  // SAT imagery (ADR-093): NASA GIBS Blue Marble Next Generation from the EPSG:4326 "500m" tile set.
+  // Level 0 is two 512 px tiles of 180° each, the same plate carrée the 2D view draws, so 2D scales the
+  // texture straight in and 3D resamples it per pixel through the inverse orthographic projection.
+  // Until both tiles load, or with no internet, SAT keeps the procedural colours (offline fallback).
+  const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_NextGeneration/default/500m/0/0/";
+  const sat = { state: "idle", tex: null, px: null, globe: null, key: "" };
+  function loadSat() {
+    if (sat.state !== "idle") return;
+    sat.state = "loading"; S.src.gibs.state = "checking";
+    const tex = document.createElement("canvas");
+    tex.width = 1024; tex.height = 512;
+    const tctx = tex.getContext("2d");
+    let done = 0;
+    const fail = () => { if (sat.state === "failed") return; sat.state = "failed"; mark("gibs", false); render(); };
+    for (const col of [0, 1]) {
+      const im = new Image();
+      im.crossOrigin = "anonymous";
+      im.decoding = "async";
+      im.addEventListener("error", fail);
+      im.addEventListener("load", () => {
+        if (sat.state === "failed") return;
+        tctx.drawImage(im, col * 512, 0, 512, 512);
+        if (++done < 2) return;
+        sat.tex = tex;
+        // Pixel access needs CORS on the tiles; without it 2D still shows the imagery and 3D falls back.
+        try { sat.px = tctx.getImageData(0, 0, 1024, 512).data; } catch { sat.px = null; }
+        sat.state = "ready"; sat.key = "";
+        mark("gibs", true, 2);
+        render();
+      });
+      im.src = GIBS + col + ".jpeg";
+    }
+  }
+  function satGlobe() {
+    const r = R(), d = Math.max(64, Math.min(512, Math.round(2 * r)));
+    const key = d + ":" + S.lon0.toFixed(2) + ":" + S.lat0.toFixed(2);
+    if (sat.key === key && sat.globe) return sat.globe;
+    const off = sat.globe || document.createElement("canvas");
+    off.width = d; off.height = d;
+    const octx = off.getContext("2d"), img = octx.createImageData(d, d), out = img.data, src = sat.px;
+    const sp0 = Math.sin(S.lat0 * RAD), cp0 = Math.cos(S.lat0 * RAD), half = d / 2;
+    for (let py = 0; py < d; py++) {
+      const dy = (half - py - 0.5) / half;
+      for (let px = 0; px < d; px++) {
+        const dx = (px + 0.5 - half) / half, rho2 = dx * dx + dy * dy;
+        if (rho2 > 1) continue;
+        const cosc = Math.sqrt(1 - rho2);
+        const lat = Math.asin(clamp(cosc * sp0 + dy * cp0, -1, 1)) / RAD;
+        const lon = S.lon0 + Math.atan2(dx, cosc * cp0 - dy * sp0) / RAD;
+        const u = Math.min(1023, Math.floor((((lon + 180) % 360 + 360) % 360) / 360 * 1024));
+        const v = Math.min(511, Math.max(0, Math.floor((90 - lat) / 180 * 512)));
+        const si = (v * 1024 + u) * 4, oi = (py * d + px) * 4;
+        out[oi] = src[si]; out[oi + 1] = src[si + 1]; out[oi + 2] = src[si + 2]; out[oi + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    sat.globe = off; sat.key = key;
+    return off;
+  }
   function draw() {
     if (!S.w || !S.h) return;
     ctx.clearRect(0, 0, S.w, S.h);
     ctx.fillStyle = colors.ocean;
-    if (S.proj === "3d") { ctx.beginPath(); ctx.arc(S.w / 2, S.h / 2, R(), 0, Math.PI * 2); ctx.fill(); }
-    else { const W = Math.min(S.w, S.h * 2), H = W / 2; ctx.fillRect((S.w - W) / 2, (S.h - H) / 2, W, H); }
+    const imagery = S.style === "sat" && sat.state === "ready" && (S.proj === "2d" || sat.px);
+    if (S.proj === "3d") {
+      if (imagery) ctx.drawImage(satGlobe(), S.w / 2 - R(), S.h / 2 - R(), 2 * R(), 2 * R());
+      else { ctx.beginPath(); ctx.arc(S.w / 2, S.h / 2, R(), 0, Math.PI * 2); ctx.fill(); }
+    } else {
+      const W = Math.min(S.w, S.h * 2), H = W / 2;
+      if (imagery) ctx.drawImage(sat.tex, (S.w - W) / 2, (S.h - H) / 2, W, H);
+      else ctx.fillRect((S.w - W) / 2, (S.h - H) / 2, W, H);
+    }
     ctx.strokeStyle = colors.grid; ctx.lineWidth = 1;
     for (let la = -60; la <= 60; la += 30) { ctx.beginPath(); let on = false; for (let lo = -180; lo <= 180; lo += 4) { const p = project(la, lo); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } } ctx.stroke(); }
     for (let lo = -180; lo < 180; lo += 30) { ctx.beginPath(); let on = false; for (let la = -88; la <= 88; la += 4) { const p = project(la, lo); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } } ctx.stroke(); }
     ctx.fillStyle = colors.land;
     const lr = Math.max(1.4, R() / 120);
-    for (const [la, lo] of land) { const p = project(la / RAD, lo / RAD); if (p) { ctx.beginPath(); ctx.arc(p[0], p[1], lr, 0, Math.PI * 2); ctx.fill(); } }
+    if (!imagery) for (const [la, lo] of land) { const p = project(la / RAD, lo / RAD); if (p) { ctx.beginPath(); ctx.arc(p[0], p[1], lr, 0, Math.PI * 2); ctx.fill(); } }
     if (S.layers.sea) {
       for (const v of S.ais) dot(v[1], v[0], 1.2, colors.violet);
-      for (const c of CHOKE) diamond(c.lat, c.lon, 6, colors.gold);
+      CHOKE.forEach((c, i) => { const st = S.straits[i]; diamond(c.lat, c.lon, st && st.warnings.length ? 8 : 6, st && st.warnings.length ? colors.danger : colors.gold); });
     }
     if (S.layers.ports) for (const p of S.ports) dot(p.lat, p.lon, 4 + Math.min(8, p.moored / 4), colors.success, true);
     if (S.layers.air) for (const a of S.air) dot(a.lat, a.lon, 1.6, colors.accent);
@@ -3521,8 +3953,24 @@ const DEFAULT_ALLOW_HOSTS = [
     return S.proxyUp;
   }
   async function loadProxy() {
-    if (!(await proxyUp())) { for (const k of ["opensky", "gdacs", "gdelt", "ais"]) S.src[k].state = "offline"; return; }
+    if (!(await proxyUp())) { for (const k of ["opensky", "gdacs", "gdelt", "ais", "straits", "seaNews"]) S.src[k].state = "offline"; return; }
     await Promise.all([
+      getJson(PROXY + "/osiris/nga", 30000).then(j => {
+        const by = new Map((Array.isArray(j.straits) ? j.straits : []).map(x => [x.key, x]));
+        S.straits = STRAIT_KEYS.map(k => {
+          const x = by.get(k) || {};
+          const warnings = (Array.isArray(x.warnings) ? x.warnings : []).map(w => ({ id: String(w.id || ""), issued: String(w.issued || ""), text: String(w.text || ""), match: w.match === "position" ? "position" : "name" }));
+          return { key: k, warnings, at: String(j.at || "") };
+        });
+        mark("straits", true, S.straits.reduce((n, x) => n + x.warnings.length, 0));
+      }).catch(() => { S.straits = []; mark("straits", false); }),
+      getJson(PROXY + "/osiris/gdelt-sea", 20000).then(j => {
+        S.seaNews = (j.articles || []).slice(0, 50).map(a => {
+          const t = String(a.title || "").toLowerCase();
+          return { title: a.title, url: a.url, domain: a.domain, seen: a.seendate, k: STRAIT_KEYS.filter((_, i) => STRAIT_WORDS[i].some(w => t.includes(w))) };
+        });
+        mark("seaNews", true, S.seaNews.length);
+      }).catch(() => { S.seaNews = []; mark("seaNews", false); }),
       getJson(PROXY + "/osiris/aviation", 20000).then(j => { S.air = (j.states || []).filter(s => Number.isFinite(s[5]) && Number.isFinite(s[6]) && !s[8]).slice(0, 2000).map(s => ({ lon: s[5], lat: s[6] })); mark("opensky", true, S.air.length); }).catch(() => mark("opensky", false)),
       getJson(PROXY + "/osiris/gdacs", 20000).then(j => {
         S.gdacs = (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && ["Orange", "Red"].includes(f.properties.alertlevel))
@@ -3559,6 +4007,10 @@ const DEFAULT_ALLOW_HOSTS = [
       const red = S.gdacs.filter(g => g.level === "Red").length, orange = S.gdacs.length - red;
       parts.push({ en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (GDACS)` });
     }
+    if (S.src.straits.state === "online") {
+      const n = S.straits.reduce((a, x) => a + x.warnings.length, 0), hot = S.straits.filter(x => x.warnings.length).length;
+      parts.push({ en: "Strait warnings", a: "إنذارات المضائق", v: clamp(n * 8 + hot * 6, 0, 100), why: `${n} active NGA warnings in ${hot} of 5 straits` });
+    }
     if (!parts.length) return { score: NaN, parts, coverage: 0 };
     return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length };
   }
@@ -3573,10 +4025,10 @@ const DEFAULT_ALLOW_HOSTS = [
     $("osPwsi").textContent = Number.isFinite(P.score) ? nf(P.score, 0) : "—";
     $("osPwsi").className = "num " + (!Number.isFinite(P.score) ? "" : P.score >= 70 ? "bad-text" : P.score >= 40 ? "warn-text" : "ok-text");
     $("osPwsiNote").replaceChildren(Number.isFinite(P.score)
-      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 3 components with live data`)
+      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 4 components with live data`)
       : ar("تعذر التحقق منها: لا يوجد مصدر حي الآن"));
     kv("osParts", P.parts.length ? P.parts.map(p => [p.en + " · " + p.why, p.a, nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No component has live data", "لا توجد بيانات حية", "—"]]);
-    const label = { online: "LIVE", offline: "OFFLINE", checking: "CHECKING…", none: "NO FREE SOURCE" };
+    const label = { online: "LIVE", offline: "OFFLINE", checking: "CHECKING…", none: "NO FREE SOURCE", standby: "STANDBY · pick SAT" };
     kv("osCore", Object.values(S.src).map(s => [s.en, s.ar, label[s.state] + (s.state === "online" ? " · " + s.n + " · " + clock.format(s.at) + " UTC" : ""), s.state === "online" ? "ok-text" : s.state === "offline" ? "bad-text" : ""]));
     const items = [];
     for (const g of S.gdacs.slice(0, 6)) items.push({ t: g.level.toUpperCase() + " " + (g.type || ""), text: g.name, url: g.url, cls: g.level === "Red" ? "ev-fail" : "ev-warn" });
@@ -3587,10 +4039,25 @@ const DEFAULT_ALLOW_HOSTS = [
       if (u) { const a = h("a", "", i.text); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "auto"; li.append(a); } else li.append(h("span", "", i.text));
       return li;
     }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", S.proxyUp === false ? "Start the local proxy to load GDACS and GDELT alerts" : "No orange or red alerts right now")); return li; })()]));
+    const sOn = S.src.straits.state === "online", nOn = S.src.seaNews.state === "online";
+    kv("osStraits", CHOKE.map((c, i) => {
+      const st = S.straits[i], news = S.seaNews.filter(n => n.k.includes(STRAIT_KEYS[i]));
+      if (!sOn && !nOn) return [c.n, c.a, "تعذر التحقق منها", "bad-text"];
+      const bits = [];
+      if (sOn) bits.push(st && st.warnings.length ? `${st.warnings.length} NGA warning${st.warnings.length > 1 ? "s" : ""} · latest ${st.warnings[0].id} (${st.warnings[0].issued || "date not given"})` : "0 active NGA warnings");
+      if (nOn) bits.push(`${news.length} GDELT headline${news.length === 1 ? "" : "s"} in 24 h`);
+      return [c.n, c.a, bits.join(" · "), st && st.warnings.length ? "warn-text" : "ok-text"];
+    }));
+    const sw = [];
+    S.straits.forEach((st, i) => { for (const w of st.warnings.slice(0, 3)) sw.push({ who: CHOKE[i].n, w }); });
+    $("osStraitList").replaceChildren(...(sw.length ? sw.slice(0, 10).map(({ who, w }) => {
+      const li = h("li"); li.append(h("time", "ev-warn", who), h("span", "", `${w.id} · ${w.issued} · ${w.text.slice(0, 220)}`));
+      return li;
+    }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", sOn ? "No active NGA warning names or falls inside one of the five straits" : S.proxyUp === false ? "Start the local proxy (start-omega) to load NGA warnings" : "Checking…")); return li; })()]));
     const tick = [];
     for (const p of S.prices) tick.push([p.s, nf(p.p, p.p < 10 ? 3 : 2), (p.c >= 0 ? "+" : "") + nf(p.c, 2) + "%", p.c >= 0 ? "ok-text" : "bad-text"]);
     for (const q of S.quakes.slice(0, 4)) tick.push(["M" + nf(q.mag), q.place.slice(0, 40), clock.format(q.t) + " UTC", q.mag >= 5 ? "bad-text" : ""]);
-    tick.push(["PWSI", Number.isFinite(P.score) ? nf(P.score, 0) + " / 100" : "unverified", P.coverage + "/3 sources", P.score >= 70 ? "bad-text" : ""]);
+    tick.push(["PWSI", Number.isFinite(P.score) ? nf(P.score, 0) + " / 100" : "unverified", P.coverage + "/4 sources", P.score >= 70 ? "bad-text" : ""]);
     if (S.src.opensky.state === "online") tick.push(["AIR", S.air.length + " aircraft", "Gulf & Red Sea", ""]);
     const build = () => tick.map(([a, b, c, cls]) => { const s = h("span", "tk"); s.append(h("b", "", a), document.createTextNode(" " + b + " "), h("i", cls, c)); return s; });
     // The marquee needs a second copy to loop seamlessly; a short ticker stays still instead.
@@ -3618,7 +4085,7 @@ const DEFAULT_ALLOW_HOSTS = [
   const seg = (attr, key, storeKey) => {
     const btns = document.querySelectorAll(`[data-${attr}]`);
     const sync = () => btns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset[attr] === S[key])));
-    btns.forEach(b => b.addEventListener("click", () => { S[key] = b.dataset[attr]; store.set(storeKey, S[key]); sync(); readColors(); redraw(); }));
+    btns.forEach(b => b.addEventListener("click", () => { S[key] = b.dataset[attr]; store.set(storeKey, S[key]); sync(); readColors(); if (S.style === "sat") loadSat(); render(); }));
     sync();
   };
   seg("proj", "proj", "omega-osiris-proj");
@@ -3644,7 +4111,7 @@ const DEFAULT_ALLOW_HOSTS = [
   new MutationObserver(() => { readColors(); redraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   /* ---------------- schedule ---------------- */
-  readColors(); size(); render();
+  readColors(); size(); if (S.style === "sat") loadSat(); render();
   const every = (fn, ms) => { const run = async () => { if (!document.hidden) { await fn(); render(); } setTimeout(run, ms); }; run(); };
   every(loadQuakes, 5 * 60e3);
   every(loadWeather, 15 * 60e3);
@@ -3656,6 +4123,7 @@ const DEFAULT_ALLOW_HOSTS = [
 "use strict";
 // App shell (ADR-092): five views with a segmented control (laptop) and a floating dock (phone),
 // the status island, and the home-screen install links when the page is served over http(s).
+// ADR-093: view 5 becomes a four-quadrant command wall at 1280 px and up, and keys 1–5 switch views.
 (() => {
   const $ = id => document.getElementById(id);
   const nf = v => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v) : "—";
@@ -3664,9 +4132,56 @@ const DEFAULT_ALLOW_HOSTS = [
   const get = () => { try { return localStorage.getItem("omega-view"); } catch { return null; } };
   const put = v => { try { localStorage.setItem("omega-view", v); } catch { /* storage blocked */ } };
 
+  // Command wall: on view 5 at 1280 px and up the cards below move into four quadrants that fill one
+  // screen; a comment marker keeps each card's home so it goes back on any other view or width.
+  const wall = $("wall"), wide = window.matchMedia("(min-width: 1280px)");
+  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "frTitle"], 4: ["wlTitle", "cbTitle", "rcTitle", "cpTitle"] };
+  const homes = new Map();
+  function maximize(q) {
+    wall.classList.toggle("maxed", !!q);
+    for (const quad of wall.querySelectorAll(".quad")) {
+      const on = quad.dataset.q === q;
+      quad.classList.toggle("max", on);
+      quad.querySelector(".quad-max").setAttribute("aria-pressed", String(on));
+    }
+    window.dispatchEvent(new Event("resize"));
+  }
+  function setWall() {
+    const on = main.dataset.active === "5" && wide.matches;
+    if (on === main.classList.contains("walled")) return;
+    if (on) {
+      for (const [q, ids] of Object.entries(QUADS)) {
+        const body = wall.querySelector(`[data-q="${q}"] .quad-body`);
+        for (const id of ids) {
+          const title = $(id), card = title && title.closest("section");
+          if (!card || homes.has(card)) continue;
+          const mark = document.createComment("wall home " + id);
+          card.before(mark);
+          homes.set(card, mark);
+          body.append(card);
+        }
+      }
+    } else {
+      for (const [card, mark] of homes) mark.replaceWith(card);
+      homes.clear();
+      maximize(null);
+    }
+    main.classList.toggle("walled", on);
+    window.dispatchEvent(new Event("resize"));
+  }
+  for (const b of wall.querySelectorAll(".quad-max")) b.addEventListener("click", () => {
+    const q = b.closest(".quad").dataset.q;
+    maximize(wall.classList.contains("maxed") && b.getAttribute("aria-pressed") === "true" ? null : q);
+  });
+  wide.addEventListener("change", setWall);
+  // The wall is one screen high below the sticky header; keep its height in step with the header.
+  const topbar = document.querySelector(".topbar");
+  new ResizeObserver(() => document.documentElement.style.setProperty("--header-h", Math.ceil(topbar.getBoundingClientRect().height) + "px")).observe(topbar);
+
   function show(v, opts = {}) {
     if (!VIEWS.includes(v)) v = "1";
     main.dataset.active = v;
+    setWall();
     for (const b of document.querySelectorAll("[data-go]")) b.setAttribute("aria-pressed", String(b.dataset.go === v));
     put(v);
     const url = new URL(location.href);
@@ -3695,6 +4210,15 @@ const DEFAULT_ALLOW_HOSTS = [
     if (a && follow(a.getAttribute("href"))) e.preventDefault();
   });
   window.addEventListener("hashchange", () => follow(location.hash));
+  // Keys 1–5 switch views, Esc restores a maximized quadrant. Ignored while typing in a field.
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    const m = /^(?:Digit|Numpad)([1-5])$/.exec(e.code);
+    if (m) { e.preventDefault(); show(m[1]); }
+    else if (e.key === "Escape" && wall.classList.contains("maxed")) { e.preventDefault(); maximize(null); }
+  });
   const fromUrl = new URL(location.href).searchParams.get("view");
   show(fromUrl || get() || "1", { keepHash: true });
   if (location.hash) follow(location.hash);
