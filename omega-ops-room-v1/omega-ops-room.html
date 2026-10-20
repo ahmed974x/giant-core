@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-cy3NhawyGikW0HbXKWXZjiFdMSpcoSUHWgR7nFXwg+A=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-8GBLd4j5dSr159bD5LlY3DXOKjixrDO0/Lr2Ee62qIs=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -1128,7 +1128,7 @@
 
     <section data-view="4 5" class="card mt-3" aria-labelledby="rcTitle" id="receipts">
       <div class="card-head"><div class="card-title" id="rcTitle">Receipt chain · SHA-256<span class="ar" lang="ar">سلسلة الفواتير الموثقة</span></div><div class="tag num" id="rcCount">0</div></div>
-      <p class="sub">Every deposit, lock, fill, sweep, withdrawal and emergency stop issues a receipt. Each hash covers the receipt and the previous hash, so changing or deleting any old receipt breaks every hash after it. · <span class="ar" lang="ar">كل فاتورة مربوطة ببصمة السابقة.</span></p>
+      <p class="sub">Every deposit, lock, fill, sweep, withdrawal and emergency stop issues a receipt. Each hash covers the receipt and the previous hash, so changing or deleting any old receipt breaks every hash after it. Past 1000 receipts the oldest 500 fold into one Merkle checkpoint so storage never fills; export the chain first if you need every line. · <span class="ar" lang="ar">كل فاتورة مربوطة ببصمة السابقة، والقديمة تُضغط في نقطة تحقق Merkle.</span></p>
       <div class="form-row">
         <button class="btn primary" id="rcVerify" type="button">Verify receipt chain · <span class="ar" lang="ar">تحقق من السلسلة</span></button>
         <button class="btn" id="rcExport" type="button">Export JSON · <span class="ar" lang="ar">صدّر</span></button>
@@ -3239,47 +3239,144 @@ const DEFAULT_ALLOW_HOSTS = [
   }
 
   /* ---------------- receipts: SHA-256 hash chain ---------------- */
-  const RKEY = "omega-receipts-v1";
+  const RKEY = "omega-receipts-v1", CKEY = "omega-receipt-checkpoints-v1";
   let receipts = store.get(RKEY, []);
   if (!Array.isArray(receipts)) receipts = [];
+  let checkpoints = store.get(CKEY, []);
+  if (!Array.isArray(checkpoints)) checkpoints = [];
   const GENESIS = "0".repeat(64);
+  // Micro-unit money (ADR-096): USDT amounts are rounded to 1e-6 before they reach the wallet or a receipt,
+  // so float drift never changes a hash. The canonical form still rounds to 8 decimals, which leaves
+  // micro-unit values unchanged and keeps every older chain verifiable.
+  const micro = v => Number.isFinite(v) ? Math.round(v * 1e6) / 1e6 : v;
   const canon = v => {
     if (typeof v === "number") return Number.isFinite(v) ? Number(v.toFixed(8)) : null;
     if (Array.isArray(v)) return v.map(canon);
     if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v).sort()) if (k !== "hash") o[k] = canon(v[k]); return o; }
     return v;
   };
-  const sha256 = async text => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))].map(b => b.toString(16).padStart(2, "0")).join("");
+  // SHA-256 in plain JavaScript (FIPS 180-4), used when WebCrypto is missing: a page opened over plain http
+  // on the home network is not a secure context, so crypto.subtle is undefined there (ADR-096).
+  const K256 = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ]);
+  function sha256Pure(bytes) {
+    const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6, m = new Uint8Array(total);
+    m.set(bytes); m[len] = 0x80;
+    const dv = new DataView(m.buffer);
+    dv.setUint32(total - 8, Math.floor(len / 0x20000000)); dv.setUint32(total - 4, (len << 3) >>> 0);
+    const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]), w = new Uint32Array(64);
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let off = 0; off < total; off += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const a = w[i - 15], b = w[i - 2];
+        w[i] = (w[i - 16] + (rotr(a, 7) ^ rotr(a, 18) ^ (a >>> 3)) + w[i - 7] + (rotr(b, 17) ^ rotr(b, 19) ^ (b >>> 10))) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, hh] = H;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (hh + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K256[i] + w[i]) >>> 0;
+        const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+        hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += hh;
+    }
+    const out = new Uint8Array(32), ov = new DataView(out.buffer);
+    for (let i = 0; i < 8; i++) ov.setUint32(i * 4, H[i]);
+    return out;
+  }
+  const subtleOk = () => typeof crypto !== "undefined" && !!crypto.subtle && window.isSecureContext;
+  const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+  const sha256 = async text => {
+    const bytes = new TextEncoder().encode(text);
+    return hex(subtleOk() ? await crypto.subtle.digest("SHA-256", bytes) : sha256Pure(bytes));
+  };
   let chainTail = Promise.resolve();
   function issue(type, amount, before, after, reason) {
     chainTail = chainTail.then(async () => {
-      const prev = receipts.length ? receipts[receipts.length - 1].hash : GENESIS;
-      const n = receipts.length + 1;
+      const lastCp = checkpoints[checkpoints.length - 1];
+      const prev = receipts.length ? receipts[receipts.length - 1].hash : lastCp ? lastCp.last_hash : GENESIS;
+      const n = receipts.length ? receipts[receipts.length - 1].seq + 1 : lastCp ? lastCp.to_seq + 1 : 1;
       const r = {
         invoice: "OMG-" + new Date().toISOString().slice(0, 10).replaceAll("-", "") + "-" + String(n).padStart(5, "0"),
-        seq: n, ts: new Date().toISOString(), mode: "paper", symbol: D.sym, type, amount,
+        seq: n, ts: new Date().toISOString(), mode: "paper", symbol: D.sym, type, amount: micro(amount),
         before, after, reason, prev_hash: prev
       };
       r.hash = await sha256(JSON.stringify(canon(r)));
       receipts.push(r);
-      store.set(RKEY, receipts);
+      await compact();
+      if (!store.set(RKEY, receipts)) { await compact(true); store.set(RKEY, receipts); }
       renderReceipts();
-    }).catch(() => { $("rcStatus").textContent = "Receipt could not be hashed: this browser blocks WebCrypto here. Open the page from http://127.0.0.1 or file://."; });
+    }).catch(() => { $("rcStatus").textContent = "Receipt could not be hashed or saved. Reload the page; the chain on screen is unchanged."; });
     return chainTail;
   }
-  async function verifyChain(list) {
-    let prev = GENESIS;
+  /* Merkle checkpoints (ADR-096): when the chain passes FOLD_AT receipts, the oldest FOLD are replaced by one
+     checkpoint {from_seq, to_seq, count, first_prev_hash, last_hash, merkle_root}. The root is the binary
+     Merkle tree of the receipt hashes (parent = SHA-256 of left hex + right hex, an odd last leaf is paired
+     with itself). Each checkpoint carries its own hash and the previous checkpoint's, so checkpoints form a
+     chain too, and the first kept receipt's prev_hash must equal the last checkpoint's last_hash. */
+  const FOLD_AT = 1000, FOLD = 500;
+  async function merkleRoot(hashes) {
+    let level = hashes.slice();
+    if (!level.length) return GENESIS;
+    while (level.length > 1) {
+      const next = [];
+      for (let i = 0; i < level.length; i += 2) next.push(await sha256(level[i] + (level[i + 1] ?? level[i])));
+      level = next;
+    }
+    return level[0];
+  }
+  async function makeCheckpoint(batch, prevCp) {
+    const cp = {
+      format: "omega-merkle-checkpoint-v1", from_seq: batch[0].seq, to_seq: batch[batch.length - 1].seq, count: batch.length,
+      first_prev_hash: batch[0].prev_hash, last_hash: batch[batch.length - 1].hash,
+      merkle_root: await merkleRoot(batch.map(r => r.hash)), ts: new Date().toISOString(), prev_checkpoint: prevCp ? prevCp.hash : GENESIS
+    };
+    cp.hash = await sha256(JSON.stringify(canon(cp)));
+    return cp;
+  }
+  async function compact(force) {
+    if (!force && receipts.length <= FOLD_AT) return;
+    const n = force ? Math.max(1, Math.floor(receipts.length / 2)) : FOLD;
+    if (receipts.length - n < 1) return;
+    const batch = receipts.slice(0, n);
+    const chk = await verifyChain(batch, checkpoints);
+    if (!chk.ok) return;
+    checkpoints.push(await makeCheckpoint(batch, checkpoints[checkpoints.length - 1]));
+    receipts = receipts.slice(n);
+    store.set(CKEY, checkpoints);
+  }
+  async function verifyCheckpoints(cps) {
+    let prev = GENESIS, prevHash = GENESIS, seq = 0;
+    for (let i = 0; i < cps.length; i++) {
+      const c = cps[i];
+      if (!c || c.format !== "omega-merkle-checkpoint-v1") return { ok: false, at: i, why: "checkpoint is malformed" };
+      if (c.first_prev_hash !== prev || c.prev_checkpoint !== prevHash || c.from_seq !== seq + 1 || c.count !== c.to_seq - c.from_seq + 1) return { ok: false, at: i, why: "checkpoint does not follow the one before it" };
+      if (await sha256(JSON.stringify(canon(c))) !== c.hash) return { ok: false, at: i, why: "checkpoint was changed after it was made" };
+      prev = c.last_hash; prevHash = c.hash; seq = c.to_seq;
+    }
+    return { ok: true, tip: prev, seq };
+  }
+  async function verifyChain(list, cps = []) {
+    const base = await verifyCheckpoints(cps);
+    if (!base.ok) return { ok: false, at: -1, why: `checkpoint ${base.at + 1}: ${base.why}` };
+    let prev = base.tip;
     for (let i = 0; i < list.length; i++) {
       const r = list[i];
+      if (!r || typeof r.hash !== "string") return { ok: false, at: i, why: "receipt is malformed" };
       if (r.prev_hash !== prev) return { ok: false, at: i, why: "prev_hash does not match the receipt before it" };
       const hsh = await sha256(JSON.stringify(canon(r)));
       if (hsh !== r.hash) return { ok: false, at: i, why: "content was changed after it was issued" };
       prev = r.hash;
     }
-    return { ok: true, n: list.length, tip: prev };
+    return { ok: true, n: list.length, folded: cps.reduce((a, c) => a + c.count, 0), tip: prev };
   }
   function renderReceipts() {
-    $("rcCount").textContent = String(receipts.length);
+    const folded = checkpoints.reduce((a, c) => a + c.count, 0);
+    $("rcCount").textContent = folded ? `${receipts.length} + ${folded} folded` : String(receipts.length);
     const head = h("tr");
     for (const t of ["#", "Time (UTC)", "Type", "Amount", "Before → after", "Reason", "Hash", ""]) head.append(h("th", "", t));
     const rows = receipts.slice(-30).reverse().map(r => {
@@ -3323,10 +3420,11 @@ const DEFAULT_ALLOW_HOSTS = [
   /* ---------------- paper wallet: locked base, sweep, kill switch ---------------- */
   const WKEY = "omega-desk-wallet-paper";
   const W = Object.assign({ cash: 1000, base: 0, active: 0, safe: 0, split: 0, sweeps: 0, swept: 0, sweepMode: "every", target: 1000, splitPct: 0, pos: null, dayKey: "", dayStart: 0, halted: false }, store.get(WKEY, {}));
-  const save = () => store.set(WKEY, W);
+  const MONEY = ["cash", "base", "active", "safe", "split", "swept", "target", "dayStart"];
+  const save = () => { for (const k of MONEY) W[k] = micro(W[k]); return store.set(WKEY, W); };
   const posValue = () => W.pos && Number.isFinite(D.price) ? W.pos.qty * D.price : 0;
   const tradingValue = () => W.active + posValue();
-  const snap = () => ({ cash: W.cash, locked_base: W.base, trading: tradingValue(), safe_vault: W.safe, split: W.split, total: W.cash + tradingValue() + W.safe + W.split });
+  const snap = () => ({ cash: micro(W.cash), locked_base: micro(W.base), trading: micro(tradingValue()), safe_vault: micro(W.safe), split: micro(W.split), total: micro(W.cash + tradingValue() + W.safe + W.split) });
   const say = (en, arText) => $("wlStatus").replaceChildren(document.createTextNode(en + " · "), ar(arText));
   const FEE = 0.001;
   // Fill against the live book: walk price levels until the notional (buy) or quantity (sell) is filled.
@@ -3616,7 +3714,7 @@ const DEFAULT_ALLOW_HOSTS = [
     capSay("Encrypting…", "جارٍ التشفير…");
     try {
       await chainTail;
-      const payload = { format: "omega-capsule-payload-v1", created: new Date().toISOString(), wallet: W, receipts, court: L, notes: notesSnapshot() };
+      const payload = { format: "omega-capsule-payload-v1", created: new Date().toISOString(), wallet: W, receipts, checkpoints, court: L, notes: notesSnapshot() };
       const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await capKey(pass, salt), te.encode(JSON.stringify(payload)));
       const fingerprint = await hexOf(ct);
@@ -3646,7 +3744,8 @@ const DEFAULT_ALLOW_HOSTS = [
       const payload = JSON.parse(td.decode(pt));
       if (!payload || payload.format !== "omega-capsule-payload-v1" || !payload.wallet || typeof payload.wallet !== "object" || !Array.isArray(payload.receipts)) throw new Error("The capsule content is not in the expected shape");
       for (const k of ["cash", "base", "active", "safe", "split"]) if (!Number.isFinite(payload.wallet[k])) throw new Error(`The capsule wallet has no valid "${k}"`);
-      const chk = await verifyChain(payload.receipts);
+      const cps = Array.isArray(payload.checkpoints) ? payload.checkpoints : [];
+      const chk = await verifyChain(payload.receipts, cps);
       if (!chk.ok) throw new Error(`The capsule's receipt chain is broken at receipt ${chk.at + 1}: ${chk.why}`);
       const court = validLearning(payload.court) ? payload.court : freshLearning();
       const notes = payload.notes && typeof payload.notes === "object" ? payload.notes : {};
@@ -3657,6 +3756,7 @@ const DEFAULT_ALLOW_HOSTS = [
       D.auto = false;
       store.set(WKEY, payload.wallet);
       store.set(RKEY, payload.receipts);
+      store.set(CKEY, cps);
       store.set(LKEY, court);
       try { for (const [k, v] of Object.entries(notes)) if (k.startsWith("omega-notes") && typeof v === "string") localStorage.setItem(k, v); } catch { /* storage blocked */ }
       $("cpPass").value = "";
@@ -3712,21 +3812,65 @@ const DEFAULT_ALLOW_HOSTS = [
     loadFast().catch(() => {}); loadSlow().catch(() => {}); runFractal().catch(fractalFail);
   });
   $("rcVerify").addEventListener("click", async () => {
-    const r = await verifyChain(receipts);
-    $("rcStatus").textContent = r.ok ? `Chain intact: ${r.n} receipts, tip ${r.tip.slice(0, 16)}…` : `Chain broken at receipt ${r.at + 1}: ${r.why}`;
+    const r = await verifyChain(receipts, checkpoints);
+    $("rcStatus").textContent = r.ok ? `Chain intact: ${r.n} receipts${r.folded ? ` after ${checkpoints.length} Merkle checkpoint(s) holding ${r.folded}` : ""}, tip ${r.tip.slice(0, 16)}…${subtleOk() ? "" : " (built-in SHA-256)"}` : r.at < 0 ? `Chain broken: ${r.why}` : `Chain broken at receipt ${r.at + 1}: ${r.why}`;
     $("rcStatus").className = "why " + (r.ok ? "ok-text" : "bad-text");
   });
-  $("rcExport").addEventListener("click", () => download("omega-receipts.json", "application/json", JSON.stringify({ format: "omega-receipt-chain-v1", receipts }, null, 2)));
+  $("rcExport").addEventListener("click", () => download("omega-receipts.json", "application/json", JSON.stringify({ format: "omega-receipt-chain-v1", checkpoints, receipts }, null, 2)));
   $("rcClear").addEventListener("click", () => {
     if (!window.confirm("Start a new receipt chain? Export the current one first if you need it. The paper wallet is not changed.")) return;
-    receipts = []; store.set(RKEY, receipts); renderReceipts();
+    receipts = []; checkpoints = []; store.set(RKEY, receipts); store.set(CKEY, checkpoints); renderReceipts();
     $("rcStatus").textContent = "New chain started.";
   });
   const fractalFail = () => state("frState", "offline", "History unreachable, retrying", "تعذر تحميل التاريخ، إعادة المحاولة");
 
   renderWallet(); renderReceipts(); renderPosition(); renderLearn(); renderChain(); setAuto(false);
-  const loop = (fn, every) => { const tick = async () => { if (!document.hidden) { try { await fn(); } catch { /* next tick retries */ } } setTimeout(tick, every); }; tick(); };
-  loop(loadFast, 5000);
+  // Background clock (ADR-096). Browsers slow main-thread timers in a hidden or minimised tab to once a
+  // minute, so stops and targets on an open paper position could wait that long. The ticks come from a
+  // small Blob Web Worker instead, which keeps its pace. While hidden the desk polls only when the auto
+  // engine is on or a paper position is open; otherwise it rests. Without workers it falls back to timers.
+  function tickWorker() {
+    const timers = new Map();
+    self.onmessage = e => {
+      const { id, every } = e.data || {};
+      clearInterval(timers.get(id));
+      if (every > 0) timers.set(id, setInterval(() => self.postMessage(id), every));
+      else timers.delete(id);
+    };
+  }
+  const clockJobs = new Map();
+  const clock = (() => {
+    try {
+      const url = URL.createObjectURL(new Blob([`(${tickWorker.toString()})();`], { type: "text/javascript" }));
+      const w = new Worker(url);
+      w.onmessage = e => { const job = clockJobs.get(e.data); if (job) job.tick(); };
+      w.onerror = () => {
+        // Worker refused (old browser or blocked): move every job to plain timers.
+        D.clock = "timers";
+        for (const job of clockJobs.values()) timerLoop(job.tick, job.every);
+        clockJobs.clear();
+      };
+      return w;
+    } catch { return null; }
+  })();
+  D.clock = clock ? "worker" : "timers";
+  const busy = () => D.auto || !!W.pos;
+  function timerLoop(tick, every) { const again = async () => { await tick(); setTimeout(again, every); }; setTimeout(again, every); }
+  const loop = (fn, every, keepHidden) => {
+    let running = false;
+    const tick = async () => {
+      if (running || (document.hidden && !(keepHidden && busy()))) return;
+      running = true;
+      try { await fn(); } catch { /* next tick retries */ } finally { running = false; }
+    };
+    if (clock && D.clock === "worker") {
+      const id = clockJobs.size + 1;
+      clockJobs.set(id, { tick, every });
+      clock.postMessage({ id, every });
+    } else timerLoop(tick, every);
+    tick();
+  };
+  loop(loadFast, 5000, true);
   loop(loadSlow, 60000);
   loop(loadChain, 60000);
   setInterval(staleGuard, 5000);

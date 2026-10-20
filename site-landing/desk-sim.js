@@ -28,10 +28,44 @@
     if (v && typeof v === "object") { var o = {}; Object.keys(v).sort().forEach(function (k) { if (k !== "hash") o[k] = canon(v[k]); }); return o; }
     return v;
   }
+  // SHA-256 in plain JavaScript (FIPS 180-4) for pages that are not a secure context, for example plain
+  // http on the home network, where crypto.subtle is undefined (ADR-096). Same output as WebCrypto.
+  var K256 = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ]);
+  function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+  function sha256Pure(bytes) {
+    var len = bytes.length, total = ((len + 9 + 63) >> 6) << 6, m = new Uint8Array(total), i, off;
+    m.set(bytes); m[len] = 0x80;
+    var dv = new DataView(m.buffer);
+    dv.setUint32(total - 8, Math.floor(len / 0x20000000)); dv.setUint32(total - 4, (len << 3) >>> 0);
+    var H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]), w = new Uint32Array(64);
+    for (off = 0; off < total; off += 64) {
+      for (i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+      for (i = 16; i < 64; i++) {
+        var x = w[i - 15], y = w[i - 2];
+        w[i] = (w[i - 16] + (rotr(x, 7) ^ rotr(x, 18) ^ (x >>> 3)) + w[i - 7] + (rotr(y, 17) ^ rotr(y, 19) ^ (y >>> 10))) >>> 0;
+      }
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], hh = H[7];
+      for (i = 0; i < 64; i++) {
+        var t1 = (hh + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K256[i] + w[i]) >>> 0;
+        var t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+        hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += hh;
+    }
+    var out = new Uint8Array(32), ov = new DataView(out.buffer);
+    for (i = 0; i < 8; i++) ov.setUint32(i * 4, H[i]);
+    return out;
+  }
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, "0"); }).join(""); }
   function sha256(text) {
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
-      return Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
-    });
+    var bytes = new TextEncoder().encode(text);
+    if (window.isSecureContext && window.crypto && crypto.subtle) return crypto.subtle.digest("SHA-256", bytes).then(hex);
+    return Promise.resolve(hex(sha256Pure(bytes)));
   }
   function seal(list, r) {
     r.prev_hash = list.length ? list[list.length - 1].hash : GENESIS;
@@ -39,10 +73,33 @@
     r.invoice = "SIM-" + String(r.seq).padStart(5, "0");
     return sha256(JSON.stringify(canon(r))).then(function (x) { r.hash = x; list.push(r); });
   }
-  function verify(list) {
-    var prev = GENESIS, i = 0;
+  // Merkle checkpoints from the Ops Room (ADR-096): each one must follow the one before it and match its
+  // own hash; the first kept receipt then links to the last checkpoint's last_hash.
+  function verifyCheckpoints(cps) {
+    var prev = GENESIS, prevCp = GENESIS, seq = 0, i = 0;
     function step() {
-      if (i >= list.length) return Promise.resolve({ ok: true, n: list.length, tip: prev });
+      if (i >= cps.length) return Promise.resolve({ ok: true, tip: prev, folded: seq });
+      var c = cps[i];
+      if (!c || c.format !== "omega-merkle-checkpoint-v1" || c.first_prev_hash !== prev || c.prev_checkpoint !== prevCp || c.from_seq !== seq + 1 || c.count !== c.to_seq - c.from_seq + 1)
+        return Promise.resolve({ ok: false, at: i, why: T("نقطة التحقق لا تتبع السابقة", "checkpoint does not follow the one before it") });
+      return sha256(JSON.stringify(canon(c))).then(function (x) {
+        if (x !== c.hash) return { ok: false, at: i, why: T("تغيّرت نقطة التحقق بعد إنشائها", "checkpoint was changed after it was made") };
+        prev = c.last_hash; prevCp = c.hash; seq = c.to_seq; i++;
+        return step();
+      });
+    }
+    return step();
+  }
+  function verify(list, cps) {
+    return verifyCheckpoints(cps || []).then(function (b) {
+      if (!b.ok) return { ok: false, at: -1, why: T("نقطة التحقق ", "checkpoint ") + (b.at + 1) + " · " + b.why };
+      return verifyList(list, b.tip, b.folded);
+    });
+  }
+  function verifyList(list, start, folded) {
+    var prev = start, i = 0;
+    function step() {
+      if (i >= list.length) return Promise.resolve({ ok: true, n: list.length, folded: folded, tip: prev });
       var r = list[i];
       if (!r || typeof r !== "object" || typeof r.hash !== "string") return Promise.resolve({ ok: false, at: i, why: T("الإيصال ناقص", "receipt is malformed") });
       if (r.prev_hash !== prev) return Promise.resolve({ ok: false, at: i, why: T("بصمة السابق لا تطابق", "prev_hash does not match the receipt before it") });
@@ -127,7 +184,8 @@
       .catch(function () { say("sVerifyOut", false, T("المتصفح منع حساب البصمة هنا. افتح الصفحة من https أو من ملف محلي.", "This browser blocks hashing here. Open the page over https or from a local file.")); });
   }
   function report(r, label) {
-    if (r.ok) say("sVerifyOut", true, label + T(": السلسلة سليمة، عدد الإيصالات ", ": chain intact, receipts ") + r.n + T("، البصمة الأخيرة ", ", tip ") + r.tip.slice(0, 16) + "…");
+    if (r.ok) say("sVerifyOut", true, label + T(": السلسلة سليمة، عدد الإيصالات ", ": chain intact, receipts ") + r.n + (r.folded ? T(" بعد نقاط تحقق تضم ", " after checkpoints holding ") + r.folded : "") + T("، البصمة الأخيرة ", ", tip ") + r.tip.slice(0, 16) + "…");
+    else if (r.at < 0) say("sVerifyOut", false, label + T(": السلسلة مكسورة · ", ": chain broken · ") + r.why);
     else say("sVerifyOut", false, label + T(": السلسلة مكسورة عند الإيصال ", ": chain broken at receipt ") + (r.at + 1) + " · " + r.why);
   }
 
@@ -149,7 +207,7 @@
       try { data = JSON.parse(String(rd.result)); } catch (e) { say("sVerifyOut", false, T("الملف ليس JSON صالحاً", "The file is not valid JSON")); return; }
       var list = data && data.format === "omega-receipt-chain-v1" && Array.isArray(data.receipts) ? data.receipts : null;
       if (!list) { say("sVerifyOut", false, T("الملف ليس سلسلة إيصالات OMEGA", "The file is not an OMEGA receipt chain")); return; }
-      verify(list).then(function (r) { report(r, f.name); });
+      verify(list, Array.isArray(data.checkpoints) ? data.checkpoints : []).then(function (r) { report(r, f.name); });
     };
     rd.readAsText(f);
   });
