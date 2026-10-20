@@ -1,0 +1,48 @@
+name: deploy-pages
+
+# Publishes NABD, the Ops Room and THE CHAIN to https://ahmed974x.github.io/giant-core/ (ADR-098).
+# Runs only on main (after a PR is merged) or by hand, and only after the whole-repo SkillSpector scan
+# and a scan of the built site pass. The site is static: paper only, no keys, no server, no orders.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: SkillSpector strict scan of the whole repo (critical or high stops the deploy)
+        run: node scripts/skillspector-audit.mjs --strict .
+      - name: Assemble the public site from the allowlist (refuses e-mail addresses, key-shaped strings, secret file names)
+        run: node scripts/build-pages.mjs _site
+      - name: SkillSpector strict scan of the built site
+        run: node scripts/skillspector-audit.mjs --strict _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

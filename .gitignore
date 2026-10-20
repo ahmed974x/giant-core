@@ -21,3 +21,4 @@ data/immich/
 
 # Local server logs
 *.log
+_site/
