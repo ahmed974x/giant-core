@@ -21,7 +21,13 @@
 //   /osiris/gdelt-sea       -> GDELT DOC 2.0 headlines that name one of the five straits, last 24 h  (cached 15 min)
 // Market pass-through for pages that cannot reach the upstream directly (ADR-093):
 //   /market/binance/<SYM>   -> Binance spot 24 h ticker for one symbol                    (cached 30 s)
+//   /market/fapi/<kind>/<SYM> -> Binance USD-M futures public data (premium, funding, open interest,
+//                              long/short and taker ratios) so the desk shares one cached copy (cached 60 s, ADR-095)
 //   /market/coingecko/<id>  -> CoinGecko simple price in USD with 24 h change             (cached 2 min)
+// Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
+// identical requests in flight share one upstream call; each host keeps a minimum gap between calls
+// (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
+// (60 s to 15 min) and the stale copy is served meanwhile. The X-Omega-Cache header says HIT, MISS or STALE.
 // Static pages (ADR-093): GET /omega-ops-room-v1/... and /site-landing/... are served from this checkout,
 // so the whole project runs from http://127.0.0.1:8796/ with one command (start-omega.sh / start-omega.bat).
 // Short addresses (ADR-094): /omega-ops-room.html, /the-chain.html, /index.html and /en.html redirect to the
@@ -96,6 +102,15 @@ function classifyNga(buf) {
   return Buffer.from(JSON.stringify({ source: "NGA Maritime Safety Information, broadcast warnings (msi.nga.mil)", at: new Date().toISOString(), active, straits }));
 }
 
+const FAPI = {
+  premium: s => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${s}`,
+  funding: s => `https://fapi.binance.com/fapi/v1/fundingRate?symbol=${s}&limit=200`,
+  oi: s => `https://fapi.binance.com/futures/data/openInterestHist?symbol=${s}&period=1h&limit=72`,
+  top: s => `https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${s}&period=1h&limit=48`,
+  global: s => `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${s}&period=1h&limit=48`,
+  taker: s => `https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=${s}&period=1h&limit=48`
+};
+
 const ROUTES = [
   { re: /^\/sec\/tickers$/, url: () => "https://www.sec.gov/files/company_tickers.json", ttl: 24 * HOUR, type: "application/json", sec: true },
   { re: /^\/sec\/facts\/(\d{10})$/, url: m => `https://data.sec.gov/api/xbrl/companyfacts/CIK${m[1]}.json`, ttl: 12 * HOUR, type: "application/json", sec: true },
@@ -107,9 +122,10 @@ const ROUTES = [
   { re: /^\/osiris\/nga$/, url: () => "https://msi.nga.mil/api/publications/broadcast-warn?output=json", ttl: HOUR / 2, type: "application/json", sec: false, transform: classifyNga },
   { re: /^\/osiris\/gdelt-sea$/, url: () => "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent('("Strait of Hormuz" OR "Bab el-Mandeb" OR "Suez Canal" OR "Strait of Malacca" OR "Panama Canal") sourcelang:english') + "&mode=artlist&format=json&maxrecords=50&timespan=24h&sort=datedesc", ttl: HOUR / 4, type: "application/json", sec: false },
   { re: /^\/market\/binance\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${m[1]}`, ttl: 30 * 1000, type: "application/json", sec: false },
+  { re: /^\/market\/fapi\/(premium|funding|oi|top|global|taker)\/([A-Z0-9]{5,20})$/, url: m => FAPI[m[1]](m[2]), ttl: 60 * 1000, type: "application/json", sec: false },
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
-const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "api.coingecko.com"]);
+const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com"]);
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -150,28 +166,66 @@ function compactAis(buf) {
 const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o || "") ||
   (!!host && (o === `http://${host}` || o === `https://${host}`));
 
-// SEC allows 10 requests per second; stay well under it.
-let nextSecSlot = 0;
-async function secSlot() {
-  const now = Date.now(), wait = Math.max(0, nextSecSlot - now);
-  nextSecSlot = Math.max(now, nextSecSlot) + 200;
-  if (wait) await new Promise(r => setTimeout(r, wait));
+// Minimum gap between calls to one host. SEC allows 10 requests per second; GDELT asks for one every 5 s;
+// anonymous OpenSky refreshes every 10 s. Other hosts get 250 ms.
+const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000 };
+const nextSlot = new Map();
+async function hostSlot(host) {
+  const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
+  nextSlot.set(host, at + (GAP[host] ?? 250));
+  if (at > now) await new Promise(r => setTimeout(r, at - now));
 }
+// Host pauses after 429 (too many requests), 418 (Binance IP ban warning) or 403 (blocked).
+const pausedUntil = new Map();
+function pauseHost(host, status, retryAfter) {
+  const sec = Number(retryAfter), base = status === 418 ? 300 : 60;
+  const ms = Math.min(15 * 60, Math.max(60, Number.isFinite(sec) && sec > 0 ? sec : base)) * 1000;
+  pausedUntil.set(host, Date.now() + ms);
+  console.warn(`${host} answered HTTP ${status}; pausing it for ${Math.round(ms / 1000)} s`);
+}
+// Memory layer in front of the disk cache, bounded to 200 entries (oldest out first).
+const mem = new Map();
+function memGet(url, ttl) { const e = mem.get(url); return e ? { body: e.body, fresh: Date.now() - e.at < ttl } : null; }
+function memPut(url, body) { mem.delete(url); mem.set(url, { body, at: Date.now() }); if (mem.size > 200) mem.delete(mem.keys().next().value); }
+const inflight = new Map();
 
 function cachePath(url) { return join(CACHE, createHash("sha256").update(url).digest("hex").slice(0, 32)); }
 function readCache(url, ttl) {
+  const m = memGet(url, ttl);
+  if (m) return m;
   const p = cachePath(url);
   if (!existsSync(p)) return null;
-  try { return { body: readFileSync(p), fresh: Date.now() - statSync(p).mtimeMs < ttl }; } catch { return null; }
+  try {
+    const st = statSync(p), body = readFileSync(p);
+    mem.set(url, { body, at: st.mtimeMs });
+    return { body, fresh: Date.now() - st.mtimeMs < ttl };
+  } catch { return null; }
+}
+// One upstream call per URL at a time; concurrent page requests wait for the same result.
+function fetchShared(route, url) {
+  if (inflight.has(url)) return inflight.get(url);
+  const p = (async () => {
+    const raw = await upstream(route, url);
+    const body = route.transform ? route.transform(raw) : raw;
+    memPut(url, body);
+    try { writeFileSync(cachePath(url), body); } catch (e) { console.warn("cache write failed:", e.message); }
+    return body;
+  })().finally(() => inflight.delete(url));
+  inflight.set(url, p);
+  return p;
 }
 
 async function upstream(route, url) {
-  if (!ALLOWED_UPSTREAM.has(new URL(url).hostname)) throw Object.assign(new Error("host not allowed"), { status: 400 });
+  const host = new URL(url).hostname;
+  if (!ALLOWED_UPSTREAM.has(host)) throw Object.assign(new Error("host not allowed"), { status: 400 });
   if (route.sec && !UA) throw Object.assign(new Error("Set OMEGA_SEC_UA to \"Your Name your@email\" before pulling from SEC."), { status: 503 });
-  if (route.sec) await secSlot();
+  const until = pausedUntil.get(host) || 0;
+  if (until > Date.now()) throw Object.assign(new Error(`${host} is paused for ${Math.ceil((until - Date.now()) / 1000)} s after a rate limit`), { status: 503, retry: Math.ceil((until - Date.now()) / 1000) });
+  await hostSlot(host);
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 20000);
   try {
     const r = await fetch(url, { signal: ctl.signal, headers: { "User-Agent": UA || "OMEGA local data proxy", "Accept-Encoding": "gzip, deflate" }, redirect: "error" });
+    if (r.status === 429 || r.status === 418 || r.status === 403) pauseHost(host, r.status, r.headers.get("retry-after"));
     if (!r.ok) throw Object.assign(new Error(`upstream HTTP ${r.status}`), { status: r.status === 404 ? 404 : 502 });
     const buf = Buffer.from(await r.arrayBuffer());
     if (buf.length > 64 * 1024 * 1024) throw Object.assign(new Error("upstream response too large"), { status: 502 });
@@ -184,7 +238,7 @@ const server = createServer(async (req, res) => {
   const origin = req.headers.origin, host = String(req.headers.host || "");
   const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
   const okOrigin = localOrigin(origin, host);
-  if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true" });
+  if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true", "Access-Control-Expose-Headers": "X-Omega-Cache, Retry-After" });
   const send = (status, body, type = "application/json") => { res.writeHead(status, { ...headers, "Content-Type": type }); res.end(body); };
   if (req.method === "OPTIONS") { res.writeHead(204, { ...headers, "Access-Control-Allow-Methods": "GET", "Access-Control-Max-Age": "600" }); return res.end(); }
   if (req.method !== "GET") return send(405, JSON.stringify({ error: "GET only" }));
@@ -204,16 +258,16 @@ const server = createServer(async (req, res) => {
   if (!route) return send(404, JSON.stringify({ error: "unknown route" }));
   const url = route.url(m);
   const cached = readCache(url, route.ttl);
-  if (cached?.fresh) return send(200, cached.body, route.type);
+  if (cached?.fresh) { headers["X-Omega-Cache"] = "HIT"; return send(200, cached.body, route.type); }
   try {
-    const raw = await upstream(route, url);
-    const body = route.transform ? route.transform(raw) : raw;
-    try { writeFileSync(cachePath(url), body); } catch (e) { console.warn("cache write failed:", e.message); }
+    const body = await fetchShared(route, url);
     console.log(`${new Date().toISOString()} ${path} -> ${body.length} bytes`);
+    headers["X-Omega-Cache"] = "MISS";
     send(200, body, route.type);
   } catch (e) {
-    if (cached) { console.warn(`${path}: ${e.message}; serving stale cache`); return send(200, cached.body, route.type); }
+    if (cached) { console.warn(`${path}: ${e.message}; serving stale cache`); headers["X-Omega-Cache"] = "STALE"; return send(200, cached.body, route.type); }
     console.warn(`${path}: ${e.message}`);
+    if (e.retry) headers["Retry-After"] = String(e.retry);
     send(e.status || 502, JSON.stringify({ error: e.message }));
   }
 });
@@ -226,6 +280,7 @@ const PROBES = [
   { name: "Digitraffic AIS", via: "proxy /osiris/ais", url: "https://meri.digitraffic.fi/api/ais/v1/locations" },
   { name: "GDACS", via: "proxy /osiris/gdacs", url: "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP" },
   { name: "Binance spot", via: "browser + proxy /market/binance", url: "https://data-api.binance.vision/api/v3/ping" },
+  { name: "Binance futures", via: "browser + proxy /market/fapi", url: "https://fapi.binance.com/fapi/v1/ping" },
   { name: "CoinGecko", via: "browser + proxy /market/coingecko", url: "https://api.coingecko.com/api/v3/ping" },
   { name: "mempool.space", via: "browser", url: "https://mempool.space/api/v1/fees/recommended" },
   { name: "NASA GIBS (SAT)", via: "browser", url: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_NextGeneration/default/500m/0/0/0.jpeg" },

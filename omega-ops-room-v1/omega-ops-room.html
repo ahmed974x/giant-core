@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-nprJrQqTJfTIgt61FT7SCwKzPCX09GiCQpIwY1lcxKQ=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-cy3NhawyGikW0HbXKWXZjiFdMSpcoSUHWgR7nFXwg+A=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -2475,14 +2475,43 @@ const DEFAULT_ALLOW_HOSTS = [
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
     del(k) { try { localStorage.removeItem(k); } catch { /* storage blocked: memory only */ } }
   };
+  // Rate-limit shield (ADR-095). Binance answers 429 when one IP asks too much and 418 when it keeps asking
+  // after that; the desk then leaves that host alone until Retry-After passes (60 s, or 5 min after a 418,
+  // at most 15 min). Above 80 % of the 6000-per-minute spot weight it waits for the next minute.
+  const hold = new Map();
   async function getJson(url, timeoutMs = 8000) {
+    const host = new URL(url).host, until = hold.get(host) || 0;
+    if (until > Date.now()) throw new Error(`${host} paused for ${Math.ceil((until - Date.now()) / 1000)} s after a rate limit`);
     const c = new AbortController();
     const t = setTimeout(() => c.abort(), timeoutMs);
     try {
       const r = await fetch(url, { signal: c.signal, cache: "no-store", credentials: "omit" });
+      if (r.status === 429 || r.status === 418) {
+        const ra = Number(r.headers.get("retry-after"));
+        hold.set(host, Date.now() + 1000 * clamp(Number.isFinite(ra) && ra > 0 ? ra : r.status === 418 ? 300 : 60, 60, 900));
+      }
+      const used = Number(r.headers.get("x-mbx-used-weight-1m"));
+      if (used > 4800) hold.set(host, Date.now() + 60000 - (Date.now() % 60000));
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } finally { clearTimeout(t); }
+  }
+  // Futures data goes through the local proxy when it runs, so every open tab shares one cached copy.
+  const LOCAL_PROXY = "http://127.0.0.1:8796";
+  const proxyState = { base: null, at: 0 };
+  async function proxyBase() {
+    if (Date.now() - proxyState.at < 300000) return proxyState.base;
+    proxyState.at = Date.now(); proxyState.base = null;
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    for (const b of tries) {
+      try { const j = await getJson(b + "/health", 2500); if (j && j.ok === true) { proxyState.base = b; break; } } catch { /* try the next address */ }
+    }
+    return proxyState.base;
+  }
+  async function futJson(kind, sym, direct) {
+    const b = await proxyBase();
+    if (b) { try { return await getJson(`${b}/market/fapi/${kind}/${sym}`); } catch { /* proxy paused or down: ask Binance directly */ } }
+    return getJson(direct);
   }
   const SPOT = "https://data-api.binance.vision/api/v3";
   // Bounded ring buffer: telemetry arrays never grow past n readings.
@@ -2548,12 +2577,12 @@ const DEFAULT_ALLOW_HOSTS = [
     const s = D.sym;
     const [k4h, prem, fr, oi, top, glob, taker] = await Promise.all([
       getJson(`${SPOT}/klines?symbol=${s}&interval=4h&limit=500`),
-      getJson(`${FUT}/fapi/v1/premiumIndex?symbol=${s}`).catch(() => null),
-      getJson(`${FUT}/fapi/v1/fundingRate?symbol=${s}&limit=200`).catch(() => null),
-      getJson(`${FUT}/futures/data/openInterestHist?symbol=${s}&period=1h&limit=72`).catch(() => null),
-      getJson(`${FUT}/futures/data/topLongShortPositionRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
-      getJson(`${FUT}/futures/data/globalLongShortAccountRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
-      getJson(`${FUT}/futures/data/takerlongshortRatio?symbol=${s}&period=1h&limit=48`).catch(() => null)
+      futJson("premium", s, `${FUT}/fapi/v1/premiumIndex?symbol=${s}`).catch(() => null),
+      futJson("funding", s, `${FUT}/fapi/v1/fundingRate?symbol=${s}&limit=200`).catch(() => null),
+      futJson("oi", s, `${FUT}/futures/data/openInterestHist?symbol=${s}&period=1h&limit=72`).catch(() => null),
+      futJson("top", s, `${FUT}/futures/data/topLongShortPositionRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
+      futJson("global", s, `${FUT}/futures/data/globalLongShortAccountRatio?symbol=${s}&period=1h&limit=48`).catch(() => null),
+      futJson("taker", s, `${FUT}/futures/data/takerlongshortRatio?symbol=${s}&period=1h&limit=48`).catch(() => null)
     ]);
     D.k4h = k4h.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
     D.fut = { prem, fr, oi, top, glob, taker };
