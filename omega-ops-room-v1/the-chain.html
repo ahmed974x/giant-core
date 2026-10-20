@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-FqeEIhgYOYbJE+qmdLawGAU3gzLrXsgEuwDRQej3gdw='; style-src 'sha256-ljOEpK6b/bF8YLesGJvTkDEzR0Rv+MdBV7w3dKyQw40='; font-src data:; img-src data: blob:; connect-src https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-QRhKFqFlC/G/tNftalUD2I91aIzgRllL/ZTQHlmT1Mo='; style-src 'sha256-QpJSYWZ5yiImUREu839LcCC/kcMTmZL1bh5OsI9uDAk='; font-src data:; img-src data: blob:; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -136,6 +136,16 @@
   }
 
   /* ---------- top bar ---------- */
+  /* ---------- opened from disk (ADR-094) ---------- */
+  .file-hint {
+    margin: max(var(--s-3), env(safe-area-inset-top)) 0 0; padding: var(--s-3) var(--s-4); border-radius: 20px;
+    background: var(--surface-2); color: var(--content-primary); font-size: var(--text-footnote); line-height: 1.6;
+    display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center;
+  }
+  .file-hint[hidden] { display: none; }
+  .file-hint a { color: var(--accent); font-weight: 600; }
+
+
   .topbar { position: sticky; top: 0; z-index: 20; padding: max(var(--s-3), env(safe-area-inset-top)) 0 var(--s-3); }
   .bar {
     display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap;
@@ -353,6 +363,7 @@
 <body>
 <a class="skip" href="#work">تخطَّ إلى مساحة العمل</a>
 <div class="shell">
+<p class="file-hint" id="fileHint" role="status" aria-live="polite" hidden><span id="fileHintText">Opened from disk. SEC and Stooq data need the local server.</span> <span class="ar" lang="ar" id="fileHintAr">فُتح الملف من القرص. بيانات SEC وStooq تحتاج السيرفر المحلي.</span> <a id="fileHintGo" href="http://127.0.0.1:8796/the-chain.html" rel="noopener noreferrer" translate="no">127.0.0.1:8796</a></p>
   <div class="topbar">
     <header class="bar">
       <div class="brand">السلسلة <span class="en" translate="no">THE CHAIN</span></div>
@@ -1621,7 +1632,17 @@
 
   /* ===================== Zero-cost data engine (ADR-089) ===================== */
   // SEC EDGAR and Stooq send no CORS headers, so they go through scripts/omega-data-proxy.mjs on this laptop.
-  const PROXY = "http://127.0.0.1:8796";
+  // ADR-094: when the proxy serves this page (127.0.0.1, --lan or Tailscale HTTPS) it shares the page's origin.
+  const LOCAL_PROXY = "http://127.0.0.1:8796";
+  let proxyBase = "";
+  async function proxy() {
+    if (proxyBase) return proxyBase;
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    for (const base of tries) {
+      try { const j = await getJSON(base + "/health", 2500); if (j && j.ok === true) { proxyBase = base; return base; } } catch { /* try the next address */ }
+    }
+    return LOCAL_PROXY;
+  }
   async function getJSON(url, ms = 12000) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
     try { const r = await fetch(url, { signal: ctl.signal, cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
@@ -1666,13 +1687,13 @@
     if (!t) { setStatus("histStatus", "اكتب رمز السهم أعلى الصفحة أولاً.", "bad"); $("ticker").focus(); return; }
     setStatus("histStatus", `جارٍ السحب من SEC EDGAR لـ ${t}…`);
     let list;
-    try { list = await getJSON(`${PROXY}/sec/tickers`); }
+    try { list = await getJSON(`${await proxy()}/sec/tickers`); }
     catch (e) { setStatus("histStatus", `تعذر الوصول إلى الخادم المحلي. ${proxyHint}`, "bad"); return; }
     const hit = Object.values(list).find(r => String(r.ticker).toUpperCase() === t);
     if (!hit) { setStatus("histStatus", `الرمز ${t} غير موجود في قائمة SEC. الشركات الأمريكية المدرجة فقط.`, "bad"); return; }
     const cik = String(hit.cik_str).padStart(10, "0");
     let j;
-    try { j = await getJSON(`${PROXY}/sec/facts/${cik}`, 20000); }
+    try { j = await getJSON(`${await proxy()}/sec/facts/${cik}`, 20000); }
     catch (e) { setStatus("histStatus", `فشل جلب companyfacts: ${e.message}`, "bad"); return; }
     const series = Object.fromEntries(Object.entries(SEC_MAP).map(([k, cs]) => [k, annualFacts(j.facts, cs)]));
     const years = [...series.revenue.keys()].sort((a, b) => a - b).slice(-5);
@@ -1730,7 +1751,7 @@
         const k = await getJSON(`https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(sym.toUpperCase())}&interval=1d&limit=366`);
         closes = k.map(r => parseFloat(r[4])); ppy = 365; label = `Binance ${sym.toUpperCase()} · ${closes.length} يوماً`;
       } else {
-        const csv = await getText(`${PROXY}/stooq/${encodeURIComponent(sym.toLowerCase())}`);
+        const csv = await getText(`${await proxy()}/stooq/${encodeURIComponent(sym.toLowerCase())}`);
         const rows = csv.trim().split(/\r?\n/).slice(1).map(l => l.split(",")).filter(c => c.length >= 5);
         closes = rows.slice(-253).map(c => parseFloat(c[4])); ppy = 252; label = `Stooq ${sym.toLowerCase()} · ${closes.length} جلسة`;
         if (!closes.length) throw new Error("لا بيانات لهذا الرمز");
@@ -1915,6 +1936,26 @@
   setTicker(ticker);
   showPanel(firstPanel);
   addEventListener("hashchange", () => showPanel(location.hash.slice(1)));
+  // Opened from disk (ADR-094): point the page at the local server, which gives a secure http origin, the
+  // install manifest and same-origin data. Data saved in the disk copy stays there, so the page only moves
+  // on its own when this copy holds nothing yet; otherwise it says how to carry the data over.
+  if (location.protocol === "file:") {
+    const target = "http://127.0.0.1:8796/the-chain.html" + location.search + location.hash;
+    const hint = $("fileHint");
+    $("fileHintGo").href = target;
+    hint.hidden = false;
+    let hasData = false;
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i) || ""; if (k.startsWith("omega-notes")) hasData = true; } } catch { /* storage blocked: nothing to carry */ }
+    const tell = (en, arText) => { $("fileHintText").textContent = en; $("fileHintAr").textContent = arText; };
+    fetch("http://127.0.0.1:8796/health", { cache: "no-store", credentials: "omit" })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => {
+        if (!j || j.ok !== true) throw new Error("proxy off");
+        if (!hasData) { location.replace(target); return; }
+        tell("The local server is running. This disk copy keeps its own data: export it here, then import it on the server page.", "السيرفر المحلي يعمل. هذه النسخة لها بياناتها: صدّرها هنا ثم استوردها في صفحة السيرفر.");
+      })
+      .catch(() => tell("Opened from disk and the local server is off. Run start-omega, then open this link.", "فُتح الملف من القرص والسيرفر متوقف. شغّل start-omega ثم افتح الرابط."));
+  }
 })();
 </script>
 </body>

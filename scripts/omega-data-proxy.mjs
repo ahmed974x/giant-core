@@ -24,18 +24,30 @@
 //   /market/coingecko/<id>  -> CoinGecko simple price in USD with 24 h change             (cached 2 min)
 // Static pages (ADR-093): GET /omega-ops-room-v1/... and /site-landing/... are served from this checkout,
 // so the whole project runs from http://127.0.0.1:8796/ with one command (start-omega.sh / start-omega.bat).
+// Short addresses (ADR-094): /omega-ops-room.html, /the-chain.html, /index.html and /en.html redirect to the
+// folder copies, so relative links, the manifest and the service worker keep one scope per folder.
 //   node scripts/omega-data-proxy.mjs --check   test every source once, print the status table and exit
-// Env: OMEGA_PROXY_PORT (default 8796), OMEGA_CACHE_DIR (default ~/.omega/cache/data-proxy).
+//   node scripts/omega-data-proxy.mjs --lan     also listen on the home network (0.0.0.0), opt-in only (ADR-094)
+// Env: OMEGA_PROXY_PORT (default 8796), OMEGA_CACHE_DIR (default ~/.omega/cache/data-proxy),
+//      OMEGA_BIND=lan (same as --lan). OMEGA_SEC_UA falls back to the first line of ~/.omega/sec-ua.txt,
+//      so the contact never has to sit in git.
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
 import { join, resolve, extname, sep, dirname } from "node:path";
-import { homedir } from "node:os";
+import { homedir, networkInterfaces } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 const PORT = Number(process.env.OMEGA_PROXY_PORT || 8796);
-const HOST = "127.0.0.1";
-const UA = (process.env.OMEGA_SEC_UA || "").trim();
+// 127.0.0.1 by default (AGENTS.md §4). --lan is the owner's opt-in for the iPhone on the same Wi-Fi.
+const LAN = process.argv.includes("--lan") || process.env.OMEGA_BIND === "lan";
+const HOST = LAN ? "0.0.0.0" : "127.0.0.1";
+function secUa() {
+  const env = (process.env.OMEGA_SEC_UA || "").trim();
+  if (env) return env;
+  try { return readFileSync(join(homedir(), ".omega", "sec-ua.txt"), "utf8").split(/\r?\n/)[0].trim().slice(0, 200); } catch { return ""; }
+}
+const UA = secUa();
 const CACHE = process.env.OMEGA_CACHE_DIR || join(homedir(), ".omega", "cache", "data-proxy");
 const HOUR = 3600 * 1000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -101,6 +113,14 @@ const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "o
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
+const SHORT = {
+  "/omega-ops-room.html": "/omega-ops-room-v1/omega-ops-room.html",
+  "/the-chain.html": "/omega-ops-room-v1/the-chain.html",
+  "/index.html": "/site-landing/index.html",
+  "/en.html": "/site-landing/en.html",
+  "/site-landing": "/site-landing/index.html",
+  "/omega-ops-room-v1": "/omega-ops-room-v1/omega-ops-room.html"
+};
 const MIME = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json", ".webmanifest": "application/manifest+json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".ico": "image/x-icon" };
 function staticFile(path) {
   const parts = path.split("/").filter(Boolean);
@@ -126,7 +146,9 @@ function compactAis(buf) {
 }
 
 // CORS only for pages on this machine: file:// (Origin "null"), 127.0.0.1 and localhost on any port.
-const localOrigin = o => o === "null" || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o || "");
+// A page this proxy served itself (same host, for example the iPhone over --lan) is same-origin, not a third party.
+const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o || "") ||
+  (!!host && (o === `http://${host}` || o === `https://${host}`));
 
 // SEC allows 10 requests per second; stay well under it.
 let nextSecSlot = 0;
@@ -159,20 +181,22 @@ async function upstream(route, url) {
 }
 
 const server = createServer(async (req, res) => {
-  const origin = req.headers.origin;
+  const origin = req.headers.origin, host = String(req.headers.host || "");
   const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
-  if (localOrigin(origin)) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true" });
+  const okOrigin = localOrigin(origin, host);
+  if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true" });
   const send = (status, body, type = "application/json") => { res.writeHead(status, { ...headers, "Content-Type": type }); res.end(body); };
   if (req.method === "OPTIONS") { res.writeHead(204, { ...headers, "Access-Control-Allow-Methods": "GET", "Access-Control-Max-Age": "600" }); return res.end(); }
   if (req.method !== "GET") return send(405, JSON.stringify({ error: "GET only" }));
-  if (origin && !localOrigin(origin)) return send(403, JSON.stringify({ error: "local pages only" }));
+  if (origin && !okOrigin) return send(403, JSON.stringify({ error: "local pages only" }));
   let path;
   try { path = decodeURIComponent(new URL(req.url, `http://${HOST}`).pathname); } catch { return send(400, JSON.stringify({ error: "bad path" })); }
   if (path === "/health") return send(200, JSON.stringify({ ok: true, secUserAgent: !!UA }));
   if (path === "/") { res.writeHead(302, { ...headers, Location: "/omega-ops-room-v1/omega-ops-room.html" }); return res.end(); }
+  if (SHORT[path]) { const q = new URL(req.url, "http://x").search; res.writeHead(302, { ...headers, Location: SHORT[path] + q }); return res.end(); }
   const st = staticFile(path);
   if (st) {
-    try { res.writeHead(200, { ...headers, "Content-Type": st.type, "Cache-Control": "no-cache" }); return res.end(readFileSync(st.file)); }
+    try { res.writeHead(200, { ...headers, "Content-Type": st.type, "Cache-Control": "no-cache", "X-Frame-Options": "DENY" }); return res.end(readFileSync(st.file)); }
     catch { return send(500, JSON.stringify({ error: "read failed" })); }
   }
   let route, m;
@@ -239,11 +263,22 @@ if (CHECK_ONLY) {
   const rows = await statusTable();
   process.exit(rows.some(r => r.ok) ? 0 : 1);
 }
+server.on("error", e => {
+  console.error(e.code === "EADDRINUSE" ? `Port ${PORT} is already in use. OMEGA may already be running: open http://127.0.0.1:${PORT}/ or close the other window.` : `Server error: ${e.message}`);
+  process.exit(1);
+});
 server.listen(PORT, HOST, () => {
-  console.log(`OMEGA data proxy on http://${HOST}:${PORT}  cache ${CACHE}`);
-  console.log(`Ops Room   http://${HOST}:${PORT}/omega-ops-room-v1/omega-ops-room.html`);
-  console.log(`THE CHAIN  http://${HOST}:${PORT}/omega-ops-room-v1/the-chain.html`);
-  console.log(`NABD       http://${HOST}:${PORT}/site-landing/index.html`);
+  const L = "127.0.0.1";
+  console.log(`OMEGA data proxy on http://${L}:${PORT}  cache ${CACHE}`);
+  console.log(`Ops Room   http://${L}:${PORT}/omega-ops-room.html`);
+  console.log(`THE CHAIN  http://${L}:${PORT}/the-chain.html`);
+  console.log(`NABD       http://${L}:${PORT}/index.html`);
+  if (LAN) {
+    const ips = Object.values(networkInterfaces()).flat().filter(i => i && i.family === "IPv4" && !i.internal).map(i => i.address);
+    console.log(`Home network (--lan) is ON. Anyone on this Wi-Fi can open these pages and use the read-only data routes:`);
+    for (const ip of ips) console.log(`           http://${ip}:${PORT}/omega-ops-room.html`);
+    console.log("           Plain http on the LAN is not a secure context, so WebCrypto is off there. Use Tailscale HTTPS for the vault and capsule.");
+  }
   if (!UA) console.log('SEC routes are off until you set OMEGA_SEC_UA="Your Name your@email". Stooq works now.');
   statusTable().catch(e => console.warn("status check failed:", e.message));
 });

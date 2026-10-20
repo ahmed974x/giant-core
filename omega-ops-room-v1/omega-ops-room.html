@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-nprJrQqTJfTIgt61FT7SCwKzPCX09GiCQpIwY1lcxKQ=' 'sha256-lxXXCjkBjxIpd1IP+Mh5lAG9g/EvgaHK+wujszZoXww=' 'sha256-uxU+MpO8jBZIzFXuClf8eAiQw/CCRlMGbZzDOT2fz8A='; style-src 'sha256-A50tWuIJLtBHXU6stD4ewxXaY40p7XP55dHK9cKB/6E='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-nprJrQqTJfTIgt61FT7SCwKzPCX09GiCQpIwY1lcxKQ=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -140,6 +140,15 @@
     max-width: 1440px; margin: 0 auto;
     padding: 0 max(var(--s-4), env(safe-area-inset-right)) max(var(--s-12), env(safe-area-inset-bottom)) max(var(--s-4), env(safe-area-inset-left));
   }
+
+  /* ---------- opened from disk (ADR-094) ---------- */
+  .file-hint {
+    margin: max(var(--s-3), env(safe-area-inset-top)) 0 0; padding: var(--s-3) var(--s-4); border-radius: 20px;
+    background: var(--surface-2); color: var(--content-primary); font-size: var(--text-footnote); line-height: 1.6;
+    display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center;
+  }
+  .file-hint[hidden] { display: none; }
+  .file-hint a { color: var(--accent); font-weight: 600; }
 
   /* ---------- top bar ---------- */
   .topbar { position: sticky; top: 0; z-index: 20; padding: max(var(--s-3), env(safe-area-inset-top)) 0 var(--s-3); }
@@ -596,6 +605,7 @@
 </head>
 <body>
 <div class="shell">
+<p class="file-hint" id="fileHint" role="status" aria-live="polite" hidden><span id="fileHintText">Opened from disk. Encryption, install and the live layers work best from the local server.</span> <span class="ar" lang="ar" id="fileHintAr">فُتح الملف من القرص. شغّل السيرفر المحلي للتشفير والتثبيت والبيانات الحية.</span> <a id="fileHintGo" href="http://127.0.0.1:8796/omega-ops-room.html" rel="noopener noreferrer" translate="no">127.0.0.1:8796</a></p>
   <div class="topbar">
     <header class="bar">
       <div class="brand">OMEGA OPS ROOM <span class="ar" lang="ar">غرفة العمليات</span></div>
@@ -3728,7 +3738,9 @@ const DEFAULT_ALLOW_HOSTS = [
       return await r.json();
     } finally { clearTimeout(t); }
   }
-  const PROXY = "http://127.0.0.1:8796";
+  // ADR-094: when the proxy serves this page (127.0.0.1, --lan or Tailscale HTTPS) it shares the page's origin.
+  const LOCAL_PROXY = "http://127.0.0.1:8796";
+  let PROXY = LOCAL_PROXY;
 
   // Reference geography (facts, not data): chokepoints, energy hubs, Baltic ports covered by Digitraffic.
   const CHOKE = [
@@ -3949,7 +3961,11 @@ const DEFAULT_ALLOW_HOSTS = [
     } catch { mark("binance", false); }
   }
   async function proxyUp() {
-    try { await getJson(PROXY + "/health", 2500); S.proxyUp = true; } catch { S.proxyUp = false; }
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    S.proxyUp = false;
+    for (const base of tries) {
+      try { const j = await getJson(base + "/health", 2500); if (j && j.ok === true) { PROXY = base; S.proxyUp = true; break; } } catch { /* try the next address */ }
+    }
     return S.proxyUp;
   }
   async function loadProxy() {
@@ -4237,6 +4253,27 @@ const DEFAULT_ALLOW_HOSTS = [
     $("islBase").textContent = nf(d.base);
     $("islSafe").textContent = "+" + nf(d.safe);
   });
+
+  // Opened from disk (ADR-094): point the page at the local server, which gives a secure http origin, the
+  // install manifest and same-origin data. Data saved in the disk copy stays there, so the page only moves
+  // on its own when this copy holds nothing yet; otherwise it says how to carry the data over.
+  if (location.protocol === "file:") {
+    const target = "http://127.0.0.1:8796/omega-ops-room.html" + location.search + location.hash;
+    const hint = $("fileHint");
+    $("fileHintGo").href = target;
+    hint.hidden = false;
+    let hasData = false;
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i) || ""; if (k === "omega-desk-wallet-paper" || k === "omega-receipts-v1" || k.startsWith("omega-notes")) hasData = true; } } catch { /* storage blocked: nothing to carry */ }
+    const tell = (en, arText) => { $("fileHintText").textContent = en; $("fileHintAr").textContent = arText; };
+    fetch("http://127.0.0.1:8796/health", { cache: "no-store", credentials: "omit" })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => {
+        if (!j || j.ok !== true) throw new Error("proxy off");
+        if (!hasData) { location.replace(target); return; }
+        tell("The local server is running. This disk copy keeps its own data: export it here, then import it on the server page.", "السيرفر المحلي يعمل. هذه النسخة لها بياناتها: صدّرها هنا ثم استوردها في صفحة السيرفر.");
+      })
+      .catch(() => tell("Opened from disk and the local server is off. Run start-omega, then open this link.", "فُتح الملف من القرص والسيرفر متوقف. شغّل start-omega ثم افتح الرابط."));
+  }
 
   // Home-screen install. Browsers refuse manifests on file://, so the links are added only over http(s).
   if (location.protocol === "http:" || location.protocol === "https:") {
