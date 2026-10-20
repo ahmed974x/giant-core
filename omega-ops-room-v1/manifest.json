@@ -1,0 +1,28 @@
+{
+  "id": "./omega-ops-room.html",
+  "name": "OMEGA Ops Room",
+  "short_name": "OMEGA",
+  "description": "Local-first operations room: OSIRIS global intelligence, paper trading desk and receipt ledger. Paper only.",
+  "start_url": "omega-ops-room.html?view=1",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f9fafb",
+  "theme_color": "#f9fafb",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/omega-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/omega-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/omega-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/omega-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Command", "short_name": "Command", "url": "omega-ops-room.html?view=1", "icons": [{ "src": "icons/omega-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "OSIRIS", "short_name": "OSIRIS", "url": "omega-ops-room.html?view=2", "icons": [{ "src": "icons/omega-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Command wall", "short_name": "Wall", "url": "omega-ops-room.html?view=5", "icons": [{ "src": "icons/omega-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "THE CHAIN", "short_name": "Chain", "url": "the-chain.html", "icons": [{ "src": "icons/omega-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}
