@@ -66,7 +66,7 @@ The 24/7 execution agent, copy-trading vault and profit split appear only as loc
 
 THE CHAIN adds: "اسحب من SEC EDGAR" in HISTORICALS, a digital-asset card (CoinGecko, Binance, DefiLlama) and the Quant-Implied Target Range `[INFERENCE - Quant Model]` next to the analyst range.
 
-SEC EDGAR and Stooq need the local proxy (they send no CORS headers):
+SEC EDGAR and Stooq need the local proxy (they send no CORS headers). `start-omega` runs it for you; by hand:
 
 ```bash
 OMEGA_SEC_UA="Ahmad your@email" node scripts/omega-data-proxy.mjs   # http://127.0.0.1:8796
@@ -81,6 +81,18 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
   - USGS and Open-Meteo load directly.
   - OpenSky, GDACS, GDELT and Digitraffic AIS need `node scripts/omega-data-proxy.mjs` (no key needed for them).
 - **Install on iPhone:** serve the folder (for example the Tailscale URL), open it in Safari, then Share → Add to Home Screen.
+
+## Phase 8: one-click launcher, straits, SAT, self-learning court, capsule (ADR-093)
+
+- **Start everything with one file:** `start-omega.bat` (Windows, double-click) or `./start-omega.sh` (macOS, Linux). It starts `scripts/omega-data-proxy.mjs` on `127.0.0.1:8796`, which now also serves the Ops Room, THE CHAIN and NABD pages from this folder, prints a LIVE / DOWN / SKIP table for every free source, and opens `http://127.0.0.1:8796/omega-ops-room-v1/omega-ops-room.html`. `node scripts/omega-data-proxy.mjs --check` prints the table and exits.
+- **Five straits:** the proxy pulls the NGA Maritime Safety Information broadcast warnings (keyless, `msi.nga.mil`) and sorts each active warning into Hormuz, Bab el-Mandeb, Suez, Malacca or Panama by the position in its text or by name, plus GDELT headlines that name a strait. OSIRIS shows the count, the latest warning number and its issue date per strait, and a fourth PWSI component. Ship positions stay Baltic-only (Digitraffic): no free source has live ship counts in the five straits.
+- **SAT:** NASA GIBS Blue Marble Next Generation imagery (EPSG:4326 level 0, two tiles). 2D scales it in, 3D resamples it per pixel. With no internet SAT keeps the drawn map.
+- **Live Hawkes and VPIN:** a ring buffer of the last 300 public trades. Hawkes μ, α and β are fitted by the method of moments on every pull (Fano factor and lag-1 autocorrelation of trade counts), and VPIN uses buckets of 1/50 of the window's volume. The fitted values are shown in the order-flow table.
+- **Self-learning court:** after each closed paper trade the three voices (bull, red-team bear, OSIRIS) are scored with the Brier loss and reweighted, `w ← w(1 − 0.05·loss)`, normalised. The judge opens only when the weighted P(up) is above 50 %. The table shows each weight, each voice's hit rate and the Court Accuracy Score. `[INFERENCE - Quant Model]`.
+- **On-chain pulse:** mempool.space fees, backlog and any of the last 10 transactions of 100 BTC or more, in the whale card. A fastest fee of 100 sat/vB or more is a red-team risk.
+- **Encrypted capsule:** `📦 Export capsule` writes the paper wallet, the receipt chain, the court weights and THE CHAIN notes to one `.omega-capsule.json` file encrypted with AES-GCM-256 (PBKDF2-SHA256, 600,000 rounds). Import it on the other device with the same passphrase. The fingerprint (SHA-256 of the ciphertext) and the receipt chain are checked before anything is replaced. No server, no API key in the file.
+- **Command wall:** view 5 at 1280 px and up shows four quadrants in one screen (OSIRIS · live chart and whales · court and physics · wallet and receipts). Each quadrant scrolls on its own and has a maximize button.
+- **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
 
 ## Trading desk · غرفة التداول (ADR-091)
 

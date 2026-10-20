@@ -7,6 +7,7 @@ Read by Codex CLI, Claude Code (through `CLAUDE.md`) and any agent that follows 
 - Ahmad (Director 00) approves every irreversible or outward action: merges, production changes, outbound messages, anything that moves money, opens trades or accepts subscribers.
 - Locked until a separate explicit approval and a legal review: real trading, an execution agent, public copy-trading vaults, investor profit split. They appear only as cards marked **«قيد الموافقة»** or as browser-only math simulations that say "no money accepted".
 - The trading desk (ADR-091, ADR-092) is paper only. Ahmad approved the paper-only auto engine on 2026-10-19 with a standing rule: no code that signs or sends an order to any exchange, Binance or Testnet. A Testnet or real-account route needs a new explicit approval, and until then it stays a disabled option in the UI.
+- The `S` key and "Sweep profit now" move paper money inside the paper ledger only (ADR-093). Any sweep of real funds stays a proposal in the Director 00 approval inbox.
 - No third-party skill, plugin, hook, MCP server or installer is added without Ahmad's approval and a written security review. Taking text rules from a skill is fine; running its scripts is not.
 
 ## 2. Look and feel (summary of DESIGN.md, which is binding)
@@ -56,6 +57,8 @@ node scripts/ui-three-sizes.mjs <url-or-file-url> [out-dir]
 ```
 
 Python services also run `ruff check`; Node services `npx @biomejs/biome lint` per `biome.json`.
+
+To run the pages with live data locally: `./start-omega.sh` or `start-omega.bat` (proxy and static server on `127.0.0.1:8796`, ADR-093). `node scripts/omega-data-proxy.mjs --check` prints the source status table. A new upstream must be added to `ALLOWED_UPSTREAM` in the proxy and to the page's CSP `connect-src` or `img-src`.
 
 ## 7. Records
 
