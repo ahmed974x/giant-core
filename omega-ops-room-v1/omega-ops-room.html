@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-8GBLd4j5dSr159bD5LlY3DXOKjixrDO0/Lr2Ee62qIs=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-GAa8AxCRVZe7Qj4dF2brAqW47ciHmAJd9aYpaW2O7P8='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-8GBLd4j5dSr159bD5LlY3DXOKjixrDO0/Lr2Ee62qIs=' 'sha256-QKld5EFpdnsscmnnnRz3CA3dBRFL4bIOZ0bhr07UFHw=' 'sha256-s3UdaxsKIh1A+8dxOKb2X2mSFJNirVhKxpU+TqX8290='; style-src 'sha256-PZQlyZqqYn33JmiBxf8ZaVQuqrFLYrMx/3esYv80zzU='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -4451,9 +4451,11 @@ const DEFAULT_ALLOW_HOSTS = [
   // Home-screen install. Browsers refuse manifests on file://, so the links are added only over http(s).
   if (location.protocol === "http:" || location.protocol === "https:") {
     const link = (rel, href, extra) => { const l = document.createElement("link"); l.rel = rel; l.href = href; Object.assign(l, extra || {}); document.head.append(l); };
-    link("manifest", "manifest.webmanifest");
+    link("manifest", "manifest.json");
     link("apple-touch-icon", "icons/omega-180.png");
     link("icon", "icons/omega-192.png", { type: "image/png" });
+    // Offline shell and desktop install (ADR-097). Service workers need a secure context (127.0.0.1 or https).
+    if (window.isSecureContext && "serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js", { scope: "./" }).catch(() => { /* install stays off; the page works without it */ });
   }
 })();
 </script>

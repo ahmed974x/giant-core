@@ -2,10 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-QRhKFqFlC/G/tNftalUD2I91aIzgRllL/ZTQHlmT1Mo='; style-src 'sha256-QpJSYWZ5yiImUREu839LcCC/kcMTmZL1bh5OsI9uDAk='; font-src data:; img-src data: blob:; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-XreNdNJ5x/hP/Cmo72/swaCPreiwd2jaXYEOn9zB9Eg='; style-src 'sha256-QpJSYWZ5yiImUREu839LcCC/kcMTmZL1bh5OsI9uDAk='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="THE CHAIN" />
 <title>THE CHAIN · السلسلة</title>
 <!--
   OMEGA THE CHAIN v1.0.0 · research workbench for three finance agents (ADR-088).
@@ -1955,6 +1958,12 @@
         tell("The local server is running. This disk copy keeps its own data: export it here, then import it on the server page.", "السيرفر المحلي يعمل. هذه النسخة لها بياناتها: صدّرها هنا ثم استوردها في صفحة السيرفر.");
       })
       .catch(() => tell("Opened from disk and the local server is off. Run start-omega, then open this link.", "فُتح الملف من القرص والسيرفر متوقف. شغّل start-omega ثم افتح الرابط."));
+  }
+  // Install as part of the OMEGA app (ADR-097): same folder, manifest and service worker as the Ops Room.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    const l = document.createElement("link"); l.rel = "manifest"; l.href = "manifest.json"; document.head.append(l);
+    const t = document.createElement("link"); t.rel = "apple-touch-icon"; t.href = "icons/omega-180.png"; document.head.append(t);
+    if (window.isSecureContext && "serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js", { scope: "./" }).catch(() => { /* install stays off; the page works without it */ });
   }
 })();
 </script>

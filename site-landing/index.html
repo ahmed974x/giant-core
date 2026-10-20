@@ -2,13 +2,17 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>نبض NABD</title>
   <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، بخمسة وكلاء ذكاء اصطناعي، وحساب تدريب وهمي، ونشر صريح لما لم ينجح.">
   <!-- DRAFT (ADR-071, ADR-087): not published. Domain, legal review and waitlist form wait for approval. -->
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#f9fafb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NABD">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="alternate" hreflang="en" href="en.html">
   <link rel="preload" href="fonts/cairo-arabic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
@@ -407,6 +411,7 @@
 
 <script src="calc.js" defer></script>
 <script src="desk-sim.js" defer></script>
+<script src="pwa.js" defer></script>
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("themeToggle");
