@@ -419,8 +419,20 @@ code { font-size: 0.875em; background: var(--surface-2); padding: 0 var(--s-1); 
 .calc-chart { display: block; width: 100%; height: auto; direction: ltr; background: var(--surface); border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); }
 .calc-chart .grid-line { stroke: var(--hairline-color); stroke-width: 1; }
 .calc-chart .axis { fill: var(--content-secondary); font-size: 12px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.calc-chart .l-gross { fill: none; stroke: var(--accent); stroke-width: 2; }
-.calc-chart .l-net { fill: none; stroke: var(--success); stroke-width: 2.5; }
+.calc-chart .l-gross { fill: none; stroke: var(--apple-blue); stroke-width: 2; stroke-linecap: round; }
+.calc-chart .l-net { fill: none; stroke: var(--apple-green); stroke-width: 2.5; stroke-linecap: round; }
+/* Apple Stocks style charts (ADR-102): spline lines, glow gradient, event dots, glass loupe (vis.js) */
+.calc-chart { touch-action: pan-y; }
+.calc-chart .v-area { stroke: none; }
+.vg-top { stop-opacity: 0.34; } .vg-bot { stop-opacity: 0; }
+.vg-blue { stop-color: var(--apple-blue); } .vg-green { stop-color: var(--apple-green); } .vg-orange { stop-color: var(--apple-orange); }
+.v-glow .v-halo { opacity: 0.22; }
+.v-glow.v-blue circle { fill: var(--apple-blue); } .v-glow.v-green circle { fill: var(--apple-green); } .v-glow.v-orange circle { fill: var(--apple-orange); }
+.v-glow .v-core { stroke: var(--surface); stroke-width: 1.5; }
+.v-cross { stroke: var(--content-tertiary); stroke-width: 1; stroke-dasharray: 3 3; }
+.v-glass { fill: var(--surface); fill-opacity: 0.94; stroke: var(--hairline-color); stroke-width: 1; }
+.v-lbl { fill: var(--content-secondary); font-family: var(--font-ar); font-size: 12px; font-weight: 600; }
+.v-val { fill: var(--content-primary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums slashed-zero; }
 .calc-chart .l-hwm { fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .calc-chart .fee-dot { fill: var(--warning); }
 .calc-legend { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); list-style: none; padding: 0 !important; margin: var(--s-3) 0 0 !important; font-size: var(--text-footnote); }

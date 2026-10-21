@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-BboARdMi7DIWZIoSYrMSnG4qLIDOTiBJh/zrD9/XMtM=' 'sha256-MWnd0jNQEaMebJqpfDYKTph3Pb8UXFaS149IkZHMj7I=' 'sha256-UQMHd4DX51PAxg/nXMsRYJDaG8E8UorulX56NY0GMX8=' 'sha256-5Jt6GrAM3fPzge0ZIKWlXwvfgejY8euAzz6jfAxBbRM=' 'sha256-s3UdaxsKIh1A+8dxOKb2X2mSFJNirVhKxpU+TqX8290='; style-src 'sha256-niM7bYrFGLq/v10sFSoYCVJmuW57QQla2idqdUBWE9I='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-r6K1rhZir3YTkqrhdF40EBpov5idR1xzegu9P+Y50Uc=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-d1qoRSj97eT+CFWH/edrK0ORJC9ThlrICGDYKtIbrnM=' 'sha256-5Jt6GrAM3fPzge0ZIKWlXwvfgejY8euAzz6jfAxBbRM=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-CCS9sHRjDXFA0Y9OcVh4jaLK3QM1Wa9YHk7LNFhj4Bc='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -303,6 +303,37 @@
   .chart .cross { stroke: var(--content-tertiary); stroke-width: 1; stroke-dasharray: 2 3; }
   .chart .tip-bg { fill: var(--surface); stroke: var(--hairline-color); }
   .chart .tip { fill: var(--content-primary); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  /* Performance rings and whale sonar (ADR-102) */
+  .rings-body { display: grid; grid-template-columns: minmax(160px, 240px) minmax(0, 1fr); gap: var(--s-5); align-items: center; }
+  .rings { width: 100%; height: auto; display: block; }
+  .rings .rg-track { fill: none; stroke-width: 20; opacity: 0.18; }
+  .rings .rg-arc { fill: none; stroke-width: 20; stroke-linecap: round; }
+  .rg-green { stroke: var(--apple-green); } .rg-blue { stroke: var(--apple-blue); } .rg-orange { stroke: var(--apple-orange); }
+  .rs { stop-opacity: 1; } .rs-green { stop-color: var(--apple-green); } .rs-cyan { stop-color: var(--apple-cyan); } .rs-blue { stop-color: var(--apple-blue); } .rs-purple { stop-color: var(--apple-purple); } .rs-orange { stop-color: var(--apple-orange); }
+  .rings-legend { list-style: none; display: grid; gap: var(--s-3); }
+  .rings-legend li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s-3); padding-bottom: var(--s-3); border-bottom: var(--hairline) solid var(--hairline-color); }
+  .rings-legend b { font-size: var(--text-footnote); font-weight: 700; display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+  .rings-legend .num { font-size: var(--text-title); font-weight: 800; }
+  .rings-legend small { grid-column: 1 / -1; font-size: var(--text-caption); color: var(--content-secondary); overflow-wrap: anywhere; }
+  .rg-sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 3px solid; }
+  .rg-sw.rg-green { border-color: var(--apple-green); } .rg-sw.rg-blue { border-color: var(--apple-blue); } .rg-sw.rg-orange { border-color: var(--apple-orange); }
+  .sonar { display: block; width: 100%; height: 260px; margin-top: var(--s-2); cursor: crosshair; }
+  @media (max-width: 599px) { .rings-body { grid-template-columns: minmax(0, 1fr); } .rings { max-width: 240px; margin: 0 auto; } }
+  /* Apple Stocks style charts (ADR-102): spline lines, glow gradient, event dots, glass loupe */
+  .chart, .v-canvas { touch-action: pan-y; }
+  .chart .price { stroke: var(--apple-blue); stroke-width: 2.25; stroke-linecap: round; }
+  .chart .v-area { stroke: none; }
+  .vg-top { stop-opacity: 0.34; } .vg-bot { stop-opacity: 0; }
+  .vg-blue { stop-color: var(--apple-blue); } .vg-green { stop-color: var(--apple-green); } .vg-red { stop-color: var(--apple-red); }
+  .vg-orange { stop-color: var(--apple-orange); } .vg-purple { stop-color: var(--apple-purple); } .vg-cyan { stop-color: var(--apple-cyan); }
+  .v-glow .v-halo { opacity: 0.22; }
+  .v-glow.v-blue circle { fill: var(--apple-blue); } .v-glow.v-green circle { fill: var(--apple-green); } .v-glow.v-red circle { fill: var(--apple-red); }
+  .v-glow.v-orange circle { fill: var(--apple-orange); } .v-glow.v-purple circle { fill: var(--apple-purple); } .v-glow.v-cyan circle { fill: var(--apple-cyan); }
+  .v-glow .v-core { stroke: var(--surface); stroke-width: 1.5; }
+  .v-cross { stroke: var(--content-tertiary); stroke-width: 1; stroke-dasharray: 3 3; }
+  .v-glass { fill: var(--surface); fill-opacity: 0.94; stroke: var(--hairline-color); stroke-width: 1; }
+  .v-lbl { fill: var(--content-secondary); font-family: var(--font-en); font-size: 12px; font-weight: 600; }
+  .v-val { fill: var(--content-primary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums slashed-zero; }
   .chart-legend { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-3); font-size: var(--text-caption); color: var(--content-secondary); font-weight: 600; }
   .chart-legend span { display: inline-flex; align-items: center; gap: var(--s-2); }
   .chart-legend i { width: 16px; height: 2px; display: inline-block; border-radius: 1px; }
@@ -421,8 +452,8 @@
   .ps-kpis div { padding: var(--s-3) var(--s-4); border-radius: var(--r-inner); background: var(--surface-2); min-width: 0; }
   .ps-kpis span { display: block; font-size: var(--text-caption); font-weight: 700; color: var(--content-secondary); }
   .ps-kpis b { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; font-size: var(--text-title); }
-  .chart .ps-gross { fill: none; stroke: var(--accent); stroke-width: 2; }
-  .chart .ps-net { fill: none; stroke: var(--success); stroke-width: 2; }
+  .chart .ps-gross { fill: none; stroke: var(--apple-blue); stroke-width: 2; }
+  .chart .ps-net { fill: none; stroke: var(--apple-green); stroke-width: 2.25; }
   .chart .ps-hwm { fill: none; stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 5 4; }
   .table-scroll { overflow-x: auto; overscroll-behavior-x: contain; margin-top: var(--s-4); border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); }
   .data-t { width: 100%; border-collapse: collapse; font-size: var(--text-footnote); }
@@ -628,10 +659,11 @@
     .dock button:active { transform: scale(0.96); }
   }
   /* Live microprice chart, keyboard help (ADR-093) */
-  #lvChart polyline { fill: none; stroke-width: 2; stroke-linejoin: round; }
-  #lvChart .lv-mid { stroke: var(--accent); }
-  #lvChart .lv-micro { stroke: var(--gold); }
+  #lvChart .lv-mid, #lvChart .lv-micro { fill: none; stroke-width: 2; stroke-linecap: round; }
+  #lvChart .lv-mid { stroke: var(--apple-blue); }
+  #lvChart .lv-micro { stroke: var(--apple-orange); stroke-width: 1.5; }
   #lvChart .lv-bid, #lvChart .lv-ask { stroke-width: 1; stroke-dasharray: 4 4; }
+  #lvChart .lv-grid { stroke: var(--hairline-color); stroke-width: 1; }
   #lvChart .lv-bid { stroke: var(--success); }
   #lvChart .lv-ask { stroke: var(--danger); }
   #lvChart text { fill: var(--content-secondary); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums slashed-zero; }
@@ -1169,6 +1201,14 @@
       </section>
     </div>
 
+    <section data-view="1 5" class="card mt-3" aria-labelledby="rgTitle" id="rings">
+      <div class="card-head"><div class="card-title" id="rgTitle">Performance rings<span class="ar" lang="ar">حلقات الأداء الثلاثية</span></div><div class="tag">PAPER · <span class="pill-inf">[INFERENCE - Quant Model]</span></div></div>
+      <div class="rings-body">
+        <svg class="rings" id="rgSvg" viewBox="0 0 220 220" role="img" aria-label="Three rings: locked base growth, court consensus, planet stability. The list beside it gives each value."></svg>
+        <ul class="rings-legend" id="rgLegend"></ul>
+      </div>
+      <p class="sub" id="rgSum" aria-live="polite">—</p>
+    </section>
     <section data-view="1 3 5" class="card mt-3" aria-labelledby="lvTitle" id="live">
       <div class="card-head"><div class="card-title" id="lvTitle">Live price &amp; microprice<span class="ar" lang="ar">السعر الحي والسعر المجهري</span></div><div class="tag">5 s · 300 READINGS</div></div>
       <svg class="chart" id="lvChart" viewBox="0 0 720 220" role="img" aria-label="Live mid price and microprice over the last 300 readings, with the largest order-book walls"></svg>
@@ -1209,6 +1249,18 @@
       </section>
     </div>
 
+    <section data-view="3 5" class="card mt-3" aria-labelledby="snTitle" id="sonar">
+      <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag">DEPTH ±1.5%</div></div>
+      <canvas class="v-canvas sonar" id="snCanvas" role="img" aria-label="Cumulative bid depth in green to the left and ask depth in red to the right, within 1.5 percent of the mid price, with whale walls and estimated liquidation pockets. The line below gives the numbers."></canvas>
+      <div class="chart-legend">
+        <span><i class="sw sw-success"></i>Bids · <span class="ar" lang="ar">جدار الشراء</span></span>
+        <span><i class="sw sw-danger"></i>Asks · <span class="ar" lang="ar">جدار البيع</span></span>
+        <span><i class="sw sw-gold"></i>Liquidation pocket · <span class="ar" lang="ar">منطقة المتورطين</span> <span class="pill-inf">[INFERENCE]</span></span>
+        <span>◎ Whale wall, pulses once when it appears · <span class="ar" lang="ar">نبض سونار عند ظهور حوت</span></span>
+      </div>
+      <p class="sub num" id="snNow">Point at the canyon to read the depth</p>
+      <p class="sub" id="snSum">Waiting for the order book…</p>
+    </section>
     <div data-view="1 3 5" class="row row-chart mt-3">
       <section class="card" aria-labelledby="frTitle">
         <div class="card-head"><div class="card-title" id="frTitle">10-year regime matcher<span class="ar" lang="ar">ذاكرة السنوات العشر</span></div><div class="tag num" id="frAsOf">—</div></div>
@@ -1282,6 +1334,94 @@
   </footer>
 </div>
 
+<script>
+// OMEGA_VIS (ADR-102): Apple Stocks style SVG charts shared by the Ops Room and the NABD portal.
+// Monotone cubic splines (no overshoot past the data), a vertical glow gradient under the line, glowing
+// event dots, and a magnetic crosshair with a glass loupe for mouse and touch. SVG is vector, so every
+// line stays sharp at any devicePixelRatio. Text goes in with textContent only.
+(() => {
+  "use strict";
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, text) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) if (v !== undefined && v !== null) n.setAttribute(k, String(v));
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  const f1 = v => (Math.round(v * 10) / 10).toString();
+  // Fritsch–Carlson monotone cubic through [x, y] points (x increasing). Returns an SVG path.
+  function spline(pts) {
+    const p = pts.filter(q => Number.isFinite(q[0]) && Number.isFinite(q[1]));
+    const n = p.length;
+    if (!n) return "";
+    if (n < 3) return p.map((q, i) => (i ? "L" : "M") + f1(q[0]) + "," + f1(q[1])).join("");
+    const dx = [], dy = [], m = [], t = new Array(n);
+    for (let i = 0; i < n - 1; i++) { dx[i] = p[i + 1][0] - p[i][0]; dy[i] = p[i + 1][1] - p[i][1]; m[i] = dx[i] ? dy[i] / dx[i] : 0; }
+    t[0] = m[0]; t[n - 1] = m[n - 2];
+    for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+      const a = t[i] / m[i], b = t[i + 1] / m[i], s = a * a + b * b;
+      if (s > 9) { const k = 3 / Math.sqrt(s); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i]; }
+    }
+    let d = "M" + f1(p[0][0]) + "," + f1(p[0][1]);
+    for (let i = 0; i < n - 1; i++) {
+      const h = dx[i] / 3;
+      d += "C" + f1(p[i][0] + h) + "," + f1(p[i][1] + h * t[i]) + " " + f1(p[i + 1][0] - h) + "," + f1(p[i + 1][1] - h * t[i + 1]) + " " + f1(p[i + 1][0]) + "," + f1(p[i + 1][1]);
+    }
+    return d;
+  }
+  const area = (pts, base) => { const p = pts.filter(q => Number.isFinite(q[1])); return p.length ? spline(p) + "L" + f1(p[p.length - 1][0]) + "," + f1(base) + "L" + f1(p[0][0]) + "," + f1(base) + "Z" : ""; };
+  let uid = 0;
+  // Vertical gradient for a chart area; the colours come from CSS classes (.vg-top-<tone>, .vg-bot-<tone>).
+  function gradient(svg, tone) {
+    const id = "vg" + (++uid);
+    const defs = svg.querySelector("defs") || svg.insertBefore(el("defs"), svg.firstChild);
+    const g = el("linearGradient", { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+    g.append(el("stop", { offset: "0%", class: "vg-top vg-" + tone }), el("stop", { offset: "100%", class: "vg-bot vg-" + tone }));
+    defs.append(g);
+    return "url(#" + id + ")";
+  }
+  const glow = (cx, cy, tone, r = 5) => { const g = el("g", { class: "v-glow v-" + tone }); g.append(el("circle", { cx: f1(cx), cy: f1(cy), r: r * 2.2, class: "v-halo" }), el("circle", { cx: f1(cx), cy: f1(cy), r, class: "v-core" })); return g; };
+  // Magnetic crosshair + glass loupe. o = { W, H, T, B, n, x(i), rows(i) -> [[label, value]], dots(i) -> [[y, tone]] }.
+  function loupe(svg, o) {
+    if (svg._loupe) svg._loupe.remove();
+    const g = el("g", { class: "v-loupe", visibility: "hidden", "pointer-events": "none" });
+    const line = el("line", { class: "v-cross", y1: o.T, y2: o.H - o.B });
+    const dots = el("g");
+    const box = el("rect", { class: "v-glass", rx: 10, ry: 10 });
+    const texts = el("g");
+    g.append(line, dots, box, texts);
+    svg.append(g);
+    svg._loupe = g;
+    const show = ev => {
+      const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      if (!r.width || !o.n) return;
+      const px = (ev.clientX - r.left) / r.width * vb.width;
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < o.n; i++) { const d = Math.abs(o.x(i) - px); if (d < bd) { bd = d; best = i; } }
+      const cx = o.x(best), rows = o.rows(best);
+      line.setAttribute("x1", f1(cx)); line.setAttribute("x2", f1(cx));
+      dots.replaceChildren(...(o.dots ? o.dots(best) : []).filter(d => Number.isFinite(d[0])).map(([y, tone]) => glow(cx, y, tone, 4)));
+      texts.replaceChildren();
+      const w = Math.max(132, ...rows.map(([a, b]) => (String(a).length + String(b).length) * 7.2 + 28)), hgt = 14 + rows.length * 18;
+      const bx = cx + 14 + w > vb.width - 4 ? cx - 14 - w : cx + 14, by = o.T + 4;
+      box.setAttribute("x", f1(bx)); box.setAttribute("y", f1(by)); box.setAttribute("width", f1(w)); box.setAttribute("height", f1(hgt));
+      rows.forEach(([a, b], k) => {
+        const yy = by + 20 + k * 18;
+        texts.append(el("text", { x: f1(bx + 10), y: f1(yy), class: "v-lbl" }, a), el("text", { x: f1(bx + w - 10), y: f1(yy), class: "v-val", "text-anchor": "end" }, b));
+      });
+      g.setAttribute("visibility", "visible");
+    };
+    const hide = () => g.setAttribute("visibility", "hidden");
+    svg.onpointermove = show;
+    svg.onpointerdown = show;
+    svg.onpointerleave = hide;
+    svg.onpointercancel = hide;
+  }
+  window.OMEGA_VIS = { el, spline, area, gradient, glow, loupe };
+})();
+</script>
 <script>
 "use strict";
 
@@ -1541,8 +1681,9 @@ function drawChart() {
   const lo = Math.min(...all) - pad, hi = Math.max(...all) + pad;
   const x = i => L + (i / (closes.length - 1)) * (W - L - R);
   const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-  const path = arr => arr.map((v, i) => v === null ? null : [x(i), y(v)]).filter(Boolean)
-    .map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
+  const V = window.OMEGA_VIS;
+  const pts = arr => arr.map((v, i) => v === null ? null : [x(i), y(v)]).filter(Boolean);
+  const path = arr => V.spline(pts(arr));
 
   const nodes = [];
   for (const v of niceTicks(lo, hi, 4)) {
@@ -1554,7 +1695,8 @@ function drawChart() {
     nodes.push(svg("text", { class: "axis", x: x(i).toFixed(1), y: H - 8, "text-anchor": anchor }, new Date(candles[i].t).toISOString().slice(5, 10)));
   }
   const line = path(closes);
-  nodes.push(svg("path", { class: "area", d: line + "L" + x(closes.length - 1).toFixed(1) + "," + (H - B) + "L" + x(0).toFixed(1) + "," + (H - B) + "Z" }));
+  const areaEl = svg("path", { class: "v-area", d: V.area(pts(closes), H - B) });
+  nodes.push(areaEl);
   nodes.push(svg("path", { class: "sma-slow", d: path(slow) }));
   nodes.push(svg("path", { class: "sma-fast", d: path(fast) }));
   nodes.push(svg("path", { class: "price", d: line }));
@@ -1563,35 +1705,21 @@ function drawChart() {
   for (let i = 1; i < closes.length; i++) {
     if (fast[i - 1] === null || slow[i - 1] === null) continue;
     const before = fast[i - 1] - slow[i - 1], after = fast[i] - slow[i];
-    if (before <= 0 && after > 0) nodes.push(svg("circle", { class: "buy", cx: x(i).toFixed(1), cy: y(closes[i]).toFixed(1), r: 5 }));
-    if (before >= 0 && after < 0) nodes.push(svg("circle", { class: "sell", cx: x(i).toFixed(1), cy: y(closes[i]).toFixed(1), r: 5 }));
+    if (before <= 0 && after > 0) nodes.push(V.glow(x(i), y(closes[i]), "green"));
+    if (before >= 0 && after < 0) nodes.push(V.glow(x(i), y(closes[i]), "red"));
   }
 
-  const cross = svg("line", { class: "cross", y1: T, y2: H - B, x1: -10, x2: -10 });
-  const tipG = svg("g", { visibility: "hidden" });
-  const tipBg = svg("rect", { class: "tip-bg", rx: 8, width: 176, height: 44 });
-  const tip1 = svg("text", { class: "tip" }), tip2 = svg("text", { class: "tip" });
-  tipG.append(tipBg, tip1, tip2);
-  nodes.push(cross, tipG);
   const chart = $("chart");
   chart.replaceChildren(...nodes);
-
-  chart.onpointermove = ev => {
-    const r = chart.getBoundingClientRect();
-    const px = (ev.clientX - r.left) / r.width * W;
-    const i = Math.max(0, Math.min(closes.length - 1, Math.round((px - L) / (W - L - R) * (closes.length - 1))));
-    const cx = x(i);
-    cross.setAttribute("x1", cx.toFixed(1)); cross.setAttribute("x2", cx.toFixed(1));
-    const bx = cx > W / 2 ? cx - 188 : cx + 12;
-    tipBg.setAttribute("x", bx.toFixed(1)); tipBg.setAttribute("y", T + 4);
-    tip1.setAttribute("x", (bx + 12).toFixed(1)); tip1.setAttribute("y", T + 22);
-    tip2.setAttribute("x", (bx + 12).toFixed(1)); tip2.setAttribute("y", T + 40);
-    tip1.textContent = new Date(candles[i].t).toISOString().slice(0, 10);
-    tip2.textContent = fmtUsd(closes[i]) + " USDT";
-    tipG.setAttribute("visibility", "visible");
-  };
-  chart.onpointerleave = () => { tipG.setAttribute("visibility", "hidden"); cross.setAttribute("x1", -10); cross.setAttribute("x2", -10); };
+  areaEl.setAttribute("fill", V.gradient(chart, "blue"));
+  const day = i => new Date(candles[i].t).toISOString().slice(0, 10);
+  V.loupe(chart, {
+    W, H, T, B, n: closes.length, x,
+    rows: i => [["Date", day(i)], ["Close", fmtUsd(closes[i])], ["SMA 20", fast[i] === null ? "—" : fmtUsd(fast[i])], ["SMA 50", slow[i] === null ? "—" : fmtUsd(slow[i])]],
+    dots: i => [[y(closes[i]), "blue"], [fast[i] === null ? NaN : y(fast[i]), "orange"], [slow[i] === null ? NaN : y(slow[i]), "purple"]]
+  });
 }
+
 
 // Seeded PRNG (mulberry32) so the Monte Carlo number is reproducible for the same candles.
 function mulberry32(seed) {
@@ -2533,12 +2661,22 @@ const DEFAULT_ALLOW_HOSTS = [
       const t = mk("text", { x: L - 8, y: y(v) + 4, class: "axis", "text-anchor": "end" }); t.textContent = nf(v, 0); svg.append(t);
     }
     S.rows.forEach((r, i) => { const t = mk("text", { x: x(i), y: H - 8, class: "axis", "text-anchor": "middle" }); t.textContent = "P" + r.p; svg.append(t); });
+    const V = window.OMEGA_VIS;
     const path = (key, cls, step) => {
       let d = "";
-      S.rows.forEach((r, i) => { d += (i ? (step ? ` H${x(i)} V${y(r[key])}` : ` L${x(i)} ${y(r[key])}`) : `M${x(0)} ${y(r[key])}`); });
+      if (step) S.rows.forEach((r, i) => { d += i ? ` H${x(i)} V${y(r[key])}` : `M${x(0)} ${y(r[key])}`; });
+      else d = V.spline(S.rows.map((r, i) => [x(i), y(r[key])]));
       svg.append(mk("path", { d, class: cls }));
     };
+    const fillNet = mk("path", { d: V.area(S.rows.map((r, i) => [x(i), y(r.nav)]), H - B), class: "v-area" });
+    svg.append(fillNet);
+    fillNet.setAttribute("fill", V.gradient(svg, "green"));
     path("gross", "ps-gross"); path("nav", "ps-net"); path("hwm", "ps-hwm", true);
+    V.loupe(svg, {
+      W, H, T, B, n: S.rows.length, x,
+      rows: i => [["Period", "P" + S.rows[i].p], ["Before fees", nf(S.rows[i].gross)], ["Investor net", nf(S.rows[i].nav)], ["High-water mark", nf(S.rows[i].hwm)]],
+      dots: i => [[y(S.rows[i].gross), "blue"], [y(S.rows[i].nav), "green"], [y(S.rows[i].hwm), "orange"]]
+    });
     // table
     const head = h("tr");
     for (const c of ["Period", "Return %", "Value before fee", "Fee", "Investor net", "High-water mark"]) { const th = h("th", "", c); th.scope = "col"; head.append(th); }
@@ -2653,6 +2791,7 @@ const DEFAULT_ALLOW_HOSTS = [
     const s = D.signal, pw = D.osiris && Number.isFinite(D.osiris.pwsi) ? D.osiris.pwsi : NaN, lim = limits().pwsi;
     const mood = pw >= lim || (s && s.cls === "sell") ? "risk" : (s && s.trap) || pw >= Math.min(40, lim) ? "warn" : s && s.cls === "buy" ? "buy" : "watch";
     $("dkAura").dataset.mood = mood;
+    renderRings();
   }
 
   async function loadFast() {
@@ -2807,18 +2946,198 @@ const DEFAULT_ALLOW_HOSTS = [
     const vals = hs.flatMap(x => [x.mid, x.micro]);
     const lo = Math.min(...vals), hi = Math.max(...vals), pad = (hi - lo) * 0.1 || hi * 1e-4;
     const W = 720, H = 220, x = i => 44 + i / (hs.length - 1) * (W - 56), y = v => 12 + (1 - (v - lo + pad) / (hi - lo + 2 * pad)) * (H - 36);
-    const line = (k, cls) => sv("polyline", { points: hs.map((p, i) => x(i).toFixed(1) + "," + y(p[k]).toFixed(1)).join(" "), class: cls });
-    const kids = [line("mid", "lv-mid"), line("micro", "lv-micro")];
+    const V = window.OMEGA_VIS, T = 12, B = 24;
+    const pts = k => hs.map((p, i) => [x(i), y(p[k])]);
+    const fill = sv("path", { d: V.area(pts("mid"), H - B), class: "v-area" });
+    const kids = [fill];
+    for (let k = 0; k <= 3; k++) kids.push(sv("line", { x1: 44, x2: W - 12, y1: T + k * (H - T - B) / 3, y2: T + k * (H - T - B) / 3, class: "lv-grid" }));
+    kids.push(sv("path", { d: V.spline(pts("mid")), class: "lv-mid" }), sv("path", { d: V.spline(pts("micro")), class: "lv-micro" }));
     const d = D.price < 10 ? 4 : 2;
     kids.push(sv("text", { x: 4, y: 18 }, nf(hi, d)), sv("text", { x: 4, y: H - 22 }, nf(lo, d)));
     for (const w of [...D.walls.values()].sort((a, b) => b.notional - a.notional).slice(0, 4)) {
       if (w.p < lo - pad || w.p > hi + pad) continue;
       kids.push(sv("line", { x1: 44, x2: W - 12, y1: y(w.p), y2: y(w.p), class: w.side === "bid" ? "lv-bid" : "lv-ask" }));
     }
+    // Glowing dots where a paper trade filled or profit was swept inside this window (from the receipt chain).
+    const t0 = hs[0].t, t1 = hs[hs.length - 1].t, near = t => { let b = 0; for (let i = 1; i < hs.length; i++) if (Math.abs(hs[i].t - t) < Math.abs(hs[b].t - t)) b = i; return b; };
+    for (const r of receipts.slice(-60)) {
+      const t = Date.parse(r.ts);
+      if (!(t >= t0 && t <= t1) || !["FILL_BUY", "FILL_SELL", "SWEEP"].includes(r.type)) continue;
+      const i = near(t);
+      kids.push(V.glow(x(i), y(hs[i].mid), r.type === "FILL_BUY" ? "green" : r.type === "FILL_SELL" ? "red" : "orange", 4.5));
+    }
     svg.replaceChildren(...kids);
+    fill.setAttribute("fill", V.gradient(svg, "blue"));
+    V.loupe(svg, {
+      W, H, T, B, n: hs.length, x,
+      rows: i => [["Time", timeFmt.format(new Date(hs[i].t)) + " UTC"], ["Mid", nf(hs[i].mid, d)], ["Microprice", nf(hs[i].micro, d)], ["Skew", nf((hs[i].micro / hs[i].mid - 1) * 1e4, 2) + " bps"]],
+      dots: i => [[y(hs[i].mid), "blue"], [y(hs[i].micro), "orange"]]
+    });
     const last = hs[hs.length - 1];
     $("lvNow").textContent = `mid ${nf(last.mid, d)} · microprice ${nf(last.micro, d)} (${nf((last.micro / last.mid - 1) * 1e4, 2)} bps) · ${hs.length}/300 readings`;
   }
+  /* ---------------- performance rings and whale sonar (ADR-102) ---------------- */
+  // Three Apple Watch style rings from numbers already on screen: locked-base growth toward the target with
+  // sweeps, the court's consensus with its running accuracy, and planet stability = 100 − PWSI.
+  function renderRings() {
+    const V = window.OMEGA_VIS, svgEl = $("rgSvg");
+    if (!V || !svgEl) return;
+    const total = W.active + W.safe, pw = D.osiris && Number.isFinite(D.osiris.pwsi) ? D.osiris.pwsi : NaN;
+    const growth = W.base > 0 ? total / W.base - 1 : NaN;
+    const outer = W.base > 0 ? (W.target > W.base ? clamp((total - W.base) / (W.target - W.base), 0, 1) : clamp(growth, 0, 1)) : 0;
+    const conf = D.court && Number.isFinite(D.court.conf) ? D.court.conf : NaN;
+    const rings = [
+      { k: "move", r: 92, p: outer, tone: "green", en: "Locked base growth & sweeps", a: "نمو المبلغ المعلّق والترحيل",
+        v: W.base > 0 ? `${pct(growth, 1)} on ${usd(W.base)} · ${W.sweeps} sweep${W.sweeps === 1 ? "" : "s"}, ${usd(W.swept)} to the safe vault · ${nf(outer * 100, 0)}% of the way to ${usd(W.target)}` : "Lock a paper base to start this ring" },
+      { k: "court", r: 68, p: Number.isFinite(conf) ? conf : 0, tone: "blue", en: "Court consensus & accuracy", a: "إجماع المحكمة ودقتها",
+        v: (Number.isFinite(conf) ? `consensus ${nf(conf * 100, 0)}%` : "waiting for the court") + " · " + (L.n ? `accuracy ${nf(L.hits / L.n * 100, 0)}% over ${L.n} closed trade${L.n === 1 ? "" : "s"}` : "no closed trade yet") },
+      { k: "planet", r: 44, p: Number.isFinite(pw) ? clamp((100 - pw) / 100, 0, 1) : 0, tone: "orange", en: "Planet stability (100 − PWSI)", a: "استقرار الكوكب والسيولة",
+        v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 4 live components` : "تعذر التحقق منها: no live PWSI source" }
+    ];
+    const kids = [];
+    for (const g of rings) {
+      const C = 2 * Math.PI * g.r;
+      kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-track rg-" + g.tone }));
+      if (g.p > 0.002) kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-arc", stroke: "url(#rg-" + g.k + ")", "stroke-dasharray": `${(C * Math.min(g.p, 0.9999)).toFixed(2)} ${C.toFixed(2)}`, transform: "rotate(-90 110 110)" }));
+    }
+    svgEl.replaceChildren(...kids);
+    const defs = V.el("defs");
+    for (const [k, a, b] of [["move", "green", "cyan"], ["court", "blue", "purple"], ["planet", "orange", "cyan"]]) {
+      const gr = V.el("linearGradient", { id: "rg-" + k, x1: 0, y1: 0, x2: 1, y2: 1 });
+      gr.append(V.el("stop", { offset: "0%", class: "rs rs-" + a }), V.el("stop", { offset: "100%", class: "rs rs-" + b }));
+      defs.append(gr);
+    }
+    svgEl.prepend(defs);
+    $("rgLegend").replaceChildren(...rings.map(g => {
+      const li = h("li"), b = h("b");
+      b.append(h("i", "rg-sw rg-" + g.tone), document.createTextNode(g.en + " · "), ar(g.a));
+      li.append(b, h("span", "num", Number.isFinite(g.p) ? nf(g.p * 100, 0) + "%" : "—"), h("small", "", g.v));
+      return li;
+    }));
+    $("rgSum").textContent = rings.map(g => `${g.en}: ${nf(g.p * 100, 0)}%`).join(" · ") + ". Paper figures and model readings, not advice.";
+  }
+
+  // Liquidity canyon: cumulative bid depth (green, left) and ask depth (red, right) within ±1.5% of the mid,
+  // whale walls (≥ 8× the median level within 2%, the same rule as the walls list) and estimated
+  // liquidation pockets [INFERENCE]. A wall that was not in the previous book fires one sonar pulse.
+  const sonar = { cv: null, ctx: null, w: 0, h: 0, dpr: 1, prev: null, pulses: [], raf: 0, hover: null, visible: true, geo: null };
+  function sonarSize() {
+    const c = sonar.cv;
+    if (!c) return;
+    sonar.dpr = Math.min(window.devicePixelRatio || 1, 3);
+    sonar.w = c.clientWidth; sonar.h = c.clientHeight;
+    if (!sonar.w || !sonar.h) return;
+    c.width = Math.round(sonar.w * sonar.dpr); c.height = Math.round(sonar.h * sonar.dpr);
+    sonar.ctx.setTransform(sonar.dpr, 0, 0, sonar.dpr, 0, 0);
+    drawCanyon();
+  }
+  function renderCanyon() {
+    if (!sonar.cv) {
+      sonar.cv = $("snCanvas");
+      if (!sonar.cv) return;
+      sonar.ctx = sonar.cv.getContext("2d");
+      new ResizeObserver(sonarSize).observe(sonar.cv);
+      new IntersectionObserver(es => { sonar.visible = es.some(e => e.isIntersecting); if (sonar.visible) drawCanyon(); }).observe(sonar.cv);
+      new MutationObserver(drawCanyon).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      const pos = e => { const r = sonar.cv.getBoundingClientRect(); return e.clientX - r.left; };
+      sonar.cv.addEventListener("pointermove", e => { sonar.hover = pos(e); drawCanyon(); });
+      sonar.cv.addEventListener("pointerdown", e => { sonar.hover = pos(e); drawCanyon(); });
+      sonar.cv.addEventListener("pointerleave", () => { sonar.hover = null; drawCanyon(); });
+      sonarSize();
+    }
+    if (!D.depth || !Number.isFinite(D.price)) return;
+    const keys = new Set(D.walls.keys());
+    if (sonar.prev) for (const [k, wl] of D.walls) if (!sonar.prev.has(k)) sonar.pulses.push({ p: wl.p, side: wl.side, t0: performance.now() });
+    sonar.prev = keys;
+    const near = side => side.filter(([p]) => Math.abs(p / D.price - 1) <= 0.015).reduce((s, [p, q]) => s + p * q, 0);
+    const big = [...D.walls.values()].sort((a, b) => b.notional - a.notional)[0];
+    $("snSum").textContent = `Bids within 1.5%: ${nf(near(D.depth.bids) / 1e6, 2)}M USDT · asks: ${nf(near(D.depth.asks) / 1e6, 2)}M · ${D.walls.size} whale wall${D.walls.size === 1 ? "" : "s"}` + (big ? ` · largest ${big.side === "bid" ? "bid" : "ask"} ${nf(big.p, big.p < 10 ? 4 : 2)} (${nf(big.notional / 1e3, 0)}k)` : "") + " · Binance spot depth, " + timeFmt.format(new Date()) + " UTC";
+    drawCanyon();
+    if (sonar.pulses.length) animatePulses();
+  }
+  function animatePulses() {
+    if (sonar.raf) return;
+    const step = () => {
+      sonar.raf = 0;
+      const now = performance.now();
+      sonar.pulses = sonar.pulses.filter(p => now - p.t0 < 1600);
+      drawCanyon();
+      if (sonar.pulses.length && !matchMedia("(prefers-reduced-motion: reduce)").matches && sonar.visible && !document.hidden) sonar.raf = requestAnimationFrame(step);
+      else if (sonar.pulses.length) { sonar.pulses = []; drawCanyon(); }
+    };
+    sonar.raf = requestAnimationFrame(step);
+  }
+  function drawCanyon() {
+    const c = sonar.ctx, w = sonar.w, hh = sonar.h;
+    if (!c || !w || !hh || !sonar.visible) return;
+    const cs = getComputedStyle(document.documentElement), col = v => cs.getPropertyValue(v).trim();
+    const green = col("--apple-green"), red = col("--apple-red"), orange = col("--apple-orange"), grid = col("--hairline-color"), text = col("--content-secondary"), prim = col("--content-primary"), surf = col("--surface");
+    c.clearRect(0, 0, w, hh);
+    c.font = "12px " + (col("--font-mono") || "monospace");
+    if (!D.depth || !Number.isFinite(D.price)) { c.fillStyle = text; c.fillText("Waiting for the Binance order book…", 12, hh / 2); return; }
+    const mid = D.price, span = 0.015, Lp = 8, Rp = 8, T = 16, B = 26;
+    const xs = p => Lp + (p / mid - (1 - span)) / (2 * span) * (w - Lp - Rp);
+    const px = x => mid * (1 - span + (x - Lp) / (w - Lp - Rp) * 2 * span);
+    const cum = rows => { let s = 0; const out = []; for (const [p, q] of rows) { if (Math.abs(p / mid - 1) > span) break; s += p * q; out.push([p, s]); } return out; };
+    const bid = cum(D.depth.bids), ask = cum(D.depth.asks);
+    const ymax = Math.max(1, bid.length ? bid[bid.length - 1][1] : 0, ask.length ? ask[ask.length - 1][1] : 0);
+    const ys = v => hh - B - v / ymax * (hh - T - B);
+    c.strokeStyle = grid; c.lineWidth = 1;
+    for (let k = 0; k <= 4; k++) { const y = T + k * (hh - T - B) / 4; c.beginPath(); c.moveTo(Lp, y); c.lineTo(w - Rp, y); c.stroke(); }
+    // liquidation pockets [INFERENCE], from the crowd radar's estimate
+    const liq = D.crowd && Array.isArray(D.crowd.liq) ? D.crowd.liq.filter(x => Math.abs(x.p / mid - 1) <= span) : [];
+    const lmax = Math.max(1, ...liq.map(x => x.long + x.short));
+    c.fillStyle = orange;
+    for (const x of liq) { c.globalAlpha = 0.16 + 0.3 * (x.long + x.short) / lmax; const xx = xs(x.p); c.fillRect(xx - 2, T, 4, hh - T - B); }
+    c.globalAlpha = 1;
+    const side = (rows, color, dir) => {
+      if (!rows.length) return;
+      c.beginPath(); c.moveTo(xs(mid), hh - B);
+      let last = hh - B;
+      for (const [p, s] of rows) { const x = xs(p); c.lineTo(x, last); last = ys(s); c.lineTo(x, last); }
+      c.lineTo(dir < 0 ? Lp : w - Rp, last);
+      const stroke = new Path2D(); stroke.moveTo(xs(mid), hh - B);
+      let l2 = hh - B;
+      for (const [p, s] of rows) { const x = xs(p); stroke.lineTo(x, l2); l2 = ys(s); stroke.lineTo(x, l2); }
+      stroke.lineTo(dir < 0 ? Lp : w - Rp, l2);
+      c.lineTo(dir < 0 ? Lp : w - Rp, hh - B); c.closePath();
+      const gr = c.createLinearGradient(0, T, 0, hh - B); gr.addColorStop(0, color); gr.addColorStop(1, "transparent");
+      c.globalAlpha = 0.34; c.fillStyle = gr; c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = color; c.lineWidth = 2; c.lineJoin = "round"; c.stroke(stroke);
+    };
+    side(bid, green, -1); side(ask, red, 1);
+    const depthAt = (rows, p, isBid) => { let s = 0; for (const [q, v] of rows) { if (isBid ? q >= p : q <= p) s = v; else break; } return s; };
+    // whale walls with their sonar pulse
+    const now = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const wl of D.walls.values()) {
+      if (Math.abs(wl.p / mid - 1) > span) continue;
+      const x = xs(wl.p), isBid = wl.side === "bid", y = ys(depthAt(isBid ? bid : ask, wl.p, isBid)), color = isBid ? green : red;
+      c.strokeStyle = color; c.globalAlpha = 0.9; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, hh - B); c.stroke(); c.setLineDash([]);
+      c.globalAlpha = 1; c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1.5; c.strokeStyle = surf; c.stroke();
+      const pulse = sonar.pulses.find(p => p.p === wl.p && p.side === wl.side);
+      if (pulse) {
+        const t = still ? 0.5 : (now - pulse.t0) / 1600;
+        for (const off of [0, 0.25, 0.5]) { const tt = still ? off + 0.2 : t - off; if (tt <= 0 || tt >= 1) continue; c.globalAlpha = (1 - tt) * 0.8; c.strokeStyle = color; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 6 + tt * 42, 0, Math.PI * 2); c.stroke(); }
+        c.globalAlpha = 1;
+      }
+    }
+    // mid line and axis
+    c.strokeStyle = prim; c.globalAlpha = 0.5; c.lineWidth = 1; c.beginPath(); c.moveTo(xs(mid), T); c.lineTo(xs(mid), hh - B); c.stroke(); c.globalAlpha = 1;
+    c.fillStyle = text; c.textAlign = "left"; c.fillText("−1.5%", Lp, hh - 8); c.textAlign = "right"; c.fillText("+1.5%", w - Rp, hh - 8);
+    c.textAlign = "center"; c.fillStyle = prim; c.fillText(nf(mid, mid < 10 ? 4 : 2), xs(mid), hh - 8); c.textAlign = "left";
+    // crosshair loupe
+    if (sonar.hover !== null && sonar.hover >= Lp && sonar.hover <= w - Rp) {
+      const x = sonar.hover, p = px(x), isBid = p <= mid, v = depthAt(isBid ? bid : ask, p, isBid), d = mid < 10 ? 4 : 2;
+      c.strokeStyle = text; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, hh - B); c.stroke(); c.setLineDash([]);
+      const lines = [["Price", nf(p, d)], [isBid ? "Bids at or above" : "Asks at or below", nf(v / 1e6, 3) + "M"], ["From mid", pct(p / mid - 1, 2)]];
+      const bw = 196, bh = 14 + lines.length * 18, bx = x + 12 + bw > w ? x - 12 - bw : x + 12;
+      c.fillStyle = surf; c.globalAlpha = 0.94; c.beginPath(); c.roundRect(bx, T, bw, bh, 10); c.fill(); c.globalAlpha = 1; c.strokeStyle = grid; c.stroke();
+      lines.forEach(([a, b], k) => { c.fillStyle = text; c.textAlign = "left"; c.fillText(a, bx + 10, T + 20 + k * 18); c.fillStyle = prim; c.textAlign = "right"; c.fillText(b, bx + bw - 10, T + 20 + k * 18); });
+      c.textAlign = "left";
+      $("snNow").textContent = lines.map(([a, b]) => a + " " + b).join(" · ");
+    }
+  }
+
   function flowScore() {
     const f = D.flow;
     if (!f) return 0;
@@ -2879,6 +3198,7 @@ const DEFAULT_ALLOW_HOSTS = [
       return li;
     }) : [(() => { const li = h("li"); li.append(h("time", "num", "—"), h("div", "", "No wall above 8× the median size within 2%")); return li; })()]));
     state("whState", "online", "LIVE · Binance spot depth", "مباشر");
+    renderCanyon();
   }
 
   /* ---------------- crowd: funding, OI, long/short, taker, liquidation map, FOMO ---------------- */
@@ -3555,6 +3875,7 @@ const DEFAULT_ALLOW_HOSTS = [
   }
 
   function renderWallet() {
+    queueMicrotask(renderRings);
     $("wlBaseOut").textContent = usd(W.base);
     $("wlActiveOut").textContent = "trading value " + usd(tradingValue());
     $("wlSafe").textContent = usd(W.safe);
@@ -4964,7 +5285,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   // Command wall: on view 5 at 1280 px and up the cards below move into four quadrants that fill one
   // screen; a comment marker keeps each card's home so it goes back on any other view or width.
   const wall = $("wall"), wide = window.matchMedia("(min-width: 1280px)");
-  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "frTitle"], 4: ["wlTitle", "cbTitle", "rcTitle", "cpTitle"] };
+  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "snTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "frTitle"], 4: ["wlTitle", "rgTitle", "cbTitle", "rcTitle", "cpTitle"] };
   const homes = new Map();
   function maximize(q) {
     wall.classList.toggle("maxed", !!q);
