@@ -2,7 +2,7 @@
 
 One design language for every OMEGA surface: `site-landing/` (public NABD portal), `omega-ops-room-v1/omega-ops-room.html` (Ops Room) and `omega-ops-room-v1/the-chain.html` (finance research chain). Decision records: ADR-087 (tokens), ADR-088 (this file, THE CHAIN, skill rules) and ADR-089 (security shield, free data engine, profit-split calculator). Agent rules: `AGENTS.md` and `CLAUDE.md`.
 
-Direction: Apple HIG discipline on a clean white canvas, with Linear's density for data, Stripe's calm hierarchy for money, and Replicate's plain, honest product copy. White "Pure Daylight" is the default; dark is a toggle, never an accident inside a light page.
+Direction: Apple HIG discipline on a clean white canvas, with Linear's density for data, Stripe's calm hierarchy for money, and Replicate's plain, honest product copy. Light "Apple Daylight Ceramic" (`#F5F5F7` page, white cards) is the default; dark "Apple OLED Pro Dark" (`#000000` page, `#1C1C1E` / `#2C2C2E` cards) is a toggle, never an accident inside a light page (ADR-101).
 
 ## 1. Tokens (source of truth: `site-landing/style.css`)
 
@@ -10,19 +10,21 @@ All colours are OKLCH. Display P3 screens get the same lightness with more chrom
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | `oklch(98.5% 0.002 260)` | `oklch(17% 0.012 265)` | page |
-| `--surface` | `oklch(100% 0 0)` | `oklch(21.5% 0.014 265)` | cards |
-| `--surface-2` | `oklch(96.5% 0.004 260)` | `oklch(25.5% 0.016 265)` | inner wells, inputs |
-| `--content-primary` | `oklch(21% 0.012 265)` | `oklch(95% 0.01 265)` | text |
-| `--content-secondary` | `oklch(46% 0.025 265)` | `oklch(86% 0.025 265)` | supporting text |
-| `--content-tertiary` | `oklch(54% 0.039 268)` | `oklch(78% 0.039 268)` | captions (floor of the contrast gate) |
-| `--accent` | `oklch(52% 0.14 245)` | `oklch(78% 0.125 245)` | the one accent |
+| `--bg` | `oklch(97.1% 0.003 286.4)` (#F5F5F7) | `oklch(0% 0 0)` (#000000) | page |
+| `--surface` | `oklch(100% 0 0)` | `oklch(22.7% 0.004 286.1)` (#1C1C1E) | cards |
+| `--surface-2` | `oklch(96.3% 0.007 286.3)` (#F2F2F7) | `oklch(29.4% 0.004 286.2)` (#2C2C2E) | inner wells, inputs |
+| `--content-primary` | `oklch(23.2% 0.004 286.1)` (#1D1D1F) | `oklch(97.1% 0.003 286.4)` | text |
+| `--content-secondary` | `oklch(50% 0.006 286)` | `oklch(84% 0.006 286)` | supporting text |
+| `--content-tertiary` | `oklch(53.5% 0.007 286)` | `oklch(79.5% 0.007 286)` | captions (floor of the contrast gate) |
+| `--accent` | `oklch(54.5% 0.197 257.4)` | `oklch(79.1% 0.107 255.5)` | the one accent, Apple system blue at text contrast |
+| `--apple-green` / `-red` / `-blue` / `-indigo` / `-purple` / `-orange` / `-cyan` | #34C759 #FF3B30 #007AFF #5856D6 #AF52DE #FF9500 #32ADE6 | #30D158 #FF453A #0A84FF #5E5CE6 #BF5AF2 #FF9F0A #64D2FF | marks, chart lines, rings and map points only, never text (more chroma under P3) |
 | `--success` / `--warning` / `--danger` / `--violet` / `--gold` | see CSS | see CSS | status only, never decoration |
 
 Rules:
 - One accent. Status colours mean status: green live, amber checking or [INFERENCE], red failed or "تعذر التحقق منها", violet locked "قيد الموافقة".
 - Every text/background pair passes WCAG ≥ 4.5:1 **and** APCA Lc ≥ 60 in light, dark and both P3 variants. Gate: `node audits/verify-contrast.mjs <file>` (culori@4.0.1, apca-w3@0.1.9). A failing pair blocks the commit.
-- No pure black, no purple-blue "AI gradient", no generic grey drop shadows. Shadows are tinted with `--shadow-color` and stay below 0.1 alpha.
+- Pure black only as the OLED dark page background (`--bg`, ADR-101). No purple-blue "AI gradient", no generic grey drop shadows. Shadows are tinted with `--shadow-color` and stay below 0.1 alpha; cards use `--shadow-soft` (`0 10px 30px -5px`, 0.05) over a 1px hairline (`rgba(0,0,0,0.07)` light, `rgba(255,255,255,0.12)` dark).
+- Apple system colours: text uses the gated tokens (`--success`, `--danger`, `--accent`…, the accessible variants of #34C759 / #FF3B30 / #007AFF), while the vivid `--apple-*` values are for strokes, fills, rings and map points, which carry no text. The decision card's ambient aura uses one of them at 18–20% (green buy, cyan watching, orange whale-trap or rising PWSI, red sell or PWSI at the limit) and cross-fades by opacity.
 
 ## 2. Type
 
@@ -43,7 +45,7 @@ Rules:
 - `--ease-apple-fluid: cubic-bezier(0.32, 0.72, 0, 1)`; spring `linear(...)` (ζ 0.72, 600ms) inside `@supports`.
 - Animate `transform` and `opacity` only, list properties explicitly (never `transition: all`). Press feedback `scale(0.96–0.98)`.
 - `prefers-reduced-motion: reduce` turns all motion off.
-- Glass (`blur(20px) saturate(180%)`) only on fixed or sticky chrome, always with an opaque fallback. The phone dock (ADR-092) is the one place that uses `blur(40px) saturate(200%)`.
+- Glass (`blur(32px) saturate(190%)`, `--glass` at 0.82 alpha) only on fixed or sticky chrome and the map overlays, always with an opaque fallback. The phone dock (ADR-092) is the one place that uses `blur(40px) saturate(200%)`.
 
 ## 5. Layout and devices
 
@@ -52,6 +54,7 @@ Rules:
 - The Ops Room and THE CHAIN must work when double-clicked from disk (`file://`): fonts embedded as base64, no build step, no framework.
 - Command wall (ADR-093): view 5 at ≥ 1280 px is a 2 × 2 grid (`1.15fr 1fr`, gap 12px) exactly `100dvh − header` high. Cards move into the quadrants and back, so ids and listeners stay the same. Each quadrant scrolls inside; the page never stacks the wall. Quadrant radius 28 = inner card 20 + padding 8. Keys: 1–5 views, K stop, S sweep, Esc restore, all ignored inside fields.
 - Ops Room shell (ADR-092): five views (1 Command, 2 OSIRIS, 3 Radar, 4 Receipts & shield, 5 All). Every top-level child of `<main>` carries `data-view="…"`, and a new section must name its views. A segmented control is used at ≥ 768 px, and a floating dock with `safe-area-inset-bottom` below that. The view lives in `?view=N`. The status island shows the two brains, the locked base and the vault in tabular numbers. The install manifest is linked only over http(s).
+- Charts (ADR-102): monotone splines (no overshoot), glow area from `--apple-*`, event dots, a magnetic crosshair with a glass loupe in tabular numbers (`OMEGA_VIS`, inline in the Ops Room, `vis.js` in NABD). Canvases use devicePixelRatio up to 3. The triple rings and the whale sonar canvas use only numbers already on the page; the sonar pulse fires once per new wall and is off under reduced motion.
 - Performance: telemetry arrays are bounded ring buffers (300). Canvases draw on demand and pause under `IntersectionObserver` and `visibilitychange`. The only continuous motion is the ticker marquee, which uses `transform`, pauses on hover and is off under reduced motion.
 
 ## 6. Content and honesty rules (override any skill that says otherwise)
@@ -61,6 +64,7 @@ Rules:
 - Real trading, public copy-trading vaults and investor profit split appear only as locked cards marked **«قيد الموافقة»** until Ahmad gives a separate explicit approval and legal review is done.
 - The profit-split / high-water-mark calculator (ADR-089) is a math simulation in the browser: it sends nothing, accepts no money and copies no trade, and says so next to the inputs. Quant ranges carry `[INFERENCE - Quant Model]`.
 - Trading desk (ADR-091): paper only. The person opens every paper trade; no code path sends an order to any exchange. Testnet and real-account modes show as disabled options until Ahmad approves each one. Signals (STRONG BUY / BUY / HOLD / SELL / STRONG SELL / WHALE TRAP WARNING) carry `[INFERENCE]`, levels and Kelly size carry `[INFERENCE - Quant Model]`, regime matches carry `[INFERENCE - 10Y Fractal Model]`, and the matcher says on screen that Binance history starts 2017-08-17 (2016 is not covered).
+- OSIRIS map (ADR-100): one camera, zoom 1–18 (web-map levels), globe up to 6 then flat Web Mercator tiles. DAY CARTO Voyager @2x (OSM fallback), MAP CARTO Dark Matter @2x, SAT Esri World Imagery (GIBS fallback), each with its required credit on the map. The embedded Natural Earth coastline is drawn under every frame, so the map works offline. Every point opens a callout with its raw source.
 - OSIRIS (ADR-092, ADR-093): every layer names its source. A layer without a live keyless source is shown as OFFLINE or "NO FREE SOURCE", never filled with simulated points. PWSI shows how many of its four components it used and carries `[INFERENCE]`. Each strait shows its NGA warnings with the warning number and issue date, or "تعذر التحقق منها" when the proxy is off. SAT is NASA GIBS Blue Marble imagery when it loads and the drawn map otherwise; nothing says "satellite" without the imagery on screen.
 - Self-learning court (ADR-093): the weights, each voice's hit rate and the Court Accuracy Score are shown with `[INFERENCE - Quant Model]`, and "no closed trade yet" until there is one. Hawkes and VPIN show their live fitted parameters, never constants.
 - The auto engine is paper only and opens a trade only on the risk judge's OPEN. The court's three lines are rule-based summaries of the numbers on screen.

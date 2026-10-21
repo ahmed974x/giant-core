@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-XreNdNJ5x/hP/Cmo72/swaCPreiwd2jaXYEOn9zB9Eg='; style-src 'sha256-QpJSYWZ5yiImUREu839LcCC/kcMTmZL1bh5OsI9uDAk='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-XreNdNJ5x/hP/Cmo72/swaCPreiwd2jaXYEOn9zB9Eg='; style-src 'sha256-NBD3RJaLWBpvJooyXHePgHbgRGw15Sr/f26PxBntA4w='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -33,26 +33,26 @@
 
   :root {
     color-scheme: light;
-    --bg: oklch(98.5% 0.002 260);
+    --bg: oklch(97.1% 0.003 286.4);
     --surface: oklch(100% 0 0);
-    --surface-2: oklch(96.5% 0.004 260);
-    --glass: oklch(100% 0 0 / 0.72);
-    --hairline-color: oklch(22% 0.02 265 / 0.1);
-    --shadow-color: 245 30% 20%;
-    --content-primary: oklch(21% 0.012 265);
-    --content-secondary: oklch(46% 0.025 265);
-    --content-tertiary: oklch(54% 0.039 268);
-    --accent: oklch(52% 0.14 245);
-    --gold: oklch(54% 0.115 78);
-    --violet: oklch(55% 0.17 292);
-    --success: oklch(52% 0.13 152);
-    --warning: oklch(54% 0.13 62);
-    --danger: oklch(55% 0.17 25);
-    --accent-fill: oklch(52% 0.147 250);
+    --surface-2: oklch(96.3% 0.007 286.3);
+    --glass: oklch(100% 0 0 / 0.82);
+    --hairline-color: oklch(0% 0 0 / 0.07);
+    --shadow-color: 250 12% 12%;
+    --content-primary: oklch(23.2% 0.004 286.1);
+    --content-secondary: oklch(50% 0.006 286);
+    --content-tertiary: oklch(53.5% 0.007 286);
+    --accent: oklch(54.5% 0.197 257.4);
+    --gold: oklch(53.9% 0.11 90.4);
+    --violet: oklch(52.9% 0.191 278.3);
+    --success: oklch(52.2% 0.153 147.4);
+    --warning: oklch(54.7% 0.125 62.6);
+    --danger: oklch(55.3% 0.225 27.3);
+    --accent-fill: oklch(56.3% 0.193 256.2);
     --on-accent-fill: oklch(100% 0 0);
-    --gold-fill: oklch(80% 0.16 82);
-    --on-gold-fill: oklch(20% 0.02 265);
-    --tint-accent: oklch(52% 0.14 245 / 0.08);
+    --gold-fill: oklch(86.5% 0.177 90.4);
+    --on-gold-fill: oklch(23.2% 0.004 286.1);
+    --tint-accent: oklch(60.3% 0.218 257.4 / 0.08);
     --land: oklch(46% 0.025 265 / 0.55);
     --sphere-a: oklch(100% 0 0);
     --sphere-b: oklch(95% 0.012 245);
@@ -75,6 +75,17 @@
     --ease-spring: var(--ease-apple-fluid);
     --dur-fast: 180ms; --dur-base: 320ms;
     --hairline: 1px;
+    /* ADR-101: danger fill, soft card shadow and the Apple system colours for marks, charts and rings (text keeps the gated tokens above) */
+    --danger-fill: oklch(55.3% 0.225 27.3);
+    --on-danger-fill: oklch(100% 0 0);
+    --shadow-soft: 0 10px 30px -5px hsl(var(--shadow-color) / 0.05);
+    --apple-green: oklch(73.0% 0.194 147.4);
+    --apple-red: oklch(65.4% 0.232 28.7);
+    --apple-blue: oklch(60.3% 0.218 257.4);
+    --apple-indigo: oklch(52.9% 0.191 278.3);
+    --apple-purple: oklch(61.5% 0.213 312.4);
+    --apple-orange: oklch(76.5% 0.175 62.6);
+    --apple-cyan: oklch(70.7% 0.133 233.9);
   }
   @supports (transition-timing-function: linear(0, 1)) {
     :root { --ease-spring: linear(0, 0.0582, 0.1929, 0.3578, 0.5227, 0.6699, 0.7911, 0.8842, 0.9509, 0.9951, 1.0214, 1.0344, 1.0384, 1.0366, 1.0316, 1.0253, 1.019, 1.0132, 1.0085, 1.0048, 1.0021, 1.0003, 0.9993, 0.9987, 1); }
@@ -83,40 +94,68 @@
 
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: oklch(17% 0.012 265);
-    --surface: oklch(21.5% 0.014 265);
-    --surface-2: oklch(25.5% 0.016 265);
-    --glass: oklch(21.5% 0.014 265 / 0.72);
+    --bg: oklch(0% 0 0);
+    --surface: oklch(22.7% 0.004 286.1);
+    --surface-2: oklch(29.4% 0.004 286.2);
+    --glass: oklch(22.7% 0.004 286.1 / 0.82);
     --hairline-color: oklch(100% 0 0 / 0.12);
-    --shadow-color: 265 40% 2%;
-    --content-primary: oklch(95% 0.01 265);
-    --content-secondary: oklch(86% 0.025 265);
-    --content-tertiary: oklch(78% 0.039 268);
-    --accent: oklch(78% 0.125 245);
-    --gold: oklch(79% 0.15 78);
-    --violet: oklch(79% 0.12 292);
-    --success: oklch(77% 0.13 152);
-    --warning: oklch(79% 0.14 62);
-    --danger: oklch(80% 0.12 25);
-    --accent-fill: oklch(78% 0.125 245);
-    --on-accent-fill: oklch(17% 0.012 265);
-    --gold-fill: oklch(80% 0.16 82);
-    --on-gold-fill: oklch(20% 0.02 265);
-    --tint-accent: oklch(78% 0.125 245 / 0.12);
+    --shadow-color: 250 30% 2%;
+    --content-primary: oklch(97.1% 0.003 286.4);
+    --content-secondary: oklch(84% 0.006 286);
+    --content-tertiary: oklch(79.5% 0.007 286);
+    --accent: oklch(79.1% 0.107 255.5);
+    --gold: oklch(88.5% 0.181 94.8);
+    --violet: oklch(80.6% 0.137 312.4);
+    --success: oklch(77% 0.208 147);
+    --warning: oklch(80% 0.155 67.2);
+    --danger: oklch(80.3% 0.112 28.3);
+    --accent-fill: oklch(79.1% 0.107 255.5);
+    --on-accent-fill: oklch(0% 0 0);
+    --gold-fill: oklch(88.5% 0.181 94.8);
+    --on-gold-fill: oklch(0% 0 0);
+    --tint-accent: oklch(62.4% 0.206 255.5 / 0.16);
     --land: oklch(86% 0.025 265 / 0.5);
     --sphere-a: oklch(27% 0.03 250);
     --sphere-b: oklch(19% 0.014 265);
+    /* ADR-101: danger fill, soft card shadow and the Apple system colours for marks, charts and rings (text keeps the gated tokens above) */
+    --danger-fill: oklch(80.3% 0.112 28.3);
+    --on-danger-fill: oklch(0% 0 0);
+    --apple-green: oklch(75.6% 0.208 147.0);
+    --apple-red: oklch(66.3% 0.224 28.3);
+    --apple-blue: oklch(62.4% 0.206 255.5);
+    --apple-indigo: oklch(55.6% 0.203 278.1);
+    --apple-purple: oklch(65.6% 0.227 312.4);
+    --apple-orange: oklch(78.2% 0.171 67.2);
+    --apple-cyan: oklch(81.7% 0.119 227.7);
   }
   @media (color-gamut: p3) {
     :root {
-      --accent: oklch(52% 0.18 245); --gold: oklch(54% 0.135 78); --violet: oklch(55% 0.24 292);
-      --success: oklch(52% 0.19 152); --warning: oklch(54% 0.15 62); --danger: oklch(55% 0.23 25);
-      --accent-fill: oklch(52% 0.19 250); --gold-fill: oklch(80% 0.19 82);
+      --accent: oklch(54.7% 0.218 257.4); --gold: oklch(54% 0.127 90.4); --violet: oklch(52.9% 0.214 278.3);
+      --success: oklch(51.9% 0.194 147.4); --warning: oklch(54.9% 0.144 62.6); --danger: oklch(55.3% 0.253 27.3);
+      --accent-fill: oklch(56.3% 0.217 256.2); --gold-fill: oklch(86.5% 0.198 90.4);
+      /* ADR-101: danger fill, soft card shadow and the Apple system colours for marks, charts and rings (text keeps the gated tokens above) */
+      --danger-fill: oklch(55.3% 0.253 27.3);
+      --apple-green: oklch(73.0% 0.218 147.4);
+      --apple-red: oklch(65.4% 0.260 28.7);
+      --apple-blue: oklch(60.3% 0.234 257.4);
+      --apple-indigo: oklch(52.9% 0.214 278.3);
+      --apple-purple: oklch(61.5% 0.238 312.4);
+      --apple-orange: oklch(76.5% 0.196 62.6);
+      --apple-cyan: oklch(70.7% 0.149 233.9);
     }
     :root[data-theme="dark"] {
-      --accent: oklch(78% 0.135 245); --gold: oklch(79% 0.187 78); --violet: oklch(79% 0.13 292);
-      --success: oklch(77% 0.19 152); --warning: oklch(79% 0.19 62); --danger: oklch(80% 0.153 25);
-      --accent-fill: oklch(78% 0.135 245); --gold-fill: oklch(80% 0.19 82);
+      --accent: oklch(79.1% 0.117 255.5); --gold: oklch(88.5% 0.202 94.8); --violet: oklch(80.7% 0.15 312.4);
+      --success: oklch(77% 0.208 147); --warning: oklch(80.1% 0.171 67.2); --danger: oklch(80.7% 0.141 28.3);
+      --accent-fill: oklch(79.1% 0.117 255.5); --gold-fill: oklch(88.5% 0.202 94.8);
+      /* ADR-101: danger fill, soft card shadow and the Apple system colours for marks, charts and rings (text keeps the gated tokens above) */
+      --danger-fill: oklch(80.7% 0.141 28.3);
+      --apple-green: oklch(75.6% 0.233 147.0);
+      --apple-red: oklch(66.3% 0.250 28.3);
+      --apple-blue: oklch(62.4% 0.221 255.5);
+      --apple-indigo: oklch(55.6% 0.228 278.1);
+      --apple-purple: oklch(65.6% 0.255 312.4);
+      --apple-orange: oklch(78.2% 0.192 67.2);
+      --apple-cyan: oklch(81.7% 0.129 227.7);
     }
   }
 
@@ -157,7 +196,7 @@
     box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 8px 24px hsl(var(--shadow-color) / 0.06);
   }
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .bar { background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); }
+    .bar { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
   }
   .brand { display: flex; align-items: baseline; gap: var(--s-2); font-weight: 800; letter-spacing: 0.08em; font-size: var(--text-body); }
   .brand .ar { font-weight: 700; color: var(--content-secondary); font-size: var(--text-footnote); }
@@ -212,7 +251,7 @@
     position: relative; min-width: 0;
     background: var(--surface); border-radius: var(--r-card); padding: var(--pad-card);
     border: var(--hairline) solid var(--hairline-color);
-    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 4px 16px hsl(var(--shadow-color) / 0.04);
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04), var(--shadow-soft);
   }
   .card + .card { margin-top: var(--s-3); }
   .card h3 { font-size: var(--text-headline); line-height: 1.4; margin-bottom: var(--s-2); text-wrap: balance; }
