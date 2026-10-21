@@ -45,13 +45,29 @@
     }
     var every = Math.max(1, Math.ceil(S.rows.length / 12));
     S.rows.forEach(function (r, i) { if (i % every === 0 || i === S.rows.length - 1) svg.append(mk("text", { x: x(i), y: H - 9, "class": "axis", "text-anchor": "middle" }, "P" + r.p)); });
+    // ADR-102: spline lines, a glow under the subscriber's net line, fee events as glowing dots, glass loupe.
+    var V = window.OMEGA_VIS;
     function path(key, cls, step) {
       var d = "";
-      S.rows.forEach(function (r, i) { d += i ? (step ? " H" + x(i) + " V" + y(r[key]) : " L" + x(i) + " " + y(r[key])) : "M" + x(0) + " " + y(r[key]); });
+      if (step || !V) S.rows.forEach(function (r, i) { d += i ? (step ? " H" + x(i) + " V" + y(r[key]) : " L" + x(i) + " " + y(r[key])) : "M" + x(0) + " " + y(r[key]); });
+      else d = V.spline(S.rows.map(function (r, i) { return [x(i), y(r[key])]; }));
       svg.append(mk("path", { d: d, "class": cls }));
     }
+    if (V) {
+      var fill = mk("path", { d: V.area(S.rows.map(function (r, i) { return [x(i), y(r.nav)]; }), H - B), "class": "v-area" });
+      svg.append(fill);
+      fill.setAttribute("fill", V.gradient(svg, "green"));
+    }
     path("gross", "l-gross"); path("hwm", "l-hwm", true); path("nav", "l-net");
-    S.rows.forEach(function (r, i) { if (r.fee > 0) svg.append(mk("circle", { cx: x(i), cy: y(r.nav), r: 3.5, "class": "fee-dot" })); });
+    S.rows.forEach(function (r, i) { if (r.fee > 0) svg.append(V ? V.glow(x(i), y(r.nav), "orange", 3.5) : mk("circle", { cx: x(i), cy: y(r.nav), r: 3.5, "class": "fee-dot" })); });
+    if (V) {
+      var arLang = document.documentElement.lang === "ar";
+      V.loupe(svg, {
+        W: W, H: H, T: T, B: B, n: S.rows.length, x: x,
+        rows: function (i) { var r = S.rows[i]; return arLang ? [["الفترة", "P" + r.p], ["قبل الرسوم", nf(r.gross, 0)], ["صافي المشترك", nf(r.nav, 0)], ["أعلى قيمة", nf(r.hwm, 0)]] : [["Period", "P" + r.p], ["Before fees", nf(r.gross, 0)], ["Subscriber net", nf(r.nav, 0)], ["High-water mark", nf(r.hwm, 0)]]; },
+        dots: function (i) { var r = S.rows[i]; return [[y(r.gross), "blue"], [y(r.nav), "green"], [y(r.hwm), "orange"]]; }
+      });
+    }
   }
 
   function render() {

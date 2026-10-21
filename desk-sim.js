@@ -144,8 +144,22 @@
       svg.append(mk("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), "class": "grid-line" }), mk("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end", "class": "axis" }, nf(v, 0)));
     });
     svg.append(mk("line", { x1: L, x2: W - R, y1: y(base), y2: y(base), "class": "l-hwm" }));
-    var path = function (f) { return pts.map(function (p, i) { return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(f(p)).toFixed(1); }).join(" "); };
-    svg.append(mk("path", { d: path(function (p) { return p.trading + p.safe; }), "class": "l-gross" }), mk("path", { d: path(function (p) { return p.safe; }), "class": "l-net" }));
+    // ADR-102: spline lines, a glow under the total, glowing dots where a sweep moved profit, glass loupe.
+    var V = window.OMEGA_VIS;
+    var tot = function (p) { return p.trading + p.safe; }, safeOf = function (p) { return p.safe; };
+    var line = function (f) { return pts.map(function (p, i) { return [x(i), y(f(p))]; }); };
+    var path = function (f) { return V ? V.spline(line(f)) : line(f).map(function (q, i) { return (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" "); };
+    var fill = V ? mk("path", { d: V.area(line(tot), H - B), "class": "v-area" }) : null;
+    if (fill) svg.append(fill);
+    svg.append(mk("path", { d: path(tot), "class": "l-gross" }), mk("path", { d: path(safeOf), "class": "l-net" }));
+    if (!V) return;
+    fill.setAttribute("fill", V.gradient(svg, "blue"));
+    pts.forEach(function (p, i) { if (p.out > 0) svg.append(V.glow(x(i), y(p.safe), "green", 4)); });
+    V.loupe(svg, {
+      W: W, H: H, T: Tp, B: B, n: pts.length, x: x,
+      rows: function (i) { var p = pts[i]; return [[T("الصفقة", "Trade"), i ? "#" + i : T("البداية", "start")], [T("المجموع", "Total"), nf(tot(p))], [T("المحفظة المحمية", "Safe vault"), nf(p.safe)], [T("مُرحّل", "Swept"), nf(p.out || 0)]]; },
+      dots: function (i) { return [[y(tot(pts[i])), "blue"], [y(pts[i].safe), "green"]]; }
+    });
   }
   function renderLedger() {
     var tb = $("sLedger").tBodies[0];
