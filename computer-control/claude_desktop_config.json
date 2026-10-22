@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "windows-mcp": {
+      "command": "uvx",
+      "args": [
+        "--python", "3.14",
+        "windows-mcp==0.8.8", "serve", "--transport", "stdio",
+        "--tools", "Snapshot,Screenshot,Click,Type,Scroll,Move,Shortcut,Wait,WaitFor"
+      ],
+      "env": { "ANONYMIZED_TELEMETRY": "false", "POSTHOG_API_KEY": "" }
+    },
+    "omega-local-mcp": {
+      "command": "node",
+      "args": ["C:\\Users\\YOUR_USER\\Desktop\\OMEGA-PRIME\\scripts\\omega-mcp-bridge.mjs"],
+      "env": { "OMEGA_PROXY_PORT": "8796" }
+    }
+  }
+}

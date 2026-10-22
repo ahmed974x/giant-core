@@ -28,8 +28,8 @@ jobs:
           node-version: 22
       - name: SkillSpector strict scan of the whole repo (critical or high stops the deploy)
         run: node scripts/skillspector-audit.mjs --strict .
-      - name: Fetch the public intel snapshot (NGA, GDACS, USGS, Open-Meteo, Binance, Digitraffic; keyless)
-        run: node scripts/fetch-public-intel-snapshot.mjs data/public-intel-snapshot.json || echo "No source answered; publishing without a snapshot"
+      - name: Fetch the public intel snapshot (NGA, GDACS, USGS, Open-Meteo, Binance, Digitraffic, CelesTrak, EONET, SWPC, CISA KEV, RIPEstat, IODA, Deribit; keyless)
+        run: node scripts/fetch-public-intel-snapshot.mjs data/public-intel-snapshot.json --prev https://ahmed974x.github.io/giant-core/data/public-intel-snapshot.json || echo "No source answered; publishing without a snapshot"
       - name: Assemble the public site from the allowlist (refuses e-mail addresses, key-shaped strings, secret file names)
         run: node scripts/build-pages.mjs _site
       - name: SkillSpector strict scan of the built site

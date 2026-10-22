@@ -94,6 +94,17 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
 - **Command wall:** view 5 at 1280 px and up shows four quadrants in one screen (OSIRIS · live chart and whales · court and physics · wallet and receipts). Each quadrant scrolls on its own and has a maximize button.
 - **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
 
+## Phase 12: Brain 2, cyber and space OSIRIS, L2 fills, local MCP (ADR-108)
+
+- **Brain 2 synaptic web** (views 1 and 5): 10 sensory nodes, 8 quant nodes, 6 agents and the vault, with the 50 links the desk uses. Pulses fire only on real events (microprice move of 0.5 bps or more, a new wall or iceberg, a data pull, a gym burst, hover or tap). Hover, tap or the arrow keys open a glass causal card per node. `[INFERENCE - Quant Model]`.
+- **Institutional readings:** Kalman latent price, BOCPD regime change, Kyle's lambda, iceberg candidates, top-25 book entropy, Deribit dealer gamma (naive convention) with flip and walls, ATM IV, DVOL, 25-delta risk reversal, and BTC/ETH funding and basis with the crowded-trade flag. One library, `scripts/lib/brain2-math.mjs`, copied into this page by `node scripts/build-brain2-inline.mjs`; tests: `node scripts/test-brain2.mjs`.
+- **Supersonic gym:** a Web Worker trains six rule agents (contextual EXP3 + fixed-share multiplicative weights) on real daily returns with synthetic stress regimes, and shows ticks per second measured on your machine. It never opens a trade.
+- **L2 paper fills:** opens walk up to 25 book levels (VWAP, slippage, impact, taker fee, maker queue); each receipt records `exec` and `brain2`.
+- **OSIRIS:** orbit layer (CelesTrak, ISS ground track, two-body + J2, not SGP4), cable corridors (approximate, hand-drawn), NASA EONET, NOAA Kp, CISA KEV, RIPEstat backbones and IODA outages. The cyber and space threat index (CSTI) is PWSI's fifth component and a hard stop for the risk judge.
+- **Self-test 18/18:** shield button or `?selftest=1`.
+- **omega-local-mcp:** `node scripts/omega-mcp-bridge.mjs` (Claude Desktop or `.mcp.json`) gives Claude read-only tools: PWSI, whale sonar, OSIRIS intel, quant web, six-agent court, sweep calculator, receipt-chain verifier and self-test. `--selftest` runs its checks.
+- **Laptop control:** `scripts/setup-windows-mcp.ps1` adds Windows-MCP 0.8.8 (stdio, telemetry off, screen, mouse and keyboard tools only) and omega-local-mcp to Claude Desktop, after a backup. `OMEGA-PRIME.bat` (copy to the Desktop) pulls `main`, starts the proxy and opens the self-test.
+
 ## Trading desk · غرفة التداول (ADR-091)
 
 Paper only. Nothing on this page sends an order to any exchange.

@@ -24,6 +24,17 @@
 //   /market/fapi/<kind>/<SYM> -> Binance USD-M futures public data (premium, funding, open interest,
 //                              long/short and taker ratios) so the desk shares one cached copy (cached 60 s, ADR-095)
 //   /market/coingecko/<id>  -> CoinGecko simple price in USD with 24 h change             (cached 2 min)
+// Brain 2 and the orbital and cyber radar (ADR-108), keyless public sources, each in its compact form:
+//   /osiris/celestrak/<group> -> CelesTrak GP mean elements, GROUP stations or visual      (cached 2 h, CelesTrak's update cycle)
+//   /osiris/eonet           -> NASA EONET open natural events, last 30 days                 (cached 30 min)
+//   /osiris/kp              -> NOAA SWPC planetary K index                                  (cached 15 min)
+//   /cyber/kev              -> CISA Known Exploited Vulnerabilities, count and last 30 days  (cached 1 h)
+//   /cyber/ripe/AS<n>       -> RIPEstat routing status of a tier-1 backbone (5 allowed ASNs) (cached 15 min)
+//   /cyber/ioda             -> IODA (Georgia Tech) country outage events, last 24 h          (cached 15 min)
+//   /market/deribit/options/BTC -> Deribit BTC option book summary (IV, open interest)       (cached 2 min)
+//   /market/deribit/dvol/BTC    -> Deribit DVOL hourly candles, last 48 h                    (cached 15 min)
+//   /market/depth/<SYM>, /market/trades/<SYM> -> Binance spot book (100 levels) and the last 300
+//                              trades, for the local MCP bridge (cached 5 s)
 // Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
 // identical requests in flight share one upstream call; each host keeps a minimum gap between calls
 // (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
@@ -45,6 +56,7 @@ import { homedir, networkInterfaces } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { classifyNga, compactAis } from "./lib/osiris-sources.mjs";
+import { OMEGA_MATH } from "./lib/brain2-math.mjs";
 
 const PORT = Number(process.env.OMEGA_PROXY_PORT || 8796);
 // 127.0.0.1 by default (AGENTS.md §4). --lan is the owner's opt-in for the iPhone on the same Wi-Fi.
@@ -62,6 +74,8 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CHECK_ONLY = process.argv.includes("--check");
 mkdirSync(CACHE, { recursive: true });
 
+const S = OMEGA_MATH.shape, U = OMEGA_MATH.urls;
+const json = fn => buf => Buffer.from(JSON.stringify(fn(JSON.parse(buf.toString("utf8")))));
 const FAPI = {
   premium: s => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${s}`,
   funding: s => `https://fapi.binance.com/fapi/v1/fundingRate?symbol=${s}&limit=200`,
@@ -83,9 +97,20 @@ const ROUTES = [
   { re: /^\/osiris\/gdelt-sea$/, url: () => "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent('("Strait of Hormuz" OR "Bab el-Mandeb" OR "Suez Canal" OR "Strait of Malacca" OR "Panama Canal") sourcelang:english') + "&mode=artlist&format=json&maxrecords=50&timespan=24h&sort=datedesc", ttl: HOUR / 4, type: "application/json", sec: false },
   { re: /^\/market\/binance\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${m[1]}`, ttl: 30 * 1000, type: "application/json", sec: false },
   { re: /^\/market\/fapi\/(premium|funding|oi|top|global|taker)\/([A-Z0-9]{5,20})$/, url: m => FAPI[m[1]](m[2]), ttl: 60 * 1000, type: "application/json", sec: false },
+  { re: /^\/osiris\/celestrak\/(stations|visual)$/, url: m => U.gp(m[1]), ttl: 2 * HOUR, type: "application/json", sec: false, transform: json(j => S.gp(j)) },
+  { re: /^\/osiris\/eonet$/, url: () => U.eonet(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.eonet(j)) },
+  { re: /^\/osiris\/kp$/, url: () => U.kp(), ttl: HOUR / 4, type: "application/json", sec: false, transform: json(j => S.kp(j)) },
+  { re: /^\/cyber\/kev$/, url: () => U.kev(), ttl: HOUR, type: "application/json", sec: false, transform: json(j => S.kev(j, Date.now())) },
+  { re: /^\/cyber\/ripe\/AS(3356|1299|174|2914|6453)$/, url: m => U.ripe(+m[1]), ttl: HOUR / 4, type: "application/json", sec: false, transform: (buf, m) => Buffer.from(JSON.stringify(S.ripe(JSON.parse(buf.toString("utf8")), +m[1]))) },
+  { re: /^\/cyber\/ioda$/, url: () => U.ioda(Date.now()), ttl: HOUR / 4, type: "application/json", sec: false, transform: json(j => S.ioda(j)) },
+  { re: /^\/market\/deribit\/options\/BTC$/, url: () => U.deribit(), ttl: 2 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.deribit(j)) },
+  { re: /^\/market\/deribit\/dvol\/BTC$/, url: () => U.dvol(Date.now()), ttl: HOUR / 4, type: "application/json", sec: false, transform: json(j => S.dvol(j)) },
+  { re: /^\/market\/depth\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/depth?symbol=${m[1]}&limit=100`, ttl: 5000, type: "application/json", sec: false },
+  { re: /^\/market\/trades\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/aggTrades?symbol=${m[1]}&limit=300`, ttl: 5000, type: "application/json", sec: false },
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
-const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com"]);
+const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com",
+  "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com"]);
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -120,7 +145,8 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 
 // Minimum gap between calls to one host. SEC allows 10 requests per second; GDELT asks for one every 5 s;
 // anonymous OpenSky refreshes every 10 s. Other hosts get 250 ms.
-const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000 };
+// CelesTrak blocks clients that ask for the same group more than its update cycle; RIPEstat and IODA get 1 s.
+const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -154,11 +180,11 @@ function readCache(url, ttl) {
   } catch { return null; }
 }
 // One upstream call per URL at a time; concurrent page requests wait for the same result.
-function fetchShared(route, url) {
+function fetchShared(route, url, m) {
   if (inflight.has(url)) return inflight.get(url);
   const p = (async () => {
     const raw = await upstream(route, url);
-    const body = route.transform ? route.transform(raw) : raw;
+    const body = route.transform ? route.transform(raw, m) : raw;
     memPut(url, body);
     try { writeFileSync(cachePath(url), body); } catch (e) { console.warn("cache write failed:", e.message); }
     return body;
@@ -212,7 +238,7 @@ const server = createServer(async (req, res) => {
   const cached = readCache(url, route.ttl);
   if (cached?.fresh) { headers["X-Omega-Cache"] = "HIT"; return send(200, cached.body, route.type); }
   try {
-    const body = await fetchShared(route, url);
+    const body = await fetchShared(route, url, m);
     console.log(`${new Date().toISOString()} ${path} -> ${body.length} bytes`);
     headers["X-Omega-Cache"] = "MISS";
     send(200, body, route.type);
@@ -237,7 +263,14 @@ const PROBES = [
   { name: "mempool.space", via: "browser", url: "https://mempool.space/api/v1/fees/recommended" },
   { name: "NASA GIBS (SAT)", via: "browser", url: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_NextGeneration/default/500m/0/0/0.jpeg" },
   { name: "USGS earthquakes", via: "browser", url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson" },
-  { name: "Open-Meteo", via: "browser", url: "https://api.open-meteo.com/v1/forecast?latitude=29.38&longitude=47.98&current=temperature_2m" }
+  { name: "Open-Meteo", via: "browser", url: "https://api.open-meteo.com/v1/forecast?latitude=29.38&longitude=47.98&current=temperature_2m" },
+  { name: "CelesTrak GP", via: "browser + proxy /osiris/celestrak", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=json" },
+  { name: "NASA EONET", via: "browser + proxy /osiris/eonet", url: "https://eonet.gsfc.nasa.gov/api/v3/events?limit=1" },
+  { name: "NOAA SWPC Kp", via: "browser + proxy /osiris/kp", url: "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json" },
+  { name: "CISA KEV", via: "proxy /cyber/kev", url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" },
+  { name: "RIPEstat", via: "browser + proxy /cyber/ripe", url: "https://stat.ripe.net/data/routing-status/data.json?resource=AS3356&sourceapp=omega-giant-core" },
+  { name: "IODA outages", via: "proxy /cyber/ioda", url: OMEGA_MATH.urls.ioda(Date.now()) },
+  { name: "Deribit public", via: "browser + proxy /market/deribit", url: "https://www.deribit.com/api/v2/public/test" }
 ];
 const tty = process.stdout.isTTY;
 const paint = (code, t) => tty ? `\x1b[${code}m${t}\x1b[0m` : t;

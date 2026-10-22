@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-jdsk8D4i8Mb6aBLy/uQQCbfDEsFHzPaWHD7S181i1mM=' 'sha256-m24EBQUz9FzWYhGsLYvnj1vwHojEekOlGeGk34zCqnk=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ=' 'sha256-PTJTR6kKtbJeGzyWahGV4OeifIYj/3oy+enPGrTLEjs='; style-src 'sha256-Cy9EzbNGJ8OUurlNydLWvsp3gMxExfQUTn1iAa6uNEQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-9IQQid5RNJ3e7eqhDGpUsC++XajIohM++hPsDtQ5cJc=' 'sha256-31iDvHMV3vL0K72zZYTdrpIWAasCJ2aGibaes4GUHdE=' 'sha256-c1OyVyjZgOTTbFeI4PG/eXdbPTZOCJp0QKvWdJ7vTgc=' 'sha256-NwYU05kXRZ2ao1cxUf3/fOgO/JYoeYBntLb/Dd1BDdY=' 'sha256-joRoT410Z/+eRTGNLDHT39hi2tmQmfaRYfWJez4XU/0=' 'sha256-e0PdPJ0DNi3hjQDGqjsBB/0FeCO5gLxZPu3t1ikOE10='; style-src 'sha256-mPdRPqMXvg6jfnwALvVLG/xj5FbuBD9g2MZcQjV1wgo='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796 https://celestrak.org https://eonet.gsfc.nasa.gov https://services.swpc.noaa.gov https://stat.ripe.net https://www.deribit.com; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -901,6 +901,28 @@
   .st-pass { color: var(--success); } .st-fail { color: var(--danger); } .st-wait { color: var(--content-secondary); }
   .st-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-2); margin-top: var(--s-4); }
   .st-foot .sub { margin-inline-end: auto; }
+  /* Brain 2 synaptic web (ADR-108). Outer radius 28 = inner well 20 + padding 8. */
+  .bw-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  @media (max-width: 999px) { .bw-body { grid-template-columns: minmax(0, 1fr); } }
+  .bw-stage { position: relative; min-width: 0; border-radius: 20px; background: var(--surface-2); overflow: hidden; }
+  #bwCanvas { display: block; width: 100%; height: clamp(340px, 46vw, 600px); touch-action: manipulation; cursor: crosshair; }
+  @media (max-width: 600px) { #bwCanvas { height: 480px; } }
+  #bwCanvas:focus-visible { outline-offset: -3px; }
+  .bw-card { position: absolute; top: 0; left: 0; z-index: 2; width: min(300px, calc(100% - 16px)); max-height: calc(100% - 16px); overflow-y: auto; padding: var(--s-3); border-radius: 20px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular), var(--shadow-soft); }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .bw-card { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
+  }
+  .bw-card[hidden] { display: none; }
+  @media (max-width: 599px) { .bw-card { position: static; width: auto; max-height: none; margin: var(--s-2); } }
+  .bw-card-v { font-size: var(--text-footnote); margin: 0 0 var(--s-2); overflow-wrap: anywhere; }
+  .bw-links { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); font-size: var(--text-caption); }
+  .bw-links li { display: grid; gap: 2px; padding: var(--s-2); border-radius: 8px; background: var(--surface-2); }
+  .bw-links b { font-weight: 700; }
+  .bw-side { min-width: 0; }
+  .bw-side .kv td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  .bw-all { margin-top: var(--s-3); }
+  .bw-all summary { cursor: pointer; font-weight: 700; font-size: var(--text-footnote); padding: var(--s-2) 0; }
+  .bw-all .kv td:last-child { white-space: normal; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -931,7 +953,7 @@
           <span class="num" id="coreCount">0 / 4</span>
         </div>
         <span class="clock num" id="clock" aria-label="Local time">--:--:--</span>
-        <button class="icon-btn st-btn" id="stBtn" type="button" aria-label="Verify system, 12 checks · فحص المنظومة" aria-haspopup="dialog">
+        <button class="icon-btn st-btn" id="stBtn" type="button" aria-label="Verify system, 18 checks · فحص المنظومة" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M8.5 12l2.4 2.4 4.6-4.8"/></svg>
           <span class="st-badge num" id="stBadge" aria-hidden="true">12</span>
         </button>
@@ -948,7 +970,7 @@
     <!-- ===== OSIRIS global intelligence (ADR-092) ===== -->
     <div class="section-title" id="osiris" data-view="2 5">
       <h2>OSIRIS global intelligence<span class="ar" lang="ar">كوكب الاستخبارات المفتوحة</span></h2>
-      <p>Seven layers from free public sources. A layer with no live source says so; nothing is filled in. · <span class="ar" lang="ar">كل طبقة من مصدر عام مجاني، والطبقة بلا مصدر حي تقول ذلك</span></p>
+      <p>Nine layers from free public sources. A layer with no live source says so; nothing is filled in. · <span class="ar" lang="ar">كل طبقة من مصدر عام مجاني، والطبقة بلا مصدر حي تقول ذلك</span></p>
     </div>
     <section class="card osiris" aria-labelledby="osTitle" data-view="2 5">
       <div class="card-head">
@@ -964,6 +986,8 @@
           <button class="os-layer" type="button" data-layer="ports" aria-pressed="true"><span aria-hidden="true">📷</span><b>Port pulse</b><span class="ar" lang="ar">نبض الموانئ</span></button>
           <button class="os-layer" type="button" data-layer="wx" aria-pressed="true"><span aria-hidden="true">⛈️</span><b>Weather grid</b><span class="ar" lang="ar">صدمات الطقس</span></button>
           <button class="os-layer" type="button" data-layer="quake" aria-pressed="true"><span aria-hidden="true">⚠️</span><b>Seismic</b><span class="ar" lang="ar">الزلازل</span></button>
+          <button class="os-layer" type="button" data-layer="orbit" aria-pressed="true"><span aria-hidden="true">🪐</span><b>Orbits &amp; EONET</b><span class="ar" lang="ar">الأقمار وطقس الفضاء</span></button>
+          <button class="os-layer" type="button" data-layer="cables" aria-pressed="true"><span aria-hidden="true">🔌</span><b>Cables &amp; cyber</b><span class="ar" lang="ar">الكابلات والرادار السيبراني</span></button>
         </nav>
         <div class="os-stage">
           <canvas id="osMap" tabindex="0" role="img" aria-label="OSIRIS map with the active layers. Drag to move, scroll, pinch or double-click to zoom from level 1 to 18, tap a point for its details and source. Keys: arrows move, plus and minus zoom, 0 resets, Enter opens the point in the centre. The data core list below describes every point."></canvas>
@@ -1032,7 +1056,18 @@
           <ul class="log" id="osStraitList"></ul>
         </div>
       </div>
-      <p class="sub">USGS and Open-Meteo load straight in the browser. OpenSky, GDACS, GDELT, Digitraffic AIS and the NGA Maritime Safety Information broadcast warnings need the local proxy (<code class="num">start-omega</code> or <code class="num">node scripts/omega-data-proxy.mjs</code>), because they send no CORS headers or have tight anonymous limits. Each NGA warning is sorted into Hormuz, Bab el-Mandeb, Suez, Malacca or Panama by the position in its text or by name. Live ship positions are free only for the Baltic (Digitraffic), so the straits show official warnings and headlines, not ship counts. SAT shows NASA GIBS Blue Marble imagery and falls back to the drawn map when offline. · <span class="ar" lang="ar">المضائق تعرض الإنذارات الملاحية الرسمية من NGA وأخبار GDELT مع المصدر والتاريخ.</span></p>
+      <div class="row row-chart mt-3">
+        <div class="os-panel">
+          <h3 class="mini-h">Cyber &amp; space threat index · <span class="ar" lang="ar">مؤشر التهديد السيبراني والفضائي</span> <span class="pill-inf">[INFERENCE]</span></h3>
+          <div class="os-pwsi"><b class="num" id="osCsti">—</b><span id="osCstiNote">Waiting for sources…</span></div>
+          <table class="kv" id="osCstiParts"><tbody></tbody></table>
+        </div>
+        <div class="os-panel">
+          <h3 class="mini-h">Exploited now · outages · orbits · <span class="ar" lang="ar">الثغرات المستغلة والانقطاعات والمدارات</span></h3>
+          <ul class="log" id="osCyber"></ul>
+        </div>
+      </div>
+      <p class="sub">USGS and Open-Meteo load straight in the browser. OpenSky, GDACS, GDELT, Digitraffic AIS and the NGA Maritime Safety Information broadcast warnings need the local proxy (<code class="num">start-omega</code> or <code class="num">node scripts/omega-data-proxy.mjs</code>), because they send no CORS headers or have tight anonymous limits. Each NGA warning is sorted into Hormuz, Bab el-Mandeb, Suez, Malacca or Panama by the position in its text or by name. Live ship positions are free only for the Baltic (Digitraffic), so the straits show official warnings and headlines, not ship counts. SAT shows NASA GIBS Blue Marble imagery and falls back to the drawn map when offline. Satellites come from CelesTrak mean elements and are placed by two-body motion with J2 drift (not SGP4, so a low orbit can be tens of km off). Submarine cables are drawn as approximate hand-drawn corridors through the main chokepoints, not real cable routes: TeleGeography's route data is licensed, see submarinecablemap.com. CISA KEV and IODA need the local proxy or the hourly snapshot. · <span class="ar" lang="ar">المضائق تعرض الإنذارات الملاحية الرسمية من NGA وأخبار GDELT مع المصدر والتاريخ.</span></p>
     </section>
     <!-- ===== Globe + live KPIs ===== -->
     <div data-view="2 5" class="row row-hero mt-3">
@@ -1407,6 +1442,33 @@
         <ul class="rings-legend" id="rgLegend"></ul>
       </div>
       <p class="sub" id="rgSum" aria-live="polite">—</p>
+    </section>
+    <section data-view="1 5" class="card mt-3" aria-labelledby="bwTitle" id="brain2">
+      <div class="card-head"><div class="card-title" id="bwTitle">Brain 2 · synaptic web<span class="ar" lang="ar">الشبكة العنكبوتية للمخ الثاني</span></div><div class="tag num" id="bwUpdated">—</div></div>
+      <div class="bw-body">
+        <div class="bw-stage">
+          <canvas id="bwCanvas" tabindex="0" role="img" aria-label="Brain 2 web: 10 sensory sources on the outer ring, 8 quant readings in the middle, the 6 agents inside and the execution and vault core at the centre. Hover, tap or use the arrow keys for a node's reading and links; the table below lists every node."></canvas>
+          <div class="bw-card" id="bwCard" role="dialog" aria-labelledby="bwCardT" hidden>
+            <div class="os-call-head"><b id="bwCardT"></b><button class="icon-btn" id="bwCardX" type="button" aria-label="Close the node details"><span aria-hidden="true">✕</span></button></div>
+            <p class="os-call-kind" id="bwCardK"></p>
+            <p class="bw-card-v num" id="bwCardV"></p>
+            <ul class="bw-links" id="bwCardL"></ul>
+          </div>
+        </div>
+        <div class="bw-side">
+          <h3 class="mini-h">Institutional readings · <span class="ar" lang="ar">المميزات المؤسسية</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+          <table class="kv" id="bwAlpha"><tbody></tbody></table>
+          <h3 class="mini-h">Options gamma &amp; funding · <span class="ar" lang="ar">جاما الخيارات والتمويل</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+          <table class="kv" id="bwDeriv"><tbody></tbody></table>
+          <h3 class="mini-h">Supersonic gym · <span class="ar" lang="ar">معسكر التدريب فائق السرعة</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+          <table class="kv" id="bwGym"><tbody></tbody></table>
+          <div class="form-row"><button class="btn" id="bwTrain" type="button">Train 3 s now · <span class="ar" lang="ar">درّب الآن</span></button></div>
+          <h3 class="mini-h">Last firings · <span class="ar" lang="ar">آخر النبضات</span></h3>
+          <ul class="log" id="bwEvents" aria-live="polite"></ul>
+        </div>
+      </div>
+      <details class="bw-all"><summary>All 25 nodes and their readings · <span class="ar" lang="ar">كل العقد وقراءاتها</span></summary><table class="kv" id="bwNodes"><tbody></tbody></table></details>
+      <p class="sub">Links are the ones the desk uses. Filaments fire only on a microprice move of 0.5 bps or more, a new whale wall or iceberg, a new data pull, or your hover and tap. Gamma assumes dealers are long calls and short puts, which is a public convention, not observed positioning. The gym trains six rule agents on bootstrapped real daily returns with synthetic stress segments, and scores each stress regime only inside its shock window; its weights inform this web and never open a trade. Decision aids for paper trading only. · <span class="ar" lang="ar">أدوات مساعدة للتداول الورقي فقط، ولا يُرسل أي أمر.</span></p>
     </section>
     <section data-view="1 3 5" class="card mt-3" aria-labelledby="lvTitle" id="live">
       <div class="card-head"><div class="card-title" id="lvTitle">Live price &amp; microprice<span class="ar" lang="ar">السعر الحي والسعر المجهري</span></div><div class="tag">5 s · 300 READINGS</div></div>
@@ -2906,6 +2968,490 @@ const DEFAULT_ALLOW_HOSTS = [
   drawSplit();
 })();
 </script>
+<!-- OMEGA_MATH begin: generated from scripts/lib/brain2-math.mjs by scripts/build-brain2-inline.mjs, do not edit here -->
+<script>
+"use strict";
+// Brain 2 maths (ADR-108): pure functions shared by the Ops Room (inlined between the OMEGA_MATH markers by
+// scripts/build-brain2-inline.mjs, because the page must work from file:// with no build step), the local MCP
+// bridge (scripts/omega-mcp-bridge.mjs) and the Node tests (scripts/test-brain2.mjs). No network, no storage,
+// no clock except where a time is passed in. Every output is a decision aid for paper trading only.
+//
+// Contents
+//   kalman(prices)          1D local-level Kalman filter, noise fitted live by the method of moments
+//   bocpd(xs, opts)         Bayesian online changepoint detection (Adams & MacKay 2007), Normal-Gamma model
+//   kyleLambda(tape)        Kyle's lambda: price impact per unit of signed volume, by OLS over time buckets
+//   iceberg(tape, book)     hidden-size candidates: traded volume at a price far above the size shown there
+//   entropy(book)           normalised Shannon entropy of the top 25 levels on each side
+//   bs / gex / rr25         Black-Scholes greeks, naive dealer gamma exposure and its flip, 25-delta skew
+//   basisTrap(prem)         perpetual mark-index basis and funding crowding
+//   kepler(gp, t)           orbit position from CelesTrak mean elements with secular J2 drift (not SGP4)
+//   l2Fill(book, ...)       step-by-step VWAP sweep of the top 25 levels, taker fee, maker queue estimate
+//   csti(parts)             cyber and space threat index, 0-100
+//   canon / merkle helpers  the receipt chain's canonical form (ADR-091, ADR-096)
+const OMEGA_MATH = (() => {
+  "use strict";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const finite = v => typeof v === "number" && Number.isFinite(v);
+  const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+  const variance = a => { const m = mean(a); return a.length > 1 ? a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1) : NaN; };
+
+  /* ---------- 1D Kalman latent price ---------- */
+  // Local-level model: y = x + v (v ~ N(0, r), book noise), x' = x + w (w ~ N(0, q), the true price walk).
+  // For this model the first difference d = y' - y has Var(d) = q + 2r and lag-1 covariance -r, so both
+  // noises come from the window itself: r = max(0, -cov1), q = max(var - 2r, var / 1000). The filter runs
+  // in basis points of the first price for numeric range, and the gap is the last price minus the latent one.
+  function kalman(prices) {
+    const y = (prices || []).filter(finite);
+    if (y.length < 10) return null;
+    const p0 = y[0], z = y.map(p => (p / p0 - 1) * 1e4);
+    const d = [];
+    for (let i = 1; i < z.length; i++) d.push(z[i] - z[i - 1]);
+    const md = mean(d), vd = variance(d);
+    let c1 = 0;
+    for (let i = 1; i < d.length; i++) c1 += (d[i] - md) * (d[i - 1] - md);
+    c1 /= Math.max(1, d.length - 1);
+    const r = Math.max(0, -c1), q = Math.max(vd - 2 * r, vd / 1000, 1e-12);
+    let x = z[0], P = r + q, K = 1;
+    const out = [x];
+    for (let i = 1; i < z.length; i++) {
+      P += q;
+      K = P / (P + r);
+      x += K * (z[i] - x);
+      P *= 1 - K;
+      out.push(x);
+    }
+    const latent = p0 * (1 + x / 1e4), last = y[y.length - 1];
+    return { latent, last, gapBps: (last / latent - 1) * 1e4, q, r, gain: K, P, n: y.length, series: out.map(v => p0 * (1 + v / 1e4)) };
+  }
+
+  /* ---------- Bayesian online changepoint detection ---------- */
+  // Adams & MacKay (2007) with a constant hazard h and a Normal-Gamma prior on each run's mean and precision,
+  // so the predictive is Student-t. Prior scale comes from the data (beta0 = alpha0 x variance of the first
+  // 20 points). Run lengths are truncated at rmax. pRecent is the posterior mass on runs no longer than
+  // `recent` steps: the chance that the regime changed within that many steps.
+  function studentLogPdf(x, mu, kappa, alpha, beta) {
+    const nu = 2 * alpha, s2 = beta * (kappa + 1) / (alpha * kappa);
+    return lgamma((nu + 1) / 2) - lgamma(nu / 2) - 0.5 * Math.log(nu * Math.PI * s2) - (nu + 1) / 2 * Math.log(1 + (x - mu) ** 2 / (nu * s2));
+  }
+  // Lanczos approximation (g = 7, n = 9), accurate to about 1e-15 for x > 0.
+  const LZ = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  function lgamma(x) {
+    if (x < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * x))) - lgamma(1 - x);
+    x -= 1;
+    let a = LZ[0];
+    const t = x + 7.5;
+    for (let i = 1; i < 9; i++) a += LZ[i] / (x + i);
+    return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+  }
+  function bocpd(xs, opts = {}) {
+    const data = (xs || []).filter(finite);
+    if (data.length < 20) return null;
+    const h = opts.hazard || 1 / 100, rmax = opts.rmax || 300, recent = opts.recent || 10;
+    const v0 = variance(data.slice(0, 20)) || variance(data) || 1e-12;
+    const mu0 = 0, k0 = 1, a0 = 1, b0 = a0 * Math.max(v0, 1e-18);
+    let R = [1], mu = [mu0], ka = [k0], al = [a0], be = [b0];
+    const mapRun = [];
+    for (const x of data) {
+      const n = R.length, logp = new Array(n);
+      for (let i = 0; i < n; i++) logp[i] = studentLogPdf(x, mu[i], ka[i], al[i], be[i]);
+      const mx = Math.max(...logp), pred = logp.map(l => Math.exp(l - mx));
+      const grow = new Array(n);
+      let cp = 0;
+      for (let i = 0; i < n; i++) { const w = R[i] * pred[i]; grow[i] = w * (1 - h); cp += w * h; }
+      let next = [cp, ...grow];
+      const mN = [mu0], kN = [k0], aN = [a0], bN = [b0];
+      for (let i = 0; i < n; i++) {
+        kN.push(ka[i] + 1);
+        mN.push((ka[i] * mu[i] + x) / (ka[i] + 1));
+        aN.push(al[i] + 0.5);
+        bN.push(be[i] + ka[i] * (x - mu[i]) ** 2 / (2 * (ka[i] + 1)));
+      }
+      if (next.length > rmax) {
+        const tail = next.slice(rmax - 1).reduce((s, v) => s + v, 0);
+        next = next.slice(0, rmax - 1).concat([tail]);
+        for (const arr of [mN, kN, aN, bN]) arr.length = rmax;
+      }
+      const z = next.reduce((s, v) => s + v, 0) || 1;
+      R = next.map(v => v / z); mu = mN; ka = kN; al = aN; be = bN;
+      let best = 0;
+      for (let i = 1; i < R.length; i++) if (R[i] > R[best]) best = i;
+      mapRun.push(best);
+    }
+    const pRecent = R.slice(0, recent + 1).reduce((s, v) => s + v, 0);
+    return { pRecent, map: mapRun[mapRun.length - 1], mapRun, hazard: h, recent, n: data.length };
+  }
+
+  /* ---------- Kyle's lambda ---------- */
+  // Trades are grouped into buckets of `ms` milliseconds. Signed volume Q is buyer-initiated minus
+  // seller-initiated size (Binance m = true means the buyer was the maker, so the seller hit the bid).
+  // lambda = Cov(dP, Q) / Var(Q) by ordinary least squares, in price units per unit of base asset.
+  function kyleLambda(tape, ms = 5000) {
+    const t = (tape || []).filter(x => x && finite(x.T) && finite(x.p) && finite(x.q));
+    if (t.length < 20) return null;
+    const b = new Map();
+    for (const x of t) {
+      const k = Math.floor(x.T / ms);
+      const e = b.get(k) || { q: 0, first: x.p, last: x.p };
+      e.q += x.m ? -x.q : x.q; e.last = x.p;
+      b.set(k, e);
+    }
+    const keys = [...b.keys()].sort((a, c) => a - c), Q = [], dP = [];
+    for (let i = 1; i < keys.length; i++) { const cur = b.get(keys[i]), prev = b.get(keys[i - 1]); Q.push(cur.q); dP.push(cur.last - prev.last); }
+    if (Q.length < 5) return null;
+    const mq = mean(Q), mp = mean(dP);
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < Q.length; i++) { sxy += (Q[i] - mq) * (dP[i] - mp); sxx += (Q[i] - mq) ** 2; syy += (dP[i] - mp) ** 2; }
+    if (!(sxx > 0)) return null;
+    const lambda = sxy / sxx, r2 = syy > 0 ? sxy * sxy / (sxx * syy) : 0, px = t[t.length - 1].p;
+    return { lambda, bpsPerUnit: lambda / px * 1e4, r2, buckets: Q.length, ms };
+  }
+
+  /* ---------- iceberg candidates ---------- */
+  // Over the last windowMs, sum the traded size at each price on each side. A price where at least `ratio`
+  // times the size the book shows there now has already traded, and the level is still standing, is a
+  // candidate for hidden (iceberg) size being refilled. A heuristic, labelled [INFERENCE] on screen.
+  function iceberg(tape, book, windowMs = 60000, ratio = 2) {
+    if (!book || !Array.isArray(book.bids) || !Array.isArray(book.asks) || !Array.isArray(tape) || !tape.length) return [];
+    const end = Math.max(...tape.map(x => x.T || 0)), traded = new Map();
+    for (const x of tape) {
+      if (!(end - x.T <= windowMs)) continue;
+      const side = x.m ? "bid" : "ask", key = side + ":" + x.p;
+      traded.set(key, (traded.get(key) || 0) + x.q);
+    }
+    const shown = new Map();
+    for (const [p, q] of book.bids.slice(0, 25)) shown.set("bid:" + p, q);
+    for (const [p, q] of book.asks.slice(0, 25)) shown.set("ask:" + p, q);
+    const out = [];
+    for (const [key, ex] of traded) {
+      const vis = shown.get(key);
+      if (!(vis > 0) || ex < ratio * vis) continue;
+      const [side, p] = key.split(":");
+      out.push({ side, price: +p, executed: ex, visible: vis, ratio: ex / vis });
+    }
+    return out.sort((a, c) => c.ratio - a.ratio);
+  }
+
+  /* ---------- order-book Shannon entropy ---------- */
+  // p_i = size at level i / size of the top n levels; H = -sum p ln p, divided by ln n so 1 is a flat book and
+  // values near 0 mean size sits in one or two walls.
+  function entropy(book, n = 25) {
+    const one = side => {
+      const q = (side || []).slice(0, n).map(l => +l[1]).filter(v => v > 0);
+      if (q.length < 2) return NaN;
+      const s = q.reduce((a, v) => a + v, 0);
+      return -q.reduce((a, v) => a + (v / s) * Math.log(v / s), 0) / Math.log(q.length);
+    };
+    const bid = one(book && book.bids), ask = one(book && book.asks);
+    return { bid, ask, mean: (bid + ask) / 2, levels: n };
+  }
+
+  /* ---------- Black-Scholes, dealer gamma exposure, 25-delta skew ---------- */
+  const SQ2PI = Math.sqrt(2 * Math.PI);
+  const npdf = x => Math.exp(-x * x / 2) / SQ2PI;
+  // Normal CDF through erf, Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7).
+  function ncdf(x) {
+    const s = x < 0 ? -1 : 1, z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.3275911 * z);
+    const e = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+    return 0.5 * (1 + s * e);
+  }
+  function bs(S, K, T, sigma) {
+    if (!(S > 0 && K > 0 && T > 0 && sigma > 0)) return null;
+    const v = sigma * Math.sqrt(T), d1 = (Math.log(S / K) + 0.5 * sigma * sigma * T) / v;
+    return { d1, gamma: npdf(d1) / (S * v), callDelta: ncdf(d1), putDelta: ncdf(d1) - 1 };
+  }
+  const MONTHS = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+  // Deribit option names look like BTC-27DEC26-100000-C; options expire at 08:00 UTC.
+  function parseOption(name) {
+    const m = /^([A-Z]+)-(\d{1,2})([A-Z]{3})(\d{2})-(\d+(?:d\d+)?)-([CP])$/.exec(String(name || ""));
+    if (!m || !(m[3] in MONTHS)) return null;
+    return { expiry: Date.UTC(2000 + +m[4], MONTHS[m[3]], +m[2], 8), strike: +m[5].replace("d", "."), type: m[6] };
+  }
+  function chain(summary, now) {
+    const out = [];
+    for (const x of summary || []) {
+      const o = parseOption(x.instrument_name);
+      const S = +x.underlying_price, iv = +x.mark_iv / 100, oi = +x.open_interest;
+      if (!o || !(S > 0) || !(iv > 0) || !(oi >= 0)) continue;
+      const T = (o.expiry - now) / (365.25 * 86400e3);
+      if (!(T > 1 / 365.25)) continue;
+      out.push({ ...o, S, iv, oi, T });
+    }
+    return out;
+  }
+  // Naive dealer gamma exposure (the common public convention): dealers are assumed long the calls and short
+  // the puts the market holds, so GEX(x) = sum over options of sign * gamma(x) * OI * x^2 * 1%, sign +1 for
+  // calls and -1 for puts, in USD per 1% move. Positive GEX means hedging damps moves (dealers buy dips);
+  // negative means hedging adds to them. The flip is the price where GEX crosses zero nearest the spot.
+  // That positioning is an assumption, not observed; the page says [INFERENCE - Quant Model].
+  function gexAt(opts, x) {
+    let g = 0;
+    for (const o of opts) { const b = bs(x, o.strike, o.T, o.iv); if (b) g += (o.type === "C" ? 1 : -1) * b.gamma * o.oi * x * x * 0.01; }
+    return g;
+  }
+  function gex(summary, now) {
+    const opts = chain(summary, now);
+    if (opts.length < 10) return null;
+    const S = opts.reduce((a, o) => a + o.S, 0) / opts.length;
+    const total = gexAt(opts, S);
+    let flip = null, prev = null;
+    const grid = [];
+    for (let i = 0; i <= 120; i++) { const x = S * (0.7 + 0.6 * i / 120); grid.push([x, gexAt(opts, x)]); }
+    for (const pt of grid) {
+      if (prev && Math.sign(prev[1]) !== Math.sign(pt[1]) && prev[1] !== 0) {
+        const x = prev[0] + (pt[0] - prev[0]) * (0 - prev[1]) / (pt[1] - prev[1]);
+        if (flip === null || Math.abs(x - S) < Math.abs(flip - S)) flip = x;
+      }
+      prev = pt;
+    }
+    const byStrike = new Map();
+    for (const o of opts) { const b = bs(S, o.strike, o.T, o.iv); if (!b) continue; const k = o.strike, e = byStrike.get(k) || { c: 0, p: 0 }; e[o.type === "C" ? "c" : "p"] += b.gamma * o.oi * S * S * 0.01; byStrike.set(k, e); }
+    let callWall = null, putWall = null, cw = 0, pw = 0;
+    for (const [k, e] of byStrike) { if (e.c > cw) { cw = e.c; callWall = k; } if (e.p > pw) { pw = e.p; putWall = k; } }
+    return { spot: S, total, flip, callWall, putWall, n: opts.length, regime: total >= 0 ? "positive" : "negative", rr: rr25(opts, S, now), atmIv: atmIv(opts, S) };
+  }
+  function atmIv(opts, S) {
+    const near = Math.min(...opts.map(o => o.T));
+    const front = opts.filter(o => o.T === near);
+    let best = null;
+    for (const o of front) if (!best || Math.abs(o.strike - S) < Math.abs(best.strike - S)) best = o;
+    return best ? { iv: best.iv, expiry: best.expiry, strike: best.strike } : null;
+  }
+  // 25-delta risk reversal on the expiry closest to 30 days: IV of the call with delta nearest +0.25 minus IV
+  // of the put with delta nearest -0.25. Positive means calls are bid over puts.
+  function rr25(opts, S) {
+    const exps = [...new Set(opts.map(o => o.T))];
+    if (!exps.length) return null;
+    const T = exps.reduce((a, t) => Math.abs(t - 30 / 365.25) < Math.abs(a - 30 / 365.25) ? t : a, exps[0]);
+    let c = null, p = null;
+    for (const o of opts.filter(x => x.T === T)) {
+      const b = bs(S, o.strike, o.T, o.iv);
+      if (!b) continue;
+      if (o.type === "C" && (!c || Math.abs(b.callDelta - 0.25) < Math.abs(c.d - 0.25))) c = { d: b.callDelta, iv: o.iv, k: o.strike };
+      if (o.type === "P" && (!p || Math.abs(b.putDelta + 0.25) < Math.abs(p.d + 0.25))) p = { d: b.putDelta, iv: o.iv, k: o.strike };
+    }
+    return c && p ? { rr: c.iv - p.iv, call: c, put: p, days: T * 365.25 } : null;
+  }
+  // Deribit DVOL candles: [[ts, open, high, low, close], ...]; the last close is the 30-day implied volatility.
+  function dvol(rows) {
+    const r = (rows || []).filter(x => Array.isArray(x) && finite(+x[4]));
+    if (!r.length) return null;
+    const last = r[r.length - 1], first = r[0];
+    return { value: +last[4], at: +last[0], change: +last[4] - +first[4], n: r.length };
+  }
+
+  /* ---------- perpetual basis and funding crowding ---------- */
+  // basis = (mark - index) / index in bps; funding per 8 h and its simple annualised rate (x 3 x 365).
+  // Crowded longs: funding >= 0.03% per 8 h (about 33% a year) with mark above index by 5 bps or more;
+  // crowded shorts: funding <= -0.02% per 8 h. Fixed thresholds, a heuristic, labelled [INFERENCE].
+  function basisTrap(p) {
+    if (!p) return null;
+    const mark = +p.markPrice, index = +p.indexPrice, f = +p.lastFundingRate;
+    if (!(mark > 0 && index > 0) || !finite(f)) return null;
+    const basisBps = (mark / index - 1) * 1e4, apr = f * 3 * 365;
+    const crowd = f >= 0.0003 && basisBps >= 5 ? "longs" : f <= -0.0002 ? "shorts" : "none";
+    const score = clamp(Math.max(Math.abs(f) / 0.0006, Math.abs(basisBps) / 20), 0, 1) * (crowd === "none" ? 0.5 : 1);
+    return { mark, index, basisBps, funding: f, apr, crowd, score, next: +p.nextFundingTime || null, symbol: String(p.symbol || "") };
+  }
+
+  /* ---------- orbits from CelesTrak mean elements ---------- */
+  // Two-body motion plus the secular J2 drift of the node and perigee (Vallado, Fundamentals of
+  // Astrodynamics, 4th ed., 9.6). Drag and periodic terms are ignored, so a low orbit can be off by some tens
+  // of km a day from its epoch; this is a map aid, not SGP4. Latitude is geocentric.
+  const MU = 398600.4418, RE = 6378.137, J2 = 1.08262668e-3, DEG = Math.PI / 180;
+  function epochMs(s) {
+    const m = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?/.exec(String(s || ""));
+    return m ? Date.parse(m[1] + (m[2] ? m[2].slice(0, 4) : "") + "Z") : NaN;
+  }
+  function gmst(t) {
+    const jd = t / 86400000 + 2440587.5;
+    return ((280.46061837 + 360.98564736629 * (jd - 2451545)) % 360 + 360) % 360 * DEG;
+  }
+  function kepler(gp, t) {
+    const n0 = +gp.MEAN_MOTION, e = +gp.ECCENTRICITY, inc = +gp.INCLINATION * DEG, ep = epochMs(gp.EPOCH);
+    if (!(n0 > 0) || !(e >= 0 && e < 1) || !finite(inc) || !finite(ep)) return null;
+    const n = n0 * 2 * Math.PI / 86400, a = Math.cbrt(MU / (n * n)), p = a * (1 - e * e), dt = (t - ep) / 1000;
+    const k = 1.5 * n * J2 * (RE / p) ** 2;
+    const raan = +gp.RA_OF_ASC_NODE * DEG - k * Math.cos(inc) * dt;
+    const argp = +gp.ARG_OF_PERICENTER * DEG + 0.5 * k * (5 * Math.cos(inc) ** 2 - 1) * dt;
+    const M = ((+gp.MEAN_ANOMALY * DEG + n * dt) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    let E = e < 0.8 ? M : Math.PI;
+    for (let i = 0; i < 30; i++) { const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; if (Math.abs(dE) < 1e-12) break; }
+    const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2)), r = a * (1 - e * Math.cos(E));
+    const u = argp + nu, cO = Math.cos(raan), sO = Math.sin(raan), ci = Math.cos(inc), si = Math.sin(inc), cu = Math.cos(u), su = Math.sin(u);
+    const x = r * (cO * cu - sO * su * ci), y = r * (sO * cu + cO * su * ci), z = r * su * si;
+    const th = gmst(t), xe = x * Math.cos(th) + y * Math.sin(th), ye = -x * Math.sin(th) + y * Math.cos(th);
+    let lon = Math.atan2(ye, xe) / DEG;
+    lon = ((lon + 540) % 360) - 180;
+    return { lat: Math.atan2(z, Math.hypot(xe, ye)) / DEG, lon, alt: r - RE, a, periodMin: 2 * Math.PI / n / 60, eci: [x, y, z] };
+  }
+  function groundTrack(gp, t0, minutes = 90, stepS = 60) {
+    const out = [];
+    for (let s = -minutes * 30; s <= minutes * 30; s += stepS) { const k = kepler(gp, t0 + s * 1000); if (k) out.push([k.lat, k.lon]); }
+    return out;
+  }
+
+  /* ---------- Level-2 fill engine ---------- */
+  // Walks at most `levels` price levels of the visible book. A buy spends `amount` of quote currency, a sell
+  // delivers `amount` of base. Returns null when those levels cannot fill it. Taker fee is charged on the
+  // quote value. The maker alternative estimates the wait for a resting order at the best price: the size
+  // already queued there, divided by the rate the opposite aggressors traded in the tape window.
+  function l2Fill(book, side, amount, o = {}) {
+    const levels = o.levels || 25, taker = finite(o.takerFee) ? o.takerFee : 0.001, maker = finite(o.makerFee) ? o.makerFee : 0.001;
+    const ladder = side === "buy" ? book && book.asks : book && book.bids;
+    if (!Array.isArray(ladder) || !ladder.length || !(amount > 0)) return null;
+    let left = amount, qty = 0, quote = 0, used = 0;
+    const steps = [];
+    for (const [p, q] of ladder.slice(0, levels)) {
+      if (left <= 1e-12) break;
+      const take = side === "buy" ? Math.min(left, p * q) : Math.min(left, q);
+      const dq = side === "buy" ? take / p : take, dv = side === "buy" ? take : take * p;
+      qty += dq; quote += dv; left -= take; used++;
+      steps.push([p, dq]);
+    }
+    if (left > 1e-9 * Math.max(1, amount)) return null;
+    const best = ladder[0][0], worst = steps[steps.length - 1][0], vwap = quote / qty;
+    const sgn = side === "buy" ? 1 : -1;
+    const shownQuote = ladder.slice(0, levels).reduce((a, [p, q]) => a + p * q, 0);
+    let queue = null;
+    if (Array.isArray(o.tape) && o.tape.length > 1) {
+      const end = Math.max(...o.tape.map(x => x.T)), win = o.tape.filter(x => end - x.T <= 60000);
+      const span = Math.max(1, (end - Math.min(...win.map(x => x.T))) / 1000);
+      // A resting buy at the best bid fills when sellers hit the bid (m = true); a resting sell when buyers lift.
+      const hit = win.filter(x => side === "buy" ? x.m : !x.m).reduce((a, x) => a + x.q, 0) / span;
+      const restAt = side === "buy" ? book.bids[0] : book.asks[0];
+      queue = restAt ? { price: restAt[0], ahead: restAt[1], rate: hit, etaS: hit > 0 ? restAt[1] / hit : null, fee: maker } : null;
+    }
+    return {
+      side, qty, quote, vwap, best, worst, levelsUsed: used, levels, steps,
+      slipBps: sgn * (vwap / best - 1) * 1e4, impactBps: sgn * (worst / best - 1) * 1e4,
+      fee: quote * taker, takerFee: taker, depthUsedPct: shownQuote > 0 ? quote / shownQuote * 100 : NaN, queue
+    };
+  }
+
+  /* ---------- cyber and space threat index ---------- */
+  // Each available part is 0-100 and CSTI is their mean:
+  //   space   NOAA planetary Kp: 0 at Kp 4 or less, 100 at Kp 9 (G5 storm)
+  //   kev     CISA KEV additions in 7 days: 8 points each, 10 more for each tied to ransomware
+  //   bgp     lowest RIS visibility of the tier-1 backbones: 0 at 98% of peers or more, 100 at 80% or less
+  //   ioda    country outages IODA flagged in 24 h: 10 points each
+  function csti(x = {}) {
+    const parts = [];
+    if (finite(x.kp)) parts.push({ k: "space", v: clamp((x.kp - 4) / 5, 0, 1) * 100 });
+    if (finite(x.kev7)) parts.push({ k: "kev", v: clamp(x.kev7 * 8 + (finite(x.ransom7) ? x.ransom7 : 0) * 10, 0, 100) });
+    if (finite(x.bgpMin)) parts.push({ k: "bgp", v: clamp((0.98 - x.bgpMin) / 0.18, 0, 1) * 100 });
+    if (finite(x.ioda)) parts.push({ k: "ioda", v: clamp(x.ioda * 10, 0, 100) });
+    return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length } : { score: NaN, parts, coverage: 0 };
+  }
+
+  /* ---------- receipts ---------- */
+  const micro = v => finite(v) ? Math.round(v * 1e6) / 1e6 : v;
+  const excess = (equity, base) => Math.max(0, equity - base);
+  const canon = v => {
+    if (typeof v === "number") return Number.isFinite(v) ? Number(v.toFixed(8)) : null;
+    if (Array.isArray(v)) return v.map(canon);
+    if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v).sort()) if (k !== "hash") o[k] = canon(v[k]); return o; }
+    return v;
+  };
+
+  /* ---------- source shapes (ADR-108) ---------- */
+  // One compact form per source, used by the proxy, the hourly snapshot and the page's direct tier, so every
+  // tier hands the page the same object. Each takes the upstream JSON and returns a small object with a
+  // `format` tag; a shape it does not recognise throws, and the source then shows as offline.
+  const RIPE_ASNS = [[3356, "Lumen (Level 3)"], [1299, "Arelion (Telia)"], [174, "Cogent"], [2914, "NTT"], [6453, "TATA Communications"]];
+  const shape = {
+    kev(j, now) {
+      const v = j && Array.isArray(j.vulnerabilities) ? j.vulnerabilities : null;
+      if (!v) throw new Error("not a KEV catalogue");
+      const cut = now - 30 * 86400e3;
+      const recent = v.filter(x => Date.parse(String(x.dateAdded) + "T00:00:00Z") >= cut).map(x => ({
+        cve: String(x.cveID || ""), vendor: String(x.vendorProject || "").slice(0, 60), product: String(x.product || "").slice(0, 60),
+        name: String(x.vulnerabilityName || "").slice(0, 140), added: String(x.dateAdded || ""), ransomware: String(x.knownRansomwareCampaignUse || "") === "Known"
+      })).sort((a, b) => b.added.localeCompare(a.added));
+      return { format: "omega-kev-v1", version: String(j.catalogVersion || ""), released: String(j.dateReleased || ""), count: v.length, recent };
+    },
+    gp(arr) {
+      if (!Array.isArray(arr)) throw new Error("not a GP list");
+      const keep = ["OBJECT_NAME", "OBJECT_ID", "NORAD_CAT_ID", "EPOCH", "MEAN_MOTION", "ECCENTRICITY", "INCLINATION", "RA_OF_ASC_NODE", "ARG_OF_PERICENTER", "MEAN_ANOMALY"];
+      const sats = arr.filter(x => x && Number(x.MEAN_MOTION) > 0).slice(0, 400).map(x => Object.fromEntries(keep.map(k => [k, x[k]])));
+      if (!sats.length) throw new Error("empty GP list");
+      return { format: "omega-gp-v1", sats };
+    },
+    eonet(j) {
+      const ev = j && Array.isArray(j.events) ? j.events : null;
+      if (!ev) throw new Error("not an EONET list");
+      const out = [];
+      for (const e of ev) {
+        const g = Array.isArray(e.geometry) ? e.geometry.filter(x => x && x.type === "Point" && Array.isArray(x.coordinates)) : [];
+        const last = g[g.length - 1];
+        if (!last) continue;
+        out.push({ id: String(e.id || ""), title: String(e.title || "").slice(0, 140), cat: String(e.categories && e.categories[0] && e.categories[0].title || ""), date: String(last.date || ""),
+          lon: +last.coordinates[0], lat: +last.coordinates[1], mag: Number.isFinite(+last.magnitudeValue) ? +last.magnitudeValue : null, unit: String(last.magnitudeUnit || ""),
+          link: String(e.sources && e.sources[0] && e.sources[0].url || e.link || "") });
+        if (out.length >= 300) break;
+      }
+      return { format: "omega-eonet-v1", events: out };
+    },
+    // SWPC has served this product both as an array of arrays with a header row and as an array of objects.
+    kp(j) {
+      if (!Array.isArray(j) || !j.length) throw new Error("not a Kp list");
+      const rows = Array.isArray(j[0]) ? j.slice(1).map(r => ({ t: String(r[0]), kp: +r[1] })) : j.map(r => ({ t: String(r.time_tag), kp: +(r.Kp ?? r.kp_index ?? r.kp) }));
+      const ok = rows.filter(r => Number.isFinite(r.kp) && r.t).slice(-56);
+      if (!ok.length) throw new Error("no Kp readings");
+      return { format: "omega-kp-v1", readings: ok };
+    },
+    ripe(j, asn) {
+      const d = j && j.data, v = d && d.visibility;
+      const v4 = v && v.v4, seeing = v4 ? +v4.ris_peers_seeing : NaN, total = v4 ? +v4.total_ris_peers : NaN;
+      if (!(total > 0) || !Number.isFinite(seeing)) throw new Error("no visibility in RIPEstat answer");
+      const name = (RIPE_ASNS.find(a => a[0] === asn) || [0, "AS" + asn])[1];
+      return { format: "omega-ripe-v1", asn, name, seeing, total, share: seeing / total, prefixes: d.announced_space && d.announced_space.v4 ? +d.announced_space.v4.prefixes : null, at: String(d.last_seen && d.last_seen.time || j.time || "") };
+    },
+    // IODA v2 outage events: "codf" rows carry location "country/XX", the "ioda" format carries entity {code, name}.
+    ioda(j) {
+      const list = Array.isArray(j) ? j : j && Array.isArray(j.data) ? j.data : null;
+      if (!list) throw new Error("not an IODA list");
+      const out = [];
+      for (const e of list) {
+        const loc = String(e.location || ""), code = (/^country\/([A-Z]{2})$/i.exec(loc) || [])[1] || (e.entity && e.entity.type === "country" ? String(e.entity.code || "") : "");
+        if (!code) continue;
+        out.push({ code: code.toUpperCase(), name: String(e.location_name || (e.entity && e.entity.name) || code).slice(0, 60), start: +(e.start ?? e.from) || null, duration: +(e.duration ?? ((e.until ?? 0) - (e.from ?? 0))) || null, score: Number.isFinite(+e.score) ? +e.score : null, source: String(e.datasource || e.format || "") });
+      }
+      return { format: "omega-ioda-v1", events: out.slice(0, 200) };
+    },
+    deribit(j) {
+      const r = j && Array.isArray(j.result) ? j.result : null;
+      if (!r) throw new Error("not a Deribit book summary");
+      return { format: "omega-deribit-v1", options: r.filter(x => x && typeof x.instrument_name === "string").map(x => ({ instrument_name: x.instrument_name, mark_iv: x.mark_iv, open_interest: x.open_interest, underlying_price: x.underlying_price })) };
+    },
+    dvol(j) {
+      const d = j && j.result && Array.isArray(j.result.data) ? j.result.data : null;
+      if (!d) throw new Error("not Deribit DVOL candles");
+      return { format: "omega-dvol-v1", rows: d.slice(-48) };
+    },
+    premium(j) {
+      if (!j || !(+j.markPrice > 0)) throw new Error("not a premium index");
+      return { symbol: String(j.symbol || ""), markPrice: j.markPrice, indexPrice: j.indexPrice, lastFundingRate: j.lastFundingRate, nextFundingTime: j.nextFundingTime, time: j.time };
+    }
+  };
+  // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
+  const win15 = now => Math.floor(now / 900e3) * 900;
+  const urls = {
+    kev: () => "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+    gp: g => `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=json`,
+    eonet: () => "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&limit=300",
+    kp: () => "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
+    ripe: asn => `https://stat.ripe.net/data/routing-status/data.json?resource=AS${asn}&sourceapp=omega-giant-core`,
+    ioda: now => { const u = win15(now); return `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?entityType=country&from=${u - 86400}&until=${u}&format=codf&limit=200`; },
+    deribit: () => "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=option",
+    dvol: now => { const u = win15(now) * 1000; return `https://www.deribit.com/api/v2/public/get_volatility_index_data?currency=BTC&start_timestamp=${u - 48 * 3600e3}&end_timestamp=${u}&resolution=3600`; },
+    premium: sym => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${sym}`
+  };
+
+  return Object.freeze({ shape, urls, RIPE_ASNS, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+})();
+window.OMEGA_MATH = OMEGA_MATH;
+</script>
+<!-- OMEGA_MATH end -->
 <script>
 "use strict";
 // Trading desk (ADR-091, ADR-092): crowd-psychology radar, 10-year regime matcher, order-flow
@@ -3209,7 +3755,7 @@ const DEFAULT_ALLOW_HOSTS = [
       { k: "court", r: 68, p: Number.isFinite(conf) ? conf : 0, tone: "blue", en: "Court consensus & accuracy", a: "إجماع المحكمة ودقتها",
         v: (Number.isFinite(conf) ? `consensus ${nf(conf * 100, 0)}%` : "waiting for the court") + " · " + (L.n ? `accuracy ${nf(L.hits / L.n * 100, 0)}% over ${L.n} closed trade${L.n === 1 ? "" : "s"}` : "no closed trade yet") },
       { k: "planet", r: 44, p: Number.isFinite(pw) ? clamp((100 - pw) / 100, 0, 1) : 0, tone: "orange", en: "Planet stability (100 − PWSI)", a: "استقرار الكوكب والسيولة",
-        v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 4 components` + (D.osiris.snap ? `, ${D.osiris.snap} from the hourly snapshot` : "") : "تعذر التحقق منها: no PWSI source reachable" }
+        v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 5 components` + (D.osiris.snap ? `, ${D.osiris.snap} from the hourly snapshot` : "") : "تعذر التحقق منها: no PWSI source reachable" }
     ];
     // ADR-103: Apple Watch gradients (green to mint, indigo to purple, orange to pink), round caps, a hairline
     // border on each track and a soft shadow under the leading cap where the arc overlaps itself. At 0 % the
@@ -3838,6 +4384,9 @@ const DEFAULT_ALLOW_HOSTS = [
     if (s.trap) risks.push("whale-trap pattern");
     if (D.flow && D.flow.vpin > lim.vpin) risks.push(`VPIN ${nf(D.flow.vpin, 2)} above ${nf(lim.vpin, 2)}`);
     if (pw >= lim.pwsi) risks.push(`OSIRIS PWSI ${nf(pw, 0)} at or above ${nf(lim.pwsi, 0)}`);
+    // ADR-108: the cyber and space threat index (Kp, CISA KEV, RIPEstat backbone visibility, IODA outages).
+    const cs = D.osiris && Number.isFinite(D.osiris.csti) ? D.osiris.csti : NaN;
+    if (cs >= lim.pwsi) risks.push(`cyber & space threat index ${nf(cs, 0)} at or above ${nf(lim.pwsi, 0)}`);
     if (D.crowd && D.crowd.fomo > 70) risks.push(`crowd euphoric (FOMO ${nf(D.crowd.fomo, 0)})`);
     const bull = best && best.s > 0 ? `${best.en}: ${best.why} (${nf(best.s, 2)})` : "No component argues for a long entry";
     const bear = risks.length ? risks.join("; ") : worst && worst.s < 0 ? `${worst.en}: ${worst.why} (${nf(worst.s, 2)})` : "No strong counter-argument found";
@@ -3849,7 +4398,7 @@ const DEFAULT_ALLOW_HOSTS = [
     };
     const P = AGENTS.reduce((a, [k]) => a + L.w[k] * p[k], 0);
     const conf = clamp(Math.abs(s.score) / 0.6, 0, 1) * (risks.length ? 0.5 : 1);
-    const hardStop = (D.flow && D.flow.vpin > lim.vpin) || pw >= lim.pwsi;
+    const hardStop = (D.flow && D.flow.vpin > lim.vpin) || pw >= lim.pwsi || cs >= lim.pwsi;
     let verdict, why;
     if (hardStop) { verdict = W.pos ? "KILL" : "STAND ASIDE"; why = W.pos ? "risk above the safe limit: emergency stop" : "risk above the safe limit: no new entry"; }
     else if (s.cls !== "buy") { verdict = "STAND ASIDE"; why = s.sig === "HOLD" ? "no edge" : s.sig + ": spot long-only, nothing to open"; }
@@ -4021,7 +4570,10 @@ const DEFAULT_ALLOW_HOSTS = [
     return hex(subtleOk() ? await crypto.subtle.digest("SHA-256", bytes) : sha256Pure(bytes));
   };
   let chainTail = Promise.resolve();
-  function issue(type, amount, before, after, reason) {
+  // ADR-108: fills also carry `exec` (the Level-2 sweep: levels walked, VWAP, slippage, impact, taker fee, the
+  // maker queue estimate, perpetual funding for reference) and `brain2` (Kalman latent price, BOCPD regime-shift
+  // probability, book entropy, Kyle's lambda, the synaptic web's agent weights). Both are inside the hash.
+  function issue(type, amount, before, after, reason, extra) {
     chainTail = chainTail.then(async () => {
       const lastCp = checkpoints[checkpoints.length - 1];
       const prev = receipts.length ? receipts[receipts.length - 1].hash : lastCp ? lastCp.last_hash : GENESIS;
@@ -4031,6 +4583,7 @@ const DEFAULT_ALLOW_HOSTS = [
         seq: n, ts: new Date().toISOString(), mode: "paper", symbol: D.sym, type, amount: micro(amount),
         before, after, reason, prev_hash: prev
       };
+      if (extra && typeof extra === "object") for (const k of ["exec", "brain2"]) if (extra[k]) r[k] = JSON.parse(JSON.stringify(extra[k]));
       r.hash = await sha256(JSON.stringify(canon(r)));
       receipts.push(r);
       await compact();
@@ -4125,7 +4678,8 @@ const DEFAULT_ALLOW_HOSTS = [
     const t = h("table");
     const rows = [["Invoice", r.invoice], ["Issued (ISO 8601)", r.ts], ["Mode", "paper simulation, no money moved"], ["Type", r.type], ["Market", r.symbol],
       ["Amount", nf(r.amount, 8) + " USDT"], ["Before", JSON.stringify(canon(r.before))], ["After", JSON.stringify(canon(r.after))],
-      ["Reason", r.reason], ["prev_hash", r.prev_hash], ["hash", r.hash]];
+      ["Reason", r.reason], ...(r.exec ? [["Level-2 execution", JSON.stringify(canon(r.exec))]] : []), ...(r.brain2 ? [["Brain 2 state", JSON.stringify(canon(r.brain2))]] : []),
+      ["prev_hash", r.prev_hash], ["hash", r.hash]];
     for (const [k, v] of rows) { const tr = h("tr"); tr.append(h("td", "", k), h("td", "", v)); t.append(tr); }
     return t;
   }
@@ -4164,6 +4718,30 @@ const DEFAULT_ALLOW_HOSTS = [
     }
     if (left > 1e-9) return null;
     return { qty, quote, vwap: quote / qty };
+  }
+
+  // Level-2 queue-priority fill engine (ADR-108): the order sweeps at most the top 25 levels of the live
+  // public book step by step (VWAP), pays the 0.1% spot taker fee, and the receipt records the levels used,
+  // slippage, impact, how long a resting maker order would have waited in the queue at the best price, and the
+  // perpetual funding rate for reference only (spot pays no funding). Paper only: nothing is sent anywhere.
+  const L2_LEVELS = 25;
+  function l2(side, amount) {
+    const M = window.OMEGA_MATH;
+    if (!M || !D.depth) return null;
+    return M.l2Fill(D.depth, side, amount, { levels: L2_LEVELS, takerFee: FEE, makerFee: FEE, tape: D.tape });
+  }
+  function execOf(f, beyond) {
+    const p = D.fut && D.fut.prem, fr = p && Number.isFinite(+p.lastFundingRate) ? +p.lastFundingRate : null;
+    return {
+      engine: "l2-vwap-25", side: f.side, levels_used: f.levelsUsed, levels_max: L2_LEVELS, beyond_25: !!beyond,
+      best: f.best, worst: f.worst, vwap: f.vwap, qty: f.qty, quote: f.quote, slippage_bps: f.slipBps, impact_bps: f.impactBps,
+      taker_fee: f.fee, taker_rate: f.takerFee, depth_used_pct: f.depthUsedPct,
+      maker_queue: f.queue ? { price: f.queue.price, ahead_qty: f.queue.ahead, opposite_rate_qps: f.queue.rate, eta_s: f.queue.etaS } : null,
+      perp_funding_8h: fr, funding_charged: 0, stream: stream.state
+    };
+  }
+  function brain2Of() {
+    try { return window.OMEGA_BRAIN2 ? window.OMEGA_BRAIN2.receipt() : null; } catch { return null; }
   }
 
   function renderWallet() {
@@ -4272,15 +4850,15 @@ const DEFAULT_ALLOW_HOSTS = [
     if (!(q.kelly > 0)) { say("Half-Kelly size is zero for these odds", "حجم كيلي صفر"); return; }
     const before = snap();
     const notional = W.active * q.kelly;
-    const fill = walk("buy", notional * (1 - FEE));
-    if (!fill) { say("The visible book is too thin for this size", "السيولة الظاهرة لا تكفي"); return; }
+    const fill = l2("buy", notional * (1 - FEE));
+    if (!fill) { say(`The top ${L2_LEVELS} levels of the live book are too thin for this size`, "أول 25 مستوى في دفتر الأوامر لا تكفي لهذا الحجم"); return; }
     const px = fill.vwap, qty = fill.qty;
-    const slip = (px / D.depth.asks[0][0] - 1) * 1e4;
+    const slip = fill.slipBps;
     W.active -= notional;
     const ct = D.court && D.court.p ? { p: { ...D.court.p }, P: D.court.P } : null;
     W.pos = { qty, entry: px, sl: q.sl, tp1: q.tp1, tp2: q.tp2, atr: q.atr, peak: px, tp1Done: false, at: Date.now(), cost: notional, got: 0, court: ct };
     save();
-    await issue("FILL_BUY", notional, before, snap(), `${auto ? "Auto engine: " : ""}${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly; VWAP ${nf(px, 2)} (slippage ${nf(slip, 2)} bps, fee 0.1%)`);
+    await issue("FILL_BUY", notional, before, snap(), `${auto ? "Auto engine: " : ""}${s.sig} score ${nf(s.score, 2)}; ${nf(q.kelly * 100, 1)}% half-Kelly; L2 VWAP ${nf(px, 2)} over ${fill.levelsUsed} of ${L2_LEVELS} levels (slippage ${nf(slip, 2)} bps, taker fee 0.1%)`, { exec: execOf(fill, false), brain2: brain2Of() });
     say(`Paper buy ${nf(qty, 6)} at ${nf(px, 2)}${auto ? " by the auto engine" : ""}`, "تم فتح صفقة ورقية");
     publish();
     renderWallet(); renderPosition();
@@ -4291,7 +4869,15 @@ const DEFAULT_ALLOW_HOSTS = [
     const before = snap();
     const full = frac >= 0.999 || W.pos.qty * (1 - frac) * D.depth.bids[0][0] < 1;
     const qty = full ? W.pos.qty : W.pos.qty * frac;
-    const fill = walk("sell", qty) || { qty, quote: qty * D.depth.bids[D.depth.bids.length - 1][0], vwap: D.depth.bids[D.depth.bids.length - 1][0] };
+    // Inside 25 levels the L2 engine fills it; a stop that needs more walks the rest of the visible book, and past
+    // the book it is priced at the last visible bid. The receipt says which.
+    let fill = l2("sell", qty), beyond = false;
+    if (!fill) {
+      beyond = true;
+      const w = walk("sell", qty) || { qty, quote: qty * D.depth.bids[D.depth.bids.length - 1][0], vwap: D.depth.bids[D.depth.bids.length - 1][0] };
+      const best = D.depth.bids[0][0];
+      fill = { side: "sell", qty: w.qty, quote: w.quote, vwap: w.vwap, best, worst: w.vwap, levelsUsed: Math.min(D.depth.bids.length, 1000), slipBps: (1 - w.vwap / best) * 1e4, impactBps: (1 - w.vwap / best) * 1e4, fee: w.quote * FEE, takerFee: FEE, depthUsedPct: NaN, queue: null };
+    }
     const proceeds = fill.quote * (1 - FEE);
     W.active += proceeds;
     W.pos.qty -= qty;
@@ -4299,7 +4885,7 @@ const DEFAULT_ALLOW_HOSTS = [
     const closed = full ? W.pos : null;
     if (full) { W.pos = null; D.cooldownUntil = Date.now() + 15 * 60e3; }
     save();
-    await issue("FILL_SELL", proceeds, before, snap(), why + ` at VWAP ${nf(fill.vwap, 2)} (fee 0.1%)`);
+    await issue("FILL_SELL", proceeds, before, snap(), why + ` at L2 VWAP ${nf(fill.vwap, 2)} over ${beyond ? "more than " + L2_LEVELS : fill.levelsUsed + " of " + L2_LEVELS} levels (taker fee 0.1%)`, { exec: execOf(fill, beyond), brain2: brain2Of() });
     if (closed) learn(closed, closed.got);
     if (!W.pos) await sweepCheck("Sweep after closing the paper position");
     renderWallet(); renderPosition(); publish();
@@ -4693,7 +5279,14 @@ const DEFAULT_ALLOW_HOSTS = [
     wallet: () => ({ base: W.base, active: W.active, safe: W.safe, cash: W.cash, halted: W.halted }),
     court: () => D.court ? JSON.parse(JSON.stringify(D.court)) : null, agents: () => AGENTS.map(a => a[0]), weights: () => ({ ...L.w }),
     canyon: () => ({ seen: !!sonar.seen, sim: simOn(), w: sonar.w, h: sonar.h, tiers: TIERS, bids: D.depth ? Math.min(TIERS, D.depth.bids.length) : 0, asks: D.depth ? Math.min(TIERS, D.depth.asks.length) : 0 }),
-    stream: () => ({ state: stream.state, msgs: stream.msgs })
+    stream: () => ({ state: stream.state, msgs: stream.msgs }),
+    // ADR-108, for Brain 2: copies of the book (top 25 per side), the trade tape, the microprice history, the
+    // perpetual premium index, the wall count, the on-chain fee and the cached daily closes.
+    book: () => D.depth ? { bids: D.depth.bids.slice(0, 25).map(l => l.slice()), asks: D.depth.asks.slice(0, 25).map(l => l.slice()) } : null,
+    tape: () => D.tape.map(x => ({ ...x })), micro: () => D.microHist.map(x => ({ ...x })), flow: () => D.flow ? { microBps: D.flow.microBps, hawkes: D.flow.hawkes, vpin: D.flow.vpin } : null,
+    prem: () => D.fut && D.fut.prem ? { ...D.fut.prem } : null, walls: () => D.walls.size, sym: () => D.sym, signal: () => D.signal ? { sig: D.signal.sig, score: D.signal.score } : null,
+    chainFee: () => D.chain && Number.isFinite(D.chain.fastest) ? D.chain.fastest : NaN, l2: (book, side, amount) => window.OMEGA_MATH ? window.OMEGA_MATH.l2Fill(book, side, amount, { levels: L2_LEVELS, takerFee: FEE }) : null,
+    closes: () => { const c = store.get("omega-hist-" + D.sym, null); return c && Array.isArray(c.rows) ? c.rows.map(r => r[3]) : []; }
   }) });
 })();
 </script>
@@ -4753,11 +5346,12 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   ];
 
   const S = {
-    layers: Object.assign({ core: true, air: true, alerts: true, sea: true, ports: true, wx: true, quake: true }, store.get("omega-osiris-layers", {})),
+    layers: Object.assign({ core: true, air: true, alerts: true, sea: true, ports: true, wx: true, quake: true, orbit: true, cables: true }, store.get("omega-osiris-layers", {})),
     proj: store.get("omega-osiris-proj", "3d") === "2d" ? "2d" : "3d",
     style: ["day", "map", "sat"].includes(store.get("omega-osiris-style", "map")) ? store.get("omega-osiris-style", "map") : "map",
     lon0: 48, lat0: 22, w: 0, h: 0, dpr: 1, visible: true, dirty: true, drag: null,
     quakes: [], wx: [], air: [], gdacs: [], news: [], ais: [], ports: [], prices: [], straits: [], seaNews: [],
+    sats: [], eonet: [], kp: [], kev: null, ripe: [], ioda: [],
     src: {
       usgs: { en: "USGS earthquakes (M2.5+, 24 h)", ar: "زلازل USGS", state: "checking", n: 0, at: 0 },
       meteo: { en: "Open-Meteo, 9 hubs", ar: "الطقس في 9 مراكز", state: "checking", n: 0, at: 0 },
@@ -4772,7 +5366,14 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       tiles_carto: { en: "CARTO basemap tiles (DAY, MAP)", ar: "بلاطات خرائط CARTO", state: "standby", n: 0, at: 0 },
       tiles_esri: { en: "Esri World Imagery tiles (SAT)", ar: "صور الأقمار الصناعية Esri", state: "standby", n: 0, at: 0 },
       tiles_osm: { en: "OpenStreetMap tiles (DAY fallback)", ar: "بلاطات OpenStreetMap", state: "standby", n: 0, at: 0 },
-      coast: { en: "Natural Earth 1:50m coastline (embedded)", ar: "خط الساحل المدمج", state: "embedded", n: 0, at: 0 }
+      coast: { en: "Natural Earth 1:50m coastline (embedded)", ar: "خط الساحل المدمج", state: "embedded", n: 0, at: 0 },
+      celestrak: { en: "CelesTrak GP elements, stations + 100 brightest (proxy, direct, snapshot)", ar: "مدارات الأقمار الصناعية", state: "checking", n: 0, at: 0 },
+      eonet: { en: "NASA EONET open natural events, 30 days", ar: "أحداث ناسا الطبيعية", state: "checking", n: 0, at: 0 },
+      swpc: { en: "NOAA SWPC planetary Kp index", ar: "طقس الفضاء والعواصف المغناطيسية", state: "checking", n: 0, at: 0 },
+      kev: { en: "CISA Known Exploited Vulnerabilities (proxy, then hourly snapshot)", ar: "الثغرات المستغلة فعلياً", state: "checking", n: 0, at: 0 },
+      ripe: { en: "RIPEstat routing status, 5 tier-1 backbones", ar: "رؤية مسارات BGP", state: "checking", n: 0, at: 0 },
+      ioda: { en: "IODA country outages, 24 h (proxy, then hourly snapshot)", ar: "انقطاعات الإنترنت", state: "checking", n: 0, at: 0 },
+      cables: { en: "Submarine cable corridors (approximate, hand-drawn)", ar: "ممرات الكابلات البحرية التقريبية", state: "embedded", n: 0, at: 0 }
     },
     pwsiHist: new Ring(300), proxyUp: null
   };
@@ -5178,6 +5779,99 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     }
     ctx.restore();
   }
+  // Submarine cable corridors (ADR-108): approximate, hand-drawn paths along which the main Europe-Asia,
+  // Gulf and Atlantic systems run, with well-known landing areas. They are not real cable routes;
+  // TeleGeography's route data is licensed and is not copied here. A corridor turns orange when NGA has a
+  // warning in a strait it passes, or IODA reports an outage in a country where it lands.
+  const CABLES = [
+    { n: "Europe–Asia via Suez and the Red Sea", a: "أوروبا وآسيا عبر السويس والبحر الأحمر", straits: ["suez", "bab"], land: ["FR", "EG", "SA", "DJ", "IN"],
+      path: [[43.3, 5.37], [40.5, 7.5], [37.5, 11.5], [34.5, 24.0], [31.2, 29.9], [30.0, 32.5], [29.1, 32.65], [27.0, 34.5], [22.0, 37.8], [18.0, 40.0], [14.5, 42.4], [12.6, 43.4], [12.4, 46.0], [13.5, 51.0], [16.0, 58.0], [19.0, 72.8]] },
+    { n: "Gulf ring through Hormuz", a: "حلقة الخليج عبر هرمز", straits: ["hormuz"], land: ["AE", "QA", "BH", "KW"],
+      path: [[25.12, 56.35], [25.9, 56.8], [26.5, 56.5], [26.6, 54.5], [25.9, 52.5], [25.3, 51.6], [26.1, 50.7], [27.6, 49.6], [29.35, 48.1]] },
+    { n: "Gulf of Oman to India", a: "خليج عمان إلى الهند", straits: ["hormuz"], land: ["AE", "OM", "IN"],
+      path: [[25.12, 56.35], [24.5, 58.5], [23.6, 59.0], [22.0, 62.0], [20.0, 68.0], [19.0, 72.8]] },
+    { n: "India to Singapore via Malacca", a: "الهند إلى سنغافورة عبر ملقا", straits: ["malacca"], land: ["IN", "LK", "SG"],
+      path: [[19.0, 72.8], [15.0, 72.5], [8.0, 76.0], [6.9, 79.85], [6.0, 82.0], [5.5, 92.0], [5.8, 95.2], [3.0, 100.4], [1.27, 103.65]] },
+    { n: "South China Sea to Japan", a: "بحر الصين الجنوبي إلى اليابان", straits: [], land: ["SG", "HK", "TW", "JP"],
+      path: [[1.27, 103.65], [5.0, 108.0], [12.0, 111.5], [22.25, 114.2], [23.0, 119.0], [25.0, 122.0], [30.0, 127.0], [33.0, 135.0], [35.0, 139.95]] },
+    { n: "Atlantic Europe via Gibraltar", a: "أوروبا الأطلسية عبر جبل طارق", straits: [], land: ["FR", "ES", "PT", "GB"],
+      path: [[43.3, 5.37], [41.5, 4.0], [38.5, 0.5], [36.6, -2.0], [35.95, -5.6], [36.5, -9.5], [38.44, -9.1], [43.5, -10.0], [48.5, -6.5], [50.83, -4.55]] },
+    { n: "Trans-Atlantic, UK to New York", a: "عبر الأطلسي من بريطانيا إلى نيويورك", straits: [], land: ["GB", "US"],
+      path: [[50.83, -4.55], [51.0, -15.0], [48.0, -35.0], [42.0, -55.0], [40.5, -70.0], [40.75, -72.85]] },
+    { n: "Trans-Atlantic, Spain to Virginia", a: "عبر الأطلسي من إسبانيا إلى فرجينيا", straits: [], land: ["ES", "US"],
+      path: [[43.4, -2.95], [44.5, -10.0], [41.0, -40.0], [37.0, -70.0], [36.85, -75.98]] }
+  ];
+  const LANDINGS = [
+    ["Marseille", "مرسيليا", 43.3, 5.37, "FR"], ["Alexandria", "الإسكندرية", 31.2, 29.9, "EG"], ["Zafarana", "الزعفرانة", 29.1, 32.65, "EG"], ["Jeddah", "جدة", 21.5, 39.15, "SA"],
+    ["Djibouti", "جيبوتي", 11.6, 43.15, "DJ"], ["Fujairah", "الفجيرة", 25.12, 56.35, "AE"], ["Doha", "الدوحة", 25.3, 51.55, "QA"], ["Manama", "المنامة", 26.2, 50.6, "BH"],
+    ["Kuwait City", "مدينة الكويت", 29.35, 48.1, "KW"], ["Muscat", "مسقط", 23.6, 58.55, "OM"], ["Mumbai", "مومباي", 19.0, 72.8, "IN"], ["Colombo", "كولومبو", 6.9, 79.85, "LK"],
+    ["Singapore", "سنغافورة", 1.27, 103.65, "SG"], ["Hong Kong", "هونغ كونغ", 22.25, 114.2, "HK"], ["Toucheng", "توتشنغ", 24.85, 121.82, "TW"], ["Chikura", "تشيكورا", 35.0, 139.95, "JP"],
+    ["Sesimbra", "سيزيمبرا", 38.44, -9.1, "PT"], ["Bilbao", "بلباو", 43.4, -2.95, "ES"], ["Bude", "بيود", 50.83, -4.55, "GB"], ["Shirley, NY", "نيويورك", 40.75, -72.85, "US"], ["Virginia Beach", "فرجينيا بيتش", 36.85, -75.98, "US"]
+  ].map(([n, a, lat, lon, cc]) => ({ n, a, lat, lon, cc }));
+  // Approximate country centres, only to place an IODA country outage on the map (reference geography).
+  const CENTROID = { AF: [34, 66], AE: [24, 54], AM: [40, 45], AO: [-12, 18], AR: [-34, -64], AU: [-25, 134], AZ: [40, 48], BD: [24, 90], BH: [26.1, 50.6], BR: [-10, -52], BY: [53, 28], CD: [-3, 23], CM: [6, 12], CN: [35, 103], CO: [4, -73], CU: [22, -79], DJ: [11.6, 43.1],
+    DZ: [28, 3], EG: [27, 30], ES: [40, -4], ET: [9, 39], FR: [46, 2], GB: [54, -2], GH: [8, -1], HK: [22.3, 114.2], ID: [-2, 118], IL: [31, 35], IN: [22, 79], IQ: [33, 44], IR: [32, 53], JO: [31, 36], JP: [36, 138], KE: [0, 38], KW: [29.3, 47.7], KZ: [48, 67], LB: [33.9, 35.8], LK: [7.8, 80.7],
+    LY: [27, 17], MA: [32, -6], MM: [21, 96], MX: [23, -102], MY: [4, 102], NG: [9, 8], OM: [21, 57], PK: [30, 70], PH: [12, 122], PS: [31.9, 35.2], PT: [39.5, -8], QA: [25.3, 51.2], RU: [60, 90], SA: [24, 45], SD: [15, 30], SG: [1.35, 103.8], SN: [14.5, -14.5], SO: [6, 46], SY: [35, 38],
+    TH: [15, 101], TN: [34, 9], TR: [39, 35], TW: [23.7, 121], TZ: [-6, 35], UA: [49, 32], US: [39, -98], UZ: [41, 64], VE: [7, -66], VN: [16, 107], YE: [15.5, 47.5], ZA: [-29, 24] };
+  const dense = line => {
+    const out = [];
+    for (let i = 0; i < line.length - 1; i++) {
+      const [a, b] = [line[i], line[i + 1]], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])));
+      for (let k = 0; k < n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+    }
+    out.push(line[line.length - 1]);
+    return out;
+  };
+  const cableDense = CABLES.map(c => dense(c.path));
+  S.src.cables.n = CABLES.length;
+  function cableStress(c) {
+    const why = [];
+    for (const k of c.straits) { const i = STRAIT_KEYS.indexOf(k), st = S.straits[i]; if (st && st.warnings.length) why.push(`${st.warnings.length} NGA warning${st.warnings.length > 1 ? "s" : ""} in ${CHOKE[i].n}`); }
+    const out = S.ioda.filter(o => c.land.includes(o.code));
+    if (out.length) why.push(`IODA outage in ${[...new Set(out.map(o => o.name))].join(", ")}`);
+    return why;
+  }
+  function stroke(line) {
+    ctx.beginPath();
+    let on = false;
+    for (const [lat, lon] of line) { const p = project(lat, lon); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } }
+    ctx.stroke();
+  }
+  function cables() {
+    const w = S.z < 3 ? 1 : S.z < 7 ? 1.6 : 2.6;
+    ctx.save();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    CABLES.forEach((c, i) => {
+      const hot = cableStress(c).length > 0;
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.35; ctx.strokeStyle = hot ? colors.warning : colors.accent; ctx.lineWidth = w * 3; stroke(cableDense[i]);
+      ctx.globalAlpha = 0.95; ctx.lineWidth = w; ctx.setLineDash(S.z < 5 ? [] : [6, 4]); stroke(cableDense[i]);
+      const mid = c.path[Math.floor(c.path.length / 2)], p = project(mid[0], mid[1]);
+      if (p) S.hits.push({ x: p[0], y: p[1], r: 12, kind: "cable", i, lat: mid[0], lon: mid[1] });
+    });
+    ctx.restore();
+    for (const l of LANDINGS) dot(l.lat, l.lon, S.z < 4 ? 2.5 : 4, colors.accent, true, S.z >= 3 ? { kind: "landing", d: l, lat: l.lat, lon: l.lon } : null);
+  }
+  // Satellites: positions from the GP mean elements at draw time, so each redraw shows them where they are now.
+  function sats() {
+    const M = window.OMEGA_MATH, now = Date.now();
+    if (!M || !S.sats.length) return;
+    const sel = S.call && S.call.kind === "sat" ? S.call.d : S.sats.find(x => /ISS \(ZARYA\)/.test(x.OBJECT_NAME)) || S.sats[0];
+    if (sel) {
+      const tr = M.groundTrack(sel, now, 90, 60);
+      ctx.save(); ctx.setLineDash([3, 5]); ctx.strokeStyle = colors.gold; ctx.globalAlpha = 0.85; ctx.lineWidth = 1.5;
+      const segs = [[]];
+      for (let i = 0; i < tr.length; i++) { if (i && Math.abs(tr[i][1] - tr[i - 1][1]) > 180) segs.push([]); segs[segs.length - 1].push(tr[i]); }
+      for (const sg of segs) if (sg.length > 1) stroke(sg);
+      ctx.restore();
+    }
+    for (const g of S.sats) {
+      const k = M.kepler(g, now);
+      if (!k) continue;
+      const station = g.group === "stations";
+      dot(k.lat, k.lon, station ? 4 : 2.2, colors.gold, false, { kind: "sat", d: g, lat: k.lat, lon: k.lon, k });
+    }
+  }
   function draw() {
     if (!S.w || !S.h) return;
     S.hits = [];
@@ -5223,6 +5917,14 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     if (S.layers.wx) for (const w of S.wx) dot(w.lat, w.lon, 5, w.gust >= 60 ? colors.danger : colors.cyan, true, { kind: "wx", d: w, lat: w.lat, lon: w.lon });
     if (S.layers.alerts) for (const g of S.gdacs) diamond(g.lat, g.lon, g.level === "Red" ? 9 : 7, g.level === "Red" ? colors.danger : colors.warning, { kind: "gdacs", d: g, lat: g.lat, lon: g.lon });
     if (S.layers.quake) for (const q of S.quakes) dot(q.lat, q.lon, clamp((q.mag - 2) * 2.4, 3, 16), colors.danger, q.mag < 4.5, { kind: "quake", d: q, lat: q.lat, lon: q.lon });
+    if (S.layers.cables) {
+      cables();
+      for (const o of S.ioda) { const c = CENTROID[o.code]; if (c) dot(c[0], c[1], 9, colors.danger, true, { kind: "outage", d: o, lat: c[0], lon: c[1] }); }
+    }
+    if (S.layers.orbit) {
+      for (const e of S.eonet) diamond(e.lat, e.lon, 5, colors.warning, { kind: "eonet", d: e, lat: e.lat, lon: e.lon });
+      sats();
+    }
     if (S.call) {
       const p = project(S.call.lat, S.call.lon);
       if (p) {
@@ -5414,6 +6116,72 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     ]);
   }
 
+  /* ---------------- orbital, space weather and cyber radar (ADR-108) ---------------- */
+  // Every source goes proxy, then direct (hosts that send browser CORS headers: CelesTrak, EONET, SWPC,
+  // RIPEstat), then the hourly snapshot. All three tiers hand over the same compact shape from OMEGA_MATH.
+  const SH = () => window.OMEGA_MATH.shape, UR = () => window.OMEGA_MATH.urls;
+  const isShape = (j, f) => j && j.format === f;
+  // CelesTrak asks clients not to fetch a group more often than its two-hour update; the direct tier keeps
+  // its own copy that long.
+  async function gpDirect(g) {
+    const key = "omega-gp-" + g, c = store.get(key, null);
+    if (c && Date.now() - c.at < 2 * 3600e3 && c.data && Array.isArray(c.data.sats)) return { raw: c.data, at: c.at };
+    const data = SH().gp(await getJson(UR().gp(g), 20000));
+    store.set(key, { at: Date.now(), data });
+    return { raw: data, at: Date.now() };
+  }
+  async function loadSpace(up) {
+    if (!window.OMEGA_MATH) return;
+    const px = (path, ms) => up ? () => live(getJson(PROXY + path, ms || 20000)) : null;
+    const groups = [];
+    for (const g of ["stations", "visual"]) {
+      const got = await (async () => {
+        for (const [tier, get] of [["proxy", px("/osiris/celestrak/" + g)], ["direct", () => gpDirect(g)], ["snapshot", () => fromSnapshot("celestrak_" + g)]]) {
+          if (!get) continue;
+          try { const { raw, at } = await get(); const d = isShape(raw, "omega-gp-v1") ? raw : SH().gp(raw); return { tier, at, sats: d.sats.map(x => ({ ...x, group: g })) }; } catch { /* next tier */ }
+        }
+        return null;
+      })();
+      if (got) groups.push(got);
+    }
+    if (groups.length) {
+      const seen = new Set();
+      S.sats = groups.flatMap(x => x.sats).filter(x => !seen.has(x.NORAD_CAT_ID) && seen.add(x.NORAD_CAT_ID));
+      mark("celestrak", true, S.sats.length, Math.min(...groups.map(x => x.at)), groups.some(x => x.tier === "snapshot") ? "snapshot" : groups[0].tier);
+    } else { S.sats = []; mark("celestrak", false); }
+    await Promise.all([
+      cascade("eonet", [["proxy", px("/osiris/eonet")], ["direct", () => live(getJson(UR().eonet(), 20000))], ["snapshot", () => fromSnapshot("eonet")]], j => { S.eonet = (isShape(j, "omega-eonet-v1") ? j : SH().eonet(j)).events.filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lon)); return S.eonet.length; }).then(ok => { if (!ok) S.eonet = []; }),
+      cascade("swpc", [["proxy", px("/osiris/kp")], ["direct", () => live(getJson(UR().kp(), 15000))], ["snapshot", () => fromSnapshot("kp")]], j => { S.kp = (isShape(j, "omega-kp-v1") ? j : SH().kp(j)).readings; return S.kp.length; }).then(ok => { if (!ok) S.kp = []; })
+    ]);
+  }
+  async function loadCyber(up) {
+    if (!window.OMEGA_MATH) return;
+    const px = (path, ms) => up ? () => live(getJson(PROXY + path, ms || 20000)) : null;
+    const asns = window.OMEGA_MATH.RIPE_ASNS;
+    await Promise.all([
+      cascade("kev", [["proxy", px("/cyber/kev", 30000)], ["snapshot", () => fromSnapshot("kev")]], j => { S.kev = isShape(j, "omega-kev-v1") ? j : SH().kev(j, Date.now()); return S.kev.count; }).then(ok => { if (!ok) S.kev = null; }),
+      cascade("ioda", [["proxy", px("/cyber/ioda")], ["snapshot", () => fromSnapshot("ioda")]], j => { S.ioda = (isShape(j, "omega-ioda-v1") ? j : SH().ioda(j)).events; return S.ioda.length; }).then(ok => { if (!ok) S.ioda = []; }),
+      cascade("ripe", [
+        ["proxy", up ? async () => ({ raw: { asns: await Promise.all(asns.map(([a]) => getJson(PROXY + "/cyber/ripe/AS" + a, 15000))) }, at: Date.now() }) : null],
+        ["direct", async () => ({ raw: { asns: await Promise.all(asns.map(([a]) => getJson(UR().ripe(a), 15000).then(j => SH().ripe(j, a)))) }, at: Date.now() })],
+        ["snapshot", () => fromSnapshot("ripe")]
+      ], j => { S.ripe = j.asns.filter(x => isShape(x, "omega-ripe-v1")); if (!S.ripe.length) throw new Error("no ASN"); return S.ripe.length; }).then(ok => { if (!ok) S.ripe = []; })
+    ]);
+  }
+  // Cyber and space threat index (ADR-108), from whichever of its four parts have data.
+  function cstiNow() {
+    const M = window.OMEGA_MATH;
+    if (!M) return { score: NaN, parts: [], coverage: 0 };
+    const kp = S.src.swpc.state === "online" && S.kp.length ? S.kp[S.kp.length - 1].kp : NaN;
+    const cut = Date.now() - 7 * 86400e3, wk = S.kev ? S.kev.recent.filter(x => Date.parse(x.added + "T00:00:00Z") >= cut) : null;
+    const bgp = S.src.ripe.state === "online" && S.ripe.length ? Math.min(...S.ripe.map(x => x.share)) : NaN;
+    const r = M.csti({ kp, kev7: wk ? wk.length : NaN, ransom7: wk ? wk.filter(x => x.ransomware).length : NaN, bgpMin: bgp, ioda: S.src.ioda.state === "online" ? S.ioda.length : NaN });
+    const why = { space: `Kp ${nf(kp, 2)} (NOAA SWPC)`, kev: wk ? `${wk.length} KEV added in 7 days, ${wk.filter(x => x.ransomware).length} ransomware` : "", bgp: Number.isFinite(bgp) ? `lowest backbone visibility ${nf(bgp * 100, 1)}% of RIS peers` : "", ioda: `${S.ioda.length} country outages in 24 h (IODA)` };
+    const tier = { space: S.src.swpc.tier, kev: S.src.kev.tier, bgp: S.src.ripe.tier, ioda: S.src.ioda.tier };
+    r.parts = r.parts.map(p => ({ ...p, why: why[p.k], tier: tier[p.k] }));
+    return r;
+  }
+
   /* ---------------- PWSI ---------------- */
   function pwsi() {
     const parts = [];
@@ -5433,13 +6201,36 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       const n = S.straits.reduce((a, x) => a + x.warnings.length, 0), hot = S.straits.filter(x => x.warnings.length).length;
       parts.push({ tier: S.src.straits.tier, en: "Strait warnings", a: "إنذارات المضائق", v: clamp(n * 8 + hot * 6, 0, 100), why: `${n} active NGA warnings in ${hot} of 5 straits` });
     }
-    if (!parts.length) return { score: NaN, parts, coverage: 0, snap: 0 };
-    return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length, snap: parts.filter(p => p.tier === "snapshot").length };
+    // ADR-108: the cyber and space threat index is PWSI's fifth component.
+    const cs = cstiNow();
+    if (Number.isFinite(cs.score)) parts.push({ tier: cs.parts.some(p => p.tier === "snapshot") ? "snapshot" : "direct", en: "Cyber & space", a: "التهديد السيبراني والفضائي", v: cs.score, why: `CSTI from ${cs.coverage} of 4 parts` });
+    if (!parts.length) return { score: NaN, parts, coverage: 0, snap: 0, csti: cs.score };
+    return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length, snap: parts.filter(p => p.tier === "snapshot").length, csti: cs.score };
   }
 
   /* ---------------- render ---------------- */
   function kv(id, rows) {
     $(id).tBodies[0].replaceChildren(...rows.map(([en, a, v, cls]) => { const tr = h("tr"); const t = h("td"); t.append(document.createTextNode(en), ar(a)); tr.append(t, h("td", cls || "", v)); return tr; }));
+  }
+  function renderCyber() {
+    const C = cstiNow();
+    $("osCsti").textContent = Number.isFinite(C.score) ? nf(C.score, 0) : "—";
+    $("osCsti").className = "num " + (!Number.isFinite(C.score) ? "" : C.score >= 70 ? "bad-text" : C.score >= 40 ? "warn-text" : "ok-text");
+    $("osCstiNote").replaceChildren(Number.isFinite(C.score) ? document.createTextNode(`0–100 · mean of ${C.coverage} of 4 parts · feeds PWSI and the risk judge`) : ar("تعذر التحقق منها: لا يوجد مصدر حي الآن"));
+    const names = { space: ["Space weather", "طقس الفضاء"], kev: ["Exploited vulnerabilities", "الثغرات المستغلة"], bgp: ["BGP backbone visibility", "رؤية مسارات الإنترنت"], ioda: ["Internet outages", "انقطاعات الإنترنت"] };
+    kv("osCstiParts", C.parts.length ? C.parts.map(p => [names[p.k][0] + " · " + p.why + (p.tier === "snapshot" ? " · hourly snapshot" : ""), names[p.k][1], nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No part has data", "لا توجد بيانات", "—"]]);
+    const items = [];
+    if (S.kev) for (const x of S.kev.recent.slice(0, 5)) items.push({ t: x.cve, text: `${x.vendor} ${x.product}: ${x.name} · added ${x.added}${x.ransomware ? " · ransomware" : ""}`, url: "https://nvd.nist.gov/vuln/detail/" + encodeURIComponent(x.cve), cls: x.ransomware ? "ev-fail" : "ev-warn" });
+    for (const o of S.ioda.slice(0, 4)) items.push({ t: "IODA " + o.code, text: `${o.name} · outage from ${Number.isFinite(o.start) ? clock.format(o.start * 1000) + " UTC" : "—"}${o.duration ? " · " + nf(o.duration / 3600, 1) + " h" : ""}`, url: "https://ioda.inetintel.cc.gatech.edu/country/" + encodeURIComponent(o.code), cls: "ev-fail" });
+    for (const r of S.ripe.filter(x => x.share < 0.98).slice(0, 3)) items.push({ t: "AS" + r.asn, text: `${r.name}: seen by ${r.seeing} of ${r.total} RIS peers`, url: "https://stat.ripe.net/AS" + r.asn, cls: "ev-warn" });
+    const iss = S.sats.find(x => /ISS \(ZARYA\)/.test(x.OBJECT_NAME)), M = window.OMEGA_MATH;
+    if (iss && M) { const k = M.kepler(iss, Date.now()); if (k) items.push({ t: "ORBIT", text: `ISS now ${coordText(k.lat, k.lon)} · ${nf(k.alt, 0)} km · ${S.sats.length} objects tracked`, url: "https://celestrak.org/NORAD/elements/", cls: "ev-ok" }); }
+    $("osCyber").replaceChildren(...(items.length ? items.map(i => {
+      const li = h("li"); li.append(h("time", i.cls, i.t));
+      const u = safeUrl(i.url);
+      if (u) { const a = h("a", "", i.text); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "auto"; li.append(a); } else li.append(h("span", "", i.text));
+      return li;
+    }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", S.proxyUp === false ? "CISA KEV and IODA need the local proxy (start-omega) or the hourly snapshot" : "Checking…")); return li; })()]));
   }
   function render() {
     const P = pwsi();
@@ -5447,7 +6238,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     $("osPwsi").textContent = Number.isFinite(P.score) ? nf(P.score, 0) : "—";
     $("osPwsi").className = "num " + (!Number.isFinite(P.score) ? "" : P.score >= 70 ? "bad-text" : P.score >= 40 ? "warn-text" : "ok-text");
     $("osPwsiNote").replaceChildren(Number.isFinite(P.score)
-      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 4 components with data` + (P.snap ? ` · ${P.snap} from the hourly snapshot` : ""))
+      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 5 components with data` + (P.snap ? ` · ${P.snap} from the hourly snapshot` : ""))
       : ar("تعذر التحقق منها: لا يوجد مصدر حي الآن"));
     kv("osParts", P.parts.length ? P.parts.map(p => [p.en + " · " + p.why + (p.tier === "snapshot" ? " · hourly snapshot" : ""), p.a, nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No component has data", "لا توجد بيانات", "—"]]);
     const label = { online: "LIVE", offline: "OFFLINE", checking: "CHECKING…", none: "NO FREE SOURCE", standby: "STANDBY · loads with its map style", embedded: "EMBEDDED · works offline" };
@@ -5480,7 +6271,10 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     const tick = [];
     for (const p of S.prices) tick.push([p.s, nf(p.p, p.p < 10 ? 3 : 2), (p.c >= 0 ? "+" : "") + nf(p.c, 2) + "%", p.c >= 0 ? "ok-text" : "bad-text"]);
     for (const q of S.quakes.slice(0, 4)) tick.push(["M" + nf(q.mag), q.place.slice(0, 40), clock.format(q.t) + " UTC", q.mag >= 5 ? "bad-text" : ""]);
-    tick.push(["PWSI", Number.isFinite(P.score) ? nf(P.score, 0) + " / 100" : "unverified", P.coverage + "/4 sources", P.score >= 70 ? "bad-text" : ""]);
+    tick.push(["PWSI", Number.isFinite(P.score) ? nf(P.score, 0) + " / 100" : "unverified", P.coverage + "/5 sources", P.score >= 70 ? "bad-text" : ""]);
+    if (S.kp.length) { const k = S.kp[S.kp.length - 1].kp; tick.push(["Kp", nf(k, 2), "NOAA SWPC", k >= 5 ? "bad-text" : ""]); }
+    if (S.kev) tick.push(["KEV", S.kev.count + " exploited", S.kev.recent.length + " in 30 d", ""]);
+    renderCyber();
     if (S.src.opensky.state === "online") tick.push(["AIR", S.air.length + " aircraft", "Gulf & Red Sea", ""]);
     const build = () => tick.map(([a, b, c, cls]) => { const s = h("span", "tk"); s.append(h("b", "", a), document.createTextNode(" " + b + " "), h("i", cls, c)); return s; });
     // The marquee needs a second copy to loop seamlessly; a short ticker stays still instead.
@@ -5488,7 +6282,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     $("osTicker").classList.toggle("still", !loop);
     $("osTicker").replaceChildren(...build(), ...(loop ? build().map(n => { n.setAttribute("aria-hidden", "true"); return n; }) : []));
     $("osUpdated").textContent = clock.format(new Date()) + " UTC";
-    document.dispatchEvent(new CustomEvent("omega:osiris", { detail: { pwsi: P.score, coverage: P.coverage, snap: P.snap, at: Date.now() } }));
+    document.dispatchEvent(new CustomEvent("omega:osiris", { detail: { pwsi: P.score, coverage: P.coverage, snap: P.snap, csti: P.csti, at: Date.now() } }));
     if (window.OMEGA_SUITE) window.OMEGA_SUITE.publish({ pwsi: Number.isFinite(P.score) ? P.score : null });
     redraw();
   }
@@ -5544,7 +6338,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       else if (P.place) openCall({ kind: "place", d: P.place, lat: P.lat, lon: P.lon });
     });
   });
-  const ZOOM_FOR = { quake: 7, gdacs: 7, strait: 9, wx: 10, port: 12, air: 11, ship: 13, place: 10 };
+  const ZOOM_FOR = { quake: 7, gdacs: 7, strait: 9, wx: 10, port: 12, air: 11, ship: 13, place: 10, sat: 3, eonet: 7, cable: 4, landing: 9, outage: 5 };
   const km = (a, b, c, d) => 6371 * 2 * Math.asin(Math.sqrt(Math.sin((c - a) * RAD / 2) ** 2 + Math.cos(a * RAD) * Math.cos(c * RAD) * Math.sin((d - b) * RAD / 2) ** 2));
   const nearestHub = (lat, lon) => HUBS.map(x => ({ x, d: km(lat, lon, x.lat, x.lon) })).sort((a, b) => a.d - b.d)[0];
   const utc = t => Number.isFinite(t) ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(t)) + " UTC" : "—";
@@ -5600,6 +6394,34 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       rows.push(["Speed over ground", "السرعة", d[2] === null || d[2] === undefined ? "—" : nf(d[2], 1) + " kn"]);
       imp = "One AIS position; port pulse sums them per port.";
       url = "https://www.digitraffic.fi/en/marine-traffic/";
+    } else if (hit.kind === "sat") {
+      const k = hit.k || {};
+      t = String(d.OBJECT_NAME || "Satellite"); a = "قمر صناعي"; kind = `NORAD ${d.NORAD_CAT_ID} · ${d.OBJECT_ID || ""}`; src = "CelesTrak";
+      rows.push(["Altitude", "الارتفاع", nf(k.alt, 0) + " km"], ["Period · inclination", "الدورة والميل", nf(k.periodMin, 1) + " min · " + nf(+d.INCLINATION, 2) + "°"], ["Elements epoch", "زمن العناصر", String(d.EPOCH || "").slice(0, 19) + " UTC"]);
+      imp = "Position from the mean elements by two-body motion with J2 drift, not SGP4; a low orbit can be tens of km off. The dashed line is the next and last 45 minutes of ground track. A strong geomagnetic storm (Kp 7+) raises drag and GPS errors.";
+      url = `https://celestrak.org/satcat/table-satcat.php?CATNR=${encodeURIComponent(d.NORAD_CAT_ID)}`;
+    } else if (hit.kind === "eonet") {
+      t = d.title; a = "حدث طبيعي"; kind = d.cat || "NASA EONET event"; src = "NASA EONET";
+      rows.push(["Last observed", "آخر رصد", utc(Date.parse(d.date))], ["Magnitude", "الشدة", d.mag !== null ? nf(d.mag, 1) + " " + d.unit : "—"]);
+      imp = `Nearest tracked hub: ${near.x.n}, ${nf(near.d, 0)} km. Wildfires, storms and volcanoes near a hub or lane can slow freight.`;
+      url = d.link || "https://eonet.gsfc.nasa.gov/";
+    } else if (hit.kind === "cable") {
+      const c = CABLES[hit.i], why = cableStress(c);
+      t = c.n; a = c.a; kind = "Submarine cable corridor (approximate)"; src = "submarinecablemap.com";
+      rows.push(["Landing countries", "دول الإنزال", c.land.join(", ")], ["Straits on the way", "المضائق في الطريق", c.straits.length ? c.straits.map(k => CHOKE[STRAIT_KEYS.indexOf(k)].n).join(", ") : "none of the five"], ["Stress now", "الضغط الآن", why.length ? why.join("; ") : S.src.straits.state === "online" || S.src.ioda.state === "online" ? "none seen" : "تعذر التحقق منها"]);
+      imp = "A hand-drawn corridor, not a real cable route. A cut here raises latency and outage risk for Gulf and Asian markets; it feeds the cyber part of the threat index only through IODA and NGA readings.";
+      url = "https://www.submarinecablemap.com/";
+    } else if (hit.kind === "landing") {
+      const out = S.ioda.filter(o => o.code === d.cc);
+      t = d.n; a = d.a; kind = "Cable landing area (approximate)"; src = "IODA";
+      rows.push(["Country", "الدولة", d.cc], ["IODA outages, 24 h", "انقطاعات IODA", S.src.ioda.state === "online" ? String(out.length) : "تعذر التحقق منها"]);
+      imp = "Landing areas are well-known public locations, placed approximately.";
+      url = "https://ioda.inetintel.cc.gatech.edu/country/" + encodeURIComponent(d.cc);
+    } else if (hit.kind === "outage") {
+      t = d.name + " internet outage"; a = "انقطاع إنترنت"; kind = "IODA country outage event"; src = "IODA (Georgia Tech)";
+      rows.push(["Started", "البداية", Number.isFinite(d.start) ? utc(d.start * 1000) : "—"], ["Duration", "المدة", d.duration ? nf(d.duration / 3600, 1) + " h" : "ongoing or not given"], ["Score", "الدرجة", d.score !== null ? nf(d.score, 0) : "—"]);
+      imp = "Marked at the country's approximate centre. It counts in the internet-outage part of the cyber and space threat index.";
+      url = "https://ioda.inetintel.cc.gatech.edu/country/" + encodeURIComponent(d.code);
     } else if (hit.kind === "place") {
       t = d.n; a = d.a; kind = "Bookmark"; src = "OpenStreetMap";
       if (d.words) { const n = S.news.filter(x => d.words.some(w => String(x.title || "").toLowerCase().includes(w))).length; rows.push(["GDELT headlines now", "عناوين GDELT", S.src.gdelt.state === "online" ? String(n) : "تعذر التحقق منها"]); }
@@ -5778,11 +6600,583 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   every(loadWeather, 15 * 60e3);
   every(loadPrices, 30e3);
   every(loadProxy, 5 * 60e3);
+  // One shared proxy probe for both loaders (loadProxy probes on its own every 5 minutes).
+  let probeJob = null;
+  const proxyReady = () => probeJob || (probeJob = proxyUp().finally(() => setTimeout(() => { probeJob = null; }, 60000)));
+  every(async () => loadSpace(await proxyReady()), 15 * 60e3);
+  every(async () => loadCyber(await proxyReady()), 15 * 60e3);
+  // Satellites move: while the orbit layer is on and the map is on screen, redraw every 30 s (a discrete
+  // update, not an animation).
+  setInterval(() => { if (S.layers.orbit && S.sats.length && S.visible && !document.hidden) redraw(); }, 30000);
   // ADR-107 self-test hook: the camera, the embedded coastline, the projection round trip and PWSI. Read-only.
   window.OMEGA_PROBE = Object.assign(window.OMEGA_PROBE || {}, { osiris: Object.freeze({
-    state: () => ({ z: S.z, w: S.w, h: S.h, proj: S.proj, coastRings: coast.length, lanes: LANES.length, pwsi: pwsi(), src: Object.fromEntries(Object.entries(S.src).map(([k, v]) => [k, { state: v.state, tier: v.tier || "" }])) }),
+    state: () => ({ z: S.z, w: S.w, h: S.h, proj: S.proj, coastRings: coast.length, lanes: LANES.length, pwsi: pwsi(), src: Object.fromEntries(Object.entries(S.src).map(([k, v]) => [k, { state: v.state, tier: v.tier || "", n: v.n, at: v.at }])) }),
+    // ADR-108: orbital and cyber radar, for Brain 2 and the self-test.
+    radar: () => ({ sats: S.sats.length, eonet: S.eonet.length, kp: S.kp.length ? S.kp[S.kp.length - 1].kp : NaN, kev: S.kev ? S.kev.count : NaN, ripe: S.ripe.length, ioda: S.ioda.length, cables: CABLES.length, cableDense: cableDense.reduce((a, l) => a + l.length, 0), landings: LANDINGS.length, stressed: CABLES.filter(c => cableStress(c).length).length, csti: cstiNow(), news: S.news.length, air: S.air.length, opensky: S.src.opensky.state, gdelt: S.src.gdelt.state }),
     roundTrip: () => { const p = project(S.lat0, S.lon0); const q = p ? unproject(p[0], p[1]) : null; return q ? Math.hypot(q[0] - S.lat0, wrapLon(q[1] - S.lon0)) : NaN; }
   }) });
+})();
+</script>
+<script>
+"use strict";
+// Brain 2 (ADR-108): the synaptic web, the institutional readings and the supersonic training gym.
+// - Web: 10 sensory nodes (outer ring), 8 quant nodes (middle), the 6 agents (inner) and the execution and
+//   vault core, joined by the causal links the desk really uses. Every node shows a live reading with its
+//   source, or says it has none. Filaments light up only on a discrete event (a microprice move of 0.5 bps or
+//   more, a new whale wall or iceberg, a new data pull) or on hover and tap; there is no idle animation, and
+//   under reduced motion the pulse is a still highlight.
+// - Readings: Kalman latent price, BOCPD regime-shift probability, Kyle's lambda, iceberg candidates and book
+//   entropy from the desk's public Binance book and tape; Deribit GEX, flip, DVOL and 25-delta skew; Binance
+//   perpetual basis and funding for BTC and ETH. Maths lives in OMEGA_MATH (scripts/lib/brain2-math.mjs).
+// - Gym: a Blob Web Worker trains six rule agents with contextual EXP3 and multiplicative weights on
+//   Float64Array ring buffers: real Binance daily returns (bootstrapped) when the desk has them cached, with
+//   synthetic stress segments laid on top (flash crash, whale spoof, cable cut, cyber attack, strait closure).
+//   The page shows the measured ticks per second. Gym weights inform the web only; they never open a trade.
+// Paper only. Nothing here sends an order, signs anything or touches money.
+(() => {
+  const $ = id => document.getElementById(id);
+  const M = window.OMEGA_MATH;
+  if (!M || !$("bwCanvas")) return;
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const ar = text => { const s = h("span", "ar", text); s.lang = "ar"; return s; };
+  const nf = (v, d = 2) => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) : "—";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" });
+  const store = {
+    get(k, f) { try { const v = localStorage.getItem(k); return v === null ? f : JSON.parse(v); } catch { return f; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked: memory only */ } }
+  };
+  const P = () => window.OMEGA_PROBE || {};
+  async function getJson(url, ms = 12000) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: c.signal, cache: "no-store", credentials: "omit" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+
+  /* ---------------- derivatives feeds: Deribit and Binance perpetual premium ---------------- */
+  // Tiers as elsewhere (ADR-104): local proxy, direct (both hosts send CORS headers), then the hourly snapshot.
+  const LOCAL_PROXY = "http://127.0.0.1:8796";
+  let proxy = { base: null, at: 0 };
+  async function proxyBase() {
+    if (Date.now() - proxy.at < 300000) return proxy.base;
+    proxy = { base: null, at: Date.now() };
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY && (location.port === "8796" || /\.ts\.net$/i.test(location.hostname)) ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    for (const b of tries) { try { const j = await getJson(b + "/health", 2500); if (j && j.ok === true) { proxy.base = b; break; } } catch { /* next */ } }
+    return proxy.base;
+  }
+  let snapJob = null, snapAt = 0;
+  async function fromSnapshot(key) {
+    if (!/^https?:$/.test(location.protocol)) throw new Error("no snapshot from disk");
+    if (!snapJob || Date.now() - snapAt > 600000) { snapAt = Date.now(); snapJob = getJson(new URL("../data/public-intel-snapshot.json", location.href).href, 10000).catch(() => null); }
+    const j = await snapJob, s = j && j.format === "omega-public-intel-v1" && j.sources && j.sources[key];
+    if (!s || s.ok !== true) throw new Error("not in the snapshot");
+    const at = Date.parse(s.at);
+    if (!(Date.now() - at < 6 * 3600e3)) throw new Error("snapshot older than 6 hours");
+    return { raw: s.data, at, tier: "snapshot" };
+  }
+  const B = {
+    src: {
+      deribit: { en: "Deribit BTC options (IV, open interest)", state: "checking", tier: "", at: 0, n: 0 },
+      dvol: { en: "Deribit DVOL index", state: "checking", tier: "", at: 0, n: 0 },
+      prem: { en: "Binance perpetual premium, BTC + ETH", state: "checking", tier: "", at: 0, n: 0 }
+    },
+    gex: null, dvol: null, basis: {}, q: {}, gym: store.get("omega-gym-v1", null), events: [], lastMicro: NaN, lastWalls: -1, lastIce: 0, osAt: {}
+  };
+  async function tiered(key, steps) {
+    for (const [tier, get] of steps) {
+      if (!get) continue;
+      try { const r = await get(); B.src[key].state = "online"; B.src[key].tier = r.tier || tier; B.src[key].at = r.at || Date.now(); return r.raw; } catch { /* next tier */ }
+    }
+    B.src[key].state = "offline";
+    return null;
+  }
+  const now = () => Date.now();
+  async function loadDerivs() {
+    const base = await proxyBase();
+    const viaProxy = path => base ? async () => ({ raw: await getJson(base + path, 15000) }) : null;
+    const direct = url => async () => ({ raw: await getJson(url, 15000) });
+    const [opt, dv, pr] = await Promise.all([
+      tiered("deribit", [["proxy", viaProxy("/market/deribit/options/BTC")], ["direct", async () => ({ raw: M.shape.deribit(await getJson(M.urls.deribit(), 15000)) })], ["snapshot", () => fromSnapshot("deribit")]]),
+      tiered("dvol", [["proxy", viaProxy("/market/deribit/dvol/BTC")], ["direct", async () => ({ raw: M.shape.dvol(await getJson(M.urls.dvol(now()), 15000)) })], ["snapshot", () => fromSnapshot("dvol")]]),
+      tiered("prem", [
+        ["proxy", base ? async () => ({ raw: { items: await Promise.all(["BTCUSDT", "ETHUSDT"].map(s => getJson(base + "/market/fapi/premium/" + s, 15000))) } }) : null],
+        ["direct", async () => ({ raw: { items: await Promise.all(["BTCUSDT", "ETHUSDT"].map(s => direct(M.urls.premium(s))().then(r => r.raw))) } })],
+        ["snapshot", () => fromSnapshot("premium")]
+      ])
+    ]);
+    B.gex = opt && Array.isArray(opt.options) ? M.gex(opt.options, now()) : null;
+    if (opt && Array.isArray(opt.options)) B.src.deribit.n = opt.options.length;
+    if (!B.gex && B.src.deribit.state === "online") B.src.deribit.state = "offline";
+    B.dvol = dv && Array.isArray(dv.rows) ? M.dvol(dv.rows) : null;
+    B.basis = {};
+    if (pr && Array.isArray(pr.items)) for (const x of pr.items) { const b = M.basisTrap(x); if (b) B.basis[b.symbol || "?"] = b; }
+    B.src.prem.n = Object.keys(B.basis).length;
+    pulse(["gex", "basis"], "derivatives data");
+    render();
+  }
+
+  /* ---------------- institutional readings from the desk's book and tape ---------------- */
+  function compute() {
+    const d = P().desk;
+    if (!d || !d.book) return;
+    const book = d.book(), tape = d.tape(), micro = d.micro();
+    const q = {};
+    q.kalman = tape.length >= 10 ? M.kalman(tape.map(x => x.p)) : null;
+    const mids = micro.map(x => x.micro).filter(Number.isFinite), rets = [];
+    for (let i = 1; i < mids.length; i++) rets.push(Math.log(mids[i] / mids[i - 1]) * 1e4);
+    q.bocpd = rets.length >= 20 ? M.bocpd(rets, { hazard: 1 / 100, recent: 6 }) : null;
+    q.kyle = M.kyleLambda(tape, 5000);
+    q.ice = book ? M.iceberg(tape, book, 60000, 2) : [];
+    q.ent = book ? M.entropy(book, 25) : null;
+    q.flow = d.flow ? d.flow() : null;
+    const pm = d.prem ? d.prem() : null;
+    if (pm) { const b = M.basisTrap({ ...pm, symbol: d.sym() }); if (b) B.basis[d.sym()] = b; }
+    q.sym = d.sym(); q.at = Date.now();
+    B.q = q;
+    // Discrete events that fire the web.
+    const last = micro[micro.length - 1];
+    if (last && Number.isFinite(last.micro)) {
+      if (Number.isFinite(B.lastMicro) && Math.abs(last.micro / B.lastMicro - 1) * 1e4 >= 0.5) pulse(["micro", "kalman"], `microprice moved ${nf((last.micro / B.lastMicro - 1) * 1e4, 2)} bps`);
+      B.lastMicro = last.micro;
+    }
+    const walls = d.walls();
+    if (B.lastWalls >= 0 && walls > B.lastWalls) pulse(["kyle", "vpin"], `new whale wall (${walls} on the book)`);
+    B.lastWalls = walls;
+    if (q.ice.length && q.ice.length !== B.lastIce) pulse(["kyle"], `${q.ice.length} iceberg candidate${q.ice.length > 1 ? "s" : ""}`);
+    B.lastIce = q.ice.length;
+  }
+
+  /* ---------------- supersonic gym (Web Worker) ---------------- */
+  function gymWorker() {
+    // Six rule agents, in order: bull, bear, judge, researcher, modeler, auditor. Each looks at rolling
+    // features of the return stream and holds -1, 0 or +1. Reward is position x next return.
+    const K = 6, CTX = 6;
+    let seed = 1;
+    const rnd = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    self.onmessage = e => {
+      const m = e.data || {};
+      seed = (m.seed >>> 0) || 88172645;
+      const base = m.returns instanceof Float64Array && m.returns.length > 100 ? m.returns : null;
+      const mw = new Float64Array(K).fill(1 / K), lw = new Float64Array(K * CTX), agree = new Float64Array(K * K), wins = new Float64Array(K * CTX), cnt = new Float64Array(CTX);
+      if (m.state && m.state.mw && m.state.mw.length === K) mw.set(m.state.mw);
+      if (m.state && m.state.lw && m.state.lw.length === K * CTX) lw.set(m.state.lw);
+      // Ring buffers of returns for the rolling features: 10, 20 and 50 steps.
+      const N = 64, ring = new Float64Array(N), pos = new Int8Array(K), prob = new Float64Array(K);
+      let head = 0, s10 = 0, s20 = 0, q20 = 0, s50 = 0, vl = 4e-4, level = 0, peak = 0, filled = 0;
+      // Fixed share (Herbster & Warmuth) keeps every agent at least alpha/K, so the weights can follow a regime change
+      // instead of collapsing onto one agent forever. A stress context counts only while its shock window is open.
+      const gamma = 0.07, eta = 0.01, alpha = 0.001, LEN = [0, 5, 5, 60, 30, 100];
+      let ticks = 0, ctx = 0, segLeft = 0, shockAt = 0, k = 0;
+      const t0 = performance.now(), budget = Math.max(50, Math.min(5000, +m.ms || 1000));
+      let elapsed = 0;
+      while (elapsed < budget) {
+        for (let n = 0; n < 4096; n++) {
+          if (segLeft <= 0) { ctx = rnd() < 0.5 ? 0 : 1 + Math.floor(rnd() * 5); segLeft = 500; shockAt = 50 + Math.floor(rnd() * 350); k = 0; }
+          // Next return: bootstrapped from real daily returns when given, otherwise a fat-tailed draw.
+          let r = base ? base[Math.floor(rnd() * base.length)] : 0.02 * gauss() * (rnd() < 0.05 ? 3 : 1);
+          const since = k - shockAt;
+          if (ctx === 1 && since >= 0 && since < 5) r += [-0.06, -0.05, -0.04, 0.03, 0.02][since];
+          else if (ctx === 2 && since >= 0 && since < 5) r += [0.015, 0.015, 0.015, -0.04, -0.04][since];
+          else if (ctx === 3 && since >= 0 && since < 60) r = r * 3 - 0.003;
+          else if (ctx === 4) { if (since === 0) r -= 0.08; else if (since > 0 && since < 30) r *= 2; }
+          else if (ctx === 5 && since >= 0 && since < 100) r = r * 2 - 0.002;
+          const c = ctx > 0 && since >= 0 && since < LEN[ctx] ? ctx : 0;
+          k++; segLeft--;
+          // Agents act on the features known before r arrives.
+          const sd20 = Math.sqrt(Math.max(1e-12, q20 / 20 - (s20 / 20) ** 2)), z = filled >= 20 ? (ring[(head + N - 1) % N] - s20 / 20) / sd20 : 0, dd = level - peak;
+          pos[0] = s10 > 0 ? 1 : 0;
+          pos[1] = s10 < 0 || sd20 * sd20 > 4 * vl ? -1 : 0;
+          pos[2] = sd20 * sd20 < 2.25 * vl ? (s10 > 0 ? 1 : s10 < 0 ? -1 : 0) : 0;
+          pos[3] = s50 > 0 ? 1 : s50 < 0 ? -1 : 0;
+          pos[4] = Math.abs(z) > 1 ? (z > 0 ? -1 : 1) : 0;
+          pos[5] = dd < -0.05 ? -1 : Math.abs(z) < 1 ? (s50 > 0 ? 1 : s50 < 0 ? -1 : 0) : 0;
+          // Contextual EXP3: sample one agent from this context's log-weights, update it with an importance-weighted gain.
+          let mx = -Infinity;
+          for (let i = 0; i < K; i++) if (lw[c * K + i] > mx) mx = lw[c * K + i];
+          let z0 = 0;
+          for (let i = 0; i < K; i++) { prob[i] = Math.exp(lw[c * K + i] - mx); z0 += prob[i]; }
+          let u = rnd(), pick = K - 1;
+          for (let i = 0; i < K; i++) { prob[i] = (1 - gamma) * prob[i] / z0 + gamma / K; if (u < prob[i] && pick === K - 1) pick = i; u -= prob[i]; }
+          // Multiplicative weights on every agent with loss in [0, 1]; a 1% move against a full position costs 0.5.
+          let sum = 0;
+          for (let i = 0; i < K; i++) {
+            const loss = Math.min(1, Math.max(0, 0.5 - 50 * pos[i] * r));
+            mw[i] *= 1 - eta * loss; sum += mw[i];
+            if (i === pick) lw[c * K + i] += gamma * (1 - loss) / prob[i] / K;
+            if (pos[i] * r > 0) wins[c * K + i]++;
+            for (let j = i + 1; j < K; j++) if (pos[i] === pos[j]) agree[i * K + j]++;
+          }
+          for (let i = 0; i < K; i++) mw[i] = (1 - alpha) * mw[i] / sum + alpha / K;
+          cnt[c]++;
+          // Roll the features forward with r.
+          const out50 = filled >= 50 ? ring[(head + N - 50) % N] : 0, out20 = filled >= 20 ? ring[(head + N - 20) % N] : 0, out10 = filled >= 10 ? ring[(head + N - 10) % N] : 0;
+          ring[head] = r; head = (head + 1) % N; if (filled < N) filled++;
+          s10 += r - out10; s20 += r - out20; q20 += r * r - out20 * out20; s50 += r - out50;
+          vl = 0.995 * vl + 0.005 * r * r; level += r; peak = Math.max(peak * 0.999 + level * 0.001, level);
+          ticks++;
+        }
+        elapsed = performance.now() - t0;
+      }
+      for (let c = 0; c < CTX; c++) { let mx = -Infinity; for (let i = 0; i < K; i++) mx = Math.max(mx, lw[c * K + i]); for (let i = 0; i < K; i++) lw[c * K + i] -= mx; }
+      self.postMessage({ ticks, ms: elapsed, mw, lw, agree, wins, cnt, bootstrap: !!base }, [mw.buffer, lw.buffer, agree.buffer, wins.buffer, cnt.buffer]);
+    };
+  }
+  const AGENT_KEYS = ["bull", "bear", "judge", "researcher", "modeler", "auditor"];
+  const REGIMES = ["calm (real returns)", "flash crash", "whale spoof", "cable cut", "cyber attack", "strait closure"];
+  let worker = null, gymBusy = false;
+  function makeWorker() {
+    if (worker) return worker;
+    try {
+      const url = URL.createObjectURL(new Blob([`(${gymWorker.toString()})();`], { type: "text/javascript" }));
+      worker = new Worker(url);
+      worker.onerror = () => { worker = null; B.gymError = "the browser refused the training worker"; render(); };
+    } catch { worker = null; B.gymError = "Web Workers are not available here"; }
+    return worker;
+  }
+  function train(ms, bench) {
+    const w = makeWorker();
+    if (!w || gymBusy) return Promise.resolve(null);
+    gymBusy = true;
+    const closes = P().desk && P().desk.closes ? P().desk.closes() : [];
+    const rets = new Float64Array(Math.max(0, closes.length - 1));
+    for (let i = 1; i < closes.length; i++) rets[i - 1] = Math.log(closes[i] / closes[i - 1]);
+    const prev = B.gym;
+    return new Promise(res => {
+      const done = e => {
+        w.removeEventListener("message", done);
+        gymBusy = false;
+        const r = e.data, ticks = (bench ? 0 : prev ? prev.ticks : 0) + r.ticks, rate = r.ticks / (r.ms / 1000);
+        const mw = Array.from(r.mw), drift = prev && prev.mw ? mw.reduce((a, v, i) => a + Math.abs(v - prev.mw[i]), 0) : NaN;
+        const agreeN = r.ticks || 1, agree = Array.from(r.agree).map(v => v / agreeN);
+        const g = { at: new Date().toISOString(), ticks, bursts: (prev ? prev.bursts : 0) + (bench ? 0 : 1), rate, usPerTick: 1e6 / rate, lastTicks: r.ticks, lastMs: r.ms, mw, lw: Array.from(r.lw), agree, drift, bootstrap: r.bootstrap,
+          bestByRegime: REGIMES.map((_, c) => { let b = 0; for (let i = 1; i < 6; i++) if (r.lw[c * 6 + i] > r.lw[c * 6 + b]) b = i; return AGENT_KEYS[b]; }) };
+        if (!bench) { B.gym = g; store.set("omega-gym-v1", g); pulse(AGENT_KEYS, `gym burst: ${nf(r.ticks, 0)} ticks`); render(); }
+        res(g);
+      };
+      w.addEventListener("message", done);
+      w.postMessage({ ms, seed: (Date.now() & 0x7fffffff) | 1, returns: rets.length > 100 ? rets : null, state: bench || !prev ? null : { mw: Float64Array.from(prev.mw), lw: Float64Array.from(prev.lw) } }, rets.length > 100 ? [rets.buffer] : []);
+    });
+  }
+
+  /* ---------------- the synaptic web ---------------- */
+  const pw = () => { const o = P().osiris; return o ? o.state().pwsi : { parts: [] }; };
+  const part = name => { const x = pw().parts.find(p => p.en === name); return x ? x.v / 100 : NaN; };
+  const src = k => { const o = P().osiris; return o ? o.state().src[k] || {} : {}; };
+  const radar = () => { const o = P().osiris; return o && o.radar ? o.radar() : null; };
+  const cs = k => { const r = radar(), p = r && r.csti.parts.find(x => x.k === k); return p ? p.v / 100 : NaN; };
+  const live = (...keys) => keys.some(k => src(k).state === "online");
+  // Each node: ring, short label, Arabic, tone, value getter (0..1 or NaN), text line, source names.
+  const NODES = [
+    { id: "cyber", ring: 0, l: "BGP/IODA", a: "انقطاعات الإنترنت", tone: "red", v: () => { const a = cs("bgp"), b = cs("ioda"); return [a, b].filter(Number.isFinite).length ? Math.max(...[a, b].filter(Number.isFinite)) : NaN; }, t: () => { const r = radar(); return r ? `${r.ioda} IODA outages · ${r.ripe} backbones checked` : "—"; }, s: "RIPEstat, IODA", on: () => live("ripe", "ioda") },
+    { id: "cables", ring: 0, l: "Cables", a: "الكابلات البحرية", tone: "blue", v: () => { const r = radar(); return r ? r.stressed / r.cables : NaN; }, t: () => { const r = radar(); return r ? `${r.stressed} of ${r.cables} corridors under stress (approximate corridors)` : "—"; }, s: "NGA, IODA", on: () => live("straits", "ioda") },
+    { id: "orbit", ring: 0, l: "Orbits/Kp", a: "الأقمار وطقس الفضاء", tone: "purple", v: () => cs("space"), t: () => { const r = radar(); return r ? `Kp ${nf(r.kp, 2)} · ${r.sats} satellites · ${r.eonet} EONET events` : "—"; }, s: "NOAA SWPC, CelesTrak, NASA EONET", on: () => live("swpc", "celestrak", "eonet") },
+    { id: "straits", ring: 0, l: "Straits", a: "المضائق", tone: "orange", v: () => part("Strait warnings"), t: () => `PWSI strait part ${nf(part("Strait warnings") * 100, 0)}`, s: "NGA MSI", on: () => live("straits") },
+    { id: "quake", ring: 0, l: "Quakes", a: "الزلازل", tone: "red", v: () => part("Seismic"), t: () => `PWSI seismic part ${nf(part("Seismic") * 100, 0)}`, s: "USGS", on: () => live("usgs") },
+    { id: "weather", ring: 0, l: "Weather", a: "الطقس", tone: "cyan", v: () => part("Weather at hubs"), t: () => `PWSI weather part ${nf(part("Weather at hubs") * 100, 0)}`, s: "Open-Meteo", on: () => live("meteo") },
+    { id: "aviation", ring: 0, l: "Aviation", a: "الطيران", tone: "blue", v: () => NaN, t: () => { const r = radar(); return r && r.opensky === "online" ? `${r.air} aircraft in the Gulf and Red Sea box` : "OpenSky needs the local proxy"; }, s: "OpenSky", on: () => live("opensky") },
+    { id: "news", ring: 0, l: "GDELT", a: "الأخبار", tone: "orange", v: () => NaN, t: () => { const r = radar(); return r && r.gdelt === "online" ? `${r.news} risk headlines in 6 h` : "GDELT needs the local proxy"; }, s: "GDELT", on: () => live("gdelt") },
+    { id: "mempool", ring: 0, l: "Mempool", a: "نبض البلوكتشين", tone: "green", v: () => { const f = P().desk ? P().desk.chainFee() : NaN; return Number.isFinite(f) ? clamp((f - 20) / 80, 0, 1) : NaN; }, t: () => { const f = P().desk ? P().desk.chainFee() : NaN; return Number.isFinite(f) ? `fastest fee ${nf(f, 0)} sat/vB` : "mempool.space not loaded"; }, s: "mempool.space", on: () => Number.isFinite(P().desk ? P().desk.chainFee() : NaN) },
+    { id: "sec", ring: 0, l: "SEC", a: "إفصاحات SEC", tone: "indigo", v: () => NaN, t: () => "SEC filings are read in THE CHAIN, not on this page", s: "SEC EDGAR (THE CHAIN)", on: () => false },
+    { id: "micro", ring: 1, l: "Microprice", a: "السعر المجهري", tone: "orange", v: () => B.q.flow ? clamp(Math.abs(B.q.flow.microBps) / 2, 0, 1) : NaN, t: () => B.q.flow ? `${nf(B.q.flow.microBps, 2)} bps from mid (Stoikov)` : "waiting for trades…", s: "Binance book", on: () => !!B.q.flow },
+    { id: "hawkes", ring: 1, l: "Hawkes λ", a: "كثافة هوكس", tone: "red", v: () => B.q.flow ? clamp((B.q.flow.hawkes - 1) / 2, 0, 1) : NaN, t: () => B.q.flow ? `intensity ×${nf(B.q.flow.hawkes, 2)} of its mean` : "—", s: "Binance trades", on: () => !!B.q.flow },
+    { id: "vpin", ring: 1, l: "VPIN", a: "سمّية السيولة", tone: "red", v: () => B.q.flow ? clamp(B.q.flow.vpin, 0, 1) : NaN, t: () => B.q.flow ? `VPIN ${nf(B.q.flow.vpin, 3)}` : "—", s: "Binance trades", on: () => !!B.q.flow },
+    { id: "kalman", ring: 1, l: "Kalman", a: "السعر الكامن", tone: "cyan", v: () => B.q.kalman ? clamp(Math.abs(B.q.kalman.gapBps) / 5, 0, 1) : NaN, t: () => B.q.kalman ? `latent ${nf(B.q.kalman.latent, 2)} · gap ${nf(B.q.kalman.gapBps, 2)} bps` : "—", s: "Binance trades", on: () => !!B.q.kalman },
+    { id: "bocpd", ring: 1, l: "BOCPD", a: "انقلاب النظام", tone: "purple", v: () => B.q.bocpd ? B.q.bocpd.pRecent : NaN, t: () => B.q.bocpd ? `P(shift in 6 readings) ${nf(B.q.bocpd.pRecent * 100, 1)}% · run ${B.q.bocpd.map}` : "—", s: "microprice history", on: () => !!B.q.bocpd },
+    { id: "kyle", ring: 1, l: "Kyle λ/Ice", a: "معامل كايل والجليد", tone: "blue", v: () => B.q.ent ? clamp(1 - B.q.ent.mean + (B.q.ice ? B.q.ice.length * 0.2 : 0), 0, 1) : NaN, t: () => `λ ${B.q.kyle ? nf(B.q.kyle.bpsPerUnit, 3) + " bps/unit" : "—"} · ${B.q.ice ? B.q.ice.length : 0} icebergs · entropy ${B.q.ent ? nf(B.q.ent.mean, 2) : "—"}`, s: "Binance book + trades", on: () => !!B.q.ent },
+    { id: "gex", ring: 1, l: "GEX/DVOL", a: "جاما المتعاملين", tone: "green", v: () => B.gex ? (B.gex.regime === "negative" ? 0.8 : 0.2) : NaN, t: () => B.gex ? `${B.gex.regime} gamma · flip ${nf(B.gex.flip, 0)} · DVOL ${B.dvol ? nf(B.dvol.value, 1) : "—"}` : "Deribit not reached", s: "Deribit", on: () => !!B.gex },
+    { id: "basis", ring: 1, l: "Funding", a: "فخ التمويل", tone: "orange", v: () => { const b = Object.values(B.basis); return b.length ? Math.max(...b.map(x => x.score)) : NaN; }, t: () => Object.values(B.basis).map(b => `${b.symbol.replace("USDT", "")} ${nf(b.funding * 100, 4)}%/8h, basis ${nf(b.basisBps, 1)} bps`).join(" · ") || "—", s: "Binance USD-M", on: () => Object.keys(B.basis).length > 0 },
+    { id: "bull", ring: 2, l: "Bull", a: "وكيل الفرص", tone: "green" },
+    { id: "bear", ring: 2, l: "Bear", a: "وكيل الشك", tone: "red" },
+    { id: "judge", ring: 2, l: "Judge", a: "القاضي", tone: "indigo" },
+    { id: "researcher", ring: 2, l: "Researcher", a: "باحث السوق", tone: "blue" },
+    { id: "modeler", ring: 2, l: "Modeler", a: "باني النماذج", tone: "purple" },
+    { id: "auditor", ring: 2, l: "Auditor", a: "مراجع الأرباح", tone: "orange" },
+    { id: "core", ring: 3, l: "Vault", a: "التنفيذ والخزنة", tone: "green" }
+  ];
+  const court = () => P().desk ? P().desk.court() : null;
+  const gw = k => B.gym ? B.gym.mw[AGENT_KEYS.indexOf(k)] : NaN;
+  const cw = () => P().desk ? P().desk.weights() : {};
+  for (const n of NODES.filter(x => x.ring === 2)) {
+    n.v = () => Number.isFinite(gw(n.id)) ? clamp(gw(n.id) * 3, 0, 1) : NaN;
+    n.s = "gym weights" + (["bull", "bear"].includes(n.id) ? " + court weights" : "");
+    n.on = () => !!B.gym || (n.id === "judge" && !!court());
+    n.t = () => {
+      const c = court(), w = cw();
+      const gym = Number.isFinite(gw(n.id)) ? `gym weight ${nf(gw(n.id) * 100, 1)}%` : "gym not trained yet";
+      if (n.id === "bull" && c) return `${gym} · court P(up) ${nf(c.p.bull * 100, 0)}% · court weight ${nf(w.bull * 100, 1)}%`;
+      if (n.id === "bear" && c) return `${gym} · court P(up) ${nf(c.p.bear * 100, 0)}% · court weight ${nf(w.bear * 100, 1)}%`;
+      if (n.id === "judge" && c) return `${gym} · ruling ${c.verdict} · weighted P(up) ${nf(c.P * 100, 0)}%`;
+      return gym + (B.gym ? ` · best in ${REGIMES.filter((_, i) => B.gym.bestByRegime[i] === n.id).join(", ") || "no regime"}` : "");
+    };
+  }
+  const core = NODES[NODES.length - 1];
+  core.v = () => { const w = P().desk ? P().desk.wallet() : null; return w && w.base > 0 ? clamp(w.active / w.base / 2, 0, 1) : NaN; };
+  core.t = () => { const w = P().desk ? P().desk.wallet() : null, c = court(); return w ? `base ${nf(w.base, 2)} · trading ${nf(w.active, 2)} · safe ${nf(w.safe, 2)} USDT · ${P().desk.receipts().length} receipts${c ? " · " + c.verdict : ""}` : "—"; };
+  core.s = "paper wallet, SHA-256 receipts"; core.on = () => !!(P().desk && P().desk.wallet().base > 0);
+  const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+  // Causal links, as the code uses them: sensory parts reach the bear and the judge through PWSI and CSTI,
+  // flow physics reaches the court's whale and flow scores, the institutional readings reach the agents
+  // that would use them, every agent speaks to the judge, and the judge rules for the vault.
+  const E = [];
+  const link = (a, b, w, why) => E.push({ a, b, w, why });
+  for (const s of ["cyber", "cables", "orbit", "straits", "quake", "weather"]) { link(s, "bear", () => byId[s].v(), "PWSI / CSTI part, the red team's shock objection"); link(s, "judge", () => byId[s].v(), "PWSI or CSTI at the limit stops new entries"); }
+  link("mempool", "bear", () => byId.mempool.v(), "fee spike of 100 sat/vB or more is an objection");
+  link("aviation", "researcher", () => NaN, "flight counts are context only"); link("news", "researcher", () => NaN, "headlines are context only"); link("sec", "auditor", () => NaN, "filings are audited in THE CHAIN");
+  link("micro", "bull", () => byId.micro.v(), "order-flow score"); link("hawkes", "bear", () => byId.hawkes.v(), "Hawkes above 2× with high VPIN is a trap");
+  link("vpin", "judge", () => byId.vpin.v(), "VPIN above the limit is a hard stop"); link("vpin", "bear", () => byId.vpin.v(), "toxic flow objection");
+  link("kalman", "modeler", () => byId.kalman.v(), "latent-price gap"); link("bocpd", "modeler", () => byId.bocpd.v(), "regime-shift odds"); link("bocpd", "judge", () => byId.bocpd.v(), "a fresh shift lowers conviction");
+  link("kyle", "researcher", () => byId.kyle.v(), "impact and hidden size"); link("kyle", "bull", () => byId.kyle.v(), "absorbed selling can precede a lift");
+  link("gex", "auditor", () => byId.gex.v(), "dealer gamma regime"); link("gex", "bear", () => byId.gex.v(), "negative gamma amplifies moves");
+  link("basis", "bear", () => byId.basis.v(), "crowded funding precedes liquidations"); link("basis", "auditor", () => byId.basis.v(), "basis quality");
+  for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) { const a = AGENT_KEYS[i], b = AGENT_KEYS[j]; link(a, b, () => B.gym ? B.gym.agree[i * 6 + j] : NaN, "gym agreement: share of ticks with the same position"); }
+  for (const a of AGENT_KEYS.filter(k => k !== "judge")) link(a, "judge", () => { const w = cw(); return a in w ? w[a] : gw(a); }, "voice weight in the ruling");
+  link("judge", "core", () => { const c = court(); return c ? c.conf : NaN; }, "ruling confidence drives the paper engine");
+
+  const cv = $("bwCanvas"), ctx = cv.getContext("2d"), card = $("bwCard"), reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const G = { w: 0, h: 0, dpr: 1, pos: new Map(), hover: null, pin: null, pulses: [], raf: 0, visible: true, colors: {} };
+  function readColors() {
+    const cs2 = getComputedStyle(document.documentElement), g = v => cs2.getPropertyValue(v).trim();
+    G.colors = { green: g("--apple-green"), red: g("--apple-red"), blue: g("--apple-blue"), indigo: g("--apple-indigo"), purple: g("--apple-purple"), orange: g("--apple-orange"), cyan: g("--apple-cyan"),
+      text: g("--content-primary"), sub: g("--content-secondary"), hair: g("--hairline-color"), surface: g("--surface"), well: g("--surface-2") };
+  }
+  const LABEL_FONT = "600 12px system-ui, -apple-system, 'SF Pro Text', sans-serif";
+  function layout() {
+    const r = cv.getBoundingClientRect();
+    G.w = Math.max(280, r.width); G.h = Math.max(320, r.height); G.dpr = Math.min(3, window.devicePixelRatio || 1);
+    cv.width = Math.round(G.w * G.dpr); cv.height = Math.round(G.h * G.dpr);
+    // The web is a circle when the canvas is wide enough for the outer labels beside it. On a phone it becomes an
+    // upright ellipse and every label sits above or below its node, so no label is pushed onto a neighbour.
+    ctx.font = LABEL_FONT;
+    const side = Math.max(...NODES.filter(n => n.ring === 0).map(n => ctx.measureText(n.l).width)) + 24;
+    const cx = G.w / 2, cy = G.h / 2, Rv = G.h / 2 - 34;
+    G.narrow = G.w / 2 - side < Rv;
+    const rx = G.narrow ? G.w / 2 - 36 : Rv, ry = G.narrow ? Math.min(Rv, rx * 1.6) : Rv;
+    const radii = (G.narrow ? [1, 0.68, 0.38, 0] : [1, 0.66, 0.36, 0]).map(k => [rx * k, ry * k]);
+    for (const ring of [0, 1, 2, 3]) {
+      const list = NODES.filter(n => n.ring === ring);
+      list.forEach((n, i) => {
+        const a = -Math.PI / 2 + (i + (ring === 1 ? 0.5 : 0)) * 2 * Math.PI / list.length;
+        G.pos.set(n.id, { x: cx + radii[ring][0] * Math.cos(a), y: cy + radii[ring][1] * Math.sin(a), a, r: ring === 3 ? 16 : ring === 2 ? 10 : 8 });
+      });
+    }
+    G.radii = radii; G.cx = cx; G.cy = cy;
+    draw();
+  }
+  const fw = (f, d = NaN) => { try { const v = f(); return Number.isFinite(v) ? v : d; } catch { return d; } };
+  const on = n => { try { return !!(n.on && n.on()); } catch { return false; } };
+  function curve(a, b) { const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; return [mx + (G.cx - mx) * 0.18, my + (G.cy - my) * 0.18]; }
+  function draw(now = performance.now()) {
+    if (!G.radii) return;
+    const c = ctx, C = G.colors;
+    c.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
+    c.clearRect(0, 0, G.w, G.h);
+    // Web threads: the concentric rings and the radial spokes, hairline.
+    c.strokeStyle = C.hair; c.lineWidth = 1;
+    for (const [rx, ry] of G.radii.slice(0, 3)) { c.beginPath(); c.ellipse(G.cx, G.cy, rx, ry, 0, 0, Math.PI * 2); c.stroke(); }
+    for (let i = 0; i < 20; i++) { const a = i * Math.PI / 10; c.beginPath(); c.moveTo(G.cx, G.cy); c.lineTo(G.cx + G.radii[0][0] * 1.04 * Math.cos(a), G.cy + G.radii[0][1] * 1.04 * Math.sin(a)); c.stroke(); }
+    const focus = G.pin || G.hover, lit = new Set(), hot = new Map();
+    for (const p of G.pulses) { const t = (now - p.t0) / 1100; if (t <= 1) for (const id of p.nodes) hot.set(id, Math.max(hot.get(id) || 0, 1 - t)); }
+    for (const e of E) {
+      const a = G.pos.get(e.a), b = G.pos.get(e.b), w = fw(e.w, 0), sel = focus && (e.a === focus || e.b === focus), heat = Math.max(hot.get(e.a) || 0, hot.get(e.b) || 0);
+      if (sel) { lit.add(e.a); lit.add(e.b); }
+      const [qx, qy] = curve(a, b);
+      c.beginPath(); c.moveTo(a.x, a.y); c.quadraticCurveTo(qx, qy, b.x, b.y);
+      c.strokeStyle = C[byId[e.a].tone] || C.blue;
+      c.globalAlpha = sel ? 0.9 : focus ? 0.08 : 0.16 + 0.5 * heat + 0.25 * w;
+      c.lineWidth = 0.75 + 2.25 * clamp(w, 0, 1) + (sel ? 0.75 : 0);
+      c.stroke();
+      // Light travelling along a filament during a pulse (motion only when reduced motion is off).
+      if (heat > 0 && !reduced.matches) {
+        const t = 1 - heat, x = (1 - t) ** 2 * a.x + 2 * (1 - t) * t * qx + t * t * b.x, y = (1 - t) ** 2 * a.y + 2 * (1 - t) * t * qy + t * t * b.y;
+        c.globalAlpha = heat; c.fillStyle = C[byId[e.a].tone] || C.blue;
+        c.beginPath(); c.arc(x, y, 2.5, 0, Math.PI * 2); c.fill();
+      }
+    }
+    c.globalAlpha = 1;
+    c.font = LABEL_FONT;
+    c.textBaseline = "middle";
+    const placed = [];
+    for (const n of NODES) {
+      const p = G.pos.get(n.id), v = fw(n.v), alive = on(n), sel = focus === n.id || lit.has(n.id), heat = hot.get(n.id) || 0;
+      const col = C[n.tone] || C.blue;
+      c.globalAlpha = focus && !sel ? 0.35 : 1;
+      c.beginPath(); c.arc(p.x, p.y, p.r + 3, 0, Math.PI * 2); c.fillStyle = C.surface; c.fill();
+      c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      if (alive) { c.fillStyle = col; c.fill(); } else { c.strokeStyle = C.sub; c.lineWidth = 1.5; c.stroke(); }
+      if (Number.isFinite(v)) { c.beginPath(); c.arc(p.x, p.y, p.r + 4.5, -Math.PI / 2, -Math.PI / 2 + v * Math.PI * 2); c.strokeStyle = col; c.lineWidth = 2; c.stroke(); }
+      if (heat > 0 || sel) { c.beginPath(); c.arc(p.x, p.y, p.r + 8, 0, Math.PI * 2); c.strokeStyle = col; c.globalAlpha = sel ? 0.8 : heat * 0.8; c.lineWidth = 1.5; c.stroke(); c.globalAlpha = focus && !sel ? 0.35 : 1; }
+      // Labels sit outside the outer ring, beside the inner nodes and under the core, kept inside the canvas.
+      const label = n.l;
+      const tw = c.measureText(label).width;
+      let lx, ly;
+      if (n.ring === 3) { lx = p.x - tw / 2; ly = p.y + p.r + 14; }
+      else if (G.narrow) { lx = p.x - tw / 2; ly = p.y + (Math.sin(p.a) > 0.05 ? 1 : -1) * (p.r + 13); }
+      else {
+        const off = p.r + (n.ring === 0 ? 12 : 9), dx = Math.cos(p.a), dy = Math.sin(p.a);
+        lx = p.x + dx * off + (dx < -0.3 ? -tw : dx > 0.3 ? 0 : -tw / 2); ly = p.y + dy * off + (Math.abs(dx) <= 0.3 ? (dy > 0 ? 6 : -6) : 0);
+      }
+      placed.push({ label, x: clamp(lx, 4, G.w - tw - 4), y: ly, w: tw, py: p.y, alpha: c.globalAlpha });
+    }
+    // Labels go on after every node, each at the first of a few spots that covers no node and no earlier label:
+    // its own spot, the mirror spot on the other side of the node, then one or two lines up or down.
+    c.fillStyle = C.text;
+    const dots = NODES.map(n => G.pos.get(n.id)), done = [];
+    const free = (x, y, w) => !dots.some(d => x < d.x + d.r + 5 && d.x - d.r - 5 < x + w && Math.abs(d.y - y) < d.r + 12) && !done.some(b => x < b.x + b.w + 4 && b.x < x + w + 4 && Math.abs(b.y - y) < 15);
+    for (const L of placed) {
+      const tries = [L.y, 2 * L.py - L.y, L.y + 15, L.y - 15, L.y + 30, L.y - 30, L.y + 45, L.y - 45].map(y => clamp(y, 9, G.h - 9));
+      const y = tries.find(t => free(L.x, t, L.w)) ?? tries[0];
+      done.push({ x: L.x, y, w: L.w });
+      c.globalAlpha = L.alpha; c.fillText(L.label, L.x, y);
+    }
+    c.globalAlpha = 1;
+    G.pulses = G.pulses.filter(p => now - p.t0 < 1100);
+    if (G.pulses.length && !reduced.matches && G.visible && !document.hidden) G.raf = requestAnimationFrame(draw);
+    else {
+      G.raf = 0;
+      // Under reduced motion the highlight stays still and clears once, 1.1 s later.
+      if (G.pulses.length && reduced.matches) setTimeout(() => { G.pulses = []; draw(); }, 1100);
+    }
+  }
+  let lastPulse = 0;
+  function pulse(ids, why) {
+    const t = performance.now();
+    B.events.unshift({ at: Date.now(), why, ids });
+    B.events.length = Math.min(B.events.length, 8);
+    if (t - lastPulse < 1000 || !G.visible || document.hidden) return;
+    lastPulse = t;
+    G.pulses.push({ t0: t, nodes: new Set(ids) });
+    if (!G.raf) draw();
+  }
+  function nodeAt(x, y) {
+    let best = null, bd = 22;
+    for (const n of NODES) { const p = G.pos.get(n.id), d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = n.id; } }
+    return best;
+  }
+  // Glass inspection card: the node's reading, its source and every link with its weight and reason.
+  function inspect(id) {
+    const n = byId[id];
+    if (!n) return null;
+    const links = E.filter(e => e.a === id || e.b === id).map(e => ({ other: e.a === id ? e.b : e.a, dir: e.a === id ? "→" : "←", w: fw(e.w), why: e.why }));
+    return { id, label: n.l, ar: n.a, value: fw(n.v), text: (() => { try { return n.t ? n.t() : "—"; } catch { return "—"; } })(), source: n.s || "", live: on(n), links };
+  }
+  function showCard(id, x, y) {
+    const d = inspect(id);
+    if (!d) { card.hidden = true; return; }
+    $("bwCardT").replaceChildren(document.createTextNode(d.label + " · "), ar(d.ar));
+    $("bwCardK").textContent = (d.live ? "LIVE · " : "NO DATA · ") + d.source;
+    $("bwCardV").textContent = d.text;
+    $("bwCardL").replaceChildren(...d.links.slice(0, 8).map(l => { const li = h("li"); li.append(h("b", "num", `${l.dir} ${byId[l.other].l} · ${Number.isFinite(l.w) ? nf(l.w, 2) : "—"}`), h("span", "", l.why)); return li; }));
+    card.hidden = false;
+    const cw2 = card.offsetWidth, ch = card.offsetHeight;
+    const px = x + 16 + cw2 <= G.w - 8 ? x + 16 : x - 16 - cw2, py = clamp(y - ch / 2, 8, Math.max(8, G.h - ch - 8));
+    card.style.transform = matchMedia("(max-width: 599px)").matches ? "" : `translate(${Math.round(clamp(px, 8, Math.max(8, G.w - cw2 - 8)))}px, ${Math.round(py)}px)`;
+  }
+  const local = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener("pointermove", e => {
+    if (e.pointerType === "touch") return;
+    const [x, y] = local(e), id = nodeAt(x, y);
+    if (id !== G.hover) { G.hover = id; if (!G.pin) { if (id) { showCard(id, G.pos.get(id).x, G.pos.get(id).y); pulse([id], "hover " + byId[id].l); } else card.hidden = true; } draw(); }
+  });
+  cv.addEventListener("pointerleave", () => { G.hover = null; if (!G.pin) card.hidden = true; draw(); });
+  cv.addEventListener("pointerdown", e => {
+    const [x, y] = local(e), id = nodeAt(x, y);
+    G.pin = id && id !== G.pin ? id : null;
+    if (G.pin) { const p = G.pos.get(G.pin); showCard(G.pin, p.x, p.y); pulse([G.pin], "tap " + byId[G.pin].l); } else card.hidden = true;
+    draw();
+  });
+  let kIdx = -1;
+  cv.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") kIdx = (kIdx + 1) % NODES.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") kIdx = (kIdx - 1 + NODES.length) % NODES.length;
+    else if (e.key === "Escape") { G.pin = null; card.hidden = true; draw(); return; }
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    G.pin = NODES[kIdx].id; const p = G.pos.get(G.pin); showCard(G.pin, p.x, p.y); draw();
+  });
+  $("bwCardX").addEventListener("click", () => { G.pin = null; card.hidden = true; draw(); cv.focus(); });
+
+  /* ---------------- tables ---------------- */
+  function kv(id, rows) {
+    $(id).tBodies[0].replaceChildren(...rows.map(([en, a, v, cls]) => { const tr = h("tr"); const t = h("td"); t.append(document.createTextNode(en), ar(a)); tr.append(t, h("td", cls || "num", v)); return tr; }));
+  }
+  const tierTxt = s => s.state === "online" ? `${s.tier === "snapshot" ? "SNAPSHOT as of" : "LIVE · " + s.tier} ${clock.format(s.at)} UTC` : s.state === "offline" ? "OFFLINE" : "CHECKING…";
+  function render() {
+    const q = B.q;
+    kv("bwAlpha", [
+      ["Kalman latent price · gap to last trade", "السعر الكامن", q.kalman ? `${nf(q.kalman.latent, 2)} · ${nf(q.kalman.gapBps, 2)} bps · q ${nf(q.kalman.q, 4)} r ${nf(q.kalman.r, 4)} bps²` : "waiting for 10 trades…"],
+      ["BOCPD regime shift, last 6 readings", "احتمال انقلاب الاتجاه", q.bocpd ? `${nf(q.bocpd.pRecent * 100, 1)}% · run length ${q.bocpd.map} of ${q.bocpd.n} · hazard 1/100` : "waiting for 20 microprice readings…", q.bocpd && q.bocpd.pRecent > 0.5 ? "bad-text num" : "num"],
+      ["Kyle's lambda, 5 s buckets", "معامل كايل", q.kyle ? `${nf(q.kyle.bpsPerUnit, 3)} bps per unit · R² ${nf(q.kyle.r2, 2)} · ${q.kyle.buckets} buckets` : "—"],
+      ["Iceberg candidates, 60 s", "الأوامر الجليدية", q.ice ? (q.ice.length ? q.ice.slice(0, 2).map(i => `${i.side} ${nf(i.price, 2)}: ${nf(i.executed, 4)} traded vs ${nf(i.visible, 4)} shown`).join(" · ") : "none") : "—", q.ice && q.ice.length ? "warn-text num" : "num"],
+      ["Book entropy, top 25 (1 = flat)", "إنتروبيا دفتر الأوامر", q.ent ? `bid ${nf(q.ent.bid, 3)} · ask ${nf(q.ent.ask, 3)}` : "—"]
+    ]);
+    const g = B.gex, rr = g && g.rr;
+    kv("bwDeriv", [
+      ["Dealer gamma (naive) · flip", "جاما المتعاملين ونقطة الانقلاب", g ? `${g.regime} ${nf(g.total / 1e6, 1)} M USD per 1% · flip ${nf(g.flip, 0)} · spot ${nf(g.spot, 0)}` : "Deribit not reached", g ? (g.regime === "negative" ? "bad-text num" : "ok-text num") : "num"],
+      ["Call wall · put wall", "جدار الشراء والبيع", g ? `${nf(g.callWall, 0)} · ${nf(g.putWall, 0)}` : "—"],
+      ["ATM IV · DVOL", "التقلب الضمني", `${g && g.atmIv ? nf(g.atmIv.iv * 100, 1) + "%" : "—"} · ${B.dvol ? nf(B.dvol.value, 1) + " (48 h " + (B.dvol.change >= 0 ? "+" : "") + nf(B.dvol.change, 1) + ")" : "—"}`],
+      ["25-delta risk reversal", "الانحراف 25 دلتا", rr ? `${rr.rr >= 0 ? "+" : ""}${nf(rr.rr * 100, 2)} vol pts · ${nf(rr.days, 0)} d expiry` : "—"],
+      ...Object.values(B.basis).map(b => [`${b.symbol} basis · funding · crowd`, "الأساس والتمويل", `${nf(b.basisBps, 1)} bps · ${nf(b.funding * 100, 4)}%/8h (${nf(b.apr * 100, 1)}% a year) · ${b.crowd}`, b.crowd !== "none" ? "warn-text num" : "num"]),
+      ["Sources", "المصادر", Object.values(B.src).map(s => `${s.en}: ${tierTxt(s)}`).join(" · ")]
+    ]);
+    const gy = B.gym;
+    kv("bwGym", gy ? [
+      ["Measured speed", "سرعة المعالجة", `${nf(gy.rate, 0)} ticks/s · ${nf(gy.usPerTick, 3)} µs per tick (last burst ${nf(gy.lastTicks, 0)} ticks in ${nf(gy.lastMs, 0)} ms)`, gy.rate >= 1e5 ? "ok-text num" : "warn-text num"],
+      ["Trained", "التدريب", `${nf(gy.ticks, 0)} ticks in ${gy.bursts} bursts · ${gy.bootstrap ? "real Binance daily returns + synthetic stress" : "synthetic returns + synthetic stress (no daily history cached yet)"}`],
+      ["Maturity", "نضج الوكلاء", `${nf(Math.min(100, gy.ticks / 1e8 * 100), 1)}% of a 100 M-tick curriculum · weight drift last burst ${Number.isFinite(gy.drift) ? nf(gy.drift * 100, 2) + "%" : "—"}`],
+      ["Weights (multiplicative weights, fixed share 0.1%)", "الأوزان", AGENT_KEYS.map((k, i) => `${byId[k].l} ${nf(gy.mw[i] * 100, 1)}%`).join(" · ")],
+      ["Best agent per regime (EXP3)", "الأفضل في كل سيناريو", REGIMES.map((r, i) => `${r}: ${byId[gy.bestByRegime[i]].l}`).join(" · ")],
+      ["Last trained", "آخر تدريب", gy.at.replace("T", " ").slice(0, 19) + " UTC"]
+    ] : [["Gym", "معسكر التدريب", B.gymError || "first burst starts a few seconds after load…"]]);
+    $("bwEvents").replaceChildren(...(B.events.length ? B.events.slice(0, 5).map(e => { const li = h("li"); li.append(h("time", "ev-ok", clock.format(e.at)), h("span", "", e.why)); return li; }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", "No event yet: the web fires on a microprice move, a whale wall, new data or your touch")); return li; })()]));
+    $("bwNodes").tBodies[0].replaceChildren(...NODES.map(n => { const d = inspect(n.id), tr = h("tr"), t = h("td"); t.append(document.createTextNode(n.l + " · " + d.source), ar(n.a)); tr.append(t, h("td", d.live ? "ok-text" : "", d.text)); return tr; }));
+    $("bwUpdated").textContent = clock.format(new Date()) + " UTC";
+    if (!G.raf) draw();
+  }
+
+  // The desk receipt carries this snapshot of Brain 2 (inside the hash).
+  function receipt() {
+    const q = B.q, g = B.gym;
+    return {
+      kalman_latent: q.kalman ? q.kalman.latent : null, kalman_gap_bps: q.kalman ? q.kalman.gapBps : null,
+      bocpd_p_shift: q.bocpd ? q.bocpd.pRecent : null, bocpd_run: q.bocpd ? q.bocpd.map : null,
+      kyle_bps_per_unit: q.kyle ? q.kyle.bpsPerUnit : null, icebergs: q.ice ? q.ice.length : 0, entropy: q.ent ? q.ent.mean : null,
+      gex_regime: B.gex ? B.gex.regime : null, gex_flip: B.gex ? B.gex.flip : null, funding_8h: B.basis[q.sym] ? B.basis[q.sym].funding : null,
+      web: g ? Object.fromEntries(AGENT_KEYS.map((k, i) => [k, g.mw[i]])) : null, gym_ticks: g ? g.ticks : 0
+    };
+  }
+
+  /* ---------------- schedule ---------------- */
+  readColors();
+  new ResizeObserver(layout).observe(cv);
+  new MutationObserver(() => { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  new IntersectionObserver(es => { G.visible = es.some(e => e.isIntersecting); }).observe(cv);
+  document.addEventListener("omega:osiris", e => {
+    const o = P().osiris, st = o ? o.state().src : {}, fresh = [];
+    const map = { ripe: "cyber", ioda: "cyber", straits: "straits", usgs: "quake", meteo: "weather", swpc: "orbit", celestrak: "orbit", eonet: "orbit", opensky: "aviation", gdelt: "news" };
+    for (const [k, id] of Object.entries(map)) { const at = st[k] && st[k].at; if (at && at !== B.osAt[k]) { B.osAt[k] = at; fresh.push(id); } }
+    if (fresh.length) pulse([...new Set(fresh)], "new data: " + [...new Set(fresh)].map(id => byId[id].l).join(", "));
+    render();
+  });
+  setInterval(() => { if (!document.hidden) { compute(); render(); } }, 2000);
+  const derivLoop = async () => { try { if (!document.hidden) await loadDerivs(); } catch { /* next round */ } setTimeout(derivLoop, 120000); };
+  setTimeout(derivLoop, 1500);
+  // Training bursts of 1.5 s, at most once a minute, only while the page is visible.
+  const gymLoop = async () => { if (!document.hidden) await train(1500, false); setTimeout(gymLoop, 60000); };
+  setTimeout(gymLoop, 4000);
+  $("bwTrain").addEventListener("click", () => train(3000, false));
+  render();
+
+  window.OMEGA_BRAIN2 = Object.freeze({
+    receipt,
+    nodes: () => NODES.map(n => ({ id: n.id, ring: n.ring })), edges: () => E.length, inspect: id => inspect(id),
+    canvas: () => ({ w: G.w, h: G.h, dpr: G.dpr, px: cv.width, py: cv.height }),
+    bench: ms => train(ms || 1000, true), gym: () => B.gym ? JSON.parse(JSON.stringify(B.gym)) : null,
+    derivs: () => ({ gex: B.gex, dvol: B.dvol, basis: { ...B.basis }, src: JSON.parse(JSON.stringify(B.src)) }), readings: () => ({ ...B.q })
+  });
 })();
 </script>
 <script>
@@ -5801,7 +7195,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   // Command wall: on view 5 at 1280 px and up the cards below move into four quadrants that fill one
   // screen; a comment marker keeps each card's home so it goes back on any other view or width.
   const wall = $("wall"), wide = window.matchMedia("(min-width: 1280px)");
-  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "snTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "frTitle"], 4: ["wlTitle", "rgTitle", "cbTitle", "rcTitle", "cpTitle"] };
+  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "snTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "bwTitle", "frTitle"], 4: ["wlTitle", "rgTitle", "cbTitle", "rcTitle", "cpTitle"] };
   const homes = new Map();
   function maximize(q) {
     wall.classList.toggle("maxed", !!q);
@@ -5938,7 +7332,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
 </script>
 <script>
 "use strict";
-// System self-test (ADR-107): twelve end-to-end checks run in this browser, from the shield button or with
+// System self-test (ADR-107, eighteen checks since ADR-108): end-to-end checks run in this browser, from the shield button or with
 // ?selftest=1 in the address. Each check reads the page through the read-only OMEGA_PROBE hooks or runs a pure
 // function on fixed test input; none moves paper money, issues a receipt or sends anything. A check that
 // depends on live data fails honestly when that data is missing, and says why.
@@ -5975,7 +7369,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       const o = P().osiris;
       if (!o) return { ok: false, why: "map not loaded" };
       const p = o.state().pwsi;
-      return { ok: Number.isFinite(p.score) && p.coverage >= 1, why: Number.isFinite(p.score) ? `PWSI ${nf(p.score)} from ${p.coverage} of 4 components${p.snap ? `, ${p.snap} from the hourly snapshot` : ""}` : "no component reachable (proxy, direct and snapshot all failed)" };
+      return { ok: Number.isFinite(p.score) && p.coverage >= 1, why: Number.isFinite(p.score) ? `PWSI ${nf(p.score)} from ${p.coverage} of 5 components${p.snap ? `, ${p.snap} from the hourly snapshot` : ""}` : "no component reachable (proxy, direct and snapshot all failed)" };
     }],
     ["Performance rings", "حلقات الأداء", async () => {
       const svg = $("rgSvg"), card = $("rings"), title = $("rgTitle");
@@ -6043,6 +7437,66 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       try { sw = window.isSecureContext && "serviceWorker" in navigator && !!(await within(navigator.serviceWorker.ready, 5000)); } catch { sw = false; }
       const icons = man && Array.isArray(man.icons) ? man.icons.length : 0;
       return { ok: !!man && !!man.name && icons >= 2 && sw, why: `${man ? `manifest "${man.name}", ${icons} icons` : "no manifest"} · service worker ${sw ? "active" : "not active"} · ${window.isSecureContext ? "secure context" : "not a secure context"}` };
+    }],
+    // ---- ADR-108: Brain 2, institutional maths, the gym, orbital and cyber radar ----
+    ["Synaptic spiderweb", "الشبكة العنكبوتية", async () => {
+      const b = window.OMEGA_BRAIN2;
+      if (!b) return { ok: false, why: "Brain 2 not loaded" };
+      const n = b.nodes(), rings = [0, 1, 2, 3].map(r => n.filter(x => x.ring === r).length), c = b.canvas(), card = b.inspect("judge");
+      const dprOk = c.px === Math.round(c.w * c.dpr) && c.dpr >= 1 && c.dpr <= 3;
+      return { ok: rings.join() === "10,8,6,1" && b.edges() >= 40 && dprOk && !!card && card.links.length >= 5, why: `rings ${rings.join(" / ")} · ${b.edges()} causal links · canvas ${c.px}×${c.py} px at ${c.dpr}× · judge card lists ${card ? card.links.length : 0} links` };
+    }],
+    ["Kalman latent price & BOCPD", "مرشح كالمان وكاشف الانقلاب", async () => {
+      const M = window.OMEGA_MATH;
+      if (!M) return { ok: false, why: "maths not loaded" };
+      // Fixed pseudo-random input: a slow random walk seen through four times larger book noise, and a
+      // return series whose mean jumps by 3 sd at step 120 of 200.
+      let s = 7; const rnd = () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; }, g = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+      const truth = [100000], obs = [];
+      for (let i = 0; i < 300; i++) { if (i) truth.push(truth[i - 1] * (1 + g() * 1e-4)); obs.push(truth[i] * (1 + g() * 4e-4)); }
+      const k = M.kalman(obs), rmse = a => Math.sqrt(a.reduce((t, v, i) => t + (v - truth[i]) ** 2, 0) / a.length), kf = rmse(k.series), raw = rmse(obs);
+      const xs = Array.from({ length: 200 }, (_, i) => (i < 120 ? 0 : 3) + g()), b = M.bocpd(xs), flat = M.bocpd(Array.from({ length: 200 }, g));
+      return { ok: kf < raw * 0.85 && Math.abs(b.map - 80) <= 6 && flat.map >= 150, why: `Kalman error ${nf(kf, 1)} vs raw ${nf(raw, 1)} · BOCPD run after the jump ${b.map} (true 80) · steady series run ${flat.map}` };
+    }],
+    ["Order-book alpha & L2 fill", "كايل والجليد والإنتروبيا والتنفيذ", async () => {
+      const M = window.OMEGA_MATH;
+      if (!M) return { ok: false, why: "maths not loaded" };
+      const tape = []; let p = 100;
+      for (let i = 0; i < 400; i++) { const q = 0.5 + (i * 37 % 13) / 10, m = (i * 7) % 3 === 0; p += (m ? -q : q) * 0.5; tape.push({ T: 1e12 + i * 1250, p, q, m }); }
+      const ky = M.kyleLambda(tape, 5000);
+      const flat = M.entropy({ bids: Array.from({ length: 25 }, (_, i) => [100 - i, 1]), asks: Array.from({ length: 25 }, (_, i) => [101 + i, 1]) }).mean;
+      const wall = M.entropy({ bids: Array.from({ length: 25 }, (_, i) => [100 - i, i ? 0.01 : 100]), asks: Array.from({ length: 25 }, (_, i) => [101 + i, i ? 0.01 : 100]) }).mean;
+      const book = { asks: Array.from({ length: 30 }, (_, i) => [100 + i, 1]), bids: Array.from({ length: 30 }, (_, i) => [99 - i, 1]) };
+      const ice = M.iceberg([{ T: 1, p: 99, q: 5, m: true }], book), f = M.l2Fill(book, "buy", 250, { levels: 25, takerFee: 0.001 }), thin = M.l2Fill(book, "buy", 1e6, { levels: 25 });
+      const ok = ky && Math.abs(ky.lambda - 0.5) < 1e-9 && flat > 0.999 && wall < 0.1 && ice.length === 1 && f && f.levelsUsed === 3 && Math.abs(f.vwap - 250 / (1 + 1 + 49 / 102)) < 1e-9 && Math.abs(f.fee - 0.25) < 1e-12 && thin === null;
+      return { ok, why: `Kyle λ ${ky ? nf(ky.lambda, 3) : "—"} (true 0.5) · entropy flat ${nf(flat, 3)}, walls ${nf(wall, 3)} · iceberg found ${ice.length} · L2 fill ${f ? f.levelsUsed : "—"} levels VWAP ${f ? nf(f.vwap, 4) : "—"}, fee ${f ? nf(f.fee, 2) : "—"} · beyond 25 levels refused ${thin === null}` };
+    }],
+    ["Deribit GEX & funding trap", "جاما الخيارات وفخ التمويل", async () => {
+      const M = window.OMEGA_MATH, b = window.OMEGA_BRAIN2;
+      if (!M || !b) return { ok: false, why: "maths not loaded" };
+      const g = M.bs(100, 100, 1, 0.2), now = Date.UTC(2026, 9, 22), sum = [];
+      for (const k of [80000, 90000, 100000, 110000, 120000]) for (const t of ["C", "P"]) sum.push({ instrument_name: `BTC-27NOV26-${k}-${t}`, underlying_price: 100000, mark_iv: 50, open_interest: t === "C" ? (k >= 100000 ? 1000 : 100) : (k <= 100000 ? 1000 : 100) });
+      const x = M.gex(sum, now), trap = M.basisTrap({ markPrice: "100100", indexPrice: "100000", lastFundingRate: "0.0005" });
+      const math = Math.abs(g.gamma - 0.019847627) < 1e-6 && x && x.regime === "positive" && x.flip > 90000 && x.flip < 100000 && trap.crowd === "longs" && Math.abs(trap.basisBps - 10) < 1e-6;
+      const d = b.derivs(), liveN = ["deribit", "prem"].filter(k => d.src[k].state === "online").length;
+      return { ok: math && liveN >= 1, why: `BS gamma ${nf(g.gamma, 6)} (true 0.019848) · test chain flip ${x ? nf(x.flip, 0) : "—"} · crowded-long trap ${trap.crowd} · live: Deribit ${d.src.deribit.state}${d.gex ? `, ${d.gex.regime} gamma, flip ${nf(d.gex.flip, 0)}` : ""} · premium ${d.src.prem.state}` };
+    }],
+    ["Orbits, space weather & cyber radar", "الأقمار والرادار السيبراني", async () => {
+      const M = window.OMEGA_MATH, o = P().osiris;
+      if (!M || !o || !o.radar) return { ok: false, why: "map not loaded" };
+      const iss = { MEAN_MOTION: 15.5, ECCENTRICITY: 0.0005, INCLINATION: 51.64, RA_OF_ASC_NODE: 100, ARG_OF_PERICENTER: 90, MEAN_ANOMALY: 0, EPOCH: "2026-10-21T12:00:00.000000" };
+      const t0 = Date.UTC(2026, 9, 21, 12), k = M.kepler(iss, t0), lats = Array.from({ length: 93 }, (_, i) => M.kepler(iss, t0 + i * 60e3).lat);
+      const orbit = k && k.alt > 400 && k.alt < 430 && Math.abs(k.periodMin - 92.9) < 0.1 && Math.abs(Math.max(...lats) - 51.64) < 0.5;
+      const r = o.radar(), src = o.state().src, space = ["celestrak", "swpc", "eonet"].filter(x => src[x].state === "online"), cyber = ["kev", "ripe", "ioda"].filter(x => src[x].state === "online");
+      return { ok: orbit && r.cables >= 6 && r.landings >= 15 && space.length >= 1 && cyber.length >= 1, why: `test orbit ${nf(k ? k.alt : NaN, 0)} km, ${nf(k ? k.periodMin : NaN, 1)} min · ${r.sats} satellites · Kp ${nf(r.kp, 2)} · ${r.cables} cable corridors, ${r.landings} landings · live space ${space.join(", ") || "none"} · live cyber ${cyber.join(", ") || "none"} · CSTI ${nf(r.csti.score, 0)}` };
+    }],
+    ["Supersonic gym", "معسكر التدريب فائق السرعة", async () => {
+      const b = window.OMEGA_BRAIN2;
+      if (!b) return { ok: false, why: "Brain 2 not loaded" };
+      const r = await within(b.bench(1000), 15000);
+      if (!r) return { ok: false, why: "training worker unavailable or busy" };
+      const sum = r.mw.reduce((a, v) => a + v, 0);
+      return { ok: r.rate >= 1e5 && Math.abs(sum - 1) < 1e-9 && r.mw.length === 6, why: `measured ${nf(r.rate, 0)} ticks/s (${nf(r.usPerTick, 3)} µs per tick) over ${nf(r.lastMs, 0)} ms in a Web Worker · 6 weights sum ${nf(sum, 6)} · ${r.bootstrap ? "real daily returns" : "synthetic returns"}` };
     }]
   ];
 
