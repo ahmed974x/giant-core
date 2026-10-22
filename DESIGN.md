@@ -58,6 +58,8 @@ Rules:
 - Charts (ADR-102): monotone splines (no overshoot), glow area from `--apple-*`, event dots, a magnetic crosshair with a glass loupe in tabular numbers (`OMEGA_VIS`, inline in the Ops Room, `vis.js` in NABD). Canvases use devicePixelRatio up to 3. The triple rings and the whale sonar canvas use only numbers already on the page; the sonar pulse fires once per new wall and is off under reduced motion.
 - Performance: telemetry arrays are bounded ring buffers (300). Canvases draw on demand and pause under `IntersectionObserver` and `visibilitychange`. The only continuous motion is the ticker marquee, which uses `transform`, pauses on hover and is off under reduced motion.
 
+- Suite (ADR-107): every page has the app-grid button beside the theme toggle; the glass switcher lists NABD, the Ops Room and THE CHAIN with a live line each. Theme, paper base/safe, PWSI and ticker sync over BroadcastChannel `omega-suite`. The Ops Room's shield button (and `?selftest=1`) runs the 12-check self-test; a check that needs live data fails honestly.
+
 ## 6. Content and honesty rules (override any skill that says otherwise)
 
 - No invented data. Market numbers, analyst targets, quotes and performance come from a named source with a date, or they are shown as "تعذر التحقق منها" (unverified). Teaching examples are labelled "مثال تعليمي — أرقام افتراضية" on screen.

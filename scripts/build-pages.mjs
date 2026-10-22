@@ -15,7 +15,7 @@ const OUT = resolve(process.argv[2] || join(REPO, "_site"));
 
 const FILES = [
   ["site-landing/index.html", "index.html"], ["site-landing/en.html", "en.html"], ["site-landing/style.css", "style.css"],
-  ["site-landing/vis.js", "vis.js"], ["site-landing/calc.js", "calc.js"], ["site-landing/desk-sim.js", "desk-sim.js"], ["site-landing/pwa.js", "pwa.js"],
+  ["site-landing/vis.js", "vis.js"], ["site-landing/suite.js", "suite.js"], ["site-landing/calc.js", "calc.js"], ["site-landing/desk-sim.js", "desk-sim.js"], ["site-landing/pwa.js", "pwa.js"],
   ["site-landing/manifest.json", "manifest.json"], ["site-landing/service-worker.js", "service-worker.js"],
   ["omega-ops-room-v1/omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html"],
   ["omega-ops-room-v1/the-chain.html", "omega-ops-room-v1/the-chain.html"],
