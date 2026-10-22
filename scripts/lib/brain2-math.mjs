@@ -15,6 +15,8 @@
 //   l2Fill(book, ...)       step-by-step VWAP sweep of the top 25 levels, taker fee, maker queue estimate
 //   csti(parts)             cyber and space threat index, 0-100
 //   canon / merkle helpers  the receipt chain's canonical form (ADR-091, ADR-096)
+//   nnFactory / nn          the 139 -> 8 neural flow: forward pass, backpropagation, Adam and (1+1)-ES (ADR-109)
+//   shape.perp*, emsc, ...  fallbacks for the perpetual premium (OKX, Deribit) and disaster alerts (EMSC, ReliefWeb)
 export const OMEGA_MATH = (() => {
   "use strict";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -370,6 +372,131 @@ export const OMEGA_MATH = (() => {
     return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length } : { score: NaN, parts, coverage: 0 };
   }
 
+  /* ---------- neural flow (ADR-109) ---------- */
+  // A small multilayer perceptron, 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8: linear inputs, ReLU hidden layers and
+  // tanh outputs, trained online with Adam on half mean squared error, plus a (1+1) evolution strategy on the
+  // output layer with the one-fifth success rule. A NaN target is skipped, so a head only learns when it has one.
+  // Parameters sit in one Float64Array: for each layer its weights (row per output neuron) and then its biases.
+  // nnFactory uses no outside name, so the Ops Room can also run it in a Web Worker from its source text.
+  function nnFactory() {
+    "use strict";
+    const SIZES = [139, 48, 36, 48, 24, 16, 8];
+    const now = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
+    function layout(sizes) {
+      const off = [];
+      let n = 0;
+      for (let l = 1; l < sizes.length; l++) { off.push({ w: n, b: n + sizes[l] * sizes[l - 1], i: sizes[l - 1], o: sizes[l] }); n += sizes[l] * sizes[l - 1] + sizes[l]; }
+      return { off, n, weights: off.reduce((a, o) => a + o.i * o.o, 0) };
+    }
+    function rng(seed) {
+      let s = (seed >>> 0) || 88172645;
+      const u = () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; };
+      return { u, g: () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u()) };
+    }
+    const lay = net => net.L || (net.L = layout(net.sizes));
+    // He initialisation for the ReLU layers, Xavier for the tanh output; biases start at zero.
+    function init(sizes = SIZES, seed = 1) {
+      const L = layout(sizes), p = new Float64Array(L.n), r = rng(seed);
+      L.off.forEach((o, k) => { const sd = k === L.off.length - 1 ? Math.sqrt(1 / o.i) : Math.sqrt(2 / o.i); for (let j = 0; j < o.o * o.i; j++) p[o.w + j] = r.g() * sd; });
+      return { sizes: sizes.slice(), p, L };
+    }
+    // a[0] is the input (missing values become 0); z[k] and a[k] are layer k before and after its activation.
+    function forward(net, x) {
+      const L = lay(net), p = net.p, a = [Float64Array.from(x, v => (Number.isFinite(v) ? v : 0))], z = [null];
+      for (let k = 0; k < L.off.length; k++) {
+        const o = L.off[k], prev = a[k], zz = new Float64Array(o.o), aa = new Float64Array(o.o), last = k === L.off.length - 1;
+        for (let j = 0; j < o.o; j++) {
+          let s = p[o.b + j];
+          const row = o.w + j * o.i;
+          for (let i = 0; i < o.i; i++) s += p[row + i] * prev[i];
+          zz[j] = s; aa[j] = last ? Math.tanh(s) : s > 0 ? s : 0;
+        }
+        z.push(zz); a.push(aa);
+      }
+      return { z, a };
+    }
+    function lossOf(net, X, Y, idx) {
+      if (!idx.length) return NaN;
+      const K = lay(net).off.length;
+      let s = 0;
+      for (const n of idx) { const out = forward(net, X[n]).a[K]; for (let j = 0; j < out.length; j++) { const t = Y[n][j]; if (Number.isFinite(t)) s += 0.5 * (out[j] - t) ** 2; } }
+      return s / idx.length;
+    }
+    // Backpropagation of the batch loss into g (same layout as p), averaged over the batch.
+    function grad(net, X, Y, idx, g) {
+      g.fill(0);
+      const L = lay(net), K = L.off.length, p = net.p;
+      let loss = 0;
+      for (const n of idx) {
+        const f = forward(net, X[n]), out = f.a[K];
+        let d = new Float64Array(out.length);
+        for (let j = 0; j < out.length; j++) { const t = Y[n][j]; if (!Number.isFinite(t)) continue; const e = out[j] - t; loss += 0.5 * e * e; d[j] = e * (1 - out[j] * out[j]); }
+        for (let k = K - 1; k >= 0; k--) {
+          const o = L.off[k], prev = f.a[k], nd = k ? new Float64Array(o.i) : null;
+          for (let j = 0; j < o.o; j++) {
+            const dj = d[j];
+            if (dj === 0) continue;
+            g[o.b + j] += dj;
+            const row = o.w + j * o.i;
+            for (let i = 0; i < o.i; i++) { g[row + i] += dj * prev[i]; if (nd) nd[i] += dj * p[row + i]; }
+          }
+          if (nd) { const zp = f.z[k]; for (let i = 0; i < o.i; i++) if (!(zp[i] > 0)) nd[i] = 0; d = nd; }
+        }
+      }
+      const m = Math.max(1, idx.length);
+      for (let i = 0; i < g.length; i++) g[i] /= m;
+      return loss / m;
+    }
+    // Time order is kept: the newest 20% is held out, and `gap` samples before it are dropped from training,
+    // because a target that looks `gap` readings ahead would otherwise see into the held-out window.
+    function train(net, X, Y, o = {}) {
+      const n = Math.min(X.length, Y.length), gap = o.gap ?? 6;
+      if (n < 20) return null;
+      const L = lay(net), P = net.p.length, g = new Float64Array(P), m = o.m || new Float64Array(P), v = o.v || new Float64Array(P);
+      const lr = o.lr ?? 0.003, b1 = 0.9, b2 = 0.999, l2 = o.l2 ?? 1e-4, epochs = o.epochs ?? 12, bs = o.batch ?? 16, r = rng(o.seed || 7);
+      const cut = Math.floor(n * 0.8), tr = [], va = [];
+      for (let i = 0; i < Math.max(1, cut - gap); i++) tr.push(i);
+      for (let i = cut; i < n; i++) va.push(i);
+      const t0 = now(), before = lossOf(net, X, Y, va);
+      let t = o.t || 0, steps = 0;
+      for (let e = 0; e < epochs; e++) {
+        for (let i = tr.length - 1; i > 0; i--) { const j = Math.floor(r.u() * (i + 1)); const s = tr[i]; tr[i] = tr[j]; tr[j] = s; }
+        for (let s = 0; s < tr.length; s += bs) {
+          grad(net, X, Y, tr.slice(s, s + bs), g);
+          t++; steps++;
+          const c1 = 1 - b1 ** t, c2 = 1 - b2 ** t;
+          for (let i = 0; i < P; i++) {
+            const gi = g[i] + l2 * net.p[i];
+            m[i] = b1 * m[i] + (1 - b1) * gi; v[i] = b2 * v[i] + (1 - b2) * gi * gi;
+            net.p[i] -= lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + 1e-8);
+          }
+        }
+      }
+      // (1+1)-ES on the output layer: keep a Gaussian step only when it lowers the training loss.
+      const lo = L.off[L.off.length - 1], len = lo.o * lo.i + lo.o;
+      let sigma = o.sigma || 0.02, acc = 0, best = lossOf(net, X, Y, tr);
+      const esN = o.es ?? 16;
+      for (let k = 0; k < esN; k++) {
+        const save = net.p.slice(lo.w, lo.w + len);
+        for (let i = 0; i < len; i++) net.p[lo.w + i] += sigma * r.g();
+        const l = lossOf(net, X, Y, tr);
+        if (l < best) { best = l; acc++; sigma *= 1.22; } else { net.p.set(save, lo.w); sigma *= 0.95; }
+      }
+      sigma = Math.min(0.2, Math.max(1e-4, sigma));
+      // Held-out scores: loss, the loss of always answering 0, and the direction hit rate of head 1.
+      let base = 0, hits = 0, calls = 0;
+      for (const i of va) {
+        for (let j = 0; j < Y[i].length; j++) if (Number.isFinite(Y[i][j])) base += 0.5 * Y[i][j] ** 2;
+        const y0 = Y[i][0];
+        if (Number.isFinite(y0) && Math.abs(y0) >= 0.1) { calls++; if (Math.sign(forward(net, X[i]).a[L.off.length][0]) === Math.sign(y0)) hits++; }
+      }
+      return { steps, t, m, v, sigma, esAccepted: acc, esTried: esN, trainLoss: best, valBefore: before, valLoss: lossOf(net, X, Y, va), valBase: va.length ? base / va.length : NaN, hit: calls ? hits / calls : NaN, calls, nTrain: tr.length, nVal: va.length, ms: now() - t0 };
+    }
+    const act = (k, last, z) => (k === 0 ? z : last ? Math.tanh(z) : Math.max(0, z));
+    return { SIZES, layout, init, forward, lossOf, grad, train, act, rng };
+  }
+  const nn = nnFactory();
+
   /* ---------- receipts ---------- */
   const micro = v => finite(v) ? Math.round(v * 1e6) / 1e6 : v;
   const excess = (equity, base) => Math.max(0, equity - base);
@@ -457,7 +584,54 @@ export const OMEGA_MATH = (() => {
     },
     premium(j) {
       if (!j || !(+j.markPrice > 0)) throw new Error("not a premium index");
-      return { symbol: String(j.symbol || ""), markPrice: j.markPrice, indexPrice: j.indexPrice, lastFundingRate: j.lastFundingRate, nextFundingTime: j.nextFundingTime, time: j.time };
+      return { symbol: String(j.symbol || ""), markPrice: j.markPrice, indexPrice: j.indexPrice, lastFundingRate: j.lastFundingRate, nextFundingTime: j.nextFundingTime, time: j.time, venue: String(j.venue || "Binance USD-M") };
+    },
+    // ADR-109 fallbacks in the same premium form, for when fapi.binance.com refuses the caller (it answers
+    // HTTP 451 to US cloud runners). The venue is kept so the page names where the number came from.
+    // OKX quotes funding per settlement, every 8 h for BTC and ETH today; another interval is scaled to 8 h.
+    perpOkx(fund, mark, index, symbol) {
+      const f = fund && Array.isArray(fund.data) && fund.data[0], mk = mark && Array.isArray(mark.data) && mark.data[0], ix = index && Array.isArray(index.data) && index.data[0];
+      if (!f || !mk || !ix || !(+mk.markPx > 0) || !(+ix.idxPx > 0) || !Number.isFinite(+f.fundingRate)) throw new Error("not an OKX funding, mark and index answer");
+      const hours = (+f.nextFundingTime - +f.fundingTime) / 3600e3, per8 = hours > 0 && hours <= 24 ? +f.fundingRate * 8 / hours : +f.fundingRate;
+      return { symbol, markPrice: String(mk.markPx), indexPrice: String(ix.idxPx), lastFundingRate: String(per8), nextFundingTime: +f.fundingTime || null, time: +mk.ts || null, venue: "OKX " + String(f.instId || "") };
+    },
+    // Deribit's perpetual ticker: funding_8h is the funding over the last 8 hours.
+    perpDeribit(j, symbol) {
+      const r = j && j.result;
+      if (!r || !(+r.mark_price > 0) || !(+r.index_price > 0) || !Number.isFinite(+r.funding_8h)) throw new Error("not a Deribit perpetual ticker");
+      return { symbol, markPrice: String(r.mark_price), indexPrice: String(r.index_price), lastFundingRate: String(r.funding_8h), nextFundingTime: null, time: +r.timestamp || null, venue: "Deribit " + String(r.instrument_name || "") };
+    },
+    // GDACS events (GeoJSON) cut to the orange and red alerts the page draws.
+    gdacs(j, via = "GDACS") {
+      const f = j && Array.isArray(j.features) ? j.features : null;
+      if (!f) throw new Error("not a GDACS event list");
+      return { format: "omega-alerts-v1", via, rule: "GDACS alert level", features: f.filter(x => x && x.geometry && x.geometry.type === "Point" && x.properties && ["Orange", "Red"].includes(x.properties.alertlevel)).slice(0, 200)
+        .map(x => ({ geometry: { type: "Point", coordinates: x.geometry.coordinates.slice(0, 2) }, properties: { alertlevel: x.properties.alertlevel, eventtype: x.properties.eventtype, name: String(x.properties.name || x.properties.eventname || "").slice(0, 140), url: { report: x.properties.url && x.properties.url.report }, basis: "GDACS " + x.properties.alertlevel + " alert" } })) };
+    },
+    // EMSC has no alert level, so a fixed magnitude rule stands in and says so on every point:
+    // M6.0 or more is drawn orange, M7.0 or more red. That is a stated rule, not a GDACS rating.
+    emsc(j) {
+      const f = j && Array.isArray(j.features) ? j.features : null;
+      if (!f) throw new Error("not an EMSC event list");
+      const out = [];
+      for (const x of f) {
+        const p = x && x.properties || {}, c = x && x.geometry && x.geometry.coordinates, mag = +p.mag;
+        if (!Array.isArray(c) || !Number.isFinite(+c[0]) || !Number.isFinite(+c[1]) || !(mag >= 6)) continue;
+        out.push({ geometry: { type: "Point", coordinates: [+c[0], +c[1]] }, properties: { alertlevel: mag >= 7 ? "Red" : "Orange", eventtype: "EQ", name: `M${mag.toFixed(1)} ${String(p.flynn_region || "").slice(0, 100)}`.trim(), url: { report: p.unid ? "https://www.seismicportal.eu/eventdetails.html?unid=" + encodeURIComponent(p.unid) : "" }, basis: "EMSC magnitude rule (M6+ orange, M7+ red), not a GDACS level", time: String(p.time || "") } });
+      }
+      return { format: "omega-alerts-v1", via: "EMSC", rule: "EMSC magnitude rule: M6+ orange, M7+ red", features: out.slice(0, 200) };
+    },
+    // ReliefWeb disasters with status "alert" (an early warning) are drawn orange at the primary country's centre.
+    reliefweb(j) {
+      const d = j && Array.isArray(j.data) ? j.data : null;
+      if (!d) throw new Error("not a ReliefWeb list");
+      const out = [];
+      for (const x of d) {
+        const f = x && x.fields || {}, loc = f.primary_country && f.primary_country.location;
+        if (!loc || !Number.isFinite(+loc.lon) || !Number.isFinite(+loc.lat) || f.status !== "alert") continue;
+        out.push({ geometry: { type: "Point", coordinates: [+loc.lon, +loc.lat] }, properties: { alertlevel: "Orange", eventtype: String(f.primary_type && f.primary_type.code || ""), name: String(f.name || "").slice(0, 140), url: { report: String(f.url || "") }, basis: "ReliefWeb status alert, placed at the country centre" } });
+      }
+      return { format: "omega-alerts-v1", via: "ReliefWeb", rule: "ReliefWeb status alert", features: out.slice(0, 100) };
     }
   };
   // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
@@ -471,8 +645,15 @@ export const OMEGA_MATH = (() => {
     ioda: now => { const u = win15(now); return `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?entityType=country&from=${u - 86400}&until=${u}&format=codf&limit=200`; },
     deribit: () => "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=option",
     dvol: now => { const u = win15(now) * 1000; return `https://www.deribit.com/api/v2/public/get_volatility_index_data?currency=BTC&start_timestamp=${u - 48 * 3600e3}&end_timestamp=${u}&resolution=3600`; },
-    premium: sym => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${sym}`
+    premium: sym => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${sym}`,
+    // ADR-109: BTCUSDT and ETHUSDT map to the OKX USDT swaps and the Deribit perpetuals.
+    okx: sym => { const b = sym.replace(/USDT$/, ""); return [`https://www.okx.com/api/v5/public/funding-rate?instId=${b}-USDT-SWAP`, `https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=${b}-USDT-SWAP`, `https://www.okx.com/api/v5/market/index-tickers?instId=${b}-USDT`]; },
+    deribitPerp: sym => `https://www.deribit.com/api/v2/public/ticker?instrument_name=${sym.replace(/USDT$/, "")}-PERPETUAL`,
+    gdacs: () => "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",
+    gdacsSearch: now => { const d = t => new Date(t).toISOString().slice(0, 10); return `https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=EQ;TC;FL;VO;DR;WF&alertlevel=Orange;Red&fromDate=${d(now - 7 * 86400e3)}&toDate=${d(now)}`; },
+    emsc: now => `https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=200&minmag=6&starttime=${new Date(win15(now) * 1000 - 7 * 86400e3).toISOString().slice(0, 19)}`,
+    reliefweb: () => "https://api.reliefweb.int/v2/disasters?appname=omega-giant-core&profile=list&limit=50&filter[field]=status&filter[value]=alert&fields[include][]=primary_country.location&fields[include][]=primary_type.code&fields[include][]=status&fields[include][]=url"
   };
 
-  return Object.freeze({ shape, urls, RIPE_ASNS, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+  return Object.freeze({ shape, urls, RIPE_ASNS, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
 })();

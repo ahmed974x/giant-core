@@ -92,7 +92,17 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
 - **On-chain pulse:** mempool.space fees, backlog and any of the last 10 transactions of 100 BTC or more, in the whale card. A fastest fee of 100 sat/vB or more is a red-team risk.
 - **Encrypted capsule:** `📦 Export capsule` writes the paper wallet, the receipt chain, the court weights and THE CHAIN notes to one `.omega-capsule.json` file encrypted with AES-GCM-256 (PBKDF2-SHA256, 600,000 rounds). Import it on the other device with the same passphrase. The fingerprint (SHA-256 of the ciphertext) and the receipt chain are checked before anything is replaced. No server, no API key in the file.
 - **Command wall:** view 5 at 1280 px and up shows four quadrants in one screen (OSIRIS · live chart and whales · court and physics · wallet and receipts). Each quadrant scrolls on its own and has a maximize button.
-- **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
+- **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `X` Architect X-Ray, `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
+
+## Phase 13: deep neural flow, X-Ray, chrono-scrubber, adaptive regime, 16/16 sources (ADR-109)
+
+- **Deep neural flow** (views 1, 3 and 5): 139 inputs from the page's real readings (book, microprice, tape, flow physics, Deribit and funding, mempool, OSIRIS) → ReLU layers 48 → 36 → 48 → 24 → 16 → 8 tanh decision heads (direction, half-Kelly, target, stop, breaker, $20 base recovery, sweep, confidence with the last receipt hash). 11,792 weights. A missing source enters as 0 and is drawn hollow. Zoom and pan; hover, tap or the arrow keys open the glass **oscilloscope** (activation function with the live operating point, the activation over the ring, the equation with numbers, the strongest w·a).
+- **Training:** a Web Worker runs Adam and a (1+1)-ES on the last 300 readings. Head 1 learns the next 6 readings (≈30 s) of the microprice; heads 2–8 learn the desk's own rule values, printed beside them. The panel shows held-out loss against an always-0 baseline and the held-out hit rate. The rules decide; the network opens nothing. `[INFERENCE - Quant Model]`.
+- **Chrono-scrubber:** drag back through the 300 readings to see the network, its weight version and the court at that moment, with a hypothetical counterfactual (network call held, court ruling held, every call followed, 0.1 % fee each way).
+- **X-Ray (`X` or the magnifier button):** glass badges on nine cards with the equation, the median time per call measured in your browser, the ring fill and the source.
+- **Adaptive regime:** calm, hunt or shield from fixed rules (PWSI, CSTI, breaker, court, BOCPD, network direction). MODE in the status island, a coloured header line and outlined key cards.
+- **Sources:** the perpetual premium falls back from Binance to OKX, then Deribit; disaster alerts from GDACS to its search endpoint, then EMSC M6+ (stated magnitude rule) with ReliefWeb. Each answer says which source it came from.
+- **Self-test 20/20.**
 
 ## Phase 12: Brain 2, cyber and space OSIRIS, L2 fills, local MCP (ADR-108)
 
@@ -101,7 +111,7 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
 - **Supersonic gym:** a Web Worker trains six rule agents (contextual EXP3 + fixed-share multiplicative weights) on real daily returns with synthetic stress regimes, and shows ticks per second measured on your machine. It never opens a trade.
 - **L2 paper fills:** opens walk up to 25 book levels (VWAP, slippage, impact, taker fee, maker queue); each receipt records `exec` and `brain2`.
 - **OSIRIS:** orbit layer (CelesTrak, ISS ground track, two-body + J2, not SGP4), cable corridors (approximate, hand-drawn), NASA EONET, NOAA Kp, CISA KEV, RIPEstat backbones and IODA outages. The cyber and space threat index (CSTI) is PWSI's fifth component and a hard stop for the risk judge.
-- **Self-test 18/18:** shield button or `?selftest=1`.
+- **Self-test 18/18** (20/20 since Phase 13): shield button or `?selftest=1`.
 - **omega-local-mcp:** `node scripts/omega-mcp-bridge.mjs` (Claude Desktop or `.mcp.json`) gives Claude read-only tools: PWSI, whale sonar, OSIRIS intel, quant web, six-agent court, sweep calculator, receipt-chain verifier and self-test. `--selftest` runs its checks.
 - **Laptop control:** `scripts/setup-windows-mcp.ps1` adds Windows-MCP 0.8.8 (stdio, telemetry off, screen, mouse and keyboard tools only) and omega-local-mcp to Claude Desktop, after a backup. `OMEGA-PRIME.bat` (copy to the Desktop) pulls `main`, starts the proxy and opens the self-test.
 

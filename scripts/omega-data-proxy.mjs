@@ -24,6 +24,9 @@
 //   /market/fapi/<kind>/<SYM> -> Binance USD-M futures public data (premium, funding, open interest,
 //                              long/short and taker ratios) so the desk shares one cached copy (cached 60 s, ADR-095)
 //   /market/coingecko/<id>  -> CoinGecko simple price in USD with 24 h change             (cached 2 min)
+// ADR-109 fallback chains (first answer wins, `via` / `venue` names it):
+//   /osiris/gdacs           GDACS event list -> GDACS search -> EMSC M6+ earthquakes (+ ReliefWeb alerts)
+//   /market/fapi/premium/<BTCUSDT|ETHUSDT>  Binance USD-M -> OKX swap funding, mark and index -> Deribit perpetual
 // Brain 2 and the orbital and cyber radar (ADR-108), keyless public sources, each in its compact form:
 //   /osiris/celestrak/<group> -> CelesTrak GP mean elements, GROUP stations or visual      (cached 2 h, CelesTrak's update cycle)
 //   /osiris/eonet           -> NASA EONET open natural events, last 30 days                 (cached 30 min)
@@ -90,12 +93,30 @@ const ROUTES = [
   { re: /^\/sec\/facts\/(\d{10})$/, url: m => `https://data.sec.gov/api/xbrl/companyfacts/CIK${m[1]}.json`, ttl: 12 * HOUR, type: "application/json", sec: true },
   { re: /^\/stooq\/([a-z0-9.\-^]{1,20})$/, url: m => `https://stooq.com/q/d/l/?s=${encodeURIComponent(m[1])}&i=d`, ttl: 6 * HOUR, type: "text/csv; charset=utf-8", sec: false },
   { re: /^\/osiris\/aviation$/, url: () => "https://opensky-network.org/api/states/all?lamin=10&lomin=30&lamax=32&lomax=62", ttl: HOUR / 4, type: "application/json", sec: false },
-  { re: /^\/osiris\/gdacs$/, url: () => "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP", ttl: HOUR / 4, type: "application/json", sec: false },
+  // ADR-109: GDACS, then its search endpoint, then EMSC M6+ earthquakes (with ReliefWeb alerts when it answers),
+  // all in the omega-alerts-v1 form whose `via` names the source that answered.
+  { re: /^\/osiris\/gdacs$/, url: () => U.gdacs(), ttl: HOUR / 4, type: "application/json", sec: false, chain: () => [
+    async r => S.gdacs(await upJson(r, U.gdacs()), "GDACS"),
+    async r => S.gdacs(await upJson(r, U.gdacsSearch(Date.now())), "GDACS search"),
+    async r => {
+      const q = S.emsc(await upJson(r, U.emsc(Date.now())));
+      let rw = null;
+      try { rw = S.reliefweb(await upJson(r, U.reliefweb())); } catch { /* EMSC alone still answers */ }
+      return rw ? { ...q, via: "EMSC + ReliefWeb", rule: q.rule + "; " + rw.rule, features: q.features.concat(rw.features) } : q;
+    }
+  ] },
   { re: /^\/osiris\/gdelt$/, url: () => "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent("(strait OR tanker OR pipeline OR blockade OR refinery OR sanctions) sourcelang:english") + "&mode=artlist&format=json&maxrecords=25&timespan=6h&sort=datedesc", ttl: HOUR / 4, type: "application/json", sec: false },
   { re: /^\/osiris\/ais$/, url: () => "https://meri.digitraffic.fi/api/ais/v1/locations", ttl: HOUR / 12, type: "application/json", sec: false, transform: compactAis },
   { re: /^\/osiris\/nga$/, url: () => "https://msi.nga.mil/api/publications/broadcast-warn?output=json", ttl: HOUR / 2, type: "application/json", sec: false, transform: classifyNga },
   { re: /^\/osiris\/gdelt-sea$/, url: () => "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent('("Strait of Hormuz" OR "Bab el-Mandeb" OR "Suez Canal" OR "Strait of Malacca" OR "Panama Canal") sourcelang:english') + "&mode=artlist&format=json&maxrecords=50&timespan=24h&sort=datedesc", ttl: HOUR / 4, type: "application/json", sec: false },
   { re: /^\/market\/binance\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${m[1]}`, ttl: 30 * 1000, type: "application/json", sec: false },
+  // ADR-109: the premium index falls back to OKX, then Deribit, in the same form with a `venue` field, when
+  // fapi.binance.com refuses this network (HTTP 451 or 403 in some regions). Binance stays first.
+  { re: /^\/market\/fapi\/premium\/(BTCUSDT|ETHUSDT)$/, url: m => FAPI.premium(m[1]), ttl: 60 * 1000, type: "application/json", sec: false, chain: m => [
+    async r => S.premium(await upJson(r, FAPI.premium(m[1]))),
+    async r => { const [a, b, c] = U.okx(m[1]); return S.perpOkx(await upJson(r, a), await upJson(r, b), await upJson(r, c), m[1]); },
+    async r => S.perpDeribit(await upJson(r, U.deribitPerp(m[1])), m[1])
+  ] },
   { re: /^\/market\/fapi\/(premium|funding|oi|top|global|taker)\/([A-Z0-9]{5,20})$/, url: m => FAPI[m[1]](m[2]), ttl: 60 * 1000, type: "application/json", sec: false },
   { re: /^\/osiris\/celestrak\/(stations|visual)$/, url: m => U.gp(m[1]), ttl: 2 * HOUR, type: "application/json", sec: false, transform: json(j => S.gp(j)) },
   { re: /^\/osiris\/eonet$/, url: () => U.eonet(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.eonet(j)) },
@@ -110,7 +131,8 @@ const ROUTES = [
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
 const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com",
-  "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com"]);
+  "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com",
+  "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int"]);
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -183,8 +205,19 @@ function readCache(url, ttl) {
 function fetchShared(route, url, m) {
   if (inflight.has(url)) return inflight.get(url);
   const p = (async () => {
-    const raw = await upstream(route, url);
-    const body = route.transform ? route.transform(raw, m) : raw;
+    let body;
+    if (route.chain) {
+      // Fallback chain (ADR-109): the first step that answers wins; the errors before it are logged, not hidden.
+      const errs = [];
+      for (const step of route.chain(m)) {
+        try { body = Buffer.from(JSON.stringify(await step(route))); break; } catch (e) { errs.push(e.message); }
+      }
+      if (!body) throw Object.assign(new Error("every source failed: " + errs.join("; ").slice(0, 300)), { status: 502 });
+      if (errs.length) console.warn(`${url}: fell back after ${errs.join("; ").slice(0, 300)}`);
+    } else {
+      const raw = await upstream(route, url);
+      body = route.transform ? route.transform(raw, m) : raw;
+    }
     memPut(url, body);
     try { writeFileSync(cachePath(url), body); } catch (e) { console.warn("cache write failed:", e.message); }
     return body;
@@ -193,6 +226,7 @@ function fetchShared(route, url, m) {
   return p;
 }
 
+const upJson = async (route, url) => JSON.parse((await upstream(route, url)).toString("utf8"));
 async function upstream(route, url) {
   const host = new URL(url).hostname;
   if (!ALLOWED_UPSTREAM.has(host)) throw Object.assign(new Error("host not allowed"), { status: 400 });
@@ -257,8 +291,11 @@ const PROBES = [
   { name: "NGA Maritime (MSI)", via: "proxy /osiris/nga", url: "https://msi.nga.mil/api/publications/broadcast-warn?output=json" },
   { name: "Digitraffic AIS", via: "proxy /osiris/ais", url: "https://meri.digitraffic.fi/api/ais/v1/locations" },
   { name: "GDACS", via: "proxy /osiris/gdacs", url: "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP" },
+  { name: "EMSC (GDACS fallback)", via: "proxy /osiris/gdacs", url: "https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=1" },
+  { name: "ReliefWeb (GDACS fallback)", via: "proxy /osiris/gdacs", url: OMEGA_MATH.urls.reliefweb() },
   { name: "Binance spot", via: "browser + proxy /market/binance", url: "https://data-api.binance.vision/api/v3/ping" },
   { name: "Binance futures", via: "browser + proxy /market/fapi", url: "https://fapi.binance.com/fapi/v1/ping" },
+  { name: "OKX public (funding fallback)", via: "proxy /market/fapi/premium", url: "https://www.okx.com/api/v5/public/time" },
   { name: "CoinGecko", via: "browser + proxy /market/coingecko", url: "https://api.coingecko.com/api/v3/ping" },
   { name: "mempool.space", via: "browser", url: "https://mempool.space/api/v1/fees/recommended" },
   { name: "NASA GIBS (SAT)", via: "browser", url: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_NextGeneration/default/500m/0/0/0.jpeg" },
