@@ -15,7 +15,7 @@ const OUT = resolve(process.argv[2] || join(REPO, "_site"));
 
 const FILES = [
   ["site-landing/index.html", "index.html"], ["site-landing/en.html", "en.html"], ["site-landing/style.css", "style.css"],
-  ["site-landing/vis.js", "vis.js"], ["site-landing/calc.js", "calc.js"], ["site-landing/desk-sim.js", "desk-sim.js"], ["site-landing/pwa.js", "pwa.js"],
+  ["site-landing/vis.js", "vis.js"], ["site-landing/suite.js", "suite.js"], ["site-landing/calc.js", "calc.js"], ["site-landing/desk-sim.js", "desk-sim.js"], ["site-landing/pwa.js", "pwa.js"],
   ["site-landing/manifest.json", "manifest.json"], ["site-landing/service-worker.js", "service-worker.js"],
   ["omega-ops-room-v1/omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html"],
   ["omega-ops-room-v1/the-chain.html", "omega-ops-room-v1/the-chain.html"],
@@ -24,6 +24,14 @@ const FILES = [
 ];
 const DIRS = [["site-landing/fonts", "fonts", /\.(woff2|txt)$/], ["site-landing/icons", "icons", /\.(png|svg)$/], ["omega-ops-room-v1/icons", "omega-ops-room-v1/icons", /\.png$/]];
 for (const [src, dst, re] of DIRS) for (const f of readdirSync(join(REPO, src))) if (re.test(f) && !f.startsWith(".")) FILES.push([`${src}/${f}`, `${dst}/${f}`]);
+// The hourly public intel snapshot (ADR-104) is optional: the workflow writes it just before this build.
+// It is published only when it parses and carries the expected format tag.
+const SNAP = "data/public-intel-snapshot.json";
+try {
+  const j = JSON.parse(readFileSync(join(REPO, SNAP), "utf8"));
+  if (j && j.format === "omega-public-intel-v1" && j.sources && typeof j.sources === "object") FILES.push([SNAP, SNAP]);
+  else console.warn(`${SNAP}: unexpected format, not published`);
+} catch { console.log(`${SNAP}: not present, the site uses the proxy and direct tiers only`); }
 
 // Checks every text file before it is published.
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
