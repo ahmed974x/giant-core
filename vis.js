@@ -68,7 +68,7 @@
       dots.replaceChildren(...(o.dots ? o.dots(best) : []).filter(d => Number.isFinite(d[0])).map(([y, tone]) => glow(cx, y, tone, 4)));
       texts.replaceChildren();
       const w = Math.max(132, ...rows.map(([a, b]) => (String(a).length + String(b).length) * 7.2 + 28)), hgt = 14 + rows.length * 18;
-      const bx = cx + 14 + w > vb.width - 4 ? cx - 14 - w : cx + 14, by = o.T + 4;
+      const bx = Math.max(4, Math.min(vb.width - w - 4, cx + 14 + w > vb.width - 4 ? cx - 14 - w : cx + 14)), by = Math.max(24, o.T + 4);
       box.setAttribute("x", f1(bx)); box.setAttribute("y", f1(by)); box.setAttribute("width", f1(w)); box.setAttribute("height", f1(hgt));
       rows.forEach(([a, b], k) => {
         const yy = by + 20 + k * 18;
