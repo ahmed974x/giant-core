@@ -60,6 +60,14 @@ Python services also run `ruff check`; Node services `npx @biomejs/biome lint` p
 
 To run the pages with live data locally: `./start-omega.sh` or `start-omega.bat` (proxy and static server on `127.0.0.1:8796`, ADR-093). `node scripts/omega-data-proxy.mjs --check` prints the source status table. A new upstream must be added to `ALLOWED_UPSTREAM` in the proxy and to the page's CSP `connect-src` or `img-src`.
 
+## 6a. Skills and local tools (ADR-108)
+
+- Project skills in `.claude/skills/`: `omega-design`, `omega-finance-chain`, `apple-liquid-glass-hig`, `osint-bgp-cables`, `quant-microstructure-gex`, `synaptic-spiderweb-viz`, `safe-vault-cryptographic-ratchet`. Each is text rules only and passes `node scripts/skillspector-audit.mjs --strict .claude/skills`.
+- Brain 2 maths: one file, `scripts/lib/brain2-math.mjs`, shared by the proxy, the snapshot, the MCP bridge and the Ops Room (inline copy from `node scripts/build-brain2-inline.mjs`; `--check` and `node scripts/test-brain2.mjs` run in CI).
+- `scripts/omega-mcp-bridge.mjs` is a zero-dependency MCP server over stdio: read-only public data and paper maths, no keys, no orders, no file writes.
+- Windows-MCP is used only at 0.8.8, stdio, telemetry off, with the screen, mouse and keyboard tools (no App, PowerShell, Registry, FileSystem, Process, Clipboard), as `scripts/setup-windows-mcp.ps1` writes it. Any other setting needs a new security review. Other OSINT MCP servers are not added without one.
+- OSINT is passive: public keyless APIs only. No port scanning, dorking, spoofed user agents or anti-bot bypass.
+
 ## 7. Records
 
 - One task = one commit = one ADR in `docs/adr/ADR-NNN-*.md` (next free number: check the folder and the open branches).

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "omega-local-mcp": {
+      "command": "node",
+      "args": ["scripts/omega-mcp-bridge.mjs"],
+      "env": { "OMEGA_PROXY_PORT": "8796" }
+    }
+  }
+}
