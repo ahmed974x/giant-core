@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-i1L3HtqBxQOx6NoTGGVTgSQ8i7wsmdecYMDJMHPgfzg=' 'sha256-SRGt9/FzvFf26UkTXzbKZQfsJjWTbmDQ8MW1l/zJyjw=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-GKfFUUwLzYFhjWw6Txk4nzAimEqyHceZJzwkOVp7rqk='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-i1L3HtqBxQOx6NoTGGVTgSQ8i7wsmdecYMDJMHPgfzg=' 'sha256-D4/JTt7wr2kpRlCNrw33CwGZjvP+vGHW1860+sHpSEY=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-qV7wploRP4ToVduH80AuWSBF6l7UTvby56dsvmjVzSQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -559,6 +559,13 @@
     --os-day-ocean: oklch(92% 0.035 230); --os-day-land: oklch(74% 0.06 145); --os-day-grid: oklch(84% 0.03 230);
     --os-map-ocean: var(--sphere-b); --os-map-land: var(--land); --os-map-grid: var(--hairline-color);
     --os-sat-ocean: oklch(22% 0.045 250); --os-sat-land: oklch(42% 0.06 145); --os-sat-grid: oklch(32% 0.04 250);
+    /* ADR-105: shaded vector map, Apple Maps style: ceramic #E5EFF7 water by day, navy #0A192F by night */
+    --os-vec-ocean: oklch(94.7% 0.015 241.8); --os-vec-ocean-hi: oklch(98% 0.008 240); --os-vec-land: oklch(98.2% 0.01 85); --os-vec-coast: oklch(78% 0.035 240);
+    --os-vec-shade: oklch(45% 0.04 250 / 0.28); --os-vec-limb: oklch(40% 0.05 250 / 0.2); --os-lane: oklch(62% 0.13 225); --os-lane-glow: oklch(70% 0.14 220 / 0.55);
+  }
+  :root[data-theme="dark"] {
+    --os-vec-ocean: oklch(21.4% 0.048 258); --os-vec-ocean-hi: oklch(28% 0.06 255); --os-vec-land: oklch(30% 0.028 258); --os-vec-coast: oklch(46% 0.05 250);
+    --os-vec-shade: oklch(0% 0 0 / 0.6); --os-vec-limb: oklch(0% 0 0 / 0.5); --os-lane: oklch(84% 0.12 210); --os-lane-glow: oklch(80% 0.14 210 / 0.6);
   }
   .os-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); margin-top: var(--s-3); }
   .os-rail { display: flex; flex-direction: column; gap: var(--s-1); }
@@ -586,7 +593,17 @@
   .os-cam-btn:active { transform: scale(0.94); }
   .os-zoom { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 132px; margin: var(--s-1) 0; accent-color: var(--accent-fill); cursor: pointer; }
   .os-zoom-val { font-size: var(--text-caption); font-weight: 700; color: var(--content-primary); }
-  .os-call { position: absolute; top: 0; left: 0; z-index: 2; width: min(320px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto; padding: var(--s-3); border-radius: 20px; background: var(--surface); border: var(--hairline) solid var(--hairline-color); box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), var(--shadow-soft); }
+  .os-call { position: absolute; top: 0; left: 0; z-index: 2; width: min(320px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto; padding: var(--s-3); border-radius: 20px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular), 0 1px 2px hsl(var(--shadow-color) / 0.06), var(--shadow-soft); }
+  :root { --specular: oklch(100% 0 0 / 0.7); }
+  :root[data-theme="dark"] { --specular: oklch(100% 0 0 / 0.22); }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .os-call { background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(190%); backdrop-filter: blur(30px) saturate(190%); }
+  }
+  .os-spark { display: block; width: 100%; height: 48px; margin-top: var(--s-2); }
+  .os-spark .sp-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .os-spark .sp-blue { stroke: var(--apple-blue); } .os-spark .sp-orange { stroke: var(--apple-orange); } .os-spark .sp-red { stroke: var(--apple-red); } .os-spark .sp-cyan { stroke: var(--apple-cyan); }
+  .os-spark-cap { font-size: var(--text-caption); color: var(--content-secondary); }
+  .os-spark-cap[hidden], .os-spark[hidden] { display: none; }
   .os-call[hidden] { display: none; }
   .os-call-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-2); }
   .os-call-head b { font-size: var(--text-headline); font-weight: 800; }
@@ -805,6 +822,8 @@
             <div class="os-call-head"><b id="osCallT"></b><button class="icon-btn" id="osCallX" type="button" aria-label="Close the point details"><span aria-hidden="true">✕</span></button></div>
             <p class="os-call-kind" id="osCallK"></p>
             <table class="kv" id="osCallKv"><tbody></tbody></table>
+            <svg class="os-spark" id="osCallSpark" viewBox="0 0 296 48" preserveAspectRatio="none" aria-hidden="true" hidden></svg>
+            <p class="os-spark-cap" id="osCallSparkCap" hidden></p>
             <p class="os-call-imp" id="osCallI"></p>
             <a class="os-call-src" id="osCallA" target="_blank" rel="noopener noreferrer" hidden>Raw source</a>
           </div>
@@ -4493,7 +4512,9 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       ocean: g("--os-" + S.style + "-ocean"), land: g("--os-" + S.style + "-land"), grid: g("--os-" + S.style + "-grid"),
       danger: g("--apple-red") || g("--danger"), warning: g("--apple-orange") || g("--warning"), accent: g("--apple-blue") || g("--accent"),
       gold: g("--gold-fill") || g("--gold"), violet: g("--apple-purple") || g("--violet"), success: g("--apple-green") || g("--success"),
-      cyan: g("--apple-cyan") || g("--accent"), text: g("--content-primary"), halo: g("--surface")
+      cyan: g("--apple-cyan") || g("--accent"), text: g("--content-primary"), halo: g("--surface"),
+      vOcean: g("--os-vec-ocean"), vOceanHi: g("--os-vec-ocean-hi"), vLand: g("--os-vec-land"), vCoast: g("--os-vec-coast"), vShade: g("--os-vec-shade"), vLimb: g("--os-vec-limb"),
+      lane: g("--os-lane"), laneGlow: g("--os-lane-glow")
     };
   }
   // Natural Earth 1:50m land (public domain, via world-atlas 2.0.2), simplified to 0.03° and stored as
@@ -4821,6 +4842,56 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       im.src = GIBS + col + ".jpeg";
     }
   }
+  // ADR-105: shaded vector base, Apple Maps style. Water is a soft radial wash (ceramic by day, navy by night),
+  // land is lifted with a tinted shadow and a hairline coast. Tiles paint over it when they load, so this is
+  // what the map shows offline or while tiles are blocked. The shadow is skipped while the camera moves.
+  function vectorBase(globe) {
+    const cx = S.w / 2, cy = S.h / 2, r = globe ? R() : Math.hypot(S.w, S.h) / 2;
+    const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, r * 1.05);
+    g.addColorStop(0, colors.vOceanHi); g.addColorStop(1, colors.vOcean);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, S.w, S.h);
+    landPath(globe);
+    ctx.save();
+    if (!S.moving && !S.fly) { ctx.shadowColor = colors.vShade; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2; }
+    ctx.fillStyle = colors.vLand; ctx.fill("nonzero");
+    ctx.restore();
+    ctx.strokeStyle = colors.vCoast; ctx.lineWidth = 0.75; ctx.stroke();
+  }
+  // Reference shipping lanes through the five chokepoints (approximate great routes, drawn as lit lines; not
+  // live traffic). Each leg is cut into 1° steps so it follows the globe's curve.
+  const LANES = [
+    [[29.3, 48.6], [27.6, 50.6], [26.4, 53.6], [26.5, 56.4], [25.2, 57.6], [23.6, 59.8], [18.5, 60.5], [13.6, 51.2], [12.6, 43.4]],
+    [[12.6, 43.4], [15.0, 41.9], [20.0, 38.6], [24.5, 36.0], [27.6, 33.9], [30.0, 32.58], [31.3, 32.35], [33.4, 28.0], [35.8, 15.0], [37.3, 8.0], [36.0, -5.6]],
+    [[13.6, 51.2], [8.0, 64.0], [5.6, 80.4], [6.0, 95.0], [2.5, 101.0], [1.2, 103.8], [5.0, 108.0], [12.0, 112.0], [22.0, 115.2]],
+    [[12.5, -77.0], [9.4, -79.9], [9.08, -79.68], [8.9, -79.5], [7.0, -80.0]]
+  ];
+  const laneDense = LANES.map(line => {
+    const out = [];
+    for (let i = 0; i < line.length - 1; i++) {
+      const [a, b] = [line[i], line[i + 1]], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])));
+      for (let k = 0; k < n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+    }
+    out.push(line[line.length - 1]);
+    return out;
+  });
+  function lanes() {
+    const w = S.z < 3 ? 1 : S.z < 7 ? 1.5 : 2.5;
+    ctx.save();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const pass of [0, 1]) {
+      ctx.strokeStyle = pass ? colors.lane : colors.laneGlow;
+      ctx.lineWidth = pass ? w : w * 3.5;
+      if (!pass && !S.moving && !S.fly) { ctx.shadowColor = colors.laneGlow; ctx.shadowBlur = 10; } else ctx.shadowBlur = 0;
+      ctx.globalAlpha = pass ? 0.95 : 0.45;
+      for (const line of laneDense) {
+        ctx.beginPath();
+        let on = false;
+        for (const [lat, lon] of line) { const p = project(lat, lon); if (!p) { on = false; continue; } if (on) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); on = true; } }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
   function draw() {
     if (!S.w || !S.h) return;
     S.hits = [];
@@ -4828,8 +4899,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     const k = provider(), isFlat = flat();
     let tz = null, imagery = false;
     if (isFlat) {
-      ctx.fillStyle = colors.ocean; ctx.fillRect(0, 0, S.w, S.h);
-      ctx.fillStyle = colors.land; landPath(false); ctx.fill("nonzero");
+      vectorBase(false);
       if (k) { tz = drawTiles(k); imagery = TILES[k].ok > 0; }
       else if (S.style === "sat" && (loadSat(), sat.state === "ready") && S.z <= 7) {
         // Blue Marble is plate carrée; at these zooms it is drawn per Mercator row band.
@@ -4844,16 +4914,21 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     } else {
       const r = R();
       ctx.save();
-      ctx.beginPath(); ctx.arc(S.w / 2, S.h / 2, r, 0, Math.PI * 2); ctx.fillStyle = colors.ocean; ctx.fill(); ctx.clip();
-      ctx.fillStyle = colors.land; landPath(true); ctx.fill("nonzero");
+      ctx.beginPath(); ctx.arc(S.w / 2, S.h / 2, r, 0, Math.PI * 2); ctx.clip();
+      vectorBase(true);
       if (S.style === "sat" && !k) loadSat();
       const rg = rasterGlobe(k);
       if (rg) { ctx.drawImage(rg, 0, 0, S.w, S.h); imagery = true; }
+      // limb darkening and a soft highlight, so the drawn globe reads as a sphere
+      const lg = ctx.createRadialGradient(S.w / 2 - r * 0.35, S.h / 2 - r * 0.4, r * 0.1, S.w / 2, S.h / 2, r);
+      lg.addColorStop(0, "transparent"); lg.addColorStop(0.72, "transparent"); lg.addColorStop(1, colors.vLimb);
+      ctx.fillStyle = lg; ctx.fillRect(S.w / 2 - r, S.h / 2 - r, 2 * r, 2 * r);
       ctx.restore();
     }
     if (!imagery || S.z < 9) graticule();
     S.view = { k, tz, imagery };
     if (S.layers.sea) {
+      lanes();
       for (const v of S.ais) dot(v[1], v[0], S.z > 9 ? 3 : 1.2, colors.violet, false, S.z > 9 ? { kind: "ship", lat: v[1], lon: v[0], d: v } : null);
       CHOKE.forEach((c, i) => { const st = S.straits[i]; diamond(c.lat, c.lon, st && st.warnings.length ? 9 : 7, st && st.warnings.length ? colors.danger : colors.gold, { kind: "strait", i, lat: c.lat, lon: c.lon }); });
     }
@@ -5189,7 +5264,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   // the link to the raw evidence. Readings are heuristics ([INFERENCE]) and decision aids for paper trading only.
   function describe(hit) {
     const d = hit.d || {}, rows = [], near = nearestHub(hit.lat, hit.lon);
-    let t = "", a = "", kind = "", imp = "", url = null, src = "";
+    let t = "", a = "", kind = "", imp = "", url = null, src = "", spark = null;
     if (hit.kind === "quake") {
       t = `M${nf(d.mag)} earthquake`; a = "زلزال"; kind = d.place || "USGS event"; src = "USGS";
       rows.push(["Time", "الوقت", utc(d.t)], ["Depth", "العمق", Number.isFinite(d.depth) ? nf(d.depth, 0) + " km" : "—"]);
@@ -5198,6 +5273,8 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
         : `Nearest tracked hub is ${near.x.n} at ${nf(near.d, 0)} km: little direct link to the desk's markets.`;
       imp += " It feeds the seismic part of PWSI.";
       url = d.url;
+      const day = [...S.quakes].sort((x, y) => x.t - y.t);
+      spark = { vals: day.map(q => q.mag), mark: day.indexOf(d), tone: "red", cap: `Magnitudes of the ${day.length} M2.5+ quakes in 24 h, oldest first · USGS` };
     } else if (hit.kind === "gdacs") {
       const types = { TC: "Tropical cyclone", FL: "Flood", EQ: "Earthquake", VO: "Volcano", DR: "Drought", WF: "Wildfire" };
       t = `${d.level} alert · ${types[d.type] || d.type || "event"}`; a = "إنذار كارثة"; kind = d.name || "GDACS event"; src = "GDACS";
@@ -5217,6 +5294,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       t = d.n; a = d.a; kind = "Weather at hub"; src = "Open-Meteo";
       rows.push(["Temperature", "الحرارة", nf(d.temp, 1) + " °C"], ["Wind / gust", "الرياح / الهبات", nf(d.wind, 0) + " / " + nf(d.gust, 0) + " km/h"]);
       imp = d.gust >= 60 ? `Gusts of ${nf(d.gust, 0)} km/h: port cranes and flights can pause.` : "No weather pressure on this hub right now.";
+      if (d.gusts && d.gusts.length > 1) spark = { vals: d.gusts, mark: 0, tone: "cyan", cap: `Gusts, next 24 h: ${nf(Math.min(...d.gusts), 0)} to ${nf(Math.max(...d.gusts), 0)} km/h · Open-Meteo forecast` };
       url = `https://open-meteo.com/en/docs#latitude=${d.lat}&longitude=${d.lon}`;
     } else if (hit.kind === "port") {
       t = d.n; a = d.a; kind = "Port pulse (AIS)"; src = "Fintraffic Digitraffic";
@@ -5239,7 +5317,12 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       imp = d.imp; url = d.url;
     }
     rows.unshift(["Position", "الموقع", coordText(hit.lat, hit.lon)]);
-    return { t, a, kind, rows, imp, url, src };
+    // Straits, alerts and bookmarks carry the session's PWSI line, which their numbers feed.
+    if (!spark && ["strait", "gdacs", "place"].includes(hit.kind)) {
+      const hs = S.pwsiHist.a.filter(x => Number.isFinite(x.v));
+      if (hs.length > 1) spark = { vals: hs.map(x => x.v), mark: hs.length - 1, tone: "orange", cap: `PWSI this session, ${hs.length} readings: ${nf(hs[0].v, 0)} to ${nf(hs[hs.length - 1].v, 0)} [INFERENCE]` };
+    }
+    return { t, a, kind, rows, imp, url, src, spark };
   }
   const call = $("osCall");
   function openCall(hit) {
@@ -5249,12 +5332,26 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     $("osCallT").replaceChildren(document.createTextNode(D.t), ar(D.a));
     $("osCallK").textContent = D.kind;
     kv("osCallKv", D.rows);
+    drawSpark(D.spark);
     $("osCallI").replaceChildren(h("span", "pill-inf", "[INFERENCE]"), document.createTextNode(" " + D.imp + " Decision aid for paper trading only."));
     const u = safeUrl(D.url), link = $("osCallA");
     link.hidden = !u;
     if (u) { link.href = u; link.textContent = "Raw source · " + D.src + " ↗"; }
     call.hidden = false;
     placeCall();
+  }
+  // Sparkline in the popover: real readings only (USGS magnitudes, the Open-Meteo gust forecast, PWSI history).
+  function drawSpark(sp) {
+    const svg = $("osCallSpark"), cap = $("osCallSparkCap"), V = window.OMEGA_VIS;
+    const ok = !!(V && sp && sp.vals.length > 1 && sp.vals.every(Number.isFinite));
+    svg.toggleAttribute("hidden", !ok); cap.hidden = !ok;
+    if (!ok) { svg.replaceChildren(); return; }
+    const lo = Math.min(...sp.vals), hi = Math.max(...sp.vals), span = hi - lo || 1, n = sp.vals.length;
+    const pts = sp.vals.map((v, i) => [4 + i / (n - 1) * 288, 42 - (v - lo) / span * 36]);
+    svg.replaceChildren(V.el("path", { d: V.area(pts, 46), class: "v-area" }), V.el("path", { d: V.spline(pts), class: "sp-line sp-" + sp.tone }));
+    svg.firstChild.setAttribute("fill", V.gradient(svg, sp.tone));
+    if (sp.mark >= 0 && sp.mark < n) svg.append(V.glow(pts[sp.mark][0], pts[sp.mark][1], sp.tone, 3));
+    cap.textContent = sp.cap;
   }
   function closeCall() { if (S.call) redraw(); S.call = null; call.hidden = true; }
   $("osCallX").addEventListener("click", () => { closeCall(); cv.focus(); });
@@ -5278,6 +5375,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     if (k && (!globe || !TILES[k].tainted) && TILES[k].ok) attr.push(TILES[k].attr);
     if (!k && S.style === "sat" && sat.state === "ready") attr.push("Imagery: NASA GIBS Blue Marble");
     attr.push("Coastline: Natural Earth");
+    if (S.layers.sea) attr.push("Lanes: reference routes, approximate");
     const badge = k && TILES[k].ok ? `${TILES[k].en}${v.tz !== null ? " · tiles z" + v.tz : ""}` : k ? `${TILES[k].en} · loading…` : "Tiles offline · vector map";
     const key = [nf(S.z, 1), S.proj, globe, attr.join(), badge].join("|");
     if (key !== uiKey) {
