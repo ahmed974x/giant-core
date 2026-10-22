@@ -18,8 +18,8 @@ const SIZES = [
   { tag: "ultrawide", width: 2560, height: 1080, mobile: false },
 ];
 // Requests to local services that are expected to be offline on a dev machine (n8n, Newton, Core API).
-// ALLOW_NET_ERRORS=1 also ignores blocked outside feeds, for sandboxes without internet.
-const EXPECTED_OFFLINE = process.env.ALLOW_NET_ERRORS === "1" ? /net::ERR_/ : /ERR_CONNECTION_REFUSED/;
+// ALLOW_NET_ERRORS=1 also ignores blocked outside feeds and refused market-data sockets, for sandboxes without internet.
+const EXPECTED_OFFLINE = process.env.ALLOW_NET_ERRORS === "1" ? /net::ERR_|WebSocket connection to 'wss:[^']*' failed: (Establishing a tunnel|Error in connection establishment)/ : /ERR_CONNECTION_REFUSED/;
 
 const browser = await chromium.launch();
 let failures = 0;

@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-GhOG+4XSyGghLFCrZEjKvrdb5A/UFR2h56dBV4wZ6ug=' 'sha256-4M9hNWZCGrCxcYv0dh/JnkVeLaZn2HYd94N9Z4UkfD8=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ=' 'sha256-PTJTR6kKtbJeGzyWahGV4OeifIYj/3oy+enPGrTLEjs='; style-src 'sha256-Cy9EzbNGJ8OUurlNydLWvsp3gMxExfQUTn1iAa6uNEQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-jdsk8D4i8Mb6aBLy/uQQCbfDEsFHzPaWHD7S181i1mM=' 'sha256-m24EBQUz9FzWYhGsLYvnj1vwHojEekOlGeGk34zCqnk=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ=' 'sha256-PTJTR6kKtbJeGzyWahGV4OeifIYj/3oy+enPGrTLEjs='; style-src 'sha256-Cy9EzbNGJ8OUurlNydLWvsp3gMxExfQUTn1iAa6uNEQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -2959,7 +2959,9 @@ const DEFAULT_ALLOW_HOSTS = [
   async function proxyBase() {
     if (Date.now() - proxyState.at < 300000) return proxyState.base;
     proxyState.at = Date.now(); proxyState.base = null;
-    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    // The page's own origin is the proxy only on port 8796 (--lan) or behind Tailscale Serve; anywhere else
+    // (GitHub Pages, a plain static server) probing it would only log a 404.
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY && (location.port === "8796" || /\.ts\.net$/i.test(location.hostname)) ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
     for (const b of tries) {
       try { const j = await getJson(b + "/health", 2500); if (j && j.ok === true) { proxyState.base = b; break; } } catch { /* try the next address */ }
     }
@@ -5352,7 +5354,9 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   const loadPrices = () => cascade("binance", [["direct", () => live(getJson(TICKERS))], ["snapshot", () => fromSnapshot("binance")]], applyPrices);
 
   async function proxyUp() {
-    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    // The page's own origin is the proxy only on port 8796 (--lan) or behind Tailscale Serve; anywhere else
+    // (GitHub Pages, a plain static server) probing it would only log a 404.
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY && (location.port === "8796" || /\.ts\.net$/i.test(location.hostname)) ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
     S.proxyUp = false;
     for (const base of tries) {
       try { const j = await getJson(base + "/health", 2500); if (j && j.ok === true) { PROXY = base; S.proxyUp = true; break; } } catch { /* try the next address */ }

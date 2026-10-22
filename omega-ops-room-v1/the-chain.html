@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-rGbU0px6TsXydSn01apP28OOBK3t1xC9z2VBT9cVcss=' 'sha256-uAru0bNxkRxrigr5MU0NVNI+aKbwLdEUu2ygHwK4pXo='; style-src 'sha256-YlXxN5sbdzvL/TPvPiHAX4i8KW1x3aKu2qXXpokz7CQ='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-rGbU0px6TsXydSn01apP28OOBK3t1xC9z2VBT9cVcss=' 'sha256-QYHpZmRdWdpgelfAL/nG834W4x09/DCDe6k8uwb91YI='; style-src 'sha256-YlXxN5sbdzvL/TPvPiHAX4i8KW1x3aKu2qXXpokz7CQ='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -1816,7 +1816,9 @@
   let proxyBase = "";
   async function proxy() {
     if (proxyBase) return proxyBase;
-    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
+    // The page's own origin is the proxy only on port 8796 (--lan) or behind Tailscale Serve; anywhere else
+    // (GitHub Pages, a plain static server) probing it would only log a 404.
+    const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY && (location.port === "8796" || /\.ts\.net$/i.test(location.hostname)) ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
     for (const base of tries) {
       try { const j = await getJSON(base + "/health", 2500); if (j && j.ok === true) { proxyBase = base; return base; } } catch { /* try the next address */ }
     }
