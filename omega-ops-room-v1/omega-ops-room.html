@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-r6K1rhZir3YTkqrhdF40EBpov5idR1xzegu9P+Y50Uc=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-d1qoRSj97eT+CFWH/edrK0ORJC9ThlrICGDYKtIbrnM=' 'sha256-5Jt6GrAM3fPzge0ZIKWlXwvfgejY8euAzz6jfAxBbRM=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-CCS9sHRjDXFA0Y9OcVh4jaLK3QM1Wa9YHk7LNFhj4Bc='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-GCrCVOEcoAk4yXAEVEBUWq4V1e4n0Y2zHE3GbXXXrr4=' 'sha256-5Jt6GrAM3fPzge0ZIKWlXwvfgejY8euAzz6jfAxBbRM=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-GKfFUUwLzYFhjWw6Txk4nzAimEqyHceZJzwkOVp7rqk='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -85,6 +85,8 @@
     --apple-purple: oklch(61.5% 0.213 312.4);
     --apple-orange: oklch(76.5% 0.175 62.6);
     --apple-cyan: oklch(70.7% 0.133 233.9);
+    --apple-mint: oklch(74.8% 0.130 189.0);
+    --apple-pink: oklch(65.0% 0.238 17.9);
   }
   @supports (transition-timing-function: linear(0, 1)) {
     :root { --ease-spring: linear(0, 0.0582, 0.1929, 0.3578, 0.5227, 0.6699, 0.7911, 0.8842, 0.9509, 0.9951, 1.0214, 1.0344, 1.0384, 1.0366, 1.0316, 1.0253, 1.019, 1.0132, 1.0085, 1.0048, 1.0021, 1.0003, 0.9993, 0.9987, 1); }
@@ -126,6 +128,8 @@
     --apple-purple: oklch(65.6% 0.227 312.4);
     --apple-orange: oklch(78.2% 0.171 67.2);
     --apple-cyan: oklch(81.7% 0.119 227.7);
+    --apple-mint: oklch(74.8% 0.130 189.0);
+    --apple-pink: oklch(65.8% 0.232 16.0);
   }
   @media (color-gamut: p3) {
     :root {
@@ -140,6 +144,8 @@
       --apple-purple: oklch(61.5% 0.238 312.4);
       --apple-orange: oklch(76.5% 0.196 62.6);
       --apple-cyan: oklch(70.7% 0.149 233.9);
+      --apple-mint: oklch(74.8% 0.146 189.0);
+      --apple-pink: oklch(65.0% 0.266 17.9);
     }
     :root[data-theme="dark"] {
       --accent: oklch(79.1% 0.117 255.5); --gold: oklch(88.5% 0.202 94.8); --violet: oklch(80.7% 0.15 312.4);
@@ -153,6 +159,8 @@
       --apple-purple: oklch(65.6% 0.255 312.4);
       --apple-orange: oklch(78.2% 0.192 67.2);
       --apple-cyan: oklch(81.7% 0.129 227.7);
+      --apple-mint: oklch(74.8% 0.146 189.0);
+      --apple-pink: oklch(65.8% 0.258 16.0);
     }
   }
 
@@ -306,18 +314,23 @@
   /* Performance rings and whale sonar (ADR-102) */
   .rings-body { display: grid; grid-template-columns: minmax(160px, 240px) minmax(0, 1fr); gap: var(--s-5); align-items: center; }
   .rings { width: 100%; height: auto; display: block; }
-  .rings .rg-track { fill: none; stroke-width: 20; opacity: 0.18; }
+  #rings { padding-top: 24px; scroll-margin-top: 24px; }
+  .rings .rg-track { fill: none; stroke-width: 20; opacity: 0.16; }
+  .rings .rg-edge { fill: none; stroke: var(--hairline-color); stroke-width: 1; }
   .rings .rg-arc { fill: none; stroke-width: 20; stroke-linecap: round; }
-  .rg-green { stroke: var(--apple-green); } .rg-blue { stroke: var(--apple-blue); } .rg-orange { stroke: var(--apple-orange); }
-  .rs { stop-opacity: 1; } .rs-green { stop-color: var(--apple-green); } .rs-cyan { stop-color: var(--apple-cyan); } .rs-blue { stop-color: var(--apple-blue); } .rs-purple { stop-color: var(--apple-purple); } .rs-orange { stop-color: var(--apple-orange); }
+  .rings .rg-shade { flood-color: hsl(var(--shadow-color)); flood-opacity: 0.28; }
+  .rg-green { stroke: var(--apple-green); } .rg-blue { stroke: var(--apple-indigo); } .rg-orange { stroke: var(--apple-orange); }
+  .rg-cap-green { fill: var(--apple-green); } .rg-cap-mint { fill: var(--apple-mint); } .rg-cap-indigo { fill: var(--apple-indigo); } .rg-cap-purple { fill: var(--apple-purple); } .rg-cap-orange { fill: var(--apple-orange); } .rg-cap-pink { fill: var(--apple-pink); }
+  .rs { stop-opacity: 1; } .rs-green { stop-color: var(--apple-green); } .rs-mint { stop-color: var(--apple-mint); } .rs-indigo { stop-color: var(--apple-indigo); } .rs-purple { stop-color: var(--apple-purple); } .rs-orange { stop-color: var(--apple-orange); } .rs-pink { stop-color: var(--apple-pink); }
   .rings-legend { list-style: none; display: grid; gap: var(--s-3); }
   .rings-legend li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s-3); padding-bottom: var(--s-3); border-bottom: var(--hairline) solid var(--hairline-color); }
   .rings-legend b { font-size: var(--text-footnote); font-weight: 700; display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
   .rings-legend .num { font-size: var(--text-title); font-weight: 800; }
   .rings-legend small { grid-column: 1 / -1; font-size: var(--text-caption); color: var(--content-secondary); overflow-wrap: anywhere; }
   .rg-sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 3px solid; }
-  .rg-sw.rg-green { border-color: var(--apple-green); } .rg-sw.rg-blue { border-color: var(--apple-blue); } .rg-sw.rg-orange { border-color: var(--apple-orange); }
-  .sonar { display: block; width: 100%; height: 260px; margin-top: var(--s-2); cursor: crosshair; }
+  .rg-sw.rg-green { border-color: var(--apple-green); } .rg-sw.rg-blue { border-color: var(--apple-indigo); } .rg-sw.rg-orange { border-color: var(--apple-orange); }
+  .sonar { display: block; width: 100%; height: 280px; margin-top: var(--s-2); cursor: crosshair; touch-action: pan-y; }
+  .sw-mint { background: var(--apple-mint); } .sw-pink { background: var(--apple-pink); } .sw-orange { background: var(--apple-orange); }
   @media (max-width: 599px) { .rings-body { grid-template-columns: minmax(0, 1fr); } .rings { max-width: 240px; margin: 0 auto; } }
   /* Apple Stocks style charts (ADR-102): spline lines, glow gradient, event dots, glass loupe */
   .chart, .v-canvas { touch-action: pan-y; }
@@ -1176,7 +1189,7 @@
         </div>
         <svg class="chart ratchet" id="wlBar" viewBox="0 0 400 34" role="img" aria-label="Locked base versus swept profits"></svg>
         <div class="form-grid">
-          <div class="field"><label for="wlBase">Amount to lock · <span class="ar" lang="ar">المبلغ المراد تعليقه</span></label><input id="wlBase" name="wlBase" type="number" inputmode="decimal" step="any" min="1" autocomplete="off" value="100" /></div>
+          <div class="field"><label for="wlBase">Amount to lock · <span class="ar" lang="ar">المبلغ المراد تعليقه</span></label><input id="wlBase" name="wlBase" type="number" inputmode="decimal" step="any" min="1" autocomplete="off" value="20" /></div>
           <div class="field"><label for="wlSweepMode">Profit sweep · <span class="ar" lang="ar">طريقة الترحيل</span></label>
             <select id="wlSweepMode" name="wlSweepMode" autocomplete="off"><option value="every">A · Sweep every profit</option><option value="target">B · Sweep at target</option></select></div>
           <div class="field"><label for="wlTarget">Target value · <span class="ar" lang="ar">الهدف</span></label><input id="wlTarget" name="wlTarget" type="number" inputmode="decimal" step="any" min="0" autocomplete="off" value="1000" /></div>
@@ -1250,13 +1263,13 @@
     </div>
 
     <section data-view="3 5" class="card mt-3" aria-labelledby="snTitle" id="sonar">
-      <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag">DEPTH ±1.5%</div></div>
-      <canvas class="v-canvas sonar" id="snCanvas" role="img" aria-label="Cumulative bid depth in green to the left and ask depth in red to the right, within 1.5 percent of the mid price, with whale walls and estimated liquidation pockets. The line below gives the numbers."></canvas>
+      <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag">25 TIERS A SIDE</div></div>
+      <canvas class="v-canvas sonar" id="snCanvas" role="img" aria-label="Stepped canyon of the top 25 Binance order-book levels on each side: cumulative bids in green to the left of the mid, asks in red to the right, badges on the three largest levels per side, an orange microprice baseline and chips for whale walls further out. The line below gives the numbers."></canvas>
       <div class="chart-legend">
-        <span><i class="sw sw-success"></i>Bids · <span class="ar" lang="ar">جدار الشراء</span></span>
-        <span><i class="sw sw-danger"></i>Asks · <span class="ar" lang="ar">جدار البيع</span></span>
-        <span><i class="sw sw-gold"></i>Liquidation pocket · <span class="ar" lang="ar">منطقة المتورطين</span> <span class="pill-inf">[INFERENCE]</span></span>
-        <span>◎ Whale wall, pulses once when it appears · <span class="ar" lang="ar">نبض سونار عند ظهور حوت</span></span>
+        <span><i class="sw sw-success"></i>Bids, cumulative · <span class="ar" lang="ar">جدار الشراء</span></span>
+        <span><i class="sw sw-danger"></i>Asks, cumulative · <span class="ar" lang="ar">جدار البيع</span></span>
+        <span><i class="sw sw-orange"></i>Microprice baseline · <span class="ar" lang="ar">خط السعر المجهري</span></span>
+        <span>◎ One set of rings when the microprice moves 0.5 bps or a new whale wall appears · <span class="ar" lang="ar">نبض سونار عند تحرك السعر المجهري أو ظهور حوت</span></span>
       </div>
       <p class="sub num" id="snNow">Point at the canyon to read the depth</p>
       <p class="sub" id="snSum">Waiting for the order book…</p>
@@ -1405,7 +1418,7 @@
       dots.replaceChildren(...(o.dots ? o.dots(best) : []).filter(d => Number.isFinite(d[0])).map(([y, tone]) => glow(cx, y, tone, 4)));
       texts.replaceChildren();
       const w = Math.max(132, ...rows.map(([a, b]) => (String(a).length + String(b).length) * 7.2 + 28)), hgt = 14 + rows.length * 18;
-      const bx = cx + 14 + w > vb.width - 4 ? cx - 14 - w : cx + 14, by = o.T + 4;
+      const bx = Math.max(4, Math.min(vb.width - w - 4, cx + 14 + w > vb.width - 4 ? cx - 14 - w : cx + 14)), by = Math.max(24, o.T + 4);
       box.setAttribute("x", f1(bx)); box.setAttribute("y", f1(by)); box.setAttribute("width", f1(w)); box.setAttribute("height", f1(hgt));
       rows.forEach(([a, b], k) => {
         const yy = by + 20 + k * 18;
@@ -2988,26 +3001,36 @@ const DEFAULT_ALLOW_HOSTS = [
     const conf = D.court && Number.isFinite(D.court.conf) ? D.court.conf : NaN;
     const rings = [
       { k: "move", r: 92, p: outer, tone: "green", en: "Locked base growth & sweeps", a: "نمو المبلغ المعلّق والترحيل",
-        v: W.base > 0 ? `${pct(growth, 1)} on ${usd(W.base)} · ${W.sweeps} sweep${W.sweeps === 1 ? "" : "s"}, ${usd(W.swept)} to the safe vault · ${nf(outer * 100, 0)}% of the way to ${usd(W.target)}` : "Lock a paper base to start this ring" },
+        v: W.base > 0 ? `${pct(growth, 1)} on a ${usd(W.base)} paper base · ${W.sweeps} sweep${W.sweeps === 1 ? "" : "s"}, ${usd(W.swept)} to the safe vault · ${nf(outer * 100, 0)}% of the way to ${usd(W.target)} · sweep = max(0, equity − base)` : "Lock a paper base to start this ring" },
       { k: "court", r: 68, p: Number.isFinite(conf) ? conf : 0, tone: "blue", en: "Court consensus & accuracy", a: "إجماع المحكمة ودقتها",
         v: (Number.isFinite(conf) ? `consensus ${nf(conf * 100, 0)}%` : "waiting for the court") + " · " + (L.n ? `accuracy ${nf(L.hits / L.n * 100, 0)}% over ${L.n} closed trade${L.n === 1 ? "" : "s"}` : "no closed trade yet") },
       { k: "planet", r: 44, p: Number.isFinite(pw) ? clamp((100 - pw) / 100, 0, 1) : 0, tone: "orange", en: "Planet stability (100 − PWSI)", a: "استقرار الكوكب والسيولة",
         v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 4 live components` : "تعذر التحقق منها: no live PWSI source" }
     ];
-    const kids = [];
-    for (const g of rings) {
-      const C = 2 * Math.PI * g.r;
-      kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-track rg-" + g.tone }));
-      if (g.p > 0.002) kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-arc", stroke: "url(#rg-" + g.k + ")", "stroke-dasharray": `${(C * Math.min(g.p, 0.9999)).toFixed(2)} ${C.toFixed(2)}`, transform: "rotate(-90 110 110)" }));
-    }
-    svgEl.replaceChildren(...kids);
+    // ADR-103: Apple Watch gradients (green to mint, indigo to purple, orange to pink), round caps, a hairline
+    // border on each track and a soft shadow under the leading cap where the arc overlaps itself. At 0 % the
+    // cap is the start dot at twelve o'clock, so an empty ring still shows where it begins.
+    const GRAD = { move: ["green", "mint"], court: ["indigo", "purple"], planet: ["orange", "pink"] };
     const defs = V.el("defs");
-    for (const [k, a, b] of [["move", "green", "cyan"], ["court", "blue", "purple"], ["planet", "orange", "cyan"]]) {
+    for (const [k, [a, b]] of Object.entries(GRAD)) {
       const gr = V.el("linearGradient", { id: "rg-" + k, x1: 0, y1: 0, x2: 1, y2: 1 });
       gr.append(V.el("stop", { offset: "0%", class: "rs rs-" + a }), V.el("stop", { offset: "100%", class: "rs rs-" + b }));
       defs.append(gr);
     }
-    svgEl.prepend(defs);
+    const shade = V.el("filter", { id: "rg-shadow", x: "-60%", y: "-60%", width: "220%", height: "220%" });
+    shade.append(V.el("feDropShadow", { dx: 0, dy: 0, stdDeviation: 2.4, class: "rg-shade" }));
+    defs.append(shade);
+    const kids = [defs];
+    for (const g of rings) {
+      const C = 2 * Math.PI * g.r, p = clamp(Number.isFinite(g.p) ? g.p : 0, 0, 0.9999), [a, b] = GRAD[g.k];
+      kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-track rg-" + g.tone }),
+        sv("circle", { cx: 110, cy: 110, r: g.r + 10, class: "rg-edge" }), sv("circle", { cx: 110, cy: 110, r: g.r - 10, class: "rg-edge" }));
+      if (p > 0.002) kids.push(sv("circle", { cx: 110, cy: 110, r: g.r, class: "rg-arc", stroke: "url(#rg-" + g.k + ")", "stroke-dasharray": `${(C * p).toFixed(2)} ${C.toFixed(2)}`, transform: "rotate(-90 110 110)" }));
+      const ang = -Math.PI / 2 + 2 * Math.PI * p, cap = sv("circle", { cx: (110 + g.r * Math.cos(ang)).toFixed(2), cy: (110 + g.r * Math.sin(ang)).toFixed(2), r: 10, class: "rg-cap-" + (p >= 0.5 ? b : a) });
+      if (p > 0.04) cap.setAttribute("filter", "url(#rg-shadow)");
+      kids.push(cap);
+    }
+    svgEl.replaceChildren(...kids);
     $("rgLegend").replaceChildren(...rings.map(g => {
       const li = h("li"), b = h("b");
       b.append(h("i", "rg-sw rg-" + g.tone), document.createTextNode(g.en + " · "), ar(g.a));
@@ -3017,10 +3040,15 @@ const DEFAULT_ALLOW_HOSTS = [
     $("rgSum").textContent = rings.map(g => `${g.en}: ${nf(g.p * 100, 0)}%`).join(" · ") + ". Paper figures and model readings, not advice.";
   }
 
-  // Liquidity canyon: cumulative bid depth (green, left) and ask depth (red, right) within ±1.5% of the mid,
-  // whale walls (≥ 8× the median level within 2%, the same rule as the walls list) and estimated
-  // liquidation pockets [INFERENCE]. A wall that was not in the previous book fires one sonar pulse.
-  const sonar = { cv: null, ctx: null, w: 0, h: 0, dpr: 1, prev: null, pulses: [], raf: 0, hover: null, visible: true, geo: null };
+  // Liquidity canyon (ADR-103): the top 25 levels on each side of the Binance spot book as a stepped staircase
+  // of cumulative depth, bids left of the mid and asks right of it, one equal-width tier per level so thin and
+  // thick levels read alike. Badges mark the three largest single levels per side. The orange baseline is the
+  // microprice (the imbalance-weighted mid, Stoikov's first-order form). When it moves 0.5 bps or more from the
+  // last pulse, at most once every 4 s, it sends one set of three sonar rings; a whale wall (≥ 8× the median
+  // level within 2 %, the rule of the walls list) that was not in the previous book sends one set too. Walls
+  // beyond the 25 tiers show as chips on the canyon's edge. Nothing animates under reduced motion or off screen.
+  const TIERS = 25;
+  const sonar = { cv: null, ctx: null, w: 0, h: 0, dpr: 1, prev: null, pulses: [], raf: 0, hover: null, visible: true, pulseMicro: NaN, pulseAt: 0 };
   function sonarSize() {
     const c = sonar.cv;
     if (!c) return;
@@ -3039,31 +3067,34 @@ const DEFAULT_ALLOW_HOSTS = [
       new ResizeObserver(sonarSize).observe(sonar.cv);
       new IntersectionObserver(es => { sonar.visible = es.some(e => e.isIntersecting); if (sonar.visible) drawCanyon(); }).observe(sonar.cv);
       new MutationObserver(drawCanyon).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-      const pos = e => { const r = sonar.cv.getBoundingClientRect(); return e.clientX - r.left; };
+      const pos = e => { const r = sonar.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
       sonar.cv.addEventListener("pointermove", e => { sonar.hover = pos(e); drawCanyon(); });
       sonar.cv.addEventListener("pointerdown", e => { sonar.hover = pos(e); drawCanyon(); });
       sonar.cv.addEventListener("pointerleave", () => { sonar.hover = null; drawCanyon(); });
       sonarSize();
     }
     if (!D.depth || !Number.isFinite(D.price)) return;
-    const keys = new Set(D.walls.keys());
-    if (sonar.prev) for (const [k, wl] of D.walls) if (!sonar.prev.has(k)) sonar.pulses.push({ p: wl.p, side: wl.side, t0: performance.now() });
-    sonar.prev = keys;
-    const near = side => side.filter(([p]) => Math.abs(p / D.price - 1) <= 0.015).reduce((s, [p, q]) => s + p * q, 0);
+    const now = performance.now(), micro = microOf(D.depth), d = D.price < 10 ? 4 : 2;
+    if (sonar.prev) for (const [k, wl] of D.walls) if (!sonar.prev.has(k)) sonar.pulses.push({ kind: "wall", side: wl.side, t0: now });
+    sonar.prev = new Set(D.walls.keys());
+    if (!Number.isFinite(sonar.pulseMicro)) sonar.pulseMicro = micro;
+    else if (Math.abs(micro / sonar.pulseMicro - 1) * 1e4 >= 0.5 && now - sonar.pulseAt >= 4000) { sonar.pulses.push({ kind: "micro", t0: now }); sonar.pulseMicro = micro; sonar.pulseAt = now; }
+    const sum = rows => rows.slice(0, TIERS).reduce((s, [p, q]) => s + p * q, 0);
     const big = [...D.walls.values()].sort((a, b) => b.notional - a.notional)[0];
-    $("snSum").textContent = `Bids within 1.5%: ${nf(near(D.depth.bids) / 1e6, 2)}M USDT · asks: ${nf(near(D.depth.asks) / 1e6, 2)}M · ${D.walls.size} whale wall${D.walls.size === 1 ? "" : "s"}` + (big ? ` · largest ${big.side === "bid" ? "bid" : "ask"} ${nf(big.p, big.p < 10 ? 4 : 2)} (${nf(big.notional / 1e3, 0)}k)` : "") + " · Binance spot depth, " + timeFmt.format(new Date()) + " UTC";
+    $("snSum").textContent = `Top ${TIERS} levels: bids ${nf(sum(D.depth.bids) / 1e6, 2)}M USDT · asks ${nf(sum(D.depth.asks) / 1e6, 2)}M · microprice ${nf(micro, d)} (${nf((micro / D.price - 1) * 1e4, 2)} bps from mid) · ${D.walls.size} whale wall${D.walls.size === 1 ? "" : "s"}` + (big ? ` · largest ${big.side} ${nf(big.p, d)} (${nf(big.notional / 1e3, 0)}k)` : "") + " · Binance spot depth, " + timeFmt.format(new Date()) + " UTC";
     drawCanyon();
     if (sonar.pulses.length) animatePulses();
   }
+  const microOf = book => { const [bp, bq] = book.bids[0], [ap, aq] = book.asks[0]; return (bp * aq + ap * bq) / (aq + bq); };
+  const usdShort = v => v >= 1e6 ? nf(v / 1e6, 2) + "M" : v >= 1e3 ? nf(v / 1e3, 0) + "k" : nf(v, 0);
   function animatePulses() {
     if (sonar.raf) return;
     const step = () => {
       sonar.raf = 0;
       const now = performance.now();
       sonar.pulses = sonar.pulses.filter(p => now - p.t0 < 1600);
-      drawCanyon();
-      if (sonar.pulses.length && !matchMedia("(prefers-reduced-motion: reduce)").matches && sonar.visible && !document.hidden) sonar.raf = requestAnimationFrame(step);
-      else if (sonar.pulses.length) { sonar.pulses = []; drawCanyon(); }
+      if (sonar.pulses.length && !matchMedia("(prefers-reduced-motion: reduce)").matches && sonar.visible && !document.hidden) { drawCanyon(); sonar.raf = requestAnimationFrame(step); }
+      else { sonar.pulses = []; drawCanyon(); }
     };
     sonar.raf = requestAnimationFrame(step);
   }
@@ -3071,70 +3102,102 @@ const DEFAULT_ALLOW_HOSTS = [
     const c = sonar.ctx, w = sonar.w, hh = sonar.h;
     if (!c || !w || !hh || !sonar.visible) return;
     const cs = getComputedStyle(document.documentElement), col = v => cs.getPropertyValue(v).trim();
-    const green = col("--apple-green"), red = col("--apple-red"), orange = col("--apple-orange"), grid = col("--hairline-color"), text = col("--content-secondary"), prim = col("--content-primary"), surf = col("--surface");
+    const K = { green: col("--apple-green"), mint: col("--apple-mint"), red: col("--apple-red"), pink: col("--apple-pink"), orange: col("--apple-orange"), grid: col("--hairline-color"), text: col("--content-secondary"), prim: col("--content-primary"), surf: col("--surface"), glass: col("--glass") || col("--surface") };
+    const mono = col("--font-mono") || "monospace";
     c.clearRect(0, 0, w, hh);
-    c.font = "12px " + (col("--font-mono") || "monospace");
-    if (!D.depth || !Number.isFinite(D.price)) { c.fillStyle = text; c.fillText("Waiting for the Binance order book…", 12, hh / 2); return; }
-    const mid = D.price, span = 0.015, Lp = 8, Rp = 8, T = 16, B = 26;
-    const xs = p => Lp + (p / mid - (1 - span)) / (2 * span) * (w - Lp - Rp);
-    const px = x => mid * (1 - span + (x - Lp) / (w - Lp - Rp) * 2 * span);
-    const cum = rows => { let s = 0; const out = []; for (const [p, q] of rows) { if (Math.abs(p / mid - 1) > span) break; s += p * q; out.push([p, s]); } return out; };
+    c.font = "12px " + mono; c.textBaseline = "alphabetic"; c.textAlign = "left";
+    if (!D.depth || !Number.isFinite(D.price)) { c.fillStyle = K.text; c.fillText("Waiting for the Binance order book…", 12, hh / 2); return; }
+    // Top padding 40 px keeps badges and the loupe clear of the card edge (ADR-103: tooltip y ≥ 24).
+    const Lp = 8, Rp = 8, T = 40, B = 30, mid = D.price, d = mid < 10 ? 4 : 2, base = hh - B;
+    const cum = rows => { let s = 0; return rows.slice(0, TIERS).map(([p, q]) => { s += p * q; return { p, n: p * q, s }; }); };
     const bid = cum(D.depth.bids), ask = cum(D.depth.asks);
-    const ymax = Math.max(1, bid.length ? bid[bid.length - 1][1] : 0, ask.length ? ask[ask.length - 1][1] : 0);
-    const ys = v => hh - B - v / ymax * (hh - T - B);
-    c.strokeStyle = grid; c.lineWidth = 1;
-    for (let k = 0; k <= 4; k++) { const y = T + k * (hh - T - B) / 4; c.beginPath(); c.moveTo(Lp, y); c.lineTo(w - Rp, y); c.stroke(); }
-    // liquidation pockets [INFERENCE], from the crowd radar's estimate
-    const liq = D.crowd && Array.isArray(D.crowd.liq) ? D.crowd.liq.filter(x => Math.abs(x.p / mid - 1) <= span) : [];
-    const lmax = Math.max(1, ...liq.map(x => x.long + x.short));
-    c.fillStyle = orange;
-    for (const x of liq) { c.globalAlpha = 0.16 + 0.3 * (x.long + x.short) / lmax; const xx = xs(x.p); c.fillRect(xx - 2, T, 4, hh - T - B); }
-    c.globalAlpha = 1;
-    const side = (rows, color, dir) => {
+    const half = (w - Lp - Rp) / 2, cx = Lp + half, tw = half / TIERS;
+    const ymax = Math.max(1, bid.length ? bid[bid.length - 1].s : 0, ask.length ? ask[ask.length - 1].s : 0);
+    const ys = v => base - v / ymax * (base - T);
+    c.strokeStyle = K.grid; c.lineWidth = 1;
+    for (let k = 0; k <= 4; k++) { const y = T + k * (base - T) / 4; c.beginPath(); c.moveTo(Lp, y); c.lineTo(w - Rp, y); c.stroke(); }
+    const stairs = (rows, dir, a, b) => {
       if (!rows.length) return;
-      c.beginPath(); c.moveTo(xs(mid), hh - B);
-      let last = hh - B;
-      for (const [p, s] of rows) { const x = xs(p); c.lineTo(x, last); last = ys(s); c.lineTo(x, last); }
-      c.lineTo(dir < 0 ? Lp : w - Rp, last);
-      const stroke = new Path2D(); stroke.moveTo(xs(mid), hh - B);
-      let l2 = hh - B;
-      for (const [p, s] of rows) { const x = xs(p); stroke.lineTo(x, l2); l2 = ys(s); stroke.lineTo(x, l2); }
-      stroke.lineTo(dir < 0 ? Lp : w - Rp, l2);
-      c.lineTo(dir < 0 ? Lp : w - Rp, hh - B); c.closePath();
-      const gr = c.createLinearGradient(0, T, 0, hh - B); gr.addColorStop(0, color); gr.addColorStop(1, "transparent");
-      c.globalAlpha = 0.34; c.fillStyle = gr; c.fill(); c.globalAlpha = 1;
-      c.strokeStyle = color; c.lineWidth = 2; c.lineJoin = "round"; c.stroke(stroke);
+      const top = new Path2D();
+      top.moveTo(cx, base);
+      rows.forEach((r, i) => { top.lineTo(cx + dir * i * tw, ys(r.s)); top.lineTo(cx + dir * (i + 1) * tw, ys(r.s)); });
+      const body = new Path2D(top);
+      body.lineTo(cx + dir * rows.length * tw, base); body.closePath();
+      const fill = c.createLinearGradient(0, T, 0, base); fill.addColorStop(0, a); fill.addColorStop(1, b);
+      c.globalAlpha = 0.4; c.fillStyle = fill; c.fill(body);
+      c.globalAlpha = 0.5; c.strokeStyle = K.surf; c.lineWidth = 1;
+      rows.forEach((r, i) => { const x = cx + dir * (i + 1) * tw; c.beginPath(); c.moveTo(x, ys(r.s)); c.lineTo(x, base); c.stroke(); });
+      c.globalAlpha = 1;
+      const edge = c.createLinearGradient(cx, 0, cx + dir * rows.length * tw, 0); edge.addColorStop(0, a); edge.addColorStop(1, b);
+      c.strokeStyle = edge; c.lineWidth = 2; c.lineJoin = "round"; c.stroke(top);
     };
-    side(bid, green, -1); side(ask, red, 1);
-    const depthAt = (rows, p, isBid) => { let s = 0; for (const [q, v] of rows) { if (isBid ? q >= p : q <= p) s = v; else break; } return s; };
-    // whale walls with their sonar pulse
-    const now = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    for (const wl of D.walls.values()) {
-      if (Math.abs(wl.p / mid - 1) > span) continue;
-      const x = xs(wl.p), isBid = wl.side === "bid", y = ys(depthAt(isBid ? bid : ask, wl.p, isBid)), color = isBid ? green : red;
-      c.strokeStyle = color; c.globalAlpha = 0.9; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, hh - B); c.stroke(); c.setLineDash([]);
-      c.globalAlpha = 1; c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1.5; c.strokeStyle = surf; c.stroke();
-      const pulse = sonar.pulses.find(p => p.p === wl.p && p.side === wl.side);
-      if (pulse) {
-        const t = still ? 0.5 : (now - pulse.t0) / 1600;
-        for (const off of [0, 0.25, 0.5]) { const tt = still ? off + 0.2 : t - off; if (tt <= 0 || tt >= 1) continue; c.globalAlpha = (1 - tt) * 0.8; c.strokeStyle = color; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 6 + tt * 42, 0, Math.PI * 2); c.stroke(); }
-        c.globalAlpha = 1;
+    stairs(bid, -1, K.green, K.mint); stairs(ask, 1, K.red, K.pink);
+    // micro-badges on the three largest single levels per side; a badge that would overlap another is skipped
+    const placed = [];
+    const pill = (x, y, label, color) => {
+      const pw = c.measureText(label).width + 14, ph = 20, bx = clamp(x - pw / 2, Lp, w - Rp - pw), by = clamp(y - ph, 24, base - ph);
+      if (placed.some(r => bx < r[0] + r[2] && bx + pw > r[0] && by < r[1] + r[3] && by + ph > r[1])) return;
+      placed.push([bx, by, pw, ph]);
+      c.fillStyle = K.surf; c.beginPath(); c.roundRect(bx, by, pw, ph, 10); c.fill();
+      c.strokeStyle = color; c.lineWidth = 1; c.stroke();
+      c.fillStyle = K.prim; c.fillText(label, bx + 7, by + 14);
+    };
+    for (const [rows, dir, color] of [[bid, -1, K.green], [ask, 1, K.red]])
+      rows.map((r, i) => ({ r, i })).sort((x, y) => y.r.n - x.r.n).slice(0, 3).forEach(({ r, i }) => pill(cx + dir * (i + 0.5) * tw, ys(r.s) - 6, usdShort(r.n), color));
+    // whale walls: inside the 25 tiers as a dashed line with a dot, further out as an edge chip
+    const edgeN = { bid: 0, ask: 0 };
+    for (const wl of [...D.walls.values()].sort((a, b) => b.notional - a.notional)) {
+      const rows = wl.side === "bid" ? bid : ask, dir = wl.side === "bid" ? -1 : 1, color = wl.side === "bid" ? K.green : K.red, i = rows.findIndex(r => r.p === wl.p);
+      if (i >= 0) {
+        const x = cx + dir * (i + 0.5) * tw, y = ys(rows[i].s);
+        c.strokeStyle = color; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, base); c.stroke(); c.setLineDash([]);
+        c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fillStyle = color; c.fill(); c.lineWidth = 1.5; c.strokeStyle = K.surf; c.stroke();
+      } else if (edgeN[wl.side] < 2) {
+        const label = (wl.side === "bid" ? "← bid wall " : "ask wall ") + nf(wl.p, d) + " · " + usdShort(wl.notional) + (wl.side === "bid" ? "" : " →");
+        const pw = c.measureText(label).width + 14, bx = wl.side === "bid" ? Lp : w - Rp - pw, by = T + 4 + edgeN[wl.side] * 24;
+        c.fillStyle = K.surf; c.beginPath(); c.roundRect(bx, by, pw, 20, 10); c.fill(); c.strokeStyle = color; c.lineWidth = 1; c.stroke();
+        c.fillStyle = K.prim; c.fillText(label, bx + 7, by + 14);
+        edgeN[wl.side]++;
       }
     }
-    // mid line and axis
-    c.strokeStyle = prim; c.globalAlpha = 0.5; c.lineWidth = 1; c.beginPath(); c.moveTo(xs(mid), T); c.lineTo(xs(mid), hh - B); c.stroke(); c.globalAlpha = 1;
-    c.fillStyle = text; c.textAlign = "left"; c.fillText("−1.5%", Lp, hh - 8); c.textAlign = "right"; c.fillText("+1.5%", w - Rp, hh - 8);
-    c.textAlign = "center"; c.fillStyle = prim; c.fillText(nf(mid, mid < 10 ? 4 : 2), xs(mid), hh - 8); c.textAlign = "left";
-    // crosshair loupe
-    if (sonar.hover !== null && sonar.hover >= Lp && sonar.hover <= w - Rp) {
-      const x = sonar.hover, p = px(x), isBid = p <= mid, v = depthAt(isBid ? bid : ask, p, isBid), d = mid < 10 ? 4 : 2;
-      c.strokeStyle = text; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, hh - B); c.stroke(); c.setLineDash([]);
-      const lines = [["Price", nf(p, d)], [isBid ? "Bids at or above" : "Asks at or below", nf(v / 1e6, 3) + "M"], ["From mid", pct(p / mid - 1, 2)]];
-      const bw = 196, bh = 14 + lines.length * 18, bx = x + 12 + bw > w ? x - 12 - bw : x + 12;
-      c.fillStyle = surf; c.globalAlpha = 0.94; c.beginPath(); c.roundRect(bx, T, bw, bh, 10); c.fill(); c.globalAlpha = 1; c.strokeStyle = grid; c.stroke();
-      lines.forEach(([a, b], k) => { c.fillStyle = text; c.textAlign = "left"; c.fillText(a, bx + 10, T + 20 + k * 18); c.fillStyle = prim; c.textAlign = "right"; c.fillText(b, bx + bw - 10, T + 20 + k * 18); });
-      c.textAlign = "left";
-      $("snNow").textContent = lines.map(([a, b]) => a + " " + b).join(" · ");
+    // microprice baseline: its offset from the mid is drawn in half-spread units of one tier
+    const [bp] = D.depth.bids[0], [ap] = D.depth.asks[0], micro = microOf(D.depth);
+    const mx = cx + clamp((micro - mid) / Math.max(1e-12, (ap - bp) / 2), -1, 1) * tw / 2;
+    c.strokeStyle = K.prim; c.globalAlpha = 0.35; c.lineWidth = 1; c.beginPath(); c.moveTo(cx, T); c.lineTo(cx, base); c.stroke();
+    c.globalAlpha = 1; c.strokeStyle = K.orange; c.lineWidth = 2; c.beginPath(); c.moveTo(mx, T); c.lineTo(mx, base); c.stroke();
+    // sonar rings (none under reduced motion)
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const now = performance.now();
+      for (const pz of sonar.pulses) {
+        const t = (now - pz.t0) / 1600, x = pz.kind === "micro" ? mx : pz.side === "bid" ? Lp + 12 : w - Rp - 12, color = pz.kind === "micro" ? K.orange : pz.side === "bid" ? K.green : K.red;
+        for (const off of [0, 0.25, 0.5]) {
+          const tt = t - off;
+          if (tt <= 0 || tt >= 1) continue;
+          c.globalAlpha = (1 - tt) * 0.7; c.strokeStyle = color; c.lineWidth = 2;
+          c.beginPath(); c.arc(x, base, 6 + tt * 60, Math.PI, 2 * Math.PI); c.stroke();
+        }
+      }
+      c.globalAlpha = 1;
+    }
+    // axis: tier depth at each end, mid and microprice in the middle
+    const far = rows => rows.length ? nf((rows[rows.length - 1].p / mid - 1) * 1e4, 1) + " bps" : "—";
+    c.fillStyle = K.text; c.textAlign = "left"; c.fillText(far(bid), Lp, hh - 9); c.textAlign = "right"; c.fillText("+" + far(ask).replace(/^\+/, ""), w - Rp, hh - 9);
+    c.textAlign = "center"; c.fillStyle = K.prim; c.fillText(nf(mid, d) + " · μ " + (micro >= mid ? "+" : "") + nf((micro / mid - 1) * 1e4, 2) + " bps", cx, hh - 9); c.textAlign = "left";
+    // glass loupe on the tier under the pointer, kept inside the canvas (y from 24 to the axis)
+    if (sonar.hover && sonar.hover.x >= Lp && sonar.hover.x <= w - Rp) {
+      const { x: hx, y: hy } = sonar.hover, dir = hx < cx ? -1 : 1, rows = dir < 0 ? bid : ask, i = Math.min(TIERS - 1, Math.floor(Math.abs(hx - cx) / tw));
+      if (i < rows.length) {
+        const r = rows[i], x0 = dir < 0 ? cx - (i + 1) * tw : cx + i * tw;
+        c.fillStyle = K.prim; c.globalAlpha = 0.08; c.fillRect(x0, ys(r.s), tw, base - ys(r.s)); c.globalAlpha = 1;
+        const lines = [["Level", (dir < 0 ? "bid " : "ask ") + (i + 1) + " of " + TIERS], ["Price", nf(r.p, d)], ["Level size", usdShort(r.n) + " USDT"], ["Cumulative", usdShort(r.s) + " USDT"], ["From mid", nf((r.p / mid - 1) * 1e4, 2) + " bps"]];
+        const bw = 220, bh = 14 + lines.length * 18;
+        const bx = clamp(hx + 14 + bw > w - 4 ? hx - 14 - bw : hx + 14, 4, Math.max(4, w - bw - 4));
+        const by = clamp(hy - bh / 2, 24, Math.max(24, base - bh));
+        c.fillStyle = K.glass; c.beginPath(); c.roundRect(bx, by, bw, bh, 12); c.fill(); c.strokeStyle = K.grid; c.lineWidth = 1; c.stroke();
+        lines.forEach(([a, b], k) => { c.fillStyle = K.text; c.textAlign = "left"; c.fillText(a, bx + 10, by + 20 + k * 18); c.fillStyle = K.prim; c.textAlign = "right"; c.fillText(b, bx + bw - 10, by + 20 + k * 18); });
+        c.textAlign = "left";
+        $("snNow").textContent = lines.map(([a, b]) => a + " " + b).join(" · ");
+      }
     }
   }
 
@@ -4259,7 +4322,23 @@ const DEFAULT_ALLOW_HOSTS = [
   });
   const fractalFail = () => state("frState", "offline", "History unreachable, retrying", "تعذر تحميل التاريخ، إعادة المحاولة");
 
+  // ADR-103: a first visit starts with a $20.00 paper base locked from the paper cash, with its own LOCK
+  // receipt, so the rings and the sweep have something to measure. It runs once per browser, never when a
+  // base, a receipt or a stop already exists, and it moves paper money only.
+  async function bootstrapBase() {
+    if (W.base > 0 || W.halted || W.pos || receipts.length || store.get("omega-desk-bootstrap-v1", false)) return;
+    store.set("omega-desk-bootstrap-v1", true);
+    if (W.cash + W.active < 20) return;
+    const before = snap();
+    W.cash = W.cash + W.active - 20; W.active = 20; W.base = 20; W.sweepMode = "every";
+    save();
+    await issue("LOCK", 20, before, snap(), "Auto paper bootstrap: $20.00 locked base (ADR-103); paper only, sweep = max(0, equity − base)");
+    $("wlBase").value = "20"; $("wlSweepMode").value = "every";
+    say("Paper base of $20.00 locked to start. Change it any time", "تم تعليق 20 دولار ورقية كبداية، تقدر تغيرها");
+    renderWallet(); renderReceipts();
+  }
   renderWallet(); renderReceipts(); renderPosition(); renderLearn(); renderChain(); setAuto(false);
+  bootstrapBase().catch(() => { /* hashing unavailable: the wallet stays as it was */ });
   // Background clock (ADR-096). Browsers slow main-thread timers in a hidden or minimised tab to once a
   // minute, so stops and targets on an open paper position could wait that long. The ticks come from a
   // small Blob Web Worker instead, which keeps its pace. While hidden the desk polls only when the auto
