@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-GCrCVOEcoAk4yXAEVEBUWq4V1e4n0Y2zHE3GbXXXrr4=' 'sha256-5Jt6GrAM3fPzge0ZIKWlXwvfgejY8euAzz6jfAxBbRM=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-GKfFUUwLzYFhjWw6Txk4nzAimEqyHceZJzwkOVp7rqk='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-i1L3HtqBxQOx6NoTGGVTgSQ8i7wsmdecYMDJMHPgfzg=' 'sha256-SRGt9/FzvFf26UkTXzbKZQfsJjWTbmDQ8MW1l/zJyjw=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-GKfFUUwLzYFhjWw6Txk4nzAimEqyHceZJzwkOVp7rqk='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -3005,7 +3005,7 @@ const DEFAULT_ALLOW_HOSTS = [
       { k: "court", r: 68, p: Number.isFinite(conf) ? conf : 0, tone: "blue", en: "Court consensus & accuracy", a: "إجماع المحكمة ودقتها",
         v: (Number.isFinite(conf) ? `consensus ${nf(conf * 100, 0)}%` : "waiting for the court") + " · " + (L.n ? `accuracy ${nf(L.hits / L.n * 100, 0)}% over ${L.n} closed trade${L.n === 1 ? "" : "s"}` : "no closed trade yet") },
       { k: "planet", r: 44, p: Number.isFinite(pw) ? clamp((100 - pw) / 100, 0, 1) : 0, tone: "orange", en: "Planet stability (100 − PWSI)", a: "استقرار الكوكب والسيولة",
-        v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 4 live components` : "تعذر التحقق منها: no live PWSI source" }
+        v: Number.isFinite(pw) ? `${nf(100 - pw, 0)} / 100 from ${D.osiris.coverage} of 4 components` + (D.osiris.snap ? `, ${D.osiris.snap} from the hourly snapshot` : "") : "تعذر التحقق منها: no PWSI source reachable" }
     ];
     // ADR-103: Apple Watch gradients (green to mint, indigo to purple, orange to pink), round caps, a hairline
     // border on each track and a soft shadow under the leading cap where the arc overlaps itself. At 0 % the
@@ -4458,10 +4458,10 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       meteo: { en: "Open-Meteo, 9 hubs", ar: "الطقس في 9 مراكز", state: "checking", n: 0, at: 0 },
       binance: { en: "Binance spot tickers", ar: "أسعار باينانس", state: "checking", n: 0, at: 0 },
       opensky: { en: "OpenSky, Gulf & Red Sea box (proxy)", ar: "الطيران عبر الوسيط", state: "checking", n: 0, at: 0 },
-      gdacs: { en: "GDACS disaster alerts (proxy)", ar: "إنذارات GDACS", state: "checking", n: 0, at: 0 },
+      gdacs: { en: "GDACS disaster alerts (proxy, then hourly snapshot)", ar: "إنذارات GDACS", state: "checking", n: 0, at: 0 },
       gdelt: { en: "GDELT headlines, 6 h (proxy)", ar: "عناوين GDELT", state: "checking", n: 0, at: 0 },
-      ais: { en: "Digitraffic AIS, Baltic (proxy)", ar: "سفن البلطيق", state: "checking", n: 0, at: 0 },
-      straits: { en: "NGA navigation warnings, 5 straits (proxy)", ar: "الإنذارات الملاحية في المضائق الخمسة", state: "checking", n: 0, at: 0 },
+      ais: { en: "Digitraffic AIS, Baltic (proxy, direct, snapshot)", ar: "سفن البلطيق", state: "checking", n: 0, at: 0 },
+      straits: { en: "NGA navigation warnings, 5 straits (proxy, then hourly snapshot)", ar: "الإنذارات الملاحية في المضائق الخمسة", state: "checking", n: 0, at: 0 },
       seaNews: { en: "GDELT strait headlines, 24 h (proxy)", ar: "أخبار المضائق", state: "checking", n: 0, at: 0 },
       gibs: { en: "NASA GIBS Blue Marble (SAT globe fallback)", ar: "صور ناسا الفضائية", state: "standby", n: 0, at: 0 },
       tiles_carto: { en: "CARTO basemap tiles (DAY, MAP)", ar: "بلاطات خرائط CARTO", state: "standby", n: 0, at: 0 },
@@ -4930,35 +4930,68 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     frame();
   }
 
-  /* ---------------- data ---------------- */
-  const mark = (k, ok, n) => { const s = S.src[k]; s.state = ok ? "online" : "offline"; if (ok) { s.n = n; s.at = Date.now(); } };
-  async function loadQuakes() {
-    try {
-      const j = await getJson("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson");
-      const cut = Date.now() - 86400e3;
-      S.quakes = j.features.filter(f => f.properties.time >= cut && Number.isFinite(f.properties.mag)).slice(0, 300)
-        .map(f => ({ mag: f.properties.mag, place: f.properties.place || "", t: f.properties.time, url: f.properties.url, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], depth: f.geometry.coordinates[2] }))
-        .sort((a, b) => b.mag - a.mag);
-      mark("usgs", true, S.quakes.length);
-    } catch { mark("usgs", false); }
+  /* ---------------- data cascade (ADR-104) ---------------- */
+  // Each source tries, in order: the local proxy when it runs, a direct browser fetch (only hosts that send
+  // CORS headers: USGS, Open-Meteo, Binance, Digitraffic), then the hourly snapshot the Pages workflow packs
+  // with the site (scripts/fetch-public-intel-snapshot.mjs). The status table names the tier used. A snapshot
+  // reading says "as of" its own fetch time and is ignored once it is older than 6 hours. A source that no
+  // tier reaches stays offline; nothing is filled in.
+  const mark = (k, ok, n, at, tier) => { const s = S.src[k]; s.state = ok ? "online" : "offline"; if (ok) { s.n = n; s.at = at || Date.now(); s.tier = tier || "direct"; } };
+  const SNAP_URL = "../data/public-intel-snapshot.json", SNAP_MAX_AGE = 6 * 3600e3;
+  let snapJob = null, snapAt = 0;
+  function snapshotFile() {
+    if (!/^https?:$/.test(location.protocol)) return Promise.resolve(null);
+    if (!snapJob || Date.now() - snapAt > 10 * 60e3) {
+      snapAt = Date.now();
+      snapJob = getJson(new URL(SNAP_URL, location.href).href, 10000).then(j => j && j.format === "omega-public-intel-v1" && j.sources ? j : null).catch(() => null);
+    }
+    return snapJob;
   }
-  async function loadWeather() {
-    try {
-      const q = `latitude=${HUBS.map(x => x.lat).join(",")}&longitude=${HUBS.map(x => x.lon).join(",")}&current=temperature_2m,wind_speed_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=UTC`;
-      const j = await getJson("https://api.open-meteo.com/v1/forecast?" + q);
-      const arr = Array.isArray(j) ? j : [j];
-      S.wx = arr.map((x, i) => ({ ...HUBS[i], temp: x.current.temperature_2m, wind: x.current.wind_speed_10m, gust: x.current.wind_gusts_10m }));
-      mark("meteo", true, S.wx.length);
-    } catch { mark("meteo", false); }
+  async function fromSnapshot(key) {
+    const j = await snapshotFile(), s = j && j.sources[key];
+    if (!s || s.ok !== true) throw new Error("not in the snapshot");
+    const at = Date.parse(s.at);
+    if (!(Date.now() - at < SNAP_MAX_AGE)) throw new Error("snapshot older than 6 hours");
+    return { raw: s.data, at };
   }
-  async function loadPrices() {
-    try {
-      const syms = encodeURIComponent(JSON.stringify(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]));
-      const j = await getJson("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + syms);
-      S.prices = j.map(x => ({ s: x.symbol.replace("USDT", ""), p: +x.lastPrice, c: +x.priceChangePercent }));
-      mark("binance", true, S.prices.length);
-    } catch { mark("binance", false); }
+  const live = async job => ({ raw: await job, at: Date.now() });
+  async function cascade(key, steps, apply) {
+    for (const [tier, get] of steps) {
+      if (!get) continue;
+      try { const { raw, at } = await get(); mark(key, true, apply(raw), at, tier); return true; } catch { /* try the next tier */ }
+    }
+    mark(key, false);
+    return false;
   }
+
+  const USGS = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson";
+  function applyQuakes(j) {
+    const cut = Date.now() - 86400e3;
+    S.quakes = j.features.filter(f => f.properties.time >= cut && Number.isFinite(f.properties.mag)).slice(0, 300)
+      .map(f => ({ mag: f.properties.mag, place: f.properties.place || "", t: f.properties.time, url: f.properties.url, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], depth: f.geometry.coordinates[2] }))
+      .sort((a, b) => b.mag - a.mag);
+    return S.quakes.length;
+  }
+  const loadQuakes = () => cascade("usgs", [["direct", () => live(getJson(USGS))], ["snapshot", () => fromSnapshot("usgs")]], applyQuakes);
+
+  // Current conditions plus the next 24 hourly gusts, which the hub callouts draw as a sparkline (ADR-105).
+  const METEO = "https://api.open-meteo.com/v1/forecast?latitude=" + HUBS.map(x => x.lat).join(",") + "&longitude=" + HUBS.map(x => x.lon).join(",") + "&current=temperature_2m,wind_speed_10m,wind_gusts_10m&hourly=wind_gusts_10m&forecast_hours=24&wind_speed_unit=kmh&timezone=UTC";
+  function applyWeather(j) {
+    const arr = Array.isArray(j) ? j : [j];
+    if (arr.length !== HUBS.length) throw new Error("hub count");
+    S.wx = arr.map((x, i) => ({ ...HUBS[i], temp: x.current.temperature_2m, wind: x.current.wind_speed_10m, gust: x.current.wind_gusts_10m, gusts: x.hourly && Array.isArray(x.hourly.wind_gusts_10m) ? x.hourly.wind_gusts_10m.slice(0, 24).map(Number) : [] }));
+    return S.wx.length;
+  }
+  const loadWeather = () => cascade("meteo", [["direct", () => live(getJson(METEO))], ["snapshot", () => fromSnapshot("meteo")]], applyWeather);
+
+  const TICKERS = "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent(JSON.stringify(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]));
+  function applyPrices(j) {
+    S.prices = j.map(x => ({ s: x.symbol.replace("USDT", ""), p: +x.lastPrice, c: +x.priceChangePercent })).filter(x => Number.isFinite(x.p));
+    if (!S.prices.length) throw new Error("no prices");
+    return S.prices.length;
+  }
+  const loadPrices = () => cascade("binance", [["direct", () => live(getJson(TICKERS))], ["snapshot", () => fromSnapshot("binance")]], applyPrices);
+
   async function proxyUp() {
     const tries = /^https?:$/.test(location.protocol) && location.origin !== LOCAL_PROXY ? [location.origin, LOCAL_PROXY] : [LOCAL_PROXY];
     S.proxyUp = false;
@@ -4967,43 +5000,54 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     }
     return S.proxyUp;
   }
+  function applyNga(j) {
+    const by = new Map((Array.isArray(j.straits) ? j.straits : []).map(x => [x.key, x]));
+    S.straits = STRAIT_KEYS.map(k => {
+      const x = by.get(k) || {};
+      const warnings = (Array.isArray(x.warnings) ? x.warnings : []).map(w => ({ id: String(w.id || ""), issued: String(w.issued || ""), text: String(w.text || ""), match: w.match === "position" ? "position" : "name" }));
+      return { key: k, warnings, at: String(j.at || "") };
+    });
+    return S.straits.reduce((n, x) => n + x.warnings.length, 0);
+  }
+  function applyGdacs(j) {
+    S.gdacs = (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && ["Orange", "Red"].includes(f.properties.alertlevel))
+      .slice(0, 100).map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], level: f.properties.alertlevel, type: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: f.properties.url && f.properties.url.report }));
+    return S.gdacs.length;
+  }
+  // Digitraffic sends every Baltic vessel as GeoJSON; the direct tier keeps [lon, lat, sog] like the proxy does.
+  const DIGITRAFFIC = "https://meri.digitraffic.fi/api/ais/v1/locations";
+  const compactAis = j => ({ at: j.dataUpdatedTime, vessels: (j.features || []).map(f => [f.geometry && f.geometry.coordinates, f.properties || {}]).filter(([c]) => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1])).map(([c, p]) => [+c[0].toFixed(4), +c[1].toFixed(4), Number.isFinite(p.sog) ? p.sog : null]) });
+  function applyAis(j) {
+    const v = Array.isArray(j.vessels) ? j.vessels : [];
+    if (!v.length) throw new Error("no vessels");
+    S.ais = v.length > 6000 ? v.filter((_, i) => i % Math.ceil(v.length / 6000) === 0) : v;
+    const km = (a, b, c, d) => 6371 * 2 * Math.asin(Math.sqrt(Math.sin((c - a) * RAD / 2) ** 2 + Math.cos(a * RAD) * Math.cos(c * RAD) * Math.sin((d - b) * RAD / 2) ** 2));
+    S.ports = PORTS.map(p => {
+      let moored = 0, moving = 0;
+      for (const x of v) { const d = km(p.lat, p.lon, x[1], x[0]); if (d <= 5 && x[2] !== null && x[2] < 0.5) moored++; else if (d <= 15 && x[2] !== null && x[2] >= 0.5) moving++; }
+      return { ...p, moored, moving };
+    });
+    return Number.isFinite(j.total) ? j.total : v.length;
+  }
   async function loadProxy() {
-    if (!(await proxyUp())) { for (const k of ["opensky", "gdacs", "gdelt", "ais", "straits", "seaNews"]) S.src[k].state = "offline"; return; }
+    const up = await proxyUp();
+    const px = (path, ms) => up ? () => live(getJson(PROXY + path, ms)) : null;
+    const proxyOnly = (k, path, ms, apply, clear) => up
+      ? getJson(PROXY + path, ms).then(j => mark(k, true, apply(j), 0, "proxy")).catch(() => { clear(); mark(k, false); })
+      : (clear(), S.src[k].state = "offline", Promise.resolve());
     await Promise.all([
-      getJson(PROXY + "/osiris/nga", 30000).then(j => {
-        const by = new Map((Array.isArray(j.straits) ? j.straits : []).map(x => [x.key, x]));
-        S.straits = STRAIT_KEYS.map(k => {
-          const x = by.get(k) || {};
-          const warnings = (Array.isArray(x.warnings) ? x.warnings : []).map(w => ({ id: String(w.id || ""), issued: String(w.issued || ""), text: String(w.text || ""), match: w.match === "position" ? "position" : "name" }));
-          return { key: k, warnings, at: String(j.at || "") };
-        });
-        mark("straits", true, S.straits.reduce((n, x) => n + x.warnings.length, 0));
-      }).catch(() => { S.straits = []; mark("straits", false); }),
-      getJson(PROXY + "/osiris/gdelt-sea", 20000).then(j => {
+      cascade("straits", [["proxy", px("/osiris/nga", 30000)], ["snapshot", () => fromSnapshot("nga")]], applyNga).then(ok => { if (!ok) S.straits = []; }),
+      cascade("gdacs", [["proxy", px("/osiris/gdacs", 20000)], ["snapshot", () => fromSnapshot("gdacs")]], applyGdacs).then(ok => { if (!ok) S.gdacs = []; }),
+      cascade("ais", [["proxy", px("/osiris/ais", 30000)], ["direct", S.layers.sea ? () => live(getJson(DIGITRAFFIC, 30000).then(compactAis)) : null], ["snapshot", () => fromSnapshot("ais")]], applyAis).then(ok => { if (!ok) { S.ais = []; S.ports = []; } }),
+      proxyOnly("seaNews", "/osiris/gdelt-sea", 20000, j => {
         S.seaNews = (j.articles || []).slice(0, 50).map(a => {
           const t = String(a.title || "").toLowerCase();
           return { title: a.title, url: a.url, domain: a.domain, seen: a.seendate, k: STRAIT_KEYS.filter((_, i) => STRAIT_WORDS[i].some(w => t.includes(w))) };
         });
-        mark("seaNews", true, S.seaNews.length);
-      }).catch(() => { S.seaNews = []; mark("seaNews", false); }),
-      getJson(PROXY + "/osiris/aviation", 20000).then(j => { S.air = (j.states || []).filter(s => Number.isFinite(s[5]) && Number.isFinite(s[6]) && !s[8]).slice(0, 2000).map(s => ({ lon: s[5], lat: s[6], icao: String(s[0] || ""), call: String(s[1] || ""), alt: s[7], v: s[9] })); mark("opensky", true, S.air.length); }).catch(() => mark("opensky", false)),
-      getJson(PROXY + "/osiris/gdacs", 20000).then(j => {
-        S.gdacs = (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && ["Orange", "Red"].includes(f.properties.alertlevel))
-          .slice(0, 100).map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], level: f.properties.alertlevel, type: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: f.properties.url && f.properties.url.report }));
-        mark("gdacs", true, S.gdacs.length);
-      }).catch(() => mark("gdacs", false)),
-      getJson(PROXY + "/osiris/gdelt", 20000).then(j => { S.news = (j.articles || []).slice(0, 25).map(a => ({ title: a.title, url: a.url, domain: a.domain, seen: a.seendate })); mark("gdelt", true, S.news.length); }).catch(() => mark("gdelt", false)),
-      getJson(PROXY + "/osiris/ais", 30000).then(j => {
-        const v = Array.isArray(j.vessels) ? j.vessels : [];
-        S.ais = v.length > 6000 ? v.filter((_, i) => i % Math.ceil(v.length / 6000) === 0) : v;
-        const km = (a, b, c, d) => 6371 * 2 * Math.asin(Math.sqrt(Math.sin((c - a) * RAD / 2) ** 2 + Math.cos(a * RAD) * Math.cos(c * RAD) * Math.sin((d - b) * RAD / 2) ** 2));
-        S.ports = PORTS.map(p => {
-          let moored = 0, moving = 0;
-          for (const x of v) { const d = km(p.lat, p.lon, x[1], x[0]); if (d <= 5 && x[2] !== null && x[2] < 0.5) moored++; else if (d <= 15 && x[2] !== null && x[2] >= 0.5) moving++; }
-          return { ...p, moored, moving };
-        });
-        mark("ais", true, v.length);
-      }).catch(() => mark("ais", false))
+        return S.seaNews.length;
+      }, () => { S.seaNews = []; }),
+      proxyOnly("opensky", "/osiris/aviation", 20000, j => { S.air = (j.states || []).filter(s => Number.isFinite(s[5]) && Number.isFinite(s[6]) && !s[8]).slice(0, 2000).map(s => ({ lon: s[5], lat: s[6], icao: String(s[0] || ""), call: String(s[1] || ""), alt: s[7], v: s[9] })); return S.air.length; }, () => { S.air = []; }),
+      proxyOnly("gdelt", "/osiris/gdelt", 20000, j => { S.news = (j.articles || []).slice(0, 25).map(a => ({ title: a.title, url: a.url, domain: a.domain, seen: a.seendate })); return S.news.length; }, () => { S.news = []; })
     ]);
   }
 
@@ -5012,22 +5056,22 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     const parts = [];
     if (S.src.usgs.state === "online") {
       const top = S.quakes[0], m5 = S.quakes.filter(q => q.mag >= 5).length;
-      parts.push({ en: "Seismic", a: "زلازل", v: clamp(Math.max(top ? (top.mag - 4) / 3 : 0, m5 / 10), 0, 1) * 100, why: top ? `max M${nf(top.mag)} · ${m5} at M5+` : "no M2.5+ in 24 h" });
+      parts.push({ tier: S.src.usgs.tier, en: "Seismic", a: "زلازل", v: clamp(Math.max(top ? (top.mag - 4) / 3 : 0, m5 / 10), 0, 1) * 100, why: top ? `max M${nf(top.mag)} · ${m5} at M5+` : "no M2.5+ in 24 h" });
     }
     if (S.src.meteo.state === "online" && S.wx.length) {
       const g = Math.max(...S.wx.map(w => w.gust || 0)), at = S.wx.find(w => w.gust === g);
-      parts.push({ en: "Weather at hubs", a: "طقس المراكز", v: clamp((g - 40) / 60, 0, 1) * 100, why: `max gust ${nf(g, 0)} km/h${at ? " · " + at.n : ""}` });
+      parts.push({ tier: S.src.meteo.tier, en: "Weather at hubs", a: "طقس المراكز", v: clamp((g - 40) / 60, 0, 1) * 100, why: `max gust ${nf(g, 0)} km/h${at ? " · " + at.n : ""}` });
     }
     if (S.src.gdacs.state === "online") {
       const red = S.gdacs.filter(g => g.level === "Red").length, orange = S.gdacs.length - red;
-      parts.push({ en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (GDACS)` });
+      parts.push({ tier: S.src.gdacs.tier, en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (GDACS)` });
     }
     if (S.src.straits.state === "online") {
       const n = S.straits.reduce((a, x) => a + x.warnings.length, 0), hot = S.straits.filter(x => x.warnings.length).length;
-      parts.push({ en: "Strait warnings", a: "إنذارات المضائق", v: clamp(n * 8 + hot * 6, 0, 100), why: `${n} active NGA warnings in ${hot} of 5 straits` });
+      parts.push({ tier: S.src.straits.tier, en: "Strait warnings", a: "إنذارات المضائق", v: clamp(n * 8 + hot * 6, 0, 100), why: `${n} active NGA warnings in ${hot} of 5 straits` });
     }
-    if (!parts.length) return { score: NaN, parts, coverage: 0 };
-    return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length };
+    if (!parts.length) return { score: NaN, parts, coverage: 0, snap: 0 };
+    return { score: parts.reduce((s, p) => s + p.v, 0) / parts.length, parts, coverage: parts.length, snap: parts.filter(p => p.tier === "snapshot").length };
   }
 
   /* ---------------- render ---------------- */
@@ -5040,11 +5084,12 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     $("osPwsi").textContent = Number.isFinite(P.score) ? nf(P.score, 0) : "—";
     $("osPwsi").className = "num " + (!Number.isFinite(P.score) ? "" : P.score >= 70 ? "bad-text" : P.score >= 40 ? "warn-text" : "ok-text");
     $("osPwsiNote").replaceChildren(Number.isFinite(P.score)
-      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 4 components with live data`)
+      ? document.createTextNode(`0–100 · mean of ${P.coverage} of 4 components with data` + (P.snap ? ` · ${P.snap} from the hourly snapshot` : ""))
       : ar("تعذر التحقق منها: لا يوجد مصدر حي الآن"));
-    kv("osParts", P.parts.length ? P.parts.map(p => [p.en + " · " + p.why, p.a, nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No component has live data", "لا توجد بيانات حية", "—"]]);
+    kv("osParts", P.parts.length ? P.parts.map(p => [p.en + " · " + p.why + (p.tier === "snapshot" ? " · hourly snapshot" : ""), p.a, nf(p.v, 0), p.v >= 70 ? "bad-text" : ""]) : [["No component has data", "لا توجد بيانات", "—"]]);
     const label = { online: "LIVE", offline: "OFFLINE", checking: "CHECKING…", none: "NO FREE SOURCE", standby: "STANDBY · loads with its map style", embedded: "EMBEDDED · works offline" };
-    kv("osCore", Object.values(S.src).map(s => [s.en, s.ar, label[s.state] + (s.state === "online" ? " · " + s.n + " · " + clock.format(s.at) + " UTC" : ""), s.state === "online" ? "ok-text" : s.state === "offline" ? "bad-text" : ""]));
+    const row = s => s.state !== "online" ? label[s.state] : s.tier === "snapshot" ? `SNAPSHOT · ${s.n} · as of ${clock.format(s.at)} UTC` : `LIVE · ${s.tier || "direct"} · ${s.n} · ${clock.format(s.at)} UTC`;
+    kv("osCore", Object.values(S.src).map(s => [s.en, s.ar, row(s), s.state === "online" ? (s.tier === "snapshot" ? "warn-text" : "ok-text") : s.state === "offline" ? "bad-text" : ""]));
     const items = [];
     for (const g of S.gdacs.slice(0, 6)) items.push({ t: g.level.toUpperCase() + " " + (g.type || ""), text: g.name, url: g.url, cls: g.level === "Red" ? "ev-fail" : "ev-warn" });
     for (const n of S.news.slice(0, 8)) items.push({ t: n.domain || "GDELT", text: n.title, url: n.url, cls: "ev-ok" });
@@ -5053,13 +5098,13 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       const u = safeUrl(i.url);
       if (u) { const a = h("a", "", i.text); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "auto"; li.append(a); } else li.append(h("span", "", i.text));
       return li;
-    }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", S.proxyUp === false ? "Start the local proxy to load GDACS and GDELT alerts" : "No orange or red alerts right now")); return li; })()]));
+    }) : [(() => { const li = h("li"); li.append(h("time", "", "—"), h("span", "", S.src.gdacs.state === "online" ? "No orange or red alerts right now" : S.proxyUp === false ? "GDACS unreachable: start the local proxy, or wait for the hourly snapshot" : "Checking…")); return li; })()]));
     const sOn = S.src.straits.state === "online", nOn = S.src.seaNews.state === "online";
     kv("osStraits", CHOKE.map((c, i) => {
       const st = S.straits[i], news = S.seaNews.filter(n => n.k.includes(STRAIT_KEYS[i]));
       if (!sOn && !nOn) return [c.n, c.a, "تعذر التحقق منها", "bad-text"];
       const bits = [];
-      if (sOn) bits.push(st && st.warnings.length ? `${st.warnings.length} NGA warning${st.warnings.length > 1 ? "s" : ""} · latest ${st.warnings[0].id} (${st.warnings[0].issued || "date not given"})` : "0 active NGA warnings");
+      if (sOn) bits.push((st && st.warnings.length ? `${st.warnings.length} NGA warning${st.warnings.length > 1 ? "s" : ""} · latest ${st.warnings[0].id} (${st.warnings[0].issued || "date not given"})` : "0 active NGA warnings") + (S.src.straits.tier === "snapshot" ? ` · snapshot as of ${clock.format(S.src.straits.at)} UTC` : ""));
       if (nOn) bits.push(`${news.length} GDELT headline${news.length === 1 ? "" : "s"} in 24 h`);
       return [c.n, c.a, bits.join(" · "), st && st.warnings.length ? "warn-text" : "ok-text"];
     }));
@@ -5080,7 +5125,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     $("osTicker").classList.toggle("still", !loop);
     $("osTicker").replaceChildren(...build(), ...(loop ? build().map(n => { n.setAttribute("aria-hidden", "true"); return n; }) : []));
     $("osUpdated").textContent = clock.format(new Date()) + " UTC";
-    document.dispatchEvent(new CustomEvent("omega:osiris", { detail: { pwsi: P.score, coverage: P.coverage, at: Date.now() } }));
+    document.dispatchEvent(new CustomEvent("omega:osiris", { detail: { pwsi: P.score, coverage: P.coverage, snap: P.snap, at: Date.now() } }));
     redraw();
   }
 
