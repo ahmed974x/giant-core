@@ -1,4 +1,5 @@
-// Tests for the Brain 2 maths (scripts/lib/brain2-math.mjs, ADR-108) and the Ops Room's inline copy.
+// Tests for the Brain 2 maths (scripts/lib/brain2-math.mjs, ADR-108), the neural flow and the source fallbacks
+// (ADR-109) and the Ops Room's inline copy.
 //   node scripts/test-brain2.mjs        exits 0 when every test passes
 // No network, no dependencies. CI runs it in the skillspector workflow.
 import { spawnSync } from "node:child_process";
@@ -109,6 +110,56 @@ test("Canonical receipt form drops hash keys at every level and rounds to 8 deci
   const h = createHash("sha256").update(JSON.stringify(c)).digest("hex");
   ok(/^[0-9a-f]{64}$/.test(h), "hash");
   near(M.excess(23.5, 20), 3.5, 0, "sweep"); ok(M.excess(19, 20) === 0, "no negative sweep");
+});
+// ---- ADR-109 ----
+test("Neural flow has 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8 and 11,792 weights", () => {
+  const n = M.nn.init();
+  ok(n.sizes.join() === "139,48,36,48,24,16,8", n.sizes.join());
+  ok(n.L.weights === 11792 && n.p.length === 11972, `${n.L.weights} weights, ${n.p.length} parameters`);
+  const f = M.nn.forward(n, Array.from({ length: 139 }, (_, i) => Math.cos(i)));
+  ok(f.a.slice(1, 6).every(l => l.every(v => v >= 0)), "ReLU layers must be non-negative");
+  ok(f.a[6].every(v => v > -1 && v < 1), "tanh outputs must sit in (-1, 1)");
+  const g = M.nn.forward(n, new Array(139).fill(NaN));
+  ok(g.a[0].every(v => v === 0), "a missing input must enter as 0");
+});
+test("Backpropagation matches central differences, NaN targets skipped", () => {
+  const n = M.nn.init([6, 5, 4, 3], 11), X = [[0.2, -0.1, 0.4, 0.3, -0.5, 0.1], [-0.3, 0.6, 0.2, -0.2, 0.1, 0.5], [0.1, 0.1, -0.7, 0.4, 0.2, -0.3]];
+  const Y = [[0.3, NaN, -0.2], [NaN, 0.5, 0.1], [-0.4, 0.2, NaN]], idx = [0, 1, 2], g = new Float64Array(n.p.length);
+  M.nn.grad(n, X, Y, idx, g);
+  let worst = 0;
+  for (let i = 0; i < n.p.length; i++) {
+    const k = n.p[i]; n.p[i] = k + 1e-6; const up = M.nn.lossOf(n, X, Y, idx); n.p[i] = k - 1e-6; const dn = M.nn.lossOf(n, X, Y, idx); n.p[i] = k;
+    const num = (up - dn) / 2e-6; worst = Math.max(worst, Math.abs(num - g[i]) / Math.max(1e-6, Math.abs(num) + Math.abs(g[i])));
+  }
+  ok(worst < 1e-5, `worst relative error ${worst}`);
+});
+test("Adam + ES lowers the held-out loss on a learnable signal and keeps time order", () => {
+  const n = M.nn.init([8, 12, 2], 5), X = [], Y = [];
+  for (let i = 0; i < 300; i++) { const x = Array.from({ length: 8 }, () => rnd() * 2 - 1); X.push(x); Y.push([Math.tanh(1.5 * x[0] - x[3]), NaN]); }
+  const r = M.nn.train(n, X, Y, { epochs: 40, seed: 3, gap: 6 });
+  ok(r && r.nVal === 60 && r.nTrain === 234, `split ${r && r.nTrain}/${r && r.nVal}`);
+  ok(r.valLoss < r.valBefore * 0.5 && r.valLoss < r.valBase, `held-out loss ${r.valLoss} vs before ${r.valBefore}, baseline ${r.valBase}`);
+  ok(r.hit > 0.8, `direction hit rate ${r.hit}`);
+  ok(M.nn.train(n, X.slice(0, 10), Y.slice(0, 10)) === null, "fewer than 20 samples must give null");
+});
+test("Perpetual premium fallbacks: OKX scales funding to 8 h, Deribit keeps its venue", () => {
+  const now = 1.79e12;
+  const o = M.shape.perpOkx({ data: [{ instId: "BTC-USDT-SWAP", fundingRate: "0.0001", fundingTime: String(now), nextFundingTime: String(now + 4 * 3600e3) }] }, { data: [{ markPx: "100100", ts: String(now) }] }, { data: [{ idxPx: "100000" }] }, "BTCUSDT");
+  near(+o.lastFundingRate, 0.0002, 1e-15, "4-hour funding scaled to 8 h"); ok(o.venue === "OKX BTC-USDT-SWAP", o.venue);
+  near(M.basisTrap(o).basisBps, 10, 1e-9, "basis from OKX mark and index");
+  const d = M.shape.perpDeribit({ result: { instrument_name: "ETH-PERPETUAL", mark_price: 4001, index_price: 4000, funding_8h: 0.00005, timestamp: now } }, "ETHUSDT");
+  ok(d.symbol === "ETHUSDT" && d.venue === "Deribit ETH-PERPETUAL" && +d.lastFundingRate === 0.00005, JSON.stringify(d));
+  let threw = false; try { M.shape.perpOkx({ data: [] }, {}, {}, "BTCUSDT"); } catch { threw = true; }
+  ok(threw, "an empty OKX answer must throw");
+});
+test("Disaster alert fallbacks say which rule set the level", () => {
+  const g = M.shape.gdacs({ features: [{ geometry: { type: "Point", coordinates: [1, 2] }, properties: { alertlevel: "Red", eventtype: "TC", name: "X" } }, { geometry: { type: "Point", coordinates: [3, 4] }, properties: { alertlevel: "Green" } }] });
+  ok(g.features.length === 1 && g.via === "GDACS", JSON.stringify(g));
+  const e = M.shape.emsc({ features: [{ geometry: { coordinates: [142, 38, -10] }, properties: { mag: 7.2, flynn_region: "JAPAN", unid: "a b" } }, { geometry: { coordinates: [0, 0, 0] }, properties: { mag: 6.1 } }, { geometry: { coordinates: [0, 0, 0] }, properties: { mag: 5.9 } }] });
+  ok(e.features.length === 2 && e.features[0].properties.alertlevel === "Red" && e.features[1].properties.alertlevel === "Orange", JSON.stringify(e.features.map(f => f.properties.alertlevel)));
+  ok(/not a GDACS level/.test(e.features[0].properties.basis) && e.features[0].properties.url.report.endsWith("unid=a%20b"), "EMSC basis and link");
+  const rw = M.shape.reliefweb({ data: [{ fields: { name: "Flood", status: "alert", primary_country: { location: { lat: 10, lon: 20 } } } }, { fields: { name: "Old", status: "past", primary_country: { location: { lat: 1, lon: 2 } } } }] });
+  ok(rw.features.length === 1 && rw.features[0].geometry.coordinates.join() === "20,10", JSON.stringify(rw));
 });
 test("Ops Room inline copy matches the library", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-brain2-inline.mjs"), "--check"], { encoding: "utf8" });

@@ -13,6 +13,9 @@
 // blocks clients that fetch the same group more often, so on odd UTC hours the CelesTrak entries are carried
 // over from the previous snapshot (with their own fetch time) instead of being fetched again.
 //
+// ADR-109 gives the perpetual premium (Binance, else OKX, else Deribit) and the disaster alerts (GDACS, else EMSC
+// with ReliefWeb) a fallback chain; the entry's `via` names the one that answered.
+//
 // Free and keyless only. No key, cookie or personal data is sent or stored. Exit code is 0 when at least
 // one source answered, 1 when none did (the deploy then publishes the site without a snapshot).
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -27,7 +30,7 @@ const args = process.argv.slice(2), pi = args.indexOf("--prev"), PREV = pi >= 0 
 if (pi >= 0) args.splice(pi, 2);
 const OUT = resolve(args[0] || join(REPO, "data", "public-intel-snapshot.json"));
 const SH = OMEGA_MATH.shape, U = OMEGA_MATH.urls, NOW = Date.now();
-const UA = "OMEGA public intel snapshot (github.com/ahmed974x/giant-core)";
+const UA = "Mozilla/5.0 (compatible; OMEGA-public-intel-snapshot/1.1; +https://github.com/ahmed974x/giant-core)";
 
 // The nine hubs the Ops Room weather layer reads, in the page's order (the five straits, then four ports).
 const HUBS = [
@@ -57,10 +60,20 @@ const SOURCES = {
     raw: true, pick: buf => JSON.parse(classifyNga(buf).toString("utf8")),
     count: d => d.straits.reduce((n, s) => n + s.warnings.length, 0)
   },
+  // ADR-109: GDACS first (its event list, then its search endpoint), then EMSC earthquakes of M6 or more with
+  // ReliefWeb alerts when ReliefWeb answers. The entry says which one answered in `via`.
   gdacs: {
-    name: "GDACS disaster alerts", url: "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",
-    pick: j => ({ features: (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && f.properties && ["Orange", "Red"].includes(f.properties.alertlevel)).slice(0, 200)
-      .map(f => ({ geometry: { type: "Point", coordinates: f.geometry.coordinates.slice(0, 2) }, properties: { alertlevel: f.properties.alertlevel, eventtype: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: { report: f.properties.url && f.properties.url.report } } })) }),
+    name: "Disaster alerts: GDACS, else EMSC + ReliefWeb",
+    tries: [
+      { via: "GDACS", url: U.gdacs(), pick: j => SH.gdacs(j, "GDACS") },
+      { via: "GDACS search", url: U.gdacsSearch(NOW), pick: j => SH.gdacs(j, "GDACS search") },
+      { via: "EMSC + ReliefWeb", url: U.emsc(NOW) + " " + U.reliefweb(), get: async signal => {
+        const q = SH.emsc(JSON.parse((await getBuf(U.emsc(NOW), signal)).toString("utf8")));
+        let rw = null;
+        try { rw = SH.reliefweb(JSON.parse((await getBuf(U.reliefweb(), signal)).toString("utf8"))); } catch { /* EMSC alone still answers */ }
+        return rw ? { ...q, via: "EMSC + ReliefWeb", rule: q.rule + "; " + rw.rule, features: q.features.concat(rw.features) } : q;
+      } }
+    ],
     count: d => d.features.length
   },
   ais: {
@@ -80,30 +93,53 @@ const SOURCES = {
   ioda: { name: "IODA country outage events, 24 h", url: U.ioda(NOW), pick: j => SH.ioda(j), count: d => d.events.length },
   deribit: { name: "Deribit BTC option book summary", url: U.deribit(), pick: j => SH.deribit(j), count: d => d.options.length },
   dvol: { name: "Deribit DVOL (BTC), hourly", url: U.dvol(NOW), pick: j => SH.dvol(j), count: d => d.rows.length },
-  premium: { name: "Binance USD-M premium index, BTC and ETH", urls: [U.premium("BTCUSDT"), U.premium("ETHUSDT")], pick: list => ({ format: "omega-premium-set-v1", items: list.map(j => SH.premium(j)) }), count: d => d.items.length }
+  // ADR-109: Binance answers HTTP 451 to US cloud runners, so the perpetual premium falls back to OKX, then Deribit.
+  premium: {
+    name: "Perpetual premium and funding, BTC and ETH: Binance USD-M, else OKX, else Deribit",
+    tries: [
+      { via: "Binance USD-M", urls: [U.premium("BTCUSDT"), U.premium("ETHUSDT")], pick: list => ({ format: "omega-premium-set-v1", via: "Binance USD-M", items: list.map(j => SH.premium(j)) }) },
+      { via: "OKX", urls: [...U.okx("BTCUSDT"), ...U.okx("ETHUSDT")], pick: l => ({ format: "omega-premium-set-v1", via: "OKX", items: [SH.perpOkx(l[0], l[1], l[2], "BTCUSDT"), SH.perpOkx(l[3], l[4], l[5], "ETHUSDT")] }) },
+      { via: "Deribit", urls: [U.deribitPerp("BTCUSDT"), U.deribitPerp("ETHUSDT")], pick: l => ({ format: "omega-premium-set-v1", via: "Deribit", items: [SH.perpDeribit(l[0], "BTCUSDT"), SH.perpDeribit(l[1], "ETHUSDT")] }) }
+    ],
+    count: d => d.items.length
+  }
 };
 
+// A plain, honest User-Agent in the common "Mozilla/5.0 (compatible; ...)" form: it names this project and
+// pretends to be no browser. Some hosts (GDACS among them) refuse requests with no recognisable agent.
 async function getBuf(url, signal) {
   const r = await fetch(url, { signal, headers: { "User-Agent": UA, "Accept": "application/json", "Accept-Encoding": "gzip" }, redirect: "follow" });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return Buffer.from(await r.arrayBuffer());
 }
-async function fetchOne(key, s, tries = 3) {
+async function attempt(s, signal) {
+  if (s.get) return s.get(signal);
+  if (s.urls) { const list = []; for (const u of s.urls) list.push(JSON.parse((await getBuf(u, signal)).toString("utf8"))); return s.pick(list); }
+  const buf = await getBuf(s.url, signal);
+  return s.pick(s.raw ? buf : JSON.parse(buf.toString("utf8")));
+}
+async function fetchTry(s, tries) {
   let last = "";
-  const url = s.url || s.urls.join(" ");
   for (let k = 0; k < tries; k++) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
-    try {
-      let data;
-      if (s.urls) { const list = []; for (const u of s.urls) list.push(JSON.parse((await getBuf(u, ctl.signal)).toString("utf8"))); data = s.pick(list); }
-      else { const buf = await getBuf(s.url, ctl.signal); data = s.pick(s.raw ? buf : JSON.parse(buf.toString("utf8"))); }
-      return { ok: true, name: s.name, url, at: new Date().toISOString(), n: s.count(data), data };
-    } catch (e) {
+    try { return { data: await attempt(s, ctl.signal) }; }
+    catch (e) {
       last = e.name === "AbortError" ? "timed out after 30 s" : String(e.message || e).slice(0, 120);
       if (k < tries - 1) await new Promise(res => setTimeout(res, 2000 * 2 ** k));
     } finally { clearTimeout(t); }
   }
-  return { ok: false, name: s.name, url, at: new Date().toISOString(), error: last };
+  return { error: last };
+}
+// A source with `tries` walks them in order and records which one answered (`via`) and why the ones before
+// it failed (`fellBack`), so a fallback is never presented as the first source.
+async function fetchOne(key, s, tries = 3) {
+  const list = s.tries || [s], fell = [];
+  for (const t of list) {
+    const r = await fetchTry(t, s.tries ? 2 : tries), url = t.url || t.urls.join(" ");
+    if (!("error" in r)) return { ok: true, name: s.name, url, at: new Date().toISOString(), n: s.count(r.data), data: r.data, ...(s.tries ? { via: (r.data && r.data.via) || t.via, fellBack: fell } : {}) };
+    fell.push(`${t.via || key}: ${r.error}`);
+  }
+  return { ok: false, name: s.name, url: list.map(t => t.url || t.urls.join(" ")).join(" | "), at: new Date().toISOString(), error: fell.join("; ").slice(0, 400) };
 }
 
 // The previous published snapshot, for CelesTrak on odd hours. A missing or unreadable one only means
@@ -128,7 +164,7 @@ mkdirSync(dirname(OUT), { recursive: true });
 // Upstream text (NGA warnings, GDACS names) can carry a contact address; the public build refuses any
 // e-mail address, so addresses are replaced before the file is written.
 writeFileSync(OUT, JSON.stringify(snap).replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g, "[address removed]"));
-for (const [k, s] of entries) console.log(`${s.ok ? (s.carried ? "KEPT" : "LIVE") : "DOWN"}  ${k.padEnd(18)} ${s.ok ? s.n + " items" + (s.carried ? ", carried over from " + s.at : "") : s.error}`);
+for (const [k, s] of entries) console.log(`${s.ok ? (s.carried ? "KEPT" : "LIVE") : "DOWN"}  ${k.padEnd(18)} ${s.ok ? s.n + " items" + (s.via ? " via " + s.via + (s.fellBack.length ? " (fell back: " + s.fellBack.join("; ") + ")" : "") : "") + (s.carried ? ", carried over from " + s.at : "") : s.error}`);
 const live = entries.filter(([, s]) => s.ok).length;
 console.log(`${live} of ${entries.length} sources in ${OUT}`);
 process.exit(live ? 0 : 1);
