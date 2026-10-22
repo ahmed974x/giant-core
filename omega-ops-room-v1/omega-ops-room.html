@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-i1L3HtqBxQOx6NoTGGVTgSQ8i7wsmdecYMDJMHPgfzg=' 'sha256-D4/JTt7wr2kpRlCNrw33CwGZjvP+vGHW1860+sHpSEY=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-qV7wploRP4ToVduH80AuWSBF6l7UTvby56dsvmjVzSQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-68n9Bxa2ehNWnLVnyRBg54P7wseHsRQZmAz5JGCpYko=' 'sha256-5oFGj7XlKyo/+JIVxftDFkjxT+4iFeBjJ70fXNfkoHc=' 'sha256-D4/JTt7wr2kpRlCNrw33CwGZjvP+vGHW1860+sHpSEY=' 'sha256-g0pAnVeu3LkinfUbvxo8I3qgb7SfTRG09RwQiZzh7GQ='; style-src 'sha256-qV7wploRP4ToVduH80AuWSBF6l7UTvby56dsvmjVzSQ='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -1282,7 +1282,7 @@
     </div>
 
     <section data-view="3 5" class="card mt-3" aria-labelledby="snTitle" id="sonar">
-      <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag">25 TIERS A SIDE</div></div>
+      <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag"><span id="snStream">REST 5 s</span> · 25 TIERS</div></div>
       <canvas class="v-canvas sonar" id="snCanvas" role="img" aria-label="Stepped canyon of the top 25 Binance order-book levels on each side: cumulative bids in green to the left of the mid, asks in red to the right, badges on the three largest levels per side, an orange microprice baseline and chips for whale walls further out. The line below gives the numbers."></canvas>
       <div class="chart-legend">
         <span><i class="sw sw-success"></i>Bids, cumulative · <span class="ar" lang="ar">جدار الشراء</span></span>
@@ -3086,6 +3086,7 @@ const DEFAULT_ALLOW_HOSTS = [
       new ResizeObserver(sonarSize).observe(sonar.cv);
       new IntersectionObserver(es => { sonar.visible = es.some(e => e.isIntersecting); if (sonar.visible) drawCanyon(); }).observe(sonar.cv);
       new MutationObserver(drawCanyon).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      setTimeout(() => { if (simOn()) { $("snSum").textContent = "Binance order book unreachable: the canyon shows a labelled simulation in made-up units. No number on this page uses it."; drawCanyon(); } }, 15500);
       const pos = e => { const r = sonar.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
       sonar.cv.addEventListener("pointermove", e => { sonar.hover = pos(e); drawCanyon(); });
       sonar.cv.addEventListener("pointerdown", e => { sonar.hover = pos(e); drawCanyon(); });
@@ -3093,6 +3094,7 @@ const DEFAULT_ALLOW_HOSTS = [
       sonarSize();
     }
     if (!D.depth || !Number.isFinite(D.price)) return;
+    sonar.seen = true;
     const now = performance.now(), micro = microOf(D.depth), d = D.price < 10 ? 4 : 2;
     if (sonar.prev) for (const [k, wl] of D.walls) if (!sonar.prev.has(k)) sonar.pulses.push({ kind: "wall", side: wl.side, t0: now });
     sonar.prev = new Set(D.walls.keys());
@@ -3104,6 +3106,20 @@ const DEFAULT_ALLOW_HOSTS = [
     drawCanyon();
     if (sonar.pulses.length) animatePulses();
   }
+  // ADR-106: when the Binance book cannot be reached for 15 s, the canyon shows a fixed, deterministic book in
+  // made-up units around 100.00, labelled SIMULATION on the canvas and in the summary. It never enters D.depth,
+  // so the court, the auto engine, the receipts and every number elsewhere ignore it. Once a real book has
+  // arrived it is never shown again in this page session.
+  const SIM = (() => {
+    const bids = [], asks = [];
+    for (let i = 0; i < TIERS; i++) {
+      bids.push([+(99.995 - i * 0.01).toFixed(3), 40 + ((i * 7) % 5) * 22 + (i === 9 ? 260 : 0)]);
+      asks.push([+(100.005 + i * 0.01).toFixed(3), 36 + ((i * 3) % 4) * 26 + (i === 15 ? 220 : 0)]);
+    }
+    return { mid: 100, book: { bids, asks } };
+  })();
+  const pageStart = Date.now();
+  const simOn = () => Date.now() - pageStart > 15000 && !D.depth && !sonar.seen;
   const microOf = book => { const [bp, bq] = book.bids[0], [ap, aq] = book.asks[0]; return (bp * aq + ap * bq) / (aq + bq); };
   const usdShort = v => v >= 1e6 ? nf(v / 1e6, 2) + "M" : v >= 1e3 ? nf(v / 1e3, 0) + "k" : nf(v, 0);
   function animatePulses() {
@@ -3125,11 +3141,12 @@ const DEFAULT_ALLOW_HOSTS = [
     const mono = col("--font-mono") || "monospace";
     c.clearRect(0, 0, w, hh);
     c.font = "12px " + mono; c.textBaseline = "alphabetic"; c.textAlign = "left";
-    if (!D.depth || !Number.isFinite(D.price)) { c.fillStyle = K.text; c.fillText("Waiting for the Binance order book…", 12, hh / 2); return; }
+    const sim = !D.depth && simOn(), book = D.depth || (sim ? SIM.book : null), mid = D.depth ? D.price : sim ? SIM.mid : NaN;
+    if (!book || !Number.isFinite(mid)) { c.fillStyle = K.text; c.fillText("Waiting for the Binance order book…", 12, hh / 2); return; }
     // Top padding 40 px keeps badges and the loupe clear of the card edge (ADR-103: tooltip y ≥ 24).
-    const Lp = 8, Rp = 8, T = 40, B = 30, mid = D.price, d = mid < 10 ? 4 : 2, base = hh - B;
+    const Lp = 8, Rp = 8, T = 40, B = 30, d = mid < 10 ? 4 : 2, base = hh - B;
     const cum = rows => { let s = 0; return rows.slice(0, TIERS).map(([p, q]) => { s += p * q; return { p, n: p * q, s }; }); };
-    const bid = cum(D.depth.bids), ask = cum(D.depth.asks);
+    const bid = cum(book.bids), ask = cum(book.asks);
     const half = (w - Lp - Rp) / 2, cx = Lp + half, tw = half / TIERS;
     const ymax = Math.max(1, bid.length ? bid[bid.length - 1].s : 0, ask.length ? ask[ask.length - 1].s : 0);
     const ys = v => base - v / ymax * (base - T);
@@ -3165,7 +3182,7 @@ const DEFAULT_ALLOW_HOSTS = [
       rows.map((r, i) => ({ r, i })).sort((x, y) => y.r.n - x.r.n).slice(0, 3).forEach(({ r, i }) => pill(cx + dir * (i + 0.5) * tw, ys(r.s) - 6, usdShort(r.n), color));
     // whale walls: inside the 25 tiers as a dashed line with a dot, further out as an edge chip
     const edgeN = { bid: 0, ask: 0 };
-    for (const wl of [...D.walls.values()].sort((a, b) => b.notional - a.notional)) {
+    for (const wl of sim ? [] : [...D.walls.values()].sort((a, b) => b.notional - a.notional)) {
       const rows = wl.side === "bid" ? bid : ask, dir = wl.side === "bid" ? -1 : 1, color = wl.side === "bid" ? K.green : K.red, i = rows.findIndex(r => r.p === wl.p);
       if (i >= 0) {
         const x = cx + dir * (i + 0.5) * tw, y = ys(rows[i].s);
@@ -3180,7 +3197,7 @@ const DEFAULT_ALLOW_HOSTS = [
       }
     }
     // microprice baseline: its offset from the mid is drawn in half-spread units of one tier
-    const [bp] = D.depth.bids[0], [ap] = D.depth.asks[0], micro = microOf(D.depth);
+    const [bp] = book.bids[0], [ap] = book.asks[0], micro = microOf(book);
     const mx = cx + clamp((micro - mid) / Math.max(1e-12, (ap - bp) / 2), -1, 1) * tw / 2;
     c.strokeStyle = K.prim; c.globalAlpha = 0.35; c.lineWidth = 1; c.beginPath(); c.moveTo(cx, T); c.lineTo(cx, base); c.stroke();
     c.globalAlpha = 1; c.strokeStyle = K.orange; c.lineWidth = 2; c.beginPath(); c.moveTo(mx, T); c.lineTo(mx, base); c.stroke();
@@ -3202,6 +3219,13 @@ const DEFAULT_ALLOW_HOSTS = [
     const far = rows => rows.length ? nf((rows[rows.length - 1].p / mid - 1) * 1e4, 1) + " bps" : "—";
     c.fillStyle = K.text; c.textAlign = "left"; c.fillText(far(bid), Lp, hh - 9); c.textAlign = "right"; c.fillText("+" + far(ask).replace(/^\+/, ""), w - Rp, hh - 9);
     c.textAlign = "center"; c.fillStyle = K.prim; c.fillText(nf(mid, d) + " · μ " + (micro >= mid ? "+" : "") + nf((micro / mid - 1) * 1e4, 2) + " bps", cx, hh - 9); c.textAlign = "left";
+    if (sim) {
+      // The offline stand-in says what it is on the canvas itself, in both languages' order of reading.
+      const label = "SIMULATION · not market data · prices in made-up units";
+      const pw = c.measureText(label).width + 20, bx = cx - pw / 2;
+      c.fillStyle = K.surf; c.beginPath(); c.roundRect(bx, 8, pw, 24, 12); c.fill(); c.strokeStyle = K.orange; c.lineWidth = 1.5; c.stroke();
+      c.fillStyle = K.prim; c.textAlign = "center"; c.fillText(label, cx, 25); c.textAlign = "left";
+    }
     // glass loupe on the tier under the pointer, kept inside the canvas (y from 24 to the axis)
     if (sonar.hover && sonar.hover.x >= Lp && sonar.hover.x <= w - Rp) {
       const { x: hx, y: hy } = sonar.hover, dir = hx < cx ? -1 : 1, rows = dir < 0 ? bid : ask, i = Math.min(TIERS - 1, Math.floor(Math.abs(hx - cx) / tw));
@@ -4175,6 +4199,66 @@ const DEFAULT_ALLOW_HOSTS = [
     if (tripped && W.pos && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Circuit breaker: " + tripped[0]); }
     else if (!W.halted) $("cbTag").textContent = "ARMED";
   }
+  /* ---------------- live market streams (ADR-106) ---------------- */
+  // Binance public market streams, read-only and keyless: the 20-level partial book every 100 ms and every
+  // aggregate trade for the selected symbol. They refresh the top of the REST book, the canyon, the microprice
+  // line and the trade tape between REST polls; levels beyond the 20 streamed ones keep the last REST values.
+  // REST polling (5 s) runs the whole time, so the desk never depends on the socket. On close it reconnects
+  // with backoff (1 s doubling to 60 s). In a hidden tab with no paper position and the auto engine off it
+  // closes and reopens on return. Nothing is sent on the socket: market data in only, no orders, no keys.
+  const WS_BASE = "wss://data-stream.binance.vision/stream?streams=";
+  const stream = { ws: null, sym: "", tries: 0, timer: 0, paint: 0, state: "off", msgs: 0, lastAt: 0 };
+  function streamUi() {
+    const t = { live: "WS 100 ms", connecting: "WS CONNECTING…", retrying: "REST 5 s · WS RETRYING", resting: "REST 5 s · WS PAUSED", off: "REST 5 s" }[stream.state] || "REST 5 s";
+    const n = $("snStream");
+    if (n) n.textContent = t;
+  }
+  function closeStream(next) {
+    clearTimeout(stream.timer);
+    const w = stream.ws;
+    stream.ws = null;
+    if (w) { try { w.close(); } catch { /* already closed */ } }
+    stream.state = next || "off";
+    streamUi();
+  }
+  function retryStream() {
+    clearTimeout(stream.timer);
+    const ms = Math.min(60000, 1000 * 2 ** stream.tries++);
+    stream.timer = setTimeout(openStream, ms);
+  }
+  function openStream() {
+    if (typeof WebSocket !== "function") { stream.state = "off"; streamUi(); return; }
+    if (stream.ws && stream.sym === D.sym) return;
+    if (stream.ws) closeStream();
+    const s = D.sym.toLowerCase();
+    stream.sym = D.sym; stream.state = "connecting"; streamUi();
+    let ws;
+    try { ws = new WebSocket(WS_BASE + s + "@depth20@100ms/" + s + "@aggTrade"); } catch { stream.state = "retrying"; streamUi(); retryStream(); return; }
+    stream.ws = ws;
+    ws.addEventListener("open", () => { if (stream.ws === ws) { stream.state = "live"; stream.tries = 0; streamUi(); } });
+    ws.addEventListener("message", e => { if (stream.ws === ws) onStream(e.data); });
+    ws.addEventListener("close", () => { if (stream.ws === ws) { stream.ws = null; stream.state = "retrying"; streamUi(); retryStream(); } });
+  }
+  function onStream(text) {
+    let m;
+    try { m = JSON.parse(text); } catch { return; }
+    const d = m && m.data, name = String(m && m.stream || "");
+    if (!d || !name.startsWith(stream.sym.toLowerCase() + "@")) return;
+    stream.msgs++; stream.lastAt = Date.now();
+    if (name.includes("@depth") && Array.isArray(d.bids) && Array.isArray(d.asks)) {
+      const bids = d.bids.map(([p, q]) => [+p, +q]).filter(([p, q]) => p > 0 && q > 0), asks = d.asks.map(([p, q]) => [+p, +q]).filter(([p, q]) => p > 0 && q > 0);
+      if (!bids.length || !asks.length || bids[0][0] >= asks[0][0]) return;
+      const lowB = bids[bids.length - 1][0], highA = asks[asks.length - 1][0];
+      D.depth = D.depth ? { bids: bids.concat(D.depth.bids.filter(([p]) => p < lowB)), asks: asks.concat(D.depth.asks.filter(([p]) => p > highA)) } : { bids, asks };
+      D.price = (bids[0][0] + asks[0][0]) / 2;
+      D.priceAt = Date.now();
+      if (!stream.paint) stream.paint = setTimeout(() => { stream.paint = 0; if (!document.hidden) renderCanyon(); }, 1000);
+    } else if (name.includes("@aggTrade") && Number.isFinite(d.a)) ingestTrades([{ a: d.a, T: d.T, q: d.q, p: d.p, m: d.m }]);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && !D.auto && !W.pos) closeStream("resting");
+    else if (!document.hidden && !stream.ws) { stream.tries = 0; openStream(); }
+  });
   function staleGuard() {
     if (W.pos && D.priceAt && Date.now() - D.priceAt > 20000 && Date.now() - lastTrip > 60000) { lastTrip = Date.now(); kill("Circuit breaker: price data stale over 20 s"); }
   }
@@ -4325,7 +4409,9 @@ const DEFAULT_ALLOW_HOSTS = [
   $("dkSymbol").addEventListener("change", () => {
     if (W.pos) { $("dkSymbol").value = D.sym; say("Close the paper position before switching market", "أغلق الصفقة قبل تغيير السوق"); return; }
     D.sym = $("dkSymbol").value;
-    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, flow: null, flowAt: 0, tape: [], microHist: [] });
+    Object.assign(D, { walls: new Map(), spoofs: [], depthHist: [], ticks: [], whale: null, crowd: null, fractal: null, quant: null, flow: null, flowAt: 0, tape: [], microHist: [], depth: null, price: NaN });
+    sonar.prev = null; sonar.pulseMicro = NaN;
+    stream.tries = 0; openStream();
     loadFast().catch(() => {}); loadSlow().catch(() => {}); runFractal().catch(fractalFail);
   });
   $("rcVerify").addEventListener("click", async () => {
@@ -4404,6 +4490,8 @@ const DEFAULT_ALLOW_HOSTS = [
     tick();
   };
   loop(loadFast, 5000, true);
+  openStream();
+  renderCanyon();
   loop(loadSlow, 60000);
   loop(loadChain, 60000);
   setInterval(staleGuard, 5000);
