@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-9IQQid5RNJ3e7eqhDGpUsC++XajIohM++hPsDtQ5cJc=' 'sha256-31iDvHMV3vL0K72zZYTdrpIWAasCJ2aGibaes4GUHdE=' 'sha256-c1OyVyjZgOTTbFeI4PG/eXdbPTZOCJp0QKvWdJ7vTgc=' 'sha256-NwYU05kXRZ2ao1cxUf3/fOgO/JYoeYBntLb/Dd1BDdY=' 'sha256-joRoT410Z/+eRTGNLDHT39hi2tmQmfaRYfWJez4XU/0=' 'sha256-e0PdPJ0DNi3hjQDGqjsBB/0FeCO5gLxZPu3t1ikOE10='; style-src 'sha256-mPdRPqMXvg6jfnwALvVLG/xj5FbuBD9g2MZcQjV1wgo='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796 https://celestrak.org https://eonet.gsfc.nasa.gov https://services.swpc.noaa.gov https://stat.ripe.net https://www.deribit.com; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-9ZIR8MqQLNUSeovQthbxpw/gwz0/WkwqnZsla7Aw5mk=' 'sha256-K8KdFagznzzu3YE6RDR4fstgxZ6eJQ80yQOU1A5BHx4=' 'sha256-PpmYFcx2e6WPhttGsN8sz2b6xMxRiYMeptTGTk6bw6A=' 'sha256-gi0kPTgBFZXxqFUxMR+NWvNivq8e+BxUKVwh1QP7kfU=' 'sha256-k4AXyoZKm8QdipONOjYbPogB3fypZ8iTxB5wpsNCIK0=' 'sha256-ihki9/sGn/XQKnjbzlDr60780WYG3KV+7v6bd6eL4Ww=' 'sha256-zLB5DUjklC3OmJeyS4lDhIo+DJ52isrTUiZDsIlvKJg=' 'sha256-bT0vNzdOFOMlLouilE/cmrygHs00TOsgIxjvOSXDOfM=' 'sha256-KdMKsfUUNmVCXFBAuJwBjOgmy6aaBJbcd6a1k+ksYPA=' 'sha256-dy4jvz6h8g5HnsKTggbrUlN/Ztqe1wOX1gULPZz4Arc=' 'sha256-Ij3vhC+ldIXkK3NiNHoEQuEoPa5WPWjML2fCTH5dhmY='; style-src 'sha256-Ao3DgSNi4fJT+Lzqzw0fOqrGHifuozhkG9VX0Fdjvtw='; font-src data:; img-src 'self' data: blob: https://s3-eu-west-1.amazonaws.com https://gibs.earthdata.nasa.gov https://basemaps.cartocdn.com https://server.arcgisonline.com https://tile.openstreetmap.org; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' https://data-api.binance.vision https://fapi.binance.com https://api.open-meteo.com https://api.coingecko.com https://api.llama.fi http://localhost:5678 http://127.0.0.1:8095 http://127.0.0.1:8000 https://earthquake.usgs.gov https://mempool.space https://meri.digitraffic.fi wss://data-stream.binance.vision http://127.0.0.1:8796 https://celestrak.org https://eonet.gsfc.nasa.gov https://services.swpc.noaa.gov https://stat.ripe.net https://www.deribit.com; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -923,13 +923,59 @@
   .bw-all { margin-top: var(--s-3); }
   .bw-all summary { cursor: pointer; font-weight: 700; font-size: var(--text-footnote); padding: var(--s-2) 0; }
   .bw-all .kv td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  /* ---------- ADR-109: deep neural flow, oscilloscope, chrono-scrubber, X-Ray HUD, adaptive regime ---------- */
+  .nf-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin-bottom: var(--s-2); }
+  .nf-zoom { display: inline-flex; align-items: center; gap: var(--s-1); }
+  .nf-zoom .btn { min-width: 52px; }
+  .nf-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); margin: 0; }
+  .nf-legend i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-inline-end: var(--s-1); vertical-align: middle; }
+  .sw-cyan { background: var(--apple-cyan); } .sw-purple { background: var(--apple-purple); } .sw-red { background: var(--apple-red); }
+  .nf-stage { position: relative; min-width: 0; border-radius: 20px; background: var(--surface-2); overflow: hidden; }
+  #nfCanvas { display: block; width: 100%; height: clamp(520px, 72dvh, 860px); touch-action: pan-y; cursor: crosshair; }
+  #nfCanvas.panning { cursor: grabbing; }
+  .nf-stage.zoomed #nfCanvas { touch-action: none; cursor: grab; }
+  .nf-scope { position: absolute; top: var(--s-2); right: var(--s-2); z-index: 2; width: 264px; max-height: calc(100% - 16px); overflow-y: auto; padding: var(--s-3); border-radius: 20px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular), var(--shadow-soft); }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .nf-scope { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
+  }
+  @media (max-width: 599px) { .nf-scope { position: static; width: auto; max-height: none; margin: var(--s-2); } }
+  .nf-scope-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1); font-size: var(--text-footnote); }
+  .nf-scope-head b { font-weight: 800; overflow-wrap: anywhere; }
+  .nf-scope canvas { display: block; width: 100%; height: 72px; margin-top: var(--s-2); border-radius: 8px; background: var(--surface-2); }
+  .nf-scope canvas + canvas { height: 52px; }
+  .nf-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; white-space: normal; overflow-wrap: anywhere; }
+  .nf-eq { margin: var(--s-2) 0 0; font-size: var(--text-caption); line-height: 1.45; overflow-wrap: anywhere; direction: ltr; unicode-bidi: isolate; }
+  .nf-w { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: var(--s-1); font-size: var(--text-caption); }
+  .nf-w li { padding: var(--s-1) var(--s-2); border-radius: 8px; background: var(--surface-2); overflow-wrap: anywhere; }
+  .nf-chrono { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
+  .nf-chrono label { grid-column: 1 / -1; font-size: var(--text-footnote); font-weight: 800; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: baseline; }
+  .nf-chrono label .ar { font-weight: 700; color: var(--content-secondary); }
+  .nf-chrono input[type="range"] { width: 100%; min-width: 0; accent-color: var(--accent); }
+  .nf-chrono p { grid-column: 1 / -1; margin: 0; overflow-wrap: anywhere; }
+  .nf-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); }
+  @media (max-width: 899px) { .nf-grid { grid-template-columns: minmax(0, 1fr); } }
+  .nf-grid .kv td:last-child, #nfInputs td:last-child { white-space: normal; overflow-wrap: anywhere; }
+  .xr-badge { position: absolute; top: var(--s-2); right: var(--s-2); z-index: 4; max-width: min(320px, calc(100% - 16px)); padding: var(--s-2) var(--s-3); border-radius: 12px; pointer-events: none;
+    background: var(--surface); border: 0.5px solid var(--accent); box-shadow: inset 0 0.5px 0 var(--specular), var(--shadow-soft); font-size: var(--text-caption); line-height: 1.4; color: var(--content-primary); }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .xr-badge { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
+  }
+  .xr-badge b { display: block; font-weight: 800; letter-spacing: 0.04em; color: var(--accent); }
+  .xr-badge span { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
+  :root[data-xray="on"] #xrBtn { border-color: var(--accent); color: var(--accent); }
+  .topbar { border-bottom: 2px solid transparent; }
+  :root[data-regime="calm"] .topbar { border-bottom-color: var(--apple-green); }
+  :root[data-regime="hunt"] .topbar { border-bottom-color: var(--apple-cyan); }
+  :root[data-regime="shield"] .topbar { border-bottom-color: var(--apple-red); }
+  :root[data-regime="shield"] [data-pri~="shield"], :root[data-regime="hunt"] [data-pri~="hunt"] { outline: 2px solid var(--accent); outline-offset: -2px; }
+  :root[data-regime="shield"] [data-pri~="shield"] { outline-color: var(--danger); }
 </style>
 </head>
 <body>
 <div class="shell">
 <dialog class="st-dlg" id="stDlg" aria-labelledby="stTitle">
   <div class="st-head">
-    <div><h2 id="stTitle">Verify system<span class="ar" lang="ar">فحص المنظومة</span></h2><p class="sub">Twelve checks in this browser. Read-only: nothing moves, nothing is sent. · <span class="ar" lang="ar">فحص للقراءة فقط، لا شيء يتحرك ولا يُرسل.</span></p></div>
+    <div><h2 id="stTitle">Verify system<span class="ar" lang="ar">فحص المنظومة</span></h2><p class="sub">Twenty checks in this browser. Read-only: nothing moves, nothing is sent. · <span class="ar" lang="ar">فحص للقراءة فقط، لا شيء يتحرك ولا يُرسل.</span></p></div>
     <b class="num st-score" id="stScore" aria-live="polite">—</b>
   </div>
   <ol class="st-list" id="stList"></ol>
@@ -944,6 +990,7 @@
         <span class="isl"><span class="dot checking" id="islEngDot"></span>ENGINE <b id="islEng">MANUAL</b></span>
         <span class="isl">BASE <b id="islBase">0.00</b></span>
         <span class="isl">VAULT <b id="islSafe">+0.00</b></span>
+        <span class="isl"><span class="dot checking" id="islModeDot"></span>MODE <b id="islMode">…</b></span>
       </div>
       <div class="bar-right">
         <div class="status-pill" role="status" aria-live="polite">
@@ -953,7 +1000,10 @@
           <span class="num" id="coreCount">0 / 4</span>
         </div>
         <span class="clock num" id="clock" aria-label="Local time">--:--:--</span>
-        <button class="icon-btn st-btn" id="stBtn" type="button" aria-label="Verify system, 18 checks · فحص المنظومة" aria-haspopup="dialog">
+        <button class="icon-btn" id="xrBtn" type="button" aria-pressed="false" aria-label="Architect X-Ray view, key X · منظور المهندس">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/><path d="M7.5 10.5h6M10.5 7.5v6"/></svg>
+        </button>
+        <button class="icon-btn st-btn" id="stBtn" type="button" aria-label="Verify system, 20 checks · فحص المنظومة" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M8.5 12l2.4 2.4 4.6-4.8"/></svg>
           <span class="st-badge num" id="stBadge" aria-hidden="true">12</span>
         </button>
@@ -963,7 +1013,7 @@
         </button>
       </div>
     </header>
-    <nav class="views" aria-label="Views"><div class="seg" role="group"><button type="button" class="seg-btn" data-go="1" aria-pressed="false">🎯 Command · <span class="ar" lang="ar">القيادة</span></button><button type="button" class="seg-btn" data-go="2" aria-pressed="false">🌍 OSIRIS · <span class="ar" lang="ar">الكوكب</span></button><button type="button" class="seg-btn" data-go="3" aria-pressed="false">🐋 Radar · <span class="ar" lang="ar">الرادار</span></button><button type="button" class="seg-btn" data-go="4" aria-pressed="false">🧾 Receipts · <span class="ar" lang="ar">الفواتير</span></button><button type="button" class="seg-btn" data-go="5" aria-pressed="false">🖥️ All · <span class="ar" lang="ar">الكل</span></button></div><p class="kbd-help">Keys: <kbd>1</kbd>–<kbd>5</kbd> views · <kbd>K</kbd> emergency stop · <kbd>S</kbd> sweep profit · <kbd>Esc</kbd> restore quadrant · <span class="ar" lang="ar">اختصارات لوحة المفاتيح</span></p></nav>
+    <nav class="views" aria-label="Views"><div class="seg" role="group"><button type="button" class="seg-btn" data-go="1" aria-pressed="false">🎯 Command · <span class="ar" lang="ar">القيادة</span></button><button type="button" class="seg-btn" data-go="2" aria-pressed="false">🌍 OSIRIS · <span class="ar" lang="ar">الكوكب</span></button><button type="button" class="seg-btn" data-go="3" aria-pressed="false">🐋 Radar · <span class="ar" lang="ar">الرادار</span></button><button type="button" class="seg-btn" data-go="4" aria-pressed="false">🧾 Receipts · <span class="ar" lang="ar">الفواتير</span></button><button type="button" class="seg-btn" data-go="5" aria-pressed="false">🖥️ All · <span class="ar" lang="ar">الكل</span></button></div><p class="kbd-help">Keys: <kbd>1</kbd>–<kbd>5</kbd> views · <kbd>K</kbd> emergency stop · <kbd>S</kbd> sweep profit · <kbd>X</kbd> X-Ray · <kbd>Esc</kbd> restore quadrant · <span class="ar" lang="ar">اختصارات لوحة المفاتيح</span></p></nav>
   </div>
 
   <main>
@@ -1397,7 +1447,7 @@
         <p class="sub">Spot, long-only. Signals are rule-based heuristics on public Binance data with no proven track record; they are not advice. · <span class="ar" lang="ar">إشارات تقديرية وليست نصيحة استثمارية.</span></p>
       </section>
 
-      <section class="card wallet" aria-labelledby="wlTitle">
+      <section class="card wallet" aria-labelledby="wlTitle" data-pri="shield">
         <div class="card-head">
           <div class="card-title" id="wlTitle">Wallet &amp; locked base<span class="ar" lang="ar">المحفظة والمبلغ المعلّق</span></div>
           <div class="tag" id="wlModeTag">PAPER</div>
@@ -1470,6 +1520,46 @@
       <details class="bw-all"><summary>All 25 nodes and their readings · <span class="ar" lang="ar">كل العقد وقراءاتها</span></summary><table class="kv" id="bwNodes"><tbody></tbody></table></details>
       <p class="sub">Links are the ones the desk uses. Filaments fire only on a microprice move of 0.5 bps or more, a new whale wall or iceberg, a new data pull, or your hover and tap. Gamma assumes dealers are long calls and short puts, which is a public convention, not observed positioning. The gym trains six rule agents on bootstrapped real daily returns with synthetic stress segments, and scores each stress regime only inside its shock window; its weights inform this web and never open a trade. Decision aids for paper trading only. · <span class="ar" lang="ar">أدوات مساعدة للتداول الورقي فقط، ولا يُرسل أي أمر.</span></p>
     </section>
+    <section data-view="1 3 5" class="card mt-3" aria-labelledby="nfTitle" id="neural" data-pri="hunt">
+      <div class="card-head"><div class="card-title" id="nfTitle">Deep neural flow · 139 → 48 → 36 → 48 → 24 → 16 → 8<span class="ar" lang="ar">محرك التدفق العصبي العميق: من البيانات إلى القرار</span></div><div class="tag num" id="nfTag">—</div></div>
+      <div class="nf-toolbar">
+        <div class="nf-zoom" role="group" aria-label="Zoom and pan the network · تقريب الشبكة">
+          <button class="icon-btn" id="nfZoomOut" type="button" aria-label="Zoom out"><span aria-hidden="true">−</span></button>
+          <button class="btn num" id="nfZoomReset" type="button" aria-label="Reset zoom">1.0×</button>
+          <button class="icon-btn" id="nfZoomIn" type="button" aria-label="Zoom in"><span aria-hidden="true">+</span></button>
+        </div>
+        <p class="sub nf-legend"><span><i class="sw-cyan"></i>w &gt; 0 excitatory · <span class="ar" lang="ar">محفّز</span></span><span><i class="sw-purple"></i><i class="sw-pink"></i>w &lt; 0 inhibitory · <span class="ar" lang="ar">مثبّط</span></span><span><i class="sw-orange"></i><i class="sw-red"></i>decision threads · <span class="ar" lang="ar">خيوط القرار</span></span></p>
+      </div>
+      <div class="nf-stage" id="nfStage">
+        <canvas id="nfCanvas" tabindex="0" role="img" aria-label="Neural flow, left to right: 139 input neurons from live market and planetary sources, five hidden layers of 48, 36, 48, 24 and 16 ReLU neurons, and 8 tanh decision neurons. Hover, tap or use the arrow keys to inspect a neuron; the oscilloscope and the tables below give every value."></canvas>
+        <div class="nf-scope" id="nfScope" role="region" aria-labelledby="nfScopeT">
+          <div class="nf-scope-head"><b id="nfScopeT">Oscilloscope · <span class="ar" lang="ar">راسم الذبذبات</span></b><span class="pill-inf">[INFERENCE - Quant Model]</span></div>
+          <canvas id="nfScopeFn" aria-hidden="true"></canvas>
+          <canvas id="nfScopeTr" aria-hidden="true"></canvas>
+          <p class="nf-eq nf-mono" id="nfScopeEq" aria-live="polite">Hover or tap a neuron to see its activation function, its live value and its strongest weights.</p>
+          <ul class="nf-w" id="nfScopeW"></ul>
+        </div>
+      </div>
+      <div class="nf-chrono">
+        <label for="nfScrub">Chrono-scrubber · last 300 readings · <span class="ar" lang="ar">آلة الزمن العصبية</span> <span class="num" id="nfScrubAt">LIVE</span></label>
+        <input type="range" id="nfScrub" name="nfScrub" min="0" max="0" value="0" step="1" autocomplete="off" aria-describedby="nfScrubTxt" />
+        <button class="btn" id="nfLive" type="button">Live · <span class="ar" lang="ar">مباشر</span></button>
+        <p class="sub nf-mono" id="nfScrubTxt" aria-live="polite">Readings start once the Binance book arrives…</p>
+      </div>
+      <div class="nf-grid">
+        <div>
+          <h3 class="mini-h">Eight decision heads · <span class="ar" lang="ar">عصبونات القرار الثمانية</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+          <table class="kv" id="nfOut"><tbody></tbody></table>
+        </div>
+        <div>
+          <h3 class="mini-h">Training in a Web Worker · <span class="ar" lang="ar">التدريب في العامل الخلفي</span> <span class="pill-inf">[INFERENCE - Quant Model]</span></h3>
+          <table class="kv" id="nfTrain"><tbody></tbody></table>
+          <div class="form-row"><button class="btn" id="nfTrainBtn" type="button">Train now · <span class="ar" lang="ar">درّب الآن</span></button></div>
+        </div>
+      </div>
+      <details class="bw-all"><summary>All 139 inputs, their sources and values · <span class="ar" lang="ar">كل المدخلات ومصادرها</span></summary><table class="kv" id="nfInputs"><tbody></tbody></table></details>
+      <p class="sub">A small network of 11,792 weights trained in this browser on the last 300 readings of real public data. Head 1 learns the next 30 seconds of the Binance microprice; heads 2 to 8 learn to reproduce the desk's own rule values (half-Kelly size, target, stop, circuit breaker, locked-base recovery, profit sweep, court confidence), so you can see how the data flows into them. The rules, the risk judge and the receipt chain decide; the network opens nothing and the $20 locked base must be whole before any sweep, whatever it says. Missing sources enter as 0 and show as hollow neurons. Threads move only on a microprice move of 0.5 bps or more, a new reading, a data pull or your touch, and stay still during the self-test and under reduced motion. Decision aid for paper trading only. · <span class="ar" lang="ar">أداة مساعدة للتداول الورقي فقط، القواعد هي التي تقرر ولا يُرسل أي أمر.</span></p>
+    </section>
     <section data-view="1 3 5" class="card mt-3" aria-labelledby="lvTitle" id="live">
       <div class="card-head"><div class="card-title" id="lvTitle">Live price &amp; microprice<span class="ar" lang="ar">السعر الحي والسعر المجهري</span></div><div class="tag">5 s · 300 READINGS</div></div>
       <svg class="chart" id="lvChart" viewBox="0 0 720 220" role="img" aria-label="Live mid price and microprice over the last 300 readings, with the largest order-book walls"></svg>
@@ -1510,7 +1600,7 @@
       </section>
     </div>
 
-    <section data-view="3 5" class="card mt-3" aria-labelledby="snTitle" id="sonar">
+    <section data-view="3 5" class="card mt-3" aria-labelledby="snTitle" id="sonar" data-pri="hunt">
       <div class="card-head"><div class="card-title" id="snTitle">Whale sonar &amp; liquidity canyon<span class="ar" lang="ar">سونار الحيتان ووادي السيولة</span></div><div class="tag"><span id="snStream">REST 5 s</span> · 25 TIERS</div></div>
       <canvas class="v-canvas sonar" id="snCanvas" role="img" aria-label="Stepped canyon of the top 25 Binance order-book levels on each side: cumulative bids in green to the left of the mid, asks in red to the right, badges on the three largest levels per side, an orange microprice baseline and chips for whale walls further out. The line below gives the numbers."></canvas>
       <div class="chart-legend">
@@ -1531,7 +1621,7 @@
         <p class="why" id="frNote"></p>
         <div class="state" id="frState"><span class="dot"></span> CHECKING</div>
       </section>
-      <section class="card" aria-labelledby="cbTitle">
+      <section class="card" aria-labelledby="cbTitle" data-pri="shield">
         <div class="card-head"><div class="card-title" id="cbTitle">Circuit breaker<span class="ar" lang="ar">القاطع الآلي للطوارئ</span></div><div class="tag" id="cbTag">ARMED</div></div>
         <p class="sub">Checked on every 5-second tick. Any red line triggers the emergency stop. Rule-based, not a prediction. · <span class="ar" lang="ar">قواعد ثابتة تفحص كل 5 ثوانٍ.</span></p>
         <div class="form-grid">
@@ -2988,6 +3078,8 @@ const DEFAULT_ALLOW_HOSTS = [
 //   l2Fill(book, ...)       step-by-step VWAP sweep of the top 25 levels, taker fee, maker queue estimate
 //   csti(parts)             cyber and space threat index, 0-100
 //   canon / merkle helpers  the receipt chain's canonical form (ADR-091, ADR-096)
+//   nnFactory / nn          the 139 -> 8 neural flow: forward pass, backpropagation, Adam and (1+1)-ES (ADR-109)
+//   shape.perp*, emsc, ...  fallbacks for the perpetual premium (OKX, Deribit) and disaster alerts (EMSC, ReliefWeb)
 const OMEGA_MATH = (() => {
   "use strict";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -3343,6 +3435,131 @@ const OMEGA_MATH = (() => {
     return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length } : { score: NaN, parts, coverage: 0 };
   }
 
+  /* ---------- neural flow (ADR-109) ---------- */
+  // A small multilayer perceptron, 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8: linear inputs, ReLU hidden layers and
+  // tanh outputs, trained online with Adam on half mean squared error, plus a (1+1) evolution strategy on the
+  // output layer with the one-fifth success rule. A NaN target is skipped, so a head only learns when it has one.
+  // Parameters sit in one Float64Array: for each layer its weights (row per output neuron) and then its biases.
+  // nnFactory uses no outside name, so the Ops Room can also run it in a Web Worker from its source text.
+  function nnFactory() {
+    "use strict";
+    const SIZES = [139, 48, 36, 48, 24, 16, 8];
+    const now = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
+    function layout(sizes) {
+      const off = [];
+      let n = 0;
+      for (let l = 1; l < sizes.length; l++) { off.push({ w: n, b: n + sizes[l] * sizes[l - 1], i: sizes[l - 1], o: sizes[l] }); n += sizes[l] * sizes[l - 1] + sizes[l]; }
+      return { off, n, weights: off.reduce((a, o) => a + o.i * o.o, 0) };
+    }
+    function rng(seed) {
+      let s = (seed >>> 0) || 88172645;
+      const u = () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; };
+      return { u, g: () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u()) };
+    }
+    const lay = net => net.L || (net.L = layout(net.sizes));
+    // He initialisation for the ReLU layers, Xavier for the tanh output; biases start at zero.
+    function init(sizes = SIZES, seed = 1) {
+      const L = layout(sizes), p = new Float64Array(L.n), r = rng(seed);
+      L.off.forEach((o, k) => { const sd = k === L.off.length - 1 ? Math.sqrt(1 / o.i) : Math.sqrt(2 / o.i); for (let j = 0; j < o.o * o.i; j++) p[o.w + j] = r.g() * sd; });
+      return { sizes: sizes.slice(), p, L };
+    }
+    // a[0] is the input (missing values become 0); z[k] and a[k] are layer k before and after its activation.
+    function forward(net, x) {
+      const L = lay(net), p = net.p, a = [Float64Array.from(x, v => (Number.isFinite(v) ? v : 0))], z = [null];
+      for (let k = 0; k < L.off.length; k++) {
+        const o = L.off[k], prev = a[k], zz = new Float64Array(o.o), aa = new Float64Array(o.o), last = k === L.off.length - 1;
+        for (let j = 0; j < o.o; j++) {
+          let s = p[o.b + j];
+          const row = o.w + j * o.i;
+          for (let i = 0; i < o.i; i++) s += p[row + i] * prev[i];
+          zz[j] = s; aa[j] = last ? Math.tanh(s) : s > 0 ? s : 0;
+        }
+        z.push(zz); a.push(aa);
+      }
+      return { z, a };
+    }
+    function lossOf(net, X, Y, idx) {
+      if (!idx.length) return NaN;
+      const K = lay(net).off.length;
+      let s = 0;
+      for (const n of idx) { const out = forward(net, X[n]).a[K]; for (let j = 0; j < out.length; j++) { const t = Y[n][j]; if (Number.isFinite(t)) s += 0.5 * (out[j] - t) ** 2; } }
+      return s / idx.length;
+    }
+    // Backpropagation of the batch loss into g (same layout as p), averaged over the batch.
+    function grad(net, X, Y, idx, g) {
+      g.fill(0);
+      const L = lay(net), K = L.off.length, p = net.p;
+      let loss = 0;
+      for (const n of idx) {
+        const f = forward(net, X[n]), out = f.a[K];
+        let d = new Float64Array(out.length);
+        for (let j = 0; j < out.length; j++) { const t = Y[n][j]; if (!Number.isFinite(t)) continue; const e = out[j] - t; loss += 0.5 * e * e; d[j] = e * (1 - out[j] * out[j]); }
+        for (let k = K - 1; k >= 0; k--) {
+          const o = L.off[k], prev = f.a[k], nd = k ? new Float64Array(o.i) : null;
+          for (let j = 0; j < o.o; j++) {
+            const dj = d[j];
+            if (dj === 0) continue;
+            g[o.b + j] += dj;
+            const row = o.w + j * o.i;
+            for (let i = 0; i < o.i; i++) { g[row + i] += dj * prev[i]; if (nd) nd[i] += dj * p[row + i]; }
+          }
+          if (nd) { const zp = f.z[k]; for (let i = 0; i < o.i; i++) if (!(zp[i] > 0)) nd[i] = 0; d = nd; }
+        }
+      }
+      const m = Math.max(1, idx.length);
+      for (let i = 0; i < g.length; i++) g[i] /= m;
+      return loss / m;
+    }
+    // Time order is kept: the newest 20% is held out, and `gap` samples before it are dropped from training,
+    // because a target that looks `gap` readings ahead would otherwise see into the held-out window.
+    function train(net, X, Y, o = {}) {
+      const n = Math.min(X.length, Y.length), gap = o.gap ?? 6;
+      if (n < 20) return null;
+      const L = lay(net), P = net.p.length, g = new Float64Array(P), m = o.m || new Float64Array(P), v = o.v || new Float64Array(P);
+      const lr = o.lr ?? 0.003, b1 = 0.9, b2 = 0.999, l2 = o.l2 ?? 1e-4, epochs = o.epochs ?? 12, bs = o.batch ?? 16, r = rng(o.seed || 7);
+      const cut = Math.floor(n * 0.8), tr = [], va = [];
+      for (let i = 0; i < Math.max(1, cut - gap); i++) tr.push(i);
+      for (let i = cut; i < n; i++) va.push(i);
+      const t0 = now(), before = lossOf(net, X, Y, va);
+      let t = o.t || 0, steps = 0;
+      for (let e = 0; e < epochs; e++) {
+        for (let i = tr.length - 1; i > 0; i--) { const j = Math.floor(r.u() * (i + 1)); const s = tr[i]; tr[i] = tr[j]; tr[j] = s; }
+        for (let s = 0; s < tr.length; s += bs) {
+          grad(net, X, Y, tr.slice(s, s + bs), g);
+          t++; steps++;
+          const c1 = 1 - b1 ** t, c2 = 1 - b2 ** t;
+          for (let i = 0; i < P; i++) {
+            const gi = g[i] + l2 * net.p[i];
+            m[i] = b1 * m[i] + (1 - b1) * gi; v[i] = b2 * v[i] + (1 - b2) * gi * gi;
+            net.p[i] -= lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + 1e-8);
+          }
+        }
+      }
+      // (1+1)-ES on the output layer: keep a Gaussian step only when it lowers the training loss.
+      const lo = L.off[L.off.length - 1], len = lo.o * lo.i + lo.o;
+      let sigma = o.sigma || 0.02, acc = 0, best = lossOf(net, X, Y, tr);
+      const esN = o.es ?? 16;
+      for (let k = 0; k < esN; k++) {
+        const save = net.p.slice(lo.w, lo.w + len);
+        for (let i = 0; i < len; i++) net.p[lo.w + i] += sigma * r.g();
+        const l = lossOf(net, X, Y, tr);
+        if (l < best) { best = l; acc++; sigma *= 1.22; } else { net.p.set(save, lo.w); sigma *= 0.95; }
+      }
+      sigma = Math.min(0.2, Math.max(1e-4, sigma));
+      // Held-out scores: loss, the loss of always answering 0, and the direction hit rate of head 1.
+      let base = 0, hits = 0, calls = 0;
+      for (const i of va) {
+        for (let j = 0; j < Y[i].length; j++) if (Number.isFinite(Y[i][j])) base += 0.5 * Y[i][j] ** 2;
+        const y0 = Y[i][0];
+        if (Number.isFinite(y0) && Math.abs(y0) >= 0.1) { calls++; if (Math.sign(forward(net, X[i]).a[L.off.length][0]) === Math.sign(y0)) hits++; }
+      }
+      return { steps, t, m, v, sigma, esAccepted: acc, esTried: esN, trainLoss: best, valBefore: before, valLoss: lossOf(net, X, Y, va), valBase: va.length ? base / va.length : NaN, hit: calls ? hits / calls : NaN, calls, nTrain: tr.length, nVal: va.length, ms: now() - t0 };
+    }
+    const act = (k, last, z) => (k === 0 ? z : last ? Math.tanh(z) : Math.max(0, z));
+    return { SIZES, layout, init, forward, lossOf, grad, train, act, rng };
+  }
+  const nn = nnFactory();
+
   /* ---------- receipts ---------- */
   const micro = v => finite(v) ? Math.round(v * 1e6) / 1e6 : v;
   const excess = (equity, base) => Math.max(0, equity - base);
@@ -3430,7 +3647,54 @@ const OMEGA_MATH = (() => {
     },
     premium(j) {
       if (!j || !(+j.markPrice > 0)) throw new Error("not a premium index");
-      return { symbol: String(j.symbol || ""), markPrice: j.markPrice, indexPrice: j.indexPrice, lastFundingRate: j.lastFundingRate, nextFundingTime: j.nextFundingTime, time: j.time };
+      return { symbol: String(j.symbol || ""), markPrice: j.markPrice, indexPrice: j.indexPrice, lastFundingRate: j.lastFundingRate, nextFundingTime: j.nextFundingTime, time: j.time, venue: String(j.venue || "Binance USD-M") };
+    },
+    // ADR-109 fallbacks in the same premium form, for when fapi.binance.com refuses the caller (it answers
+    // HTTP 451 to US cloud runners). The venue is kept so the page names where the number came from.
+    // OKX quotes funding per settlement, every 8 h for BTC and ETH today; another interval is scaled to 8 h.
+    perpOkx(fund, mark, index, symbol) {
+      const f = fund && Array.isArray(fund.data) && fund.data[0], mk = mark && Array.isArray(mark.data) && mark.data[0], ix = index && Array.isArray(index.data) && index.data[0];
+      if (!f || !mk || !ix || !(+mk.markPx > 0) || !(+ix.idxPx > 0) || !Number.isFinite(+f.fundingRate)) throw new Error("not an OKX funding, mark and index answer");
+      const hours = (+f.nextFundingTime - +f.fundingTime) / 3600e3, per8 = hours > 0 && hours <= 24 ? +f.fundingRate * 8 / hours : +f.fundingRate;
+      return { symbol, markPrice: String(mk.markPx), indexPrice: String(ix.idxPx), lastFundingRate: String(per8), nextFundingTime: +f.fundingTime || null, time: +mk.ts || null, venue: "OKX " + String(f.instId || "") };
+    },
+    // Deribit's perpetual ticker: funding_8h is the funding over the last 8 hours.
+    perpDeribit(j, symbol) {
+      const r = j && j.result;
+      if (!r || !(+r.mark_price > 0) || !(+r.index_price > 0) || !Number.isFinite(+r.funding_8h)) throw new Error("not a Deribit perpetual ticker");
+      return { symbol, markPrice: String(r.mark_price), indexPrice: String(r.index_price), lastFundingRate: String(r.funding_8h), nextFundingTime: null, time: +r.timestamp || null, venue: "Deribit " + String(r.instrument_name || "") };
+    },
+    // GDACS events (GeoJSON) cut to the orange and red alerts the page draws.
+    gdacs(j, via = "GDACS") {
+      const f = j && Array.isArray(j.features) ? j.features : null;
+      if (!f) throw new Error("not a GDACS event list");
+      return { format: "omega-alerts-v1", via, rule: "GDACS alert level", features: f.filter(x => x && x.geometry && x.geometry.type === "Point" && x.properties && ["Orange", "Red"].includes(x.properties.alertlevel)).slice(0, 200)
+        .map(x => ({ geometry: { type: "Point", coordinates: x.geometry.coordinates.slice(0, 2) }, properties: { alertlevel: x.properties.alertlevel, eventtype: x.properties.eventtype, name: String(x.properties.name || x.properties.eventname || "").slice(0, 140), url: { report: x.properties.url && x.properties.url.report }, basis: "GDACS " + x.properties.alertlevel + " alert" } })) };
+    },
+    // EMSC has no alert level, so a fixed magnitude rule stands in and says so on every point:
+    // M6.0 or more is drawn orange, M7.0 or more red. That is a stated rule, not a GDACS rating.
+    emsc(j) {
+      const f = j && Array.isArray(j.features) ? j.features : null;
+      if (!f) throw new Error("not an EMSC event list");
+      const out = [];
+      for (const x of f) {
+        const p = x && x.properties || {}, c = x && x.geometry && x.geometry.coordinates, mag = +p.mag;
+        if (!Array.isArray(c) || !Number.isFinite(+c[0]) || !Number.isFinite(+c[1]) || !(mag >= 6)) continue;
+        out.push({ geometry: { type: "Point", coordinates: [+c[0], +c[1]] }, properties: { alertlevel: mag >= 7 ? "Red" : "Orange", eventtype: "EQ", name: `M${mag.toFixed(1)} ${String(p.flynn_region || "").slice(0, 100)}`.trim(), url: { report: p.unid ? "https://www.seismicportal.eu/eventdetails.html?unid=" + encodeURIComponent(p.unid) : "" }, basis: "EMSC magnitude rule (M6+ orange, M7+ red), not a GDACS level", time: String(p.time || "") } });
+      }
+      return { format: "omega-alerts-v1", via: "EMSC", rule: "EMSC magnitude rule: M6+ orange, M7+ red", features: out.slice(0, 200) };
+    },
+    // ReliefWeb disasters with status "alert" (an early warning) are drawn orange at the primary country's centre.
+    reliefweb(j) {
+      const d = j && Array.isArray(j.data) ? j.data : null;
+      if (!d) throw new Error("not a ReliefWeb list");
+      const out = [];
+      for (const x of d) {
+        const f = x && x.fields || {}, loc = f.primary_country && f.primary_country.location;
+        if (!loc || !Number.isFinite(+loc.lon) || !Number.isFinite(+loc.lat) || f.status !== "alert") continue;
+        out.push({ geometry: { type: "Point", coordinates: [+loc.lon, +loc.lat] }, properties: { alertlevel: "Orange", eventtype: String(f.primary_type && f.primary_type.code || ""), name: String(f.name || "").slice(0, 140), url: { report: String(f.url || "") }, basis: "ReliefWeb status alert, placed at the country centre" } });
+      }
+      return { format: "omega-alerts-v1", via: "ReliefWeb", rule: "ReliefWeb status alert", features: out.slice(0, 100) };
     }
   };
   // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
@@ -3444,10 +3708,17 @@ const OMEGA_MATH = (() => {
     ioda: now => { const u = win15(now); return `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?entityType=country&from=${u - 86400}&until=${u}&format=codf&limit=200`; },
     deribit: () => "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=option",
     dvol: now => { const u = win15(now) * 1000; return `https://www.deribit.com/api/v2/public/get_volatility_index_data?currency=BTC&start_timestamp=${u - 48 * 3600e3}&end_timestamp=${u}&resolution=3600`; },
-    premium: sym => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${sym}`
+    premium: sym => `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${sym}`,
+    // ADR-109: BTCUSDT and ETHUSDT map to the OKX USDT swaps and the Deribit perpetuals.
+    okx: sym => { const b = sym.replace(/USDT$/, ""); return [`https://www.okx.com/api/v5/public/funding-rate?instId=${b}-USDT-SWAP`, `https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=${b}-USDT-SWAP`, `https://www.okx.com/api/v5/market/index-tickers?instId=${b}-USDT`]; },
+    deribitPerp: sym => `https://www.deribit.com/api/v2/public/ticker?instrument_name=${sym.replace(/USDT$/, "")}-PERPETUAL`,
+    gdacs: () => "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",
+    gdacsSearch: now => { const d = t => new Date(t).toISOString().slice(0, 10); return `https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=EQ;TC;FL;VO;DR;WF&alertlevel=Orange;Red&fromDate=${d(now - 7 * 86400e3)}&toDate=${d(now)}`; },
+    emsc: now => `https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=200&minmag=6&starttime=${new Date(win15(now) * 1000 - 7 * 86400e3).toISOString().slice(0, 19)}`,
+    reliefweb: () => "https://api.reliefweb.int/v2/disasters?appname=omega-giant-core&profile=list&limit=50&filter[field]=status&filter[value]=alert&fields[include][]=primary_country.location&fields[include][]=primary_type.code&fields[include][]=status&fields[include][]=url"
   };
 
-  return Object.freeze({ shape, urls, RIPE_ASNS, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+  return Object.freeze({ shape, urls, RIPE_ASNS, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
 })();
 window.OMEGA_MATH = OMEGA_MATH;
 </script>
@@ -5286,7 +5557,9 @@ window.OMEGA_MATH = OMEGA_MATH;
     tape: () => D.tape.map(x => ({ ...x })), micro: () => D.microHist.map(x => ({ ...x })), flow: () => D.flow ? { microBps: D.flow.microBps, hawkes: D.flow.hawkes, vpin: D.flow.vpin } : null,
     prem: () => D.fut && D.fut.prem ? { ...D.fut.prem } : null, walls: () => D.walls.size, sym: () => D.sym, signal: () => D.signal ? { sig: D.signal.sig, score: D.signal.score } : null,
     chainFee: () => D.chain && Number.isFinite(D.chain.fastest) ? D.chain.fastest : NaN, l2: (book, side, amount) => window.OMEGA_MATH ? window.OMEGA_MATH.l2Fill(book, side, amount, { levels: L2_LEVELS, takerFee: FEE }) : null,
-    closes: () => { const c = store.get("omega-hist-" + D.sym, null); return c && Array.isArray(c.rows) ? c.rows.map(r => r[3]) : []; }
+    closes: () => { const c = store.get("omega-hist-" + D.sym, null); return c && Array.isArray(c.rows) ? c.rows.map(r => r[3]) : []; },
+    // ADR-109, for the neural flow: the quant levels (ATR, half-Kelly, stop, target) the court used, as a copy.
+    quant: () => D.quant ? { ...D.quant } : null
   }) });
 })();
 </script>
@@ -6076,7 +6349,9 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   }
   function applyGdacs(j) {
     S.gdacs = (j.features || []).filter(f => f.geometry && f.geometry.type === "Point" && ["Orange", "Red"].includes(f.properties.alertlevel))
-      .slice(0, 100).map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], level: f.properties.alertlevel, type: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: f.properties.url && f.properties.url.report }));
+      .slice(0, 100).map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], level: f.properties.alertlevel, type: f.properties.eventtype, name: f.properties.name || f.properties.eventname || "", url: f.properties.url && f.properties.url.report, basis: String(f.properties.basis || "GDACS " + f.properties.alertlevel + " alert") }));
+    // ADR-109: the alert list can come from a fallback (EMSC magnitude rule, ReliefWeb); `via` names it.
+    S.gdacsVia = String(j.via || "GDACS");
     return S.gdacs.length;
   }
   // Digitraffic sends every Baltic vessel as GeoJSON; the direct tier keeps [lon, lat, sog] like the proxy does.
@@ -6195,7 +6470,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     }
     if (S.src.gdacs.state === "online") {
       const red = S.gdacs.filter(g => g.level === "Red").length, orange = S.gdacs.length - red;
-      parts.push({ tier: S.src.gdacs.tier, en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (GDACS)` });
+      parts.push({ tier: S.src.gdacs.tier, en: "Disaster alerts", a: "إنذارات الكوارث", v: clamp(red * 34 + orange * 12, 0, 100), why: `${red} red · ${orange} orange (${S.gdacsVia || "GDACS"})` });
     }
     if (S.src.straits.state === "online") {
       const n = S.straits.reduce((a, x) => a + x.warnings.length, 0), hot = S.straits.filter(x => x.warnings.length).length;
@@ -6360,8 +6635,8 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       spark = { vals: day.map(q => q.mag), mark: day.indexOf(d), tone: "red", cap: `Magnitudes of the ${day.length} M2.5+ quakes in 24 h, oldest first · USGS` };
     } else if (hit.kind === "gdacs") {
       const types = { TC: "Tropical cyclone", FL: "Flood", EQ: "Earthquake", VO: "Volcano", DR: "Drought", WF: "Wildfire" };
-      t = `${d.level} alert · ${types[d.type] || d.type || "event"}`; a = "إنذار كارثة"; kind = d.name || "GDACS event"; src = "GDACS";
-      rows.push(["Level", "المستوى", d.level]);
+      t = `${d.level} alert · ${types[d.type] || d.type || "event"}`; a = "إنذار كارثة"; kind = d.name || "GDACS event"; src = S.gdacsVia || "GDACS";
+      rows.push(["Level", "المستوى", d.level], ["Basis", "أساس التصنيف", d.basis || "GDACS"]);
       imp = (d.type === "TC" ? "Ports and lanes in the storm path can slow." : d.type === "VO" ? "Ash can close air routes." : d.type === "FL" ? "Floods can cut inland freight." : "Check the source for the affected area.")
         + ` Nearest tracked hub: ${near.x.n}, ${nf(near.d, 0)} km. It feeds the disaster part of PWSI.`;
       url = d.url;
@@ -6613,6 +6888,22 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     state: () => ({ z: S.z, w: S.w, h: S.h, proj: S.proj, coastRings: coast.length, lanes: LANES.length, pwsi: pwsi(), src: Object.fromEntries(Object.entries(S.src).map(([k, v]) => [k, { state: v.state, tier: v.tier || "", n: v.n, at: v.at }])) }),
     // ADR-108: orbital and cyber radar, for Brain 2 and the self-test.
     radar: () => ({ sats: S.sats.length, eonet: S.eonet.length, kp: S.kp.length ? S.kp[S.kp.length - 1].kp : NaN, kev: S.kev ? S.kev.count : NaN, ripe: S.ripe.length, ioda: S.ioda.length, cables: CABLES.length, cableDense: cableDense.reduce((a, l) => a + l.length, 0), landings: LANDINGS.length, stressed: CABLES.filter(c => cableStress(c).length).length, csti: cstiNow(), news: S.news.length, air: S.air.length, opensky: S.src.opensky.state, gdelt: S.src.gdelt.state }),
+    // ADR-109: compact counts for the neural flow's input layer. NaN where the source is not online.
+    intel: () => {
+      const on = k => S.src[k] && S.src[k].state === "online", cut = Date.now() - 7 * 86400e3, wk = S.kev ? S.kev.recent.filter(x => Date.parse(x.added + "T00:00:00Z") >= cut) : null;
+      return {
+        straits: STRAIT_KEYS.map(k => { const x = S.straits.find(s => s.key === k); return on("straits") && x ? x.warnings.length : NaN; }),
+        quakes: on("usgs") ? S.quakes.length : NaN, quakeMax: on("usgs") && S.quakes.length ? S.quakes[0].mag : NaN, quakeM5: on("usgs") ? S.quakes.filter(q => q.mag >= 5).length : NaN,
+        gdacsRed: on("gdacs") ? S.gdacs.filter(g => g.level === "Red").length : NaN, gdacsOrange: on("gdacs") ? S.gdacs.filter(g => g.level !== "Red").length : NaN, gdacsVia: S.gdacsVia || "GDACS",
+        gust: on("meteo") && S.wx.length ? Math.max(...S.wx.map(w => w.gust || 0)) : NaN, ais: on("ais") ? S.ais.length : NaN,
+        seaNews: on("seaNews") ? S.seaNews.length : NaN, news: on("gdelt") ? S.news.length : NaN, air: on("opensky") ? S.air.length : NaN,
+        kev7: on("kev") && wk ? wk.length : NaN, ransom7: on("kev") && wk ? wk.filter(x => x.ransomware).length : NaN,
+        bgpMin: on("ripe") && S.ripe.length ? Math.min(...S.ripe.map(x => x.share)) : NaN, ioda: on("ioda") ? S.ioda.length : NaN,
+        kp: on("swpc") && S.kp.length ? S.kp[S.kp.length - 1].kp : NaN, eonet: on("eonet") ? S.eonet.length : NaN, sats: on("celestrak") ? S.sats.length : NaN,
+        stressed: CABLES.length ? CABLES.filter(c => cableStress(c).length).length / CABLES.length : NaN,
+        prices: on("binance") ? S.prices.map(p => ({ s: p.s, c: p.c })) : []
+      };
+    },
     roundTrip: () => { const p = project(S.lat0, S.lon0); const q = p ? unproject(p[0], p[1]) : null; return q ? Math.hypot(q[0] - S.lat0, wrapLon(q[1] - S.lon0)) : NaN; }
   }) });
 })();
@@ -6681,7 +6972,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     src: {
       deribit: { en: "Deribit BTC options (IV, open interest)", state: "checking", tier: "", at: 0, n: 0 },
       dvol: { en: "Deribit DVOL index", state: "checking", tier: "", at: 0, n: 0 },
-      prem: { en: "Binance perpetual premium, BTC + ETH", state: "checking", tier: "", at: 0, n: 0 }
+      prem: { en: "Perpetual premium, BTC + ETH (Binance, else OKX or Deribit)", state: "checking", tier: "", at: 0, n: 0 }
     },
     gex: null, dvol: null, basis: {}, q: {}, gym: store.get("omega-gym-v1", null), events: [], lastMicro: NaN, lastWalls: -1, lastIce: 0, osAt: {}
   };
@@ -6704,6 +6995,8 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       tiered("prem", [
         ["proxy", base ? async () => ({ raw: { items: await Promise.all(["BTCUSDT", "ETHUSDT"].map(s => getJson(base + "/market/fapi/premium/" + s, 15000))) } }) : null],
         ["direct", async () => ({ raw: { items: await Promise.all(["BTCUSDT", "ETHUSDT"].map(s => direct(M.urls.premium(s))().then(r => r.raw))) } })],
+        // ADR-109: Deribit's perpetual ticker sends CORS headers, so it is the browser's own fallback when Binance refuses.
+        ["direct · Deribit", async () => ({ raw: { items: await Promise.all(["BTCUSDT", "ETHUSDT"].map(s => getJson(M.urls.deribitPerp(s), 15000).then(j => M.shape.perpDeribit(j, s)))) } })],
         ["snapshot", () => fromSnapshot("premium")]
       ])
     ]);
@@ -6712,7 +7005,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     if (!B.gex && B.src.deribit.state === "online") B.src.deribit.state = "offline";
     B.dvol = dv && Array.isArray(dv.rows) ? M.dvol(dv.rows) : null;
     B.basis = {};
-    if (pr && Array.isArray(pr.items)) for (const x of pr.items) { const b = M.basisTrap(x); if (b) B.basis[b.symbol || "?"] = b; }
+    if (pr && Array.isArray(pr.items)) for (const x of pr.items) { const b = M.basisTrap(x); if (b) B.basis[b.symbol || "?"] = { ...b, venue: String(x.venue || "Binance USD-M") }; }
     B.src.prem.n = Object.keys(B.basis).length;
     pulse(["gex", "basis"], "derivatives data");
     render();
@@ -6733,7 +7026,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     q.ent = book ? M.entropy(book, 25) : null;
     q.flow = d.flow ? d.flow() : null;
     const pm = d.prem ? d.prem() : null;
-    if (pm) { const b = M.basisTrap({ ...pm, symbol: d.sym() }); if (b) B.basis[d.sym()] = b; }
+    if (pm) { const b = M.basisTrap({ ...pm, symbol: d.sym() }); if (b) B.basis[d.sym()] = { ...b, venue: "Binance USD-M (desk)" }; }
     q.sym = d.sym(); q.at = Date.now();
     B.q = q;
     // Discrete events that fire the web.
@@ -6888,7 +7181,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
     { id: "bocpd", ring: 1, l: "BOCPD", a: "انقلاب النظام", tone: "purple", v: () => B.q.bocpd ? B.q.bocpd.pRecent : NaN, t: () => B.q.bocpd ? `P(shift in 6 readings) ${nf(B.q.bocpd.pRecent * 100, 1)}% · run ${B.q.bocpd.map}` : "—", s: "microprice history", on: () => !!B.q.bocpd },
     { id: "kyle", ring: 1, l: "Kyle λ/Ice", a: "معامل كايل والجليد", tone: "blue", v: () => B.q.ent ? clamp(1 - B.q.ent.mean + (B.q.ice ? B.q.ice.length * 0.2 : 0), 0, 1) : NaN, t: () => `λ ${B.q.kyle ? nf(B.q.kyle.bpsPerUnit, 3) + " bps/unit" : "—"} · ${B.q.ice ? B.q.ice.length : 0} icebergs · entropy ${B.q.ent ? nf(B.q.ent.mean, 2) : "—"}`, s: "Binance book + trades", on: () => !!B.q.ent },
     { id: "gex", ring: 1, l: "GEX/DVOL", a: "جاما المتعاملين", tone: "green", v: () => B.gex ? (B.gex.regime === "negative" ? 0.8 : 0.2) : NaN, t: () => B.gex ? `${B.gex.regime} gamma · flip ${nf(B.gex.flip, 0)} · DVOL ${B.dvol ? nf(B.dvol.value, 1) : "—"}` : "Deribit not reached", s: "Deribit", on: () => !!B.gex },
-    { id: "basis", ring: 1, l: "Funding", a: "فخ التمويل", tone: "orange", v: () => { const b = Object.values(B.basis); return b.length ? Math.max(...b.map(x => x.score)) : NaN; }, t: () => Object.values(B.basis).map(b => `${b.symbol.replace("USDT", "")} ${nf(b.funding * 100, 4)}%/8h, basis ${nf(b.basisBps, 1)} bps`).join(" · ") || "—", s: "Binance USD-M", on: () => Object.keys(B.basis).length > 0 },
+    { id: "basis", ring: 1, l: "Funding", a: "فخ التمويل", tone: "orange", v: () => { const b = Object.values(B.basis); return b.length ? Math.max(...b.map(x => x.score)) : NaN; }, t: () => Object.values(B.basis).map(b => `${b.symbol.replace("USDT", "")} ${nf(b.funding * 100, 4)}%/8h, basis ${nf(b.basisBps, 1)} bps`).join(" · ") || "—", s: "Binance USD-M, else OKX or Deribit", on: () => Object.keys(B.basis).length > 0 },
     { id: "bull", ring: 2, l: "Bull", a: "وكيل الفرص", tone: "green" },
     { id: "bear", ring: 2, l: "Bear", a: "وكيل الشك", tone: "red" },
     { id: "judge", ring: 2, l: "Judge", a: "القاضي", tone: "indigo" },
@@ -7119,7 +7412,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       ["Call wall · put wall", "جدار الشراء والبيع", g ? `${nf(g.callWall, 0)} · ${nf(g.putWall, 0)}` : "—"],
       ["ATM IV · DVOL", "التقلب الضمني", `${g && g.atmIv ? nf(g.atmIv.iv * 100, 1) + "%" : "—"} · ${B.dvol ? nf(B.dvol.value, 1) + " (48 h " + (B.dvol.change >= 0 ? "+" : "") + nf(B.dvol.change, 1) + ")" : "—"}`],
       ["25-delta risk reversal", "الانحراف 25 دلتا", rr ? `${rr.rr >= 0 ? "+" : ""}${nf(rr.rr * 100, 2)} vol pts · ${nf(rr.days, 0)} d expiry` : "—"],
-      ...Object.values(B.basis).map(b => [`${b.symbol} basis · funding · crowd`, "الأساس والتمويل", `${nf(b.basisBps, 1)} bps · ${nf(b.funding * 100, 4)}%/8h (${nf(b.apr * 100, 1)}% a year) · ${b.crowd}`, b.crowd !== "none" ? "warn-text num" : "num"]),
+      ...Object.values(B.basis).map(b => [`${b.symbol} basis · funding · crowd (${b.venue || "Binance USD-M"})`, "الأساس والتمويل", `${nf(b.basisBps, 1)} bps · ${nf(b.funding * 100, 4)}%/8h (${nf(b.apr * 100, 1)}% a year) · ${b.crowd}`, b.crowd !== "none" ? "warn-text num" : "num"]),
       ["Sources", "المصادر", Object.values(B.src).map(s => `${s.en}: ${tierTxt(s)}`).join(" · ")]
     ]);
     const gy = B.gym;
@@ -7181,6 +7474,739 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
 </script>
 <script>
 "use strict";
+// Deep neural flow (ADR-109): a 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8 network drawn left to right, its
+// oscilloscope inspector, the chrono-scrubber over the last 300 readings, the Architect X-Ray HUD and the
+// adaptive regime layout.
+// - Inputs are real readings already on this page (Binance book, tape and microprice, the institutional
+//   readings, Deribit and the perpetual premium, mempool fees, the OSIRIS sources and PWSI). A missing source
+//   enters as 0 and its neuron is drawn hollow; nothing is filled in.
+// - The maths is OMEGA_MATH.nn (scripts/lib/brain2-math.mjs). A Blob Web Worker trains it with Adam and a
+//   (1+1)-ES on the output layer. Head 1 learns the next 6 readings (about 30 s) of the microprice; heads 2-8
+//   learn the desk's own rule values. The page shows measured held-out loss and hit rate only.
+// - Motion: threads light up only on a discrete event (a new reading, a microprice move of 0.5 bps or more,
+//   a data pull) or hover and tap, at most once a second; still under reduced motion and during the self-test.
+// Paper only. Nothing here opens a trade, sends an order or touches money.
+(() => {
+  const $ = id => document.getElementById(id);
+  const M = window.OMEGA_MATH;
+  if (!M || !M.nn || !$("nfCanvas")) return;
+  const NN = M.nn, SIZES = NN.SIZES, NL = SIZES.length, TOTAL = SIZES.reduce((a, v) => a + v, 0), RING = 300, HORIZON = 6;
+  const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const ar = text => { const s = h("span", "ar", text); s.lang = "ar"; return s; };
+  const nf = (v, d = 2) => Number.isFinite(v) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) : "—";
+  const sgn = (v, d = 2) => Number.isFinite(v) ? (v >= 0 ? "+" : "−") + nf(Math.abs(v), d) : "—";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const th = Math.tanh, fin = Number.isFinite;
+  const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" });
+  const store = {
+    get(k, f) { try { const v = localStorage.getItem(k); return v === null ? f : JSON.parse(v); } catch { return f; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked or full: memory only */ } }
+  };
+  const P = () => window.OMEGA_PROBE || {};
+  const B2 = () => window.OMEGA_BRAIN2 || null;
+  const SELFTEST_URL = new URL(location.href).searchParams.get("selftest") === "1";
+
+  /* ---------------- the 139 inputs ---------------- */
+  // Each input: group, label, source, raw getter (from one context object) and the squashing to about [-1, 1].
+  const G_TONE = { book: "blue", mret: "orange", tape: "purple", flow: "red", deriv: "green", chain: "cyan", intel: "indigo" };
+  const GROUPS = [["book", "BOOK", "دفتر الأوامر"], ["mret", "μ-RET", "عوائد السعر المجهري"], ["tape", "TAPE", "صفقات لحظية"], ["flow", "FLOW", "فيزياء السيولة"], ["deriv", "DERIV", "المشتقات والتمويل"], ["chain", "CHAIN", "البلوكتشين"], ["intel", "INTEL", "استخبارات الكوكب"]];
+  const IN = [];
+  const add = (g, l, src, raw, norm) => IN.push({ g, l, src, raw, norm });
+  for (let i = 0; i < 25; i++) add("book", `Bid level ${i + 1} size share`, "Binance book", c => c.book ? c.book.bidShare[i] : NaN, v => th(v * 25 - 1));
+  for (let i = 0; i < 25; i++) add("book", `Ask level ${i + 1} size share`, "Binance book", c => c.book ? c.book.askShare[i] : NaN, v => th(v * 25 - 1));
+  for (let i = 0; i < 20; i++) add("mret", `Microprice return t−${20 - i} (bps)`, "Binance book", c => c.rets[i], v => th(v / 2));
+  for (let i = 0; i < 10; i++) add("tape", `Trade t−${10 - i}, signed size ÷ median`, "Binance trades", c => c.tape[i], v => th(v / 3));
+  const fl = [
+    ["Microprice − mid (bps)", "Binance book", c => c.flow ? c.flow.microBps : NaN, v => th(v / 2)],
+    ["Hawkes intensity ÷ mean", "Binance trades", c => c.flow ? c.flow.hawkes : NaN, v => th(v - 1)],
+    ["VPIN", "Binance trades", c => c.flow ? c.flow.vpin : NaN, v => v * 2 - 1],
+    ["Kalman gap (bps)", "Binance trades", c => c.q.kalman ? c.q.kalman.gapBps : NaN, v => th(v / 3)],
+    ["BOCPD P(shift, 6 readings)", "microprice history", c => c.q.bocpd ? c.q.bocpd.pRecent : NaN, v => v * 2 - 1],
+    ["Kyle λ (bps per unit)", "Binance trades", c => c.q.kyle ? c.q.kyle.bpsPerUnit : NaN, v => th(v)],
+    ["Iceberg candidates, 60 s", "Binance book + trades", c => c.q.ice ? c.q.ice.length : NaN, v => th(v / 2)],
+    ["Book entropy, bids", "Binance book", c => c.q.ent ? c.q.ent.bid : NaN, v => v * 2 - 1],
+    ["Book entropy, asks", "Binance book", c => c.q.ent ? c.q.ent.ask : NaN, v => v * 2 - 1],
+    ["Spread (bps)", "Binance book", c => c.book ? c.book.spreadBps : NaN, v => th(v / 2)],
+    ["Imbalance, top 5", "Binance book", c => c.book ? c.book.imb5 : NaN, v => v],
+    ["Imbalance, top 25", "Binance book", c => c.book ? c.book.imb25 : NaN, v => v]
+  ];
+  for (const [l, src, raw, norm] of fl) add("flow", l, src, raw, norm);
+  const basis = (c, s) => c.d && c.d.basis ? c.d.basis[s] : null;
+  const dv = [
+    ["Dealer gamma regime (+1 / −1)", "Deribit options", c => c.d && c.d.gex ? (c.d.gex.regime === "negative" ? -1 : 1) : NaN, v => v],
+    ["Spot vs gamma flip (%)", "Deribit options", c => c.d && c.d.gex && fin(c.d.gex.flip) ? (c.d.gex.spot / c.d.gex.flip - 1) * 100 : NaN, v => th(v / 5)],
+    ["Spot vs call wall (%)", "Deribit options", c => c.d && c.d.gex && fin(c.d.gex.callWall) ? (c.d.gex.spot / c.d.gex.callWall - 1) * 100 : NaN, v => th(v / 5)],
+    ["Spot vs put wall (%)", "Deribit options", c => c.d && c.d.gex && fin(c.d.gex.putWall) ? (c.d.gex.spot / c.d.gex.putWall - 1) * 100 : NaN, v => th(v / 5)],
+    ["ATM implied vol", "Deribit options", c => c.d && c.d.gex && c.d.gex.atmIv ? c.d.gex.atmIv.iv : NaN, v => th((v - 0.5) * 3)],
+    ["DVOL", "Deribit DVOL", c => c.d && c.d.dvol ? c.d.dvol.value : NaN, v => th((v - 50) / 20)],
+    ["DVOL change, 48 h", "Deribit DVOL", c => c.d && c.d.dvol ? c.d.dvol.change : NaN, v => th(v / 5)],
+    ["25-delta risk reversal (vol pts)", "Deribit options", c => c.d && c.d.gex && c.d.gex.rr ? c.d.gex.rr.rr * 100 : NaN, v => th(v / 5)],
+    ["BTC funding per 8 h (%)", "perpetual premium", c => { const b = basis(c, "BTCUSDT"); return b ? b.funding * 100 : NaN; }, v => th(v / 0.03)],
+    ["BTC basis (bps)", "perpetual premium", c => { const b = basis(c, "BTCUSDT"); return b ? b.basisBps : NaN; }, v => th(v / 10)],
+    ["ETH funding per 8 h (%)", "perpetual premium", c => { const b = basis(c, "ETHUSDT"); return b ? b.funding * 100 : NaN; }, v => th(v / 0.03)],
+    ["ETH basis (bps)", "perpetual premium", c => { const b = basis(c, "ETHUSDT"); return b ? b.basisBps : NaN; }, v => th(v / 10)]
+  ];
+  for (const [l, src, raw, norm] of dv) add("deriv", l, src, raw, norm);
+  add("chain", "Fastest on-chain fee (sat/vB)", "mempool.space", c => c.fee, v => th((v - 20) / 40));
+  const pwPart = (c, name) => { const x = c.pw && c.pw.parts ? c.pw.parts.find(p => p.en === name) : null; return x ? x.v : NaN; };
+  const it = [
+    ["PWSI score", "OSIRIS PWSI", c => c.pw ? c.pw.score : NaN, v => v / 50 - 1],
+    ["PWSI seismic part", "USGS", c => pwPart(c, "Seismic"), v => v / 50 - 1],
+    ["PWSI weather part", "Open-Meteo", c => pwPart(c, "Weather at hubs"), v => v / 50 - 1],
+    ["PWSI disaster part", "GDACS / EMSC", c => pwPart(c, "Disaster alerts"), v => v / 50 - 1],
+    ["PWSI strait part", "NGA MSI", c => pwPart(c, "Strait warnings"), v => v / 50 - 1],
+    ["PWSI cyber and space part", "SWPC, CISA, RIPEstat, IODA", c => pwPart(c, "Cyber & space"), v => v / 50 - 1],
+    ...["Hormuz", "Bab el-Mandeb", "Suez", "Malacca", "Panama"].map((n, i) => [`${n} warnings`, "NGA MSI", c => c.it ? c.it.straits[i] : NaN, v => th(v / 3)]),
+    ["Earthquakes M2.5+, 24 h", "USGS", c => c.it ? c.it.quakes : NaN, v => th(v / 50)],
+    ["Largest quake magnitude", "USGS", c => c.it ? c.it.quakeMax : NaN, v => th((v - 5) / 1.5)],
+    ["Quakes M5+, 24 h", "USGS", c => c.it ? c.it.quakeM5 : NaN, v => th(v / 3)],
+    ["Red disaster alerts", "GDACS / EMSC", c => c.it ? c.it.gdacsRed : NaN, v => th(v)],
+    ["Orange disaster alerts", "GDACS / EMSC", c => c.it ? c.it.gdacsOrange : NaN, v => th(v / 3)],
+    ["Strongest gust at hubs (km/h)", "Open-Meteo", c => c.it ? c.it.gust : NaN, v => th((v - 40) / 30)],
+    ["Baltic AIS vessels", "Digitraffic", c => c.it ? c.it.ais : NaN, v => th(v / 3000)],
+    ["Strait headlines, 24 h", "GDELT", c => c.it ? c.it.seaNews : NaN, v => th(v / 10)],
+    ["Risk headlines, 6 h", "GDELT", c => c.it ? c.it.news : NaN, v => th(v / 10)],
+    ["Aircraft, Gulf and Red Sea box", "OpenSky", c => c.it ? c.it.air : NaN, v => th(v / 100)],
+    ["KEV added, 7 days", "CISA KEV", c => c.it ? c.it.kev7 : NaN, v => th(v / 3)],
+    ["KEV ransomware, 7 days", "CISA KEV", c => c.it ? c.it.ransom7 : NaN, v => th(v)],
+    ["Lowest backbone visibility", "RIPEstat", c => c.it ? c.it.bgpMin : NaN, v => th((0.98 - v) * 20)],
+    ["Country outages, 24 h", "IODA", c => c.it ? c.it.ioda : NaN, v => th(v / 5)],
+    ["Planetary Kp", "NOAA SWPC", c => c.it ? c.it.kp : NaN, v => th((v - 4) / 2)],
+    ["Open natural events", "NASA EONET", c => c.it ? c.it.eonet : NaN, v => th(v / 100)],
+    ["Tracked satellites", "CelesTrak", c => c.it ? c.it.sats : NaN, v => th(v / 200)],
+    ["Cable corridors under stress (share)", "NGA, IODA", c => c.it ? c.it.stressed : NaN, v => v * 2 - 1],
+    ["CSTI", "SWPC, CISA, RIPEstat, IODA", c => c.csti, v => v / 50 - 1],
+    ...["BTC", "ETH", "SOL", "BNB"].map(s => [`${s} 24 h change (%)`, "Binance spot", c => { const x = c.it && c.it.prices.find(p => p.s === s); return x ? x.c : NaN; }, v => th(v / 5)])
+  ];
+  for (const [l, src, raw, norm] of it) add("intel", l, src, raw, norm);
+  if (IN.length !== SIZES[0]) throw new Error("neural flow: " + IN.length + " inputs");
+
+  const HEADS = [
+    ["Direction", "قرار الاتجاه", "Dir"], ["Half-Kelly size", "حجم كيلي", "Kelly"], ["Take-profit", "هدف الربح", "TP"], ["Stop-loss", "وقف الخسارة", "SL"],
+    ["Circuit breaker", "القاطع العصبي", "Brk"], ["$20 base recovery", "استعادة الأساس", "Base"], ["Profit sweep", "ترحيل الأرباح", "Sweep"], ["Confidence · receipt", "الثقة والفاتورة", "Conf"]
+  ];
+  const ACT = k => k === 0 ? "linear" : k === NL - 1 ? "tanh" : "ReLU";
+
+  /* ---------------- live context ---------------- */
+  function context() {
+    const d = P().desk, o = P().osiris, b2 = B2();
+    const book = d && d.book ? d.book() : null, micro = d && d.micro ? d.micro() : [], tape = d && d.tape ? d.tape() : [];
+    const c = { book: null, rets: new Array(20).fill(NaN), tape: new Array(10).fill(NaN), flow: d && d.flow ? d.flow() : null, q: b2 ? b2.readings() : {}, d: b2 ? b2.derivs() : null,
+      fee: d && d.chainFee ? d.chainFee() : NaN, pw: o ? o.state().pwsi : null, it: o && o.intel ? o.intel() : null, csti: o && o.radar ? o.radar().csti.score : NaN, micro, sym: d && d.sym ? d.sym() : "" };
+    if (book && book.bids.length && book.asks.length) {
+      const bq = book.bids.slice(0, 25).map(l => +l[1]), aq = book.asks.slice(0, 25).map(l => +l[1]), tot = bq.reduce((a, v) => a + v, 0) + aq.reduce((a, v) => a + v, 0) || 1;
+      const s5b = bq.slice(0, 5).reduce((a, v) => a + v, 0), s5a = aq.slice(0, 5).reduce((a, v) => a + v, 0), sb = bq.reduce((a, v) => a + v, 0), sa = aq.reduce((a, v) => a + v, 0);
+      const bb = +book.bids[0][0], ba = +book.asks[0][0];
+      c.book = { bidShare: Array.from({ length: 25 }, (_, i) => fin(bq[i]) ? bq[i] / tot : NaN), askShare: Array.from({ length: 25 }, (_, i) => fin(aq[i]) ? aq[i] / tot : NaN),
+        spreadBps: (ba / bb - 1) * 1e4, imb5: (s5b - s5a) / ((s5b + s5a) || 1), imb25: (sb - sa) / ((sb + sa) || 1), mid: (bb + ba) / 2 };
+    }
+    const mids = micro.map(x => x.micro).filter(fin);
+    for (let i = 0; i < 20; i++) { const a = mids[mids.length - 21 + i], b = mids[mids.length - 20 + i]; c.rets[i] = fin(a) && fin(b) ? Math.log(b / a) * 1e4 : NaN; }
+    const last = tape.slice(-10), qs = tape.slice(-200).map(x => x.q).sort((a, b) => a - b), med = qs.length ? qs[Math.floor(qs.length / 2)] : NaN;
+    last.forEach((x, i) => { c.tape[10 - last.length + i] = med > 0 ? (x.m ? -1 : 1) * x.q / med : NaN; });
+    return c;
+  }
+  function features(c) {
+    const x = new Float64Array(IN.length), raw = new Float64Array(IN.length);
+    IN.forEach((f, i) => { let r = NaN; try { r = f.raw(c); } catch { r = NaN; } raw[i] = fin(r) ? r : NaN; const v = fin(r) ? f.norm(r) : NaN; x[i] = fin(v) ? clamp(v, -1, 1) : NaN; });
+    return { x, raw };
+  }
+  // The desk's rule values at this moment, squashed the way heads 2-8 are trained (head 1's target is filled
+  // in later, once the microprice 6 readings ahead is known).
+  function rules() {
+    const d = P().desk, y = new Float64Array(8).fill(NaN);
+    if (!d) return y;
+    const q = d.quant ? d.quant() : null, c = d.court ? d.court() : null, w = d.wallet ? d.wallet() : null;
+    if (q && fin(q.kelly)) y[1] = clamp(q.kelly / 0.25 * 2 - 1, -1, 1);
+    if (q && q.entry > 0 && fin(q.tp1)) y[2] = th((q.tp1 / q.entry - 1) * 1e4 / 100);
+    if (q && q.entry > 0 && fin(q.sl)) y[3] = th((1 - q.sl / q.entry) * 1e4 / 100);
+    if (w && (c || w.halted)) y[4] = w.halted || (c && c.verdict === "KILL") ? 1 : -1;
+    if (w && w.base > 0) { y[5] = w.active < w.base - 1e-9 ? 1 : -1; y[6] = d.excess(w.active, w.base) > 0 ? 1 : -1; }
+    if (c && fin(c.conf)) y[7] = clamp(c.conf * 2 - 1, -1, 1);
+    return y;
+  }
+
+  /* ---------------- state: weights, the 300-reading ring, weight versions ---------------- */
+  const saved = store.get("omega-neural-v1", null);
+  let net = NN.init(SIZES, 20261022);
+  if (saved && Array.isArray(saved.p) && saved.p.length === net.p.length && JSON.stringify(saved.sizes) === JSON.stringify(SIZES)) net.p = Float64Array.from(saved.p);
+  const S = { ver: saved && saved.ver || 0, opt: null, report: saved && saved.report || null, bursts: saved && saved.bursts || 0, steps: saved && saved.steps || 0, busy: false, error: "", ring: [], versions: [], lastMicroT: 0, lastMicro: NaN, live: null, sel: null, hover: null, scrub: -1, frozen: SELFTEST_URL, regime: "calm" };
+  S.versions.push({ ver: S.ver, at: Date.now(), p: net.p.slice() });
+  function frame(c) {
+    const { x, raw } = features(c), f = NN.forward(net, x), acts = new Float32Array(TOTAL), zs = new Float32Array(TOTAL);
+    let o = 0;
+    for (let k = 0; k < NL; k++) { acts.set(f.a[k], o); zs.set(k ? f.z[k] : f.a[0], o); o += SIZES[k]; }
+    const dsk = P().desk, cr = dsk && dsk.court ? dsk.court() : null, rc = dsk && dsk.receipts ? dsk.receipts() : [];
+    return { t: Date.now(), x, raw, acts, zs, y: rules(), ver: S.ver, micro: c.micro.length ? c.micro[c.micro.length - 1].micro : NaN, mid: c.book ? c.book.mid : NaN, verdict: cr ? cr.verdict : "—", P: cr ? cr.P : NaN, hash: rc.length ? String(rc[rc.length - 1].hash || "") : "", nOn: x.reduce((a, v) => a + (fin(v) ? 1 : 0), 0), sym: c.sym };
+  }
+  const offs = SIZES.map((_, k) => SIZES.slice(0, k).reduce((a, v) => a + v, 0));
+  const actOf = (fr, k, j) => fr ? fr.acts[offs[k] + j] : NaN;
+  const zOf = (fr, k, j) => fr ? fr.zs[offs[k] + j] : NaN;
+  // Head 1 target: the microprice change over the next HORIZON readings, in bps, squashed by tanh(bps / 3).
+  function targets() {
+    const R = S.ring, X = [], Y = [];
+    for (let i = 0; i < R.length; i++) {
+      const y = Float64Array.from(R[i].y), a = R[i].micro, b = R[i + HORIZON] ? R[i + HORIZON].micro : NaN;
+      y[0] = fin(a) && fin(b) ? th((b / a - 1) * 1e4 / 3) : NaN;
+      X.push(R[i].x); Y.push(y);
+    }
+    return { X, Y };
+  }
+  function takeReading(force) {
+    const d = P().desk;
+    if (!d || !d.micro) return false;
+    const m = d.micro(), last = m[m.length - 1];
+    if (!last || (!force && last.t === S.lastMicroT)) return false;
+    S.lastMicroT = last.t;
+    const c = context();
+    if (!c.book) return false;
+    const fr = frame(c);
+    S.ring.push(fr);
+    if (S.ring.length > RING) S.ring.shift();
+    S.live = fr;
+    const moved = fin(S.lastMicro) && fin(fr.micro) ? Math.abs(fr.micro / S.lastMicro - 1) * 1e4 : 0;
+    S.lastMicro = fr.micro;
+    pulse(moved >= 0.5 ? `microprice moved ${nf(moved, 2)} bps` : "new reading");
+    return true;
+  }
+
+  /* ---------------- training worker ---------------- */
+  function nnWorker() {
+    self.onmessage = e => {
+      const m = e.data || {};
+      const net = { sizes: m.sizes, p: m.p };
+      const r = NN.train(net, m.X, m.Y, { m: m.m, v: m.v, t: m.t, sigma: m.sigma, epochs: m.epochs, lr: 0.003, batch: 16, seed: m.seed, gap: m.gap, es: 16 });
+      self.postMessage(r ? { ok: true, p: net.p, r } : { ok: false });
+    };
+  }
+  let worker = null;
+  function makeWorker() {
+    if (worker) return worker;
+    try {
+      const src = `"use strict";\nconst NN = (${M.nnFactory.toString()})();\n(${nnWorker.toString()})();`;
+      worker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+      worker.onerror = () => { worker = null; S.error = "the browser refused the training worker"; S.busy = false; render(); };
+    } catch { worker = null; S.error = "Web Workers are not available here"; }
+    return worker;
+  }
+  function train(epochs = 12) {
+    const { X, Y } = targets();
+    const usable = Y.filter(y => fin(y[0])).length;
+    if (S.busy) return Promise.resolve(null);
+    if (X.length < 30 || usable < 20) { S.error = `needs 30 readings with 20 known outcomes; has ${X.length} and ${usable}`; render(); return Promise.resolve(null); }
+    const w = makeWorker();
+    if (!w) return Promise.resolve(null);
+    S.busy = true; S.error = "";
+    const o = S.opt || {};
+    return new Promise(res => {
+      const done = e => {
+        w.removeEventListener("message", done);
+        S.busy = false;
+        const m = e.data;
+        if (!m || !m.ok) { S.error = "not enough data in the ring for a burst"; render(); return res(null); }
+        net.p = m.p;
+        S.opt = { m: m.r.m, v: m.r.v, t: m.r.t, sigma: m.r.sigma };
+        S.ver++; S.bursts++; S.steps += m.r.steps;
+        const { m: _m, v: _v, ...rep } = m.r;
+        S.report = { ...rep, at: new Date().toISOString(), samples: X.length, ver: S.ver };
+        S.versions.push({ ver: S.ver, at: Date.now(), p: net.p.slice() });
+        if (S.versions.length > 12) S.versions.shift();
+        store.set("omega-neural-v1", { sizes: SIZES, ver: S.ver, bursts: S.bursts, steps: S.steps, report: S.report, p: Array.from(net.p, v => Math.round(v * 1e6) / 1e6) });
+        // Recompute the live frame with the new weights so the drawing matches them.
+        if (S.ring.length) { const c = context(); if (c.book) { S.live = frame(c); S.ring[S.ring.length - 1] = S.live; } }
+        pulse(`training burst ${S.bursts}: ${m.r.steps} Adam steps`);
+        render();
+        res(S.report);
+      };
+      w.addEventListener("message", done);
+      w.postMessage({ sizes: SIZES, p: net.p.slice(), X, Y, m: o.m, v: o.v, t: o.t, sigma: o.sigma, epochs, seed: (Date.now() & 0x7fffffff) | 1, gap: HORIZON });
+    });
+  }
+
+  /* ---------------- drawing ---------------- */
+  const cv = $("nfCanvas"), ctx = cv.getContext("2d"), stage = $("nfStage"), reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const V = { w: 0, h: 0, dpr: 1, k: 1, tx: 0, ty: 0, pos: [], colors: {}, buf: null, pulses: [], raf: 0, visible: true, narrow: false, lastPulse: 0, drawMs: NaN, edges: 0 };
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement), g = v => cs.getPropertyValue(v).trim();
+    V.colors = { green: g("--apple-green"), red: g("--apple-red"), blue: g("--apple-blue"), indigo: g("--apple-indigo"), purple: g("--apple-purple"), orange: g("--apple-orange"), cyan: g("--apple-cyan"), pink: g("--apple-pink"),
+      text: g("--content-primary"), sub: g("--content-secondary"), hair: g("--hairline-color"), surface: g("--surface"), well: g("--surface-2") };
+  }
+  const FONT = "600 12px system-ui, -apple-system, 'SF Pro Text', sans-serif", FONT_B = "800 12px system-ui, -apple-system, 'SF Pro Text', sans-serif";
+  function layout() {
+    const r = cv.getBoundingClientRect();
+    V.w = Math.max(300, r.width); V.h = Math.max(420, r.height); V.dpr = Math.min(3, window.devicePixelRatio || 1);
+    cv.width = Math.round(V.w * V.dpr); cv.height = Math.round(V.h * V.dpr);
+    V.narrow = V.w < 600;
+    const left = V.narrow ? 52 : 64, right = V.narrow ? 54 : 150, top = 44, bottom = 16;
+    const scopeTop = V.narrow ? 0 : Math.min(V.h * 0.42, 300);
+    V.pos = SIZES.map((n, k) => {
+      const x = left + (V.w - left - right) * k / (NL - 1);
+      const y0 = k === NL - 1 ? top + scopeTop : top, y1 = V.h - bottom - (k === NL - 1 ? 8 : 0);
+      const gapPx = k === 0 ? 3 : 0, groups = k === 0 ? GROUPS.length - 1 : 0, span = y1 - y0 - groups * gapPx * 2;
+      let gi = 0;
+      return Array.from({ length: n }, (_, j) => {
+        if (k === 0 && j > 0 && IN[j].g !== IN[j - 1].g) gi++;
+        return { x, y: y0 + (n === 1 ? span / 2 : span * j / (n - 1)) + gi * gapPx * 2, r: k === 0 ? 1.9 : k === NL - 1 ? 7 : 3.2 };
+      });
+    });
+    V.buf = null;
+    draw();
+  }
+  // Weights as drawn: the live network, or during a scrub the version that produced that reading when kept.
+  function weightsFor(fr) {
+    if (!fr || fr === S.live) return { p: net.p, ver: S.ver, exact: true };
+    const v = S.versions.find(x => x.ver === fr.ver);
+    return v ? { p: v.p, ver: v.ver, exact: true } : { p: S.versions[0].p, ver: S.versions[0].ver, exact: false };
+  }
+  const L = NN.layout(SIZES);
+  const shown = () => (S.scrub >= 0 && S.ring[S.scrub]) || S.live;
+  // Every thread is a cubic Bézier from one neuron to the next layer. Threads are grouped by colour and by
+  // binned opacity and width, so about 11,800 curves are stroked in a few dozen paths.
+  function renderBuffer() {
+    const t0 = performance.now(), fr = shown(), W = weightsFor(fr).p, C = V.colors;
+    const b = V.buf || (V.buf = document.createElement("canvas"));
+    b.width = cv.width; b.height = cv.height;
+    const c = b.getContext("2d");
+    c.setTransform(V.dpr * V.k, 0, 0, V.dpr * V.k, V.dpr * V.tx, V.dpr * V.ty);
+    c.clearRect(-V.tx / V.k, -V.ty / V.k, V.w / V.k, V.h / V.k);
+    let edges = 0;
+    for (let k = 0; k < NL - 1; k++) {
+      const o = L.off[k], A = V.pos[k], Bp = V.pos[k + 1], last = k === NL - 2;
+      let wmax = 1e-9, cmax = 1e-9;
+      for (let j = 0; j < o.o; j++) for (let i = 0; i < o.i; i++) { const w = Math.abs(W[o.w + j * o.i + i]); if (w > wmax) wmax = w; const cc = Math.abs(w * (fr ? actOf(fr, k, i) : 1)); if (cc > cmax) cmax = cc; }
+      const bins = new Map();
+      for (let j = 0; j < o.o; j++) for (let i = 0; i < o.i; i++) {
+        const w = W[o.w + j * o.i + i], aw = Math.abs(w) / wmax, cc = Math.abs(w * (fr ? actOf(fr, k, i) : 1)) / cmax;
+        const tone = last ? (w >= 0 ? "orange" : "red") : w >= 0 ? "cyan" : aw > 0.5 ? "pink" : "purple";
+        const ab = Math.min(4, Math.floor(cc * 5)), wb = Math.min(2, Math.floor(aw * 3)), key = tone + ab + wb;
+        let path = bins.get(key);
+        if (!path) { path = { tone, ab, wb, p: new Path2D() }; bins.set(key, path); }
+        const a = A[i], z = Bp[j], dx = (z.x - a.x) * 0.5;
+        path.p.moveTo(a.x, a.y); path.p.bezierCurveTo(a.x + dx, a.y, z.x - dx, z.y, z.x, z.y);
+        edges++;
+      }
+      for (const q of bins.values()) {
+        c.strokeStyle = C[q.tone];
+        c.globalAlpha = (last ? 0.08 : 0.025) + q.ab * (last ? 0.18 : 0.11);
+        c.lineWidth = (0.35 + q.wb * 0.45 + (last ? 0.6 : 0)) / Math.sqrt(V.k);
+        c.stroke(q.p);
+      }
+    }
+    c.globalAlpha = 1;
+    V.edges = edges;
+    V.drawMs = performance.now() - t0;
+  }
+  function draw(now = performance.now()) {
+    if (!V.pos.length) return;
+    if (!V.buf) renderBuffer();
+    const c = ctx, C = V.colors, fr = shown(), foc = S.sel || S.hover;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, cv.width, cv.height);
+    c.drawImage(V.buf, 0, 0);
+    c.setTransform(V.dpr * V.k, 0, 0, V.dpr * V.k, V.dpr * V.tx, V.dpr * V.ty);
+    // Focus: the selected neuron's incoming and outgoing threads drawn on top.
+    if (foc) {
+      const W = weightsFor(fr).p, k = foc.k, j = foc.j, me = V.pos[k][j];
+      const pathOf = (a, z) => { const dx = (z.x - a.x) * 0.5; c.beginPath(); c.moveTo(a.x, a.y); c.bezierCurveTo(a.x + dx, a.y, z.x - dx, z.y, z.x, z.y); };
+      if (k > 0) { const o = L.off[k - 1]; let mx = 1e-9; for (let i = 0; i < o.i; i++) mx = Math.max(mx, Math.abs(W[o.w + j * o.i + i])); for (let i = 0; i < o.i; i++) { const w = W[o.w + j * o.i + i]; pathOf(V.pos[k - 1][i], me); c.strokeStyle = k === NL - 1 ? (w >= 0 ? C.orange : C.red) : w >= 0 ? C.cyan : C.pink; c.globalAlpha = 0.15 + 0.75 * Math.abs(w) / mx; c.lineWidth = (0.6 + 1.6 * Math.abs(w) / mx) / Math.sqrt(V.k); c.stroke(); } }
+      if (k < NL - 1) { const o = L.off[k]; let mx = 1e-9; for (let q = 0; q < o.o; q++) mx = Math.max(mx, Math.abs(W[o.w + q * o.i + j])); for (let q = 0; q < o.o; q++) { const w = W[o.w + q * o.i + j]; pathOf(me, V.pos[k + 1][q]); c.strokeStyle = k === NL - 2 ? (w >= 0 ? C.orange : C.red) : w >= 0 ? C.cyan : C.pink; c.globalAlpha = 0.15 + 0.75 * Math.abs(w) / mx; c.lineWidth = (0.6 + 1.6 * Math.abs(w) / mx) / Math.sqrt(V.k); c.stroke(); } }
+      c.globalAlpha = 1;
+    }
+    // Light pulses: a wave that crosses one layer gap after another along the strongest contributions.
+    const live = V.pulses.filter(p => now - p.t0 < 1400);
+    if (live.length && fr) {
+      const W = weightsFor(fr).p, still = reduced.matches || S.frozen;
+      for (const p of live) {
+        const t = (now - p.t0) / 1400;
+        for (let k = 0; k < NL - 1; k++) {
+          const local = still ? 0.5 : t * (NL - 1) - k;
+          if (local < 0 || local > 1) continue;
+          for (const [i, j, w] of p.top[k]) {
+            const a = V.pos[k][i], z = V.pos[k + 1][j], dx = (z.x - a.x) * 0.5, u = local, v = 1 - u;
+            const x = v * v * v * a.x + 3 * v * v * u * (a.x + dx) + 3 * v * u * u * (z.x - dx) + u * u * u * z.x, y = v * v * v * a.y + 3 * v * v * u * a.y + 3 * v * u * u * z.y + u * u * u * z.y;
+            c.globalAlpha = still ? 0.8 : 1 - Math.abs(u - 0.5);
+            c.fillStyle = k === NL - 2 ? (w >= 0 ? C.orange : C.red) : w >= 0 ? C.cyan : C.pink;
+            c.beginPath(); c.arc(x, y, 2.2 / Math.sqrt(V.k), 0, Math.PI * 2); c.fill();
+          }
+        }
+      }
+      c.globalAlpha = 1;
+    }
+    // Neurons: filled by activation, hollow when the input's source has no value.
+    for (let k = 0; k < NL; k++) {
+      let mx = 1e-9;
+      if (fr) for (let j = 0; j < SIZES[k]; j++) mx = Math.max(mx, Math.abs(actOf(fr, k, j)));
+      for (let j = 0; j < SIZES[k]; j++) {
+        const p = V.pos[k][j], a = fr ? actOf(fr, k, j) : NaN, missing = k === 0 && (!fr || !fin(fr.x[j])), sel = foc && foc.k === k && foc.j === j;
+        const tone = k === 0 ? V.colors[G_TONE[IN[j].g]] : k === NL - 1 ? (a >= 0 ? C.orange : C.red) : C.cyan;
+        c.beginPath(); c.arc(p.x, p.y, p.r + (k === NL - 1 ? 3 : 1), 0, Math.PI * 2); c.fillStyle = C.surface; c.fill();
+        c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        if (missing) { c.strokeStyle = C.sub; c.lineWidth = 0.8; c.stroke(); }
+        else { c.fillStyle = tone; c.globalAlpha = fin(a) ? 0.25 + 0.75 * Math.min(1, Math.abs(a) / (k === NL - 1 ? 1 : mx)) : 0.25; c.fill(); c.globalAlpha = 1; }
+        if (k === NL - 1 && fin(a)) { c.beginPath(); c.arc(p.x, p.y, p.r + 4, -Math.PI / 2, -Math.PI / 2 + Math.abs(a) * Math.PI * 2); c.strokeStyle = tone; c.lineWidth = 2; c.stroke(); }
+        if (sel) { c.beginPath(); c.arc(p.x, p.y, p.r + 5, 0, Math.PI * 2); c.strokeStyle = C.text; c.lineWidth = 1.5; c.stroke(); }
+      }
+    }
+    // Labels (12 px, never smaller): layer heads, input groups on the left, decision heads on the right.
+    c.font = FONT_B; c.fillStyle = C.text; c.textBaseline = "middle";
+    for (let k = 0; k < NL; k++) { const x = V.pos[k][0].x, t1 = String(SIZES[k]), t2 = ACT(k); c.textAlign = "center"; c.fillText(t1, x, 14); c.font = FONT; c.fillStyle = C.sub; c.fillText(t2, x, 30); c.font = FONT_B; c.fillStyle = C.text; }
+    c.textAlign = "start";
+    for (const [g, short] of GROUPS) {
+      const idx = IN.map((f, i) => f.g === g ? i : -1).filter(i => i >= 0), y0 = V.pos[0][idx[0]].y, y1 = V.pos[0][idx[idx.length - 1]].y;
+      c.strokeStyle = V.colors[G_TONE[g]]; c.lineWidth = 2; c.beginPath(); c.moveTo(V.pos[0][0].x - 8, y0); c.lineTo(V.pos[0][0].x - 8, y1); c.stroke();
+      if (y1 - y0 >= 10 || idx.length === 1) { c.fillStyle = C.text; c.font = FONT; c.textAlign = "end"; c.fillText(short, V.pos[0][0].x - 13, (y0 + y1) / 2); }
+    }
+    c.textAlign = "start";
+    for (let j = 0; j < 8; j++) {
+      const p = V.pos[NL - 1][j], a = fr ? actOf(fr, NL - 1, j) : NaN;
+      c.font = FONT_B; c.fillStyle = C.text; c.fillText(V.narrow ? HEADS[j][2] : HEADS[j][0], p.x + 14, p.y - (V.narrow ? 0 : 7));
+      if (!V.narrow) { c.font = FONT; c.fillStyle = C.sub; c.fillText(decode(j, a, fr).short, p.x + 14, p.y + 8); }
+    }
+    V.pulses = live;
+    if (live.length && !reduced.matches && !S.frozen && V.visible && !document.hidden) V.raf = requestAnimationFrame(draw);
+    else {
+      V.raf = 0;
+      if (live.length && (reduced.matches || S.frozen)) setTimeout(() => { V.pulses = []; draw(); }, 1100);
+    }
+  }
+  // The 24 strongest |w·a| contributions per layer gap carry the light of a pulse.
+  function topContrib(fr) {
+    const W = weightsFor(fr).p, out = [];
+    for (let k = 0; k < NL - 1; k++) {
+      const o = L.off[k], list = [];
+      for (let j = 0; j < o.o; j++) for (let i = 0; i < o.i; i++) { const w = W[o.w + j * o.i + i], cc = Math.abs(w * actOf(fr, k, i)); if (cc > 0) list.push([i, j, w, cc]); }
+      list.sort((a, b) => b[3] - a[3]);
+      out.push(list.slice(0, 24));
+    }
+    return out;
+  }
+  function pulse(why) {
+    S.lastWhy = why;
+    const t = performance.now(), fr = shown();
+    if (!fr || t - V.lastPulse < 1000 || !V.visible || document.hidden) { V.buf = null; draw(); return false; }
+    V.lastPulse = t;
+    V.buf = null;
+    V.pulses.push({ t0: t, top: topContrib(fr), why });
+    if (!V.raf) draw();
+    return true;
+  }
+
+  /* ---------------- decoding the eight heads ---------------- */
+  const atanh = v => 0.5 * Math.log((1 + v) / (1 - v));
+  function decode(j, a, fr) {
+    if (!fin(a)) return { short: "—", long: "no reading yet" };
+    const mid = fr && fin(fr.mid) ? fr.mid : NaN, rc = fr && fr.hash ? fr.hash.slice(0, 12) : "";
+    switch (j) {
+      case 0: { const call = a > 0.15 ? "BUY" : a < -0.15 ? "SELL" : "HOLD", bps = atanh(clamp(a, -0.999, 0.999)) * 3; return { short: `${call} ${sgn(a, 2)}`, long: `${call} · expected ${sgn(bps, 2)} bps over 6 readings (≈30 s)`, call }; }
+      case 1: { const k = clamp((a + 1) / 2 * 25, 0, 25); return { short: nf(k, 1) + "%", long: `${nf(k, 1)}% of the locked base (cap 25%)` }; }
+      case 2: { const b = Math.max(0, atanh(clamp(a, -0.999, 0.999)) * 100); return { short: "+" + nf(b, 0) + " bps", long: `+${nf(b, 1)} bps${fin(mid) ? " · " + nf(mid * (1 + b / 1e4), 2) : ""}` }; }
+      case 3: { const b = Math.max(0, atanh(clamp(a, -0.999, 0.999)) * 100); return { short: "−" + nf(b, 0) + " bps", long: `−${nf(b, 1)} bps${fin(mid) ? " · " + nf(mid * (1 - b / 1e4), 2) : ""}` }; }
+      case 4: return a > 0 ? { short: "TRIP", long: "suggests tripping the breaker" } : { short: "armed", long: "breaker armed, not tripped" };
+      case 5: return a > 0 ? { short: "recover", long: "base below $20: recover it before any sweep" } : { short: "base whole", long: "locked base whole" };
+      case 6: return a > 0 ? { short: "sweep", long: "profit above the base: sweep to the safe vault" } : { short: "hold", long: "nothing to sweep" };
+      default: { const p = clamp((a + 1) / 2 * 100, 0, 100); return { short: nf(p, 0) + "%", long: `${nf(p, 0)}% confidence${rc ? " · last receipt " + rc + "…" : " · no receipt yet"}` }; }
+    }
+  }
+  const ruleTxt = (j, y) => {
+    if (!fin(y)) return "rule: no value";
+    switch (j) {
+      case 1: return `rule ${nf((y + 1) / 2 * 25, 1)}%`;
+      case 2: case 3: return `rule ${nf(atanh(clamp(y, -0.999, 0.999)) * 100, 0)} bps`;
+      case 4: return y > 0 ? "rule: tripped" : "rule: armed";
+      case 5: return y > 0 ? "rule: recovering" : "rule: base whole";
+      case 6: return y > 0 ? "rule: sweep" : "rule: no sweep";
+      case 7: return `rule ${nf((y + 1) / 2 * 100, 0)}%`;
+      default: return "";
+    }
+  };
+
+  /* ---------------- oscilloscope inspector ---------------- */
+  const scFn = $("nfScopeFn"), scTr = $("nfScopeTr");
+  function scopeCanvas(el) {
+    const r = el.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1), w = Math.max(120, r.width), hh = Math.max(40, r.height);
+    el.width = Math.round(w * dpr); el.height = Math.round(hh * dpr);
+    const c = el.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, hh);
+    return { c, w, h: hh };
+  }
+  function inspect(k, j, fr = shown()) {
+    if (!(k >= 0 && k < NL && j >= 0 && j < SIZES[k])) return null;
+    const W = weightsFor(fr).p, z = zOf(fr, k, j), a = actOf(fr, k, j), name = k === 0 ? IN[j].l : k === NL - 1 ? HEADS[j][0] : `Layer ${k + 1} · neuron ${j + 1}`;
+    const curve = [];
+    for (let i = 0; i <= 60; i++) { const x = -3 + i / 10; curve.push([x, NN.act(k, k === NL - 1, x)]); }
+    const incoming = [];
+    let b = NaN;
+    if (k > 0) {
+      const o = L.off[k - 1];
+      b = W[o.b + j];
+      for (let i = 0; i < o.i; i++) { const w = W[o.w + j * o.i + i], ai = actOf(fr, k - 1, i); incoming.push({ from: k - 1 === 0 ? IN[i].l : `L${k} n${i + 1}`, w, a: ai, wa: w * ai }); }
+      incoming.sort((x, y) => Math.abs(y.wa) - Math.abs(x.wa) || Math.abs(y.w) - Math.abs(x.w));
+    }
+    const trace = S.ring.map(r => actOf(r, k, j));
+    let eq;
+    if (k === 0) eq = `x = ${fr && fin(fr.raw[j]) ? "squash(" + nf(fr.raw[j], 4) + ")" : "0 (no value)"} = ${nf(a, 3)} · source ${IN[j].src} · linear: a = x`;
+    else if (k === NL - 1) eq = `y = tanh(Σ${SIZES[k - 1]} wᵢ·aᵢ + b) = tanh(${nf(z, 3)}) = ${nf(a, 3)} · b ${sgn(b, 3)} · ${decode(j, a, fr).long}`;
+    else eq = `a = max(0, Σ${SIZES[k - 1]} wᵢ·aᵢ + b) = max(0, ${nf(z, 3)}) = ${nf(a, 3)} · b ${sgn(b, 3)}`;
+    return { k, j, name, act: ACT(k), z, a, b, curve, incoming: incoming.slice(0, 4), fanIn: incoming.length, trace, eq };
+  }
+  function showScope(k, j) {
+    const d = inspect(k, j);
+    if (!d) return;
+    $("nfScopeT").replaceChildren(document.createTextNode(`${d.name} · ${d.act}`));
+    $("nfScopeEq").textContent = d.eq;
+    $("nfScopeW").replaceChildren(...(d.incoming.length ? d.incoming.map(x => h("li", "nf-mono", `← ${x.from} · w ${sgn(x.w, 3)} · a ${nf(x.a, 3)} · w·a ${sgn(x.wa, 3)}`)) : [h("li", "", k === 0 ? `Group ${GROUPS.find(g => g[0] === IN[j].g)[1]} · fans out to ${SIZES[1]} neurons in layer 2` : "—")]));
+    const C = V.colors;
+    // Activation function with the live operating point.
+    { const { c, w, h: hh } = scopeCanvas(scFn), X = x => (x + 3) / 6 * w, Y = y => hh / 2 - y / 3.2 * (hh / 2 - 6);
+      c.strokeStyle = C.hair; c.lineWidth = 1; c.beginPath(); c.moveTo(0, hh / 2); c.lineTo(w, hh / 2); c.moveTo(w / 2, 0); c.lineTo(w / 2, hh); c.stroke();
+      c.strokeStyle = k === NL - 1 ? C.orange : C.cyan; c.lineWidth = 2; c.beginPath(); d.curve.forEach(([x, y], i) => i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y))); c.stroke();
+      const zx = fin(d.z) ? clamp(d.z, -3, 3) : 0;
+      if (fin(d.z)) { c.fillStyle = C.text; c.beginPath(); c.arc(X(zx), Y(NN.act(k, k === NL - 1, zx)), 3.5, 0, Math.PI * 2); c.fill(); } }
+    // Its activation over the readings in the ring, with the scrub position.
+    { const { c, w, h: hh } = scopeCanvas(scTr), tr = d.trace.filter(fin);
+      if (tr.length > 1) {
+        const lo = Math.min(...tr), hi = Math.max(...tr), sp = hi - lo || 1, X = i => i / (d.trace.length - 1) * w, Y = v => hh - 4 - (v - lo) / sp * (hh - 8);
+        c.strokeStyle = C.purple; c.lineWidth = 1.5; c.beginPath(); let st = false;
+        d.trace.forEach((v, i) => { if (!fin(v)) return; if (st) c.lineTo(X(i), Y(v)); else { c.moveTo(X(i), Y(v)); st = true; } }); c.stroke();
+        const at = S.scrub >= 0 ? S.scrub : d.trace.length - 1;
+        c.strokeStyle = C.text; c.lineWidth = 1; c.beginPath(); c.moveTo(X(at), 0); c.lineTo(X(at), hh); c.stroke();
+      } else { c.fillStyle = C.sub; c.font = FONT; c.textBaseline = "middle"; c.fillText("activation trace after 2 readings…", 6, hh / 2); } }
+  }
+  function nodeAt(x, y) {
+    const ux = (x - V.tx) / V.k, uy = (y - V.ty) / V.k;
+    let best = null, bd = 12 / V.k;
+    for (let k = 0; k < NL; k++) { const col = V.pos[k]; if (Math.abs(col[0].x - ux) > bd + 8) continue; for (let j = 0; j < col.length; j++) { const d = Math.hypot(col[j].x - ux, col[j].y - uy); if (d < bd) { bd = d; best = { k, j }; } } }
+    return best;
+  }
+  const local = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  let drag = null;
+  cv.addEventListener("pointermove", e => {
+    const [x, y] = local(e);
+    if (drag) { V.tx = drag.tx + x - drag.x; V.ty = drag.ty + y - drag.y; clampPan(); V.buf = null; draw(); return; }
+    if (e.pointerType === "touch") return;
+    const n = nodeAt(x, y), same = n && S.hover && n.k === S.hover.k && n.j === S.hover.j;
+    if (same || (!n && !S.hover)) return;
+    S.hover = n;
+    if (n && !S.sel) { showScope(n.k, n.j); pulse("hover"); }
+    draw();
+  });
+  cv.addEventListener("pointerleave", () => { S.hover = null; draw(); });
+  cv.addEventListener("pointerdown", e => {
+    const [x, y] = local(e), n = nodeAt(x, y);
+    if (!n && V.k > 1) { drag = { x, y, tx: V.tx, ty: V.ty }; cv.classList.add("panning"); cv.setPointerCapture(e.pointerId); return; }
+    S.sel = n && !(S.sel && S.sel.k === n.k && S.sel.j === n.j) ? n : null;
+    if (S.sel) { showScope(S.sel.k, S.sel.j); pulse("tap"); }
+    draw();
+  });
+  const endDrag = () => { drag = null; cv.classList.remove("panning"); };
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("keydown", e => {
+    const cur = S.sel || { k: 0, j: -1 };
+    let { k, j } = cur;
+    if (e.key === "ArrowDown") j = (j + 1) % SIZES[k];
+    else if (e.key === "ArrowUp") j = (j - 1 + SIZES[k]) % SIZES[k];
+    else if (e.key === "ArrowRight") { k = Math.min(NL - 1, k + 1); j = Math.round(Math.max(0, j) / Math.max(1, SIZES[cur.k] - 1) * (SIZES[k] - 1)); }
+    else if (e.key === "ArrowLeft") { k = Math.max(0, k - 1); j = Math.round(Math.max(0, j) / Math.max(1, SIZES[cur.k] - 1) * (SIZES[k] - 1)); }
+    else if (e.key === "Escape") { S.sel = null; draw(); return; }
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    S.sel = { k, j: Math.max(0, j) }; showScope(S.sel.k, S.sel.j); draw();
+  });
+  // Zoom keeps the centre of the canvas in place; pan is clamped so the network never leaves the stage.
+  function clampPan() { V.tx = clamp(V.tx, V.w - V.w * V.k, 0); V.ty = clamp(V.ty, V.h - V.h * V.k, 0); }
+  function zoom(f) {
+    const k = clamp(V.k * f, 1, 6), cx = V.w / 2, cy = V.h / 2;
+    V.tx = cx - (cx - V.tx) * k / V.k; V.ty = cy - (cy - V.ty) * k / V.k; V.k = k;
+    if (k === 1) { V.tx = 0; V.ty = 0; }
+    clampPan(); V.buf = null;
+    stage.classList.toggle("zoomed", V.k > 1);
+    $("nfZoomReset").textContent = nf(V.k, 1) + "×";
+    draw();
+  }
+  $("nfZoomIn").addEventListener("click", () => zoom(1.5));
+  $("nfZoomOut").addEventListener("click", () => zoom(1 / 1.5));
+  $("nfZoomReset").addEventListener("click", () => zoom(1 / V.k));
+  // Trackpad pinch arrives as a wheel event with ctrlKey; a plain wheel keeps scrolling the page.
+  cv.addEventListener("wheel", e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+
+  /* ---------------- chrono-scrubber and counterfactual replay ---------------- */
+  const scrub = $("nfScrub");
+  // Hypothetical paper replay from reading i to the newest reading, on recorded microprices, 0.1% taker fee
+  // each way: (a) the network's call at i held to now, (b) the court's ruling at i held to now (OPEN = long),
+  // (c) following every network call since i, paying the fee on each change. Nothing here was traded.
+  function counterfactual(i, ring = S.ring) {
+    const n = ring.length - 1;
+    if (!(i >= 0 && i < n)) return null;
+    const a = ring[i], z = ring[n], dir = fr => { const o = actOf(fr, NL - 1, 0); return o > 0.15 ? 1 : o < -0.15 ? -1 : 0; };
+    const move = fin(a.micro) && fin(z.micro) ? (z.micro / a.micro - 1) * 1e4 : NaN, FEE = 10;
+    const net1 = dir(a) * move - (dir(a) ? 2 * FEE : 0), court = (a.verdict === "OPEN" ? 1 : 0) * move - (a.verdict === "OPEN" ? 2 * FEE : 0);
+    let path = 0, pos = 0, changes = 0;
+    for (let j = i; j < n; j++) {
+      const d = dir(ring[j]);
+      if (d !== pos) { path -= FEE * Math.abs(d - pos); pos = d; changes++; }
+      const r = fin(ring[j].micro) && fin(ring[j + 1].micro) ? (ring[j + 1].micro / ring[j].micro - 1) * 1e4 : 0;
+      path += pos * r;
+    }
+    if (pos) path -= FEE;
+    return { from: a.t, to: z.t, move, net: net1, court, path, changes, call: dir(a), verdict: a.verdict, steps: n - i };
+  }
+  function setScrub(i) {
+    const n = S.ring.length;
+    S.scrub = i >= 0 && i < n - 1 ? i : -1;
+    V.buf = null;
+    if (S.sel) showScope(S.sel.k, S.sel.j);
+    renderScrub(); renderOut(); draw();
+  }
+  scrub.addEventListener("input", () => setScrub(+scrub.value));
+  $("nfLive").addEventListener("click", () => setScrub(-1));
+  function renderScrub() {
+    const n = S.ring.length;
+    scrub.max = String(Math.max(0, n - 1)); scrub.disabled = n < 2;
+    if (S.scrub < 0) scrub.value = String(Math.max(0, n - 1));
+    const fr = shown();
+    if (!fr) { $("nfScrubAt").textContent = "LIVE"; $("nfScrubTxt").textContent = "Readings start once the Binance book arrives…"; return; }
+    if (S.scrub < 0) { $("nfScrubAt").textContent = `LIVE · ${n}/${RING}`; $("nfScrubTxt").textContent = `${n} readings in the ring, oldest ${clock.format(S.ring[0].t)} UTC. Drag back to replay how the network, its weights and the court looked at any of them.`; return; }
+    const cf = counterfactual(S.scrub), W = weightsFor(fr);
+    $("nfScrubAt").textContent = `${clock.format(fr.t)} UTC · ${S.scrub + 1}/${n}`;
+    $("nfScrubTxt").textContent = `Then: microprice ${nf(fr.micro, 2)} · network ${decode(0, actOf(fr, NL - 1, 0), fr).short} · court ${fr.verdict}${fin(fr.P) ? ", P(up) " + nf(fr.P * 100, 0) + "%" : ""} · weights v${W.ver}${W.exact ? "" : " (that version is no longer kept; oldest kept shown)"} · ${fr.nOn}/139 inputs live.`
+      + (cf ? ` Counterfactual to now (${cf.steps} readings, move ${sgn(cf.move, 2)} bps): holding the network's call ${sgn(cf.net, 2)} bps · holding the court's ruling ${sgn(cf.court, 2)} bps · following every network call ${sgn(cf.path, 2)} bps after ${cf.changes} changes, 0.1% fee each way. Hypothetical paper numbers from recorded prices; nothing was traded. · ` : "");
+    if (cf) $("nfScrubTxt").append(ar("مثال افتراضي — أرقام افتراضية"));
+  }
+
+  /* ---------------- tables ---------------- */
+  function kv(id, rows) {
+    $(id).tBodies[0].replaceChildren(...rows.map(([en, a, v, cls]) => { const tr = h("tr"); const t = h("td"); t.append(document.createTextNode(en), ar(a)); tr.append(t, h("td", cls || "num", v)); return tr; }));
+  }
+  function renderOut() {
+    const fr = shown();
+    kv("nfOut", HEADS.map(([en, a], j) => {
+      const o = fr ? actOf(fr, NL - 1, j) : NaN, dcd = decode(j, o, fr), rule = j ? ruleTxt(j, fr ? fr.y[j] : NaN) : "learned from the next 6 readings";
+      return [`${j + 1}. ${en}`, a, `${dcd.long} · tanh ${sgn(o, 3)} · ${rule}`, j === 0 && dcd.call === "SELL" ? "bad-text num" : j === 0 && dcd.call === "BUY" ? "ok-text num" : "num"];
+    }));
+  }
+  function render() {
+    const r = S.report, fr = S.live;
+    $("nfTag").textContent = fr ? `${fr.nOn}/139 LIVE · ${S.ring.length}/${RING} · v${S.ver}` : "WAITING FOR DATA…";
+    renderOut();
+    kv("nfTrain", [
+      ["Architecture", "البنية", `${SIZES.join(" → ")} · ${nf(L.weights, 0)} weights + ${nf(L.n - L.weights, 0)} biases · ReLU hidden, tanh out`],
+      ["Optimiser", "خوارزمية التحديث", "Adam (lr 0.003, L2 1e-4, batch 16) + (1+1)-ES on the output layer, one-fifth rule"],
+      ["Data", "البيانات", `${S.ring.length} of ${RING} readings · held out: newest 20%, with a 6-reading gap before it`],
+      ["Held-out loss", "خطأ التحقق", r ? `${nf(r.valLoss, 4)} after · ${nf(r.valBefore, 4)} before · always-0 baseline ${nf(r.valBase, 4)}` : "no burst yet", r ? (r.valLoss < r.valBase ? "ok-text num" : "warn-text num") : "num"],
+      ["Direction hit rate (held out)", "دقة الاتجاه", r ? (r.calls ? `${nf(r.hit * 100, 1)}% of ${r.calls} moves of 0.3 bps or more` : "no move large enough in the held-out window") : "—"],
+      ["Last burst", "آخر دفعة", r ? `${r.steps} Adam steps · ES kept ${r.esAccepted}/${r.esTried} · ${nf(r.ms, 0)} ms in the worker · ${r.at.replace("T", " ").slice(0, 19)} UTC` : (S.busy ? "training…" : S.error || "starts once 30 readings are in")],
+      ["Totals", "الإجمالي", `${S.bursts} bursts · ${nf(S.steps, 0)} Adam steps · ${nf(V.edges, 0)} threads drawn in ${nf(V.drawMs, 1)} ms`]
+    ]);
+    $("nfInputs").tBodies[0].replaceChildren(...IN.map((f, i) => { const tr = h("tr"), t = h("td"); t.append(document.createTextNode(`${i + 1}. ${f.l} · ${f.src}`), ar(GROUPS.find(g => g[0] === f.g)[2])); tr.append(t, h("td", fr && fin(fr.x[i]) ? "ok-text num" : "num", fr && fin(fr.raw[i]) ? `${nf(fr.raw[i], 4)} → ${sgn(fr.x[i], 3)}` : "no value (enters as 0)")); return tr; }));
+    renderScrub();
+    regime();
+    const f = S.sel || S.hover;
+    if (f) showScope(f.k, f.j); else showScope(NL - 1, 0);
+  }
+
+  /* ---------------- adaptive regime layout ---------------- */
+  // Calm, hunt or shield, from fixed rules on numbers already on the page (not a prediction):
+  //   shield: PWSI or CSTI at 70 or more, the breaker tripped, or the court says KILL
+  //   hunt:   BOCPD shift odds of 50% or more, a network direction of |0.5| or more, or the court says OPEN
+  //   calm:   otherwise
+  function regime() {
+    const o = P().osiris, d = P().desk, pw = o ? o.state().pwsi.score : NaN, cs = o && o.radar ? o.radar().csti.score : NaN;
+    const c = d && d.court ? d.court() : null, w = d && d.wallet ? d.wallet() : null, q = B2() ? B2().readings() : {}, out = S.live ? actOf(S.live, NL - 1, 0) : NaN;
+    const why = [];
+    let mode = "calm";
+    if (pw >= 70) why.push(`PWSI ${nf(pw, 0)}`); if (cs >= 70) why.push(`CSTI ${nf(cs, 0)}`); if (w && w.halted) why.push("breaker tripped"); if (c && c.verdict === "KILL") why.push("court KILL");
+    if (why.length) mode = "shield";
+    else {
+      if (q.bocpd && q.bocpd.pRecent >= 0.5) why.push(`BOCPD ${nf(q.bocpd.pRecent * 100, 0)}%`); if (Math.abs(out) >= 0.5) why.push(`network ${sgn(out, 2)}`); if (c && c.verdict === "OPEN") why.push("court OPEN");
+      if (why.length) mode = "hunt";
+    }
+    S.regime = mode; S.regimeWhy = why.join(", ") || "no trigger";
+    document.documentElement.dataset.regime = mode;
+    const b = $("islMode"), dot = $("islModeDot");
+    if (b) { b.textContent = mode.toUpperCase(); dot.className = "dot " + (mode === "shield" ? "offline" : mode === "hunt" ? "checking" : "online"); b.parentElement.title = S.regimeWhy; }
+    return { mode, why: S.regimeWhy };
+  }
+
+  /* ---------------- Architect X-Ray HUD ---------------- */
+  // Each badge: the equation that card runs, its measured time per call in this browser (median of repeated
+  // calls on the data now on the page), its ring-buffer fill and its data source.
+  const time = fn => { const ts = []; let n = 0; const t0 = performance.now(); while (n < 200 && performance.now() - t0 < 4) { const a = performance.now(); fn(); ts.push(performance.now() - a); n++; } ts.sort((x, y) => x - y); return ts.length ? ts[Math.floor(ts.length / 2)] * 1000 : NaN; };
+  const XR = [
+    ["osTitle", "PWSI = mean of available parts (5)", () => { const o = P().osiris; return o ? time(() => o.state().pwsi) : NaN; }, () => { const o = P().osiris; if (!o) return "—"; const s = o.state().src, on = Object.values(s).filter(x => x.state === "online").length; return `${on}/${Object.keys(s).length} sources online`; }, "USGS, Open-Meteo, NGA, GDACS/EMSC, AIS, SWPC…"],
+    ["dkTitle", "P(up) = Σ wₖ·pₖ · f* = (p·b − q) / 2b", () => { const d = P().desk; return d ? time(() => d.court()) : NaN; }, () => { const d = P().desk; return d ? `tape ${d.tape().length} trades · micro ${d.micro().length}/300` : "—"; }, "Binance public book and trades"],
+    ["wlTitle", "sweep = max(0, equity − base)", () => { const d = P().desk; return d ? time(() => d.excess(25, 20)) : NaN; }, () => { const d = P().desk; return d ? `${d.receipts().length} receipts` : "—"; }, "paper ledger"],
+    ["rgTitle", "ring = value ÷ target, clamped 0…1", () => NaN, () => "3 rings", "numbers already on the page"],
+    ["bwTitle", "x̂ₜ = x̂ₜ₋₁ + Kₜ(yₜ − x̂ₜ₋₁)", () => { const d = P().desk; if (!d) return NaN; const px = d.tape().map(x => x.p); return px.length >= 10 ? time(() => M.kalman(px)) : NaN; }, () => { const g = B2() && B2().gym(); return g ? `gym ${nf(g.ticks, 0)} ticks` : "gym idle"; }, "Binance, Deribit, perpetual premium"],
+    ["nfTitle", "aˡ = ReLU(Wˡaˡ⁻¹ + bˡ) · y = tanh(W⁷a⁶ + b⁷)", () => { const x = S.live ? S.live.x : new Float64Array(139); return time(() => NN.forward(net, x)); }, () => `${S.ring.length}/${RING} readings · v${S.ver}`, () => S.live ? `${S.live.nOn}/139 inputs live` : "inputs waiting"],
+    ["lvTitle", "μ = (Pa·Qb + Pb·Qa) / (Qa + Qb)", () => { const d = P().desk, b = d && d.book(); if (!b) return NaN; return time(() => { const [pb, qb] = b.bids[0], [pa, qa] = b.asks[0]; return (pa * qb + pb * qa) / (qa + qb); }); }, () => { const d = P().desk; return d ? `${d.micro().length}/300 readings` : "—"; }, "Binance book, 5 s"],
+    ["snTitle", "H = −Σ pᵢ ln pᵢ ÷ ln 25", () => { const d = P().desk, b = d && d.book(); return b ? time(() => M.entropy(b, 25)) : NaN; }, () => { const d = P().desk; return d ? `${d.canyon().bids}+${d.canyon().asks} tiers · ${d.stream().state}` : "—"; }, "Binance depth20@100ms, REST fallback"],
+    ["rcTitle", "hₙ = SHA-256(canon(rₙ without hash))", () => { const d = P().desk; return d ? time(() => d.sha256Pure("omega")) : NaN; }, () => { const d = P().desk; return d ? `${d.receipts().length} receipts (folds at 1000)` : "—"; }, "paper ledger, pure-JS SHA-256"]
+  ];
+  const X = { on: false, timer: 0 };
+  function xrayRender() {
+    for (const el of document.querySelectorAll(".xr-badge")) el.remove();
+    if (!X.on) return 0;
+    let n = 0;
+    for (const [id, eq, tm, ring, src] of XR) {
+      const title = $(id), card = title && title.closest("section");
+      if (!card) continue;
+      let us = NaN, rg = "—", sr = "";
+      try { us = tm(); } catch { us = NaN; } try { rg = ring(); } catch { rg = "—"; } try { sr = typeof src === "function" ? src() : src; } catch { sr = ""; }
+      const b = h("div", "xr-badge");
+      b.setAttribute("aria-hidden", "true");
+      b.append(h("b", "", "X-RAY"), h("span", "", eq), h("span", "", fin(us) ? `${nf(us, us < 10 ? 2 : 1)} µs per call (measured here)` : "time: not measured"), h("span", "", rg), h("span", "", sr));
+      b.dataset.us = fin(us) ? String(us) : "";
+      card.append(b);
+      n++;
+    }
+    return n;
+  }
+  function xray(on) {
+    X.on = on === undefined ? !X.on : !!on;
+    document.documentElement.dataset.xray = X.on ? "on" : "off";
+    $("xrBtn").setAttribute("aria-pressed", String(X.on));
+    clearInterval(X.timer);
+    const n = xrayRender();
+    if (X.on) X.timer = setInterval(xrayRender, 3000);
+    return n;
+  }
+  $("xrBtn").addEventListener("click", () => xray());
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    if (e.code === "KeyX") { e.preventDefault(); xray(); }
+  });
+
+  /* ---------------- schedule ---------------- */
+  readColors();
+  new ResizeObserver(layout).observe(cv);
+  new MutationObserver(() => { readColors(); V.buf = null; draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  new IntersectionObserver(es => { V.visible = es.some(e => e.isIntersecting); }).observe(cv);
+  document.addEventListener("omega:selftest-start", () => { S.frozen = true; });
+  document.addEventListener("omega:selftest", () => { S.frozen = SELFTEST_URL; });
+  let lastData = 0;
+  document.addEventListener("omega:osiris", () => { const t = Date.now(); if (t - lastData > 5000) { lastData = t; if (S.live) pulse("data pull"); } render(); });
+  setInterval(() => { if (!document.hidden && takeReading(false)) render(); }, 1000);
+  // Training bursts at most once a minute while visible, from 30 readings on.
+  const loop = async () => { if (!document.hidden && S.ring.length >= 30) await train(12); setTimeout(loop, 60000); };
+  setTimeout(loop, 20000);
+  $("nfTrainBtn").addEventListener("click", () => train(24));
+  render();
+
+  // Read-only hooks for the self-test.
+  window.OMEGA_NEURAL = Object.freeze({
+    sizes: () => SIZES.slice(), weights: () => L.weights, params: () => L.n, inputs: () => IN.map(f => ({ g: f.g, l: f.l, src: f.src })),
+    forward: x => { const f = NN.forward(net, x); return f.a.map(a => Array.from(a)); }, inspect: (k, j) => inspect(k, j),
+    state: () => ({ readings: S.ring.length, ring: RING, ver: S.ver, live: S.live ? S.live.nOn : 0, frozen: S.frozen, animating: !!V.raf, regime: S.regime, why: S.regimeWhy, report: S.report ? { ...S.report } : null, edges: V.edges, canvas: { w: V.w, h: V.h, dpr: V.dpr, px: cv.width, py: cv.height } }),
+    pulse: why => pulse(why || "test"), counterfactual: (i, ring) => counterfactual(i, ring), frameSize: () => TOTAL,
+    xray: on => xray(on), xrayBadges: () => [...document.querySelectorAll(".xr-badge")].map(b => ({ us: b.dataset.us ? +b.dataset.us : NaN, text: b.textContent })),
+    scrub: i => { setScrub(i); return S.scrub; }, regime: () => regime()
+  });
+})();
+</script>
+<script>
+"use strict";
 // App shell (ADR-092): five views with a segmented control (laptop) and a floating dock (phone),
 // the status island, and the home-screen install links when the page is served over http(s).
 // ADR-093: view 5 becomes a four-quadrant command wall at 1280 px and up, and keys 1–5 switch views.
@@ -7195,7 +8221,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   // Command wall: on view 5 at 1280 px and up the cards below move into four quadrants that fill one
   // screen; a comment marker keeps each card's home so it goes back on any other view or width.
   const wall = $("wall"), wide = window.matchMedia("(min-width: 1280px)");
-  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "snTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "bwTitle", "frTitle"], 4: ["wlTitle", "rgTitle", "cbTitle", "rcTitle", "cpTitle"] };
+  const QUADS = { 1: ["osTitle"], 2: ["lvTitle", "snTitle", "chartTitle", "whTitle", "trTitle", "foTitle"], 3: ["dkTitle", "bwTitle", "nfTitle", "frTitle"], 4: ["wlTitle", "rgTitle", "cbTitle", "rcTitle", "cpTitle"] };
   const homes = new Map();
   function maximize(q) {
     wall.classList.toggle("maxed", !!q);
@@ -7332,7 +8358,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
 </script>
 <script>
 "use strict";
-// System self-test (ADR-107, eighteen checks since ADR-108): end-to-end checks run in this browser, from the shield button or with
+// System self-test (ADR-107, eighteen checks since ADR-108, twenty since ADR-109): end-to-end checks run in this browser, from the shield button or with
 // ?selftest=1 in the address. Each check reads the page through the read-only OMEGA_PROBE hooks or runs a pure
 // function on fixed test input; none moves paper money, issues a receipt or sends anything. A check that
 // depends on live data fails honestly when that data is missing, and says why.
@@ -7497,6 +8523,49 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
       if (!r) return { ok: false, why: "training worker unavailable or busy" };
       const sum = r.mw.reduce((a, v) => a + v, 0);
       return { ok: r.rate >= 1e5 && Math.abs(sum - 1) < 1e-9 && r.mw.length === 6, why: `measured ${nf(r.rate, 0)} ticks/s (${nf(r.usPerTick, 3)} µs per tick) over ${nf(r.lastMs, 0)} ms in a Web Worker · 6 weights sum ${nf(sum, 6)} · ${r.bootstrap ? "real daily returns" : "synthetic returns"}` };
+    }],
+    // ---- ADR-109: the deep neural flow, the oscilloscope, X-Ray, the chrono-scrubber and the 16 sources ----
+    ["Neural flow 139 → 8 & oscilloscope", "الشبكة العصبية وراسم الذبذبات", async () => {
+      const M = window.OMEGA_MATH, n = window.OMEGA_NEURAL;
+      if (!M || !M.nn || !n) return { ok: false, why: "neural flow not loaded" };
+      const sizes = n.sizes(), shape = sizes.join() === "139,48,36,48,24,16,8" && n.weights() === 11792 && n.inputs().length === 139;
+      // Fixed input through the live weights: outputs inside (-1, 1), hidden layers never negative (ReLU).
+      const x = Array.from({ length: 139 }, (_, i) => Math.sin(i * 0.37)), a = n.forward(x);
+      const okAct = a.length === 7 && a.slice(1, 6).every(l => l.every(v => v >= 0)) && a[6].every(v => v > -1 && v < 1);
+      // Backpropagation against central differences on a small net with the same code.
+      const tiny = M.nn.init([5, 4, 3, 2], 3), X = [[0.3, -0.2, 0.5, 0.1, -0.4], [-0.6, 0.2, 0.1, 0.7, 0.3]], Y = [[0.2, -0.1], [NaN, 0.4]], g = new Float64Array(tiny.p.length);
+      M.nn.grad(tiny, X, Y, [0, 1], g);
+      let worst = 0;
+      for (let i = 0; i < tiny.p.length; i++) {
+        const keep = tiny.p[i]; tiny.p[i] = keep + 1e-6; const up = M.nn.lossOf(tiny, X, Y, [0, 1]); tiny.p[i] = keep - 1e-6; const dn = M.nn.lossOf(tiny, X, Y, [0, 1]); tiny.p[i] = keep;
+        const num = (up - dn) / 2e-6; worst = Math.max(worst, Math.abs(num - g[i]) / Math.max(1e-6, Math.abs(num) + Math.abs(g[i])));
+      }
+      const sc = n.inspect(3, 0), out = n.inspect(6, 0), st = n.state(), c = st.canvas, dprOk = c.px === Math.round(c.w * c.dpr) && c.dpr >= 1 && c.dpr <= 3;
+      const scope = !!sc && sc.curve.length === 61 && sc.fanIn === 36 && /max\(0/.test(sc.eq) && !!out && /tanh/.test(out.eq);
+      n.pulse("self-test");
+      const still = st.frozen && !n.state().animating;
+      return { ok: shape && okAct && worst < 1e-4 && scope && dprOk && still, why: `layers ${sizes.join("→")} · ${n.weights()} weights · ReLU ≥ 0 and tanh in (−1, 1): ${okAct} · gradient check worst relative error ${worst.toExponential(1)} · oscilloscope ${sc ? sc.curve.length : 0} points, fan-in ${sc ? sc.fanIn : 0} · canvas ${c.px}×${c.py} at ${c.dpr}× · motion frozen during the test: ${still} · ${st.live}/139 inputs live, ${st.readings} readings` };
+    }],
+    ["X-Ray, chrono-scrubber & 16/16 sources", "الأشعة السينية وآلة الزمن والمصادر", async () => {
+      const n = window.OMEGA_NEURAL, b = window.OMEGA_BRAIN2, o = P().osiris;
+      if (!n || !o) return { ok: false, why: "neural flow or map not loaded" };
+      const was = document.documentElement.dataset.xray === "on";
+      n.xray(true);
+      const badges = n.xrayBadges(), timed = badges.filter(x => Number.isFinite(x.us)).length;
+      n.xray(was);
+      // Counterfactual replay on a fixed ring: the network said BUY at 100 and SELL at 101, the court said OPEN.
+      const mk = (micro, o0, verdict) => { const acts = new Float32Array(n.frameSize()); acts[acts.length - 8] = o0; return { t: 0, micro, acts, verdict }; };
+      const cf = n.counterfactual(0, [mk(100, 0.9, "OPEN"), mk(101, -0.9, "OPEN"), mk(100.5, 0, "STAND ASIDE")]);
+      const cfOk = !!cf && Math.abs(cf.net - (50 - 20)) < 1e-9 && Math.abs(cf.court - (50 - 20)) < 1e-9 && Math.abs(cf.path - (-10 + 100 - 20 + 49.504950495049506 - 10)) < 1e-6;
+      const st = n.state(), rg = n.regime(), rgOk = ["calm", "hunt", "shield"].includes(rg.mode) && document.documentElement.dataset.regime === rg.mode;
+      // Data coverage: the hourly snapshot (16 sources) when the page is served, and the page's own live sources.
+      let snap = null;
+      if (/^https?:$/.test(location.protocol)) { try { const r = await within(fetch(new URL("../data/public-intel-snapshot.json", location.href).href, { credentials: "omit", cache: "no-store" }), 8000); snap = r.ok ? await r.json() : null; } catch { snap = null; } }
+      const ss = snap && snap.sources ? Object.values(snap.sources) : [], snapOk = ss.filter(s => s.ok).length;
+      const src = o.state().src, keys = ["usgs", "meteo", "binance", "straits", "gdacs", "ais", "celestrak", "eonet", "swpc", "kev", "ripe", "ioda"], d = b ? b.derivs().src : {};
+      const pageOn = keys.filter(k => src[k] && src[k].state === "online").length + ["deribit", "dvol", "prem"].filter(k => d[k] && d[k].state === "online").length;
+      const data = (ss.length === 16 && snapOk === 16) || pageOn === 15;
+      return { ok: badges.length >= 8 && timed >= 1 && cfOk && st.ring === 300 && rgOk && data, why: `X-Ray ${badges.length} badges, ${timed} timed here · counterfactual replay ${cfOk ? "exact" : "wrong"} · ring ${st.readings}/${st.ring} · mode ${rg.mode} (${rg.why}) · snapshot ${ss.length ? `${snapOk}/${ss.length} sources ok, generated ${String(snap.generated || "").slice(0, 16)}` : "not reachable from here"} · page sources online ${pageOn}/15` };
     }]
   ];
 
@@ -7504,6 +8573,7 @@ const COAST_B64 = "0wkQoJkCoRlXXQIVSC4AK2UNKxQlJTsPFSQTAhIiKgEgHlAUJhoEzQOzAQsBB
   async function run() {
     if (busy) return last;
     busy = true;
+    document.dispatchEvent(new CustomEvent("omega:selftest-start"));
     $("stScore").textContent = "…";
     $("stRun").disabled = true;
     const list = $("stList");
