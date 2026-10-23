@@ -62,11 +62,11 @@ To run the pages with live data locally: `./start-omega.sh` or `start-omega.bat`
 
 ## 6a. Skills and local tools (ADR-108)
 
-- Project skills in `.claude/skills/`: `omega-design`, `omega-finance-chain`, `apple-liquid-glass-hig`, `osint-bgp-cables`, `quant-microstructure-gex`, `synaptic-spiderweb-viz`, `safe-vault-cryptographic-ratchet`, and from ADR-109 `neural-flow-decision-viz` and `supreme-software-ui-architect`. Each is text rules only and passes `node scripts/skillspector-audit.mjs --strict .claude/skills`.
+- Project skills in `.claude/skills/`: `omega-design`, `omega-finance-chain`, `apple-liquid-glass-hig`, `osint-bgp-cables`, `quant-microstructure-gex`, `synaptic-spiderweb-viz`, `safe-vault-cryptographic-ratchet`, from ADR-109 `neural-flow-decision-viz` and `supreme-software-ui-architect`, and from ADR-110 `cyber-space-osint-grid`, `liquid-neural-139-flow` and `autonomous-24-selftest-gate`. Each is text rules only and passes `node scripts/skillspector-audit.mjs --strict .claude/skills`.
 - Brain 2 maths: one file, `scripts/lib/brain2-math.mjs`, shared by the proxy, the snapshot, the MCP bridge and the Ops Room (inline copy from `node scripts/build-brain2-inline.mjs`; `--check` and `node scripts/test-brain2.mjs` run in CI).
 - `scripts/omega-mcp-bridge.mjs` is a zero-dependency MCP server over stdio: read-only public data and paper maths, no keys, no orders, no file writes.
 - Windows-MCP is used only at 0.8.8, stdio, telemetry off, with the screen, mouse and keyboard tools (no App, PowerShell, Registry, FileSystem, Process, Clipboard), as `scripts/setup-windows-mcp.ps1` writes it. Any other setting needs a new security review. Other OSINT MCP servers are not added without one.
-- OSINT is passive: public keyless APIs only. No port scanning, dorking, spoofed user agents or anti-bot bypass.
+- OSINT is passive: public keyless APIs only. No port scanning, dorking, spoofed user agents or anti-bot bypass. Shodan InternetDB is read only for the four public resolvers fixed in `INTERNETDB_HOSTS` (ADR-110), never for an address taken from input.
 
 ## 7. Records
 

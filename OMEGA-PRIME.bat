@@ -2,7 +2,7 @@
 rem OMEGA PRIME one-click launcher (ADR-094, ADR-108). Copy this file to the Desktop and double-click it.
 rem 1. Clones giant-core into %USERPROFILE%\Desktop\OMEGA-PRIME, or pulls the latest main if it is already there.
 rem 2. Starts the local data proxy on 127.0.0.1:8796 in its own window (close that window to stop it).
-rem 3. Waits for the proxy, runs the omega-local-mcp bridge checks, then opens the Ops Room with its 18-check
+rem 3. Waits for the proxy, runs the omega-local-mcp bridge checks, then opens the Ops Room with its 24-check
 rem    self-test (?selftest=1).
 rem SEC routes read the contact line from %USERPROFILE%\.omega\sec-ua.txt ("Your Name your@email"); no address
 rem lives in this file. Paper only: nothing started here can place an order or move money.

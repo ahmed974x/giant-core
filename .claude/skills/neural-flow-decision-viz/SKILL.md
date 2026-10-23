@@ -23,7 +23,7 @@ The neural flow (`#neural`, ADR-109) is a small network trained in the browser o
 | FLOW | 12 | microprice gap, Hawkes, VPIN, Kalman gap, BOCPD, Kyle λ, icebergs, entropy, spread, imbalance |
 | DERIV | 12 | Deribit gamma regime, flip and walls, ATM IV, DVOL, 25Δ skew, BTC/ETH funding and basis |
 | CHAIN | 1 | mempool.space fastest fee |
-| INTEL | 34 | PWSI and its parts, five straits, quakes, disaster alerts, gusts, AIS, GDELT, OpenSky, KEV, RIPEstat, IODA, Kp, EONET, CelesTrak, cables, CSTI, four 24 h changes |
+| INTEL | 34 | PWSI and its parts, five straits, quakes, disaster alerts, gusts, AIS, GDELT, OpenSky, KEV, RIPEstat, IODA, Kp, EONET, SANS InfoCON, cables, CSTI, BTC 24 h change, RIS Live instability, squawk 7700 count, aircraft near the straits (ADR-110) |
 
 Each input is squashed to about [-1, 1] with a stated formula (shown in the oscilloscope). A missing source enters as 0 and its neuron is drawn hollow. Never fill a gap with a guess.
 

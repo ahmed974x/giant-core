@@ -28,5 +28,8 @@ To update: re-copy the folders from a fresh clone of the source repo named in ea
 | `safe-vault-cryptographic-ratchet` | Locked base, profit sweep, SHA-256 receipt chain, Merkle checkpoints, capsule and vault; paper only (ADR-108) |
 | `neural-flow-decision-viz` | The Ops Room deep neural flow 139 → 8: threads, pulses, oscilloscope, chrono-scrubber, training worker, decision heads (ADR-109) |
 | `supreme-software-ui-architect` | Engineering and visual craft for any OMEGA page: 4/8 grid, glass rules, P3, zero clipped text, workers and canvases without jank, honest data paths, the checks (ADR-109) |
+| `cyber-space-osint-grid` | OSIRIS cyber, space and air sources: SANS InfoCON, Shodan InternetDB on four fixed resolvers, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, the 7-part CSTI (ADR-110) |
+| `liquid-neural-139-flow` | The continuous-time dynamics of the 139 → 8 flow: τ table, shocks, Heun solver, settle loop, oscilloscope τ (ADR-110) |
+| `autonomous-24-selftest-gate` | The 24-check browser self-test and the release gate before a PR (ADR-110) |
 
 These hold text rules distilled from taste-skill, web-interface-guidelines, agent-skills and awesome-design-md, and (the five ADR-108 skills) written from this repo's own code and the papers they cite; no third-party scripts were copied.
