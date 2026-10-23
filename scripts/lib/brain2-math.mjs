@@ -20,6 +20,10 @@
 //   shape.perp*, emsc, ...  fallbacks for the perpetual premium (OKX, Deribit) and disaster alerts (EMSC, ReliefWeb)
 //   nn.ode*                 continuous-time hidden layers, dx/dt = (σ(Wx + b) − x) / τ(t), Heun steps (ADR-110)
 //   shape.infocon, ...      SANS ISC InfoCON, Shodan InternetDB, adsb.lol squawks and zones (ADR-110)
+//   lfi(llama)              DefiLlama stablecoin, chain and DEX liquidity flow index, -100..+100 (ADR-112)
+//   cvss3 / circlSummary    CVSS 3.x base score from a vector; CIRCL Vulnerability-Lookup entries with MISP
+//                           taxonomy tags and a 0-100 vulnerability pressure part for CSTI (ADR-112)
+//   seaState(marine)        Open-Meteo Marine waves and currents at the five straits (ADR-112)
 export const OMEGA_MATH = (() => {
   "use strict";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -370,6 +374,8 @@ export const OMEGA_MATH = (() => {
   //   infocon SANS ISC InfoCON: green 0, yellow 33, orange 67, red 100
   //   ris     RIS Live instability index of the watched DNS anycast prefixes (risSummary), already 0-100
   //   exposed CVEs Shodan InternetDB lists on the watched resolver addresses: 25 points each
+  // ADR-112 adds an eighth:
+  //   circl   vulnerability pressure of CIRCL's latest published records (circlSummary), already 0-100
   function csti(x = {}) {
     const parts = [];
     if (finite(x.kp)) parts.push({ k: "space", v: clamp((x.kp - 4) / 5, 0, 1) * 100 });
@@ -379,7 +385,8 @@ export const OMEGA_MATH = (() => {
     if (finite(x.infocon)) parts.push({ k: "infocon", v: clamp(x.infocon, 0, 3) / 3 * 100 });
     if (finite(x.ris)) parts.push({ k: "ris", v: clamp(x.ris, 0, 100) });
     if (finite(x.exposed)) parts.push({ k: "exposed", v: clamp(x.exposed * 25, 0, 100) });
-    return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length, of: 7 } : { score: NaN, parts, coverage: 0, of: 7 };
+    if (finite(x.circl)) parts.push({ k: "circl", v: clamp(x.circl, 0, 100) });
+    return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length, of: 8 } : { score: NaN, parts, coverage: 0, of: 8 };
   }
 
   /* ---------- RIS Live BGP watch (ADR-110) ---------- */
@@ -444,6 +451,99 @@ export const OMEGA_MATH = (() => {
   const AIR_RADIUS_NM = 150;
   // Squawk 7500 unlawful interference, 7600 radio failure, 7700 general emergency (ICAO).
   const SQUAWKS = { 7500: "unlawful interference", 7600: "radio failure", 7700: "general emergency" };
+
+
+  /* ---------- DefiLlama liquidity flow (ADR-112) ---------- */
+  // Liquidity flow index, -100 (liquidity leaving) to +100 (liquidity arriving), a fixed heuristic [INFERENCE]:
+  //   35% stablecoin supply change over 1 day, scaled so ±0.5% is the full swing
+  //   30% stablecoin supply change over 7 days, ±2% full swing
+  //   20% DEX volume of the last 24 h against the 24 h before it, ±25% full swing
+  //   15% peg stress: 0 while the largest USD stablecoins sit within 50 bps of $1, −1 at 200 bps or more
+  // Newly minted stablecoins are cash waiting at the exchanges' door; a falling supply or a broken peg is
+  // cash leaving. The index says which way the stablecoin float moved, not where the price goes next.
+  // The weights of the parts that have data are renormalised, and `parts` says which ones were used.
+  function lfi(set) {
+    const st = set && set.stable, dx = set && set.dex, parts = [];
+    if (st && finite(st.pct1)) parts.push({ k: "supply1d", w: 0.35, v: clamp(st.pct1 / 0.5, -1, 1), why: `stablecoin supply ${st.pct1 >= 0 ? "+" : ""}${st.pct1.toFixed(3)}% in 1 day` });
+    if (st && finite(st.pct7)) parts.push({ k: "supply7d", w: 0.30, v: clamp(st.pct7 / 2, -1, 1), why: `${st.pct7 >= 0 ? "+" : ""}${st.pct7.toFixed(2)}% in 7 days` });
+    if (dx && finite(dx.chg1d)) parts.push({ k: "dex", w: 0.20, v: clamp(dx.chg1d / 25, -1, 1), why: `DEX volume ${dx.chg1d >= 0 ? "+" : ""}${dx.chg1d.toFixed(1)}% against the day before` });
+    if (st && st.depeg && finite(st.depeg.bps)) parts.push({ k: "peg", w: 0.15, v: -clamp((Math.abs(st.depeg.bps) - 50) / 150, 0, 1), why: `largest peg gap ${st.depeg.symbol} ${Math.abs(st.depeg.bps).toFixed(0)} bps` });
+    if (!parts.length) return { score: NaN, parts, coverage: 0, of: 4, regime: "unknown" };
+    const W = parts.reduce((a, p) => a + p.w, 0), score = 100 * parts.reduce((a, p) => a + p.w * p.v, 0) / W;
+    return { score, parts, coverage: parts.length, of: 4, regime: score >= 25 ? "inflow" : score <= -25 ? "outflow" : "flat" };
+  }
+
+  /* ---------- CVSS 3.x and CIRCL Vulnerability-Lookup with MISP tags (ADR-112) ---------- */
+  // Base score from a CVSS 3.0 or 3.1 vector (FIRST CVSS v3.1 specification, section 7.1, with its Roundup).
+  const CV = { AV: { N: 0.85, A: 0.62, L: 0.55, P: 0.2 }, AC: { L: 0.77, H: 0.44 }, UI: { N: 0.85, R: 0.62 }, CIA: { H: 0.56, L: 0.22, N: 0 } };
+  const roundup = x => { const i = Math.round(x * 100000); return i % 10000 === 0 ? i / 100000 : (Math.floor(i / 10000) + 1) / 10; };
+  function cvss3(vector) {
+    const m = {};
+    for (const kv of String(vector || "").split("/")) { const [k, v] = kv.split(":"); if (k && v) m[k] = v; }
+    if (!/^CVSS:3\.[01]$/.test("CVSS:" + (m.CVSS || ""))) return NaN;
+    const av = CV.AV[m.AV], ac = CV.AC[m.AC], ui = CV.UI[m.UI], c = CV.CIA[m.C], i = CV.CIA[m.I], a = CV.CIA[m.A], changed = m.S === "C";
+    const pr = { N: 0.85, L: changed ? 0.68 : 0.62, H: changed ? 0.5 : 0.27 }[m.PR];
+    if (![av, ac, ui, c, i, a, pr].every(finite) || !["U", "C"].includes(m.S)) return NaN;
+    const iss = 1 - (1 - c) * (1 - i) * (1 - a);
+    const impact = changed ? 7.52 * (iss - 0.029) - 3.25 * (iss - 0.02) ** 15 : 6.42 * iss;
+    const expl = 8.22 * av * ac * pr * ui;
+    if (impact <= 0) return 0;
+    return changed ? roundup(Math.min(1.08 * (impact + expl), 10)) : roundup(Math.min(impact + expl, 10));
+  }
+  // MISP taxonomies (github.com/MISP/misp-taxonomies, CC0): machine tags namespace:predicate="value". The
+  // mapping from a record to tags is a fixed rule set, labelled [INFERENCE] on screen:
+  //   priority-level  from CVSS and KEV: emergency (CVSS ≥ 9 and in CISA KEV), severe (≥ 9), high (≥ 7),
+  //                   medium (≥ 4), low (> 0), baseline-minor (no score published yet)
+  //   vulnerability   sighting="exploited" when CISA KEV lists it; information="PoC" when a reference is
+  //                   marked as an exploit; origin="software" for package advisories (OSV records)
+  //   rsit            vulnerable="vulnerable-system" for every record; intrusion-attempts="exploit" when in KEV;
+  //                   CWE-200 information-disclosure, CWE-326/327/328 weak-crypto, CWE-400/674/770/835 availability dos
+  const CWE_RSIT = { "CWE-200": 'rsit:vulnerable="information-disclosure"', "CWE-326": 'rsit:vulnerable="weak-crypto"', "CWE-327": 'rsit:vulnerable="weak-crypto"', "CWE-328": 'rsit:vulnerable="weak-crypto"',
+    "CWE-400": 'rsit:availability="dos"', "CWE-674": 'rsit:availability="dos"', "CWE-770": 'rsit:availability="dos"', "CWE-835": 'rsit:availability="dos"' };
+  function priorityLevel(cvss, kev) {
+    if (!finite(cvss)) return "baseline-minor";
+    return cvss >= 9 && kev ? "emergency" : cvss >= 9 ? "severe" : cvss >= 7 ? "high" : cvss >= 4 ? "medium" : cvss > 0 ? "low" : "baseline-minor";
+  }
+  function mispTags(v, kev) {
+    const t = [`priority-level:${priorityLevel(v.cvss, kev)}`, 'rsit:vulnerable="vulnerable-system"'];
+    if (kev) t.push('vulnerability:sighting="exploited"', 'rsit:intrusion-attempts="exploit"');
+    if (v.poc) t.push('vulnerability:information="PoC"');
+    if (v.osv) t.push('vulnerability:origin="software"');
+    if (CWE_RSIT[v.cwe] && !t.includes(CWE_RSIT[v.cwe])) t.push(CWE_RSIT[v.cwe]);
+    return t;
+  }
+  // Summary of the CIRCL records with tags; `kevIds` is the set of CVE ids in the CISA KEV catalogue (may be empty).
+  // Vulnerability pressure, 0-100: 10 per critical record (CVSS ≥ 9), 2 per high one (7 to 8.9), 25 per record
+  // CISA KEV lists as exploited, capped at 100.
+  function circlSummary(set, kevIds) {
+    const kev = kevIds instanceof Set ? kevIds : new Set(Array.isArray(kevIds) ? kevIds : []);
+    const items = (set && Array.isArray(set.items) ? set.items : []).map(v => {
+      const inKev = [v.id, ...(v.aliases || [])].some(x => kev.has(x));
+      return { ...v, kev: inKev, priority: priorityLevel(v.cvss, inKev), tags: mispTags(v, inKev) };
+    });
+    const critical = items.filter(v => v.cvss >= 9).length, high = items.filter(v => v.cvss >= 7 && v.cvss < 9).length, exploited = items.filter(v => v.kev).length;
+    const by = {};
+    for (const v of items) by[v.priority] = (by[v.priority] || 0) + 1;
+    return { n: items.length, critical, high, exploited, scored: items.filter(v => finite(v.cvss)).length, priority: by, pressure: clamp(critical * 10 + high * 2 + exploited * 25, 0, 100), items };
+  }
+
+  /* ---------- sea state at the five straits (ADR-112) ---------- */
+  // Open-Meteo Marine (keyless, CC BY 4.0) at a sea point inside or at the mouth of each strait; the API picks the
+  // nearest sea grid cell. Currents come in km/h and are also given in knots.
+  const MARINE_POINTS = [
+    { key: "hormuz", en: "Strait of Hormuz", lat: 26.45, lon: 56.45 }, { key: "bab", en: "Bab el-Mandeb", lat: 12.6, lon: 43.33 },
+    { key: "suez", en: "Suez Canal, Gulf of Suez approach", lat: 29.7, lon: 32.6 }, { key: "malacca", en: "Strait of Malacca", lat: 2.5, lon: 101.0 },
+    { key: "panama", en: "Panama Canal, Pacific approach", lat: 8.75, lon: -79.5 }
+  ];
+  // Sea-state part for PWSI, 0-100: 0 with every significant wave height at 2 m or less, 100 at 6 m or more;
+  // a current of 4 knots or more adds the same as 1 m of wave. Fixed rule, [INFERENCE].
+  function seaState(m) {
+    const pts = m && Array.isArray(m.points) ? m.points.filter(p => finite(p.hs)) : [];
+    if (!pts.length) return { score: NaN, maxHs: NaN, maxKn: NaN, at: "", n: 0 };
+    const top = pts.reduce((a, p) => p.hs > a.hs ? p : a), kn = pts.filter(p => finite(p.curKn)), fast = kn.length ? kn.reduce((a, p) => p.curKn > a.curKn ? p : a) : null;
+    const score = clamp((top.hs - 2) / 4 + (fast && fast.curKn >= 4 ? 0.25 : 0), 0, 1) * 100;
+    return { score, maxHs: top.hs, at: top.key, maxKn: fast ? fast.curKn : NaN, fastAt: fast ? fast.key : "", n: pts.length };
+  }
 
   /* ---------- neural flow (ADR-109) ---------- */
   // A small multilayer perceptron, 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8: linear inputs, ReLU hidden layers and
@@ -812,6 +912,81 @@ export const OMEGA_MATH = (() => {
     ris(j) {
       if (!j || j.format !== "omega-ris-v1" || !Array.isArray(j.prefixes) || !Number.isFinite(j.index)) throw new Error("not a RIS Live summary");
       return j;
+    },
+    // ADR-112. DefiLlama stablecoins (stablecoins.llama.fi/stablecoins): USD-pegged assets only, summed.
+    llamaStable(j) {
+      const a = j && Array.isArray(j.peggedAssets) ? j.peggedAssets : null;
+      if (!a) throw new Error("not a DefiLlama stablecoin list");
+      const usd = x => x && finite(+x.peggedUSD) ? +x.peggedUSD : NaN;
+      const rows = a.filter(x => x && x.pegType === "peggedUSD").map(x => ({ symbol: String(x.symbol || "").slice(0, 12), name: String(x.name || "").slice(0, 40), mech: String(x.pegMechanism || ""),
+        now: usd(x.circulating), d1: usd(x.circulatingPrevDay), d7: usd(x.circulatingPrevWeek), d30: usd(x.circulatingPrevMonth), price: finite(+x.price) && x.price !== null ? +x.price : NaN })).filter(x => finite(x.now) && x.now > 0);
+      if (!rows.length) throw new Error("no USD stablecoins");
+      const sum = k => rows.reduce((s, x) => s + (finite(x[k]) ? x[k] : x.now), 0), total = sum("now"), p1 = sum("d1"), p7 = sum("d7"), p30 = sum("d30");
+      rows.sort((x, y) => y.now - x.now);
+      // Peg gap only for the large coins (supply of $1 bn or more) with a price, so a thin market does not dominate.
+      const big = rows.filter(x => x.now >= 1e9 && finite(x.price)), worst = big.length ? big.reduce((w, x) => Math.abs(x.price - 1) > Math.abs(w.price - 1) ? x : w) : null;
+      return { format: "omega-llama-stable-v1", total, prevDay: p1, prevWeek: p7, prevMonth: p30, pct1: (total / p1 - 1) * 100, pct7: (total / p7 - 1) * 100, pct30: (total / p30 - 1) * 100, coins: rows.length,
+        top: rows.slice(0, 8).map(x => ({ symbol: x.symbol, now: x.now, d1: x.d1, price: x.price, mech: x.mech })), depeg: worst ? { symbol: worst.symbol, price: worst.price, bps: (worst.price - 1) * 1e4 } : null };
+    },
+    // DefiLlama chains (api.llama.fi/v2/chains): total value locked now, largest chains first.
+    llamaChains(j) {
+      if (!Array.isArray(j)) throw new Error("not a DefiLlama chain list");
+      const rows = j.filter(x => x && finite(+x.tvl) && +x.tvl > 0).map(x => ({ name: String(x.name || "").slice(0, 30), tvl: +x.tvl })).sort((a, b) => b.tvl - a.tvl);
+      if (!rows.length) throw new Error("no chain TVL");
+      const total = rows.reduce((s, x) => s + x.tvl, 0);
+      return { format: "omega-llama-chains-v1", total, chains: rows.length, top: rows.slice(0, 8).map(x => ({ ...x, share: x.tvl / total })) };
+    },
+    // DefiLlama DEX overview (api.llama.fi/overview/dexs): volume of the last 24 h and of the 24 h before.
+    llamaDex(j) {
+      if (!j || !finite(+j.total24h)) throw new Error("not a DefiLlama DEX overview");
+      const t24 = +j.total24h, t48 = +j.total48hto24h, t7 = +j.total7d, t14 = +j.total14dto7d;
+      return { format: "omega-llama-dex-v1", total24h: t24, prev24h: finite(t48) ? t48 : NaN, total7d: finite(t7) ? t7 : NaN, chg1d: finite(t48) && t48 > 0 ? (t24 / t48 - 1) * 100 : NaN, chg7d: finite(t7) && finite(t14) && t14 > 0 ? (t7 / t14 - 1) * 100 : NaN,
+        top: (Array.isArray(j.protocols) ? j.protocols : []).filter(p => p && finite(+p.total24h)).sort((a, b) => b.total24h - a.total24h).slice(0, 5).map(p => ({ name: String(p.displayName || p.name || "").slice(0, 30), v: +p.total24h })) };
+    },
+    llamaSet(list) {
+      if (!Array.isArray(list) || list.length !== 3) throw new Error("DefiLlama set needs 3 answers");
+      const set = { format: "omega-llama-v1", stable: shape.llamaStable(list[0]), chains: shape.llamaChains(list[1]), dex: shape.llamaDex(list[2]) };
+      return { ...set, lfi: lfi(set).score };
+    },
+    // CIRCL Vulnerability-Lookup "last" feed: a list mixing CVE JSON 5 records and OSV advisories (PYSEC, GHSA, ...).
+    // Each is cut to id, aliases, dates, title, CVSS base score (published score, else computed from the vector),
+    // CWE, vendor and product, and whether a reference is marked as an exploit.
+    circl(j) {
+      const list = Array.isArray(j) ? j : j && Array.isArray(j.data) ? j.data : null;
+      if (!list) throw new Error("not a CIRCL list");
+      const out = [];
+      for (const r of list) {
+        if (!r || typeof r !== "object") continue;
+        const meta = r.cveMetadata || {}, cna = r.containers && r.containers.cna || {}, adp = r.containers && Array.isArray(r.containers.adp) ? r.containers.adp : [];
+        const id = String(meta.cveId || r.id || "").slice(0, 40);
+        if (!id) continue;
+        const scores = [];
+        for (const m of [cna, ...adp].flatMap(c => Array.isArray(c.metrics) ? c.metrics : [])) for (const k of ["cvssV4_0", "cvssV3_1", "cvssV3_0"]) if (m && m[k] && finite(+m[k].baseScore)) scores.push(+m[k].baseScore);
+        for (const s of Array.isArray(r.severity) ? r.severity : []) { const v = cvss3(s && s.score); if (finite(v)) scores.push(v); }
+        const desc = (Array.isArray(cna.descriptions) ? cna.descriptions : []).find(d => d && /^en/i.test(String(d.lang || ""))) || {};
+        const cwe = (((cna.problemTypes || [])[0] || {}).descriptions || []).map(d => String(d.cweId || "")).find(Boolean) || ((Array.isArray(r.database_specific && r.database_specific.cwe_ids) ? r.database_specific.cwe_ids[0] : "") || "");
+        const af = Array.isArray(r.affected) ? r.affected[0] || {} : Array.isArray(cna.affected) ? cna.affected[0] || {} : {}, pkg = af.package || {};
+        const refs = [...(Array.isArray(r.references) ? r.references : []), ...(Array.isArray(cna.references) ? cna.references : [])];
+        out.push({ id, aliases: (Array.isArray(r.aliases) ? r.aliases : []).map(String).filter(a => /^CVE-\d{4}-\d+$/.test(a)).slice(0, 4),
+          published: String(meta.datePublished || r.published || "").slice(0, 25), title: String(cna.title || desc.value || r.summary || r.details || "").replace(/\s+/g, " ").trim().slice(0, 160),
+          cvss: scores.length ? Math.max(...scores) : NaN, cwe: String(cwe).slice(0, 12), vendor: String(af.vendor || pkg.ecosystem || "").slice(0, 40), product: String(af.product || pkg.name || "").slice(0, 60),
+          osv: !!pkg.ecosystem, poc: refs.some(x => x && (String(x.type || "").toUpperCase() === "EXPLOIT" || (Array.isArray(x.tags) && x.tags.some(t => /exploit/i.test(String(t)))))) });
+        if (out.length >= 60) break;
+      }
+      if (!out.length) throw new Error("empty CIRCL list");
+      return { format: "omega-circl-v1", source: "CIRCL Vulnerability-Lookup", items: out };
+    },
+    // Open-Meteo Marine for MARINE_POINTS (one answer per point, in order).
+    marine(j) {
+      const arr = Array.isArray(j) ? j : [j];
+      if (arr.length !== MARINE_POINTS.length || !arr.every(x => x && x.current)) throw new Error("not a marine answer for the five straits");
+      const n = v => finite(+v) && v !== null ? +v : NaN;
+      return { format: "omega-marine-v1", source: "Open-Meteo Marine (CC BY 4.0)", at: String(arr[0].current.time || ""), points: arr.map((x, i) => {
+        const c = x.current, cur = n(c.ocean_current_velocity);
+        return { key: MARINE_POINTS[i].key, en: MARINE_POINTS[i].en, lat: n(x.latitude), lon: n(x.longitude), hs: n(c.wave_height), dir: n(c.wave_direction), period: n(c.wave_period), swell: n(c.swell_wave_height),
+          cur, curKn: finite(cur) ? cur / 1.852 : NaN, curDir: n(c.ocean_current_direction), sst: n(c.sea_surface_temperature),
+          hourly: x.hourly && Array.isArray(x.hourly.wave_height) ? x.hourly.wave_height.slice(0, 24).map(v => finite(+v) && v !== null ? +v : null) : [] };
+      }) };
     }
   };
   // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
@@ -841,8 +1016,15 @@ export const OMEGA_MATH = (() => {
     // NASA GIBS WMTS (EPSG:3857, "best"): VIIRS Black Marble night lights (2016 composite) and the MODIS
     // Terra + Aqua thermal anomalies of the latest day. Keyless; credit "NASA GIBS".
     gibs: (layer, z, x, y) => layer === "night" ? `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/${z}/${y}/${x}.png`
-      : `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Combined_Thermal_Anomalies_All/default/default/GoogleMapsCompatible_Level9/${z}/${y}/${x}.png`
+      : `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Combined_Thermal_Anomalies_All/default/default/GoogleMapsCompatible_Level9/${z}/${y}/${x}.png`,
+    // ADR-112. DefiLlama (keyless): stablecoin supply, chain TVL and the DEX volume overview without its charts.
+    llama: () => ["https://stablecoins.llama.fi/stablecoins?includePrices=true", "https://api.llama.fi/v2/chains", "https://api.llama.fi/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true"],
+    // CIRCL Vulnerability-Lookup (keyless): the most recently published records.
+    circl: () => "https://vulnerability.circl.lu/api/last",
+    // Open-Meteo Marine (keyless): current sea state and today's hourly wave height at the five strait points.
+    marine: () => "https://marine-api.open-meteo.com/v1/marine?latitude=" + MARINE_POINTS.map(p => p.lat).join(",") + "&longitude=" + MARINE_POINTS.map(p => p.lon).join(",")
+      + "&current=wave_height,wave_direction,wave_period,swell_wave_height,ocean_current_velocity,ocean_current_direction,sea_surface_temperature&hourly=wave_height&forecast_days=1&cell_selection=sea&timezone=UTC"
   };
 
-  return Object.freeze({ shape, urls, RIPE_ASNS, RIS_WATCH, INTERNETDB_HOSTS, AIR_ZONES, AIR_RADIUS_NM, SQUAWKS, risSummary, risSubscribe, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+  return Object.freeze({ shape, urls, RIPE_ASNS, RIS_WATCH, INTERNETDB_HOSTS, AIR_ZONES, AIR_RADIUS_NM, SQUAWKS, MARINE_POINTS, lfi, cvss3, priorityLevel, mispTags, circlSummary, seaState, risSummary, risSubscribe, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
 })();

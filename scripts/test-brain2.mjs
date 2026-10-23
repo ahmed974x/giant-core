@@ -1,5 +1,6 @@
 // Tests for the Brain 2 maths (scripts/lib/brain2-math.mjs, ADR-108), the neural flow and the source fallbacks
-// (ADR-109), the continuous-time flow and the cyber and air sources (ADR-110) and the Ops Room's inline copy.
+// (ADR-109), the continuous-time flow and the cyber and air sources (ADR-110), the DefiLlama liquidity index, CIRCL
+// records with MISP tags and the strait sea state (ADR-112) and the Ops Room's inline copy.
 //   node scripts/test-brain2.mjs        exits 0 when every test passes
 // No network, no dependencies. CI runs it in the skillspector workflow.
 import { spawnSync } from "node:child_process";
@@ -188,9 +189,9 @@ test("Shocks shorten τ, with a floor, and fade over 30 s", () => {
   near(later, 3 * Math.exp(-3), 1e-12, "shock after 90 s");
   ok(M.nn.odeTau(6, 0, 0) > M.nn.odeTau(1, 0, 0) * 2, "deeper layers are slower");
 });
-test("CSTI takes the three ADR-110 parts and reports seven possible", () => {
+test("CSTI takes the three ADR-110 parts and reports eight possible", () => {
   const c = M.csti({ kp: 9, infocon: 3, ris: 40, exposed: 1 });
-  ok(c.coverage === 4 && c.of === 7, JSON.stringify(c));
+  ok(c.coverage === 4 && c.of === 8, JSON.stringify(c));
   near(c.score, (100 + 100 + 40 + 25) / 4, 1e-9, "mean of the parts");
   ok(M.shape.infocon("Orange\n").level === 2 && M.shape.infocon({ status: "green" }).level === 0, "InfoCON levels");
   let threw = false; try { M.shape.infocon({ status: "purple" }); } catch { threw = true; }
@@ -221,13 +222,76 @@ test("InternetDB and adsb.lol shapes", () => {
   ok(s.zones.length === 6 && s.zones[0].n === 2 && s.zones[0].emerg === 1 && s.zones[5].key === "taiwan", JSON.stringify(s.zones[0]));
   ok(/\/v2\/point\/26\.57\/56\.25\/150$/.test(M.urls.adsbZone("hormuz")) && M.urls.adsbZone("nowhere") === "", "zone URLs");
 });
+// ---- ADR-112: DefiLlama liquidity flow, CIRCL with MISP tags, sea state ----
+const llamaFix = () => [
+  { peggedAssets: [
+    { symbol: "USDT", name: "Tether", pegType: "peggedUSD", pegMechanism: "fiat-backed", circulating: { peggedUSD: 101e9 }, circulatingPrevDay: { peggedUSD: 100e9 }, circulatingPrevWeek: { peggedUSD: 98e9 }, circulatingPrevMonth: { peggedUSD: 95e9 }, price: 1.0002 },
+    { symbol: "USDC", name: "USD Coin", pegType: "peggedUSD", pegMechanism: "fiat-backed", circulating: { peggedUSD: 50e9 }, circulatingPrevDay: { peggedUSD: 50e9 }, circulatingPrevWeek: { peggedUSD: 50e9 }, circulatingPrevMonth: { peggedUSD: 49e9 }, price: 0.97 },
+    { symbol: "EURC", name: "Euro Coin", pegType: "peggedEUR", circulating: { peggedEUR: 1e8 }, price: 1.08 },
+    { symbol: "TINY", name: "Tiny", pegType: "peggedUSD", circulating: { peggedUSD: 5e6 }, circulatingPrevDay: { peggedUSD: 5e6 }, circulatingPrevWeek: { peggedUSD: 5e6 }, circulatingPrevMonth: { peggedUSD: 5e6 }, price: 0.5 }] },
+  [{ name: "Ethereum", tvl: 60e9 }, { name: "Solana", tvl: 10e9 }, { name: "Dead", tvl: 0 }, { name: "Tron", tvl: 30e9 }],
+  { total24h: 12e9, total48hto24h: 10e9, total7d: 70e9, total14dto7d: 56e9, protocols: [{ name: "a", displayName: "Uniswap", total24h: 3e9 }, { name: "b", total24h: 4e9 }] }
+];
+test("DefiLlama shapes and the liquidity flow index", () => {
+  const set = M.shape.llamaSet(llamaFix());
+  ok(set.format === "omega-llama-v1" && set.stable.coins === 3 && set.stable.total === 151e9 + 5e6, JSON.stringify(set.stable));
+  near(set.stable.pct1, (151.005 / 150.005 - 1) * 100, 1e-9, "1-day supply change");
+  ok(set.stable.depeg.symbol === "USDC" && Math.abs(set.stable.depeg.bps + 300) < 1e-6, "largest peg gap among $1 bn coins (TINY is ignored)");
+  ok(set.chains.chains === 3 && set.chains.top[0].name === "Ethereum" && Math.abs(set.chains.top[0].share - 0.6) < 1e-12, "chains sorted, zero TVL dropped");
+  ok(Math.abs(set.dex.chg1d - 20) < 1e-9 && Math.abs(set.dex.chg7d - 25) < 1e-9 && set.dex.top[0].name === "b", "DEX change and leaders");
+  const L = M.lfi(set), a = Math.min(1, set.stable.pct1 / 0.5), b = Math.min(1, set.stable.pct7 / 2);
+  near(L.score, 100 * (0.35 * a + 0.30 * b + 0.20 * 0.8 + 0.15 * -1), 1e-9, "weighted index");
+  ok(L.coverage === 4 && L.of === 4 && Math.abs(set.lfi - L.score) < 1e-12, "coverage and set value");
+  const only = M.lfi({ dex: { chg1d: -50 } });
+  ok(only.coverage === 1 && only.score === -100 && only.regime === "outflow", "renormalised over the parts it has");
+  ok(Number.isNaN(M.lfi({}).score), "no data, no index");
+  let threw = false; try { M.shape.llamaStable({ foo: 1 }); } catch { threw = true; }
+  ok(threw, "foreign input must throw");
+});
+test("CVSS 3.x base scores match the FIRST reference vectors", () => {
+  ok(M.cvss3("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H") === 9.8, "critical RCE");
+  ok(M.cvss3("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H") === 10, "scope changed");
+  ok(M.cvss3("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N") === 6.1, "reflected XSS");
+  ok(M.cvss3("CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N") === 5.5, "local read");
+  ok(M.cvss3("CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:N/I:N/A:N") === 0, "no impact");
+  ok(Number.isNaN(M.cvss3("CVSS:4.0/AV:N")) && Number.isNaN(M.cvss3("nonsense")), "other strings give NaN");
+});
+test("CIRCL records get MISP taxonomy tags and a pressure score", () => {
+  const raw = [
+    { id: "PYSEC-2026-1", published: "2026-10-20T10:00:00Z", aliases: ["CVE-2026-1111", "GHSA-xxxx"], details: "Path traversal", affected: [{ package: { ecosystem: "PyPI", name: "pkg" } }], severity: [{ type: "CVSS_V3", score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" }], references: [{ type: "EXPLOIT", url: "https://example.org" }] },
+    { cveMetadata: { cveId: "CVE-2026-2222", datePublished: "2026-10-21T00:00:00Z" }, containers: { cna: { title: "Info leak", descriptions: [{ lang: "en", value: "x" }], problemTypes: [{ descriptions: [{ cweId: "CWE-200" }] }], affected: [{ vendor: "Acme", product: "Router" }], metrics: [{ cvssV3_1: { baseScore: 7.5 } }] }, adp: [{ metrics: [{ cvssV3_1: { baseScore: 7.1 } }] }] } },
+    { cveMetadata: { cveId: "CVE-2026-3333" }, containers: { cna: { title: "No score yet" } } }
+  ];
+  const set = M.shape.circl(raw);
+  ok(set.items.length === 3 && set.items[0].id === "PYSEC-2026-1" && set.items[0].cvss === 9.8 && set.items[0].osv && set.items[0].poc, JSON.stringify(set.items[0]));
+  ok(set.items[1].cvss === 7.5 && set.items[1].cwe === "CWE-200" && set.items[1].vendor === "Acme", JSON.stringify(set.items[1]));
+  const s = M.circlSummary(set, new Set(["CVE-2026-1111"]));
+  const t0 = s.items[0].tags, t1 = s.items[1].tags, t2 = s.items[2].tags;
+  ok(t0.includes("priority-level:emergency") && t0.includes('vulnerability:sighting="exploited"') && t0.includes('rsit:intrusion-attempts="exploit"') && t0.includes('vulnerability:information="PoC"') && t0.includes('vulnerability:origin="software"'), t0.join(" "));
+  ok(t1.includes("priority-level:high") && t1.includes('rsit:vulnerable="information-disclosure"') && !t1.includes('vulnerability:sighting="exploited"'), t1.join(" "));
+  ok(t2[0] === "priority-level:baseline-minor" && t2.includes('rsit:vulnerable="vulnerable-system"'), t2.join(" "));
+  ok(s.critical === 1 && s.high === 1 && s.exploited === 1 && s.pressure === 10 + 2 + 25 && s.scored === 2, JSON.stringify({ ...s, items: 0 }));
+  const c = M.csti({ circl: s.pressure });
+  ok(c.coverage === 1 && c.of === 8 && c.parts[0].k === "circl" && c.score === 37, "CSTI eighth part");
+});
+test("Marine shape and sea state at the five straits", () => {
+  const pt = (hs, cur) => ({ latitude: 1, longitude: 2, current: { time: "2026-10-23T11:00", wave_height: hs, wave_direction: 90, wave_period: 6, swell_wave_height: 0.4, ocean_current_velocity: cur, ocean_current_direction: 45, sea_surface_temperature: 29 }, hourly: { wave_height: [hs, null, hs] } });
+  const m = M.shape.marine([pt(1, 1.852), pt(4, 9.26), pt(null, null), pt(0.5, 2), pt(1.2, 3)]);
+  ok(m.points.length === 5 && m.points[1].key === "bab" && Math.abs(m.points[1].curKn - 5) < 1e-12 && Number.isNaN(m.points[2].hs) && m.points[0].hourly[1] === null, JSON.stringify(m.points[1]));
+  const s = M.seaState(m);
+  ok(s.at === "bab" && s.maxHs === 4 && s.fastAt === "bab" && s.n === 4, JSON.stringify(s));
+  near(s.score, (0.5 + 0.25) * 100, 1e-9, "wave plus current");
+  ok(/marine-api\.open-meteo\.com\/v1\/marine\?latitude=26\.45,12\.6,29\.7,2\.5,8\.75&/.test(M.urls.marine()) && /cell_selection=sea/.test(M.urls.marine()), "marine URL");
+  let threw = false; try { M.shape.marine([pt(1, 1)]); } catch { threw = true; }
+  ok(threw, "an answer for fewer than five points must throw");
+});
 test("Ops Room inline copy matches the library", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-brain2-inline.mjs"), "--check"], { encoding: "utf8" });
   ok(r.status === 0, (r.stdout + r.stderr).trim() || "parity check failed");
 });
 test("MCP bridge loads and lists its tools", () => {
   const r = spawnSync(process.execPath, [join(HERE, "omega-mcp-bridge.mjs"), "--list"], { encoding: "utf8" });
-  ok(r.status === 0 && r.stdout.trim().split("\n").length === 8, (r.stdout + r.stderr).trim());
+  ok(r.status === 0 && r.stdout.trim().split("\n").length === 9, (r.stdout + r.stderr).trim());
 });
 
 console.log(`${passed} passed, ${failed} failed`);

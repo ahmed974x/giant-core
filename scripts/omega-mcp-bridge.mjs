@@ -13,6 +13,9 @@
 // Read only and paper only. No tool here signs or sends an order, holds a key, moves money or writes a file.
 // lock_base_and_sweep only computes the paper sweep; the sweep itself is the S key in the Ops Room.
 // verify_sha256_receipt_chain reads one local .json file the user names. Logs go to stderr, never stdout.
+// ADR-112: query_osiris_intel adds the layers liquidity (DefiLlama flow index), vulns (CIRCL records with MISP
+// tags) and sea (Open-Meteo Marine at the five straits); explain_with_local_model hands a list of readings to a
+// local Ollama model through the data proxy (which refuses :cloud models) and returns its explanation, labelled.
 import { readFileSync, statSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, resolve, dirname, extname } from "node:path";
@@ -96,6 +99,9 @@ const SRC = {
     ["snapshot", async () => { const s = await fromSnapshot("premium"); const p = (s.data.items || []).find(x => x.symbol === sym); if (!p) throw new Error(sym + " not in the snapshot"); return { ...s, data: p }; }]]),
   depth: sym => cascade([["proxy", viaProxy("/market/depth/" + sym)], ["direct", direct(`https://data-api.binance.vision/api/v3/depth?symbol=${sym}&limit=100`, j => j)]]),
   trades: sym => cascade([["proxy", viaProxy("/market/trades/" + sym)], ["direct", direct(`https://data-api.binance.vision/api/v3/aggTrades?symbol=${sym}&limit=300`, j => j)]]),
+  llama: () => cascade([["proxy", viaProxy("/market/llama")], ["direct", async () => { const l = []; for (const u of M.urls.llama()) l.push(await get(u, 30000)); return { data: M.shape.llamaSet(l) }; }], ["snapshot", snap("llama")]]),
+  circl: () => cascade([["proxy", viaProxy("/cyber/circl")], ["direct", direct(M.urls.circl(), M.shape.circl)], ["snapshot", snap("circl")]]),
+  marine: () => cascade([["proxy", viaProxy("/osiris/marine")], ["direct", direct(M.urls.marine(), M.shape.marine)], ["snapshot", snap("marine")]]),
   klines: sym => cascade([["direct", direct(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1m&limit=240`, j => j)]])
 };
 const meta = (x, name) => ({ source: name, tier: x.error ? "offline" : x.tier, fetched: x.error ? null : iso(x.at), ...(x.error ? { error: x.error, tried: x.tried } : {}) });
@@ -297,7 +303,7 @@ async function selftest() {
   await check("Cyber & space feeds", async () => { const c = await cyberSpace(); if (!Number.isFinite(c.csti.score)) throw new Error("no CSTI part answered"); return `CSTI ${c.csti.score} from ${c.csti.coverage}`; });
   await check("Binance public book", async () => { const s = await sonar({ symbol: "BTCUSDT" }); if (!Number.isFinite(s.mid)) throw new Error(s.error || "no book"); return `mid ${s.mid} · ${s.book.tier}`; });
   const passed = out.filter(x => x.ok).length;
-  return { passed, total: out.length, results: out, browser_selftest: `${PROXY}/omega-ops-room.html?selftest=1`, note: "The Ops Room's own 18 checks need the browser: open browser_selftest, or press the shield button. Checks that need live data fail honestly when a source is offline." };
+  return { passed, total: out.length, results: out, browser_selftest: `${PROXY}/omega-ops-room.html?selftest=1`, note: "The Ops Room's own 24 checks need the browser: open browser_selftest, or press the shield button. Checks that need live data fail honestly when a source is offline." };
 }
 
 /* ---------------- MCP plumbing ---------------- */
@@ -305,12 +311,13 @@ const SYM_ARG = { symbol: { type: "string", description: "Binance spot symbol, f
 const TOOLS = [
   { name: "get_live_pwsi", description: "Planetary War & Stress Index (0-100) with each component, its source, tier and fetch time, the cyber & space threat index (CSTI) and whether the risk judge's kill switch (70) is tripped. [INFERENCE]", inputSchema: { type: "object", properties: {}, additionalProperties: false }, run: pwsi },
   { name: "get_whale_sonar_state", description: "Whale sonar for one symbol from Binance public depth: mid, microprice and its gap, spread, top-25 imbalance, book entropy, the three largest walls per side, iceberg candidates and Kyle's lambda. Read only.", inputSchema: { type: "object", properties: SYM_ARG, additionalProperties: false }, run: sonar },
-  { name: "query_osiris_intel", description: "OSIRIS public intel by layer: space (Kp, ISS position from CelesTrak), cyber (CISA KEV, RIPEstat backbones, IODA outages), events (NASA EONET), straits (NGA warnings per chokepoint), quakes (USGS). Each with source, tier and fetch time.", inputSchema: { type: "object", properties: { layer: { type: "string", enum: ["space", "cyber", "events", "straits", "quakes", "all"], description: "which layer (default all)" } }, additionalProperties: false }, run: osiris },
+  { name: "query_osiris_intel", description: "OSIRIS public intel by layer: space (Kp, ISS position from CelesTrak), cyber (CISA KEV, RIPEstat backbones, IODA outages), events (NASA EONET), straits (NGA warnings per chokepoint), quakes (USGS), liquidity (DefiLlama stablecoin flow index), vulns (CIRCL records with MISP tags), sea (waves and currents at the five straits). Each with source, tier and fetch time.", inputSchema: { type: "object", properties: { layer: { type: "string", enum: ["space", "cyber", "events", "straits", "quakes", "liquidity", "vulns", "sea", "all"], description: "which layer (default all)" } }, additionalProperties: false }, run: osiris },
   { name: "query_quant_spiderweb", description: "Brain 2 quant readings for one symbol: Kalman latent price, BOCPD regime-change probability, order-book stats, Deribit dealer gamma, DVOL and 25-delta risk reversal (BTC), perpetual funding and basis with the crowded-trade flag. [INFERENCE - Quant Model]", inputSchema: { type: "object", properties: SYM_ARG, additionalProperties: false }, run: quant },
   { name: "run_6_agent_court", description: "Six rule-based voices (Bull, Bear, Researcher, Modeler, Auditor, Judge) over the quant readings and PWSI, each with its reasons, and the judge's BUY / SELL / HOLD. A paper decision aid that opens nothing. [INFERENCE]", inputSchema: { type: "object", properties: SYM_ARG, additionalProperties: false }, run: court },
   { name: "lock_base_and_sweep", description: "Computes the paper profit sweep max(0, NetEquity - LockedBase). It cannot touch the browser wallet; the sweep itself is the S key in the Ops Room.", inputSchema: { type: "object", properties: { net_equity: { type: "number", minimum: 0, description: "paper net equity in USDT" }, locked_base: { type: "number", minimum: 0, description: "locked base in USDT (default 20)" } }, required: ["net_equity"], additionalProperties: false }, run: sweep },
   { name: "verify_sha256_receipt_chain", description: "Verifies an exported omega-receipt-chain-v1 file (receipts and Merkle checkpoints) with the same canonical SHA-256 form as the Ops Room and NABD verifiers. Give a path to the .json export or its text.", inputSchema: { type: "object", properties: { path: { type: "string", description: "path to the exported .json file" }, json: { type: "string", description: "the file's text, instead of a path" } }, additionalProperties: false }, run: verifyTool },
-  { name: "run_selftest", description: "Runs the bridge's own checks (maths, receipt chain, proxy, snapshot, feeds) and returns the link to the Ops Room's 18-check browser self-test.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, run: selftest }
+  { name: "explain_with_local_model", description: "Sends a list of readings (each with its source) to a local Ollama model through the data proxy and returns its Arabic explanation labelled [INFERENCE - local LLM]. Local models only (a :cloud model is refused); nothing is traded or sent elsewhere.", inputSchema: { type: "object", properties: { facts: { type: "array", items: { type: "string", maxLength: 300 }, minItems: 1, maxItems: 40, description: "readings with their sources, for example \"LFI +32 (DefiLlama)\"" }, question: { type: "string", maxLength: 300 } }, required: ["facts"], additionalProperties: false }, run: explainLocal },
+  { name: "run_selftest", description: "Runs the bridge's own checks (maths, receipt chain, proxy, snapshot, feeds) and returns the link to the Ops Room's 24-check browser self-test.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, run: selftest }
 ];
 async function osiris(a) {
   const layer = (a && a.layer) || "all", want = k => layer === "all" || layer === k, out = { layer };
@@ -325,8 +332,36 @@ async function osiris(a) {
   if (want("events")) jobs.push(SRC.eonet().then(e => { out.events = e.error ? meta(e, "NASA EONET") : { open: asShape("omega-eonet-v1", M.shape.eonet)(e.data).events.slice(0, 20), ...meta(e, "NASA EONET") }; }));
   if (want("straits")) jobs.push(SRC.nga().then(n => { out.straits = n.error ? meta(n, "NGA MSI") : { straits: (n.data.straits || []).map(s => ({ strait: s.en, warnings: (s.warnings || []).map(w => ({ id: w.id, issued: w.issued, text: String(w.text || "").slice(0, 240) })) })), ...meta(n, "NGA Maritime Safety Information") }; }));
   if (want("quakes")) jobs.push(SRC.usgs().then(q => { out.quakes = q.error ? meta(q, "USGS") : { top: (q.data.features || []).map(f => f.properties).filter(p => p && Number.isFinite(p.mag)).sort((x, y) => y.mag - x.mag).slice(0, 10).map(p => ({ mag: p.mag, place: p.place, time: iso(p.time), url: p.url })), ...meta(q, "USGS M2.5+ past day") }; }));
+  // ADR-112
+  if (want("liquidity")) jobs.push(SRC.llama().then(x => {
+    if (x.error) { out.liquidity = meta(x, "DefiLlama"); return; }
+    const d = x.data, L = M.lfi(d);
+    out.liquidity = { lfi: r(L.score, 1), regime: L.regime, coverage: `${L.coverage} of ${L.of} parts`, parts: L.parts.map(p => ({ part: p.k, weight: p.w, value: r(p.v, 3), why: p.why })), stablecoins_usd: r(d.stable.total, 0), change_1d_pct: r(d.stable.pct1, 3), change_7d_pct: r(d.stable.pct7, 2),
+      largest_peg_gap: d.stable.depeg, dex_24h_usd: r(d.dex.total24h, 0), dex_change_1d_pct: r(d.dex.chg1d, 1), chains_tvl_usd: r(d.chains.total, 0), top_chains: d.chains.top.slice(0, 5), label: "[INFERENCE] fixed heuristic, not a forecast", ...meta(x, "DefiLlama stablecoins, chains and DEX overview") };
+  }));
+  if (want("vulns")) jobs.push(Promise.all([SRC.circl(), SRC.kev()]).then(([c, k]) => {
+    if (c.error) { out.vulns = meta(c, "CIRCL Vulnerability-Lookup"); return; }
+    const K = k.error ? null : asShape("omega-kev-v1", j => M.shape.kev(j, Date.now()))(k.data), s = M.circlSummary(asShape("omega-circl-v1", M.shape.circl)(c.data), new Set(K ? K.recent.map(x => x.cve) : []));
+    out.vulns = { records: s.n, critical: s.critical, high: s.high, in_kev_30d: s.exploited, pressure: s.pressure, priority: s.priority, kev_checked: !!K,
+      latest: s.items.slice(0, 10).map(v => ({ id: v.id, cvss: r(v.cvss, 1), title: v.title, published: v.published, misp: v.tags })), label: "MISP tags by fixed rules [INFERENCE]", ...meta(c, "CIRCL Vulnerability-Lookup") };
+  }));
+  if (want("sea")) jobs.push(SRC.marine().then(x => {
+    if (x.error) { out.sea = meta(x, "Open-Meteo Marine"); return; }
+    const m = asShape("omega-marine-v1", M.shape.marine)(x.data), s = M.seaState(m);
+    out.sea = { score: r(s.score, 0), highest_wave_m: r(s.maxHs, 2), at: s.at, fastest_current_kn: r(s.maxKn, 2), points: m.points.map(p => ({ strait: p.en, wave_m: r(p.hs, 2), period_s: r(p.period, 1), swell_m: r(p.swell, 2), current_kn: r(p.curKn, 2), current_dir: r(p.curDir, 0), sst_c: r(p.sst, 1) })), label: "[INFERENCE] sea-state rule", ...meta(x, "Open-Meteo Marine (CC BY 4.0)") };
+  }));
   await Promise.all(jobs);
   return out;
+}
+// ADR-112: the proxy holds the Ollama rules (local models only, fixed instruction); the bridge only forwards.
+async function explainLocal(a) {
+  const facts = (Array.isArray(a && a.facts) ? a.facts : []).map(String).filter(Boolean).slice(0, 40);
+  if (!facts.length) throw new Error("give at least one reading in facts");
+  if (!(await proxyUp())) throw new Error("the data proxy is not running; start it with start-omega.bat, then start Ollama");
+  const res = await fetch(PROXY + "/llm/ollama/explain", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ facts, question: a.question ? String(a.question).slice(0, 300) : undefined }), signal: AbortSignal.timeout(130000) });
+  const j = await res.json().catch(() => ({ error: "no JSON from the proxy" }));
+  if (!res.ok || !j.ok) throw new Error(j.error || "local model failed");
+  return { model: j.model, ms: j.ms, answer: j.answer, label: j.label, note: PAPER };
 }
 
 function send(msg) { process.stdout.write(JSON.stringify(msg) + "\n"); }

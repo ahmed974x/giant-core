@@ -31,5 +31,8 @@ To update: re-copy the folders from a fresh clone of the source repo named in ea
 | `cyber-space-osint-grid` | OSIRIS cyber, space and air sources: SANS InfoCON, Shodan InternetDB on four fixed resolvers, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, the 7-part CSTI (ADR-110) |
 | `liquid-neural-139-flow` | The continuous-time dynamics of the 139 → 8 flow: τ table, shocks, Heun solver, settle loop, oscilloscope τ (ADR-110) |
 | `autonomous-24-selftest-gate` | The 24-check browser self-test and the release gate before a PR (ADR-110) |
+| `stablecoin-cyber-vuln-intel` | DefiLlama liquidity flow index, CIRCL Vulnerability-Lookup with MISP taxonomy tags, the 8-part CSTI and the Open-Meteo Marine sea state at the five straits (ADR-112) |
+| `neural-139-inputs-heads` | What enters the 139 inputs, what the 8 heads mean (the $20 base, protected wallet and SHA-256 receipt heads are Director 00 proposals), the frozen oscilloscope and the causal "why" table (ADR-112) |
+| `local-glm-agent-windows-mcp` | The loopback-only Ollama bridge for local GLM models, the MCP explain tool, the launchers and the locked Windows-MCP setup (ADR-112) |
 
 These hold text rules distilled from taste-skill, web-interface-guidelines, agent-skills and awesome-design-md, and (the five ADR-108 skills) written from this repo's own code and the papers they cite; no third-party scripts were copied.

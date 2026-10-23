@@ -5,7 +5,7 @@
 //   OMEGA_SEC_UA="Your Name your@email" node scripts/omega-data-proxy.mjs
 //
 // SEC asks every client to send a User-Agent with a contact (https://www.sec.gov/os/accessing-edgar-data).
-// Routes (GET only):
+// Routes (GET only, except the local model bridge below):
 //   /health                 -> {"ok":true}
 //   /sec/tickers            -> https://www.sec.gov/files/company_tickers.json        (cached 24 h)
 //   /sec/facts/<10-digit>   -> https://data.sec.gov/api/xbrl/companyfacts/CIK<cik>.json (cached 12 h)
@@ -45,6 +45,17 @@
 //   /osiris/adsb/sqk/<7500|7600|7700> -> adsb.lol aircraft squawking an emergency code, worldwide (cached 2 min)
 //   /osiris/adsb/zone/<key> -> adsb.lol aircraft within 150 nm of a strait or the Taiwan Strait   (cached 5 min)
 // RIS Live is a WebSocket the page opens itself (wss://ris-live.ripe.net); the hourly snapshot keeps a sample.
+// Liquidity, vulnerabilities and sea state (ADR-112), keyless:
+//   /market/llama           -> DefiLlama stablecoin supply, chain TVL and DEX volume in one omega-llama-v1 set,
+//                              with the liquidity flow index (cached 15 min)
+//   /cyber/circl            -> CIRCL Vulnerability-Lookup, latest published records cut to id, CVSS, CWE (cached 30 min)
+//   /osiris/marine          -> Open-Meteo Marine waves and currents at the five strait points    (cached 30 min)
+// Local model bridge (ADR-112), optional, this machine only (connections from 127.0.0.1 or ::1):
+//   GET  /llm/ollama/status  -> whether Ollama answers on 127.0.0.1:11434 and which local models it has
+//   POST /llm/ollama/explain -> {facts: [strings], question?} (at most 16 KB) to the chosen local model with a fixed
+//                              instruction: explain the readings in Arabic, paper trading only, no order advice.
+//                              Models whose name ends in :cloud or -cloud are refused, because Ollama runs those on
+//                              its own servers. OMEGA_OLLAMA_MODEL picks one; otherwise the first local "glm" model.
 // Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
 // identical requests in flight share one upstream call; each host keeps a minimum gap between calls
 // (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
@@ -57,7 +68,7 @@
 //   node scripts/omega-data-proxy.mjs --check   test every source once, print the status table and exit
 //   node scripts/omega-data-proxy.mjs --lan     also listen on the home network (0.0.0.0), opt-in only (ADR-094)
 // Env: OMEGA_PROXY_PORT (default 8796), OMEGA_CACHE_DIR (default ~/.omega/cache/data-proxy),
-//      OMEGA_BIND=lan (same as --lan). OMEGA_SEC_UA falls back to the first line of ~/.omega/sec-ua.txt,
+//      OMEGA_BIND=lan (same as --lan), OMEGA_OLLAMA_MODEL (optional, a local Ollama model name). OMEGA_SEC_UA falls back to the first line of ~/.omega/sec-ua.txt,
 //      so the contact never has to sit in git.
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
@@ -139,12 +150,19 @@ const ROUTES = [
   { re: /^\/osiris\/adsb\/zone\/(hormuz|bab|suez|malacca|panama|taiwan)$/, url: m => U.adsbZone(m[1]), ttl: 5 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.adsb(j)) },
   { re: /^\/market\/depth\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/depth?symbol=${m[1]}&limit=100`, ttl: 5000, type: "application/json", sec: false },
   { re: /^\/market\/trades\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/aggTrades?symbol=${m[1]}&limit=300`, ttl: 5000, type: "application/json", sec: false },
+  // ADR-112: three DefiLlama answers in one set, fetched in order (one host gap apart).
+  { re: /^\/market\/llama$/, url: () => U.llama()[0], ttl: HOUR / 4, type: "application/json", sec: false, chain: () => [
+    async r => { const list = []; for (const u of U.llama()) list.push(await upJson(r, u)); return S.llamaSet(list); }
+  ] },
+  { re: /^\/cyber\/circl$/, url: () => U.circl(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.circl(j)) },
+  { re: /^\/osiris\/marine$/, url: () => U.marine(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.marine(j)) },
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
 const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com",
   "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com",
   "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int",
-  "isc.sans.edu", "internetdb.shodan.io", "api.adsb.lol"]);
+  "isc.sans.edu", "internetdb.shodan.io", "api.adsb.lol",
+  "stablecoins.llama.fi", "api.llama.fi", "vulnerability.circl.lu", "marine-api.open-meteo.com"]);
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -182,7 +200,7 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 // CelesTrak blocks clients that ask for the same group more than its update cycle; RIPEstat and IODA get 1 s.
 // SANS asks for light use of its API, adsb.lol for about one request a second (ADR-110).
 const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
-  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000 };
+  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000, "vulnerability.circl.lu": 2000, "api.llama.fi": 1000 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -260,17 +278,87 @@ async function upstream(route, url) {
   } finally { clearTimeout(t); }
 }
 
+// Local model bridge (ADR-112). Ollama listens on this machine only; the address may be changed with OMEGA_OLLAMA_URL
+// but must stay a loopback address. Nothing here reaches the internet: models tagged :cloud run on Ollama's servers
+// and are refused, so a prompt never leaves the laptop through this route.
+const OLLAMA = (() => {
+  const u = (process.env.OMEGA_OLLAMA_URL || "http://127.0.0.1:11434").trim().replace(/\/+$/, "");
+  return /^http:\/\/(127\.0\.0\.1|localhost|\[::1\]):\d{2,5}$/.test(u) ? u : "http://127.0.0.1:11434";
+})();
+const isCloudModel = name => /(:|-)cloud$/i.test(String(name || ""));
+async function ollamaFetch(path, body, ms) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(OLLAMA + path, { signal: ctl.signal, method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined, redirect: "error" });
+    if (!r.ok) throw Object.assign(new Error(`Ollama answered HTTP ${r.status}`), { status: 502 });
+    return await r.json();
+  } catch (e) {
+    if (e.status) throw e;
+    throw Object.assign(new Error(e.name === "AbortError" ? `Ollama gave no answer in ${ms / 1000} s` : "Ollama is not running on " + OLLAMA + " (install it from https://ollama.com, then: ollama pull glm4)"), { status: 503 });
+  } finally { clearTimeout(t); }
+}
+// Local models only, by name.
+async function ollamaModels() {
+  const j = await ollamaFetch("/api/tags", null, 2500);
+  return (Array.isArray(j.models) ? j.models : []).map(m => String(m.name || m.model || "")).filter(n => n && !isCloudModel(n));
+}
+async function ollamaPick() {
+  const names = await ollamaModels(), want = (process.env.OMEGA_OLLAMA_MODEL || "").trim();
+  if (want) {
+    if (isCloudModel(want)) throw Object.assign(new Error(`${want} runs on Ollama's servers, not this machine; pick a local model`), { status: 400 });
+    if (!names.includes(want)) throw Object.assign(new Error(`${want} is not pulled yet: run  ollama pull ${want}`), { status: 503 });
+    return { model: want, names };
+  }
+  const glm = names.find(n => /^glm/i.test(n));
+  if (!glm && !names.length) throw Object.assign(new Error("Ollama has no local model yet: run  ollama pull glm4  (9B, about 5.5 GB)"), { status: 503 });
+  return { model: glm || names[0], names };
+}
+const LLM_SYSTEM = "You explain readings from OMEGA, a paper-trading research page. Answer in Arabic (Gulf Arabic is fine) in at most 8 short lines. " +
+  "Use only the facts you are given and name the source of each number you use. If a fact is missing, say تعذر التحقق منها. " +
+  "Everything on this page is paper trading and a decision aid: never tell the reader to place a real order, move real money, sign anything or connect an exchange account. " +
+  "End with the label [INFERENCE - local LLM].";
+async function readBody(req, max) {
+  const chunks = [];
+  let n = 0;
+  for await (const c of req) { n += c.length; if (n > max) throw Object.assign(new Error(`body larger than ${max} bytes`), { status: 413 }); chunks.push(c); }
+  return Buffer.concat(chunks).toString("utf8");
+}
+async function llmRoute(req, path) {
+  if (path === "/llm/ollama/status" && req.method === "GET") {
+    try { const p = await ollamaPick(); return { ok: true, url: OLLAMA, model: p.model, models: p.names }; }
+    catch (e) { return { ok: false, url: OLLAMA, error: e.message }; }
+  }
+  if (path === "/llm/ollama/explain" && req.method === "POST") {
+    let q;
+    try { q = JSON.parse(await readBody(req, 16384)); } catch (e) { throw Object.assign(new Error(e.status ? e.message : "send JSON: {\"facts\": [\"...\"], \"question\": \"...\"}"), { status: e.status || 400 }); }
+    const facts = (Array.isArray(q && q.facts) ? q.facts : []).map(f => String(f).replace(/\s+/g, " ").slice(0, 300)).filter(Boolean).slice(0, 40);
+    if (!facts.length) throw Object.assign(new Error("no facts to explain"), { status: 400 });
+    const question = String(q.question || "Explain what these readings say together and what the paper desk should watch next.").slice(0, 300);
+    const { model } = await ollamaPick(), t0 = Date.now();
+    const j = await ollamaFetch("/api/generate", { model, system: LLM_SYSTEM, prompt: "Facts:\n- " + facts.join("\n- ") + "\n\nQuestion: " + question, stream: false, options: { temperature: 0.2, num_predict: 500 } }, 120000);
+    return { ok: true, model, ms: Date.now() - t0, answer: String(j.response || "").slice(0, 4000), label: "[INFERENCE - local LLM]", facts: facts.length };
+  }
+  return null;
+}
+const loopback = a => ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(String(a || ""));
+
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin, host = String(req.headers.host || "");
   const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
   const okOrigin = localOrigin(origin, host);
   if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true", "Access-Control-Expose-Headers": "X-Omega-Cache, Retry-After" });
   const send = (status, body, type = "application/json") => { res.writeHead(status, { ...headers, "Content-Type": type }); res.end(body); };
-  if (req.method === "OPTIONS") { res.writeHead(204, { ...headers, "Access-Control-Allow-Methods": "GET", "Access-Control-Max-Age": "600" }); return res.end(); }
-  if (req.method !== "GET") return send(405, JSON.stringify({ error: "GET only" }));
+  if (req.method === "OPTIONS") { res.writeHead(204, { ...headers, "Access-Control-Allow-Methods": "GET, POST", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "600" }); return res.end(); }
   if (origin && !okOrigin) return send(403, JSON.stringify({ error: "local pages only" }));
   let path;
   try { path = decodeURIComponent(new URL(req.url, `http://${HOST}`).pathname); } catch { return send(400, JSON.stringify({ error: "bad path" })); }
+  // ADR-112: the local model bridge answers this machine only, even when --lan is on.
+  if (path.startsWith("/llm/")) {
+    if (!loopback(req.socket.remoteAddress)) return send(403, JSON.stringify({ error: "the local model bridge answers this machine only" }));
+    try { const r = await llmRoute(req, path); return r ? send(200, JSON.stringify(r)) : send(404, JSON.stringify({ error: "unknown route" })); }
+    catch (e) { return send(e.status || 502, JSON.stringify({ ok: false, error: e.message })); }
+  }
+  if (req.method !== "GET") return send(405, JSON.stringify({ error: "GET only" }));
   if (path === "/health") return send(200, JSON.stringify({ ok: true, secUserAgent: !!UA }));
   if (path === "/") { res.writeHead(302, { ...headers, Location: "/omega-ops-room-v1/omega-ops-room.html" }); return res.end(); }
   if (SHORT[path]) { const q = new URL(req.url, "http://x").search; res.writeHead(302, { ...headers, Location: SHORT[path] + q }); return res.end(); }
@@ -327,12 +415,18 @@ const PROBES = [
   { name: "adsb.lol (ODbL)", via: "proxy /osiris/adsb", url: OMEGA_MATH.urls.adsbSqk(7700) },
   { name: "RIS Live (WebSocket host)", via: "browser wss", url: "https://ris-live.ripe.net/manual/" },
   { name: "NASA GIBS night lights", via: "browser tiles", url: OMEGA_MATH.urls.gibs("night", 0, 0, 0) },
-  { name: "NASA GIBS thermal anomalies", via: "browser tiles", url: OMEGA_MATH.urls.gibs("heat", 0, 0, 0) }
+  { name: "NASA GIBS thermal anomalies", via: "browser tiles", url: OMEGA_MATH.urls.gibs("heat", 0, 0, 0) },
+  { name: "DefiLlama stablecoins", via: "browser + proxy /market/llama", url: OMEGA_MATH.urls.llama()[0] },
+  { name: "DefiLlama chains and DEX", via: "browser + proxy /market/llama", url: OMEGA_MATH.urls.llama()[1] },
+  { name: "CIRCL Vulnerability-Lookup", via: "proxy /cyber/circl", url: OMEGA_MATH.urls.circl() },
+  { name: "Open-Meteo Marine", via: "browser + proxy /osiris/marine", url: OMEGA_MATH.urls.marine() },
+  { name: "Ollama (optional, this machine)", via: "proxy /llm/ollama", url: OLLAMA + "/api/tags", local: true }
 ];
 const tty = process.stdout.isTTY;
 const paint = (code, t) => tty ? `\x1b[${code}m${t}\x1b[0m` : t;
 async function probe(p) {
   if (p.sec && !UA) return { ...p, ok: null, note: "set OMEGA_SEC_UA to enable" };
+  if (p.local) { const m = await ollamaModels().catch(() => null); return { ...p, ok: m ? true : null, note: m ? `${m.length} local model${m.length === 1 ? "" : "s"}${m.length ? ": " + m.slice(0, 3).join(", ") : ""}` : "not running (optional)" }; }
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000), t0 = Date.now();
   try {
     const r = await fetch(p.url, { signal: ctl.signal, headers: { "User-Agent": UA || "OMEGA local data proxy" }, redirect: "error" });

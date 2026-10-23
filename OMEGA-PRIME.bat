@@ -1,9 +1,12 @@
 @echo off
-rem OMEGA PRIME one-click launcher (ADR-094, ADR-108). Copy this file to the Desktop and double-click it.
+rem OMEGA PRIME one-click launcher (ADR-094, ADR-108, ADR-112). Copy this file to the Desktop and double-click it.
 rem 1. Clones giant-core into %USERPROFILE%\Desktop\OMEGA-PRIME, or pulls the latest main if it is already there.
-rem 2. Starts the local data proxy on 127.0.0.1:8796 in its own window (close that window to stop it).
-rem 3. Waits for the proxy, runs the omega-local-mcp bridge checks, then opens the Ops Room with its 24-check
-rem    self-test (?selftest=1).
+rem 2. The first time, sets up laptop control for Claude Desktop with scripts\setup-windows-mcp.ps1: Windows-MCP
+rem    0.8.8 pinned, stdio only, telemetry off, screen, mouse and keyboard tools only, plus omega-local-mcp. The
+rem    script backs up the Claude Desktop config first and asks before it installs uv.
+rem 3. Starts the local data proxy on 127.0.0.1:8796 in its own window (close that window to stop it).
+rem 4. Waits for the proxy, says whether the optional local model (Ollama) answers, runs the omega-local-mcp bridge
+rem    checks, then opens the Ops Room with its 24-check self-test (?selftest=1).
 rem SEC routes read the contact line from %USERPROFILE%\.omega\sec-ua.txt ("Your Name your@email"); no address
 rem lives in this file. Paper only: nothing started here can place an order or move money.
 setlocal
@@ -28,6 +31,16 @@ if not exist "%OMEGA_DIR%\.git" (
 cd /d "%OMEGA_DIR%"
 if not exist "%USERPROFILE%\.omega\sec-ua.txt" echo SEC filings stay off until %USERPROFILE%\.omega\sec-ua.txt holds "Your Name your@email".
 
+rem Laptop control, once: skipped when Claude Desktop already has the pinned Windows-MCP entry.
+findstr /c:"windows-mcp==0.8.8" "%APPDATA%\Claude\claude_desktop_config.json" >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo Setting up laptop control for Claude Desktop: Windows-MCP 0.8.8 and omega-local-mcp ...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%OMEGA_DIR%\scripts\setup-windows-mcp.ps1" || echo Laptop control setup stopped; OMEGA itself still starts. Run this file again to retry.
+) else (
+  echo Laptop control: Windows-MCP 0.8.8 is already set up for Claude Desktop.
+)
+
 echo Starting the data proxy on 127.0.0.1:%OMEGA_PROXY_PORT% ...
 start "OMEGA data proxy" cmd /k node scripts\omega-data-proxy.mjs
 set /a TRIES=0
@@ -38,6 +51,10 @@ if %TRIES% GEQ 20 (echo The proxy did not answer in 20 s. Read the "OMEGA data p
 timeout /t 1 /nobreak >nul
 goto wait
 :up
+echo.
+echo Local model (optional, Ollama on this computer; GLM-5.2 is cloud-only in Ollama, so use a local GLM such as glm4):
+curl.exe -s http://127.0.0.1:%OMEGA_PROXY_PORT%/llm/ollama/status
+echo.
 echo.
 echo Bridge checks (omega-local-mcp):
 node scripts\omega-mcp-bridge.mjs --selftest

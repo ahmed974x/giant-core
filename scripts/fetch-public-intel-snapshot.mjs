@@ -20,6 +20,10 @@
 // emergency squawks and aircraft counts around the five straits and the Taiwan Strait, and a 25-second sample
 // of RIS Live BGP updates for the watched DNS anycast prefixes (Node's built-in WebSocket, Node 22 or newer).
 //
+// ADR-112 adds the DefiLlama stablecoin, chain and DEX set with its liquidity flow index, the CIRCL
+// Vulnerability-Lookup latest records (tagged with MISP taxonomies in the page, against CISA KEV) and Open-Meteo
+// Marine waves and currents at the five straits. That makes 23 sources.
+//
 // Free and keyless only. No key, cookie or personal data is sent or stored. Exit code is 0 when at least
 // one source answered, 1 when none did (the deploy then publishes the site without a snapshot).
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -110,7 +114,11 @@ const SOURCES = {
   infocon: { name: "SANS Internet Storm Center InfoCON", url: U.infocon(), pick: j => SH.infocon(j), count: () => 1 },
   internetdb: { name: "Shodan InternetDB, four public resolvers (weekly data, non-commercial use)", urls: OMEGA_MATH.INTERNETDB_HOSTS.map(([ip]) => U.internetdb(ip)), pick: list => SH.internetdbSet(list), count: d => d.hosts.length },
   adsb: { name: "adsb.lol (ODbL 1.0): squawk 7700 worldwide, aircraft near the five straits and Taiwan", urls: [U.adsbSqk(7700), ...OMEGA_MATH.AIR_ZONES.map(z => U.adsbZone(z.key))], gapMs: 3000, pick: list => SH.adsbSet(list), count: d => d.zones.reduce((n, z) => n + z.n, 0) },
-  rislive: { name: "RIS Live BGP updates, watched DNS anycast prefixes, 25 s sample", url: U.risLive(), get: () => risSample(25000), count: d => d.messages }
+  rislive: { name: "RIS Live BGP updates, watched DNS anycast prefixes, 25 s sample", url: U.risLive(), get: () => risSample(25000), count: d => d.messages },
+  // ADR-112
+  llama: { name: "DefiLlama stablecoin supply, chain TVL and DEX volume, with the liquidity flow index", urls: U.llama(), gapMs: 1000, pick: list => SH.llamaSet(list), count: d => d.stable.coins },
+  circl: { name: "CIRCL Vulnerability-Lookup, latest published records", url: U.circl(), pick: j => SH.circl(j), count: d => d.items.length },
+  marine: { name: "Open-Meteo Marine (CC BY 4.0), waves and currents at the five straits", url: U.marine(), pick: j => SH.marine(j), count: d => d.points.filter(p => Number.isFinite(p.hs)).length }
 };
 
 // RIS Live: open the stream, subscribe to the watched prefixes, keep every UPDATE for `ms`, then summarise.
