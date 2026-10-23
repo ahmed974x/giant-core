@@ -18,6 +18,9 @@ The Ops Room explains its readings with a model that runs on Ahmad's laptop. The
 - `OMEGA_OLLAMA_URL` must be loopback (`127.0.0.1`, `localhost` or `[::1]`); any other address falls back to `http://127.0.0.1:11434`.
 - `GET /llm/ollama/status`: running or not, the chosen model and the local list.
 - `POST /llm/ollama/explain` with `{facts: [...], question?}`: body at most 16 KB, at most 40 facts, from a loopback socket and an allowed origin only. It calls `/api/generate` with a fixed system prompt (Arabic, paper only, no orders, label every claim [INFERENCE - local LLM]), temperature 0.2, 500 tokens, no streaming.
+- ADR-113 hardening: `/llm/*` refuses `Origin: null` and any origin that is not a loopback page, requires `Content-Type: application/json` (forces a CORS preflight), runs one generation at a time (429 for the rest), cuts a body that stalls for 10 s (408) and stops the Ollama call when the page closes the request.
+- The whole proxy answers only Host names it knows (127.0.0.1, localhost, [::1], and under `--lan` this machine's addresses and `*.ts.net`, plus `OMEGA_ALLOWED_HOSTS`), which blocks DNS rebinding (421).
+- `OMEGA_OLLAMA_MODEL=glm4` matches the listed `glm4:latest`.
 - Every other route stays GET-only. `/llm/` is the one POST path.
 
 ## 3. MCP bridge (`scripts/omega-mcp-bridge.mjs`)
@@ -26,12 +29,12 @@ The Ops Room explains its readings with a model that runs on Ahmad's laptop. The
 
 ## 4. Windows-MCP
 
-- Set up only by `scripts/setup-windows-mcp.ps1`: version 0.8.8, stdio, telemetry off, tools Snapshot, Screenshot, Click, Type, Scroll, Move, Shortcut, Wait and WaitFor. No App, PowerShell, Registry, FileSystem, Process or Clipboard tool. Any other setting needs a new security review.
+- Set up only by `scripts/setup-windows-mcp.ps1`: version 0.8.8, stdio, telemetry off, tools Snapshot, Screenshot, Click, Type, Scroll, Move, Shortcut, Wait and WaitFor. No App, PowerShell, Registry, FileSystem, Process or Clipboard tool. Any other setting needs a new security review. Known residual risk (ADR-113 review): Shortcut plus Type can open the Run box and type a command, so the narrow list is not a hard boundary; `uvx` pins the top package only, not its dependencies.
 - `OMEGA-PRIME.bat` runs the setup script on first start only when the Claude Desktop config has no `windows-mcp==0.8.8` entry; `start-omega.bat` only reports whether it is configured.
 
 ## 5. Launchers
 
-- `OMEGA-PRIME.bat`: pull or clone, Windows-MCP check, start the proxy on 127.0.0.1:8796, wait for `/health`, print the Ollama status, run the bridge self-test, open the Ops Room with `?selftest=1`.
+- `OMEGA-PRIME.bat`: clone, or fetch and list the incoming commits and pull only after a Y within 60 s (ADR-113), Windows-MCP check, start the proxy on 127.0.0.1:8796, wait for `/health`, print the Ollama status, run the bridge self-test, open the Ops Room with `?selftest=1`.
 - `start-omega.bat [selftest]` and `start-omega.sh`: start the proxy, wait for `/health`, print the Ollama status, open the Ops Room.
 - Both bind to 127.0.0.1 unless `--lan` is given, and never print a key.
 

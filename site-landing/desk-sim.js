@@ -129,7 +129,7 @@
     return { rows: rows, events: events, trading: trading, safe: safe, sweeps: sweeps, swept: swept };
   }
 
-  var ledger = [];
+  var ledger = [], runs = 0;
   function setText(id, v) { $(id).textContent = v; }
   function draw(S, base) {
     var svg = $("sChart");
@@ -165,7 +165,7 @@
     var tb = $("sLedger").tBodies[0];
     tb.replaceChildren.apply(tb, ledger.map(function (r) {
       var tr = h("tr");
-      tr.append(h("td", "num", String(r.seq)), h("td", "", r.type), h("td", "num", nf(r.amount)), h("td", "", r.reason), h("td", "num hash", r.hash.slice(0, 16) + "…"));
+      tr.append(h("td", "num", String(r.seq)), h("td", "", r.type), h("td", "num", nf(r.amount)), h("td", "reason", r.reason), h("td", "num hash", r.hash.slice(0, 16) + "…"));
       return tr;
     }));
   }
@@ -191,11 +191,12 @@
       return tr;
     }));
     draw(S, base);
-    ledger = [];
+    // ADR-113: each run builds its own list and shows it only if no newer run started meanwhile.
+    var list = [], token = ++runs;
     var chain = Promise.resolve();
-    S.events.forEach(function (e) { chain = chain.then(function () { return seal(ledger, { ts: new Date().toISOString(), mode: "simulation", type: e.type, amount: e.amount, before: e.before, after: e.after, reason: e.reason }); }); });
-    chain.then(function () { renderLedger(); setText("sLedgerCount", String(ledger.length)); say("sVerifyOut", true, T("سلسلة جديدة جاهزة. اضغط «تحقق» لفحصها.", "New chain ready. Press Verify to check it.")); })
-      .catch(function () { say("sVerifyOut", false, T("المتصفح منع حساب البصمة هنا. افتح الصفحة من https أو من ملف محلي.", "This browser blocks hashing here. Open the page over https or from a local file.")); });
+    S.events.forEach(function (e) { chain = chain.then(function () { return seal(list, { ts: new Date().toISOString(), mode: "simulation", type: e.type, amount: e.amount, before: e.before, after: e.after, reason: e.reason }); }); });
+    chain.then(function () { if (token !== runs) return; ledger = list; renderLedger(); setText("sLedgerCount", String(ledger.length)); say("sVerifyOut", true, T("سلسلة جديدة جاهزة. اضغط «تحقق» لفحصها.", "New chain ready. Press Verify to check it.")); })
+      .catch(function () { if (token === runs) say("sVerifyOut", false, T("تعذّر حساب البصمة. أعد تحميل الصفحة، وإذا تكرر الخطأ جرّب متصفحاً آخر.", "Hashing failed. Reload the page; if it happens again, try another browser.")); });
   }
   function report(r, label) {
     if (r.ok) say("sVerifyOut", true, label + T(": السلسلة سليمة، عدد الإيصالات ", ": chain intact, receipts ") + r.n + (r.folded ? T(" بعد نقاط تحقق تضم ", " after checkpoints holding ") + r.folded : "") + T("، البصمة الأخيرة ", ", tip ") + r.tip.slice(0, 16) + "…");
@@ -218,9 +219,9 @@
     var rd = new FileReader();
     rd.onload = function () {
       var data;
-      try { data = JSON.parse(String(rd.result)); } catch (e) { say("sVerifyOut", false, T("الملف ليس JSON صالحاً", "The file is not valid JSON")); return; }
+      try { data = JSON.parse(String(rd.result)); } catch (e) { say("sVerifyOut", false, T("الملف ليس JSON صالحاً. صدّر السلسلة من غرفة العمليات واختر ذلك الملف.", "The file is not valid JSON. Export the chain from the Ops Room and pick that file.")); return; }
       var list = data && data.format === "omega-receipt-chain-v1" && Array.isArray(data.receipts) ? data.receipts : null;
-      if (!list) { say("sVerifyOut", false, T("الملف ليس سلسلة إيصالات OMEGA", "The file is not an OMEGA receipt chain")); return; }
+      if (!list) { say("sVerifyOut", false, T("الملف ليس سلسلة إيصالات OMEGA (omega-receipt-chain-v1). اختر ملف التصدير من غرفة العمليات.", "The file is not an OMEGA receipt chain (omega-receipt-chain-v1). Pick the export from the Ops Room.")); return; }
       verify(list, Array.isArray(data.checkpoints) ? data.checkpoints : []).then(function (r) { report(r, f.name); });
     };
     rd.readAsText(f);

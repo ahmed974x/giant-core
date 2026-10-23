@@ -247,6 +247,11 @@ test("DefiLlama shapes and the liquidity flow index", () => {
   ok(Number.isNaN(M.lfi({}).score), "no data, no index");
   let threw = false; try { M.shape.llamaStable({ foo: 1 }); } catch { threw = true; }
   ok(threw, "foreign input must throw");
+  // ADR-113: a failed chains or DEX answer leaves that part out; null totals are missing, not $0.
+  const part = M.shape.llamaSet([llamaFix()[0], { error: "internal" }, { error: "internal" }]);
+  ok(part.chains === null && part.dex === null && M.lfi(part).coverage === 3 && Number.isFinite(part.lfi), "stablecoins alone still give the index");
+  const nd = M.shape.llamaDex({ total24h: 5e9, total48hto24h: null, total7d: null });
+  ok(Number.isNaN(nd.prev24h) && Number.isNaN(nd.total7d) && Number.isNaN(nd.chg1d), "null totals stay missing");
 });
 test("CVSS 3.x base scores match the FIRST reference vectors", () => {
   ok(M.cvss3("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H") === 9.8, "critical RCE");
@@ -270,9 +275,9 @@ test("CIRCL records get MISP taxonomy tags and a pressure score", () => {
   ok(t0.includes("priority-level:emergency") && t0.includes('vulnerability:sighting="exploited"') && t0.includes('rsit:intrusion-attempts="exploit"') && t0.includes('vulnerability:information="PoC"') && t0.includes('vulnerability:origin="software"'), t0.join(" "));
   ok(t1.includes("priority-level:high") && t1.includes('rsit:vulnerable="information-disclosure"') && !t1.includes('vulnerability:sighting="exploited"'), t1.join(" "));
   ok(t2[0] === "priority-level:baseline-minor" && t2.includes('rsit:vulnerable="vulnerable-system"'), t2.join(" "));
-  ok(s.critical === 1 && s.high === 1 && s.exploited === 1 && s.pressure === 10 + 2 + 25 && s.scored === 2, JSON.stringify({ ...s, items: 0 }));
+  ok(s.critical === 1 && s.high === 1 && s.exploited === 1 && s.pressure === 25 + 40 * 1 / 2 && s.scored === 2, JSON.stringify({ ...s, items: 0 }));
   const c = M.csti({ circl: s.pressure });
-  ok(c.coverage === 1 && c.of === 8 && c.parts[0].k === "circl" && c.score === 37, "CSTI eighth part");
+  ok(c.coverage === 1 && c.of === 8 && c.parts[0].k === "circl" && c.score === 45, "CSTI eighth part");
 });
 test("Marine shape and sea state at the five straits", () => {
   const pt = (hs, cur) => ({ latitude: 1, longitude: 2, current: { time: "2026-10-23T11:00", wave_height: hs, wave_direction: 90, wave_period: 6, swell_wave_height: 0.4, ocean_current_velocity: cur, ocean_current_direction: 45, sea_surface_temperature: 29 }, hourly: { wave_height: [hs, null, hs] } });
@@ -281,7 +286,7 @@ test("Marine shape and sea state at the five straits", () => {
   const s = M.seaState(m);
   ok(s.at === "bab" && s.maxHs === 4 && s.fastAt === "bab" && s.n === 4, JSON.stringify(s));
   near(s.score, (0.5 + 0.25) * 100, 1e-9, "wave plus current");
-  ok(/marine-api\.open-meteo\.com\/v1\/marine\?latitude=26\.45,12\.6,29\.7,2\.5,8\.75&/.test(M.urls.marine()) && /cell_selection=sea/.test(M.urls.marine()), "marine URL");
+  ok(/marine-api\.open-meteo\.com\/v1\/marine\?latitude=26\.45,12\.6,31\.45,2\.5,8\.75&longitude=56\.45,43\.33,32\.35,101,-79\.5&/.test(M.urls.marine()) && /cell_selection=sea/.test(M.urls.marine()), "marine URL");
   let threw = false; try { M.shape.marine([pt(1, 1)]); } catch { threw = true; }
   ok(threw, "an answer for fewer than five points must throw");
 });

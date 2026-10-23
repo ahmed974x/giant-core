@@ -513,8 +513,9 @@ export const OMEGA_MATH = (() => {
     return t;
   }
   // Summary of the CIRCL records with tags; `kevIds` is the set of CVE ids in the CISA KEV catalogue (may be empty).
-  // Vulnerability pressure, 0-100: 10 per critical record (CVSS ≥ 9), 2 per high one (7 to 8.9), 25 per record
-  // CISA KEV lists as exploited, capped at 100.
+  // Vulnerability pressure, 0-100 (ADR-113): 25 per record CISA KEV lists as exploited, plus 40 × the share of
+  // critical records (CVSS ≥ 9) among those with a score, capped at 100. The feed is the latest 30 records, so a raw
+  // count of critical ones measures the sample size, not the threat: half of a normal day's records are critical.
   function circlSummary(set, kevIds) {
     const kev = kevIds instanceof Set ? kevIds : new Set(Array.isArray(kevIds) ? kevIds : []);
     const items = (set && Array.isArray(set.items) ? set.items : []).map(v => {
@@ -524,7 +525,8 @@ export const OMEGA_MATH = (() => {
     const critical = items.filter(v => v.cvss >= 9).length, high = items.filter(v => v.cvss >= 7 && v.cvss < 9).length, exploited = items.filter(v => v.kev).length;
     const by = {};
     for (const v of items) by[v.priority] = (by[v.priority] || 0) + 1;
-    return { n: items.length, critical, high, exploited, scored: items.filter(v => finite(v.cvss)).length, priority: by, pressure: clamp(critical * 10 + high * 2 + exploited * 25, 0, 100), items };
+    const scored = items.filter(v => finite(v.cvss)).length;
+    return { n: items.length, critical, high, exploited, scored, priority: by, pressure: clamp(exploited * 25 + (scored ? 40 * critical / scored : 0), 0, 100), items };
   }
 
   /* ---------- sea state at the five straits (ADR-112) ---------- */
@@ -532,7 +534,7 @@ export const OMEGA_MATH = (() => {
   // nearest sea grid cell. Currents come in km/h and are also given in knots.
   const MARINE_POINTS = [
     { key: "hormuz", en: "Strait of Hormuz", lat: 26.45, lon: 56.45 }, { key: "bab", en: "Bab el-Mandeb", lat: 12.6, lon: 43.33 },
-    { key: "suez", en: "Suez Canal, Gulf of Suez approach", lat: 29.7, lon: 32.6 }, { key: "malacca", en: "Strait of Malacca", lat: 2.5, lon: 101.0 },
+    { key: "suez", en: "Suez Canal, Port Said approach", lat: 31.45, lon: 32.35 }, { key: "malacca", en: "Strait of Malacca", lat: 2.5, lon: 101.0 },
     { key: "panama", en: "Panama Canal, Pacific approach", lat: 8.75, lon: -79.5 }
   ];
   // Sea-state part for PWSI, 0-100: 0 with every significant wave height at 2 m or less, 100 at 6 m or more;
@@ -939,13 +941,16 @@ export const OMEGA_MATH = (() => {
     // DefiLlama DEX overview (api.llama.fi/overview/dexs): volume of the last 24 h and of the 24 h before.
     llamaDex(j) {
       if (!j || !finite(+j.total24h)) throw new Error("not a DefiLlama DEX overview");
-      const t24 = +j.total24h, t48 = +j.total48hto24h, t7 = +j.total7d, t14 = +j.total14dto7d;
+      const n = v => v == null || v === "" ? NaN : +v; // a null total is missing, not $0
+      const t24 = +j.total24h, t48 = n(j.total48hto24h), t7 = n(j.total7d), t14 = n(j.total14dto7d);
       return { format: "omega-llama-dex-v1", total24h: t24, prev24h: finite(t48) ? t48 : NaN, total7d: finite(t7) ? t7 : NaN, chg1d: finite(t48) && t48 > 0 ? (t24 / t48 - 1) * 100 : NaN, chg7d: finite(t7) && finite(t14) && t14 > 0 ? (t7 / t14 - 1) * 100 : NaN,
         top: (Array.isArray(j.protocols) ? j.protocols : []).filter(p => p && finite(+p.total24h)).sort((a, b) => b.total24h - a.total24h).slice(0, 5).map(p => ({ name: String(p.displayName || p.name || "").slice(0, 30), v: +p.total24h })) };
     },
     llamaSet(list) {
       if (!Array.isArray(list) || list.length !== 3) throw new Error("DefiLlama set needs 3 answers");
-      const set = { format: "omega-llama-v1", stable: shape.llamaStable(list[0]), chains: shape.llamaChains(list[1]), dex: shape.llamaDex(list[2]) };
+      // Stablecoins carry most of the index; a failed chains or DEX answer leaves that part out (ADR-113).
+      const opt = (f, j) => { try { return f(j); } catch { return null; } };
+      const set = { format: "omega-llama-v1", stable: shape.llamaStable(list[0]), chains: opt(shape.llamaChains, list[1]), dex: opt(shape.llamaDex, list[2]) };
       return { ...set, lfi: lfi(set).score };
     },
     // CIRCL Vulnerability-Lookup "last" feed: a list mixing CVE JSON 5 records and OSV advisories (PYSEC, GHSA, ...).
