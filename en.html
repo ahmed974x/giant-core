@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NABD نبض</title>
-  <meta name="description" content="NABD: open research and learning tools for understanding markets, with five AI agents, a made-up-money practice account and plain reporting of what did not work.">
+  <meta name="description" content="NABD: open research and learning tools for understanding markets, with five planned agents, two of them partly working today, a made-up-money practice account and plain reporting of what did not work.">
   <!-- DRAFT (ADR-071, ADR-087): not published. Domain, legal review and waitlist form wait for approval. -->
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#f9fafb">
@@ -44,7 +44,7 @@
   <div class="hero">
     <span class="eyebrow">Draft · not published yet</span>
     <h1>Understand what moves markets, <em>with evidence, not claims.</em></h1>
-    <p>NABD is a research and learning platform built on public, open data, with five AI agents that read the physical world and check every number, plus a practice account in made-up money. We publish what we test, including what failed.</p>
+    <p>NABD is a research and learning platform built on public, open data, with five planned agents, two of them partly working today, plus a practice account in made-up money. We publish what we test, including what failed.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="#agents">Meet the agents</a>
       <a class="btn btn-ghost" href="#tested">What we tested</a>
@@ -56,7 +56,7 @@
       <h2 id="what-h">What works today</h2>
       <p class="lead">This is what actually exists. Nothing here connects to a real trading account.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-2x2">
       <article class="card">
         <span class="status live">Working</span>
         <h3>Practice account</h3>
@@ -94,7 +94,7 @@
       <h2 id="agents-h">Five agents, each with one clear job</h2>
       <p class="lead">Every agent records what it did and why, and passes through check gates before its output touches any number. The status next to each agent is its real state today.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-agents">
       <article class="card">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 15l4-6 4 3 4-7"/></svg></span>
         <span class="status live">Partly working</span>
@@ -155,31 +155,31 @@
     <div class="panel"><div class="grid">
       <article class="card">
         <h3>Sea and sky</h3>
-        <p>Public ship positions, flight traffic, satellites, and NASA satellite fire detections.</p>
+        <p>Public ship positions, flight traffic, approximate satellite orbits from CelesTrak, and NASA FIRMS fire detections.</p>
         <ul class="sources">
-          <li><a href="https://www.digitraffic.fi/en/marine-traffic/" rel="noopener">Digitraffic AIS</a></li>
-          <li><a href="https://aisstream.io/" rel="noopener">AISStream</a></li>
-          <li><a href="https://opensky-network.org/" rel="noopener">OpenSky</a></li>
-          <li><a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener">NASA FIRMS</a></li>
+          <li><a href="https://www.digitraffic.fi/en/marine-traffic/" rel="noopener noreferrer">Digitraffic AIS</a></li>
+          <li><a href="https://adsb.lol/" rel="noopener noreferrer">adsb.lol</a></li>
+          <li><a href="https://opensky-network.org/" rel="noopener noreferrer">OpenSky</a></li>
+          <li><a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener noreferrer">NASA FIRMS</a></li>
         </ul>
       </article>
       <article class="card">
         <h3>Events and disasters</h3>
         <p>Earthquakes, cyclones, humanitarian alerts and the global event database, each event linked to the assets it affects.</p>
         <ul class="sources">
-          <li><a href="https://www.gdeltproject.org/" rel="noopener">GDELT</a></li>
-          <li><a href="https://earthquake.usgs.gov/" rel="noopener">USGS</a></li>
-          <li><a href="https://www.gdacs.org/" rel="noopener">GDACS</a></li>
-          <li><a href="https://www.nhc.noaa.gov/" rel="noopener">NOAA</a></li>
+          <li><a href="https://www.gdeltproject.org/" rel="noopener noreferrer">GDELT</a></li>
+          <li><a href="https://earthquake.usgs.gov/" rel="noopener noreferrer">USGS</a></li>
+          <li><a href="https://www.gdacs.org/" rel="noopener noreferrer">GDACS</a></li>
+          <li><a href="https://www.nhc.noaa.gov/" rel="noopener noreferrer">NOAA</a></li>
         </ul>
       </article>
       <article class="card">
         <h3>Open cameras</h3>
         <p>Still images that government transport agencies publish for anyone, shown as they are with a link to their source. No private feeds and no bypassing of any protection.</p>
         <ul class="sources">
-          <li><a href="https://tfl.gov.uk/traffic/status/" rel="noopener">TfL JamCams</a></li>
-          <li><a href="https://liikennetilanne.fintraffic.fi/" rel="noopener">Fintraffic</a></li>
-          <li><a href="https://umferdin.is/" rel="noopener">Vegagerðin</a></li>
+          <li><a href="https://tfl.gov.uk/traffic/status/" rel="noopener noreferrer">TfL JamCams</a></li>
+          <li><a href="https://liikennetilanne.fintraffic.fi/" rel="noopener noreferrer">Fintraffic</a></li>
+          <li><a href="https://umferdin.is/" rel="noopener noreferrer">Vegagerðin</a></li>
         </ul>
       </article>
     </div></div>
@@ -256,7 +256,7 @@
       <p><strong>Result: failed.</strong> None of the three indicators beat plain volatility. The well-known thresholds (Reynolds above <span class="num">2000</span> or <span class="num">4000</span>) were never reached on any asset, and Lyapunov above zero held on <span class="num">100%</span> of days, even on shuffled random data, so it carries no information.</p>
       <p>The best result was Reynolds* on Bitcoin, so we gave it one last test on <span class="num">2023–2026</span> data with a pass rule fixed before running. It scored <span class="num">AUC 0.329 [0.269, 0.452]</span>, worse than a coin flip. The file is closed, and none of these indicators is wired to any screen.</p>
     </div>
-    <p class="note">Free daily data only, one window per indicator chosen before running. Full numbers and how to reproduce them: <code>physics_lab/results/REPORT.md</code> and decision record ADR-065. The public report link ships with the site.</p>
+    <p class="note">Free daily data only, one window per indicator chosen before running. These results come from a local run whose report is not in the repository yet, so the figures above are unverified until the report is published with its run date.</p>
   </section>
 
   <section id="performance" aria-labelledby="performance-h">
@@ -282,7 +282,7 @@
       </article>
       <article class="card">
         <h3>Worked example</h3>
-        <p>Made-up numbers that explain the formula, not a trading result. The <span class="num">20%</span> rate is assumed for the example.</p>
+        <p>Teaching example, hypothetical numbers, not a trading result. The <span class="num">20%</span> rate is assumed for the example.</p>
         <table class="example">
           <tbody>
             <tr><td>Start, high-water mark</td><td class="num">10,000.00</td></tr>
@@ -291,7 +291,8 @@
             <tr><td>New high-water mark</td><td class="num">10,960.00</td></tr>
             <tr><td>End of period 2 (down)</td><td class="num">10,500.00</td></tr>
             <tr><td>Fee</td><td class="num">0.00</td></tr>
-            <tr><td>End of period 3: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
+            <tr><td>End of period 3</td><td class="num">11,000.00</td></tr>
+            <tr><td>Fee: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
           </tbody>
         </table>
       </article>
@@ -299,7 +300,7 @@
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>
         <span class="status gated">Pending approval</span>
         <h3>Copy-trading portal</h3>
-        <p>The portal design is for display only: an audited performance board from real data, risk limits per copier, and an instant stop. It connects to no account and copies no trade.</p>
+        <p>The portal design is for display only: a performance board that stays empty until an audited record exists, risk limits per copier, and a stop button. It connects to no account and copies no trade.</p>
         <p>Try the <a class="inline-link" href="#calc">profit-split calculator</a> and the <a class="inline-link" href="#safe">locked-base simulator with its receipt ledger</a>. Math simulation only.</p>
       </article>
       <article class="card">
@@ -397,7 +398,7 @@
       <p class="lead">NABD is still being built. Sign-up opens after the legal review.</p>
     </div>
     <div class="hero-actions">
-      <a class="btn btn-gold" role="link" aria-disabled="true">Opening soon</a>
+      <a class="btn btn-ghost" role="link" aria-disabled="true">Closed until legal review</a>
     </div>
   </section>
 </main>

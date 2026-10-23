@@ -4,7 +4,7 @@
 // as the server has it; the cached copy is used only when the network fails. Live data is never cached
 // here: the portal fetches no market data, and requests to other origins pass straight through.
 "use strict";
-const VERSION = "nabd-shell-2026-10-22";
+const VERSION = "nabd-shell-2026-10-23-p16";
 const SHELL = ["index.html", "en.html", "style.css", "vis.js", "suite.js", "calc.js", "desk-sim.js", "pwa.js", "manifest.json", "fonts/cairo-arabic-wght-normal.woff2", "fonts/cairo-latin-wght-normal.woff2", "fonts/jetbrains-mono-latin-wght-normal.woff2", "icons/nabd.svg", "icons/nabd-180.png", "icons/nabd-192.png", "icons/nabd-512.png", "icons/nabd-maskable-512.png"];
 
 self.addEventListener("install", event => {

@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>نبض NABD</title>
-  <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، بخمسة وكلاء ذكاء اصطناعي، وحساب تدريب وهمي، ونشر صريح لما لم ينجح.">
+  <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، بخمسة وكلاء مخطَّطين يعمل اثنان منهم جزئياً اليوم، وحساب تدريب وهمي، ونشر صريح لما لم ينجح.">
   <!-- DRAFT (ADR-071, ADR-087): not published. Domain, legal review and waitlist form wait for approval. -->
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#f9fafb">
@@ -45,7 +45,7 @@
   <div class="hero">
     <span class="eyebrow">مسودة · غير منشورة بعد</span>
     <h1>افهم ما يحدث في الأسواق، <em>بأدلة لا بمزاعم.</em></h1>
-    <p>نبض منصة بحث وتعلّم تعمل على بيانات عامة ومفتوحة، بخمسة وكلاء ذكاء اصطناعي يقرؤون العالم ويفحصون كل رقم، مع حساب تدريب بأموال وهمية. وننشر ما اختبرناه، بما فيه ما فشل.</p>
+    <p>نبض منصة بحث وتعلّم تعمل على بيانات عامة ومفتوحة، بخمسة وكلاء مخطَّطين، اثنان منهم يعملان جزئياً اليوم، مع حساب تدريب بأموال وهمية. وننشر ما اختبرناه، بما فيه ما فشل.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="#agents">تعرّف على الوكلاء</a>
       <a class="btn btn-ghost" href="#tested">ماذا اختبرنا</a>
@@ -57,7 +57,7 @@
       <h2 id="what-h">ماذا يعمل اليوم</h2>
       <p class="lead">هذا ما هو مبني فعلاً. لا شيء هنا يتصل بحساب تداول حقيقي.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-2x2">
       <article class="card">
         <span class="status live">يعمل</span>
         <h3>حساب تدريب وهمي</h3>
@@ -95,7 +95,7 @@
       <h2 id="agents-h">خمسة وكلاء، كل واحد بدور واضح</h2>
       <p class="lead">كل وكيل يكتب ما فعله ولماذا، ويمر عبر بوابات فحص قبل أن يصل أثره إلى أي رقم. الحالة بجانب كل وكيل هي حالته الحقيقية اليوم.</p>
     </div>
-    <div class="panel"><div class="grid">
+    <div class="panel"><div class="grid grid-agents">
       <article class="card">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 15l4-6 4 3 4-7"/></svg></span>
         <span class="status live">يعمل جزئياً</span>
@@ -156,31 +156,31 @@
     <div class="panel"><div class="grid">
       <article class="card">
         <h3>البحر والسماء</h3>
-        <p>مواقع السفن العامة، وحركة الطيران، والأقمار الصناعية، وحرائق الأقمار الصناعية من ناسا.</p>
+        <p>مواقع السفن العامة، وحركة الطيران، ومدارات الأقمار من CelesTrak (تقريبية)، وبؤر الحرائق من NASA FIRMS.</p>
         <ul class="sources">
-          <li><a href="https://www.digitraffic.fi/en/marine-traffic/" rel="noopener">Digitraffic AIS</a></li>
-          <li><a href="https://aisstream.io/" rel="noopener">AISStream</a></li>
-          <li><a href="https://opensky-network.org/" rel="noopener">OpenSky</a></li>
-          <li><a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener">NASA FIRMS</a></li>
+          <li><a href="https://www.digitraffic.fi/en/marine-traffic/" rel="noopener noreferrer">Digitraffic AIS</a></li>
+          <li><a href="https://adsb.lol/" rel="noopener noreferrer">adsb.lol</a></li>
+          <li><a href="https://opensky-network.org/" rel="noopener noreferrer">OpenSky</a></li>
+          <li><a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener noreferrer">NASA FIRMS</a></li>
         </ul>
       </article>
       <article class="card">
         <h3>الأحداث والكوارث</h3>
         <p>الزلازل، والأعاصير، والتنبيهات الإنسانية، وقاعدة الأحداث العالمية، كل حدث مربوط بالأصول المتأثرة.</p>
         <ul class="sources">
-          <li><a href="https://www.gdeltproject.org/" rel="noopener">GDELT</a></li>
-          <li><a href="https://earthquake.usgs.gov/" rel="noopener">USGS</a></li>
-          <li><a href="https://www.gdacs.org/" rel="noopener">GDACS</a></li>
-          <li><a href="https://www.nhc.noaa.gov/" rel="noopener">NOAA</a></li>
+          <li><a href="https://www.gdeltproject.org/" rel="noopener noreferrer">GDELT</a></li>
+          <li><a href="https://earthquake.usgs.gov/" rel="noopener noreferrer">USGS</a></li>
+          <li><a href="https://www.gdacs.org/" rel="noopener noreferrer">GDACS</a></li>
+          <li><a href="https://www.nhc.noaa.gov/" rel="noopener noreferrer">NOAA</a></li>
         </ul>
       </article>
       <article class="card">
         <h3>الكاميرات المفتوحة</h3>
         <p>صور ثابتة تنشرها جهات النقل الحكومية للعموم، تُعرض كما هي مع رابط مصدرها. لا خلاصات خاصة، ولا تجاوز لأي حماية.</p>
         <ul class="sources">
-          <li><a href="https://tfl.gov.uk/traffic/status/" rel="noopener">TfL JamCams</a></li>
-          <li><a href="https://liikennetilanne.fintraffic.fi/" rel="noopener">Fintraffic</a></li>
-          <li><a href="https://umferdin.is/" rel="noopener">Vegagerðin</a></li>
+          <li><a href="https://tfl.gov.uk/traffic/status/" rel="noopener noreferrer">TfL JamCams</a></li>
+          <li><a href="https://liikennetilanne.fintraffic.fi/" rel="noopener noreferrer">Fintraffic</a></li>
+          <li><a href="https://umferdin.is/" rel="noopener noreferrer">Vegagerðin</a></li>
         </ul>
       </article>
     </div></div>
@@ -257,7 +257,7 @@
       <p><strong>النتيجة: فشل.</strong> ولا مؤشر من الثلاثة تفوّق على التذبذب العادي. العتبات المشهورة (Reynolds فوق <span class="num">2000</span> أو <span class="num">4000</span>) لم تتحقق ولا يوماً واحداً على أي أصل، وLyapunov فوق الصفر كان صحيحاً <span class="num">100%</span> من الأيام، حتى على بيانات عشوائية مخلوطة، فلا يحمل أي معلومة.</p>
       <p>أفضل نتيجة كانت Reynolds* على Bitcoin، فاختبرناه مرة أخيرة على بيانات <span class="num">2023–2026</span> بقاعدة نجاح محددة قبل التشغيل. النتيجة <span class="num">AUC 0.329 [0.269, 0.452]</span>، أي أسوأ من رمي العملة. أغلقنا الملف ولم نربط هذه المؤشرات بأي شاشة.</p>
     </div>
-    <p class="note">بيانات يومية مجانية فقط، ونافذة واحدة لكل مؤشر اختيرت قبل التشغيل. التفاصيل الكاملة وطريقة الإعادة في <code>physics_lab/results/REPORT.md</code> وسجل القرار ADR-065. الرابط العام للتقرير يُنشر مع الموقع.</p>
+    <p class="note">بيانات يومية مجانية فقط، ونافذة واحدة لكل مؤشر اختيرت قبل التشغيل. النتائج من تشغيل محلي لم يُرفع تقريره إلى المستودع بعد، لذلك الأرقام أعلاه تعذر التحقق منها حتى يُنشر التقرير مع تاريخ التشغيل.</p>
   </section>
 
   <section id="performance" aria-labelledby="performance-h">
@@ -283,7 +283,7 @@
       </article>
       <article class="card">
         <h3>مثال حسابي</h3>
-        <p>أرقام مفترضة لشرح المعادلة، وليست نتيجة تداول. النسبة <span class="num">20%</span> مفترضة للمثال.</p>
+        <p>مثال تعليمي — أرقام افتراضية، وليست نتيجة تداول. النسبة <span class="num">20%</span> مفترضة للمثال.</p>
         <table class="example">
           <tbody>
             <tr><td>البداية، أعلى قيمة</td><td class="num">10,000.00</td></tr>
@@ -292,7 +292,8 @@
             <tr><td>أعلى قيمة جديدة</td><td class="num">10,960.00</td></tr>
             <tr><td>نهاية الفترة 2 (هبوط)</td><td class="num">10,500.00</td></tr>
             <tr><td>الرسوم</td><td class="num">0.00</td></tr>
-            <tr><td>نهاية الفترة 3: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
+            <tr><td>نهاية الفترة 3</td><td class="num">11,000.00</td></tr>
+            <tr><td>الرسوم: <span class="num">20% × 40</span></td><td class="num">8.00</td></tr>
           </tbody>
         </table>
       </article>
@@ -300,7 +301,7 @@
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>
         <span class="status gated">قيد الموافقة</span>
         <h3>بوابة نسخ الصفقات</h3>
-        <p>تصميم البوابة جاهز للعرض فقط: لوحة أداء مُدقَّقة من بيانات حقيقية، وحدود مخاطرة لكل ناسخ، وإيقاف فوري. لا تتصل بأي حساب ولا تنسخ أي صفقة.</p>
+        <p>تصميم البوابة جاهز للعرض فقط: لوحة أداء لن تُملأ قبل أن يوجد سجل مُدقَّق، وحدود مخاطرة لكل ناسخ، وزر إيقاف. لا تتصل بأي حساب ولا تنسخ أي صفقة.</p>
         <p><a class="inline-link" href="#calc">جرّب حاسبة تقسيم الأرباح</a> و<a class="inline-link" href="#safe">محاكي المبلغ المعلّق وسجل الإيصالات</a>. محاكاة رياضية فقط.</p>
       </article>
       <article class="card">
@@ -398,7 +399,7 @@
       <p class="lead">نبض قيد البناء. التسجيل يفتح بعد المراجعة القانونية.</p>
     </div>
     <div class="hero-actions">
-      <a class="btn btn-gold" role="link" aria-disabled="true">يفتح قريباً</a>
+      <a class="btn btn-ghost" role="link" aria-disabled="true">مغلق حتى المراجعة القانونية</a>
     </div>
   </section>
 </main>
