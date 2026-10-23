@@ -182,7 +182,7 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 // CelesTrak blocks clients that ask for the same group more than its update cycle; RIPEstat and IODA get 1 s.
 // SANS asks for light use of its API, adsb.lol for about one request a second (ADR-110).
 const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
-  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 1100 };
+  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
