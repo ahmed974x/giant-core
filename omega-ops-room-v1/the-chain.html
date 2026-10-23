@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-rGbU0px6TsXydSn01apP28OOBK3t1xC9z2VBT9cVcss=' 'sha256-QYHpZmRdWdpgelfAL/nG834W4x09/DCDe6k8uwb91YI='; style-src 'sha256-YlXxN5sbdzvL/TPvPiHAX4i8KW1x3aKu2qXXpokz7CQ='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-rGbU0px6TsXydSn01apP28OOBK3t1xC9z2VBT9cVcss=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4='; style-src 'sha256-YIIlF0b5uWYtD5LIVMNMZH+QedOOjyDH0ZVu7F1nKuw='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -312,10 +312,12 @@
   .topbar { position: sticky; top: 0; z-index: 20; padding: max(var(--s-3), env(safe-area-inset-top)) 0 var(--s-3); }
   .bar {
     display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap;
-    padding: var(--s-1) var(--s-1) var(--s-1) var(--s-5); border-radius: var(--r-pill);
+    padding: var(--s-1); padding-inline-start: var(--s-5); border-radius: var(--r-pill);
     background: var(--surface); border: var(--hairline) solid var(--hairline-color);
     box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 8px 24px hsl(var(--shadow-color) / 0.06);
   }
+  /* ADR-113: a pill that wraps to two rows becomes a rounded rectangle (28 = 20 inner + 8 padding). */
+  @media (max-width: 1279px) { .bar { border-radius: 28px; padding: var(--s-2); padding-inline-start: var(--s-4); } }
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .bar { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
   }
@@ -416,7 +418,7 @@
 
   /* ---------- tabs ---------- */
   .tabs { display: flex; flex-wrap: wrap; gap: var(--s-1); padding: var(--s-1); border-radius: var(--r-pill); background: var(--surface-2); width: fit-content; max-width: 100%; margin-bottom: var(--s-4); }
-  .tab { min-height: 36px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.04em; color: var(--content-secondary); transition: transform var(--dur-base) var(--ease-spring); }
+  .tab { min-height: 36px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; font-family: inherit; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0; color: var(--content-secondary); transition: transform var(--dur-base) var(--ease-spring); }
   .tab:hover { color: var(--content-primary); }
   .tab:active { transform: scale(0.96); }
   .tab[aria-selected="true"] { background: var(--surface); color: var(--accent); box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.08); }
@@ -434,6 +436,10 @@
   }
   input:hover, textarea:hover, select:hover { border-color: var(--content-tertiary); }
   input[type="number"], input.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; direction: ltr; text-align: left; }
+  /* ADR-113: Arabic hints read right to left in the Arabic face; addresses stay left to right. */
+  input.mono::placeholder { font-family: var(--font-ar); direction: rtl; text-align: right; }
+  input[type="url"] { direction: ltr; text-align: left; }
+  @media (pointer: coarse) { .icon-btn { width: 44px; height: 44px; } .tab { min-height: 44px; } }
   textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
   textarea.code { font-family: var(--font-mono); font-size: var(--text-footnote); direction: auto; }
   .actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); align-items: center; }
@@ -2070,7 +2076,7 @@
       cgLast = { symbol: coin.symbol.toUpperCase() + "USDT", price: px?.usd ?? (bt ? parseFloat(bt.lastPrice) : NaN), onBinance: !!bt };
       $("cgToQuant").disabled = !cgLast.onBinance;
       setStatus("cgStatus", "جُلبت البيانات.", "ok");
-    } catch (e) { setStatus("cgStatus", `تعذر الجلب: ${e.message}`, "bad"); }
+    } catch (e) { setStatus("cgStatus", `تعذر الجلب: ${e.message}. أعد المحاولة بعد دقيقة أو شغّل الخادم المحلي (start-omega).`, "bad"); }
   }
   $("cgFetch").addEventListener("click", fetchCrypto);
   $("cgQuery").addEventListener("keydown", e => { if (e.key === "Enter") fetchCrypto(); });

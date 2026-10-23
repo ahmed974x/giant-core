@@ -110,16 +110,19 @@ const sym = a => { const s = String((a && a.symbol) || "BTCUSDT").toUpperCase();
 
 /* ---------------- readings, the same formulas as the Ops Room ---------------- */
 async function cyberSpace() {
-  const [kev, kp, ripe, ioda] = await Promise.all([SRC.kev(), SRC.kp(), SRC.ripe(), SRC.ioda()]);
+  const [kev, kp, ripe, ioda, circl] = await Promise.all([SRC.kev(), SRC.kp(), SRC.ripe(), SRC.ioda(), SRC.circl()]);
   const K = kev.error ? null : asShape("omega-kev-v1", j => M.shape.kev(j, Date.now()))(kev.data);
   const KP = kp.error ? null : asShape("omega-kp-v1", M.shape.kp)(kp.data).readings;
   const RI = ripe.error ? [] : (ripe.data.asns || []).filter(x => x && x.format === "omega-ripe-v1");
   const IO = ioda.error ? null : asShape("omega-ioda-v1", M.shape.ioda)(ioda.data).events;
   const cut = Date.now() - 7 * 86400e3, wk = K ? K.recent.filter(x => Date.parse(x.added + "T00:00:00Z") >= cut) : null;
   const kpNow = KP && KP.length ? KP[KP.length - 1].kp : NaN, bgp = RI.length ? Math.min(...RI.map(x => x.share)) : NaN;
-  const c = M.csti({ kp: kpNow, kev7: wk ? wk.length : NaN, ransom7: wk ? wk.filter(x => x.ransomware).length : NaN, bgpMin: bgp, ioda: IO ? IO.length : NaN });
+  // CIRCL pressure is CSTI's eighth part (ADR-112, calibrated in ADR-113), the same as on the Ops Room page.
+  let CI = null;
+  try { CI = circl.error ? null : M.circlSummary(asShape("omega-circl-v1", M.shape.circl)(circl.data), new Set(K ? K.recent.map(x => x.cve) : [])); } catch { CI = null; }
+  const c = M.csti({ kp: kpNow, kev7: wk ? wk.length : NaN, ransom7: wk ? wk.filter(x => x.ransomware).length : NaN, bgpMin: bgp, ioda: IO ? IO.length : NaN, circl: CI ? CI.pressure : NaN });
   return {
-    csti: { score: r(c.score, 1), coverage: `${c.coverage} of 4 parts`, parts: c.parts.map(p => ({ part: p.k, value: r(p.v, 1) })), label: "[INFERENCE]" },
+    csti: { score: r(c.score, 1), coverage: `${c.coverage} of ${c.of} possible parts (InfoCON, RIS Live and InternetDB are read on the page only)`, parts: c.parts.map(p => ({ part: p.k, value: r(p.v, 1) })), label: "[INFERENCE]" },
     space: { kp_now: r(kpNow, 2), kp_time: KP && KP.length ? KP[KP.length - 1].t : null, ...meta(kp, "NOAA SWPC planetary K index") },
     kev: K ? { catalogue: K.count, added_7d: wk.length, ransomware_7d: wk.filter(x => x.ransomware).length, latest: K.recent.slice(0, 5), ...meta(kev, "CISA Known Exploited Vulnerabilities") } : meta(kev, "CISA KEV"),
     bgp: { backbones: RI.map(x => ({ asn: x.asn, name: x.name, seen_by: `${x.seeing} of ${x.total} RIS peers`, share: r(x.share, 4) })), ...meta(ripe, "RIPEstat routing status") },
@@ -268,7 +271,8 @@ function verifyTool(a) {
     const p = resolve(a.path.replace(/^~(?=$|[\\/])/, process.env.USERPROFILE || process.env.HOME || "~"));
     if (extname(p).toLowerCase() !== ".json") throw new Error("path must be a .json receipt export");
     if (statSync(p).size > 20e6) throw new Error("file is larger than 20 MB");
-    doc = JSON.parse(readFileSync(p, "utf8"));
+    // The parse error is replaced so a wrong file's contents never reach the model (ADR-113).
+    try { doc = JSON.parse(readFileSync(p, "utf8")); } catch { throw new Error("that file is not valid JSON; give the .json file the Ops Room exported"); }
   } else throw new Error("give path (an exported .json file) or json (the file's text)");
   return { ...verifyChain(doc), method: "SHA-256 of JSON with keys sorted, numbers rounded to 8 decimals, hash keys dropped; first prev_hash is 64 zeros; checkpoints are Merkle roots of the folded hashes" };
 }

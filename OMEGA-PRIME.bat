@@ -19,15 +19,29 @@ where node >nul 2>nul || (echo Node.js 18 or newer is needed. Install it from ht
 for /f %%v in ('node -p "process.versions.node.split(\".\")[0]"') do set NODE_MAJOR=%%v
 if %NODE_MAJOR% LSS 18 (echo Node.js %NODE_MAJOR% is too old. Install Node.js 18 or newer. & pause & exit /b 1)
 
-if not exist "%OMEGA_DIR%\.git" (
-  echo Downloading giant-core into %OMEGA_DIR% ...
-  git clone https://github.com/ahmed974x/giant-core.git "%OMEGA_DIR%" || (echo Clone failed. Check the internet connection. & pause & exit /b 1)
-) else (
-  echo Updating %OMEGA_DIR% to the latest main ...
-  pushd "%OMEGA_DIR%"
-  git checkout main && git pull --ff-only origin main || echo Update failed, so the copy already on disk is used. Local edits block a fast-forward pull.
-  popd
-)
+if exist "%OMEGA_DIR%\.git" goto update
+echo Downloading giant-core into %OMEGA_DIR% ...
+git clone https://github.com/ahmed974x/giant-core.git "%OMEGA_DIR%" || (echo Clone failed. Check the internet connection. & pause & exit /b 1)
+goto updated
+
+rem ADR-113: nothing new runs without a look first. The launcher fetches main, lists the incoming commits and
+rem pulls only when you press Y; with no answer in 60 s it keeps the copy already on disk.
+:update
+pushd "%OMEGA_DIR%"
+git fetch --quiet origin main || (echo Could not reach GitHub, so the copy already on disk is used. & goto pulled)
+git log --oneline HEAD..origin/main > "%TEMP%\omega-incoming.txt" 2>nul
+for %%A in ("%TEMP%\omega-incoming.txt") do if %%~zA==0 (echo This copy is already the latest main. & goto pulled)
+echo.
+echo New commits on GitHub main:
+type "%TEMP%\omega-incoming.txt"
+echo.
+choice /c YN /t 60 /d N /m "Pull these commits and run them"
+if errorlevel 2 (echo Kept the copy already on disk. & goto pulled)
+git checkout main && git pull --ff-only origin main || echo Update failed, so the copy already on disk is used. Local edits block a fast-forward pull.
+:pulled
+del "%TEMP%\omega-incoming.txt" >nul 2>nul
+popd
+:updated
 cd /d "%OMEGA_DIR%"
 if not exist "%USERPROFILE%\.omega\sec-ua.txt" echo SEC filings stay off until %USERPROFILE%\.omega\sec-ua.txt holds "Your Name your@email".
 

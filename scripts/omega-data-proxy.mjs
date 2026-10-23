@@ -190,6 +190,24 @@ function staticFile(path) {
   return { file, type };
 }
 
+// Host names this proxy answers to (ADR-113). A DNS-rebinding page arrives with its own name in Host, so any other
+// name is refused before routing. --lan adds this machine's own interface addresses and, for Tailscale Serve,
+// names under .ts.net; OMEGA_ALLOWED_HOSTS adds more, comma separated.
+const ALLOWED_HOSTS = (() => {
+  const set = new Set(["127.0.0.1", "localhost", "[::1]"]);
+  if (LAN) for (const list of Object.values(networkInterfaces())) for (const a of list || []) set.add(a.family === "IPv6" || a.family === 6 ? `[${a.address}]` : a.address);
+  for (const h of String(process.env.OMEGA_ALLOWED_HOSTS || "").split(",")) if (h.trim()) set.add(h.trim().toLowerCase());
+  return set;
+})();
+const hostAllowed = host => {
+  if (!host) return true;
+  const m = /^(\[[0-9a-f:.]+\]|[^:]+)(?::(\d+))?$/i.exec(String(host).toLowerCase());
+  if (!m) return false;
+  return ALLOWED_HOSTS.has(m[1]) || (LAN && /\.ts\.net$/.test(m[1]));
+};
+// Origins allowed to call the local model: pages served from this machine's loopback address, never "null".
+const llmOrigin = o => !o || /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(o);
+
 // CORS only for pages on this machine: file:// (Origin "null"), 127.0.0.1 and localhost on any port.
 // A page this proxy served itself (same host, for example the iPhone over --lan) is same-origin, not a third party.
 const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o || "") ||
@@ -286,16 +304,21 @@ const OLLAMA = (() => {
   return /^http:\/\/(127\.0\.0\.1|localhost|\[::1\]):\d{2,5}$/.test(u) ? u : "http://127.0.0.1:11434";
 })();
 const isCloudModel = name => /(:|-)cloud$/i.test(String(name || ""));
-async function ollamaFetch(path, body, ms) {
-  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+// `outer` aborts the call early, for example when the page that asked has closed the connection.
+async function ollamaFetch(path, body, ms, outer) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms), stop = () => ctl.abort();
+  if (outer) { if (outer.aborted) ctl.abort(); else outer.addEventListener("abort", stop, { once: true }); }
+  let r;
   try {
-    const r = await fetch(OLLAMA + path, { signal: ctl.signal, method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined, redirect: "error" });
+    r = await fetch(OLLAMA + path, { signal: ctl.signal, method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined, redirect: "error" });
     if (!r.ok) throw Object.assign(new Error(`Ollama answered HTTP ${r.status}`), { status: 502 });
-    return await r.json();
+    const text = await r.text();
+    try { return JSON.parse(text); } catch { throw Object.assign(new Error("Ollama answered something that is not JSON; update Ollama and try again"), { status: 502 }); }
   } catch (e) {
     if (e.status) throw e;
-    throw Object.assign(new Error(e.name === "AbortError" ? `Ollama gave no answer in ${ms / 1000} s` : "Ollama is not running on " + OLLAMA + " (install it from https://ollama.com, then: ollama pull glm4)"), { status: 503 });
-  } finally { clearTimeout(t); }
+    if (e.name === "AbortError") throw Object.assign(new Error(outer && outer.aborted ? "the page closed the request" : `Ollama gave no answer in ${ms / 1000} s`), { status: 504 });
+    throw Object.assign(new Error("Ollama is not running on " + OLLAMA + " (install it from https://ollama.com, then: ollama pull glm4)"), { status: 503 });
+  } finally { clearTimeout(t); if (outer) outer.removeEventListener("abort", stop); }
 }
 // Local models only, by name.
 async function ollamaModels() {
@@ -306,8 +329,10 @@ async function ollamaPick() {
   const names = await ollamaModels(), want = (process.env.OMEGA_OLLAMA_MODEL || "").trim();
   if (want) {
     if (isCloudModel(want)) throw Object.assign(new Error(`${want} runs on Ollama's servers, not this machine; pick a local model`), { status: 400 });
-    if (!names.includes(want)) throw Object.assign(new Error(`${want} is not pulled yet: run  ollama pull ${want}`), { status: 503 });
-    return { model: want, names };
+    // Ollama lists "glm4" as "glm4:latest", so a name without a tag matches its :latest copy.
+    const hit = names.find(n => n === want || n === want + ":latest");
+    if (hit) return { model: hit, names };
+    throw Object.assign(new Error(`${want} is not pulled yet: run  ollama pull ${want}`), { status: 503 });
   }
   const glm = names.find(n => /^glm/i.test(n));
   if (!glm && !names.length) throw Object.assign(new Error("Ollama has no local model yet: run  ollama pull glm4  (9B, about 5.5 GB)"), { status: 503 });
@@ -317,34 +342,55 @@ const LLM_SYSTEM = "You explain readings from OMEGA, a paper-trading research pa
   "Use only the facts you are given and name the source of each number you use. If a fact is missing, say تعذر التحقق منها. " +
   "Everything on this page is paper trading and a decision aid: never tell the reader to place a real order, move real money, sign anything or connect an exchange account. " +
   "End with the label [INFERENCE - local LLM].";
-async function readBody(req, max) {
-  const chunks = [];
-  let n = 0;
-  for await (const c of req) { n += c.length; if (n > max) throw Object.assign(new Error(`body larger than ${max} bytes`), { status: 413 }); chunks.push(c); }
-  return Buffer.concat(chunks).toString("utf8");
+// Reads a request body of at most `max` bytes within `ms`; a client that stalls is cut off.
+function readBody(req, max, ms = 10000) {
+  return new Promise((done, fail) => {
+    const chunks = [];
+    let n = 0, over = false;
+    const t = setTimeout(() => { over = true; fail(Object.assign(new Error(`body not received within ${ms / 1000} s`), { status: 408 })); }, ms);
+    req.on("data", c => {
+      if (over) return;
+      n += c.length;
+      if (n > max) { over = true; clearTimeout(t); fail(Object.assign(new Error(`body larger than ${max} bytes`), { status: 413 })); req.resume(); return; }
+      chunks.push(c);
+    });
+    req.on("end", () => { if (!over) { clearTimeout(t); done(Buffer.concat(chunks).toString("utf8")); } });
+    req.on("error", e => { if (!over) { over = true; clearTimeout(t); fail(Object.assign(e, { status: 400 })); } });
+  });
 }
+// One generation at a time: a second request gets 429 instead of queueing another long run on the laptop.
+const llmBusy = { on: false };
 async function llmRoute(req, path) {
   if (path === "/llm/ollama/status" && req.method === "GET") {
     try { const p = await ollamaPick(); return { ok: true, url: OLLAMA, model: p.model, models: p.names }; }
     catch (e) { return { ok: false, url: OLLAMA, error: e.message }; }
   }
   if (path === "/llm/ollama/explain" && req.method === "POST") {
+    // application/json forces a CORS preflight, so no page can fire this as a "simple" cross-site request.
+    if (!/^application\/json\b/i.test(String(req.headers["content-type"] || ""))) throw Object.assign(new Error("send Content-Type: application/json"), { status: 415 });
+    if (llmBusy.on) throw Object.assign(new Error("the local model is already answering; try again when it finishes"), { status: 429 });
+    llmBusy.on = true;
+    try { return await explain(req); } finally { llmBusy.on = false; }
+  }
+  return null;
+}
+async function explain(req) {
     let q;
     try { q = JSON.parse(await readBody(req, 16384)); } catch (e) { throw Object.assign(new Error(e.status ? e.message : "send JSON: {\"facts\": [\"...\"], \"question\": \"...\"}"), { status: e.status || 400 }); }
     const facts = (Array.isArray(q && q.facts) ? q.facts : []).map(f => String(f).replace(/\s+/g, " ").slice(0, 300)).filter(Boolean).slice(0, 40);
     if (!facts.length) throw Object.assign(new Error("no facts to explain"), { status: 400 });
     const question = String(q.question || "Explain what these readings say together and what the paper desk should watch next.").slice(0, 300);
-    const { model } = await ollamaPick(), t0 = Date.now();
-    const j = await ollamaFetch("/api/generate", { model, system: LLM_SYSTEM, prompt: "Facts:\n- " + facts.join("\n- ") + "\n\nQuestion: " + question, stream: false, options: { temperature: 0.2, num_predict: 500 } }, 120000);
+    const { model } = await ollamaPick(), t0 = Date.now(), gone = new AbortController();
+    req.socket.once("close", () => gone.abort());
+    const j = await ollamaFetch("/api/generate", { model, system: LLM_SYSTEM, prompt: "Facts:\n- " + facts.join("\n- ") + "\n\nQuestion: " + question, stream: false, options: { temperature: 0.2, num_predict: 500 } }, 120000, gone.signal);
     return { ok: true, model, ms: Date.now() - t0, answer: String(j.response || "").slice(0, 4000), label: "[INFERENCE - local LLM]", facts: facts.length };
-  }
-  return null;
 }
 const loopback = a => ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(String(a || ""));
 
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin, host = String(req.headers.host || "");
   const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
+  if (!hostAllowed(host)) { res.writeHead(421, { "Content-Type": "application/json", "Cache-Control": "no-store" }); return res.end(JSON.stringify({ error: "unknown host name; open the page at http://127.0.0.1:" + PORT })); }
   const okOrigin = localOrigin(origin, host);
   if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true", "Access-Control-Expose-Headers": "X-Omega-Cache, Retry-After" });
   const send = (status, body, type = "application/json") => { res.writeHead(status, { ...headers, "Content-Type": type }); res.end(body); };
@@ -355,6 +401,7 @@ const server = createServer(async (req, res) => {
   // ADR-112: the local model bridge answers this machine only, even when --lan is on.
   if (path.startsWith("/llm/")) {
     if (!loopback(req.socket.remoteAddress)) return send(403, JSON.stringify({ error: "the local model bridge answers this machine only" }));
+    if (!llmOrigin(origin)) return send(403, JSON.stringify({ error: "the local model answers pages opened from http://127.0.0.1:" + PORT + " only (not file:// or other sites)" }));
     try { const r = await llmRoute(req, path); return r ? send(200, JSON.stringify(r)) : send(404, JSON.stringify({ error: "unknown route" })); }
     catch (e) { return send(e.status || 502, JSON.stringify({ ok: false, error: e.message })); }
   }

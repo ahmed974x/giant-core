@@ -23,15 +23,16 @@ Three keyless sources feed the whale sonar, the agent court, CSTI and PWSI. Read
 
 ## 2. Parsers (one place: `scripts/lib/brain2-math.mjs`)
 
+- `shape.llamaSet` needs only the stablecoin answer; a failed chains or DEX answer becomes `null` and the LFI renormalises (ADR-113). A `null` total is missing, never $0.
 - `shape.llamaStable` keeps USD-pegged coins only, sums supply, gives pct1, pct7 and pct30, the top 8 coins and the largest peg gap among coins of $1 bn or more. `shape.llamaDex` gives chg1d = (24 h ÷ the 24 h before − 1) · 100. `shape.llamaSet` packs the three with `format: "omega-llama-v1"` and the LFI.
 - `shape.circl` reads mixed CVE 5 and OSV records into `{id, aliases, published, title, cvss, cwe, vendor, product, osv, poc}`. `cvss3(vector)` computes the CVSS 3.0/3.1 base score with FIRST's Roundup; a record without a vector has no score, never a guessed one.
-- `shape.marine` reads one point per strait from `MARINE_POINTS` (Hormuz, Bab el-Mandeb, Suez, Malacca, Panama). Currents arrive in km/h and are also given in knots.
+- `shape.marine` reads one point per strait from `MARINE_POINTS` (Hormuz, Bab el-Mandeb, Suez at the Port Said approach because the Gulf of Suez point returned no wave value, Malacca, Panama). Currents arrive in km/h and are also given in knots.
 
 ## 3. Fixed rules (all [INFERENCE])
 
 - LFI, −100 to +100: 35 % one-day supply change (±0.5 % is full scale), 30 % seven-day change (±2 %), 20 % DEX volume against the day before (±25 %), 15 % peg stress (0 within 50 bps, −1 at 200 bps). Weights are renormalised over the parts present; coverage is shown as `n of 4`. Inflow at ≥ 25, outflow at ≤ −25.
 - MISP machine tags (github.com/MISP/misp-taxonomies, CC0): `priority-level` from CVSS and CISA KEV (emergency = CVSS ≥ 9 and in KEV, severe ≥ 9, high ≥ 7, medium ≥ 4, low > 0, baseline-minor with no score), `vulnerability:sighting="exploited"` when KEV lists it, `vulnerability:information="PoC"` when a reference is an exploit, `vulnerability:origin="software"` for OSV, `rsit` tags from a fixed CWE map. The tags are a classification aid, not CIRCL's own rating.
-- CIRCL pressure, 0 to 100: 10 per critical record, 2 per high record, 25 per record in KEV, capped. It is CSTI's eighth part (`of: 8`); `csti()` never fills a missing part.
+- CIRCL pressure, 0 to 100 (ADR-113): 25 per record in KEV plus 40 × the share of critical records among those with a score, capped. The feed is always the latest 30 records, so a raw count of critical ones measures the sample, not the threat (the first live run had 15 of 30 critical and saturated at 100). It is CSTI's eighth part (`of: 8`); `csti()` never fills a missing part.
 - Sea state, 0 to 100: (highest significant wave − 2 m) ÷ 4 m, plus 0.25 when any current is 4 kn or more. It merges into PWSI's weather part as the larger of gust and sea.
 
 ## 4. Where it shows

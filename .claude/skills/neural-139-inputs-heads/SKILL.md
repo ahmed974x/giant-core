@@ -33,7 +33,7 @@ Read `neural-flow-decision-viz` (layout, training) and `liquid-neural-139-flow` 
 
 ## 4. Oscilloscope
 
-- Click or tap a neuron: the glass scope sits top right at ≥ 600 px and under the canvas on a phone. It shows x(t), the activation history and τ now and at calm.
+- Click or tap a neuron: the glass scope sits beside the canvas, top right, at ≥ 900 px and under it below that, never over the heads (ADR-113). It shows x(t), the activation history and τ now and at calm.
 - During the self-test (`?selftest=1`) the state is frozen: no settle loop, no training burst, and the scope title adds "frozen for the self-test".
 
 ## 5. Causal "why" table (`#nfWhy`)
