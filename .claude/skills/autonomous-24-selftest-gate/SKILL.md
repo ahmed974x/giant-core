@@ -17,7 +17,7 @@ The self-test runs in the browser from the shield button or with `?selftest=1`. 
 
 ## 2. The 24 checks
 
-1 to 18: CSP posture, vault round trip, OSIRIS map, live PWSI, performance rings, sonar canyon, quant physics, three-agent court, $20 locked-base sweep maths, SHA-256 receipt chain, cross-page sync, PWA readiness, synaptic web, Kalman and BOCPD, order-book alpha and L2 fill, Deribit GEX and funding trap, orbits and cyber radar, the gym (ADR-107, ADR-108). 19 and 20: neural flow and oscilloscope; X-Ray, chrono-scrubber and the 20 snapshot sources (ADR-109, counted from the snapshot, not hard-coded).
+1 to 18: CSP posture, vault round trip, OSIRIS map, live PWSI, performance rings, sonar canyon, quant physics, three-agent court, $20 locked-base sweep maths, SHA-256 receipt chain, cross-page sync, PWA readiness, synaptic web, Kalman and BOCPD, order-book alpha and L2 fill, Deribit GEX and funding trap, orbits and cyber radar, the gym (ADR-107, ADR-108). 19 and 20: neural flow, oscilloscope and the agent wiring card (ADR-111: 8 heads, 15 agents, 21 links); X-Ray, chrono-scrubber and the 20 snapshot sources (ADR-109, counted from the snapshot, not hard-coded).
 
 ADR-110 adds:
 

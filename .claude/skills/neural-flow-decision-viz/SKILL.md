@@ -49,3 +49,12 @@ Every reading stores inputs, activations, pre-activations, rule targets, micropr
 ## 6. Probe and checks
 
 `window.OMEGA_NEURAL` is read-only: `sizes`, `weights`, `inputs`, `forward`, `inspect`, `state`, `pulse`, `counterfactual`, `xray`, `xrayBadges`, `scrub`, `regime`. Self-test checks 19 and 20, `node scripts/test-brain2.mjs`, the three sizes in light and dark, SkillSpector strict.
+
+## Agent wiring card (ADR-111)
+
+`#agentwire` draws the eight heads beside the agents that teach them and the agents that act on the paper desk. Rules:
+- Draw only links the code has: teaching (rule value → head target), court (voice → judge), gym (dashed, informs only) and acting (judge OPEN, Kelly, levels, breaker → paper engine; engine, sweeper, base guard → vault). Never draw a head feeding an agent: the network decides nothing.
+- Teaching colour is the gap |network − rule| in tanh units: green ≤ 0.25, amber ≤ 0.6, red beyond, grey with no reading.
+- Read the heads through `OMEGA_NEURAL.heads()` and the engine through `OMEGA_PROBE.desk.engine()`; both are read-only.
+- Draw on events (`omega:neural`, `omega:desk`, `omega:osiris`, a 5 s refresh while visible, hover, tap, resize, theme). No animation loop.
+- Self-test check 19 asserts 8 heads, 15 agents and 21 links; change it when the wiring changes.

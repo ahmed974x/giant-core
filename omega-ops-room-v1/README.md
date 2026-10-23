@@ -94,6 +94,10 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
 - **Command wall:** view 5 at 1280 px and up shows four quadrants in one screen (OSIRIS · live chart and whales · court and physics · wallet and receipts). Each quadrant scrolls on its own and has a maximize button.
 - **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `X` Architect X-Ray, `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
 
+## Agent wiring (ADR-111)
+
+- **Agents and heads in one picture** (views 1, 3 and 5): the eight decision heads, the desk agents that teach each one (market, Kelly sizer, levels, breaker, $20 base guard, sweeper, risk judge), the court voices and the Brain 2 gym agents, and the paper auto engine and vault. 21 links, each one the code has; teaching lines show the gap between the rule and the network. The heads feed nothing: the judge rules and the engine is paper only.
+
 ## Phase 14: cyber storm radar, continuous-time neural flow, 24/24 self-test (ADR-110)
 
 - **Cyber storm:** SANS ISC InfoCON and Shodan InternetDB (open ports and CVEs of 1.1.1.1, 8.8.8.8, 9.9.9.9 and 208.67.222.222 only) through the local proxy, then the hourly snapshot. CSTI now has seven possible parts and says how many it used.

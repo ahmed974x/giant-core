@@ -109,7 +109,7 @@ const SOURCES = {
   },
   infocon: { name: "SANS Internet Storm Center InfoCON", url: U.infocon(), pick: j => SH.infocon(j), count: () => 1 },
   internetdb: { name: "Shodan InternetDB, four public resolvers (weekly data, non-commercial use)", urls: OMEGA_MATH.INTERNETDB_HOSTS.map(([ip]) => U.internetdb(ip)), pick: list => SH.internetdbSet(list), count: d => d.hosts.length },
-  adsb: { name: "adsb.lol (ODbL 1.0): squawk 7700 worldwide, aircraft near the five straits and Taiwan", urls: [U.adsbSqk(7700), ...OMEGA_MATH.AIR_ZONES.map(z => U.adsbZone(z.key))], pick: list => SH.adsbSet(list), count: d => d.zones.reduce((n, z) => n + z.n, 0) },
+  adsb: { name: "adsb.lol (ODbL 1.0): squawk 7700 worldwide, aircraft near the five straits and Taiwan", urls: [U.adsbSqk(7700), ...OMEGA_MATH.AIR_ZONES.map(z => U.adsbZone(z.key))], gapMs: 3000, pick: list => SH.adsbSet(list), count: d => d.zones.reduce((n, z) => n + z.n, 0) },
   rislive: { name: "RIS Live BGP updates, watched DNS anycast prefixes, 25 s sample", url: U.risLive(), get: () => risSample(25000), count: d => d.messages }
 };
 
@@ -136,7 +136,8 @@ async function getBuf(url, signal) {
 }
 async function attempt(s, signal) {
   if (s.get) return s.get(signal);
-  if (s.urls) { const list = []; for (const u of s.urls) list.push(JSON.parse((await getBuf(u, signal)).toString("utf8"))); return s.pick(list); }
+  // `gapMs` spaces the calls of one source (ADR-111: adsb.lol answered HTTP 429 to seven calls in a row).
+  if (s.urls) { const list = []; for (const [i, u] of s.urls.entries()) { if (i && s.gapMs) await new Promise(res => setTimeout(res, s.gapMs)); list.push(JSON.parse((await getBuf(u, signal)).toString("utf8"))); } return s.pick(list); }
   const buf = await getBuf(s.url, signal);
   return s.pick(s.raw ? buf : JSON.parse(buf.toString("utf8")));
 }
