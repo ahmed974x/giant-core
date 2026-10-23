@@ -5,7 +5,7 @@
 // here: proxy routes (/osiris, /market, /sec, /stooq) sit outside this scope, and requests to other
 // origins pass straight through, so an offline layer still says OFFLINE instead of showing old numbers.
 "use strict";
-const VERSION = "omega-ops-shell-2026-10-22-p12";
+const VERSION = "omega-ops-shell-2026-10-23-p14";
 const SHELL = ["omega-ops-room.html", "the-chain.html", "manifest.json", "icons/omega-180.png", "icons/omega-192.png", "icons/omega-512.png", "icons/omega-maskable-512.png"];
 
 self.addEventListener("install", event => {

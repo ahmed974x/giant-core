@@ -16,6 +16,10 @@
 // ADR-109 gives the perpetual premium (Binance, else OKX, else Deribit) and the disaster alerts (GDACS, else EMSC
 // with ReliefWeb) a fallback chain; the entry's `via` names the one that answered.
 //
+// ADR-110 adds the SANS ISC InfoCON level, Shodan InternetDB records of four public resolvers, adsb.lol
+// emergency squawks and aircraft counts around the five straits and the Taiwan Strait, and a 25-second sample
+// of RIS Live BGP updates for the watched DNS anycast prefixes (Node's built-in WebSocket, Node 22 or newer).
+//
 // Free and keyless only. No key, cookie or personal data is sent or stored. Exit code is 0 when at least
 // one source answered, 1 when none did (the deploy then publishes the site without a snapshot).
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -102,8 +106,26 @@ const SOURCES = {
       { via: "Deribit", urls: [U.deribitPerp("BTCUSDT"), U.deribitPerp("ETHUSDT")], pick: l => ({ format: "omega-premium-set-v1", via: "Deribit", items: [SH.perpDeribit(l[0], "BTCUSDT"), SH.perpDeribit(l[1], "ETHUSDT")] }) }
     ],
     count: d => d.items.length
-  }
+  },
+  infocon: { name: "SANS Internet Storm Center InfoCON", url: U.infocon(), pick: j => SH.infocon(j), count: () => 1 },
+  internetdb: { name: "Shodan InternetDB, four public resolvers (weekly data, non-commercial use)", urls: OMEGA_MATH.INTERNETDB_HOSTS.map(([ip]) => U.internetdb(ip)), pick: list => SH.internetdbSet(list), count: d => d.hosts.length },
+  adsb: { name: "adsb.lol (ODbL 1.0): squawk 7700 worldwide, aircraft near the five straits and Taiwan", urls: [U.adsbSqk(7700), ...OMEGA_MATH.AIR_ZONES.map(z => U.adsbZone(z.key))], pick: list => SH.adsbSet(list), count: d => d.zones.reduce((n, z) => n + z.n, 0) },
+  rislive: { name: "RIS Live BGP updates, watched DNS anycast prefixes, 25 s sample", url: U.risLive(), get: () => risSample(25000), count: d => d.messages }
 };
+
+// RIS Live: open the stream, subscribe to the watched prefixes, keep every UPDATE for `ms`, then summarise.
+// A quiet half minute is a valid answer (index 0); only a socket that never opens is a failure.
+function risSample(ms) {
+  if (typeof WebSocket !== "function") return Promise.reject(new Error("this Node has no WebSocket (needs 22 or newer)"));
+  return new Promise((res, rej) => {
+    const msgs = [], ws = new WebSocket(U.risLive());
+    let open = false;
+    const stop = setTimeout(() => { try { ws.close(); } catch { /* already closed */ } if (open) res({ ...OMEGA_MATH.risSummary(msgs, Date.now(), ms), sampleMs: ms }); else rej(new Error("RIS Live did not open in time")); }, ms);
+    ws.addEventListener("open", () => { open = true; for (const m of OMEGA_MATH.risSubscribe()) ws.send(JSON.stringify(m)); });
+    ws.addEventListener("message", e => { try { const m = JSON.parse(String(e.data)); if (m.type === "ris_message" && m.data && msgs.length < 20000) msgs.push(m.data); } catch { /* not JSON: ignored */ } });
+    ws.addEventListener("error", () => { if (!open) { clearTimeout(stop); rej(new Error("RIS Live socket error")); } });
+  });
+}
 
 // A plain, honest User-Agent in the common "Mozilla/5.0 (compatible; ...)" form: it names this project and
 // pretends to be no browser. Some hosts (GDACS among them) refuse requests with no recognisable agent.

@@ -1,5 +1,5 @@
 // Tests for the Brain 2 maths (scripts/lib/brain2-math.mjs, ADR-108), the neural flow and the source fallbacks
-// (ADR-109) and the Ops Room's inline copy.
+// (ADR-109), the continuous-time flow and the cyber and air sources (ADR-110) and the Ops Room's inline copy.
 //   node scripts/test-brain2.mjs        exits 0 when every test passes
 // No network, no dependencies. CI runs it in the skillspector workflow.
 import { spawnSync } from "node:child_process";
@@ -160,6 +160,66 @@ test("Disaster alert fallbacks say which rule set the level", () => {
   ok(/not a GDACS level/.test(e.features[0].properties.basis) && e.features[0].properties.url.report.endsWith("unid=a%20b"), "EMSC basis and link");
   const rw = M.shape.reliefweb({ data: [{ fields: { name: "Flood", status: "alert", primary_country: { location: { lat: 10, lon: 20 } } } }, { fields: { name: "Old", status: "past", primary_country: { location: { lat: 1, lon: 2 } } } }] });
   ok(rw.features.length === 1 && rw.features[0].geometry.coordinates.join() === "20,10", JSON.stringify(rw));
+});
+// ---- ADR-110: continuous-time flow, cyber and air sources ----
+test("Neural ODE settles on the feed-forward answer from any start", () => {
+  const n = M.nn.init(M.nn.SIZES, 9), x = Array.from({ length: 139 }, (_, i) => Math.cos(i * 0.21));
+  const st = M.nn.odeInit(n, new Array(139).fill(0));
+  ok(M.nn.odeGap(n, x, st) > 0.01, "a new input must move the flow away from rest");
+  for (let i = 0; i < 60; i++) M.nn.odeStep(n, x, st, 1, 0);
+  ok(M.nn.odeGap(n, x, st) < 1e-6, `gap after 60 s ${M.nn.odeGap(n, x, st)}`);
+  ok(st.s.every(l => l.every(Number.isFinite)), "every state finite");
+});
+test("Heun step is second order on dx/dt = (c − x) / τ", () => {
+  // One linear output with weight 0 and bias atanh(0.6): the exact path is x(t) = 0.6 (1 − e^{−t/τ}).
+  const n = M.nn.init([1, 1], 1); n.p[0] = 0; n.p[1] = Math.atanh(0.6);
+  // τ of 4 s or more keeps each outer step inside one sub-step, so the step size is the one under test.
+  const o = { ...M.nn.ODE, tau: [4] }, tau = M.nn.odeTau(1, 0, 0, o), err = steps => {
+    const st = { s: [new Float64Array([0])], t: 0, steps: 0 };
+    for (let i = 0; i < steps; i++) M.nn.odeStep(n, [0], st, 1 / steps, 0, o);
+    return Math.abs(st.s[0][0] - 0.6 * (1 - Math.exp(-1 / tau)));
+  };
+  const e1 = err(4), e2 = err(8), ratio = e1 / e2;
+  ok(ratio > 3.5 && ratio < 4.6, `error ratio ${ratio} for halved steps (second order is 4)`);
+});
+test("Shocks shorten τ, with a floor, and fade over 30 s", () => {
+  const calm = M.nn.odeTau(3, 5, 0), hot = M.nn.odeTau(3, 5, M.nn.odeShock([{ t: 1e12, w: 3 }], 1e12)), later = M.nn.odeShock([{ t: 1e12, w: 3 }], 1e12 + 90e3);
+  ok(hot < calm / 4 && hot >= calm / M.nn.ODE.floor - 1e-12, `τ calm ${calm}, after a shock ${hot}`);
+  near(later, 3 * Math.exp(-3), 1e-12, "shock after 90 s");
+  ok(M.nn.odeTau(6, 0, 0) > M.nn.odeTau(1, 0, 0) * 2, "deeper layers are slower");
+});
+test("CSTI takes the three ADR-110 parts and reports seven possible", () => {
+  const c = M.csti({ kp: 9, infocon: 3, ris: 40, exposed: 1 });
+  ok(c.coverage === 4 && c.of === 7, JSON.stringify(c));
+  near(c.score, (100 + 100 + 40 + 25) / 4, 1e-9, "mean of the parts");
+  ok(M.shape.infocon("Orange\n").level === 2 && M.shape.infocon({ status: "green" }).level === 0, "InfoCON levels");
+  let threw = false; try { M.shape.infocon({ status: "purple" }); } catch { threw = true; }
+  ok(threw, "an unknown InfoCON colour must throw");
+});
+test("RIS Live summary flags a foreign origin and a more specific route", () => {
+  const t = 1.79e9, msgs = [
+    { type: "UPDATE", timestamp: t - 10, peer_asn: "3333", path: [3333, 1299, 13335], announcements: [{ next_hop: "x", prefixes: ["1.1.1.0/24"] }] },
+    { type: "UPDATE", timestamp: t - 20, peer_asn: "6939", path: [6939, 64512], announcements: [{ next_hop: "x", prefixes: ["8.8.8.0/25"] }] },
+    { type: "UPDATE", timestamp: t - 30, peer_asn: "174", path: [174], withdrawals: ["9.9.9.0/24", "10.0.0.0/8"] },
+    { type: "UPDATE", timestamp: t - 900, peer_asn: "1", path: [1, 999], announcements: [{ prefixes: ["1.1.1.0/24"] }] },
+    { type: "KEEPALIVE", timestamp: t - 5 }
+  ];
+  const r = M.risSummary(msgs, t * 1000, 300e3);
+  ok(r.messages === 3 && r.announcements === 2 && r.withdrawals === 1, JSON.stringify([r.messages, r.announcements, r.withdrawals]));
+  ok(r.foreign === 1 && r.specific === 1 && r.prefixes[1].foreign[0].origin === 64512 && r.prefixes[0].foreign.length === 0, "foreign origin on 8.8.8.0/25 only");
+  near(r.index, 2 * 1 / 5 + 0.25 * 2 / 5 + 30 + 15, 1e-9, "instability index");
+  ok(M.risSubscribe().length === M.RIS_WATCH.length && M.risSubscribe()[0].data.moreSpecific === true, "one subscription per watched prefix");
+  ok(M.shape.ris(r) === r, "summary passes its own check");
+});
+test("InternetDB and adsb.lol shapes", () => {
+  const set = M.shape.internetdbSet([{ ip: "1.1.1.1", ports: [53, 443], vulns: [], tags: ["cdn"] }, { ip: "8.8.8.8", ports: [53], vulns: ["CVE-2026-0001"] }, { detail: "No information available" }, { ip: "208.67.222.222", ports: [53] }]);
+  ok(set.hosts.length === 4 && set.vulns === 1 && set.hosts[2].none === true && set.hosts[0].name === "Cloudflare DNS", JSON.stringify(set));
+  const a = { ac: [{ hex: "abc", flight: "UAE1 ", lat: 25, lon: 55, alt_baro: 30000, squawk: "7700", emergency: "general" }, { hex: "d", lat: 1, lon: 2, squawk: "1200" }], now: 1.79e12 };
+  const zone = { ac: [{ hex: "e", lat: 26, lon: 56, squawk: "2000" }, { hex: "f", lat: 26, lon: 56, squawk: "7600" }] };
+  const s = M.shape.adsbSet([a, zone, zone, zone, zone, zone, zone]);
+  ok(s.emergencies.length === 1 && s.emergencies[0].meaning === "general emergency" && s.emergencies[0].flight === "UAE1", JSON.stringify(s.emergencies));
+  ok(s.zones.length === 6 && s.zones[0].n === 2 && s.zones[0].emerg === 1 && s.zones[5].key === "taiwan", JSON.stringify(s.zones[0]));
+  ok(/\/v2\/point\/26\.57\/56\.25\/150$/.test(M.urls.adsbZone("hormuz")) && M.urls.adsbZone("nowhere") === "", "zone URLs");
 });
 test("Ops Room inline copy matches the library", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-brain2-inline.mjs"), "--check"], { encoding: "utf8" });

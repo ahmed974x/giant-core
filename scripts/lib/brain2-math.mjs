@@ -13,10 +13,13 @@
 //   basisTrap(prem)         perpetual mark-index basis and funding crowding
 //   kepler(gp, t)           orbit position from CelesTrak mean elements with secular J2 drift (not SGP4)
 //   l2Fill(book, ...)       step-by-step VWAP sweep of the top 25 levels, taker fee, maker queue estimate
-//   csti(parts)             cyber and space threat index, 0-100
+//   csti(parts)             cyber and space threat index, 0-100 (seven parts since ADR-110)
+//   risSummary(msgs, ...)   RIS Live BGP updates on watched prefixes: churn, origin changes, instability index
 //   canon / merkle helpers  the receipt chain's canonical form (ADR-091, ADR-096)
 //   nnFactory / nn          the 139 -> 8 neural flow: forward pass, backpropagation, Adam and (1+1)-ES (ADR-109)
 //   shape.perp*, emsc, ...  fallbacks for the perpetual premium (OKX, Deribit) and disaster alerts (EMSC, ReliefWeb)
+//   nn.ode*                 continuous-time hidden layers, dx/dt = (σ(Wx + b) − x) / τ(t), Heun steps (ADR-110)
+//   shape.infocon, ...      SANS ISC InfoCON, Shodan InternetDB, adsb.lol squawks and zones (ADR-110)
 export const OMEGA_MATH = (() => {
   "use strict";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -363,14 +366,84 @@ export const OMEGA_MATH = (() => {
   //   kev     CISA KEV additions in 7 days: 8 points each, 10 more for each tied to ransomware
   //   bgp     lowest RIS visibility of the tier-1 backbones: 0 at 98% of peers or more, 100 at 80% or less
   //   ioda    country outages IODA flagged in 24 h: 10 points each
+  // ADR-110 adds three:
+  //   infocon SANS ISC InfoCON: green 0, yellow 33, orange 67, red 100
+  //   ris     RIS Live instability index of the watched DNS anycast prefixes (risSummary), already 0-100
+  //   exposed CVEs Shodan InternetDB lists on the watched resolver addresses: 25 points each
   function csti(x = {}) {
     const parts = [];
     if (finite(x.kp)) parts.push({ k: "space", v: clamp((x.kp - 4) / 5, 0, 1) * 100 });
     if (finite(x.kev7)) parts.push({ k: "kev", v: clamp(x.kev7 * 8 + (finite(x.ransom7) ? x.ransom7 : 0) * 10, 0, 100) });
     if (finite(x.bgpMin)) parts.push({ k: "bgp", v: clamp((0.98 - x.bgpMin) / 0.18, 0, 1) * 100 });
     if (finite(x.ioda)) parts.push({ k: "ioda", v: clamp(x.ioda * 10, 0, 100) });
-    return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length } : { score: NaN, parts, coverage: 0 };
+    if (finite(x.infocon)) parts.push({ k: "infocon", v: clamp(x.infocon, 0, 3) / 3 * 100 });
+    if (finite(x.ris)) parts.push({ k: "ris", v: clamp(x.ris, 0, 100) });
+    if (finite(x.exposed)) parts.push({ k: "exposed", v: clamp(x.exposed * 25, 0, 100) });
+    return parts.length ? { score: mean(parts.map(p => p.v)), parts, coverage: parts.length, of: 7 } : { score: NaN, parts, coverage: 0, of: 7 };
   }
+
+  /* ---------- RIS Live BGP watch (ADR-110) ---------- */
+  // Watched prefixes: public DNS anycast blocks that exchanges, banks and cloud platforms resolve through, each
+  // with the origin AS that announces it. RIS Live (ris-live.ripe.net) streams every BGP UPDATE its route
+  // collectors see for them; no key, a `client` name is asked for.
+  const RIS_WATCH = [
+    { prefix: "1.1.1.0/24", origin: 13335, name: "Cloudflare DNS" },
+    { prefix: "8.8.8.0/24", origin: 15169, name: "Google Public DNS" },
+    { prefix: "9.9.9.0/24", origin: 19281, name: "Quad9" },
+    { prefix: "208.67.222.0/24", origin: 36692, name: "Cisco OpenDNS" }
+  ];
+  const ip4 = a => { const p = String(a).split(".").map(Number); return p.length === 4 && p.every(v => Number.isInteger(v) && v >= 0 && v <= 255) ? p[0] * 16777216 + p[1] * 65536 + p[2] * 256 + p[3] : NaN; };
+  const cidr = c => { const [a, l] = String(c).split("/"), n = ip4(a), len = +l; return finite(n) && Number.isInteger(len) && len >= 0 && len <= 32 ? { n, len } : null; };
+  // b lies inside a (the same block or a more specific one).
+  const inside = (b, a) => { if (!a || !b || b.len < a.len) return false; const size = 2 ** (32 - a.len); return Math.floor(b.n / size) === Math.floor(a.n / size); };
+  // Summary of RIS Live ris_message data objects in the windowMs before `now`: per watched prefix the
+  // announcements, withdrawals and origins seen, the announcements whose origin AS is not the expected one
+  // (a hijack, a leak, or a change the operator made on purpose: [INFERENCE]) and the ones more specific than
+  // the watched block. Instability index, a fixed heuristic, 0-100:
+  //   2 × withdrawals per minute + 0.25 × announcements per minute
+  //   + 30 for each prefix with a foreign origin + 15 for each prefix with a more specific announcement
+  function risSummary(msgs, now, windowMs = 300e3, watch = RIS_WATCH) {
+    const from = now - windowMs, W = watch.map(w => ({ ...w, c: cidr(w.prefix), ann: 0, wd: 0, origins: new Map(), foreign: [], specific: [] }));
+    let used = 0;
+    for (const m of msgs || []) {
+      const t = (+(m && m.timestamp)) * 1000;
+      if (!(t >= from && t <= now) || m.type !== "UPDATE") continue;
+      used++;
+      const path = Array.isArray(m.path) ? m.path : [], last = path[path.length - 1], origin = !Array.isArray(last) && Number.isInteger(+last) ? +last : NaN;
+      for (const a of Array.isArray(m.announcements) ? m.announcements : []) for (const p of Array.isArray(a && a.prefixes) ? a.prefixes : []) {
+        const c = cidr(p);
+        for (const w of W) {
+          if (!inside(c, w.c)) continue;
+          w.ann++;
+          if (finite(origin)) w.origins.set(origin, (w.origins.get(origin) || 0) + 1);
+          if (finite(origin) && origin !== w.origin && w.foreign.length < 20) w.foreign.push({ prefix: String(p), origin, peer: String(m.peer_asn || ""), t });
+          if (c.len > w.c.len && w.specific.length < 20) w.specific.push({ prefix: String(p), origin, t });
+        }
+      }
+      for (const p of Array.isArray(m.withdrawals) ? m.withdrawals : []) { const c = cidr(p); for (const w of W) if (inside(c, w.c)) w.wd++; }
+    }
+    const min = windowMs / 60e3, ann = W.reduce((s, w) => s + w.ann, 0), wd = W.reduce((s, w) => s + w.wd, 0);
+    const foreign = W.filter(w => w.foreign.length).length, specific = W.filter(w => w.specific.length).length;
+    return { format: "omega-ris-v1", windowMin: min, messages: used, announcements: ann, withdrawals: wd, foreign, specific,
+      index: clamp(2 * wd / min + 0.25 * ann / min + 30 * foreign + 15 * specific, 0, 100),
+      prefixes: W.map(w => ({ prefix: w.prefix, name: w.name, origin: w.origin, ann: w.ann, wd: w.wd, origins: [...w.origins.entries()].map(([asn, n]) => ({ asn, n })), foreign: w.foreign, specific: w.specific })) };
+  }
+  // The messages a RIS Live client sends once connected: one UPDATE subscription per watched prefix.
+  const risSubscribe = (watch = RIS_WATCH) => watch.map(w => ({ type: "ris_subscribe", data: { type: "UPDATE", prefix: w.prefix, moreSpecific: true, lessSpecific: false, socketOptions: { includeRaw: false } } }));
+
+  /* ---------- watched hosts and air zones (ADR-110) ---------- */
+  // Shodan InternetDB (internetdb.shodan.io, keyless, free for non-commercial use, updated weekly) is asked
+  // about these four public resolver addresses only. It is a lookup of Shodan's existing records, not a scan.
+  const INTERNETDB_HOSTS = [["1.1.1.1", "Cloudflare DNS"], ["8.8.8.8", "Google Public DNS"], ["9.9.9.9", "Quad9"], ["208.67.222.222", "Cisco OpenDNS"]];
+  // adsb.lol (ODbL 1.0, keyless today) point queries: the five straits and the Taiwan Strait, radius in nautical miles.
+  const AIR_ZONES = [
+    { key: "hormuz", en: "Strait of Hormuz", lat: 26.57, lon: 56.25 }, { key: "bab", en: "Bab el-Mandeb", lat: 12.6, lon: 43.33 },
+    { key: "suez", en: "Suez Canal", lat: 30.0, lon: 32.58 }, { key: "malacca", en: "Strait of Malacca", lat: 2.5, lon: 101.0 },
+    { key: "panama", en: "Panama Canal", lat: 9.08, lon: -79.68 }, { key: "taiwan", en: "Taiwan Strait", lat: 24.0, lon: 119.5 }
+  ];
+  const AIR_RADIUS_NM = 150;
+  // Squawk 7500 unlawful interference, 7600 radio failure, 7700 general emergency (ICAO).
+  const SQUAWKS = { 7500: "unlawful interference", 7600: "radio failure", 7700: "general emergency" };
 
   /* ---------- neural flow (ADR-109) ---------- */
   // A small multilayer perceptron, 139 -> 48 -> 36 -> 48 -> 24 -> 16 -> 8: linear inputs, ReLU hidden layers and
@@ -492,8 +565,72 @@ export const OMEGA_MATH = (() => {
       }
       return { steps, t, m, v, sigma, esAccepted: acc, esTried: esN, trainLoss: best, valBefore: before, valLoss: lossOf(net, X, Y, va), valBase: va.length ? base / va.length : NaN, hit: calls ? hits / calls : NaN, calls, nTrain: tr.length, nVal: va.length, ms: now() - t0 };
     }
+    // Continuous-time flow (ADR-110). Each hidden and output neuron is a leaky integrator driven by the layer
+    // before it, as that layer is now (not as it will settle), so a change at the inputs reaches the heads with
+    // a delay that grows with depth:
+    //   dx_i/dt = (σ(Σ_j W_ij x_j(t) + b_i) − x_i(t)) / τ_i(t)
+    // This is the textbook form −x/τ + σ(·) with the drive scaled by 1/τ, so that the resting state is the
+    // trained feed-forward answer σ(z) whatever τ is; τ then only sets how fast a neuron follows its input.
+    // τ_i(t) = τ_layer · spread_i / (1 + κ · E(t)), floored at τ_layer · spread_i / 8, where E is the decayed count of
+    // shock events (decay 30 s) and spread_i a fixed 0.7-1.3 spread so neurons in one layer differ.
+    // Integration: explicit Heun (trapezoid predictor-corrector, second order) with sub-steps of at most half
+    // the smallest τ, inside the stability bound h·(1/τ) ≤ 2 of the leak term.
+    const ODE = { tau: [0.6, 0.9, 1.2, 1.6, 2.0, 2.5], kappa: 4, floor: 8, decay: 30 };
+    const spread = j => { const s = Math.sin((j + 1) * 12.9898) * 43758.5453; return 0.7 + 0.6 * (s - Math.floor(s)); };
+    // τ of neuron j in layer k (1 = first hidden layer), in seconds, for shock level E.
+    function odeTau(k, j, E = 0, o = ODE) {
+      const base = o.tau[Math.min(o.tau.length, Math.max(1, k)) - 1] * spread(j + k * 97);
+      return Math.max(base / o.floor, base / (1 + o.kappa * Math.max(0, E)));
+    }
+    // Shock level now from event times (ms) and weights: E = Σ w · exp(−age / decay).
+    function odeShock(events, now, o = ODE) {
+      let E = 0;
+      for (const e of events || []) { const age = (now - e.t) / 1000; if (age >= 0) E += (Number.isFinite(e.w) ? e.w : 1) * Math.exp(-age / o.decay); }
+      return E;
+    }
+    // Start at rest for input x: the feed-forward activations.
+    function odeInit(net, x) { const f = forward(net, x); return { s: f.a.slice(1).map(a => Float64Array.from(a)), t: 0, steps: 0 }; }
+    // ds/dt for every layer at state s, input x and the τ table.
+    function odeDeriv(net, x0, s, taus, out) {
+      const L = lay(net), p = net.p;
+      for (let k = 0; k < L.off.length; k++) {
+        const o = L.off[k], prev = k ? s[k - 1] : x0, sk = s[k], dk = out[k], tk = taus[k], last = k === L.off.length - 1;
+        for (let j = 0; j < o.o; j++) {
+          let z = p[o.b + j];
+          const row = o.w + j * o.i;
+          for (let i = 0; i < o.i; i++) z += p[row + i] * prev[i];
+          dk[j] = ((last ? Math.tanh(z) : z > 0 ? z : 0) - sk[j]) / tk[j];
+        }
+      }
+      return out;
+    }
+    // Advances state st by dt seconds with input x held, at shock level E. Returns the number of sub-steps.
+    function odeStep(net, x, st, dt, E = 0, o = ODE) {
+      if (!(dt > 0)) return 0;
+      const L = lay(net), x0 = Float64Array.from(x, v => (Number.isFinite(v) ? v : 0));
+      const taus = L.off.map((ly, k) => Float64Array.from({ length: ly.o }, (_, j) => odeTau(k + 1, j, E, o)));
+      let tmin = Infinity;
+      for (const t of taus) for (const v of t) if (v < tmin) tmin = v;
+      const n = Math.min(4000, Math.max(1, Math.ceil(dt / (tmin / 2)))), h = dt / n;
+      const k1 = st.s.map(a => new Float64Array(a.length)), k2 = st.s.map(a => new Float64Array(a.length)), pr = st.s.map(a => new Float64Array(a.length));
+      for (let r = 0; r < n; r++) {
+        odeDeriv(net, x0, st.s, taus, k1);
+        for (let k = 0; k < pr.length; k++) for (let j = 0; j < pr[k].length; j++) pr[k][j] = st.s[k][j] + h * k1[k][j];
+        odeDeriv(net, x0, pr, taus, k2);
+        for (let k = 0; k < pr.length; k++) for (let j = 0; j < pr[k].length; j++) st.s[k][j] += h / 2 * (k1[k][j] + k2[k][j]);
+      }
+      st.t += dt; st.steps += n; st.lastTauMin = tmin; st.lastH = h;
+      return n;
+    }
+    // Largest |x − σ(z)| over all neurons: how far the flow is from rest.
+    function odeGap(net, x, st) {
+      const f = forward(net, x);
+      let g = 0;
+      for (let k = 0; k < st.s.length; k++) for (let j = 0; j < st.s[k].length; j++) g = Math.max(g, Math.abs(st.s[k][j] - f.a[k + 1][j]));
+      return g;
+    }
     const act = (k, last, z) => (k === 0 ? z : last ? Math.tanh(z) : Math.max(0, z));
-    return { SIZES, layout, init, forward, lossOf, grad, train, act, rng };
+    return { SIZES, layout, init, forward, lossOf, grad, train, act, rng, ODE, odeTau, odeShock, odeInit, odeDeriv, odeStep, odeGap };
   }
   const nn = nnFactory();
 
@@ -632,6 +769,49 @@ export const OMEGA_MATH = (() => {
         out.push({ geometry: { type: "Point", coordinates: [+loc.lon, +loc.lat] }, properties: { alertlevel: "Orange", eventtype: String(f.primary_type && f.primary_type.code || ""), name: String(f.name || "").slice(0, 140), url: { report: String(f.url || "") }, basis: "ReliefWeb status alert, placed at the country centre" } });
       }
       return { format: "omega-alerts-v1", via: "ReliefWeb", rule: "ReliefWeb status alert", features: out.slice(0, 100) };
+    },
+    // ADR-110. SANS Internet Storm Center InfoCON: {"status": "green"} from /api/infocon?json (also plain text).
+    infocon(j) {
+      const v = String(j && typeof j === "object" ? (j.status ?? j.infocon ?? "") : j || "").trim().toLowerCase();
+      const level = ["green", "yellow", "orange", "red"].indexOf(v);
+      if (level < 0) throw new Error("not an InfoCON answer");
+      return { format: "omega-infocon-v1", status: v, level };
+    },
+    // Shodan InternetDB for one address. Its 404 ("No information available") means Shodan holds no record.
+    internetdb(j, ip) {
+      if (!j || typeof j !== "object") throw new Error("not an InternetDB answer");
+      if (!Array.isArray(j.ports)) { if (/no information/i.test(String(j.detail || ""))) return { ip, ports: [], vulns: [], tags: [], hostnames: [], none: true }; throw new Error("not an InternetDB answer"); }
+      const str = a => (Array.isArray(a) ? a : []).map(String).slice(0, 40);
+      return { ip: String(j.ip || ip), ports: j.ports.filter(Number.isInteger).slice(0, 60), vulns: str(j.vulns), tags: str(j.tags), hostnames: str(j.hostnames).slice(0, 5) };
+    },
+    internetdbSet(list) {
+      const hosts = list.map((j, i) => ({ ...shape.internetdb(j, INTERNETDB_HOSTS[i][0]), name: INTERNETDB_HOSTS[i][1] }));
+      return { format: "omega-internetdb-v1", hosts, vulns: hosts.reduce((n, h) => n + h.vulns.length, 0) };
+    },
+    // adsb.lol v2 (the ADS-B Exchange v2 schema): {ac: [{hex, flight, lat, lon, alt_baro, squawk, emergency}], now}.
+    adsb(j) {
+      const ac = j && Array.isArray(j.ac) ? j.ac : null;
+      if (!ac) throw new Error("not an adsb.lol answer");
+      const emerg = [];
+      for (const a of ac) {
+        const sq = String(a.squawk || ""), em = String(a.emergency || "none");
+        if (!(SQUAWKS[sq] || (em && em !== "none"))) continue;
+        if (!Number.isFinite(+a.lat) || !Number.isFinite(+a.lon)) continue;
+        emerg.push({ hex: String(a.hex || "").slice(0, 8), flight: String(a.flight || "").trim().slice(0, 10), lat: +a.lat, lon: +a.lon, alt: a.alt_baro === "ground" ? 0 : Number.isFinite(+a.alt_baro) ? +a.alt_baro : null, squawk: sq, emergency: em, meaning: SQUAWKS[sq] || em });
+        if (emerg.length >= 60) break;
+      }
+      return { n: ac.length, emerg, at: Number.isFinite(+j.now) ? +j.now : null };
+    },
+    // One answer for the squawk 7700 list and the six zone queries, in AIR_ZONES order after it.
+    adsbSet(list) {
+      if (!Array.isArray(list) || list.length !== AIR_ZONES.length + 1) throw new Error("adsb set needs 7 answers");
+      const sq = shape.adsb(list[0]), zones = AIR_ZONES.map((z, i) => { const r = shape.adsb(list[i + 1]); return { key: z.key, en: z.en, lat: z.lat, lon: z.lon, n: r.n, emerg: r.emerg.length }; });
+      return { format: "omega-adsb-v1", source: "adsb.lol (ODbL 1.0)", radiusNm: AIR_RADIUS_NM, emergencies: sq.emerg, zones, at: sq.at };
+    },
+    // A RIS Live sample (risSummary) taken by the snapshot or the page; passed through after a sanity check.
+    ris(j) {
+      if (!j || j.format !== "omega-ris-v1" || !Array.isArray(j.prefixes) || !Number.isFinite(j.index)) throw new Error("not a RIS Live summary");
+      return j;
     }
   };
   // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
@@ -652,8 +832,17 @@ export const OMEGA_MATH = (() => {
     gdacs: () => "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",
     gdacsSearch: now => { const d = t => new Date(t).toISOString().slice(0, 10); return `https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=EQ;TC;FL;VO;DR;WF&alertlevel=Orange;Red&fromDate=${d(now - 7 * 86400e3)}&toDate=${d(now)}`; },
     emsc: now => `https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=200&minmag=6&starttime=${new Date(win15(now) * 1000 - 7 * 86400e3).toISOString().slice(0, 19)}`,
-    reliefweb: () => "https://api.reliefweb.int/v2/disasters?appname=omega-giant-core&profile=list&limit=50&filter[field]=status&filter[value]=alert&fields[include][]=primary_country.location&fields[include][]=primary_type.code&fields[include][]=status&fields[include][]=url"
+    reliefweb: () => "https://api.reliefweb.int/v2/disasters?appname=omega-giant-core&profile=list&limit=50&filter[field]=status&filter[value]=alert&fields[include][]=primary_country.location&fields[include][]=primary_type.code&fields[include][]=status&fields[include][]=url",
+    infocon: () => "https://isc.sans.edu/api/infocon?json",
+    internetdb: ip => `https://internetdb.shodan.io/${ip}`,
+    adsbSqk: code => `https://api.adsb.lol/v2/sqk/${code}`,
+    adsbZone: key => { const z = AIR_ZONES.find(x => x.key === key); return z ? `https://api.adsb.lol/v2/point/${z.lat}/${z.lon}/${AIR_RADIUS_NM}` : ""; },
+    risLive: () => "wss://ris-live.ripe.net/v1/ws/?client=omega-giant-core",
+    // NASA GIBS WMTS (EPSG:3857, "best"): VIIRS Black Marble night lights (2016 composite) and the MODIS
+    // Terra + Aqua thermal anomalies of the latest day. Keyless; credit "NASA GIBS".
+    gibs: (layer, z, x, y) => layer === "night" ? `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/${z}/${y}/${x}.png`
+      : `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Combined_Thermal_Anomalies_All/default/default/GoogleMapsCompatible_Level9/${z}/${y}/${x}.png`
   };
 
-  return Object.freeze({ shape, urls, RIPE_ASNS, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+  return Object.freeze({ shape, urls, RIPE_ASNS, RIS_WATCH, INTERNETDB_HOSTS, AIR_ZONES, AIR_RADIUS_NM, SQUAWKS, risSummary, risSubscribe, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
 })();

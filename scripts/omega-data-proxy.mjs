@@ -38,6 +38,13 @@
 //   /market/deribit/dvol/BTC    -> Deribit DVOL hourly candles, last 48 h                    (cached 15 min)
 //   /market/depth/<SYM>, /market/trades/<SYM> -> Binance spot book (100 levels) and the last 300
 //                              trades, for the local MCP bridge (cached 5 s)
+// Cyber storm and air radar (ADR-110), keyless:
+//   /cyber/infocon          -> SANS Internet Storm Center InfoCON level                       (cached 15 min)
+//   /cyber/internetdb/<ip>  -> Shodan InternetDB record of one of four public resolvers (1.1.1.1, 8.8.8.8,
+//                              9.9.9.9, 208.67.222.222): a lookup of Shodan's weekly data, not a scan (cached 6 h)
+//   /osiris/adsb/sqk/<7500|7600|7700> -> adsb.lol aircraft squawking an emergency code, worldwide (cached 2 min)
+//   /osiris/adsb/zone/<key> -> adsb.lol aircraft within 150 nm of a strait or the Taiwan Strait   (cached 5 min)
+// RIS Live is a WebSocket the page opens itself (wss://ris-live.ripe.net); the hourly snapshot keeps a sample.
 // Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
 // identical requests in flight share one upstream call; each host keeps a minimum gap between calls
 // (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
@@ -126,13 +133,18 @@ const ROUTES = [
   { re: /^\/cyber\/ioda$/, url: () => U.ioda(Date.now()), ttl: HOUR / 4, type: "application/json", sec: false, transform: json(j => S.ioda(j)) },
   { re: /^\/market\/deribit\/options\/BTC$/, url: () => U.deribit(), ttl: 2 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.deribit(j)) },
   { re: /^\/market\/deribit\/dvol\/BTC$/, url: () => U.dvol(Date.now()), ttl: HOUR / 4, type: "application/json", sec: false, transform: json(j => S.dvol(j)) },
+  { re: /^\/cyber\/infocon$/, url: () => U.infocon(), ttl: HOUR / 4, type: "application/json", sec: false, transform: buf => { const t = buf.toString("utf8"); let j; try { j = JSON.parse(t); } catch { j = t; } return Buffer.from(JSON.stringify(S.infocon(j))); } },
+  { re: /^\/cyber\/internetdb\/(1\.1\.1\.1|8\.8\.8\.8|9\.9\.9\.9|208\.67\.222\.222)$/, url: m => U.internetdb(m[1]), ttl: 6 * HOUR, type: "application/json", sec: false, transform: (buf, m) => Buffer.from(JSON.stringify(S.internetdb(JSON.parse(buf.toString("utf8")), m[1]))) },
+  { re: /^\/osiris\/adsb\/sqk\/(7500|7600|7700)$/, url: m => U.adsbSqk(m[1]), ttl: 2 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.adsb(j)) },
+  { re: /^\/osiris\/adsb\/zone\/(hormuz|bab|suez|malacca|panama|taiwan)$/, url: m => U.adsbZone(m[1]), ttl: 5 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.adsb(j)) },
   { re: /^\/market\/depth\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/depth?symbol=${m[1]}&limit=100`, ttl: 5000, type: "application/json", sec: false },
   { re: /^\/market\/trades\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/aggTrades?symbol=${m[1]}&limit=300`, ttl: 5000, type: "application/json", sec: false },
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
 const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com",
   "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com",
-  "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int"]);
+  "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int",
+  "isc.sans.edu", "internetdb.shodan.io", "api.adsb.lol"]);
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -168,7 +180,9 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 // Minimum gap between calls to one host. SEC allows 10 requests per second; GDELT asks for one every 5 s;
 // anonymous OpenSky refreshes every 10 s. Other hosts get 250 ms.
 // CelesTrak blocks clients that ask for the same group more than its update cycle; RIPEstat and IODA get 1 s.
-const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000 };
+// SANS asks for light use of its API, adsb.lol for about one request a second (ADR-110).
+const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
+  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 1100 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -307,7 +321,13 @@ const PROBES = [
   { name: "CISA KEV", via: "proxy /cyber/kev", url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" },
   { name: "RIPEstat", via: "browser + proxy /cyber/ripe", url: "https://stat.ripe.net/data/routing-status/data.json?resource=AS3356&sourceapp=omega-giant-core" },
   { name: "IODA outages", via: "proxy /cyber/ioda", url: OMEGA_MATH.urls.ioda(Date.now()) },
-  { name: "Deribit public", via: "browser + proxy /market/deribit", url: "https://www.deribit.com/api/v2/public/test" }
+  { name: "Deribit public", via: "browser + proxy /market/deribit", url: "https://www.deribit.com/api/v2/public/test" },
+  { name: "SANS ISC InfoCON", via: "proxy /cyber/infocon", url: OMEGA_MATH.urls.infocon() },
+  { name: "Shodan InternetDB", via: "proxy /cyber/internetdb", url: OMEGA_MATH.urls.internetdb("1.1.1.1") },
+  { name: "adsb.lol (ODbL)", via: "proxy /osiris/adsb", url: OMEGA_MATH.urls.adsbSqk(7700) },
+  { name: "RIS Live (WebSocket host)", via: "browser wss", url: "https://ris-live.ripe.net/manual/" },
+  { name: "NASA GIBS night lights", via: "browser tiles", url: OMEGA_MATH.urls.gibs("night", 0, 0, 0) },
+  { name: "NASA GIBS thermal anomalies", via: "browser tiles", url: OMEGA_MATH.urls.gibs("heat", 0, 0, 0) }
 ];
 const tty = process.stdout.isTTY;
 const paint = (code, t) => tty ? `\x1b[${code}m${t}\x1b[0m` : t;

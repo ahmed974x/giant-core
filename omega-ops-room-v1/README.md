@@ -94,6 +94,16 @@ Every page has a strict, hash-pinned CSP. After editing any inline script or sty
 - **Command wall:** view 5 at 1280 px and up shows four quadrants in one screen (OSIRIS · live chart and whales · court and physics · wallet and receipts). Each quadrant scrolls on its own and has a maximize button.
 - **Keys:** `1`–`5` views, `K` emergency stop, `S` sweep profit above the locked base now (paper ledger, with a receipt), `X` Architect X-Ray, `Esc` restore a maximized quadrant. Keys are ignored while typing in a field.
 
+## Phase 14: cyber storm radar, continuous-time neural flow, 24/24 self-test (ADR-110)
+
+- **Cyber storm:** SANS ISC InfoCON and Shodan InternetDB (open ports and CVEs of 1.1.1.1, 8.8.8.8, 9.9.9.9 and 208.67.222.222 only) through the local proxy, then the hourly snapshot. CSTI now has seven possible parts and says how many it used.
+- **RIS Live BGP:** a read-only WebSocket for the four DNS anycast prefixes. Foreign origins and more-specific routes raise an instability index and a "possible hijack or leak [INFERENCE]" line. The socket closes while the tab is hidden and backs off from 30 s to 10 min.
+- **Air emergencies:** adsb.lol (ODbL) squawk 7500/7600/7700 diamonds worldwide and aircraft counts within 150 nm of Hormuz, Bab el-Mandeb, Suez, Malacca, Panama and Taiwan.
+- **Straits:** each callout lists its cable corridors and landings within 600 km (a Caribbean to Pacific corridor through Panama was added) and says that ships with AIS switched off have no free source.
+- **NASA GIBS overlays:** VIIRS Black Marble night lights (2016) and the latest day's MODIS thermal anomalies over the flat map, layer "Night & heat".
+- **Continuous-time neural flow:** between readings the 139 → 8 network runs as dx/dt = (σ(Wx + b) − x) / τ with Heun steps. Shocks shorten τ up to eightfold and fade over 30 s; the oscilloscope shows x(t) and τ.
+- **Self-test 24/24** on the laptop with the proxy running. The four new checks fail honestly where outbound data is blocked.
+
 ## Phase 13: deep neural flow, X-Ray, chrono-scrubber, adaptive regime, 16/16 sources (ADR-109)
 
 - **Deep neural flow** (views 1, 3 and 5): 139 inputs from the page's real readings (book, microprice, tape, flow physics, Deribit and funding, mempool, OSIRIS) → ReLU layers 48 → 36 → 48 → 24 → 16 → 8 tanh decision heads (direction, half-Kelly, target, stop, breaker, $20 base recovery, sweep, confidence with the last receipt hash). 11,792 weights. A missing source enters as 0 and is drawn hollow. Zoom and pan; hover, tap or the arrow keys open the glass **oscilloscope** (activation function with the live operating point, the activation over the ring, the equation with numbers, the strongest w·a).
