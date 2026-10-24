@@ -171,6 +171,43 @@
     --apple-cyan: oklch(81.7% 0.129 227.7);
   }
 }
+/* ADR-127: the dark gold peak (الذروة الذهبية المظلمة), a tone on top of the dark theme: warm near-black
+   surfaces, gold as the one accent, ivory text. Status colours keep their meaning. Gated with the other modes. */
+:root[data-theme="dark"][data-tone="gold"] {
+  --bg: oklch(11.5% 0.012 75);
+  --surface: oklch(18.5% 0.016 78);
+  --surface-2: oklch(24.5% 0.02 80);
+  --glass: oklch(18.5% 0.016 78 / 0.82);
+  --hairline-color: oklch(86% 0.11 86 / 0.2);
+  --shadow-color: 40 40% 3%;
+  --content-primary: oklch(96.5% 0.018 92);
+  --content-secondary: oklch(86% 0.035 86);
+  --content-tertiary: oklch(81% 0.04 84);
+  --accent: oklch(84.5% 0.135 86);
+  --gold: oklch(88.5% 0.15 93);
+  --violet: oklch(81% 0.125 312);
+  --success: oklch(80% 0.175 147);
+  --warning: oklch(81% 0.145 58);
+  --danger: oklch(80.5% 0.11 28);
+  --accent-fill: oklch(84.5% 0.135 86);
+  --on-accent-fill: oklch(14% 0.014 75);
+  --gold-fill: oklch(88.5% 0.15 93);
+  --on-gold-fill: oklch(14% 0.014 75);
+  --danger-fill: oklch(80.5% 0.11 28);
+  --on-danger-fill: oklch(14% 0.014 75);
+  --tint-accent: oklch(78% 0.15 86 / 0.14);
+  --land: oklch(86% 0.06 86 / 0.45);
+  --sphere-a: oklch(26% 0.03 80);
+  --sphere-b: oklch(16% 0.016 75);
+}
+@media (color-gamut: p3) {
+  :root[data-theme="dark"][data-tone="gold"] {
+    --accent: oklch(84.5% 0.15 86); --gold: oklch(88.5% 0.17 93); --accent-fill: oklch(84.5% 0.15 86); --gold-fill: oklch(88.5% 0.17 93);
+    --success: oklch(80% 0.2 147); --warning: oklch(81% 0.165 58); --danger: oklch(80.5% 0.135 28); --danger-fill: oklch(80.5% 0.135 28); --violet: oklch(81% 0.14 312);
+  }
+}
+.suite-tone { width: 100%; border: 0; background: transparent; font: inherit; text-align: start; cursor: pointer; }
+.suite-tone[aria-pressed="true"] .suite-ico { background: var(--gold-fill); color: var(--on-gold-fill); }
 
 *, *::before, *::after { box-sizing: border-box; }
 html {

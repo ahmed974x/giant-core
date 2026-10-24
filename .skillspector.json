@@ -92,12 +92,12 @@
     {
       "rule": "SEC-STORAGE",
       "path": "site-landing/index.html",
-      "reason": "Stores the light/dark theme choice only."
+      "reason": "Stores the light/dark theme choice and, since ADR-127, the dark gold tone (omega-tone: gold or none) only."
     },
     {
       "rule": "SEC-STORAGE",
       "path": "site-landing/en.html",
-      "reason": "Stores the light/dark theme choice only."
+      "reason": "Stores the light/dark theme choice and, since ADR-127, the dark gold tone (omega-tone: gold or none) only."
     },
     {
       "rule": "SEC-STORAGE",
@@ -313,6 +313,16 @@
       "rule": "SEC-EXEC",
       "path": "scripts/test-knowledge.mjs",
       "reason": "Test only (ADR-126): spawnSync(process.execPath, [scripts/build-knowledge-inline.mjs | scripts/build-brain-inline.mjs | scripts/build-core-inline.mjs, --check]) with no shell and no user input; it checks that the knowledge domain page carries the current engine and registry copies."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-apex.html",
+      "reason": "Stores the theme choice, the dark gold tone (omega-tone), the suite's shared state, the language choice, the last council question (omega-apex-last-v1) and one checked paper plan for PRIME (omega-know-plan-v1, ADR-127); it reads the second brain's ideas, TRADE LAB notes and plan, ORACLE questions and THE CHAIN notes from this browser to sort them. No secret, key or vault entry is read or stored."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-apex.mjs",
+      "reason": "Test only (ADR-127): spawnSync(process.execPath, [scripts/build-apex-inline.mjs, --check]) with no shell and no user input; it checks that the APEX page carries the current engine and registry copy."
     }
   ]
 }

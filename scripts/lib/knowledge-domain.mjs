@@ -4,7 +4,7 @@
 // describes is the optional Wikidata / OpenAlex enrichment, whose URLs it builds and whose answers it shapes, and
 // the page makes those calls only when the person presses the button.
 //
-// One typed graph joins everything OMEGA already knows: fifteen domains, the eight pages, PRIME and its nine
+// One typed graph joins everything OMEGA already knows: fifteen domains, the nine pages, PRIME and its nine
 // helpers, ORACLE's seventeen open sources, the open-source library (ADR-125) plus the knowledge-graph tools below,
 // every decision record in docs/adr, and the ideas the second brain organised in this browser. Links come from
 // fixed tables (a source feeds a domain, a helper watches it) or from shared words (an idea is about a domain),
@@ -31,14 +31,14 @@ const DOMAINS = Object.freeze([
   { id: "space", ar: "الفضاء والأقمار", en: "Space and satellites", words: "space satellite satellites orbit orbits kp solar storm celestrak sgp4 rocket launch فضاء قمر اقمار مدار شمسي عاصفة صاروخ", lib: ["map"], sources: ["arxiv", "osti"], helpers: ["sentinel"], pages: ["ops"], q: "space weather" },
   { id: "news", ar: "الأخبار والأحداث", en: "News and world events", words: "news event events conflict gdelt war crisis tone coverage اخبار خبر حدث احداث صراع حرب ازمة", lib: ["osint"], sources: ["gdelt", "wikipedia", "wayback"], helpers: ["sentinel", "research"], pages: ["oracle", "ops"], q: "news media" },
   { id: "vision", ar: "الكاميرات والرؤية", en: "Cameras and vision", words: "camera cameras video vision image detection cctv كاميرا كاميرات فيديو رؤية صورة صور", lib: ["cam"], sources: [], helpers: ["sentinel"], pages: ["ops"], q: "computer vision" },
-  { id: "ai", ar: "الذكاء الاصطناعي والوكلاء", en: "AI and agents", words: "ai agent agents model models llm neural network ollama prime planner memory mission ذكاء وكيل وكلاء نموذج نماذج شبكة عصبية مهمة", lib: ["ai"], sources: ["arxiv", "semanticscholar", "dblp"], helpers: ["research", "ops"], pages: ["core", "ops"], q: "intelligent agent" },
-  { id: "knowledge", ar: "المعرفة والبحث", en: "Knowledge and research", words: "knowledge research paper papers idea ideas note notes brain graph source sources citation wiki معرفة بحث ورقة اوراق فكرة افكار ملاحظة مخ عقل مصدر مصادر", lib: ["brain", "kg"], sources: ["openalex", "crossref", "wikipedia", "wikidata", "doaj", "wayback"], helpers: ["research"], pages: ["brain", "oracle", "know"], q: "knowledge graph" },
+  { id: "ai", ar: "الذكاء الاصطناعي والوكلاء", en: "AI and agents", words: "ai agent agents model models llm neural network ollama prime planner memory mission ذكاء وكيل وكلاء نموذج نماذج شبكة عصبية مهمة", lib: ["ai"], sources: ["arxiv", "semanticscholar", "dblp"], helpers: ["research", "ops"], pages: ["core", "ops", "apex"], q: "intelligent agent" },
+  { id: "knowledge", ar: "المعرفة والبحث", en: "Knowledge and research", words: "knowledge research paper papers idea ideas note notes brain graph source sources citation wiki معرفة بحث ورقة اوراق فكرة افكار ملاحظة مخ عقل مصدر مصادر", lib: ["brain", "kg"], sources: ["openalex", "crossref", "wikipedia", "wikidata", "doaj", "wayback"], helpers: ["research"], pages: ["brain", "oracle", "know", "apex"], q: "knowledge graph" },
   { id: "design", ar: "التصميم والواجهة", en: "Design and interface", words: "design ui interface chart charts colour color contrast apple glass layout mobile font تصميم واجهة رسم رسوم لون الوان تباين جوال خط", lib: ["ui"], sources: [], helpers: ["ops"], pages: ["nabd", "ops"], q: "user interface design" },
   { id: "security", ar: "الأمان والخصوصية", en: "Security and privacy", words: "security csp secret vault key keys privacy encryption hash receipt shield audit امان خزنة مفتاح مفاتيح خصوصية تشفير فاتورة درع", lib: ["sec"], sources: ["nvd"], helpers: ["audit", "ops"], pages: ["ops"], q: "information privacy" },
   { id: "medicine", ar: "الطب والصحة", en: "Medicine and health", words: "medicine medical health clinical trial disease drug patient طب صحة مرض دواء علاج مريض تجربة سريرية", lib: [], sources: ["pubmed", "europepmc", "clinicaltrials"], helpers: ["research"], pages: ["oracle"], q: "medicine" },
   { id: "science", ar: "العلوم والصناعة", en: "Science and industry", words: "science industry physics chemistry engineering dataset report algorithm math علم علوم صناعة فيزياء كيمياء هندسة خوارزمية رياضيات", lib: [], sources: ["zenodo", "osti", "arxiv", "dblp"], helpers: ["research"], pages: ["oracle"], q: "applied science" }
 ]);
-// The eight OMEGA pages. `words` are the names a decision record uses for the page.
+// The nine OMEGA pages (the APEX council since ADR-127). `words` are the names a decision record uses for the page.
 const PAGES = Object.freeze([
   { id: "nabd", ar: "بوابة نبض", en: "NABD portal", file: "index.html", words: ["nabd", "landing", "site-landing"] },
   { id: "ops", ar: "غرفة العمليات", en: "Ops Room", file: "omega-ops-room.html", words: ["ops room", "omega-ops-room", "osiris"] },
@@ -47,7 +47,8 @@ const PAGES = Object.freeze([
   { id: "lab", ar: "مختبر المتداول", en: "TRADE LAB", file: "omega-trade-lab.html", words: ["trade lab", "trade-lab"] },
   { id: "brain", ar: "المخ الثاني", en: "Second brain", file: "omega-second-brain.html", words: ["second brain", "second-brain"] },
   { id: "core", ar: "النواة", en: "Core", file: "omega-core.html", words: ["agent core", "omega-core"] },
-  { id: "know", ar: "نطاق المعرفة", en: "Knowledge domain", file: "omega-knowledge.html", words: ["knowledge domain", "omega-knowledge"] }
+  { id: "know", ar: "نطاق المعرفة", en: "Knowledge domain", file: "omega-knowledge.html", words: ["knowledge domain", "omega-knowledge"] },
+  { id: "apex", ar: "مجلس القمة", en: "APEX council", file: "omega-apex.html", words: ["apex council", "omega-apex", "field helpers"] }
 ]);
 // Which PRIME tool each helper runs (scripts/lib/agent-core.mjs TOOLS). The paper executor has no plan tool: it
 // opens a paper trade only on the risk judge's OPEN, never from a plan.

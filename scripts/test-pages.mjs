@@ -38,7 +38,7 @@ for (const p of PAGES) {
 }
 test("site-landing/style.css closes its braces", () => { const d = depth(read("site-landing/style.css")); assert(d === 0, `ends at depth ${d}`); });
 
-for (const p of ["omega-oracle", "omega-trade-lab", "omega-second-brain", "omega-core", "omega-knowledge", "the-chain"].map(n => `omega-ops-room-v1/${n}.html`)) {
+for (const p of ["omega-oracle", "omega-trade-lab", "omega-second-brain", "omega-core", "omega-knowledge", "omega-apex", "the-chain"].map(n => `omega-ops-room-v1/${n}.html`)) {
   test(`${p}: Arabic brand and status text untracked, number headers in the Arabic face`, () => {
     const h = read(p);
     assert(/:root\[lang="ar"\] \.brand, :root\[lang="ar"\] \.status-pill \{ letter-spacing: 0; \}/.test(h), "missing the Arabic letter-spacing reset");
