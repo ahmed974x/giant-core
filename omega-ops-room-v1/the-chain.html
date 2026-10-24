@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-axk4DdvcG+rOxsatky1Q6H81BxbH80EsimdoXO1bU/I=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4='; style-src 'sha256-YIIlF0b5uWYtD5LIVMNMZH+QedOOjyDH0ZVu7F1nKuw='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-axk4DdvcG+rOxsatky1Q6H81BxbH80EsimdoXO1bU/I=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4='; style-src 'sha256-LheFKa9s+OAPEgSNb+ug86uHUw2ms9Bl+3q988Cde2E='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -546,6 +546,12 @@
   .suite-app:active { transform: scale(0.98); }
   @media (max-width: 640px) { .bar-right { width: 100%; justify-content: flex-end; } .bar-right .status-pill { flex: 1 1 100%; } }
   @media (prefers-reduced-motion: no-preference) { .suite-app { transition: transform var(--dur-fast, 180ms) var(--ease-apple-fluid, ease); } }
+  /* Touch targets (DESIGN.md §5, ADR-113, ADR-115): 44 px under a coarse pointer. Kept last so it wins over the denser desktop sizes above. */
+  @media (pointer: coarse) {
+    .btn, select, .skip { min-height: 44px; }
+    .skip, .back-link { display: inline-flex; align-items: center; }
+    .back-link { min-height: 44px; }
+  }
 </style>
 </head>
 <body>

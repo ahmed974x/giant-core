@@ -1,4 +1,4 @@
-// Tests for the deep research engine (scripts/lib/deep-research.mjs, ADR-114) and the ORACLE page's inline copy.
+// Tests for the deep research engine (scripts/lib/deep-research.mjs, ADR-114 and ADR-115) and the ORACLE page's inline copy.
 //   node scripts/test-research.mjs        exits 0 when every test passes
 // No network, no dependencies. The answers below are small hand-made test fixtures in the shape each public API
 // documents; they are never shown on a page. CI runs this in the skillspector workflow.
@@ -47,7 +47,29 @@ const FIX = {
   arxiv: `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><entry><id>http://arxiv.org/abs/2501.00001v1</id><published>2025-01-02T00:00:00Z</published><title>Deep learning detects coral bleaching from satellite imagery</title><summary>We show that a convolutional network detects coral bleaching from satellite images with high accuracy across reefs during heatwaves.</summary><author><name>C. Coder</name></author><link title="pdf" href="https://arxiv.org/pdf/2501.00001v1" rel="related" type="application/pdf"/></entry></feed>`,
   s2: { data: [{ title: "Global warming transforms coral reef assemblages", year: 2018, citationCount: 1600, externalIds: { DOI: "10.1038/s41586-018-0041-2" }, url: "https://www.semanticscholar.org/paper/x", openAccessPdf: null, venue: "Nature", authors: [{ name: "T. Hughes" }] }] },
   gdelt: { articles: [{ url: "https://news.example.com/coral-2026", title: "Record coral bleaching reported on reefs", seendate: "20261001T101500Z", domain: "news.example.com", language: "English" }] },
-  wayback: { archived_snapshots: { closest: { available: true, url: "http://web.archive.org/web/20261002000000/https://news.example.com/coral-2026", timestamp: "20261002000000", status: "200" } } }
+  wayback: { archived_snapshots: { closest: { available: true, url: "http://web.archive.org/web/20261002000000/https://news.example.com/coral-2026", timestamp: "20261002000000", status: "200" } } },
+  // ADR-115
+  doaj: { results: [
+    { bibjson: { title: "Coral bleaching physiology under marine heatwaves", year: "2024", month: "5", author: [{ name: "J. Doe" }], identifier: [{ type: "doi", id: "10.1000/CB.2024.1" }, { type: "eissn", id: "1234-5678" }],
+      link: [{ type: "fulltext", url: "https://journal.example.org/cb2024", content_type: "HTML" }], journal: { title: "Open Marine Biology", language: ["EN"] }, abstract: ABS2, keywords: ["coral", "bleaching"] } },
+    { bibjson: { title: "ابيضاض الشعاب المرجانية في البحر الأحمر", year: "2023", author: [{ name: "س. باحث" }], identifier: [], link: [{ type: "fulltext", url: "https://ar.journal.example.org/1" }], journal: { title: "مجلة علوم البحار", language: ["AR"] } } }
+  ] },
+  dblp: { result: { hits: { "@total": "2", hit: [
+    { info: { authors: { author: [{ text: "C. Coder" }, { text: "D. Dev" }] }, title: "Deep learning detects coral bleaching from satellite imagery.", venue: "CoRR", year: "2025", type: "Informal and Other Publications", ee: "https://arxiv.org/abs/2501.00001", url: "https://dblp.org/rec/x" } },
+    { info: { authors: { author: { text: "E. Engineer" } }, title: "Edge sensors for reef temperature monitoring.", venue: ["IoT J.", "x"], year: "2023", type: "Journal Articles", doi: "10.1000/edge.2023", ee: ["https://doi.org/10.1000/edge.2023"] } }
+  ] } } },
+  wdSearch: { search: [{ id: "Q1047062", label: "coral bleaching", description: "loss of colour in corals" }, { id: "x1", label: "bad id" }] },
+  wdEntity: { entities: { Q1047062: { id: "Q1047062", labels: { en: { value: "coral bleaching" }, ar: { value: "ابيضاض المرجان" } }, descriptions: { en: { value: "loss of colour in corals" } },
+    sitelinks: { enwiki: { url: "https://en.wikipedia.org/wiki/Coral_bleaching" }, arwiki: { url: "javascript:alert(1)" } } } } },
+  nvd: { vulnerabilities: [
+    { cve: { id: "CVE-2026-1111", published: "2026-09-01T10:00:00.000", descriptions: [{ lang: "en", value: "A buffer overflow in the reef sensor firmware allows remote attackers to execute code. Attackers exploited the flaw against coral monitoring stations." }],
+      metrics: { cvssMetricV31: [{ cvssData: { version: "3.1", baseScore: 9.8, baseSeverity: "CRITICAL" } }] }, cisaExploitAdd: "2026-09-10" } },
+    { cve: { id: "CVE-2026-2222", published: "2026-10-01T10:00:00.000", descriptions: [{ lang: "es", value: "x" }, { lang: "en", value: "Cross-site scripting in the coral bleaching dashboard lets attackers inject script into reports viewed by operators." }],
+      metrics: { cvssMetricV31: [{ cvssData: { version: "3.1", baseScore: 6.1, baseSeverity: "MEDIUM" } }] } } },
+    { cve: { id: "not-a-cve" } }
+  ] },
+  gdeltVol: { timeline: [{ series: "Volume Intensity", data: Array.from({ length: 30 }, (_, i) => ({ date: `202609${String(i + 1).padStart(2, "0")}T000000Z`, value: i >= 23 ? 0.3 : 0.1 })) }] },
+  gdeltTone: { timeline: [{ series: "Average Tone", data: Array.from({ length: 30 }, (_, i) => ({ date: `202609${String(i + 1).padStart(2, "0")}T000000Z`, value: i >= 23 ? -4 : -1 })) }] }
 };
 const io = (fail = new Set()) => ({
   clock: () => 0,
@@ -62,8 +84,12 @@ const io = (fail = new Set()) => ({
     else if (source === "europepmc") data = FIX.europepmc;
     else if (source === "arxiv") { ok(type === "text", "arXiv is XML text"); data = FIX.arxiv; }
     else if (source === "semanticscholar") data = FIX.s2;
-    else if (source === "gdelt") data = FIX.gdelt;
+    else if (source === "gdelt") { const m = u.searchParams.get("mode"); data = m === "timelinevol" ? FIX.gdeltVol : m === "timelinetone" ? FIX.gdeltTone : FIX.gdelt; }
     else if (source === "wayback") data = FIX.wayback;
+    else if (source === "doaj") data = decodeURIComponent(u.pathname).includes("ابيضاض") ? { results: [FIX.doaj.results[1]] } : FIX.doaj;
+    else if (source === "dblp") data = FIX.dblp;
+    else if (source === "wikidata") data = u.searchParams.get("action") === "wbsearchentities" ? FIX.wdSearch : FIX.wdEntity;
+    else if (source === "nvd") data = FIX.nvd;
     else throw new Error("unknown source " + source);
     return { data: JSON.parse(JSON.stringify(data)), tier: "direct" };
   }
@@ -182,11 +208,81 @@ await test("run: failing sources become honest gaps, not invented data", async (
   ok(/مصادر لم تُجب/.test(g), "failed sources listed: " + g);
   ok(/لم يُجب أي مصدر/.test(g), "the news step says no source answered");
   ok(!out.records.some(r => r.kind === "news"), "no news invented");
-  const none = await R.run("Coral bleaching", { now: NOW, depth: 1 }, io(new Set(["wikipedia", "openalex", "crossref", "europepmc", "semanticscholar", "gdelt", "arxiv", "wayback"])));
+  const none = await R.run("Coral bleaching", { now: NOW, depth: 1 }, io(new Set(Object.keys(R.SOURCES))));
   ok(none.records.length === 0 && /تعذر التحقق منها/.test(none.markdown), "empty run says unverified");
   let threw = false;
   try { await R.run("؟ ! .", { now: NOW }, io()); } catch { threw = true; }
   ok(threw, "a question with no words is refused");
+});
+// ---- ADR-115: new sources, intel mode, trend ----
+await test("ADR-115 urls: DOAJ, dblp, Wikidata and NVD stay on their one API path", () => {
+  const src = { doaj: R.urls.doaj("coral bleaching"), dblp: R.urls.dblp("coral bleaching"), wikidata: R.urls.wikidataSearch("ar", "ابيضاض"), nvd: R.urls.nvd("reef sensor firmware", NOW) };
+  for (const [k, u] of Object.entries(src)) { ok(u && R.HOSTS.includes(new URL(u).hostname), "host " + k); ok(R.allowed(k, u), "proxy shape for " + k + " " + u); }
+  ok(R.allowed("wikidata", R.urls.wikidataEntity("Q42")) && R.urls.wikidataEntity("Q42|Q1") === null, "entity ids are checked");
+  ok(!R.allowed("doaj", "https://doaj.org/api/search/journals/coral") && !R.allowed("doaj", "https://doaj.org/api/search/articles/a/b") && !R.allowed("doaj", "https://doaj.org/api/search/articles/"), "DOAJ prefix holds one segment");
+  ok(!R.allowed("nvd", "https://services.nvd.nist.gov/rest/json/cpes/2.0?x=1") && !R.allowed("dblp", "https://dblp.org/search/author/api?q=x"), "other NVD and dblp paths refused");
+  const n = new URL(R.urls.nvd("Reef sensor firmware overflow attack", NOW));
+  ok(n.searchParams.get("keywordSearch") === "reef sensor firmware", "three keywords: " + n.searchParams.get("keywordSearch"));
+  const days = (Date.parse(n.searchParams.get("pubEndDate") + "Z") - Date.parse(n.searchParams.get("pubStartDate") + "Z")) / 864e5;
+  ok(days === 119 && n.searchParams.has("noRejected"), "a 119-day window inside NVD's 120-day limit: " + days);
+  ok(R.urls.nvd("ابيضاض المرجان", NOW) === null && R.urls.dblp("ابيضاض") === null, "no ASCII keyword, no NVD or dblp call");
+  ok(decodeURIComponent(R.urls.doaj("ابيضاض المرجان")).includes("ابيضاض المرجان"), "DOAJ keeps Arabic letters as typed");
+  ok(new URL(R.urls.gdeltTimeline("coral reef", "tone")).searchParams.get("mode") === "timelinetone", "tone timeline");
+});
+await test("ADR-115 shapes: DOAJ, dblp, Wikidata, NVD and GDELT timelines", () => {
+  const d = R.shape.doaj(FIX.doaj, "evidence");
+  ok(d.length === 2 && d[0].doi === "10.1000/cb.2024.1" && d[0].oa === "https://journal.example.org/cb2024" && d[0].date === "2024-05" && d[0].lang === "en", "doaj " + JSON.stringify(d[0]));
+  ok(d[1].lang === "ar" && d[1].kind === "paper", "Arabic DOAJ article");
+  const b = R.shape.dblp(FIX.dblp, "evidence");
+  ok(b[0].kind === "preprint" && b[0].title === "Deep learning detects coral bleaching from satellite imagery" && b[0].authors.length === 2, "dblp CoRR is a preprint");
+  ok(b[1].kind === "paper" && b[1].doi === "10.1000/edge.2023" && b[1].venue === "IoT J." && b[1].authors.join() === "E. Engineer", "dblp single author and arrays");
+  const s = R.shape.wikidataSearch(FIX.wdSearch);
+  ok(s.length === 1 && s[0].id === "Q1047062", "bad ids dropped");
+  const e = R.shape.wikidataEntity(FIX.wdEntity, "Q1047062", "en");
+  ok(e.other === "ابيضاض المرجان" && e.description === "loss of colour in corals" && e.wiki.ar === null && e.wiki.en, "entity " + JSON.stringify(e));
+  const v = R.shape.nvd(FIX.nvd, "cyber");
+  ok(v.length === 2 && v[0].key === "cve:CVE-2026-1111" && v[0].cve.score === 9.8 && v[0].cve.kev && v[0].cve.kevDate === "2026-09-10", "nvd " + JSON.stringify(v[0].cve));
+  ok(v[1].abstract.startsWith("Cross-site scripting") && !v[1].cve.kev && R.grade(v[1]) === "G", "English description, grade G");
+  const t = R.shape.gdeltTimeline(FIX.gdeltVol);
+  ok(t.length === 30 && t[0].date === "2026-09-01" && t[29].value === 0.3, "timeline");
+});
+await test("ADR-115 trend: last 7 days against the 3-month mean, by fixed rules", () => {
+  const tr = R.trend(R.shape.gdeltTimeline(FIX.gdeltVol), R.shape.gdeltTimeline(FIX.gdeltTone));
+  ok(tr.dir === "rising" && tr.ratio > 1.5 && tr.peak.date === "2026-09-24" && tr.days === 30, "rising " + JSON.stringify({ r: tr.ratio, p: tr.peak }));
+  ok(tr.tone.last7 === -4 && tr.tone.delta < 0, "tone falls");
+  const flat = Array.from({ length: 20 }, (_, i) => ({ date: "2026-01-" + String(i + 1).padStart(2, "0"), value: 1 }));
+  ok(R.trend(flat).dir === "steady" && R.trend(flat).tone === null, "steady");
+  ok(R.trend(flat.map((p, i) => ({ ...p, value: i >= 13 ? 0.2 : 1 }))).dir === "falling", "falling");
+  ok(R.trend(flat.slice(0, 10)) === null && R.trend(null) === null, "too short gives null");
+});
+await test("ADR-115 plan: intel mode reads news, trend and NVD, not the snowball", () => {
+  const p = R.plan("reef sensor firmware", { now: NOW, mode: "intel", depth: 2 });
+  ok(p.mode === "intel" && p.steps.map(s => s.id).join() === "define,news,trend,cyber,evidence,recent", "steps " + p.steps.map(s => s.id));
+  ok(R.plan("coral", {}).mode === "scholar" && R.plan("coral", { mode: "evil" }).mode === "scholar", "default and unknown modes are scholar");
+  ok(R.plan("coral", { now: NOW }).steps.find(s => s.id === "evidence").sources.includes("doaj"), "DOAJ in scholar evidence");
+});
+await test("ADR-115 run: scholar mode merges DOAJ and dblp, Wikidata gives the entity", async () => {
+  const out = await R.run("Coral bleaching and marine heatwaves", { now: NOW, depth: 1 }, io());
+  const cb = out.records.find(r => r.doi === "10.1000/cb.2024.1");
+  ok(cb.via.includes("doaj") && cb.oa, "DOAJ joined by DOI " + JSON.stringify(cb.via));
+  ok(out.records.some(r => r.via.includes("dblp")), "dblp record");
+  ok(out.records.some(r => r.via.includes("doaj") && r.lang === "ar" && r.steps.includes("arabic")), "Arabic DOAJ article through the bridge");
+  ok(out.entity && out.entity.id === "Q1047062" && out.report.sections.entity.id === "Q1047062", "entity card");
+  ok(out.report.mode === "scholar" && !out.report.sections.trend && !out.report.sections.advisories.length, "no intel sections in scholar mode");
+});
+await test("ADR-115 run: intel mode gives the trend, exploited CVEs first and an OSINT brief", async () => {
+  const out = await R.run("reef sensor firmware", { now: NOW, mode: "intel" }, io());
+  const rep = out.report;
+  ok(rep.mode === "intel" && rep.sections.trend && rep.sections.trend.dir === "rising", "trend in the report");
+  ok(rep.sections.advisories.length === 2 && rep.sections.advisories[0].r.cve.id === "CVE-2026-1111", "KEV first");
+  ok(rep.kpi.advisories === 2 && rep.kpi.kev === 1, "kpis " + JSON.stringify(rep.kpi));
+  ok(rep.sections.summary.some(s => /buffer overflow|Cross-site/.test(s.text)), "advisory sentences quoted verbatim");
+  ok(!out.runs.some(r => r.step === "snowball") && !out.runs.some(r => r.source === "crossref"), "intel mode skips the literature-only steps");
+  ok(out.markdown.includes("تقرير استخبارات مفتوحة المصدر") && out.markdown.includes("CISA KEV 2026-09-10") && out.markdown.includes("الاتجاه: صاعد") && out.markdown.includes("OSINT سلبي"), "markdown");
+  ok(rep.references.find(r => r.cve && r.cve.id === "CVE-2026-1111").grade === "G", "official record grade");
+  const offline = await R.run("reef sensor firmware", { now: NOW, mode: "intel" }, io(new Set(["gdelt", "nvd"])));
+  const g = offline.evaluation.gaps.map(x => x.ar).join(" | ");
+  ok(!offline.report.sections.trend && /لم يُجب أي مصدر/.test(g) && /أقل من 3 أخبار/.test(g), "honest gaps offline: " + g);
 });
 await test("the ORACLE page carries the current library copy", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-research-inline.mjs"), "--check"], { encoding: "utf8" });

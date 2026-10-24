@@ -48,7 +48,10 @@
     "core.ac.uk",
     "pubmed.ncbi.nlm.nih.gov",
     "qspace.qu.edu.qa",
-    "doaj.org"
+    "doaj.org",
+    "dblp.org",
+    "www.wikidata.org",
+    "services.nvd.nist.gov"
   ],
   "suppress": [
     {

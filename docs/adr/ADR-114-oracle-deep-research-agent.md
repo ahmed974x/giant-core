@@ -1,6 +1,6 @@
 # ADR-114: ORACLE, an open-source deep research agent on the public site
 
-Date: 2026-10-24 · Status: Proposed (Ahmad's Phase 16 directive of 2026-10-23; merge waits for his go)
+Date: 2026-10-24 · Status: Accepted (merged as PR #35 on 2026-10-24 after Ahmad's go; extended by ADR-115)
 
 ## Context
 Phase 16 came as a file of search-engine answers about free OSINT and research tools (Isnad, Open Access Button, OpenAlex-style indexes, Maltego, Shodan, Wayback, Google Dorks, Open Deep Research, LangGraph agents) and one line of direction: design a super AI research agent for the site, open source, free and reliable, think outside the box, research the tools, integrate them, add tools and skills, then plan and build it properly.
