@@ -2,13 +2,13 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-2Te5216QbHcqC3at5GkTsCOyqFdb9fbc6OKnRYkkxIs='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NABD نبض</title>
   <meta name="description" content="NABD: open research and learning tools for understanding markets, with five planned agents, two of them partly working today, a made-up-money practice account and plain reporting of what did not work.">
   <!-- DRAFT (ADR-071, ADR-087): not published. Domain, legal review and waitlist form wait for approval. -->
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#f9fafb">
+  <meta name="theme-color" content="#F5F5F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="NABD">
@@ -94,8 +94,40 @@
       <h2 id="agents-h">Five agents, each with one clear job</h2>
       <p class="lead">Every agent records what it did and why, and passes through check gates before its output touches any number. The status next to each agent is its real state today.</p>
     </div>
-    <div class="panel"><div class="grid grid-agents">
-      <article class="card">
+    <div class="panel">
+    <figure class="card threads" id="threads" aria-labelledby="threads-h">
+      <h3 id="threads-h">How the agents connect</h3>
+      <p class="th-lead">Each thread is a real link: who reads from whom and who writes where. The dot is the agent’s status today. No thread reaches a real exchange.</p>
+      <div class="th-stage" data-links="t-market>t-quant:data t-world>t-osint:data t-news>t-osint:data t-osint>t-quant:informs t-quant>t-exec:decides t-exec>t-paper:acts t-exec>t-receipts:acts t-paper>t-audit:informs t-audit>t-inbox:decides t-folio>t-inbox:locked">
+        <svg class="th-svg" aria-hidden="true" focusable="false"></svg>
+        <ul class="th-col th-src" aria-label="Sources">
+          <li class="th-node" id="t-market" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Public market prices <bdi translate="no">Binance</bdi></span></li>
+          <li class="th-node" id="t-world" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Ships, flights, disasters</span></li>
+          <li class="th-node" id="t-news" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>News and events <bdi translate="no">GDELT</bdi></span></li>
+        </ul>
+        <ul class="th-col th-agents" aria-label="Agents">
+          <li class="th-node agent live" id="t-quant" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Quant maths</span></li>
+          <li class="th-node agent live" id="t-osint" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Open-source intelligence</span></li>
+          <li class="th-node agent gated" id="t-exec" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Execution · paper only</span></li>
+          <li class="th-node agent design" id="t-audit" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Audit and planning</span></li>
+          <li class="th-node agent closed" id="t-folio" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Portfolio and profit split</span></li>
+        </ul>
+        <ul class="th-col th-out" aria-label="Outcome">
+          <li class="th-node out" id="t-paper" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Practice account</span></li>
+          <li class="th-node out" id="t-receipts" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Sealed receipts <bdi translate="no">SHA-256</bdi></span></li>
+          <li class="th-node out" id="t-inbox" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>Your approval inbox</span></li>
+        </ul>
+      </div>
+      <ul class="th-legend" aria-label="Thread key">
+        <li><i class="sw data" aria-hidden="true"></i>reads data</li>
+        <li><i class="sw decides" aria-hidden="true"></i>decides or proposes</li>
+        <li><i class="sw acts" aria-hidden="true"></i>writes on paper</li>
+        <li><i class="sw informs" aria-hidden="true"></i>informs only</li>
+        <li><i class="sw locked" aria-hidden="true"></i>locked · awaiting approval</li>
+      </ul>
+    </figure>
+    <div class="grid grid-agents">
+      <article class="card" data-thread="t-quant">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 15l4-6 4 3 4-7"/></svg></span>
         <span class="status live">Partly working</span>
         <h3>Quant maths agent</h3>
@@ -105,7 +137,7 @@
           <li>Runs today through Newton and the strategy lab, on the practice account only.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-osint">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
         <span class="status live">Partly working</span>
         <h3>Open-source intelligence agent</h3>
@@ -115,7 +147,7 @@
           <li>Automated image analysis (OpenCV / YOLO) is planned and not built yet.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-exec">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
         <span class="status gated">Locked · needs explicit approval</span>
         <h3>Execution agent</h3>
@@ -125,7 +157,7 @@
           <li>Any real trading needs a separate, explicit approval from the account owner.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-audit">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span>
         <span class="status design">Design</span>
         <h3>Daily audit and planning agent</h3>
@@ -134,7 +166,7 @@
           <li>It only proposes. Any strategy change goes through your approval.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-folio">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span>
         <span class="status closed">Closed · legal review</span>
         <h3>Portfolio and profit-split agent</h3>
@@ -411,6 +443,7 @@
 </footer>
 
 <script src="vis.js" defer></script>
+<script src="threads.js" defer></script>
 <script src="calc.js" defer></script>
 <script src="desk-sim.js" defer></script>
 <script src="pwa.js" defer></script>
@@ -421,7 +454,7 @@
   function apply(theme) {
     if (theme === "dark") root.dataset.theme = "dark"; else delete root.dataset.theme;
     btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-    meta.setAttribute("content", theme === "dark" ? "#0d0f15" : "#f9fafb");
+    meta.setAttribute("content", theme === "dark" ? "#000000" : "#F5F5F7");
   }
   apply(root.dataset.theme === "dark" ? "dark" : "light");
   btn.addEventListener("click", function () {

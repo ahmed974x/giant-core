@@ -43,9 +43,40 @@ Ops Room only (`omega-ops-room-v1/omega-ops-room.html`):
 6. **Arabic alignment.** `.card-title .ar` uses `text-align: match-parent`, so it starts under the English title.
    `.section-title h2` is a wrapping flex row with a 12 px column gap instead of a left margin on the Arabic part.
 
+7. **Apple audit pass** (Ahmad's second message, 19:21Z: audit and design like an Apple designer, research open tools and
+   skills). Checked against Apple's Liquid Glass overview (hierarchy, harmony, consistency; glass for the control layer,
+   content stays opaque; colour in controls used sparingly) and the text rules of Vercel's open Web Interface Guidelines.
+   Findings fixed here:
+   - `theme-color` and the PWA manifests still used the pre-ADR-101 `#f9fafb` / `#0d0f15`, so the phone status bar did not
+     match the page (`#F5F5F7` light, `#000000` OLED dark). Fixed in the Ops Room, THE CHAIN, NABD (ar, en) and both manifests.
+   - Scroll edge effect: on a laptop, cards now fade out under the sticky glass header instead of cutting against it (a fixed
+     band inside the header's stacking context, no added width).
+   - The Ops Room sets `-webkit-tap-highlight-color: transparent` on buttons and links, as NABD already did.
+   Tools and skills looked at, none installed (AGENTS.md §1): the "HIG Compliance Auditor" skill (MIT, Markdown, but its
+   install pipes a script into bash, so it needs a security review first) and Vercel's `web-design-guidelines` skill (fetches
+   its rules from GitHub at run time; only the text rules were read). The repo's own `apple-liquid-glass-hig` and
+   `supreme-software-ui-architect` skills already hold the rules that apply here.
+
+8. **Agent threads on NABD** (Ahmad, 19:25Z: bring the agents-with-threads design into the site). The agents panel of
+   `site-landing/index.html` and `en.html` opens with a figure, "How the agents connect": three columns (sources, the five
+   agents, outputs) joined by Bézier threads. The links are declared in the page (`data-links="from>to:kind"`) and
+   `site-landing/threads.js` only draws them, so the drawing shows no link the page does not state. Thread colours follow the
+   Ops Room wiring (ADR-111): cyan reads data, indigo decides or proposes, green writes on paper, dashed purple informs only,
+   dotted violet locked «قيد الموافقة». Each node's dot is its status (green live, blue design, orange gated, red closed).
+   Hover, keyboard focus or a tap on a node, or hover on an agent card, lights its threads and dims the rest; a second tap
+   clears it. On a phone (< 720 px) the nodes stack in one column and the threads become an arc diagram on the free side,
+   taller arcs bulging further, so they stay apart. No network, no timers; it redraws on resize. Nothing reaches an exchange.
+
+## Sources
+- Apple, Liquid Glass technology overview, developer.apple.com/documentation/technologyoverviews/liquid-glass (read 2026-10-24).
+- Vercel Labs, web-interface-guidelines `command.md` on GitHub (read 2026-10-24, text only).
+- HIG Compliance Auditor skill page, om.bearblog.dev/skill (read 2026-10-24).
+- Astronomical Almanac low-precision formulas for the Sun's position (as used by the US Naval Observatory approximate solar
+  coordinates).
+
 ## Consequences
 - The laptop header is one row again from 1280 to 2560 px, and the phone header is 63 px shorter.
 - The globe reads as a sphere in the sky and shows where it is night now; nothing about it is a forecast or a live feed.
 - No data, rule, trading path or lock changed. Real trading stays locked (ADR-119).
-- Other pages (ORACLE, TRADE LAB, core, second brain, THE CHAIN, NABD) are unchanged.
+- NABD gains the agent threads figure; THE CHAIN and NABD get the corrected status bar colour. ORACLE, TRADE LAB, core and second brain are unchanged.
 - The CSP hashes of the Ops Room are re-pinned.
