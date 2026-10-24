@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-mc+KYualSYpTCCIdAg+GlQuHIKYEBxGOKiyaE3gUXRM=' 'sha256-l+PBA0l7e4E+j4vBs5Ksenk6dHZys3UuTaEHQ2OyZlc=' 'sha256-n1hn/wN84rOu7aAkA2ltlYSO416O8dVMTG5DYvHqC1A='; style-src 'sha256-BkAK6FFkwfx1tBEwCUPa1F+0YEHigMbpqdV/EeTv1KM='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://data-api.binance.vision; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-QINyPMly4SLWwYffTDBXgdXipNi5l9rpU0NxhJU5K8w=' 'sha256-2p1T4jL4gPw8cl8lBmPJMXOvX0X8vSWAQQjhkqZNQ40=' 'sha256-FfzUv1ZoYuG9GMaRHt4ClBPOZ+SEew7pqee/Ic+w5F8=' 'sha256-yGAF9/o+c/keiLN/30O4Q8U2K9Dy+jOPHRPFcPcI2dM='; style-src 'sha256-HGyBDdB1wP+QymXxHkiTeoCX6+QqDKeOQRV6nLW8HZI='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://data-api.binance.vision; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -91,7 +91,8 @@
     ops: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-ops-room.html" : "omega-ops-room-v1/omega-ops-room.html") : "omega-ops-room.html",
     chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
-    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html"
+    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
+    brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -99,7 +100,8 @@
     { k: "ops", icon: "🎯", en: "Ops Room", ar: "غرفة العمليات", line: () => (state.wallet ? `Paper base ${usd(state.wallet.base)} · safe ${usd(state.wallet.safe)}` : "Paper desk, OSIRIS, receipts") + (Number.isFinite(state.pwsi) ? ` · PWSI ${state.pwsi}` : "") },
     { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
-    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" }
+    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
+    { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {
@@ -449,6 +451,7 @@
   .pill.inf { color: var(--warning); font-family: var(--font-mono); }
   .pill.unv { color: var(--danger); }
   .pill.ok { color: var(--success); }
+  .pill.lock { color: var(--violet); }
   .pill.cat { color: var(--accent); }
   .pill.bull { color: var(--success); }
   .pill.bear { color: var(--danger); }
@@ -696,6 +699,13 @@
           <div class="meter" id="chMeter"><span id="chFill"></span></div>
           <div class="kpis" id="chKpis"></div>
           <p class="status-line" id="chStatus" role="status" aria-live="polite"></p>
+        </section>
+        <section class="card" aria-labelledby="gateTitle" id="live-gate">
+          <h3 id="gateTitle">بوابة الجاهزية للتداول الحقيقي <span class="en" translate="no">LIVE READINESS GATE</span> <span class="pill lock">«قيد الموافقة»</span></h3>
+          <p class="lead">سجل الورقي لازم ينجح في كل الشروط قبل ما يُقترح أي تداول حقيقي. تُقاس فقط صفقات غرفة العمليات من سلسلة الإيصالات المتحقق منها. النجاح لا يفتح شيئاً: التداول الحقيقي مقفول حتى يوافق المدير 00 على الحدود بنفسه وتنتهي المراجعة القانونية والأمنية. لا يوجد في هذه الصفحة أي اتصال بمنصة ولا أي مفتاح.</p>
+          <div class="meter mt-3" id="gateMeter"><span id="gateFill"></span></div>
+          <div class="table-scroll mt-3"><table class="data" id="gateTable"><thead><tr><th scope="col">الشرط</th><th scope="col" class="n">الآن</th><th scope="col" class="n">المطلوب</th><th scope="col">الحالة</th></tr></thead><tbody></tbody></table></div>
+          <p class="status-line" id="gateStatus" role="status" aria-live="polite"></p>
         </section>
         <section class="card" aria-labelledby="layTitle" id="layers">
           <h3 id="layTitle">طبقات البيانات الست <span class="en" translate="no">SIX DATA LAYERS</span></h3>
@@ -1156,6 +1166,28 @@ const MISTAKES = Object.freeze([
   { k: "hesitation", ar: "تردد وفوّت الدخول الصحيح", en: "hesitated on a valid entry" }
 ]);
 const MISTAKE_KEYS = new Set(MISTAKES.map(m => m.k));
+// Live readiness gate (ADR-119, docs/LIVE-TRADING-READINESS.md): the paper track record that must pass before a
+// live route may even be proposed. It measures only trips rebuilt from the verified Ops Room receipt chain (manual
+// trips and the teaching example do not count). Passing it unlocks nothing: real trading stays locked until
+// Director 00 approves the limits in his own words and the legal and security reviews are done.
+const LIVE_GATE_DEFAULTS = Object.freeze({ minTrips: 100, minDays: 30, minProfitFactor: 1.2, maxDrawdownPct: 10, minCompliancePct: 90 });
+function liveGate(allTrips, planIn, chainOk, rulesIn) {
+  const r = { ...LIVE_GATE_DEFAULTS, ...(rulesIn || {}) };
+  const ops = (allTrips || []).filter(t => t && t.src === "ops");
+  const m = metrics(ops, planIn), c = compliance(ops, planIn), closed = closedOf(ops);
+  const span = closed.length ? (Math.max(...closed.map(t => t.closeTs)) - Math.min(...closed.map(t => t.openTs))) / DAY : 0;
+  const pf = m.profitFactor;
+  const checks = [
+    { key: "chain", ar: "سلسلة الإيصالات سليمة", en: "receipt chain verified", value: chainOk ? 1 : 0, need: 1, pass: !!chainOk, show: chainOk ? "✓" : "✗", needShow: "✓" },
+    { key: "trips", ar: "صفقات ورقية مغلقة", en: "closed paper round trips", value: m.n, need: r.minTrips, pass: m.n >= r.minTrips, show: String(m.n), needShow: "≥ " + r.minTrips },
+    { key: "days", ar: "أيام التداول الورقي", en: "days of paper trading", value: span, need: r.minDays, pass: span >= r.minDays, show: span.toFixed(1), needShow: "≥ " + r.minDays },
+    { key: "pf", ar: "معامل الربح", en: "profit factor", value: pf, need: r.minProfitFactor, pass: m.n > 0 && (pf === Infinity || (finite(pf) && pf >= r.minProfitFactor)), show: pf === Infinity ? "∞" : finite(pf) ? pf.toFixed(2) : "—", needShow: "≥ " + r.minProfitFactor.toFixed(2) },
+    { key: "dd", ar: "أقصى تراجع", en: "max drawdown", value: m.maxDD * 100, need: r.maxDrawdownPct, pass: m.n > 0 && m.maxDD * 100 <= r.maxDrawdownPct, show: m.n ? (m.maxDD * 100).toFixed(1) + "%" : "—", needShow: "≤ " + r.maxDrawdownPct + "%" },
+    { key: "plan", ar: "الالتزام بالخطة", en: "plan compliance", value: c.rate * 100, need: r.minCompliancePct, pass: c.n > 0 && c.rate * 100 >= r.minCompliancePct, show: c.n ? (c.rate * 100).toFixed(0) + "%" : "—", needShow: "≥ " + r.minCompliancePct + "%" }
+  ];
+  const passed = checks.filter(x => x.pass).length;
+  return { rules: r, checks, passed, total: checks.length, ready: passed === checks.length, locked: true, progress: passed / checks.length };
+}
 function sanitizeNote(n) {
   if (!n || typeof n !== "object") return null;
   const txt = (v, max) => typeof v === "string" ? v.replace(/[\u0000-\u0008\u000B-\u001F]/g, "").slice(0, max) : "";
@@ -1398,7 +1430,7 @@ const OMEGA_TRADELAB = Object.freeze({
   VERSION: "omega-tradelab-v1", GENESIS, PLAN_DEFAULTS, CHALLENGE_DEFAULTS, RULES, MISTAKES, INTERVALS,
   canon, sha256Hex, hashOf, merkleRoot, verifyChain, parseExport, buildChain,
   tripsFromReceipts, manualTrip, sanitizePlan, riskUnit, metrics, equityCurve, histogramR, byBucket,
-  compliance, challenge, sanitizeNote, mistakeStats,
+  compliance, challenge, LIVE_GATE_DEFAULTS, liveGate, sanitizeNote, mistakeStats,
   klinesUrl, parseKlines, sma, ema, rsi, macd, bollinger, atr, marketLens,
   monteCarlo, layers, coach, teachingExample
 });
@@ -1574,6 +1606,7 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
     const g = $("gaps"); clear(g);
     for (const x of gaps) g.append(el("li", "", x));
     renderChallenge(ch);
+    renderGate();
     renderLayers();
     renderTrips(c);
     renderLessons(k);
@@ -1665,6 +1698,22 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
     if (!view.m.n) { st.className = "status-line"; st.textContent = "يبدأ مع أول صفقة مغلقة."; return; }
     st.className = "status-line " + (ch.status === "failed" ? "bad" : ch.status === "passed" ? "ok" : "");
     st.textContent = ch.status === "failed" ? `فشل: ${ch.failed.ar} (الصفقة ${ch.failed.at}).` : ch.status === "passed" ? "نجح: بلغ الهدف بلا كسر لأي قاعدة." : `جارٍ: ${pct(ch.progress, 0)} من الهدف.`;
+  }
+  function renderGate() {
+    const g = L.liveGate(example ? [] : trips, plan, !!chain);
+    $("gateFill").style.transform = `scaleX(${g.progress})`;
+    $("gateMeter").className = "meter" + (g.ready ? " pass" : "");
+    const tb = $("gateTable").tBodies[0]; clear(tb);
+    for (const x of g.checks) {
+      const tr = el("tr"), a = el("td"); a.append(el("b", "", x.ar + " ")); a.append(el("span", "en", x.en));
+      const now = el("td", "n", x.show); now.dir = "ltr";
+      const need = el("td", "n", x.needShow); need.dir = "ltr";
+      const st = el("td"); st.append(el("span", "lvl lvl-" + (x.pass ? "ok" : "act"), x.pass ? "ناجح" : "لم يكتمل"));
+      tr.append(a, now, need, st); tb.append(tr);
+    }
+    const s = $("gateStatus");
+    s.className = "status-line" + (g.ready ? " ok" : "");
+    s.textContent = example ? "المثال التعليمي لا يُحسب في البوابة." : g.ready ? `نجح ${g.passed} من ${g.total}. يبقى التداول الحقيقي مقفولاً «قيد الموافقة» حتى قرار المدير 00.` : `نجح ${g.passed} من ${g.total} شروط. التداول الحقيقي مقفول.`;
   }
   function renderLayers() {
     const tb = $("layTable").tBodies[0]; clear(tb);
@@ -1898,5 +1947,274 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 </script>
+<!-- OMEGA_I18N begin: generated from scripts/lib/i18n.mjs and scripts/lib/i18n/ by scripts/build-i18n-inline.mjs, do not edit here -->
+<script>
+(() => {
+"use strict";
+// Arabic / English switch for every OMEGA page (ADR-119). One engine, shared by the Ops Room, THE CHAIN, ORACLE,
+// TRADE LAB and the second brain, inlined between the OMEGA_I18N markers by scripts/build-i18n-inline.mjs because
+// the pages must work from file:// with no build step. Tests: scripts/test-i18n.mjs.
+//
+// The pages were written in one language each (the Ops Room in English with Arabic notes, the others in Arabic).
+// Rather than rewriting thousands of elements, the engine swaps whole text nodes and a few attributes against a
+// page dictionary of [arabic, english] pairs. A pair may hold {n} slots for numbers and short codes, so "نجح 2 من 6"
+// and "2 of 6 passed" match one entry. Text the dictionary does not know stays as written: nothing is machine
+// translated and nothing leaves the browser. Brand names and code tokens under translate="no" are never touched.
+// The choice lives in localStorage "omega-lang" (wrapped in try/catch) and syncs across open pages over the
+// BroadcastChannel "omega-suite-lang"; ?lang=ar|en in the address wins for that visit.
+
+const WS = /\s+/g;
+const norm = s => String(s).replace(WS, " ").trim();
+const SLOT = "{n}";
+// What a {n} slot may hold: a number with its sign, separators, unit or percent, a time, a dash or a short code.
+const SLOT_RE = "([-+−]?[\\d٠-٩][\\d٠-٩.,:/٫٬]*\\s?(?:%|٪|R|bps|USDT|\\$|ms|µs|s|x)?|[—–∞✓✗]|[A-Z0-9_./-]{1,16})";
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function compile(pairs) {
+  const exact = { ar: new Map(), en: new Map() }, patterns = { ar: [], en: [] };
+  for (const p of pairs || []) {
+    if (!Array.isArray(p) || p.length < 2 || typeof p[0] !== "string" || typeof p[1] !== "string") continue;
+    const ar = norm(p[0]), en = norm(p[1]);
+    if (!ar || !en) continue;
+    if (ar.includes(SLOT) || en.includes(SLOT)) {
+      const nA = ar.split(SLOT).length - 1, nE = en.split(SLOT).length - 1;
+      if (nA !== nE) continue;
+      // Slots keep their order unless the pair names them {n1} {n2}… (not needed so far).
+      patterns.en.push({ re: new RegExp("^" + ar.split(SLOT).map(esc).join(SLOT_RE) + "$"), out: en });
+      patterns.ar.push({ re: new RegExp("^" + en.split(SLOT).map(esc).join(SLOT_RE) + "$"), out: ar });
+    } else {
+      if (!exact.en.has(ar)) exact.en.set(ar, en);
+      if (!exact.ar.has(en)) exact.ar.set(en, ar);
+    }
+  }
+  return { exact, patterns, size: exact.en.size + patterns.en.length };
+}
+
+// Translate one string into `to` ("ar" or "en"). Returns null when the dictionary has no entry, so the caller keeps
+// the original. Leading and trailing white space is kept exactly.
+function translate(text, table, to) {
+  if (typeof text !== "string" || !table || (to !== "ar" && to !== "en")) return null;
+  const core = norm(text);
+  if (!core) return null;
+  let out = table.exact[to].get(core);
+  if (out == null) {
+    for (const p of table.patterns[to]) {
+      const m = core.match(p.re);
+      if (m) { let i = 1; out = p.out.split(SLOT).reduce((s, part, k) => k === 0 ? part : s + m[i++] + part, ""); break; }
+    }
+  }
+  if (out == null) return null;
+  const lead = text.match(/^\s*/)[0], trail = text.match(/\s*$/)[0];
+  return lead + out + trail;
+}
+
+function pickLang(search, stored, fallback) {
+  const q = /[?&]lang=(ar|en)\b/.exec(search || "");
+  if (q) return q[1];
+  if (stored === "ar" || stored === "en") return stored;
+  return fallback === "en" ? "en" : "ar";
+}
+
+// Share of the page's visible text (by characters, Arabic or Latin letters only) that is in the target language.
+function coverage(texts, to) {
+  let want = 0, other = 0;
+  const AR = /[؀-ۿ]/g, EN = /[A-Za-z]/g;
+  for (const t of texts) { const a = (t.match(AR) || []).length, e = (t.match(EN) || []).length; if (to === "en") { want += e; other += a; } else { want += a; other += e; } }
+  return want + other ? want / (want + other) : 1;
+}
+
+// Letters of each script, used to tell which language a text node is in.
+const HAS = { ar: /[\u0600-\u06FF]/, en: /[A-Za-z]/ };
+const other = l => l === "ar" ? "en" : "ar";
+// A trailing separator left when the other half of a bilingual label is hidden ("Run again · ").
+const SEP_TAIL = /\s*[·•|/]\s*$/;
+// Labels that stay as written in both languages: [INFERENCE…] tags and similar bracketed codes.
+const TOKEN = /^\s*\[[A-Z][A-Za-z0-9 .:_-]*\]\s*$/;
+
+// The DOM part. `opts`: { pairs, source: "ar" | "en" | "both", button: id of the control to place the switch
+// before, flipDir: false to keep the page's direction }. A page in "both" was written bilingual: English text with
+// an Arabic <span class="ar"> beside it (the Ops Room). Arabic pages mark English sub-labels with class "en". For a
+// label that has both halves, the chosen language shows its own half and the other half is hidden; a label with one
+// half is translated through the dictionary when it can be.
+function mount(opts) {
+  const doc = typeof document !== "undefined" ? document : null;
+  if (!doc || !doc.body) return null;
+  const table = compile(opts.pairs), source = opts.source === "en" || opts.source === "both" ? opts.source : "ar";
+  const modes = source === "both" ? ["both", "ar", "en"] : ["ar", "en"];
+  const root = doc.documentElement, srcDir = root.getAttribute("dir") || (source === "ar" ? "rtl" : "ltr"), srcLang = root.getAttribute("lang") || "ar";
+  const origText = new WeakMap(), wrote = new WeakMap(), origAttr = new WeakMap(), hiddenBy = new WeakSet(), superseded = new WeakSet();
+  const ATTRS = ["aria-label", "placeholder", "title", "alt"];
+  const skip = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest("script,style,textarea,[data-i18n-skip]"); };
+  const frozen = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !!(e && e.closest("[translate=\"no\"]")); };
+  const half = e => e && e.nodeType === 1 && (e.classList.contains("ar") || e.classList.contains("en")) ? (e.classList.contains("ar") ? "ar" : "en") : null;
+  let lang = source, busy = false, chan = null, btn = null;
+  const store = { get() { try { return localStorage.getItem("omega-lang"); } catch (e) { return null; } }, set(v) { try { localStorage.setItem("omega-lang", v); } catch (e) { /* the page works without storage */ } } };
+  const docTitle = doc.title;
+
+  // The bilingual partner of a text node: a marked half among its parent's children, or the half it sits inside.
+  function partnerOf(n) {
+    const e = n.parentElement;
+    if (!e) return null;
+    const own = half(e.closest(".ar,.en"));
+    if (own) return { inside: own };
+    for (const c of e.children) { const h = half(c); if (h) return { beside: h, el: c }; }
+    // A plain inline wrapper (<span id="…">English</span> <span class="ar">…</span>) pairs one level up.
+    if (e.tagName === "SPAN" && e.id && !e.children.length && e.parentElement) for (const c of e.parentElement.children) { const h = half(c); if (h && c !== e) return { beside: h, el: c }; }
+    return null;
+  }
+  function wantText(n, src) {
+    if (lang === "both" || lang === source && source !== "both") return src;
+    const p = partnerOf(n);
+    // A marked half is shown or hidden whole; it is rewritten only when the dictionary knows it (a lone half).
+    if (p && p.inside) return HAS[other(lang)].test(src) ? (translate(src, table, lang) ?? src) : src;
+    if (p && p.beside) {
+      // This node is the other half of a pair whose marked half is in the chosen language: it gives way.
+      // Translated when the dictionary knows it (the marked half then reads as a sub-label, as on the source page).
+      // On a bilingual page the marked half already says it, so this half gives way.
+      // A dictionary line that says more (a live state such as "OFF") replaces both halves.
+      if (p.beside === lang && HAS[other(lang)].test(src) && !HAS[lang].test(src) && !TOKEN.test(src)) {
+        const t = translate(src, table, lang);
+        if (source === "both") { if (t != null && /[:：]/.test(src)) { superseded.add(p.el); return t; } superseded.delete(p.el); return ""; }
+        return t ?? "";
+      }
+      if (p.beside !== lang && HAS[lang].test(src)) return src.replace(SEP_TAIL, "");
+    }
+    if (!HAS[other(lang)].test(src) || TOKEN.test(src)) return src;
+    return translate(src, table, lang) ?? src;
+  }
+  // Arabic written into a box styled for Latin (tracked capitals, a left-to-right number line) gets letter-spacing 0
+  // and its own paragraph direction through the CSSOM, and gets the page's style back when the text does.
+  const fixed = new WeakMap();
+  function fitBox(e, arabic) {
+    if (!e || !e.style) return;
+    if (arabic && !fixed.has(e)) {
+      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform });
+      e.style.letterSpacing = "0"; e.style.unicodeBidi = "plaintext"; e.style.textTransform = "none";
+    } else if (!arabic && fixed.has(e)) {
+      const o = fixed.get(e); fixed.delete(e);
+      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt;
+    }
+  }
+  function doText(n) {
+    if (skip(n) || frozen(n)) return;
+    const cur = n.nodeValue;
+    // A value the page wrote after us is the new source text.
+    if (!origText.has(n) || (wrote.has(n) && wrote.get(n) !== cur)) origText.set(n, cur);
+    const src = origText.get(n), want = wantText(n, src);
+    if (cur !== want) n.nodeValue = want;
+    wrote.set(n, want);
+    if (source !== "ar") fitBox(n.parentElement, want !== src && HAS.ar.test(want));
+  }
+  function doHalf(e) {
+    const h = half(e);
+    if (!h) return;
+    let hide = lang !== "both" && h === lang && superseded.has(e);
+    // A page in its own language shows both halves as written; only a switched page hides one.
+    if (lang !== "both" && h !== lang && (source === "both" || lang !== source)) {
+      // Hide the half in the other language only when its partner carries the chosen language (or a translation).
+      const par = e.parentElement;
+      if (par) for (const c of par.childNodes) {
+        if (c === e) continue;
+        const t = c.nodeType === 3 ? origText.get(c) ?? c.nodeValue : c.nodeType === 1 && !half(c) ? c.textContent : "";
+        if (t && (HAS[lang].test(t) || (HAS[other(lang)].test(t) && translate(t, table, lang) != null))) { hide = true; break; }
+      }
+    }
+    if (hide) { if (e.style.display !== "none") { e.style.display = "none"; hiddenBy.add(e); } }
+    else if (hiddenBy.has(e)) { e.style.display = ""; hiddenBy.delete(e); }
+    // An Arabic half shown on its own inside a tracked-capitals label loses the tracking.
+    if (source === "both") fitBox(e, h === "ar" && lang === "ar");
+  }
+  function doAttrs(e) {
+    if (skip(e) || frozen(e)) return;
+    let o = origAttr.get(e);
+    for (const a of ATTRS) {
+      if (!e.hasAttribute(a)) continue;
+      const v = e.getAttribute(a);
+      if (!o) { o = {}; origAttr.set(e, o); }
+      if (!(a in o) || (o["w" + a] != null && o["w" + a] !== v)) o[a] = v;
+      let want = o[a];
+      if (lang !== "both" && !(lang === source && source !== "both")) {
+        const parts = want.split(" · ");
+        // "English · العربية" labels keep the chosen half.
+        if (parts.length === 2 && HAS.en.test(parts[0]) && HAS.ar.test(parts[1]) && !HAS.ar.test(parts[0])) want = lang === "ar" ? parts[1] : parts[0];
+        else if (HAS[other(lang)].test(want)) want = translate(want, table, lang) ?? want;
+      }
+      if (v !== want) e.setAttribute(a, want);
+      o["w" + a] = want;
+    }
+  }
+  function walk(node) {
+    if (node.nodeType === 3) { doText(node); if (node.parentElement) for (const c of node.parentElement.children) doHalf(c); return; }
+    if (node.nodeType !== 1 || skip(node)) return;
+    doAttrs(node);
+    const w = doc.createTreeWalker(node, 5 /* elements and text */);
+    const halves = [];
+    if (half(node)) halves.push(node);
+    let n; while ((n = w.nextNode())) { if (n.nodeType === 3) doText(n); else { doAttrs(n); if (half(n)) halves.push(n); } }
+    for (const e of halves) doHalf(e);
+  }
+  const mo = new MutationObserver(list => {
+    if (busy || lang === "both" || (lang === source && source !== "both")) return;
+    for (const m of list) pending.add(m.target);
+    if (!queued && pending.size) {
+      queued = true;
+      Promise.resolve().then(() => { queued = false; busy = true; try { for (const n of pending) if (n.isConnected) walk(n); } finally { busy = false; pending.clear(); mo.takeRecords(); } });
+    }
+  });
+  const pending = new Set();
+  let queued = false;
+  const LABEL = { both: "ع+EN", ar: "ع", en: "EN" };
+  function apply(next, from) {
+    lang = modes.includes(next) ? next : source;
+    busy = true;
+    try {
+      root.lang = lang === "both" ? srcLang : lang;
+      root.dir = opts.flipDir === false || lang === "both" ? srcDir : (lang === "ar" ? "rtl" : "ltr");
+      root.dataset.lang = lang;
+      walk(doc.body);
+      const t = lang === source || lang === "both" ? docTitle : (translate(docTitle, table, lang) ?? docTitle);
+      if (doc.title !== t) doc.title = t;
+      if (btn) {
+        const nx = modes[(modes.indexOf(lang) + 1) % modes.length];
+        btn.textContent = LABEL[lang];
+        btn.setAttribute("aria-label", `Language: ${LABEL[lang]}, switch to ${LABEL[nx]} · اللغة`);
+        btn.title = btn.getAttribute("aria-label");
+      }
+    } finally { busy = false; mo.takeRecords(); }
+    if (from !== "remote") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
+    if (typeof opts.onChange === "function") opts.onChange(lang);
+    try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ }
+  }
+  mo.observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+
+  const anchor = opts.button && doc.getElementById(opts.button);
+  if (anchor && anchor.parentNode && !doc.getElementById("langToggle")) {
+    btn = doc.createElement("button");
+    btn.type = "button"; btn.id = "langToggle"; btn.className = anchor.className || "icon-btn"; btn.setAttribute("translate", "no");
+    btn.classList.add("lang-btn");
+    // The label is text, not an icon, so the square icon button grows to fit it (CSSOM, allowed by the CSP).
+    btn.style.width = "auto"; btn.style.minWidth = "44px"; btn.style.paddingInline = "10px"; btn.style.fontWeight = "700";
+    btn.addEventListener("click", () => apply(modes[(modes.indexOf(lang) + 1) % modes.length]));
+    anchor.parentNode.insertBefore(btn, anchor);
+  }
+  try { chan = new BroadcastChannel("omega-suite-lang"); chan.onmessage = e => { const v = e && e.data && e.data.lang; if ((v === "ar" || v === "en" || v === "both") && v !== lang) apply(v === "both" && !modes.includes("both") ? source : v, "remote"); }; } catch (e) { chan = null; }
+  let first = pickLang(typeof location !== "undefined" ? location.search : "", store.get(), source === "en" ? "en" : "ar");
+  // A page that is bilingual by design opens bilingual until someone picks a language.
+  if (source === "both" && !/[?&]lang=(ar|en)\b/.test(typeof location !== "undefined" ? location.search : "") && store.get() !== "ar" && store.get() !== "en") first = "both";
+  apply(first, "remote");
+  return {
+    get lang() { return lang; }, set: v => apply(v), t: (ar, en) => lang === "en" ? en : ar, size: table.size,
+    coverage: () => { const out = []; const w = doc.createTreeWalker(doc.body, 4); let n; while ((n = w.nextNode())) { const e = n.parentElement; if (!skip(n) && n.nodeValue.trim() && e && e.offsetParent !== null) out.push(n.nodeValue); } return coverage(out, lang === "both" ? "en" : lang); }
+  };
+}
+
+const OMEGA_I18N = Object.freeze({ VERSION: "omega-i18n-v1", compile, translate, pickLang, coverage, norm, mount });
+const PAIRS = [["بوابة نبض","NABD portal"],["Public site, paper simulations · الموقع العام","Public site, paper simulations"],["غرفة العمليات","Ops Room"],["السلسلة","THE CHAIN"],["العرّاف","ORACLE"],["مختبر المتداول","TRADE LAB"],["المخ الثاني","Second brain"],["Switch app · تبديل التطبيق","Switch app"],["OMEGA apps · تطبيقات أوميغا","OMEGA apps"],["تبديل الوضع الداكن","Toggle dark mode"],["«قيد الموافقة»","«Pending approval»"],["قيد الموافقة","Pending approval"],["تعذر التحقق منها","Could not be verified"],["مثال تعليمي — أرقام افتراضية","Teaching example — hypothetical numbers"],["نعم","Yes"],["لا","No"],["إلغاء","Cancel"],["احذف","Delete"],["عدّل","Edit"],["اكتب","Write"],["تم","Done"],["الحالة","Status"],["المصدر","Source"],["المصادر","Sources"],["الآن","Now"],["المطلوب","Required"],["الشرط","Condition"],["متوفر","Available"],["جزئي","Partial"],["لا بيانات","No data"],["لا ينطبق","Not applicable"],["سليم","Healthy"],["انتبه","Watch"],["تصرّف","Act"],["توقف","Stop"],["ناجح","Passed"],["لم يكتمل","Not yet"],["مفتوحة","Open"],["مستبعدة","Excluded"],["كيف يعمل","How it works"],["المدير 00","Director 00"],["ليس نصيحة مالية.","Not financial advice."],["اللغة","Language"],["TRADE LAB · مختبر المتداول","TRADE LAB"],["تخطَّ إلى المختبر","Skip to the lab"],["فُتح الملف من القرص. الشموع العامة والحسابات تعمل هنا؛ النموذج المحلي يحتاج الصفحة من السيرفر المحلي. إن لم يظهر سجل غرفة العمليات فصدّر الإيصالات منها واستوردها هنا.","Opened from disk. Public candles and the maths work here; the local model needs the page from the local server. If the Ops Room ledger does not show, export the receipts there and import them here."],["لا سجل محلي","No local ledger"],["مختبر المتداول والوكيل المدير","Trade lab and desk manager agent"],["يقرأ سجل الإيصالات الورقية من غرفة العمليات ويتحقق من كل بصمة، ثم يبني الصفقات ويقيسها كما يفعل دفتر المتداول المحترف: نسبة الفوز، التوقع الرياضي، معامل الربح، التراجع، مضاعفات R مقابل خطتك المكتوبة، الالتزام بالخطة، والأخطاء التي تتكرر. الوكيل المدير يحوّل هذه الأرقام إلى ملاحظات واقتراحات بقواعد ثابتة. ورقي فقط: لا أوامر لأي منصة، لا أموال، لا مشتركين.","Reads the Ops Room's paper receipt ledger and checks every hash, then rebuilds the trades and measures them the way a professional trading journal does: win rate, expectancy, profit factor, drawdown, R multiples against your written plan, plan compliance and the mistakes that repeat. The desk manager agent turns these numbers into findings and proposals with fixed rules. Paper only: no orders to any exchange, no money, no subscribers."],["مثال تعليمي — أرقام افتراضية. لا شيء من هذه الصفقات حدث.","Teaching example — hypothetical numbers. None of these trades happened."],["إغلاق المثال","Close the example"],["اقرأ سجل غرفة العمليات","Read the Ops Room ledger"],["استورد ملف الإيصالات","Import a receipts file"],["مثال تعليمي","Teaching example"],["مثال","Example"],["صدّر السجل والخطة","Export journal and plan"],["استورد سجلاً محفوظاً","Import a saved journal"],["لا إيصالات لغرفة العمليات في هذا المتصفح. افتحها مرة من نفس العنوان، أو صدّر الإيصالات منها (زر Export في البطاقة) واستوردها هنا.","No Ops Room receipts in this browser. Open it once from the same address, or export the receipts there (the card's Export button) and import them here."],["الإيصالات","Receipts"],["البصمات","Hashes"],["سليمة ✓","Verified ✓"],["الصفقات المغلقة","Closed trades"],["يدوية","Manual"],["ملاحظات","Notes"],["هذا المتصفح","This browser"],["ملف","File"],["الوكيل المدير","Desk manager agent"],["مدير منصة تداول يعتمد على البيانات، على الورق: يقرأ، يقيس، يدقّق الخطة، يتعلّم من ملاحظاتك، ثم يقترح. كل ملاحظة بقاعدة ثابتة","A data-driven trading desk manager, on paper: it reads, measures, audits the plan, learns from your notes, then proposes. Every finding comes from a fixed rule"],["ومعها رقمها، وكل اقتراح يذهب إلى المدير 00 ولا يغيّر شيئاً حتى تطبّقه بنفسك.","with its number, and every proposal goes to Director 00 and changes nothing until you apply it yourself."],["قراءة","Read"],["لا سجل","No ledger"],["بانتظار بيانات","Waiting for data"],["قياس","Measure"],["تدقيق","Audit"],["لا صفقات","No trades"],["تعلّم","Learn"],["لا ملاحظات","No notes"],["اقتراح","Propose"],["لا قراءة بعد","No reading yet"],["{n} صفقة مغلقة","{n} closed trades"],["{n} اقتراح","{n} proposals"],["{n} إيصال، البصمات سليمة","{n} receipts, hashes verified"],["{n} إيصال ✓","{n} receipts ✓"],["التزام {n}","Compliance {n}"],["ملاحظات {n}","Notes {n}"],["اقرأ السجل أو افتح المثال التعليمي.","Read the ledger or open the teaching example."],["لا توجد صفقات مغلقة بعد. اقرأ سجل غرفة العمليات أو أضف صفقة ورقية يدوية.","No closed trades yet. Read the Ops Room ledger or add a manual paper trade."],["لم تُكتب خطة تداول بعد. الأرقام تقاس على القيم الافتراضية (1% لكل صفقة).","No trading plan written yet. Numbers are measured on the defaults (1% per trade)."],["اقتراحات للمدير 00","Proposals for Director 00"],["لا اقتراحات الآن.","No proposals now."],["اشرح بالنموذج المحلي","Explain with the local model"],["النموذج المحلي يعمل حين تُفتح الصفحة من http://127.0.0.1:8796 والسيرفر يعمل.","The local model works when the page is opened from http://127.0.0.1:8796 with the server running."],["النموذج المحلي يكتب…","The local model is writing…"],["المكتب سليم على الورق","The desk is healthy on paper"],["انتبه لنقاط قليلة","Watch a few points"],["يلزم تصرّف قبل الصفقة القادمة","Act before the next trade"],["توقف عن التداول الورقي وراجع","Stop paper trading and review"],["صحة المكتب من 100 بقواعد ثابتة [INFERENCE].","Desk health out of 100 by fixed rules [INFERENCE]."],["صحة المكتب من 100 بقواعد ثابتة [INFERENCE] · مثال تعليمي.","Desk health out of 100 by fixed rules [INFERENCE] · teaching example."],["طبّق على الخطة","Apply to the plan"],["طُبّق الاقتراح على الخطة الورقية.","The proposal was applied to the paper plan."],["عادة","Habit"],["الأداء","Performance"],["صفقات مغلقة فقط. صفقة أغلقها الإيقاف الطارئ تُستبعد لأن الإيصال لا يحمل سعر خروجها، وتُذكر في الفجوات. 1R هو ما تسمح الخطة بخسارته في الصفقة: رأس المال قبلها × نسبة المخاطرة، أو (الدخول − الوقف) × الكمية في الصفقة اليدوية.","Closed trades only. A trade closed by the emergency stop is left out because its receipt carries no exit price, and it is listed in the gaps. 1R is what the plan allows a trade to lose: equity before it × the risk share, or (entry − stop) × quantity for a manual trade."],["الصافي","Net"],["نسبة الفوز","Win rate"],["نسبة التعادل","Break-even win rate"],["معامل الربح","Profit factor"],["التوقع لكل صفقة","Expectancy per trade"],["التوقع بـ R","Expectancy in R"],["متوسط الربح / الخسارة","Average win / loss"],["أقصى تراجع","Max drawdown"],["شارب لكل صفقة","Sharpe per trade"],["كيلي المقاس ÷ 2","Measured Kelly ÷ 2"],["أطول سلسلة خسارة","Longest losing streak"],["احتفاظ الرابحة","Hold, winners"],["احتفاظ الخاسرة","Hold, losers"],["الرسوم","Fees"],["متوسط الانزلاق","Average slippage"],["لا صفقات مغلقة","No closed trades"],["رأس المال بعد كل صفقة","Equity after each trade"],["التراجع من القمة","Drawdown from the peak"],["منحنى رأس المال الورقي من الصفقات المغلقة.","Paper equity curve from the closed trades."],["توزيع مضاعفات R، خانات بعرض نصف R.","Distribution of R multiples, half-R bins."],["ساعة رابحة","Winning hour"],["ساعة خاسرة","Losing hour"],["عدد الصفقات حسب ساعة الدخول بتوقيت UTC، واللون حسب صافي الساعة.","Trades by entry hour in UTC, coloured by the hour's net."],["إعادة السحب من صفقاتك","Bootstrap of your trades"],["2,000 مسار من 100 صفقة تُسحب عشوائياً من عوائد صفقاتك نفسها (بذرة ثابتة). يقيس المخاطرة إن بقي أسلوبك كما هو؛ ليس تنبؤاً بالسوق.","2,000 paths of 100 trades drawn at random from your own trade returns (fixed seed). It measures the risk if your style stays the same; it is not a market forecast."],["إعادة السحب","Bootstrap"],["إعادة السحب: {n} closed trades; the bootstrap needs at least 10","Bootstrap: {n} closed trades; the bootstrap needs at least 10"],["احتمال بلوغ حد التراجع","Chance of hitting the drawdown limit"],["الوسيط بعد 100 صفقة","Median after 100 trades"],["أسوأ 5%","Worst 5%"],["أفضل 5%","Best 5%"],["تراجع الوسيط","Median drawdown"],["تراجع أسوأ 5%","Worst 5% drawdown"],["خطة التداول","Trading plan"],["الاستراتيجية، إدارة رأس المال، شروط الدخول والخروج، والقواعد النفسية. تُحفظ في هذا المتصفح فقط، والوكيل يقيس كل صفقة عليها.","Strategy, money management, entry and exit rules and psychology rules. Saved in this browser only; the agent measures every trade against it."],["اسم الاستراتيجية","Strategy name"],["الأسواق","Markets"],["الإعدادات المسموحة وشروط الدخول","Allowed setups and entry rules"],["رأس المال الورقي عند البداية ($)","Starting paper equity ($)"],["المخاطرة لكل صفقة (% = 1R)","Risk per trade (% = 1R)"],["أقصى حجم مركز (% من رأس المال)","Max position size (% of equity)"],["أقصى صفقات في اليوم","Max trades per day"],["حد الخسارة اليومي (%)","Daily loss limit (%)"],["حد التراجع الكلي (%)","Overall drawdown limit (%)"],["أقل عائد إلى مخاطرة (R:R)","Minimum reward to risk (R:R)"],["تهدئة بعد الخسارة (دقيقة)","Cool-down after a loss (minutes)"],["من الساعة (UTC)","From hour (UTC)"],["إلى الساعة (UTC)","To hour (UTC)"],["أدخل صفقات المكتب الآلي على إشارة شراء فقط","Enter auto desk trades only on a BUY signal"],["القواعد النفسية ودروس ثابتة","Psychology rules and standing lessons"],["احفظ الخطة","Save the plan"],["القيم الافتراضية","Defaults"],["حُفظت الخطة، وأعيد القياس عليها.","Plan saved and the numbers re-measured on it."],["الخطة مطبّقة على هذه الجلسة فقط؛ المتصفح يمنع الحفظ.","The plan applies to this session only; the browser blocks saving."],["اختبار الانضباط الورقي","Paper discipline challenge"],["على شكل قواعد التقييم التي تنشرها شركات التداول الممول: هدف ربح، حد خسارة يومي، حد تراجع كلي، وأيام تداول دنيا. اختبار شخصي على الورق: بلا رسوم ولا تمويل ولا صرف أرباح، ولا يقبل أي مال.","Shaped like the evaluation rules funded trading firms publish: a profit target, a daily loss limit, an overall drawdown limit and minimum trading days. A personal test on paper: no fee, no funding, no payout, and it accepts no money."],["هدف الربح (%)","Profit target (%)"],["أقل أيام تداول","Minimum trading days"],["الربح من البداية","Gain since start"],["أسوأ يوم","Worst day"],["أيام التداول","Trading days"],["يبدأ مع أول صفقة مغلقة.","Starts with the first closed trade."],["نجح: بلغ الهدف بلا كسر لأي قاعدة.","Passed: reached the target without breaking a rule."],["جارٍ: {n} من الهدف.","Running: {n} of the target."],["بوابة الجاهزية للتداول الحقيقي","Live readiness gate"],["سجل الورقي لازم ينجح في كل الشروط قبل ما يُقترح أي تداول حقيقي. تُقاس فقط صفقات غرفة العمليات من سلسلة الإيصالات المتحقق منها. النجاح لا يفتح شيئاً: التداول الحقيقي مقفول حتى يوافق المدير 00 على الحدود بنفسه وتنتهي المراجعة القانونية والأمنية. لا يوجد في هذه الصفحة أي اتصال بمنصة ولا أي مفتاح.","The paper record must pass every condition before any live trading is even proposed. Only Ops Room trades from the verified receipt chain count. Passing unlocks nothing: live trading stays locked until Director 00 approves the limits himself and the legal and security reviews are done. This page has no exchange connection and no key."],["سلسلة الإيصالات سليمة","Receipt chain verified"],["صفقات ورقية مغلقة","Closed paper round trips"],["أيام التداول الورقي","Days of paper trading"],["الالتزام بالخطة","Plan compliance"],["نجح {n} من {n} شروط. التداول الحقيقي مقفول.","{n} of {n} conditions passed. Live trading is locked."],["نجح {n} من {n}. يبقى التداول الحقيقي مقفولاً «قيد الموافقة» حتى قرار المدير 00.","{n} of {n} passed. Live trading stays locked «pending approval» until Director 00 decides."],["المثال التعليمي لا يُحسب في البوابة.","The teaching example does not count toward the gate."],["طبقات البيانات الست","Six data layers"],["الطبقات التي تراقبها مكاتب التداول الاحترافية، وما يتوفر منها لحساب ورقي واحد.","The layers professional trading desks watch, and which of them a single paper account has."],["الطبقة","Layer"],["حالة الحساب","Account state"],["بيانات الصفقات","Trade data"],["السلوك","Behaviour"],["المخاطر عبر الحسابات","Risk across accounts"],["الهوية","Identity"],["دورة الحساب","Account lifecycle"],["سجل الصفقات","Trade journal"],["كل صفقة ورقية مع سبب الدخول والخروج ومخالفات الخطة. اكتب ملاحظة لكل صفقة: الإعداد، السبب، شعورك قبل الدخول، الأخطاء، والدرس. الوكيل يتعلّم من الملاحظات لا من الأرقام وحدها.","Every paper trade with its entry and exit reason and plan breaches. Write a note for each trade: the setup, the reason, how you felt before entry, the mistakes and the lesson. The agent learns from the notes, not from the numbers alone."],["الصفقات","Trades"],["صفقة ورقية يدوية","Manual paper trade"],["الإغلاق (UTC)","Close (UTC)"],["الرمز","Symbol"],["الدخول → الخروج","Entry → exit"],["الربح/الخسارة","P/L"],["المصدر والسبب","Source and reason"],["الخطة","Plan"],["ملاحظة","Note"],["لا صفقات بعد.","No trades yet."],["ملاحظة الصفقة","Trade note"],["الإعداد","Setup"],["شعورك قبل الدخول (1 هادئ – 5 متوتر)","How you felt before entry (1 calm – 5 tense)"],["التزمت بالخطة؟","Kept to the plan?"],["تقييم التنفيذ","Execution grade"],["سبب الدخول والخروج","Entry and exit reason"],["الأخطاء","Mistakes"],["دخول متأخر خوفاً من الفوات","Late entry from fear of missing out"],["خروج مبكر قبل الهدف","Early exit before the target"],["تحريك الوقف ضد الصفقة","Moved the stop against the trade"],["حجم أكبر من الخطة","Size above the plan"],["صفقة انتقام بعد خسارة","Revenge trade after a loss"],["دخول بلا سبب مكتوب","Entry without a written reason"],["عكس الاتجاه الأكبر","Against the larger trend"],["تداول وقت خبر قوي","Traded into strong news"],["إفراط في عدد الصفقات","Overtrading"],["تردد وفوّت الدخول الصحيح","Hesitated and missed the right entry"],["الدرس المستفاد","Lesson learned"],["احفظ الملاحظة","Save the note"],["احذف الملاحظة","Delete the note"],["صفقة ورقية كتبتها بيدك، مثلاً من حساب تجريبي لدى وسيط أو من تمرين على الرسم البياني. لا تُرسل لأي جهة.","A paper trade you write by hand, for example from a broker demo account or a chart exercise. It is sent nowhere."],["الاتجاه","Direction"],["شراء (Long)","Buy (Long)"],["بيع (Short)","Sell (Short)"],["سعر الدخول","Entry price"],["سعر الخروج","Exit price"],["الكمية","Quantity"],["الوقف الأول (اختياري، يحدد 1R)","Initial stop (optional, sets 1R)"],["الرسوم ($)","Fees ($)"],["رأس المال قبل الصفقة ($، اختياري)","Equity before the trade ($, optional)"],["وقت الدخول (توقيتك المحلي)","Entry time (your local time)"],["وقت الخروج (توقيتك المحلي)","Exit time (your local time)"],["أضف الصفقة الورقية","Add the paper trade"],["الأخطاء والدروس","Mistakes and lessons"],["من وسوم الملاحظات: كم مرة تكرر كل خطأ، وكم كلّف. التكلفة مجموع خسائر الصفقات الموسومة، لا إثبات أن الخطأ وحده سببها","From the note tags: how often each mistake repeated and what it cost. The cost is the sum of the tagged trades' losses, not proof that the mistake alone caused them"],["صفقات بملاحظة","Trades with a note"],["متوسط الموسومة بخطأ","Average, tagged with a mistake"],["متوسط النظيفة","Average, clean"],["التزمت / خالفت","Kept / broke the plan"],["الشعور ↔ النتيجة","Feeling ↔ result"],["الخطأ","Mistake"],["صفقات","Trades"],["صافي","Net"],["تكلفة الخسائر","Cost of losses"],["لا وسوم أخطاء بعد.","No mistake tags yet."],["آخر الدروس","Latest lessons"],["لا دروس مكتوبة بعد.","No lessons written yet."],["عدسة السوق","Market lens"],["شموع Binance العامة (بلا مفتاح، قراءة فقط): RSI 14 بطريقة وايلدر، MACD 12/26/9، المتوسطات 50 و200، نطاقات بولنجر 20/2 وATR 14. القراءات قواعد ثابتة","Binance public candles (keyless, read only): Wilder RSI 14, MACD 12/26/9, the 50 and 200 averages, Bollinger bands 20/2 and ATR 14. The readings are fixed rules"],["، لا إشارة دخول.",", not an entry signal."],["الإطار","Interval"],["اقرأ الشموع","Read the candles"],["الإغلاق","Close"],["متوسط 50","50 average"],["متوسط 200","200 average"],["بولنجر","Bollinger"],["RSI مع منطقتي 30 و70","RSI with the 30 and 70 zones"],["آخر 300 شمعة.","Last 300 candles."],["RSI 14 لآخر 300 شمعة.","RSI 14 over the last 300 candles."],["نقرأ الشموع…","Reading the candles…"],["السيرفر المحلي","Local server"],["Binance مباشرة","Binance direct"],["السعر","Price"],["MACD − الإشارة","MACD − signal"],["ATR 14 ÷ السعر","ATR 14 ÷ price"],["صاعد","Up"],["هابط","Down"],["غير واضح","Unclear"],["صاعد قصير","Short-term up"],["هابط قصير","Short-term down"],["قراءة:","Read:"],["سجل الإيصالات من هذا المتصفح (نفس مفتاح غرفة العمليات) أو من ملف","The receipt ledger from this browser (the Ops Room's own key) or from a file"],["المصدَّر منها. كل بصمة SHA-256 ونقاط ميركل تُفحص بنفس الصيغة القانونية؛ سجل معدَّل يُرفض ولا يُقاس.","exported from it. Every SHA-256 hash and Merkle checkpoint is checked in the same canonical form; an edited ledger is refused and not measured."],["قياس:","Measure:"],["الصفقة تبدأ بإيصال FILL_BUY وتنتهي حين تُباع كميته كلها بإيصالات FILL_SELL. نسبة الفوز ومعامل الربح والتوقع والتراجع وسلاسل الخسارة ومدة الاحتفاظ من الإيصالات وحدها. SQN وكيلي المقاس وإعادة السحب","A trade starts with a FILL_BUY receipt and ends when its whole quantity is sold in FILL_SELL receipts. Win rate, profit factor, expectancy, drawdown, losing streaks and hold time come from the receipts alone. SQN, measured Kelly and the bootstrap"],["تدقيق:","Audit:"],["كل صفقة على الخطة: الحجم، خسارة فوق 1R، العدد اليومي، حد الخسارة اليومي، التهدئة بعد الخسارة، الساعات، والإشارة.","Every trade against the plan: size, a loss beyond 1R, the daily count, the daily loss limit, the cool-down after a loss, the hours and the signal."],["تعلّم:","Learn:"],["وسوم الأخطاء والشعور والالتزام في ملاحظاتك تُربط بنتيجة كل صفقة.","The mistake, feeling and compliance tags in your notes are tied to each trade's result."],["اقتراح:","Propose:"],["قواعد ثابتة تقترح تعديلات على الخطة الورقية. لا شيء يتغير إلا بضغطك، ولا شيء يُرسل خارج المتصفح إلا سؤال النموذج المحلي على هذا الجهاز.","Fixed rules propose changes to the paper plan. Nothing changes unless you press, and nothing leaves the browser except the question to the local model on this machine."],["مقفل:","Locked:"],["التداول الحقيقي، وكيل التنفيذ، الحسابات التجريبية لدى الوسطاء عبر الربط، الحسابات الممولة، نسخ الصفقات وتقاسم الأرباح تبقى","Real trading, an execution agent, linked broker demo accounts, funded accounts, copy trading and profit split stay"],["حتى موافقة صريحة ومراجعة قانونية.","until an explicit approval and a legal review."],["توثيق الواجهة:","API docs:"],["مسارات السيرفر المحلي موثقة بصيغة OpenAPI 3.1 في","The local server's routes are documented as OpenAPI 3.1 in"],["مختبر المتداول · الوكيل المدير في أوميغا (ADR-116). شموع Binance العامة بشروط واجهتها المفتوحة. السجل والخطة والملاحظات تبقى في هذا المتصفح. ليس نصيحة مالية، ولا يقبل أموالاً، ولا ينسخ صفقات، ولا يرسل أوامر لأي منصة.","TRADE LAB · OMEGA's desk manager agent (ADR-116). Binance public candles under its open API terms. The journal, plan and notes stay in this browser. Not financial advice; it accepts no money, copies no trades and sends no orders to any exchange."],["السجل","Journal"],["مثل BTCUSDT","e.g. BTCUSDT"],["سجل مرفوض","Ledger refused"],["الملف أكبر من 8 MB.","The file is larger than 8 MB."],["مثال تعليمي: انتظر إغلاق الشمعة قبل الدخول.","Teaching example: wait for the candle close before entering."],["مثال تعليمي — أرقام افتراضية: 18 صفقة مصنوعة كسلسلة إيصالات سليمة لتجربة الصفحة.","Teaching example — hypothetical numbers: 18 made-up trades built as a valid receipt chain to try the page."],["صُدّر السجل والخطة والملاحظات إلى ملف omega-trade-journal.json.","Journal, plan and notes exported to omega-trade-journal.json."],["ليس ملف سجل من مختبر المتداول (omega-tradelab-journal-v1).","Not a TRADE LAB journal file (omega-tradelab-journal-v1)."],["المحرك الآلي ·","Auto engine ·"],["يدوي في المكتب ·","Manual at the desk ·"],["صفقة اختبار","Test trade"],["ملتزمة","Kept"],["انتهت المهلة","Timed out"]];
+window.OMEGA_I18N = OMEGA_I18N;
+const start = () => { window.OMEGA_LANG = OMEGA_I18N.mount(Object.assign({ pairs: PAIRS }, {"source":"ar","button":"themeToggle","flipDir":true})); };
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();
+})();
+</script>
+<!-- OMEGA_I18N end -->
 </body>
 </html>

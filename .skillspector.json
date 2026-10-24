@@ -248,6 +248,21 @@
       "rule": "SEC-STORAGE",
       "path": "omega-ops-room-v1/omega-trade-lab.html",
       "reason": "Stores the theme choice, the suite's shared state, and the paper journal (ADR-116): the trading plan, trade notes, hand-written paper trades, challenge rules and the market-lens symbol; it reads the Ops Room's paper receipts. No credentials, keys or vault entries, and the page works without storage."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-second-brain.html",
+      "reason": "Stores the theme choice, the suite's shared state, the language choice and the person's own ideas (omega-brain-v1, ADR-119); it reads TRADE LAB notes and plan, ORACLE's question history and THE CHAIN's notes.md views. No credentials, keys or vault entries; the page has no network and works without storage."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "scripts/lib/i18n.mjs",
+      "reason": "Stores only the language choice, the string \"ar\", \"en\" or \"both\" under omega-lang (ADR-119), wrapped in try/catch; the pages work without storage."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-brain.mjs",
+      "reason": "Test only (ADR-119): spawnSync(process.execPath, [scripts/build-brain-inline.mjs | scripts/build-i18n-inline.mjs, --check]) with no shell and no user input; it checks that the pages carry the current engine and dictionary copies."
     }
   ]
 }
