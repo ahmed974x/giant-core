@@ -61,6 +61,11 @@ cyber sources stayed offline.
    installed; installing any of them needs Ahmad's approval and a written security review. n8n is listed honestly
    as fair-code (Sustainable Use License), not OSI open source.
 
+6. Launchers: `start-omega.bat` and `start-omega.sh` also say whether n8n (5678) and Newton (8095) answer, and how to
+   start each, so one launcher shows the whole laptop state. n8n needs the `.env` of the folder Docker was set up in
+   (the compose project is named `omega`, so either folder reaches the same containers and volumes); a fresh clone has
+   no `.env`, so n8n is started from the folder that holds it.
+
 ## Consequences
 
 - New upstream hosts in the proxy allowlist: api.tfl.gov.uk, tie.digitraffic.fi, api.data.gov.sg,

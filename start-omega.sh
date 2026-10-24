@@ -31,6 +31,11 @@ open_browser() {
     echo "Local model (optional, Ollama on this computer; GLM-5.2 is cloud-only in Ollama, use a local GLM such as glm4):"
     curl -fsS "http://127.0.0.1:${PORT}/llm/ollama/status" 2>/dev/null || echo "proxy not answering yet"
     echo
+    # Optional laptop services (ADR-125); the Ops Room shows them grey when they are off.
+    if curl -fsS -m 2 -o /dev/null http://127.0.0.1:5678/healthz 2>/dev/null; then echo "n8n 5678: running."
+    else echo "n8n 5678: off. Start Docker, then run 'docker compose up -d n8n' in the giant-core folder that holds your .env file."; fi
+    if curl -fsS -m 2 -o /dev/null http://127.0.0.1:8095/api/health 2>/dev/null; then echo "Newton 8095: running."
+    else echo "Newton 8095: off. Optional: 'python3 -m pip install -r newton/requirements.txt', then 'python3 -m newton.http_api' in this folder."; fi
   fi
   if command -v open >/dev/null 2>&1; then open "$URL"
   elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1
