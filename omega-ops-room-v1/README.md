@@ -41,9 +41,11 @@ The gate opens only when the browser actually reads `/api/health` and it returns
 
 When `omega-core-api` runs on `127.0.0.1:8000`, the page asks it for n8n and Newton health first (tags show `VIA CORE`), which solves the CORS limitation above without touching Newton. Open it through the API at http://127.0.0.1:8000/ops/omega-ops-room.html. If the API is not running, the page falls back to probing each service directly.
 
-## ORACLE · العرّاف, deep research agent (ADR-114)
+## ORACLE · العرّاف, deep research agent (ADR-114, ADR-115)
 
 `omega-oracle.html` sits next to the Ops Room and THE CHAIN and also opens by double-click. Type a question in Arabic or English: the agent plans seven sub-questions, reads OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar, Wikipedia, GDELT and the Wayback availability API (all free and keyless), merges by DOI, ranks, chases citations and writes a brief where every quoted sentence carries its numbered reference, with the gaps it could not verify. arXiv and the optional Arabic summary by a local Ollama model need the local server; the rest work from GitHub Pages too. Deep link: `omega-oracle.html?q=coral%20bleaching&depth=2`. The same agent is the `deep_research` tool of the local MCP bridge.
+
+ADR-115 adds DOAJ (open access journals, Arabic ones too), dblp (computer science), Wikidata (the entity and the Arabic/English bridge) and NVD (CVE records, through the local server), and a second mode, **OSINT** (`?mode=intel`): passive open-source intelligence on a topic, with the entity card, news in Arabic and English, a three-month GDELT coverage and tone curve, CVEs published in the last 120 days with the CISA KEV flag, and the research behind it. It never scans or looks up an address, person or account.
 
 ## THE CHAIN · سلسلة الوكلاء الماليين (ADR-088)
 

@@ -6,10 +6,18 @@
 // The agent follows the four stages of open deep-research systems: plan, gather, evaluate, write. Every source is
 // free, keyless and public, and is read passively through its documented API: OpenAlex, Crossref, Europe PMC,
 // arXiv, Semantic Scholar, Wikipedia (Arabic and English), GDELT DOC 2.0 and the Internet Archive's Wayback
-// availability API. No scraping, no search-engine dorking, no scanning, no paid key.
+// availability API; ADR-115 adds DOAJ (open access journals), dblp (computer science), Wikidata (entities and the
+// Arabic/English bridge) and NVD (CVE records, through the proxy). No scraping, no search-engine dorking, no
+// scanning, no paid key.
+//
+// Two modes (ADR-115): "scholar" (the literature, as in ADR-114) and "intel", passive open-source intelligence on a
+// topic: who or what it is (Wikipedia, Wikidata), what the news says in English and Arabic and how much and in what
+// tone over three months (GDELT), which published vulnerabilities name it in the last 120 days (NVD, with the CISA
+// KEV flag NVD carries), and the research behind it. Nothing is scanned, probed or looked up by address.
 //
 // Contents
-//   plan(query, opts)        sub-questions, each with the sources that answer it; Arabic and English bridge terms
+//   plan(query, opts)        sub-questions, each with the sources that answer it; Arabic and English bridge terms;
+//                            opts.mode "scholar" (default) or "intel" (ADR-115)
 //   urls.*                   the request each source gets (one place, so the page, proxy and bridge agree)
 //   shape.*                  each answer cut to one record form {key, kind, title, authors, year, doi, url, oa, ...}
 //   merge(lists)             de-duplication by DOI, then by normalised title; `via` lists every index that had it
@@ -20,12 +28,13 @@
 //   evaluate(...)            coverage per sub-question and the gaps, by fixed rules
 //   report(...) / markdown   the finished brief, every sentence numbered to its reference
 //   checkCitations(text, n)  verifies a model's text: which [n] exist, which sentences carry none
+//   trend(volume, tone)      GDELT coverage and tone over three months: last 7 days against the 3-month mean, [INFERENCE]
 //   graph(records)           evidence map: links by citation and shared topic, deterministic force layout
 //   allowed(source, url)     the one API path each source may take through the local proxy
 //   run(query, opts, io)     the whole agent over an injected transport io.get(source, url, type) -> {data, tier}
 export const OMEGA_RESEARCH = (() => {
   "use strict";
-  const VERSION = "omega-research-v1";
+  const VERSION = "omega-research-v2";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const finite = v => typeof v === "number" && Number.isFinite(v);
   const enc = encodeURIComponent;
@@ -59,6 +68,8 @@ export const OMEGA_RESEARCH = (() => {
     try { const x = new URL(String(u || "")); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch { return null; }
   }
   const cleanQuery = q => str(q, 200).replace(/[<>{}\\]/g, " ").replace(/\s+/g, " ").trim();
+  // The question's own words, unnormalised (Arabic letters kept as typed), for APIs that match exact words.
+  const words = q => String(q || "").split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 2);
 
   /* ---------------- plan ---------------- */
   // Sources, their licence or terms, and the kind of record they return. `cors` says whether a browser may call the
@@ -71,8 +82,14 @@ export const OMEGA_RESEARCH = (() => {
     arxiv: { name: "arXiv", terms: "arXiv API terms, 1 request per 3 s", kind: "preprint", cors: false, home: "https://arxiv.org/" },
     semanticscholar: { name: "Semantic Scholar", terms: "public API, shared rate limit", kind: "paper", cors: true, home: "https://www.semanticscholar.org/" },
     gdelt: { name: "GDELT DOC 2.0", terms: "open, 1 request per 5 s", kind: "news", cors: true, home: "https://www.gdeltproject.org/" },
-    wayback: { name: "Internet Archive Wayback", terms: "availability API", kind: "archive", cors: true, home: "https://web.archive.org/" }
+    wayback: { name: "Internet Archive Wayback", terms: "availability API", kind: "archive", cors: true, home: "https://web.archive.org/" },
+    // ADR-115
+    doaj: { name: "DOAJ", terms: "CC0 article metadata", kind: "paper", cors: true, home: "https://doaj.org/" },
+    dblp: { name: "dblp", terms: "CC0, computer science", kind: "paper", cors: true, home: "https://dblp.org/" },
+    wikidata: { name: "Wikidata", terms: "CC0", kind: "entity", cors: true, home: "https://www.wikidata.org/" },
+    nvd: { name: "NVD (NIST)", terms: "public domain, 5 requests per 30 s", kind: "advisory", cors: false, home: "https://nvd.nist.gov/" }
   });
+  const MODES = Object.freeze(["scholar", "intel"]);
   // plan(): the sub-questions in order. `bridge` holds the other-language term found through Wikipedia language links
   // (filled in after the define step), so an Arabic question also searches the English literature and back.
   function plan(query, opts = {}) {
@@ -81,19 +98,27 @@ export const OMEGA_RESEARCH = (() => {
     const year = new Date(now).getUTCFullYear();
     const lang = isArabic(q) ? "ar" : "en";
     const depth = opts.depth === 1 ? 1 : 2;
+    const mode = opts.mode === "intel" ? "intel" : "scholar";
     const off = new Set(Array.isArray(opts.off) ? opts.off : []);
-    const steps = [
-      { id: "define", ar: "تعريف وخلفية", en: "Definition and background", sources: ["wikipedia"] },
-      { id: "evidence", ar: "الأدلة المحكّمة الأكثر صلة", en: "Most relevant peer-reviewed evidence", sources: ["openalex", "crossref", "europepmc", "semanticscholar"] },
+    const steps = mode === "intel" ? [
+      { id: "define", ar: "من هو أو ما هو", en: "Who or what it is", sources: ["wikipedia", "wikidata"] },
+      { id: "news", ar: "الأخبار بالعربية والإنجليزية في آخر 3 أشهر", en: "News in Arabic and English, last 3 months", sources: ["gdelt"] },
+      { id: "trend", ar: "حجم التغطية ونبرتها عبر 3 أشهر", en: "Coverage volume and tone over 3 months", sources: ["gdelt"] },
+      { id: "cyber", ar: "الثغرات المنشورة في آخر 120 يوماً", en: "Published vulnerabilities, last 120 days", sources: ["nvd"] },
+      { id: "evidence", ar: "البحث المحكّم وراء الموضوع", en: "Peer-reviewed research behind it", sources: ["openalex", "semanticscholar"] },
+      { id: "recent", ar: `أحدث ما نُشر منذ ${year - 2}`, en: `Newest work since ${year - 2}`, sources: ["openalex"] }
+    ] : [
+      { id: "define", ar: "تعريف وخلفية", en: "Definition and background", sources: ["wikipedia", "wikidata"] },
+      { id: "evidence", ar: "الأدلة المحكّمة الأكثر صلة", en: "Most relevant peer-reviewed evidence", sources: ["openalex", "crossref", "europepmc", "semanticscholar", "doaj", "dblp"] },
       { id: "recent", ar: `أحدث ما نُشر منذ ${year - 2}`, en: `Newest work since ${year - 2}`, sources: ["openalex", "arxiv"] },
       { id: "foundations", ar: "الأعمال التأسيسية الأكثر استشهاداً", en: "Most-cited foundations", sources: ["openalex"] },
       { id: "counter", ar: "القيود والأدلة المعاكسة", en: "Limits and counter-evidence", sources: ["openalex"] },
-      { id: "arabic", ar: "المصادر العربية", en: "Arabic-language sources", sources: ["openalex", "wikipedia"] },
+      { id: "arabic", ar: "المصادر العربية", en: "Arabic-language sources", sources: ["openalex", "doaj", "wikipedia"] },
       { id: "news", ar: "الأخبار في آخر 3 أشهر", en: "News, last 3 months", sources: ["gdelt"] }
     ];
-    if (depth === 2) steps.push({ id: "snowball", ar: "تتبّع الاستشهادات (كرة الثلج)", en: "Citation chasing (snowball)", sources: ["openalex"] });
+    if (depth === 2 && mode === "scholar") steps.push({ id: "snowball", ar: "تتبّع الاستشهادات (كرة الثلج)", en: "Citation chasing (snowball)", sources: ["openalex"] });
     for (const s of steps) s.sources = s.sources.filter(k => !off.has(k));
-    return { format: VERSION + "-plan", query: q, lang, year, depth, steps: steps.filter(s => s.sources.length), terms: tokens(q).slice(0, 12) };
+    return { format: VERSION + "-plan", query: q, lang, year, depth, mode, steps: steps.filter(s => s.sources.length), terms: tokens(q).slice(0, 12) };
   }
 
   /* ---------------- requests ---------------- */
@@ -120,26 +145,55 @@ export const OMEGA_RESEARCH = (() => {
     arxiv: q => { const s = arxivQuery(q); return s ? `https://export.arxiv.org/api/query?search_query=${enc(s)}&start=0&max_results=12&sortBy=relevance&sortOrder=descending` : null; },
     semanticscholar: q => `https://api.semanticscholar.org/graph/v1/paper/search?query=${enc(q)}&limit=15&fields=title,year,publicationDate,citationCount,abstract,externalIds,openAccessPdf,venue,authors,url`,
     gdelt: (q, lang) => {
-      const words = q.split(" ").filter(w => w.length >= 3);
-      if (!words.length) return null;
-      const term = (words.length > 1 ? `"${words.slice(0, 6).join(" ")}"` : words[0]) + (lang === "ar" ? " sourcelang:arabic" : "");
-      return `https://api.gdeltproject.org/api/v2/doc/doc?query=${enc(term)}&mode=artlist&format=json&maxrecords=20&timespan=3months&sort=hybridrel`;
+      const term = gdeltTerm(q, lang);
+      return term ? `https://api.gdeltproject.org/api/v2/doc/doc?query=${enc(term)}&mode=artlist&format=json&maxrecords=20&timespan=3months&sort=hybridrel` : null;
     },
-    wayback: u => `https://archive.org/wayback/available?url=${enc(u)}`
+    // ADR-115: daily coverage volume ("timelinevol", share of all monitored articles) or average tone ("timelinetone").
+    gdeltTimeline: (q, kind) => {
+      const term = gdeltTerm(q);
+      return term ? `https://api.gdeltproject.org/api/v2/doc/doc?query=${enc(term)}&mode=${kind === "tone" ? "timelinetone" : "timelinevol"}&format=json&timespan=3months` : null;
+    },
+    wayback: u => `https://archive.org/wayback/available?url=${enc(u)}`,
+    // ADR-115. DOAJ takes the query in the path (Elasticsearch query string), so only plain words go in.
+    doaj: q => { const w = words(q).slice(0, 8); return w.length ? `https://doaj.org/api/search/articles/${enc(w.join(" "))}?pageSize=15&page=1` : null; },
+    dblp: q => { const w = words(q).filter(t => /^[A-Za-z0-9]+$/.test(t)).slice(0, 8); return w.length ? `https://dblp.org/search/publ/api?q=${enc(w.join(" "))}&format=json&h=15` : null; },
+    wikidataSearch: (lang, q) => `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${enc(q.slice(0, 120))}&language=${lang === "ar" ? "ar" : "en"}&uselang=${lang === "ar" ? "ar" : "en"}&type=item&limit=3&format=json&origin=*`,
+    wikidataEntity: id => /^Q\d{1,12}$/.test(String(id)) ? `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${id}&props=labels|descriptions|sitelinks/urls&languages=ar|en&sitefilter=arwiki|enwiki&format=json&origin=*` : null,
+    // NVD CVE API 2.0: every word must appear in the description; published in the 120 days before `now` (its maximum range).
+    nvd: (q, now) => {
+      const w = [...new Set(words(q).map(t => t.toLowerCase()).filter(t => /^[a-z0-9][a-z0-9.-]{2,}$/.test(t) && !STOP.has(t)))].slice(0, 3);
+      if (!w.length) return null;
+      const end = new Date(finite(now) ? now : Date.parse("2026-01-01T00:00:00Z")), start = new Date(end.getTime() - 119 * 864e5);
+      const iso = d => d.toISOString().slice(0, 19) + ".000";
+      return `https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=${enc(w.join(" "))}&pubStartDate=${enc(iso(start))}&pubEndDate=${enc(iso(end))}&resultsPerPage=20&noRejected`;
+    }
   };
+  function gdeltTerm(q, lang) {
+    const w = q.split(" ").filter(x => x.length >= 3);
+    if (!w.length) return null;
+    return (w.length > 1 ? `"${w.slice(0, 6).join(" ")}"` : w[0]) + (lang === "ar" ? " sourcelang:arabic" : "");
+  }
   // The proxy (and the static page) refuse every other host.
-  const HOSTS = Object.freeze(["en.wikipedia.org", "ar.wikipedia.org", "api.openalex.org", "api.crossref.org", "www.ebi.ac.uk", "export.arxiv.org", "api.semanticscholar.org", "api.gdeltproject.org", "archive.org"]);
+  const HOSTS = Object.freeze(["en.wikipedia.org", "ar.wikipedia.org", "api.openalex.org", "api.crossref.org", "www.ebi.ac.uk", "export.arxiv.org", "api.semanticscholar.org", "api.gdeltproject.org", "archive.org",
+    "doaj.org", "dblp.org", "www.wikidata.org", "services.nvd.nist.gov"]);
   // allowed(): the one request shape each source may take through the local proxy: https, its own host, its one
   // API path, no credentials or port in the address. Anything else is refused before a byte leaves the laptop.
+  // A third entry `true` means the path is a prefix followed by one encoded segment (DOAJ puts the query there).
   const ENDPOINTS = Object.freeze({
     wikipedia: [/^(ar|en)\.wikipedia\.org$/, "/w/api.php"], openalex: [/^api\.openalex\.org$/, "/works"], crossref: [/^api\.crossref\.org$/, "/works"],
     europepmc: [/^www\.ebi\.ac\.uk$/, "/europepmc/webservices/rest/search"], arxiv: [/^export\.arxiv\.org$/, "/api/query"], semanticscholar: [/^api\.semanticscholar\.org$/, "/graph/v1/paper/search"],
-    gdelt: [/^api\.gdeltproject\.org$/, "/api/v2/doc/doc"], wayback: [/^archive\.org$/, "/wayback/available"]
+    gdelt: [/^api\.gdeltproject\.org$/, "/api/v2/doc/doc"], wayback: [/^archive\.org$/, "/wayback/available"],
+    doaj: [/^doaj\.org$/, "/api/search/articles/", true], dblp: [/^dblp\.org$/, "/search/publ/api"], wikidata: [/^www\.wikidata\.org$/, "/w/api.php"],
+    nvd: [/^services\.nvd\.nist\.gov$/, "/rest/json/cves/2.0"]
   });
   function allowed(source, url) {
     const e = Object.prototype.hasOwnProperty.call(ENDPOINTS, source) ? ENDPOINTS[source] : null;
     if (!e || typeof url !== "string" || url.length > 2000) return false;
-    try { const u = new URL(url); return u.protocol === "https:" && e[0].test(u.hostname) && u.pathname === e[1] && !u.username && !u.password && !u.port && !u.hash; } catch { return false; }
+    try {
+      const u = new URL(url);
+      const path = e[2] ? u.pathname.startsWith(e[1]) && /^[^/]{1,400}$/.test(u.pathname.slice(e[1].length)) : u.pathname === e[1];
+      return u.protocol === "https:" && e[0].test(u.hostname) && path && !u.username && !u.password && !u.port && !u.hash;
+    } catch { return false; }
   }
 
   /* ---------------- shapes ---------------- */
@@ -220,6 +274,60 @@ export const OMEGA_RESEARCH = (() => {
       if (!c || !c.available) return { archived: false, url: null, at: null };
       const t = String(c.timestamp || ""), at = /^\d{14}$/.test(t) ? `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}` : null;
       return { archived: true, url: safeUrl(c.url), at };
+    },
+    // ADR-115. DOAJ: every journal it lists is open access and peer reviewed, so the full-text link is the oa link.
+    doaj: (j, step) => ((j && j.results) || []).map(a => {
+      const b = (a && a.bibjson) || {}, ids = Array.isArray(b.identifier) ? b.identifier : [], links = Array.isArray(b.link) ? b.link : [];
+      const doi = ids.find(i => i && /^doi$/i.test(i.type || "")), ft = links.find(l => l && /fulltext/i.test(l.type || "")), y = Number(b.year);
+      const jl = b.journal && Array.isArray(b.journal.language) ? b.journal.language.map(x => String(x).toLowerCase()) : [];
+      const title = stripTags(b.title || "");
+      return rec({ kind: "paper", title, authors: (b.author || []).map(x => x && x.name), year: Number.isFinite(y) && y > 1800 ? y : null,
+        date: Number.isFinite(y) && y > 1800 ? String(y) + (b.month ? "-" + String(b.month).padStart(2, "0") : "") : null, venue: b.journal && b.journal.title, doi: normDoi(doi && doi.id),
+        url: ft ? ft.url : null, oa: ft ? ft.url : null, abstract: b.abstract ? stripTags(b.abstract) : null, lang: isArabic(title) ? "ar" : jl.length === 1 ? jl[0].slice(0, 2) : null,
+        topics: Array.isArray(b.keywords) ? b.keywords.slice(0, 5) : [], via: "doaj", step });
+    }).filter(r => r.title),
+    // dblp: computer-science bibliography. No abstracts; CoRR (arXiv) entries are "Informal" and count as preprints.
+    dblp: (j, step) => {
+      const hits = j && j.result && j.result.hits && j.result.hits.hit;
+      return (Array.isArray(hits) ? hits : hits ? [hits] : []).map(h => {
+        const i = (h && h.info) || {}, au = i.authors && i.authors.author, list = Array.isArray(au) ? au : au ? [au] : [], y = Number(i.year);
+        const ee = Array.isArray(i.ee) ? i.ee[0] : i.ee, venue = Array.isArray(i.venue) ? i.venue[0] : i.venue;
+        return rec({ kind: /informal/i.test(i.type || "") ? "preprint" : "paper", title: stripTags(i.title || "").replace(/\.$/, ""), authors: list.map(a => (typeof a === "string" ? a : a && a.text)),
+          year: Number.isFinite(y) ? y : null, venue, doi: normDoi(i.doi), url: ee || i.url, via: "dblp", step });
+      }).filter(r => r.title);
+    },
+    // Wikidata: the best-matching item for the question, then its labels, descriptions and Wikipedia pages in both languages.
+    wikidataSearch: j => ((j && j.search) || []).map(x => ({ id: /^Q\d{1,12}$/.test(String(x && x.id)) ? x.id : null, label: str(x && x.label, 200), description: str(x && x.description, 300) })).filter(x => x.id),
+    wikidataEntity: (j, id, lang) => {
+      const e = j && j.entities && j.entities[id];
+      if (!e || e.missing !== undefined) return null;
+      const lab = k => (e.labels && e.labels[k] && str(e.labels[k].value, 200)) || null, des = k => (e.descriptions && e.descriptions[k] && str(e.descriptions[k].value, 300)) || null;
+      const wiki = k => (e.sitelinks && e.sitelinks[k + "wiki"] && safeUrl(e.sitelinks[k + "wiki"].url)) || null;
+      const other = lang === "ar" ? "en" : "ar";
+      return { id, url: `https://www.wikidata.org/wiki/${id}`, label: lab(lang) || lab(other), description: des(lang) || des(other), other: lab(other), labels: { ar: lab("ar"), en: lab("en") },
+        descriptions: { ar: des("ar"), en: des("en") }, wiki: { ar: wiki("ar"), en: wiki("en") } };
+    },
+    // NVD: one record per CVE, with its CVSS base score and the CISA KEV date NVD carries when the flaw is exploited.
+    nvd: (j, step) => ((j && j.vulnerabilities) || []).map(v => {
+      const c = (v && v.cve) || {}, id = str(c.id, 24);
+      if (!/^CVE-\d{4}-\d{4,}$/.test(id)) return null;
+      const d = (c.descriptions || []).find(x => x && x.lang === "en"), m = c.metrics || {};
+      const M = (m.cvssMetricV40 || m.cvssMetricV31 || m.cvssMetricV30 || m.cvssMetricV2 || [])[0], cv = (M && M.cvssData) || {};
+      const pub = str(c.published, 10), text = str(d && d.value, 2400);
+      const r = rec({ kind: "advisory", title: `${id} · ${text.length > 140 ? text.slice(0, 137) + "…" : text}`, year: /^\d{4}/.test(pub) ? Number(pub.slice(0, 4)) : null, date: pub || null,
+        venue: "NVD · NIST", url: `https://nvd.nist.gov/vuln/detail/${id}`, abstract: text || null, via: "nvd", step });
+      r.key = "cve:" + id;
+      r.cve = { id, score: finite(cv.baseScore) ? cv.baseScore : null, severity: str(cv.baseSeverity || (M && M.baseSeverity), 12) || null, version: str(cv.version, 4) || null,
+        kev: !!c.cisaExploitAdd, kevDate: c.cisaExploitAdd ? str(c.cisaExploitAdd, 10) : null };
+      return r;
+    }).filter(Boolean),
+    // GDELT timelines -> [{date, value}] per day (volume: % of all monitored articles; tone: average, about -10..+10).
+    gdeltTimeline: j => {
+      const s = j && Array.isArray(j.timeline) ? j.timeline[0] : null;
+      return (s && Array.isArray(s.data) ? s.data : []).map(p => {
+        const m = /^(\d{4})(\d{2})(\d{2})/.exec(String((p && p.date) || "")), v = Number(p && p.value);
+        return m && Number.isFinite(v) ? { date: `${m[1]}-${m[2]}-${m[3]}`, value: v } : null;
+      }).filter(Boolean).slice(-400);
     }
   };
 
@@ -253,7 +361,7 @@ export const OMEGA_RESEARCH = (() => {
   }
 
   /* ---------------- score ---------------- */
-  const KIND_W = { paper: 1, preprint: 0.85, encyclopedia: 0.75, news: 0.6 };
+  const KIND_W = { paper: 1, preprint: 0.85, advisory: 0.9, encyclopedia: 0.75, news: 0.6 };
   // score(): BM25 (k1 1.2, b 0.75; title counted twice) normalised to the best record, then a weighted blend.
   // A retracted record keeps its place in the list with score 0 and a red flag. [INFERENCE]
   function score(records, terms, now) {
@@ -281,12 +389,32 @@ export const OMEGA_RESEARCH = (() => {
     }).sort((a, b) => b.score - a.score || (b.cites || 0) - (a.cites || 0));
   }
   // grade(): A = peer-reviewed and (found in two or more indexes or cited 50+ times); B = peer-reviewed;
-  // C = preprint or encyclopedia; D = news; X = retracted. Fixed rules, not a judgement of quality. [INFERENCE]
+  // C = preprint or encyclopedia; D = news; G = official public record (an NVD CVE entry, ADR-115); X = retracted.
+  // Fixed rules, not a judgement of quality. [INFERENCE]
   function grade(r) {
     if (r.retracted) return "X";
+    if (r.kind === "advisory") return "G";
     if (r.kind === "paper") return r.via.length >= 2 || (r.cites || 0) >= 50 ? "A" : "B";
     if (r.kind === "preprint" || r.kind === "encyclopedia") return "C";
     return "D";
+  }
+
+  /* ---------------- trend (ADR-115) ---------------- */
+  // trend(): the last 7 days of GDELT coverage against the whole 3-month mean, the peak day, and the same for tone.
+  // "rising" at 1.5x or more, "falling" at 0.67x or less, else "steady". Fixed rules over GDELT's own numbers. [INFERENCE]
+  function trend(volume, tone) {
+    const v = (volume || []).filter(p => p && finite(p.value));
+    if (v.length < 14) return null;
+    const mean = a => a.reduce((x, p) => x + p.value, 0) / (a.length || 1);
+    const all = mean(v), last7 = mean(v.slice(-7)), ratio = all > 0 ? last7 / all : null;
+    const peak = v.reduce((b, p) => (p.value > b.value ? p : b), v[0]);
+    const t = (tone || []).filter(p => p && finite(p.value));
+    const tn = t.length >= 14 ? { mean: +mean(t).toFixed(3), last7: +mean(t.slice(-7)).toFixed(3) } : null;
+    if (tn) tn.delta = +(tn.last7 - tn.mean).toFixed(3);
+    return { label: "[INFERENCE] fixed rules over GDELT DOC 2.0 timelines", from: v[0].date, to: v[v.length - 1].date, days: v.length,
+      mean: +all.toFixed(5), last7: +last7.toFixed(5), ratio: ratio === null ? null : +ratio.toFixed(3),
+      dir: ratio === null ? "steady" : ratio >= 1.5 ? "rising" : ratio <= 0.67 ? "falling" : "steady", peak: { date: peak.date, value: +peak.value.toFixed(5) },
+      tone: tn, series: v.slice(-92).map(p => ({ date: p.date, value: +p.value.toFixed(5) })), toneSeries: t.slice(-92).map(p => ({ date: p.date, value: +p.value.toFixed(3) })) };
   }
 
   /* ---------------- snowball ---------------- */
@@ -341,7 +469,8 @@ export const OMEGA_RESEARCH = (() => {
 
   /* ---------------- evaluate ---------------- */
   // evaluate(): per sub-question, how many records answered it and from which sources; then the gaps by fixed rules.
-  function evaluate(planned, ranked, runs, now) {
+  function evaluate(planned, ranked, runs, now, extra = {}) {
+    const intel = planned.mode === "intel";
     const year = new Date(finite(now) ? now : Date.parse("2026-01-01T00:00:00Z")).getUTCFullYear();
     const steps = planned.steps.map(s => {
       const own = runs.filter(x => x.step === s.id);
@@ -352,9 +481,11 @@ export const OMEGA_RESEARCH = (() => {
     const gaps = [];
     for (const s of steps) if (s.sources.length && s.sources.every(x => !x.ok)) gaps.push({ level: "red", ar: `«${s.ar}»: لم يُجب أي مصدر، تعذر التحقق منها.`, en: `${s.en}: no source answered.` });
     else if (s.sources.length && !s.records && s.id !== "snowball") gaps.push({ level: "amber", ar: `«${s.ar}»: أجابت المصادر بلا نتائج مطابقة.`, en: `${s.en}: sources answered with no matching record.` });
-    if (peer.length < 3) gaps.push({ level: "red", ar: `أقل من 3 أوراق محكّمة (${peer.length}). الخلاصة ضعيفة السند.`, en: `Fewer than 3 peer-reviewed papers (${peer.length}).` });
+    if (peer.length < 3 && !intel) gaps.push({ level: "red", ar: `أقل من 3 أوراق محكّمة (${peer.length}). الخلاصة ضعيفة السند.`, en: `Fewer than 3 peer-reviewed papers (${peer.length}).` });
+    if (intel && !extra.trend && runs.some(x => x.step === "trend")) gaps.push({ level: "amber", ar: "لا منحنى للتغطية الإخبارية: GDELT لم يرجع 14 يوماً على الأقل.", en: "No coverage curve: GDELT returned fewer than 14 days." });
+    if (intel && ranked.filter(r => r.kind === "news").length < 3) gaps.push({ level: "amber", ar: "أقل من 3 أخبار؛ الصورة الإخبارية ناقصة.", en: "Fewer than 3 news items." });
     if (ranked.length && !ranked.some(r => r.year && r.year >= year - 2 && r.kind !== "news")) gaps.push({ level: "amber", ar: `لا بحث منشور منذ ${year - 2}، قد تكون المعرفة قديمة.`, en: `Nothing published since ${year - 2}.` });
-    if (!ranked.some(r => r.lang === "ar" || isArabic(r.title))) gaps.push({ level: "amber", ar: "لا مصدر عربي في النتائج. جرّب منصة إسناد أو مستودع QSpace من روابط البحث الخارجي.", en: "No Arabic-language source found." });
+    if (!intel && !ranked.some(r => r.lang === "ar" || isArabic(r.title))) gaps.push({ level: "amber", ar: "لا مصدر عربي في النتائج. جرّب منصة إسناد أو مستودع QSpace من روابط البحث الخارجي.", en: "No Arabic-language source found." });
     const retracted = ranked.filter(r => r.retracted);
     if (retracted.length) gaps.push({ level: "red", ar: `${retracted.length} عمل مسحوب (retracted) استُبعد من الخلاصة.`, en: `${retracted.length} retracted work(s) excluded.` });
     const single = peer.filter(r => r.via.length === 1).length;
@@ -363,13 +494,14 @@ export const OMEGA_RESEARCH = (() => {
     if (top5.length && !top5.some(r => r.oa)) gaps.push({ level: "amber", ar: "لا نص كامل مفتوح لأعلى خمسة مصادر؛ الخلاصة مبنية على الملخصات فقط.", en: "No open full text for the top five." });
     const failed = [...new Set(runs.filter(x => !x.ok).map(x => x.source))];
     if (failed.length) gaps.push({ level: "amber", ar: `مصادر لم تُجب: ${failed.map(k => (SOURCES[k] || { name: k }).name).join("، ")}.`, en: `Sources that failed: ${failed.join(", ")}.` });
-    const kinds = { paper: 0, preprint: 0, encyclopedia: 0, news: 0 };
+    const kinds = { paper: 0, preprint: 0, advisory: 0, encyclopedia: 0, news: 0 };
     for (const r of ranked) kinds[r.kind] = (kinds[r.kind] || 0) + 1;
     const indexes = new Set(ranked.flatMap(r => r.via));
     const years = ranked.map(r => r.year).filter(finite);
     return { steps, gaps, kpi: { records: ranked.length, peer: peer.length, preprints: kinds.preprint, encyclopedia: kinds.encyclopedia, news: kinds.news,
       indexes: indexes.size, corroborated: ranked.filter(r => r.via.length >= 2).length, oaShare: ranked.length ? +(ranked.filter(r => r.oa).length / ranked.length).toFixed(3) : 0,
-      retracted: retracted.length, newest: years.length ? Math.max(...years) : null, oldest: years.length ? Math.min(...years) : null } };
+      retracted: retracted.length, newest: years.length ? Math.max(...years) : null, oldest: years.length ? Math.min(...years) : null,
+      advisories: kinds.advisory, kev: ranked.filter(r => r.cve && r.cve.kev).length } };
   }
 
   /* ---------------- report ---------------- */
@@ -379,9 +511,13 @@ export const OMEGA_RESEARCH = (() => {
     const live = ranked.filter(r => !r.retracted);
     const refs = [], index = new Map();
     const cite = r => { if (!index.has(r.key)) { refs.push(r); index.set(r.key, refs.length); } return index.get(r.key); };
+    const intel = planned.mode === "intel";
     const scholarly = live.filter(r => r.kind === "paper" || r.kind === "preprint");
+    const advisories = live.filter(r => r.kind === "advisory").sort((a, b) => (b.cve && b.cve.kev ? 1 : 0) - (a.cve && a.cve.kev ? 1 : 0) || ((b.cve && b.cve.score) || 0) - ((a.cve && a.cve.score) || 0) || String(b.date || "").localeCompare(String(a.date || "")));
     const pick = (list, n) => list.slice(0, n).map(r => ({ n: cite(r), r }));
-    const summary = keySentences(scholarly.length ? scholarly : live, terms, { n: opts.summary || 6 }).map(s => ({ text: s.text, n: cite(live.find(r => r.key === s.key)) }));
+    // In intel mode the brief opens with the newest exploited or most severe advisories, then the research.
+    const pool = intel ? advisories.slice(0, 6).concat(scholarly) : scholarly;
+    const summary = keySentences(pool.length ? pool : live, terms, { n: opts.summary || 6 }).map(s => ({ text: s.text, n: cite(live.find(r => r.key === s.key)) }));
     const counterS = keySentences(scholarly.filter(r => r.steps.includes("counter")).concat(scholarly), terms, { n: 3, mode: "counter" }).map(s => ({ text: s.text, n: cite(live.find(r => r.key === s.key)) }));
     const define = live.find(r => r.kind === "encyclopedia" && r.steps.includes("define"));
     const sections = {
@@ -391,25 +527,46 @@ export const OMEGA_RESEARCH = (() => {
       recent: pick(scholarly.filter(r => r.year && r.year >= planned.year - 2).sort((a, b) => (b.year - a.year) || (b.score - a.score)), 5),
       foundations: pick(scholarly.filter(r => r.steps.includes("foundations") || r.steps.includes("snowball")).sort((a, b) => (b.cites || 0) - (a.cites || 0)), 5),
       arabic: pick(live.filter(r => r.lang === "ar" || isArabic(r.title)), 5),
-      news: pick(live.filter(r => r.kind === "news"), 6)
+      news: pick(live.filter(r => r.kind === "news"), intel ? 10 : 6),
+      advisories: pick(advisories, 8),
+      entity: opts.entity || null,
+      trend: opts.trend || null
     };
     for (const r of live.slice(0, 30)) cite(r);
-    return { format: VERSION, query: planned.query, lang: planned.lang, bridge: opts.bridge || null, generatedAt: at, depth: planned.depth,
+    return { format: VERSION, query: planned.query, lang: planned.lang, mode: planned.mode || "scholar", bridge: opts.bridge || null, generatedAt: at, depth: planned.depth,
       label: "[INFERENCE] ranking, grades and grouping are fixed rules; quoted sentences are verbatim from the cited abstract",
       sections, gaps: evaluation.gaps, kpi: evaluation.kpi, steps: evaluation.steps,
       references: refs.map((r, i) => ({ n: i + 1, key: r.key, kind: r.kind, grade: grade(r), title: r.title, authors: r.authors, year: r.year, date: r.date, venue: r.venue, doi: r.doi, url: r.url, oa: r.oa,
-        cites: r.cites, via: r.via, score: r.score, retracted: r.retracted, archive: r.archive || null, lang: r.lang })),
+        cites: r.cites, via: r.via, score: r.score, retracted: r.retracted, archive: r.archive || null, lang: r.lang, cve: r.cve || null })),
       retracted: ranked.filter(r => r.retracted).map(r => ({ title: r.title, doi: r.doi, url: r.url })) };
   }
-  const GRADE_AR = { A: "محكّم ومؤكد", B: "محكّم", C: "مسودة أو موسوعة", D: "خبر", X: "مسحوب" };
+  const GRADE_AR = { A: "محكّم ومؤكد", B: "محكّم", C: "مسودة أو موسوعة", D: "خبر", G: "سجل رسمي", X: "مسحوب" };
+  const DIR_AR = { rising: "صاعد", falling: "هابط", steady: "مستقر" };
+  const pct = v => (Math.round(v * 1e4) / 1e4).toString();
   function markdown(rep) {
     const L = [], ref = n => `[${n}]`;
     const item = x => `- ${x.r.title}${x.r.year ? ` (${x.r.year})` : ""}${x.r.venue ? ` · ${x.r.venue}` : ""}${finite(x.r.cites) ? ` · الاستشهادات ${x.r.cites}` : ""} ${ref(x.n)}`;
-    L.push(`# تقرير بحث عميق: ${rep.query}`, "");
-    L.push(`> وكيل أوميغا للبحث العميق (ORACLE)${rep.generatedAt ? ` · ${rep.generatedAt}` : ""} · المصادر ${rep.kpi.records} · الفهارس ${rep.kpi.indexes} · ${rep.label}`);
-    if (rep.bridge) L.push(`> مصطلح الجسر بين العربية والإنجليزية (من روابط ويكيبيديا): ${rep.bridge}`);
+    const intel = rep.mode === "intel";
+    L.push(`# ${intel ? "تقرير استخبارات مفتوحة المصدر" : "تقرير بحث عميق"}: ${rep.query}`, "");
+    L.push(`> وكيل أوميغا للبحث العميق (ORACLE) · ${intel ? "وضع الاستخبارات المفتوحة (OSINT سلبي)" : "وضع البحث العلمي"}${rep.generatedAt ? ` · ${rep.generatedAt}` : ""} · المصادر ${rep.kpi.records} · الفهارس ${rep.kpi.indexes} · ${rep.label}`);
+    if (rep.bridge) L.push(`> مصطلح الجسر بين العربية والإنجليزية (من ويكيبيديا وويكي بيانات): ${rep.bridge}`);
     L.push("");
     if (rep.sections.define) L.push("## تعريف", "", `${rep.sections.define.text} ${ref(rep.sections.define.n)}`, "");
+    const ent = rep.sections.entity;
+    if (ent) L.push("## الكيان في ويكي بيانات", "", `- ${ent.label || ent.id} (${ent.id})${ent.description ? `: ${ent.description}` : ""} · ${ent.url}`, "");
+    const tr = rep.sections.trend;
+    if (tr) {
+      L.push("## حجم التغطية الإخبارية ونبرتها [INFERENCE]", "");
+      L.push(`- من ${tr.from} إلى ${tr.to} (${tr.days} يوماً): متوسط آخر 7 أيام ${pct(tr.last7)}% من كل الأخبار المرصودة، مقابل ${pct(tr.mean)}% في الفترة كلها${tr.ratio !== null ? `، أي ${tr.ratio} ضعف` : ""}. الاتجاه: ${DIR_AR[tr.dir]}.`);
+      L.push(`- الذروة: ${tr.peak.date} عند ${pct(tr.peak.value)}%.`);
+      if (tr.tone) L.push(`- النبرة (GDELT، من −10 إلى +10 تقريباً): آخر 7 أيام ${tr.tone.last7}، والمتوسط ${tr.tone.mean} (فرق ${tr.tone.delta > 0 ? "+" : ""}${tr.tone.delta}).`);
+      L.push("");
+    }
+    if (rep.sections.advisories.length) {
+      L.push("## الثغرات المنشورة (NVD، آخر 120 يوماً)", "");
+      for (const x of rep.sections.advisories) { const c = x.r.cve || {}; L.push(`- ${c.id}${c.score !== null && c.score !== undefined ? ` · CVSS ${c.score}${c.severity ? " " + c.severity : ""}` : ""}${c.kev ? ` · مستغلة فعلاً (CISA KEV ${c.kevDate})` : ""} · نُشرت ${x.r.date || "؟"} ${ref(x.n)}`); }
+      L.push("");
+    }
     L.push("## الخلاصة المستخرجة", "", "جمل منقولة حرفياً من ملخصات منشورة، بلغتها الأصلية، مع رقم مرجعها.", "");
     if (rep.sections.summary.length) for (const s of rep.sections.summary) L.push(`- «${s.text}» ${ref(s.n)}`); else L.push("- تعذر التحقق منها: لا ملخص يطابق السؤال.");
     L.push("");
@@ -419,7 +576,8 @@ export const OMEGA_RESEARCH = (() => {
     sec("الأعمال التأسيسية", rep.sections.foundations);
     if (rep.sections.counter.length) { L.push("## قيود وأدلة معاكسة", ""); for (const s of rep.sections.counter) L.push(`- «${s.text}» ${ref(s.n)}`); L.push(""); }
     sec("السياق العربي", rep.sections.arabic);
-    sec("الأخبار والمتابعة", rep.sections.news);
+    if (!intel) sec("الأخبار والمتابعة", rep.sections.news);
+    else if (rep.sections.news.length) { L.push("## الأخبار (GDELT)", ""); for (const x of rep.sections.news) L.push(`- ${x.r.title}${x.r.date ? ` (${x.r.date})` : ""}${x.r.venue ? ` · ${x.r.venue}` : ""} ${ref(x.n)}`); L.push(""); }
     L.push("## خطة البحث وما أجاب", "", "| الخطوة | المصادر | النتائج |", "|---|---|---|");
     for (const s of rep.steps) L.push(`| ${s.ar} | ${s.sources.map(x => `${(SOURCES[x.source] || { name: x.source }).name} ${x.ok ? `✓ ${x.n}` : "✗"}`).join("، ")} | ${s.records} |`);
     L.push("");
@@ -431,7 +589,7 @@ export const OMEGA_RESEARCH = (() => {
       L.push(`${r.n}. ${who}${r.title}.${r.venue ? ` ${r.venue}` : ""}${r.year ? `، ${r.year}` : ""}. ${r.doi ? "https://doi.org/" + r.doi : r.url || ""} · الدرجة ${r.grade} (${GRADE_AR[r.grade]}) · الفهارس: ${r.via.map(v => (SOURCES[v] || { name: v }).name).join("، ")}${r.oa && r.oa !== r.url ? ` · نص مفتوح: ${r.oa}` : ""}${r.archive && r.archive.archived ? ` · أرشيف ${r.archive.at}: ${r.archive.url}` : ""}`);
     }
     if (rep.retracted.length) { L.push("", "### أعمال مسحوبة استُبعدت", ""); for (const r of rep.retracted) L.push(`- ${r.title}${r.doi ? " · https://doi.org/" + r.doi : ""}`); }
-    L.push("", "---", "قرار المساعدة فقط. لا شيء هنا نصيحة مالية أو طبية أو قانونية، ولا ينفّذ أي أمر.");
+    L.push("", "---", intel ? "استخبارات مفتوحة سلبية: قراءة واجهات عامة فقط، بلا مسح ولا فحص منافذ ولا بحث عن عناوين. للمساعدة في القرار فقط، ولا ينفّذ أي أمر." : "قرار المساعدة فقط. لا شيء هنا نصيحة مالية أو طبية أو قانونية، ولا ينفّذ أي أمر.");
     return L.join("\n");
   }
   // For the local model: numbered sources with their verbatim sentences, at most `max` characters in all.
@@ -483,7 +641,7 @@ export const OMEGA_RESEARCH = (() => {
       if (shared && !edges.some(e => (e.a === i && e.b === j) || (e.a === j && e.b === i))) edges.push({ a: i, b: j, type: "topic", w: shared });
     }
     const n = nodes.length || 1, K = Math.sqrt(1 / n) * 0.9;
-    const order = { paper: 0, preprint: 1, encyclopedia: 2, news: 3 };
+    const order = { paper: 0, preprint: 1, encyclopedia: 2, news: 3, advisory: 4 };
     nodes.forEach((p, k) => { const ang = (2 * Math.PI * k) / n + (order[p.kind] || 0) * 0.35; const rad = 0.18 + 0.22 * (1 - clamp(p.score, 0, 1)); p.x = 0.5 + rad * Math.cos(ang); p.y = 0.5 + rad * Math.sin(ang); });
     let temp = 0.08;
     for (let it = 0; it < 160; it++) {
@@ -510,7 +668,7 @@ export const OMEGA_RESEARCH = (() => {
   // run(): the whole agent over an injected transport, so the page, the proxy-less bridge and the tests share it.
   //   io.get(source, url, "json" | "text") -> Promise<{data, tier}>   (throws when the source fails)
   //   io.clock() -> milliseconds, for the per-call timings (optional)
-  //   opts: {now, depth: 1 | 2, off: [source keys], wayback: true, onEvent(type, data)}
+  //   opts: {now, depth: 1 | 2, mode: "scholar" | "intel", off: [source keys], wayback: true, onEvent(type, data)}
   async function run(query, opts, io) {
     const o = opts || {}, now = finite(o.now) ? o.now : Date.parse("2026-01-01T00:00:00Z");
     const P = plan(query, { ...o, now });
@@ -519,7 +677,7 @@ export const OMEGA_RESEARCH = (() => {
     const clock = () => (io && typeof io.clock === "function" ? io.clock() : 0);
     const want = (step, source) => P.steps.some(s => s.id === step && s.sources.includes(source));
     const runs = [], lists = [];
-    async function call(step, source, url, shapeFn, type) {
+    async function call(step, source, url, shapeFn, type, keep = true) {
       if (!want(step, source)) return [];
       if (!url) { runs.push({ step, source, ok: false, n: 0, ms: 0, error: "the question is too short for this source" }); emit("fail", { step, source }); return []; }
       const t0 = clock();
@@ -529,7 +687,7 @@ export const OMEGA_RESEARCH = (() => {
         const list = shapeFn(res && "data" in res ? res.data : res) || [];
         runs.push({ step, source, ok: true, n: list.length, ms: Math.round(clock() - t0), tier: res && res.tier ? res.tier : null });
         emit("done", { step, source, n: list.length });
-        lists.push(list);
+        if (keep) lists.push(list);
         return list;
       } catch (e) {
         runs.push({ step, source, ok: false, n: 0, ms: Math.round(clock() - t0), error: str(e && e.message ? e.message : e, 160) });
@@ -550,9 +708,32 @@ export const OMEGA_RESEARCH = (() => {
         if (!page.length) runs[runs.length - 1].note = "no page";
       }
     }
+    // Wikidata: the entity card, and the bridge term when Wikipedia had no language link (ADR-115).
+    let entity = null;
+    if (want("define", "wikidata")) {
+      const found = await call("define", "wikidata", urls.wikidataSearch(P.lang, P.query), shape.wikidataSearch, "json", false);
+      if (found[0]) {
+        await call("define", "wikidata", urls.wikidataEntity(found[0].id), j => { entity = shape.wikidataEntity(j, found[0].id, P.lang); return entity ? [entity] : []; }, "json", false);
+        if (!entity) entity = { id: found[0].id, url: `https://www.wikidata.org/wiki/${found[0].id}`, label: found[0].label, description: found[0].description, other: null };
+        if (!bridge && entity.other) bridge = entity.other;
+      }
+    }
     const sq = P.lang === "ar" ? (bridge || P.query) : P.query;
     const arq = P.lang === "ar" ? P.query : bridge;
-    const jobs = [
+    let volume = null, tone = null;
+    const jobs = P.mode === "intel" ? [
+      call("news", "gdelt", urls.gdelt(sq), j => shape.gdelt(j, "news")),
+      call("news", "gdelt", urls.gdelt(arq || P.query, "ar"), j => shape.gdelt(j, "news")),
+      call("trend", "gdelt", urls.gdeltTimeline(sq, "volume"), j => (volume = shape.gdeltTimeline(j)), "json", false),
+      call("trend", "gdelt", urls.gdeltTimeline(sq, "tone"), j => (tone = shape.gdeltTimeline(j)), "json", false),
+      call("cyber", "nvd", urls.nvd(sq, now), j => shape.nvd(j, "cyber")),
+      call("evidence", "openalex", urls.openalex(sq), j => shape.openalex(j, "evidence")),
+      call("evidence", "semanticscholar", urls.semanticscholar(sq), j => shape.semanticscholar(j, "evidence")),
+      call("recent", "openalex", urls.openalex(sq, "recent", P.year), j => shape.openalex(j, "recent"))
+    ] : [
+      call("evidence", "doaj", urls.doaj(sq), j => shape.doaj(j, "evidence")),
+      call("evidence", "dblp", urls.dblp(sq), j => shape.dblp(j, "evidence")),
+      call("arabic", "doaj", arq ? urls.doaj(arq) : null, j => shape.doaj(j, "arabic")),
       call("evidence", "openalex", urls.openalex(sq), j => shape.openalex(j, "evidence")),
       call("evidence", "crossref", urls.crossref(sq), j => shape.crossref(j, "evidence")),
       call("evidence", "europepmc", urls.europepmc(sq), j => shape.europepmc(j, "evidence")),
@@ -564,8 +745,8 @@ export const OMEGA_RESEARCH = (() => {
       call("arabic", "openalex", urls.openalex(arq || sq, "ar"), j => shape.openalex(j, "arabic")),
       call("news", "gdelt", urls.gdelt(sq), j => shape.gdelt(j, "news"))
     ];
-    if (P.lang === "en" && arq) jobs.push(call("arabic", "wikipedia", urls.wikiPage("ar", arq, "en"), j => { const w = shape.wikiPage(j, "ar", "arabic"); return w ? [w.record] : []; }));
-    if (P.lang === "ar") jobs.push(call("news", "gdelt", urls.gdelt(P.query, "ar"), j => shape.gdelt(j, "news")));
+    if (P.mode !== "intel" && P.lang === "en" && arq) jobs.push(call("arabic", "wikipedia", urls.wikiPage("ar", arq, "en"), j => { const w = shape.wikiPage(j, "ar", "arabic"); return w ? [w.record] : []; }));
+    if (P.mode !== "intel" && P.lang === "ar") jobs.push(call("news", "gdelt", urls.gdelt(P.query, "ar"), j => shape.gdelt(j, "news")));
     await Promise.all(jobs);
     const terms = [...P.terms, ...tokens(bridge || "")];
     emit("stage", { stage: "evaluate" });
@@ -587,10 +768,11 @@ export const OMEGA_RESEARCH = (() => {
         catch { r.archive = { archived: null, url: null, at: null }; }
       }));
     }
-    const evaluation = evaluate(P, ranked, runs, now);
+    const tr = trend(volume, tone);
+    const evaluation = evaluate(P, ranked, runs, now, { trend: tr });
     emit("stage", { stage: "write" });
-    const rep = report(P, ranked, evaluation, { now, bridge });
-    return { plan: P, bridge, records: ranked, runs, evaluation, report: rep, markdown: markdown(rep), graph: graph(ranked) };
+    const rep = report(P, ranked, evaluation, { now, bridge, entity, trend: tr });
+    return { plan: P, bridge, entity, trend: tr, records: ranked, runs, evaluation, report: rep, markdown: markdown(rep), graph: graph(ranked) };
   }
 
   // Search links the agent does not read, for the reader to open in a new tab (Isnad has no public API).
@@ -606,6 +788,6 @@ export const OMEGA_RESEARCH = (() => {
     { name: "arXiv", en: "arXiv", url: q => `https://arxiv.org/search/?query=${enc(q)}&searchtype=all` }
   ]);
 
-  return Object.freeze({ VERSION, SOURCES, HOSTS, ENDPOINTS, allowed, LINKOUTS, GRADE_AR, run, plan, urls, shape, merge, score, grade, snowball, keySentences, sentences, evaluate, report, markdown, facts, checkCitations, graph,
-    tokens, isArabic, normDoi, normTitle, safeUrl, cleanQuery, abstractFromIndex, arxivQuery });
+  return Object.freeze({ VERSION, SOURCES, MODES, HOSTS, ENDPOINTS, allowed, LINKOUTS, GRADE_AR, DIR_AR, run, plan, urls, shape, merge, score, grade, snowball, keySentences, sentences, evaluate, report, markdown, facts, checkCitations, graph, trend,
+    tokens, words, isArabic, normDoi, normTitle, safeUrl, cleanQuery, abstractFromIndex, arxivQuery });
 })();

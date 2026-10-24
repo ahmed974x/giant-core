@@ -52,10 +52,13 @@
 //   /osiris/marine          -> Open-Meteo Marine waves and currents at the five strait points    (cached 30 min)
 // Deep research agent (ADR-114), keyless scholarly and news APIs, one fixed API path per source:
 //   /research/<source>?url=<upstream>  where source is wikipedia, openalex, crossref, europepmc, arxiv,
-//                              semanticscholar, gdelt or wayback, and the upstream address must be that source's own
+//                              semanticscholar, gdelt, wayback, and from ADR-115 doaj, dblp, wikidata or nvd, and
+//                              the upstream address must be that source's own
 //                              https host and API path (OMEGA_RESEARCH.allowed). arXiv sends no browser CORS, so the
 //                              ORACLE page reads it only through here; the rest use this as a shared cache (6 h,
 //                              GDELT 30 min, Wayback 24 h). arXiv gets one call every 3 s, as its API terms ask.
+//                              NVD (CVE API 2.0, no browser CORS) gets one call every 6.5 s, inside its keyless limit
+//                              of 5 requests per 30 s, and is cached 1 h.
 // Local model bridge (ADR-112), optional, this machine only (connections from 127.0.0.1 or ::1):
 //   GET  /llm/ollama/status  -> whether Ollama answers on 127.0.0.1:11434 and which local models it has
 //   POST /llm/ollama/explain -> {facts: [strings], question?} (at most 16 KB) to the chosen local model with a fixed
@@ -175,7 +178,8 @@ const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "o
   "stablecoins.llama.fi", "api.llama.fi", "vulnerability.circl.lu", "marine-api.open-meteo.com",
   ...OMEGA_RESEARCH.HOSTS]);
 // ADR-114: cache life of each research source; the request shape itself is checked by OMEGA_RESEARCH.allowed.
-const RESEARCH_TTL = { wikipedia: 6 * HOUR, openalex: 6 * HOUR, crossref: 6 * HOUR, europepmc: 6 * HOUR, arxiv: 6 * HOUR, semanticscholar: 6 * HOUR, gdelt: HOUR / 2, wayback: 24 * HOUR };
+const RESEARCH_TTL = { wikipedia: 6 * HOUR, openalex: 6 * HOUR, crossref: 6 * HOUR, europepmc: 6 * HOUR, arxiv: 6 * HOUR, semanticscholar: 6 * HOUR, gdelt: HOUR / 2, wayback: 24 * HOUR,
+  doaj: 6 * HOUR, dblp: 6 * HOUR, wikidata: 6 * HOUR, nvd: HOUR };
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -233,7 +237,8 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 // SANS asks for light use of its API, adsb.lol for about one request a second (ADR-110).
 const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
   "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000, "vulnerability.circl.lu": 2000, "api.llama.fi": 1000,
-  "export.arxiv.org": 3100, "api.semanticscholar.org": 1100, "archive.org": 500, "en.wikipedia.org": 100, "ar.wikipedia.org": 100 };
+  "export.arxiv.org": 3100, "api.semanticscholar.org": 1100, "archive.org": 500, "en.wikipedia.org": 100, "ar.wikipedia.org": 100,
+  "services.nvd.nist.gov": 6500, "dblp.org": 1000, "doaj.org": 300, "www.wikidata.org": 100 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -456,7 +461,7 @@ const server = createServer(async (req, res) => {
   let route, m;
   for (const r of ROUTES) { m = r.re.exec(path); if (m) { route = r; break; } }
   // ADR-114: research sources, one fixed host and API path each.
-  const rs = /^\/research\/([a-z]{4,16})$/.exec(path);
+  const rs = /^\/research\/([a-z]{3,16})$/.exec(path);
   if (!route && rs) {
     const target = new URL(req.url, "http://x").searchParams.get("url") || "";
     if (!OMEGA_RESEARCH.allowed(rs[1], target)) return send(400, JSON.stringify({ error: "not an allowed request for this research source" }));
@@ -521,6 +526,11 @@ const PROBES = [
   { name: "Semantic Scholar", via: "proxy /research/semanticscholar", url: "https://api.semanticscholar.org/graph/v1/paper/search?query=coral&limit=1&fields=title" },
   { name: "Wikipedia (ar)", via: "proxy /research/wikipedia", url: "https://ar.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D9%85%D8%B1%D8%AC%D8%A7%D9%86&srlimit=1&format=json" },
   { name: "Wayback availability", via: "proxy /research/wayback", url: "https://archive.org/wayback/available?url=example.com" },
+  // ADR-115
+  { name: "DOAJ articles", via: "browser + proxy /research/doaj", url: "https://doaj.org/api/search/articles/coral?pageSize=1" },
+  { name: "dblp", via: "browser + proxy /research/dblp", url: "https://dblp.org/search/publ/api?q=coral&format=json&h=1" },
+  { name: "Wikidata", via: "browser + proxy /research/wikidata", url: "https://www.wikidata.org/w/api.php?action=wbsearchentities&search=coral&language=en&type=item&limit=1&format=json" },
+  { name: "NVD CVE API 2.0", via: "proxy /research/nvd", url: "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=1" },
   { name: "Ollama (optional, this machine)", via: "proxy /llm/ollama", url: OLLAMA + "/api/tags", local: true }
 ];
 const tty = process.stdout.isTTY;
