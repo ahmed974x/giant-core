@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-0815kd7DfXKCqc+OiuLve/MgluliGlqNqXCFfOAO2o0=' 'sha256-aH3Ji13JUvm+3SFYqOkbAMY8VsGHgNfq4z3X+GCgrts=' 'sha256-jGgknbBMF+YvycmXDdETktEKaidXd7CeI9lDqyC5p7A=' 'sha256-nDC/FnUvHAo6htFgt6vlpv0aLRKSqxiX6HM64fFDtnQ='; style-src 'sha256-6wvdyVWPiJx/W0r9A8SikL31WI1aUxKyIs7RASCkusg='; font-src data:; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-NDo62oU1nblfs6Kks1T/h9hiwoGfvQtRQBTJWV9v0Vc=' 'sha256-aH3Ji13JUvm+3SFYqOkbAMY8VsGHgNfq4z3X+GCgrts=' 'sha256-jGgknbBMF+YvycmXDdETktEKaidXd7CeI9lDqyC5p7A=' 'sha256-nDC/FnUvHAo6htFgt6vlpv0aLRKSqxiX6HM64fFDtnQ='; style-src 'sha256-6wvdyVWPiJx/W0r9A8SikL31WI1aUxKyIs7RASCkusg='; font-src data:; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -91,7 +91,8 @@
     chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
     lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
-    brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html"
+    brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html",
+    core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -100,7 +101,8 @@
     { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
     { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
-    { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" }
+    { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" },
+    { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {

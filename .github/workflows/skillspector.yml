@@ -24,6 +24,8 @@ jobs:
         run: node scripts/test-tradelab.mjs
       - name: Second brain engine, Arabic / English engine and dictionaries, and their inline copies (ADR-119)
         run: node scripts/test-brain.mjs
+      - name: Core engine tests (planner, retries, breaker, memory, lessons, missions, 3D maths) and its inline copies (ADR-121)
+        run: node scripts/test-core.mjs
       - name: Static page checks, CSS braces, Arabic faces, self-test badge (ADR-120)
         run: node scripts/test-pages.mjs
       - name: SkillSpector strict scan of the whole repo (critical or high fails the job)

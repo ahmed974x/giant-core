@@ -1419,6 +1419,80 @@
         }
       }
     },
+    "/llm/ollama/plan": {
+      "post": {
+        "tags": [
+          "local model"
+        ],
+        "summary": "Plan a paper mission for PRIME",
+        "description": "The local model writes a JSON plan that may use only the core's read-only tools; the proxy checks it with OMEGA_CORE.checkPlan and the Ops Room checks it again before it runs (ADR-121).",
+        "x-omega-special": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "goal"
+                ],
+                "properties": {
+                  "goal": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "ms": {
+                      "type": "number"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "const": "[INFERENCE - local LLM]"
+                    },
+                    "steps": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "send Content-Type: application/json"
+          },
+          "429": {
+            "description": "the local model is already answering"
+          },
+          "403": {
+            "description": "not this machine, or not a page from 127.0.0.1"
+          },
+          "422": {
+            "description": "the model's plan was refused by the checker"
+          }
+        }
+      }
+    },
     "/data/public-intel-snapshot.json": {
       "get": {
         "tags": [
