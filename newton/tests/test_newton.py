@@ -56,3 +56,38 @@ def test_road_eta_uses_router_and_traffic():
 def test_stopped_ship_has_no_eta():
     with pytest.raises(ValueError):
         eta.ship_eta(0, 0, 1, 1, 0)
+
+
+def test_health_cors_only_for_known_pages_and_never_for_tools():
+    # ADR-125: the Ops Room reads /api/health; other origins and POST tool calls get no CORS header.
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from newton import http_api
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), http_api.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+
+    def get(path, origin, method="GET", body=None):
+        req = urllib.request.Request(base + path, data=body, method=method, headers={"Origin": origin})  # noqa: S310 - loopback test server
+        try:
+            with urllib.request.urlopen(req, timeout=5) as r:  # noqa: S310 - loopback test server
+                return r.status, r.headers
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers
+
+    try:
+        code, h = get("/api/health", "https://ahmed974x.github.io")
+        assert code == 200 and h["Access-Control-Allow-Origin"] == "https://ahmed974x.github.io"
+        code, h = get("/api/health", "https://evil.example")
+        assert code == 200 and h.get("Access-Control-Allow-Origin") is None
+        code, h = get("/api/health", "http://127.0.0.1:8796", method="OPTIONS")
+        assert code == 204 and h["Access-Control-Allow-Private-Network"] == "true"
+        code, _ = get("/api/calc", "http://127.0.0.1:8796", method="OPTIONS")
+        assert code == 403
+        code, h = get("/api/calc", "http://127.0.0.1:8796", method="POST", body=b'{"expr": "1+1"}')
+        assert h.get("Access-Control-Allow-Origin") is None
+    finally:
+        srv.shutdown()

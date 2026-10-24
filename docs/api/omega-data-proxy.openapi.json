@@ -414,6 +414,64 @@
         }
       }
     },
+    "/osiris/cams": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "Open public cameras (ADR-125)",
+        "description": "TfL JamCams, Fintraffic road weather cameras and Singapore LTA cameras in one omega-cams-v1 list: name, position and one still-image URL on an allowlisted https host. A group that fails is named, never filled.",
+        "x-upstream": "https://api.tfl.gov.uk/Place/Type/JamCam, https://tie.digitraffic.fi/api/weathercam/v1/stations, https://api.data.gov.sg/v1/transport/traffic-images",
+        "x-cache-seconds": 3600,
+        "x-omega-examples": [
+          "/osiris/cams"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/market/oilgold": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Oil and gold daily series (ADR-125)",
+        "description": "WTI and Brent daily spot (U.S. EIA via the keyless FRED CSV) and gold via PAXGUSDT daily candles, last 260 trading days, in one omega-oilgold-v1 set. A series that fails is listed under missing.",
+        "x-upstream": "https://fred.stlouisfed.org/graph/fredgraph.csv, https://data-api.binance.vision/api/v3/klines",
+        "x-cache-seconds": 21600,
+        "x-omega-examples": [
+          "/market/oilgold"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
     "/osiris/marine": {
       "get": {
         "tags": [

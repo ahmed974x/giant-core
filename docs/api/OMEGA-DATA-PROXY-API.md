@@ -24,6 +24,8 @@ Server: `http://127.0.0.1:8796` (local proxy (./start-omega.sh or start-omega.ba
 | GET | `/osiris/gdelt-sea` | GDELT headlines naming a strait | 15 min | https://api.gdeltproject.org/api/v2/doc/doc |
 | GET | `/osiris/eonet` | NASA EONET natural events | 30 min | https://eonet.gsfc.nasa.gov/api/v3/events |
 | GET | `/osiris/kp` | NOAA planetary K index | 15 min | https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json |
+| GET | `/osiris/cams` | Open public cameras (ADR-125) | 1 h | https://api.tfl.gov.uk/Place/Type/JamCam, https://tie.digitraffic.fi/api/weathercam/v1/stations, https://api.data.gov.sg/v1/transport/traffic-images |
+| GET | `/market/oilgold` | Oil and gold daily series (ADR-125) | 6 h | https://fred.stlouisfed.org/graph/fredgraph.csv, https://data-api.binance.vision/api/v3/klines |
 | GET | `/osiris/marine` | Open-Meteo Marine at the five straits | 30 min | https://marine-api.open-meteo.com/v1/marine |
 | GET | `/cyber/kev` | CISA Known Exploited Vulnerabilities | 1 h | https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json |
 | GET | `/cyber/ioda` | IODA country outages | 15 min | https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events |
@@ -99,6 +101,14 @@ Daily OHLCV history as CSV.
 | `symbol` | path | `^[a-z0-9.\-^]{1,20}$` | Stooq symbol, lower case |
 
 Example: `/stooq/aapl.us`
+
+Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.; 502 the upstream did not answer and no cached copy exists.
+
+### GET `/market/oilgold`
+
+WTI and Brent daily spot (U.S. EIA via the keyless FRED CSV) and gold via PAXGUSDT daily candles, last 260 trading days, in one omega-oilgold-v1 set. A series that fails is listed under missing.
+
+Example: `/market/oilgold`
 
 Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.; 502 the upstream did not answer and no cached copy exists.
 
@@ -263,6 +273,14 @@ Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is 
 Kp readings, compact form.
 
 Example: `/osiris/kp`
+
+Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.; 502 the upstream did not answer and no cached copy exists.
+
+### GET `/osiris/cams`
+
+TfL JamCams, Fintraffic road weather cameras and Singapore LTA cameras in one omega-cams-v1 list: name, position and one still-image URL on an allowlisted https host. A group that fails is named, never filled.
+
+Example: `/osiris/cams`
 
 Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.; 502 the upstream did not answer and no cached copy exists.
 

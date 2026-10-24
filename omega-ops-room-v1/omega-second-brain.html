@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-NDo62oU1nblfs6Kks1T/h9hiwoGfvQtRQBTJWV9v0Vc=' 'sha256-aH3Ji13JUvm+3SFYqOkbAMY8VsGHgNfq4z3X+GCgrts=' 'sha256-jGgknbBMF+YvycmXDdETktEKaidXd7CeI9lDqyC5p7A=' 'sha256-nDC/FnUvHAo6htFgt6vlpv0aLRKSqxiX6HM64fFDtnQ='; style-src 'sha256-6wvdyVWPiJx/W0r9A8SikL31WI1aUxKyIs7RASCkusg='; font-src data:; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-NDo62oU1nblfs6Kks1T/h9hiwoGfvQtRQBTJWV9v0Vc=' 'sha256-dLhdqBvS/og+9ytZJ7ecKd749SqbNXkRvArigxUPP+g=' 'sha256-WsyD0rTmsoFDffR0haew8cXFEU7QzrW1d1iaAAMgUeI=' 'sha256-q2KWcCIHhFyo2+CG9/hJoMGBUOpOm2cfHZdyXxe1Aps='; style-src 'sha256-7oeeUJiC7upTr/m5cFRvkEZhvIKGhCzV7oC3K6e2bhc='; font-src data:; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -439,6 +439,8 @@
   /* ---------- data tables ---------- */
   .table-scroll { overflow-x: auto; overscroll-behavior-x: contain; border-radius: var(--r-inner); border: var(--hairline) solid var(--hairline-color); }
   table.data { width: 100%; border-collapse: collapse; font-size: var(--text-footnote); }
+  .lib-check { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; font-size: var(--text-footnote); color: var(--content-primary); cursor: pointer; }
+  .lib-check input { width: 20px; height: 20px; accent-color: var(--accent); }
   table.data th, table.data td { padding: var(--s-2) var(--s-3); border-bottom: var(--hairline) solid var(--hairline-color); text-align: start; vertical-align: top; }
   table.data thead th { background: var(--surface-2); font-size: var(--text-caption); color: var(--content-secondary); font-weight: 700; position: sticky; top: 0; }
   table.data tr:last-child td { border-bottom: 0; }
@@ -669,6 +671,7 @@
         <h3 id="srcTitle">المصادر المقروءة <span class="en" translate="no">SOURCES</span></h3>
         <p class="lead">ما وجده المخ الثاني في هذا المتصفح. الصفحات تشارك التخزين فقط حين تُفتح من نفس العنوان (مثلاً كلها من القرص أو كلها من 127.0.0.1:8796).</p>
         <div class="table-scroll mt-3"><table class="data" id="srcTable"><thead><tr><th scope="col">المصدر</th><th scope="col" class="n">مداخل</th><th scope="col">الحالة</th></tr></thead><tbody></tbody></table></div>
+        <label class="lib-check mt-3" for="libOn"><input type="checkbox" id="libOn" name="library" autocomplete="off" /> أدخل مكتبة الأدوات المفتوحة في الترتيب <span class="en" translate="no">OPEN-SOURCE LIBRARY</span></label>
       </section>
     </div>
 
@@ -677,6 +680,12 @@
       <p class="lead">كل محور مجموعة أفكار متشابهة الكلمات (تشابه جيب التمام على أوزان TF-IDF، ربط بالمتوسط). اسم المحور أقوى ثلاث كلمات فيه. الدرجة من 100 تجمع الحداثة وعدد الروابط وتنوّع المصادر. كل هذا استنتاج بقواعد ثابتة <span class="pill inf" translate="no">[INFERENCE]</span>، وليس فهماً للمعنى.</p>
       <div class="themes" id="themeList"></div>
       <p class="empty" id="themeEmpty">لا أفكار بعد. أضف فكرة أو استورد ملفاً أو افتح المثال التعليمي.</p>
+    </section>
+
+    <section class="card mt-3" aria-labelledby="libTitle" id="library">
+      <h3 id="libTitle">مكتبة الأدوات المفتوحة المصدر <span class="en" translate="no">OPEN-SOURCE LIBRARY · IDEAS ONLY</span></h3>
+      <p class="lead">أدوات مجانية مفتوحة المصدر مرتبة حسب ما تضيفه لأوميغا. «مستخدمة» تعني أن المستودع يستخدمها اليوم؛ الباقي أفكار فقط. لا شيء هنا مثبّت أو يعمل من هذه الصفحة، وتثبيت أي أداة يحتاج موافقة أحمد ومراجعة أمنية مكتوبة يُعاد فيها فحص الترخيص. التراخيص كما ينشرها كل مشروع، قُرئت 2026-10-24.</p>
+      <div class="table-scroll mt-3"><table class="data" id="libTable"><thead><tr><th scope="col">الفئة</th><th scope="col">الأداة</th><th scope="col">ماذا تضيف</th><th scope="col">الترخيص</th><th scope="col">الحالة</th></tr></thead><tbody></tbody></table></div>
     </section>
 
     <section class="card mt-3" aria-labelledby="mapTitle" id="map-card">
@@ -767,8 +776,64 @@ const SOURCES = Object.freeze({
   plan: { ar: "خطة التداول", en: "Trading plan" },
   oracle: { ar: "أسئلة العرّاف", en: "ORACLE questions" },
   chain: { ar: "ملاحظات السلسلة", en: "THE CHAIN notes" },
-  file: { ar: "ملف مستورد", en: "Imported file" }
+  file: { ar: "ملف مستورد", en: "Imported file" },
+  library: { ar: "مكتبة الأدوات المفتوحة", en: "Open-source library" }
 });
+// ADR-125: free, open-source tools worth knowing, grouped by what they would add to OMEGA. Ideas only: nothing here
+// is installed or run by this page. "in use" means the repository already uses it (as a pinned dev tool or a
+// laptop service). Licences as each project publishes them, read 2026-10-24; installing any of them still needs
+// Ahmad's approval and a written security review (AGENTS.md §1), where the licence is checked again.
+const LIBRARY_CATS = Object.freeze({
+  map: { ar: "الخرائط والكرة الأرضية", en: "Maps and globe" },
+  cam: { ar: "الكاميرات والرؤية", en: "Cameras and vision" },
+  quant: { ar: "التنبؤ والتحليل الكمي (ورقي)", en: "Forecasting and quant (paper)" },
+  osint: { ar: "الاستخبارات المفتوحة والسيبراني", en: "OSINT and cyber" },
+  ai: { ar: "الذكاء المحلي والوكلاء", en: "Local AI and agents" },
+  brain: { ar: "العقل الثاني والمعرفة", en: "Second brain and knowledge" },
+  ui: { ar: "التصميم والرسوم", en: "Design and charts" },
+  sec: { ar: "فحوص الأمان", en: "Security checks" }
+});
+const LIBRARY = Object.freeze([
+  { cat: "map", name: "satellite.js", licence: "MIT", repo: "https://github.com/shashwatak/satellite-js", ar: "مدارات الأقمار بدقة SGP4 بدل التقريب الحالي", en: "SGP4 orbit propagation, to replace the two-body + J2 estimate", status: "idea" },
+  { cat: "map", name: "MapLibre GL JS", licence: "BSD-3-Clause", repo: "https://github.com/maplibre/maplibre-gl-js", ar: "خرائط متجهة سريعة بلا مفاتيح", en: "fast keyless vector maps", status: "idea" },
+  { cat: "map", name: "PMTiles", licence: "BSD-3-Clause", repo: "https://github.com/protomaps/PMTiles", ar: "خريطة العالم كملف واحد تعمل بدون إنترنت", en: "the whole basemap as one file that works offline", status: "idea" },
+  { cat: "map", name: "CesiumJS", licence: "Apache-2.0", repo: "https://github.com/CesiumGS/cesium", ar: "كرة أرضية ثلاثية الأبعاد بتضاريس حقيقية", en: "3D globe with real terrain", status: "idea" },
+  { cat: "map", name: "deck.gl", licence: "MIT", repo: "https://github.com/visgl/deck.gl", ar: "طبقات بيانات ضخمة (سفن وطائرات) على الخريطة", en: "large data layers (ships, aircraft) on the map", status: "idea" },
+  { cat: "cam", name: "go2rtc", licence: "MIT", repo: "https://github.com/AlexxIT/go2rtc", ar: "بث كاميراتك أنت (RTSP) للمتصفح محلياً", en: "stream your own cameras (RTSP) to the browser locally", status: "idea" },
+  { cat: "cam", name: "Frigate", licence: "MIT", repo: "https://github.com/blakeblackshear/frigate", ar: "كشف الأجسام في كاميراتك على جهازك", en: "object detection on your own cameras, on your machine", status: "idea" },
+  { cat: "cam", name: "OpenCV", licence: "Apache-2.0", repo: "https://github.com/opencv/opencv", ar: "تحليل صور الكاميرات المفتوحة (زحمة، طقس)", en: "analyse open camera stills (traffic, weather)", status: "idea" },
+  { cat: "cam", name: "Ultralytics YOLO", licence: "AGPL-3.0", repo: "https://github.com/ultralytics/ultralytics", ar: "عدّ السيارات والسفن في الصور؛ ترخيص يلزم نشر الكود", en: "count cars and ships in stills; copyleft licence", status: "idea" },
+  { cat: "quant", name: "StatsForecast (Nixtla)", licence: "Apache-2.0", repo: "https://github.com/Nixtla/statsforecast", ar: "توقعات سريعة للنفط والذهب (ARIMA, ETS) مع نطاق ثقة", en: "fast oil and gold forecasts (ARIMA, ETS) with intervals", status: "idea" },
+  { cat: "quant", name: "Darts", licence: "Apache-2.0", repo: "https://github.com/unit8co/darts", ar: "مكتبة توقع سلاسل زمنية مع اختبار رجعي", en: "time-series forecasting with backtests", status: "idea" },
+  { cat: "quant", name: "Prophet", licence: "MIT", repo: "https://github.com/facebook/prophet", ar: "توقع موسمي بسيط وواضح", en: "simple seasonal forecasting", status: "idea" },
+  { cat: "quant", name: "QuantStats", licence: "Apache-2.0", repo: "https://github.com/ranaroussi/quantstats", ar: "تقارير أداء المحفظة الورقية", en: "performance reports for the paper portfolio", status: "idea" },
+  { cat: "quant", name: "NautilusTrader", licence: "LGPL-3.0", repo: "https://github.com/nautechsystems/nautilus_trader", ar: "محرك اختبار رجعي ومحاكاة؛ الأوامر الحقيقية مقفلة", en: "backtest and simulation engine; live orders stay locked", status: "idea" },
+  { cat: "quant", name: "freqtrade (dry-run)", licence: "GPL-3.0", repo: "https://github.com/freqtrade/freqtrade", ar: "بوت كريبتو بوضع تجريبي فقط؛ لا مفاتيح منصة", en: "crypto bot in dry-run only; no exchange keys", status: "idea" },
+  { cat: "quant", name: "CCXT (public data only)", licence: "MIT", repo: "https://github.com/ccxt/ccxt", ar: "بيانات عامة من منصات كثيرة؛ بدون توقيع أوامر", en: "public data from many exchanges; no order signing", status: "idea" },
+  { cat: "osint", name: "OpenCTI", licence: "Apache-2.0", repo: "https://github.com/OpenCTI-Platform/opencti", ar: "قاعدة معرفة التهديدات السيبرانية", en: "cyber threat knowledge base", status: "idea" },
+  { cat: "osint", name: "MISP", licence: "AGPL-3.0", repo: "https://github.com/MISP/MISP", ar: "مشاركة مؤشرات التهديد؛ وسومه مستخدمة في CSTI", en: "threat sharing platform; its taxonomy tags already feed CSTI", status: "in use" },
+  { cat: "osint", name: "OpenBB", licence: "AGPL-3.0", repo: "https://github.com/OpenBB-finance/OpenBB", ar: "منصة بيانات مالية مفتوحة", en: "open financial data platform", status: "idea" },
+  { cat: "osint", name: "AIS-catcher", licence: "GPL-3.0", repo: "https://github.com/jvde-github/AIS-catcher", ar: "التقاط إشارات السفن بجهاز SDR رخيص", en: "receive ship AIS with a cheap SDR dongle", status: "idea" },
+  { cat: "osint", name: "SearXNG", licence: "AGPL-3.0", repo: "https://github.com/searxng/searxng", ar: "محرك بحث خاص على اللابتوب", en: "private metasearch on the laptop", status: "in use" },
+  { cat: "ai", name: "Ollama", licence: "MIT", repo: "https://github.com/ollama/ollama", ar: "تشغيل نموذج لغوي محلي (جسر /llm/ollama)", en: "run a local language model (the /llm/ollama bridge)", status: "in use" },
+  { cat: "ai", name: "llama.cpp", licence: "MIT", repo: "https://github.com/ggml-org/llama.cpp", ar: "تشغيل نماذج صغيرة على المعالج بلا بطاقة", en: "run small models on the CPU", status: "idea" },
+  { cat: "ai", name: "LangGraph", licence: "MIT", repo: "https://github.com/langchain-ai/langgraph", ar: "رسم مسار الوكلاء خطوة بخطوة مع ذاكرة", en: "agent workflows as graphs with memory", status: "idea" },
+  { cat: "ai", name: "n8n", licence: "Sustainable Use License (fair-code, not OSI)", repo: "https://github.com/n8n-io/n8n", ar: "أتمتة على اللابتوب؛ مجاني للاستخدام الشخصي لكنه ليس مفتوح المصدر بالمعنى الكامل", en: "automation on the laptop; free for own use but not OSI open source", status: "in use" },
+  { cat: "brain", name: "Logseq", licence: "AGPL-3.0", repo: "https://github.com/logseq/logseq", ar: "ملاحظات مترابطة على جهازك", en: "linked notes on your device", status: "idea" },
+  { cat: "brain", name: "SiYuan", licence: "AGPL-3.0", repo: "https://github.com/siyuan-note/siyuan", ar: "قاعدة معرفة محلية بالكامل", en: "fully local knowledge base", status: "idea" },
+  { cat: "brain", name: "Trilium Notes", licence: "AGPL-3.0", repo: "https://github.com/TriliumNext/Notes", ar: "شجرة ملاحظات هرمية مع خريطة روابط", en: "hierarchical notes with a link map", status: "idea" },
+  { cat: "brain", name: "Khoj", licence: "AGPL-3.0", repo: "https://github.com/khoj-ai/khoj", ar: "بحث في ملاحظاتك بنموذج محلي", en: "search your notes with a local model", status: "idea" },
+  { cat: "ui", name: "Lightweight Charts", licence: "Apache-2.0", repo: "https://github.com/tradingview/lightweight-charts", ar: "شموع أسعار سريعة (المكتبة فقط، لا خدمة TradingView)", en: "fast candle charts (the library, not the TradingView service)", status: "idea" },
+  { cat: "ui", name: "uPlot", licence: "MIT", repo: "https://github.com/leeoniya/uPlot", ar: "رسوم زمنية خفيفة جداً", en: "very small time-series charts", status: "idea" },
+  { cat: "ui", name: "Apache ECharts", licence: "Apache-2.0", repo: "https://github.com/apache/echarts", ar: "رسوم بيانية غنية", en: "rich charts", status: "idea" },
+  { cat: "ui", name: "Lucide", licence: "ISC", repo: "https://github.com/lucide-icons/lucide", ar: "أيقونات خطية نظيفة", en: "clean line icons", status: "idea" },
+  { cat: "ui", name: "culori + apca-w3", licence: "MIT / W3C", repo: "https://github.com/Evercoder/culori", ar: "فحص تباين الألوان (بوابة التباين)", en: "colour contrast checks (the contrast gate)", status: "in use" },
+  { cat: "sec", name: "OSV-Scanner", licence: "Apache-2.0", repo: "https://github.com/google/osv-scanner", ar: "فحص ثغرات المكتبات", en: "scan dependencies for known vulnerabilities", status: "idea" },
+  { cat: "sec", name: "Gitleaks", licence: "MIT", repo: "https://github.com/gitleaks/gitleaks", ar: "منع تسريب المفاتيح في git", en: "stop secrets from entering git", status: "idea" },
+  { cat: "sec", name: "Trivy", licence: "Apache-2.0", repo: "https://github.com/aquasecurity/trivy", ar: "فحص حاويات Docker", en: "scan Docker images", status: "idea" },
+  { cat: "sec", name: "Semgrep CE", licence: "LGPL-2.1", repo: "https://github.com/semgrep/semgrep", ar: "قواعد فحص الكود", en: "code scanning rules", status: "idea" },
+  { cat: "sec", name: "ZAP", licence: "Apache-2.0", repo: "https://github.com/zaproxy/zaproxy", ar: "فحص أمان الموقع على اللابتوب فقط", en: "web security testing of our own site, on the laptop only", status: "idea" }
+]);
 // Split a block of text into idea-sized pieces: Markdown bullets, numbered lines or paragraphs.
 function splitIdeas(text) {
   const out = [];
@@ -811,6 +876,9 @@ function gather(input) {
       if (m) for (const t of splitIdeas(m[1])) add("chain", `${ticker}: ${t}`, 0, "chain:" + ticker);
     }
   }
+  // ADR-125: the open-source library joins as ideas when the page asks for it; its category words let the
+  // clustering group it by what each tool would add.
+  if (i.library === true) for (const x of LIBRARY) add("library", `${LIBRARY_CATS[x.cat].ar} · ${x.name}: ${x.ar} · ${LIBRARY_CATS[x.cat].en}, ${x.en} (${x.licence})`, 0, "lib:" + x.name);
   for (const f of Array.isArray(i.files) ? i.files : []) if (f && typeof f.text === "string") for (const t of splitIdeas(f.text).slice(0, 400)) add("file", t, +f.at, "file:" + clean(f.name || "", 80));
   return items.slice(0, 600);
 }
@@ -964,7 +1032,7 @@ function toMarkdown(res, at) {
 }
 
 const OMEGA_BRAIN = Object.freeze({
-  VERSION: "omega-brain-v1", SOURCES, normAr, stemAr, stemEn, tokens, splitIdeas, gather, vectorize, cosine, merge, cluster, organise, develop, layout, toMarkdown, clean
+  VERSION: "omega-brain-v1", SOURCES, LIBRARY, LIBRARY_CATS, normAr, stemAr, stemEn, tokens, splitIdeas, gather, vectorize, cosine, merge, cluster, organise, develop, layout, toMarkdown, clean
 });
 window.OMEGA_BRAIN = OMEGA_BRAIN;
 })();
@@ -988,6 +1056,8 @@ window.OMEGA_BRAIN = OMEGA_BRAIN;
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
   let own = (Array.isArray(read(OWN_KEY, [])) ? read(OWN_KEY, []) : []).filter(x => x && typeof x.text === "string").slice(0, 500);
   let files = [], example = false, res = null, pick = -1, counts = {};
+  // ADR-125: whether the open-source library joins the ideas (on by default, remembered in this browser).
+  let libOn = read("omega-brain-lib-v1", true) !== false;
 
   function readChain() {
     const out = {}; let idx = [];
@@ -1001,7 +1071,7 @@ window.OMEGA_BRAIN = OMEGA_BRAIN;
   function input() {
     if (example) return exampleInput();
     const plan = read("omega-tradelab-plan-v1", null);
-    return { own, tradeNotes: read("omega-tradelab-notes-v1", {}), plan: plan && typeof plan === "object" ? plan : null, oracle: read("omega-oracle-history-v1", []), chain: readChain(), files };
+    return { own, tradeNotes: read("omega-tradelab-notes-v1", {}), plan: plan && typeof plan === "object" ? plan : null, oracle: read("omega-oracle-history-v1", []), chain: readChain(), files, library: libOn };
   }
   function exampleInput() {
     const now = Date.now(), d = 86400000;
@@ -1025,7 +1095,7 @@ window.OMEGA_BRAIN = OMEGA_BRAIN;
     const inp = input();
     counts = {
       own: (inp.own || []).length, tradeNote: Object.keys(inp.tradeNotes || {}).length, plan: inp.plan ? 1 : 0,
-      oracle: (inp.oracle || []).length, chain: Object.keys(inp.chain || {}).length, file: (inp.files || []).length
+      oracle: (inp.oracle || []).length, chain: Object.keys(inp.chain || {}).length, file: (inp.files || []).length, library: inp.library ? B.LIBRARY.length : 0
     };
     res = B.organise(inp, { now: Date.now() });
     pick = -1;
@@ -1107,8 +1177,20 @@ window.OMEGA_BRAIN = OMEGA_BRAIN;
     });
     if (pick < 0) $("mapPick").textContent = T("اضغط نقطة لترى نصها.", "Tap a dot to see its text.");
   }
+  function renderLibrary() {
+    const tb = $("libTable").tBodies[0]; clear(tb);
+    for (const x of B.LIBRARY) {
+      const tr = el("tr"), c = B.LIBRARY_CATS[x.cat], name = el("td"), a = el("a", "", x.name);
+      a.href = x.repo; a.target = "_blank"; a.rel = "noopener noreferrer"; a.translate = false; a.dir = "ltr"; name.append(a);
+      const what = el("td", "", T(x.ar, x.en)); what.dir = "auto";
+      const lic = el("td", "", x.licence); lic.dir = "ltr"; lic.translate = false;
+      const st = el("td"); st.append(el("span", "lvl lvl-" + (x.status === "in use" ? "ok" : "na"), x.status === "in use" ? T("مستخدمة", "In use") : T("فكرة", "Idea")));
+      tr.append(el("td", "", c[L()]), name, what, lic, st); tb.append(tr);
+    }
+    $("libOn").checked = libOn;
+  }
   function render() {
-    renderSources(); renderOwn(); kpis(); renderThemes(); renderMap();
+    renderSources(); renderOwn(); kpis(); renderThemes(); renderMap(); renderLibrary();
     const ok = !!(res && res.ideas.length);
     $("btnMd").disabled = !ok; $("btnJson").disabled = !ok;
     $("brainDot").className = "dot " + (ok ? "live" : "checking");
@@ -1142,6 +1224,7 @@ window.OMEGA_BRAIN = OMEGA_BRAIN;
     catch (err) { $("runStatus").textContent = T("تعذر قراءة الملف: ", "Could not read the file: ") + err.message; }
   });
   $("btnExample").addEventListener("click", () => { example = true; run(); });
+  $("libOn").addEventListener("change", e => { libOn = e.target.checked; write("omega-brain-lib-v1", libOn); run(); });
   $("btnExampleOff").addEventListener("click", () => { example = false; run(); });
   $("btnMd").addEventListener("click", () => { if (res) download("omega-second-brain.md", "text/markdown", B.toMarkdown(res, new Date().toISOString()) + (example ? "\n\nمثال تعليمي — أفكار افتراضية.\n" : "")); });
   $("btnJson").addEventListener("click", () => { if (res) download("omega-second-brain.json", "application/json", JSON.stringify({ format: "omega-brain-map-v1", exported: new Date().toISOString(), example, ideas: res.ideas.map(x => ({ id: x.id, text: x.text, sources: x.sources, score: x.score, theme: x.theme, merged: x.merged })), themes: res.themes.map(t => ({ id: t.id, label: t.label, members: t.members, score: t.score, next: t.next })) }, null, 2)); });
@@ -1421,7 +1504,7 @@ function mount(opts) {
 }
 
 const OMEGA_I18N = Object.freeze({ VERSION: "omega-i18n-v1", compile, translate, pickLang, coverage, norm, mount });
-const PAIRS = [["بوابة نبض","NABD portal"],["Public site, paper simulations · الموقع العام","Public site, paper simulations"],["غرفة العمليات","Ops Room"],["السلسلة","THE CHAIN"],["العرّاف","ORACLE"],["مختبر المتداول","TRADE LAB"],["المخ الثاني","Second brain"],["Switch app · تبديل التطبيق","Switch app"],["OMEGA apps · تطبيقات أوميغا","OMEGA apps"],["تبديل الوضع الداكن","Toggle dark mode"],["«قيد الموافقة»","«Pending approval»"],["قيد الموافقة","Pending approval"],["تعذر التحقق منها","Could not be verified"],["مثال تعليمي — أرقام افتراضية","Teaching example — hypothetical numbers"],["نعم","Yes"],["لا","No"],["إلغاء","Cancel"],["احذف","Delete"],["عدّل","Edit"],["اكتب","Write"],["تم","Done"],["الحالة","Status"],["المصدر","Source"],["المصادر","Sources"],["الآن","Now"],["المطلوب","Required"],["الشرط","Condition"],["متوفر","Available"],["جزئي","Partial"],["لا بيانات","No data"],["لا ينطبق","Not applicable"],["سليم","Healthy"],["انتبه","Watch"],["تصرّف","Act"],["توقف","Stop"],["ناجح","Passed"],["لم يكتمل","Not yet"],["مفتوحة","Open"],["مستبعدة","Excluded"],["كيف يعمل","How it works"],["المدير 00","Director 00"],["ليس نصيحة مالية.","Not financial advice."],["اللغة","Language"],["المخ الثاني · OMEGA","Second brain · OMEGA"],["تخطَّ إلى المخ الثاني","Skip to the second brain"],["لم يُرتّب بعد…","Not arranged yet…"],["يجمع الأفكار الموجودة في هذا المتصفح من كل صفحات أوميغا: أفكارك، وملاحظات صفقات مختبر المتداول وقواعد خطتك، وأسئلة العرّاف، وآراءك في ملفات notes.md في السلسلة. يدمج المكرر، ويرتب الأفكار في محاور، ويقترح كيف تطوّر كل محور. كله بقواعد رياضية ثابتة على جهازك: لا نموذج لغوي ولا اتصال بالإنترنت.","It gathers the ideas already in this browser from every OMEGA page: your ideas, TRADE LAB trade notes and plan rules, ORACLE questions, and your views in THE CHAIN's notes.md files. It merges repeats, arranges the ideas into themes and suggests how to develop each theme. All by fixed maths rules on your device: no language model and no internet connection."],["رتّب أفكاري الآن","Arrange my ideas now"],["استورد ملف نص أو Markdown","Import a text or Markdown file"],["مثال تعليمي","Teaching example"],["نزّل الخريطة .md","Download the map .md"],["نزّل البيانات .json","Download the data .json"],["مثال تعليمي — أفكار افتراضية لتجربة الصفحة.","Teaching example — hypothetical ideas to try the page."],["إغلاق المثال","Close the example"],["أضف فكرة","Add an idea"],["فكرة واحدة في كل مرة، أو عدة أفكار كل واحدة في سطر يبدأ بـ «-». تُحفظ في هذا المتصفح فقط.","One idea at a time, or several, each on a line that starts with «-». Saved in this browser only."],["الفكرة","Idea"],["مثل: أدخل صفقة البيتكوين بعد إغلاق الشمعة فقط…","e.g. enter the Bitcoin trade only after the candle closes…"],["احفظ الفكرة","Save the idea"],["المصادر المقروءة","Sources read"],["ما وجده المخ الثاني في هذا المتصفح. الصفحات تشارك التخزين فقط حين تُفتح من نفس العنوان (مثلاً كلها من القرص أو كلها من 127.0.0.1:8796).","What the second brain found in this browser. Pages share storage only when opened from the same address (for example all from disk, or all from 127.0.0.1:8796)."],["مداخل","Entries"],["المحاور","Themes"],["كل محور مجموعة أفكار متشابهة الكلمات (تشابه جيب التمام على أوزان TF-IDF، ربط بالمتوسط). اسم المحور أقوى ثلاث كلمات فيه. الدرجة من 100 تجمع الحداثة وعدد الروابط وتنوّع المصادر. كل هذا استنتاج بقواعد ثابتة","Each theme is a group of ideas with similar words (cosine similarity on TF-IDF weights, average linkage). A theme's name is its three strongest words. The score out of 100 combines recency, number of links and source spread. All of this is inference by fixed rules"],["، وليس فهماً للمعنى.",", not an understanding of meaning."],["لا أفكار بعد. أضف فكرة أو استورد ملفاً أو افتح المثال التعليمي.","No ideas yet. Add an idea, import a file or open the teaching example."],["خريطة الأفكار","Idea map"],["كل نقطة فكرة بلون محورها، وحجمها بدرجتها. الخط بين فكرتين يعني كلمات مشتركة كافية. التخطيط ثابت البذرة، فنفس الأفكار تقع دائماً في نفس المكان. اضغط نقطة لترى نصها.","Each dot is an idea in its theme's colour, sized by its score. A line between two ideas means enough shared words. The layout has a fixed seed, so the same ideas always land in the same place. Tap a dot to see its text."],["جمع:","Gather:"],["يقرأ من التخزين المحلي: أفكارك (omega-brain-v1)، وملاحظات الصفقات وخطة مختبر المتداول، وآخر أسئلة العرّاف، وأقسام «رأيي» و«ما قد يثبت خطئي» و«ما الذي تغيّر» في ملفات السلسلة. لا يقرأ أي مفتاح ولا أي بيانات من الخزنة.","Reads local storage: your ideas (omega-brain-v1), TRADE LAB trade notes and plan, ORACLE's recent questions, and the «my view», «what would prove me wrong» and «what changed» sections of THE CHAIN files. It reads no key and nothing from the vault."],["تنظيف:","Clean:"],["يوحّد الهمزات والتاء المربوطة والألف المقصورة، ويحذف التشكيل و«ال» و«و» في أول الكلمة وكلمات الربط، بالعربية والإنجليزية.","Unifies hamza forms, taa marbuta and alif maqsura, and drops diacritics, a leading «ال» or «و» and connecting words, in Arabic and English."],["دمج:","Merge:"],["فكرتان تشابههما 0.80 أو أكثر تصبحان فكرة واحدة تحفظ كل مصادرها، والنص الأطول هو المحفوظ.","Two ideas with similarity 0.80 or more become one idea that keeps all its sources; the longer text is kept."],["محاور:","Themes:"],["تجميع هرمي بمتوسط التشابه حتى يقل عن 0.16. الروابط في الخريطة من 0.12 فما فوق.","Hierarchical clustering by average similarity until it drops below 0.16. Map links start at 0.12."],["تطوير:","Develop:"],["قواعد ثابتة: محور بلا سؤال في العرّاف ← ابحث فيه؛ كلمات تداول بلا ملاحظة صفقة ← اختبرها على الورق؛ فكرة منفردة ← أضف دليلاً؛ مصدران أو أكثر ← اكتب الخلاصة؛ سؤال مفتوح ← حدّد ما يجيب عنه.","Fixed rules: a theme with no ORACLE question → research it; trading words with no trade note → test it on paper; a lone idea → add evidence; two or more sources → write the takeaway; an open question → name what would answer it."],["الحدود:","Limits:"],["يقارن الكلمات لا المعنى، فلا يربط فكرة عربية بأخرى إنجليزية بلا كلمات مشتركة. لا يرسل شيئاً لأي جهة، ولا يتداول، ولا يغيّر شيئاً في الصفحات الأخرى.","It compares words, not meaning, so it does not link an Arabic idea to an English one without shared words. It sends nothing anywhere, does not trade and changes nothing on the other pages."],["المخ الثاني · أوميغا (ADR-119). كل الأفكار تبقى في هذا المتصفح. التجميع والأسماء والترتيب استنتاج بقواعد ثابتة [INFERENCE].","Second brain · OMEGA (ADR-119). Every idea stays in this browser. Grouping, names and ranks are inference by fixed rules [INFERENCE]."]];
+const PAIRS = [["بوابة نبض","NABD portal"],["Public site, paper simulations · الموقع العام","Public site, paper simulations"],["غرفة العمليات","Ops Room"],["السلسلة","THE CHAIN"],["العرّاف","ORACLE"],["مختبر المتداول","TRADE LAB"],["المخ الثاني","Second brain"],["Switch app · تبديل التطبيق","Switch app"],["OMEGA apps · تطبيقات أوميغا","OMEGA apps"],["تبديل الوضع الداكن","Toggle dark mode"],["«قيد الموافقة»","«Pending approval»"],["قيد الموافقة","Pending approval"],["تعذر التحقق منها","Could not be verified"],["مثال تعليمي — أرقام افتراضية","Teaching example — hypothetical numbers"],["نعم","Yes"],["لا","No"],["إلغاء","Cancel"],["احذف","Delete"],["عدّل","Edit"],["اكتب","Write"],["تم","Done"],["الحالة","Status"],["المصدر","Source"],["المصادر","Sources"],["الآن","Now"],["المطلوب","Required"],["الشرط","Condition"],["متوفر","Available"],["جزئي","Partial"],["لا بيانات","No data"],["لا ينطبق","Not applicable"],["سليم","Healthy"],["انتبه","Watch"],["تصرّف","Act"],["توقف","Stop"],["ناجح","Passed"],["لم يكتمل","Not yet"],["مفتوحة","Open"],["مستبعدة","Excluded"],["كيف يعمل","How it works"],["المدير 00","Director 00"],["ليس نصيحة مالية.","Not financial advice."],["اللغة","Language"],["المخ الثاني · OMEGA","Second brain · OMEGA"],["تخطَّ إلى المخ الثاني","Skip to the second brain"],["لم يُرتّب بعد…","Not arranged yet…"],["يجمع الأفكار الموجودة في هذا المتصفح من كل صفحات أوميغا: أفكارك، وملاحظات صفقات مختبر المتداول وقواعد خطتك، وأسئلة العرّاف، وآراءك في ملفات notes.md في السلسلة. يدمج المكرر، ويرتب الأفكار في محاور، ويقترح كيف تطوّر كل محور. كله بقواعد رياضية ثابتة على جهازك: لا نموذج لغوي ولا اتصال بالإنترنت.","It gathers the ideas already in this browser from every OMEGA page: your ideas, TRADE LAB trade notes and plan rules, ORACLE questions, and your views in THE CHAIN's notes.md files. It merges repeats, arranges the ideas into themes and suggests how to develop each theme. All by fixed maths rules on your device: no language model and no internet connection."],["رتّب أفكاري الآن","Arrange my ideas now"],["استورد ملف نص أو Markdown","Import a text or Markdown file"],["مثال تعليمي","Teaching example"],["نزّل الخريطة .md","Download the map .md"],["نزّل البيانات .json","Download the data .json"],["مثال تعليمي — أفكار افتراضية لتجربة الصفحة.","Teaching example — hypothetical ideas to try the page."],["إغلاق المثال","Close the example"],["أضف فكرة","Add an idea"],["فكرة واحدة في كل مرة، أو عدة أفكار كل واحدة في سطر يبدأ بـ «-». تُحفظ في هذا المتصفح فقط.","One idea at a time, or several, each on a line that starts with «-». Saved in this browser only."],["الفكرة","Idea"],["مثل: أدخل صفقة البيتكوين بعد إغلاق الشمعة فقط…","e.g. enter the Bitcoin trade only after the candle closes…"],["احفظ الفكرة","Save the idea"],["المصادر المقروءة","Sources read"],["ما وجده المخ الثاني في هذا المتصفح. الصفحات تشارك التخزين فقط حين تُفتح من نفس العنوان (مثلاً كلها من القرص أو كلها من 127.0.0.1:8796).","What the second brain found in this browser. Pages share storage only when opened from the same address (for example all from disk, or all from 127.0.0.1:8796)."],["مداخل","Entries"],["أدخل مكتبة الأدوات المفتوحة في الترتيب","Include the open-source library when arranging"],["مكتبة الأدوات المفتوحة المصدر","Open-source library"],["أدوات مجانية مفتوحة المصدر مرتبة حسب ما تضيفه لأوميغا. «مستخدمة» تعني أن المستودع يستخدمها اليوم؛ الباقي أفكار فقط. لا شيء هنا مثبّت أو يعمل من هذه الصفحة، وتثبيت أي أداة يحتاج موافقة أحمد ومراجعة أمنية مكتوبة يُعاد فيها فحص الترخيص. التراخيص كما ينشرها كل مشروع، قُرئت 2026-10-24.","Free, open-source tools grouped by what they would add to OMEGA. \"In use\" means the repository uses it today; the rest are ideas only. Nothing here is installed or run by this page, and installing any tool needs Ahmad's approval and a written security review that checks the licence again. Licences as each project publishes them, read 2026-10-24."],["الفئة","Category"],["الأداة","Tool"],["ماذا تضيف","What it adds"],["الترخيص","Licence"],["المحاور","Themes"],["كل محور مجموعة أفكار متشابهة الكلمات (تشابه جيب التمام على أوزان TF-IDF، ربط بالمتوسط). اسم المحور أقوى ثلاث كلمات فيه. الدرجة من 100 تجمع الحداثة وعدد الروابط وتنوّع المصادر. كل هذا استنتاج بقواعد ثابتة","Each theme is a group of ideas with similar words (cosine similarity on TF-IDF weights, average linkage). A theme's name is its three strongest words. The score out of 100 combines recency, number of links and source spread. All of this is inference by fixed rules"],["، وليس فهماً للمعنى.",", not an understanding of meaning."],["لا أفكار بعد. أضف فكرة أو استورد ملفاً أو افتح المثال التعليمي.","No ideas yet. Add an idea, import a file or open the teaching example."],["خريطة الأفكار","Idea map"],["كل نقطة فكرة بلون محورها، وحجمها بدرجتها. الخط بين فكرتين يعني كلمات مشتركة كافية. التخطيط ثابت البذرة، فنفس الأفكار تقع دائماً في نفس المكان. اضغط نقطة لترى نصها.","Each dot is an idea in its theme's colour, sized by its score. A line between two ideas means enough shared words. The layout has a fixed seed, so the same ideas always land in the same place. Tap a dot to see its text."],["جمع:","Gather:"],["يقرأ من التخزين المحلي: أفكارك (omega-brain-v1)، وملاحظات الصفقات وخطة مختبر المتداول، وآخر أسئلة العرّاف، وأقسام «رأيي» و«ما قد يثبت خطئي» و«ما الذي تغيّر» في ملفات السلسلة. لا يقرأ أي مفتاح ولا أي بيانات من الخزنة.","Reads local storage: your ideas (omega-brain-v1), TRADE LAB trade notes and plan, ORACLE's recent questions, and the «my view», «what would prove me wrong» and «what changed» sections of THE CHAIN files. It reads no key and nothing from the vault."],["تنظيف:","Clean:"],["يوحّد الهمزات والتاء المربوطة والألف المقصورة، ويحذف التشكيل و«ال» و«و» في أول الكلمة وكلمات الربط، بالعربية والإنجليزية.","Unifies hamza forms, taa marbuta and alif maqsura, and drops diacritics, a leading «ال» or «و» and connecting words, in Arabic and English."],["دمج:","Merge:"],["فكرتان تشابههما 0.80 أو أكثر تصبحان فكرة واحدة تحفظ كل مصادرها، والنص الأطول هو المحفوظ.","Two ideas with similarity 0.80 or more become one idea that keeps all its sources; the longer text is kept."],["محاور:","Themes:"],["تجميع هرمي بمتوسط التشابه حتى يقل عن 0.16. الروابط في الخريطة من 0.12 فما فوق.","Hierarchical clustering by average similarity until it drops below 0.16. Map links start at 0.12."],["تطوير:","Develop:"],["قواعد ثابتة: محور بلا سؤال في العرّاف ← ابحث فيه؛ كلمات تداول بلا ملاحظة صفقة ← اختبرها على الورق؛ فكرة منفردة ← أضف دليلاً؛ مصدران أو أكثر ← اكتب الخلاصة؛ سؤال مفتوح ← حدّد ما يجيب عنه.","Fixed rules: a theme with no ORACLE question → research it; trading words with no trade note → test it on paper; a lone idea → add evidence; two or more sources → write the takeaway; an open question → name what would answer it."],["الحدود:","Limits:"],["يقارن الكلمات لا المعنى، فلا يربط فكرة عربية بأخرى إنجليزية بلا كلمات مشتركة. لا يرسل شيئاً لأي جهة، ولا يتداول، ولا يغيّر شيئاً في الصفحات الأخرى.","It compares words, not meaning, so it does not link an Arabic idea to an English one without shared words. It sends nothing anywhere, does not trade and changes nothing on the other pages."],["المخ الثاني · أوميغا (ADR-119). كل الأفكار تبقى في هذا المتصفح. التجميع والأسماء والترتيب استنتاج بقواعد ثابتة [INFERENCE].","Second brain · OMEGA (ADR-119). Every idea stays in this browser. Grouping, names and ranks are inference by fixed rules [INFERENCE]."]];
 window.OMEGA_I18N = OMEGA_I18N;
 const start = () => { window.OMEGA_LANG = OMEGA_I18N.mount(Object.assign({ pairs: PAIRS }, {"source":"ar","button":"themeToggle","flipDir":true})); };
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();

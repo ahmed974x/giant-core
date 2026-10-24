@@ -18,13 +18,20 @@ TOOLS = {
 }
 UI = Path(__file__).with_name("ui") / "index.html"
 MAX_BODY = 16_384
+# ADR-125: the Ops Room's health gate reads GET /api/health from these pages only. Tool calls (POST) get no CORS
+# header, so no other page can run a Newton tool through the browser.
+HEALTH_ORIGINS = {"http://127.0.0.1:8796", "http://localhost:8796", "https://ahmed974x.github.io", "null"}
 
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "omega-newton/1.0"
 
-    def _send(self, code: int, body: bytes, ctype: str = "application/json") -> None:
+    def _send(self, code: int, body: bytes, ctype: str = "application/json", cors: bool = False) -> None:
         self.send_response(code)
+        origin = self.headers.get("Origin", "")
+        if cors and origin in HEALTH_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
@@ -35,9 +42,22 @@ class Handler(BaseHTTPRequestHandler):
         if self.path in ("/", "/index.html"):
             self._send(200, UI.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/health":
-            self._send(200, json.dumps({"ok": True, "tools": sorted(TOOLS)}).encode())
+            self._send(200, json.dumps({"ok": True, "tools": sorted(TOOLS)}).encode(), cors=True)
         else:
             self._send(404, b'{"error":"not found"}')
+
+    def do_OPTIONS(self) -> None:
+        # Preflight for the health read only, with Chrome's private network access answer for a public page.
+        origin = self.headers.get("Origin", "")
+        if self.path != "/api/health" or origin not in HEALTH_ORIGINS:
+            return self._send(403, b'{"error":"not allowed"}')
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Methods", "GET")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Vary", "Origin")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_POST(self) -> None:  # noqa: N802
         name = self.path.removeprefix("/api/")

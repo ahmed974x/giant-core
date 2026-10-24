@@ -53,6 +53,11 @@
 //                              with the liquidity flow index (cached 15 min)
 //   /cyber/circl            -> CIRCL Vulnerability-Lookup, latest published records cut to id, CVSS, CWE (cached 30 min)
 //   /osiris/marine          -> Open-Meteo Marine waves and currents at the five strait points    (cached 30 min)
+// Open cameras and the oil and gold watch (ADR-125), keyless:
+//   /osiris/cams            -> TfL JamCams, Fintraffic weather cameras and Singapore LTA cameras in one
+//                              omega-cams-v1 list (position + still-image URL on an allowlisted host) (cached 1 h)
+//   /market/oilgold         -> WTI and Brent daily spot (EIA via FRED CSV) and gold via PAXGUSDT daily candles
+//                              in one omega-oilgold-v1 set (cached 6 h)
 // Deep research agent (ADR-114), keyless scholarly and news APIs, one fixed API path per source:
 //   /research/<source>?url=<upstream>  where source is wikipedia, openalex, crossref, europepmc, arxiv,
 //                              semanticscholar, gdelt, wayback, and from ADR-115 doaj, dblp, wikidata or nvd, and
@@ -183,6 +188,17 @@ const ROUTES = [
   ] },
   { re: /^\/cyber\/circl$/, url: () => U.circl(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.circl(j)) },
   { re: /^\/osiris\/marine$/, url: () => U.marine(), ttl: HOUR / 2, type: "application/json", sec: false, transform: json(j => S.marine(j)) },
+  // ADR-125: each camera group and each oil or gold series is asked on its own; a failed one is named, never filled.
+  { re: /^\/osiris\/cams$/, url: () => U.cams()[0], ttl: HOUR, type: "application/json", sec: false, chain: () => [
+    async r => { const list = []; for (const u of U.cams()) { try { list.push(await upJson(r, u)); } catch { list.push(null); } } return S.camsSet(list, new Date().toISOString()); }
+  ] },
+  { re: /^\/market\/oilgold$/, url: () => U.fred("DCOILWTICO"), ttl: 6 * HOUR, type: "application/json", sec: false, chain: () => [
+    async r => {
+      const list = [];
+      for (const m of OMEGA_MATH.OIL_GOLD) { try { list.push(m.fred ? (await upstream(r, U.fred(m.fred))).toString("utf8") : await upJson(r, U.paxg())); } catch { list.push(null); } }
+      return S.oilGoldSet(list, new Date().toISOString());
+    }
+  ] },
   { re: /^\/market\/coingecko\/([a-z0-9-]{2,40})$/, url: m => `https://api.coingecko.com/api/v3/simple/price?ids=${m[1]}&vs_currencies=usd&include_24hr_change=true`, ttl: 2 * 60 * 1000, type: "application/json", sec: false },
 ];
 const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "opensky-network.org", "www.gdacs.org", "api.gdeltproject.org", "meri.digitraffic.fi", "msi.nga.mil", "data-api.binance.vision", "fapi.binance.com", "api.coingecko.com",
@@ -190,6 +206,7 @@ const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "o
   "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int",
   "isc.sans.edu", "internetdb.shodan.io", "api.adsb.lol",
   "stablecoins.llama.fi", "api.llama.fi", "vulnerability.circl.lu", "marine-api.open-meteo.com",
+  "api.tfl.gov.uk", "tie.digitraffic.fi", "api.data.gov.sg", "fred.stlouisfed.org",
   ...OMEGA_RESEARCH.HOSTS]);
 // ADR-114: cache life of each research source; the request shape itself is checked by OMEGA_RESEARCH.allowed.
 const RESEARCH_TTL = { wikipedia: 6 * HOUR, openalex: 6 * HOUR, crossref: 6 * HOUR, europepmc: 6 * HOUR, arxiv: 6 * HOUR, semanticscholar: 6 * HOUR, gdelt: HOUR / 2, wayback: 24 * HOUR,
@@ -568,6 +585,11 @@ const PROBES = [
   { name: "DefiLlama chains and DEX", via: "browser + proxy /market/llama", url: OMEGA_MATH.urls.llama()[1] },
   { name: "CIRCL Vulnerability-Lookup", via: "proxy /cyber/circl", url: OMEGA_MATH.urls.circl() },
   { name: "Open-Meteo Marine", via: "browser + proxy /osiris/marine", url: OMEGA_MATH.urls.marine() },
+  // ADR-125
+  { name: "TfL JamCams list", via: "browser + proxy /osiris/cams", url: OMEGA_MATH.urls.cams()[0] },
+  { name: "Fintraffic weather cameras", via: "browser + proxy /osiris/cams", url: OMEGA_MATH.urls.cams()[1] },
+  { name: "Singapore LTA cameras (data.gov.sg)", via: "browser + proxy /osiris/cams", url: OMEGA_MATH.urls.cams()[2] },
+  { name: "FRED oil prices (EIA)", via: "proxy /market/oilgold", url: OMEGA_MATH.urls.fred("DCOILWTICO") },
   // ADR-114: deep research sources (ORACLE)
   { name: "OpenAlex", via: "proxy /research/openalex", url: "https://api.openalex.org/works?search=coral&per-page=1&select=id" },
   { name: "Crossref", via: "proxy /research/crossref", url: "https://api.crossref.org/works?query=coral&rows=1&select=DOI" },

@@ -118,8 +118,21 @@ const SOURCES = {
   // ADR-112
   llama: { name: "DefiLlama stablecoin supply, chain TVL and DEX volume, with the liquidity flow index", urls: U.llama(), gapMs: 1000, pick: list => SH.llamaSet(list), count: d => d.stable.coins },
   circl: { name: "CIRCL Vulnerability-Lookup, latest published records", url: U.circl(), pick: j => SH.circl(j), count: d => d.items.length },
-  marine: { name: "Open-Meteo Marine (CC BY 4.0), waves and currents at the five straits", url: U.marine(), pick: j => SH.marine(j), count: d => d.points.filter(p => Number.isFinite(p.hs)).length }
+  marine: { name: "Open-Meteo Marine (CC BY 4.0), waves and currents at the five straits", url: U.marine(), pick: j => SH.marine(j), count: d => d.points.filter(p => Number.isFinite(p.hs)).length },
+  // ADR-125: camera lists (images load live in the page) and the oil and gold daily series; each part is asked
+  // on its own, so one failed group or series is named in the set instead of failing the whole source.
+  cams: { name: "Open cameras: TfL JamCams, Fintraffic weather cameras, Singapore LTA (lists only)", url: U.cams().join(" "), get: signal => partsOf(U.cams(), signal, true).then(l => SH.camsSet(l, new Date().toISOString())), count: d => d.cams.length },
+  oilgold: { name: "WTI and Brent spot (EIA via FRED) and gold via PAXGUSDT daily candles", url: OMEGA_MATH.OIL_GOLD.map(m => m.fred ? U.fred(m.fred) : U.paxg()).join(" "),
+    get: signal => partsOf(OMEGA_MATH.OIL_GOLD.map(m => m.fred ? U.fred(m.fred) : U.paxg()), signal, false).then(l => SH.oilGoldSet(l, new Date().toISOString())), count: d => d.series.length }
 };
+// One answer per URL, in order, null for a URL that failed; `asJson` false keeps CSV text for FRED.
+async function partsOf(urls, signal, asJson) {
+  const out = [];
+  for (const u of urls) {
+    try { const b = await getBuf(u, signal), t = b.toString("utf8"); out.push(asJson || !/fredgraph\.csv/.test(u) ? JSON.parse(t) : t); } catch { out.push(null); }
+  }
+  return out;
+}
 
 // RIS Live: open the stream, subscribe to the watched prefixes, keep every UPDATE for `ms`, then summarise.
 // A quiet half minute is a valid answer (index 0); only a socket that never opens is a failure.
@@ -138,7 +151,7 @@ function risSample(ms) {
 // A plain, honest User-Agent in the common "Mozilla/5.0 (compatible; ...)" form: it names this project and
 // pretends to be no browser. Some hosts (GDACS among them) refuse requests with no recognisable agent.
 async function getBuf(url, signal) {
-  const r = await fetch(url, { signal, headers: { "User-Agent": UA, "Accept": "application/json", "Accept-Encoding": "gzip" }, redirect: "follow" });
+  const r = await fetch(url, { signal, headers: { "User-Agent": UA, "Accept": "application/json, text/csv;q=0.9, */*;q=0.5", "Accept-Encoding": "gzip" }, redirect: "follow" });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return Buffer.from(await r.arrayBuffer());
 }

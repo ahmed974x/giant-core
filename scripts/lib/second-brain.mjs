@@ -60,8 +60,64 @@ const SOURCES = Object.freeze({
   plan: { ar: "خطة التداول", en: "Trading plan" },
   oracle: { ar: "أسئلة العرّاف", en: "ORACLE questions" },
   chain: { ar: "ملاحظات السلسلة", en: "THE CHAIN notes" },
-  file: { ar: "ملف مستورد", en: "Imported file" }
+  file: { ar: "ملف مستورد", en: "Imported file" },
+  library: { ar: "مكتبة الأدوات المفتوحة", en: "Open-source library" }
 });
+// ADR-125: free, open-source tools worth knowing, grouped by what they would add to OMEGA. Ideas only: nothing here
+// is installed or run by this page. "in use" means the repository already uses it (as a pinned dev tool or a
+// laptop service). Licences as each project publishes them, read 2026-10-24; installing any of them still needs
+// Ahmad's approval and a written security review (AGENTS.md §1), where the licence is checked again.
+const LIBRARY_CATS = Object.freeze({
+  map: { ar: "الخرائط والكرة الأرضية", en: "Maps and globe" },
+  cam: { ar: "الكاميرات والرؤية", en: "Cameras and vision" },
+  quant: { ar: "التنبؤ والتحليل الكمي (ورقي)", en: "Forecasting and quant (paper)" },
+  osint: { ar: "الاستخبارات المفتوحة والسيبراني", en: "OSINT and cyber" },
+  ai: { ar: "الذكاء المحلي والوكلاء", en: "Local AI and agents" },
+  brain: { ar: "العقل الثاني والمعرفة", en: "Second brain and knowledge" },
+  ui: { ar: "التصميم والرسوم", en: "Design and charts" },
+  sec: { ar: "فحوص الأمان", en: "Security checks" }
+});
+const LIBRARY = Object.freeze([
+  { cat: "map", name: "satellite.js", licence: "MIT", repo: "https://github.com/shashwatak/satellite-js", ar: "مدارات الأقمار بدقة SGP4 بدل التقريب الحالي", en: "SGP4 orbit propagation, to replace the two-body + J2 estimate", status: "idea" },
+  { cat: "map", name: "MapLibre GL JS", licence: "BSD-3-Clause", repo: "https://github.com/maplibre/maplibre-gl-js", ar: "خرائط متجهة سريعة بلا مفاتيح", en: "fast keyless vector maps", status: "idea" },
+  { cat: "map", name: "PMTiles", licence: "BSD-3-Clause", repo: "https://github.com/protomaps/PMTiles", ar: "خريطة العالم كملف واحد تعمل بدون إنترنت", en: "the whole basemap as one file that works offline", status: "idea" },
+  { cat: "map", name: "CesiumJS", licence: "Apache-2.0", repo: "https://github.com/CesiumGS/cesium", ar: "كرة أرضية ثلاثية الأبعاد بتضاريس حقيقية", en: "3D globe with real terrain", status: "idea" },
+  { cat: "map", name: "deck.gl", licence: "MIT", repo: "https://github.com/visgl/deck.gl", ar: "طبقات بيانات ضخمة (سفن وطائرات) على الخريطة", en: "large data layers (ships, aircraft) on the map", status: "idea" },
+  { cat: "cam", name: "go2rtc", licence: "MIT", repo: "https://github.com/AlexxIT/go2rtc", ar: "بث كاميراتك أنت (RTSP) للمتصفح محلياً", en: "stream your own cameras (RTSP) to the browser locally", status: "idea" },
+  { cat: "cam", name: "Frigate", licence: "MIT", repo: "https://github.com/blakeblackshear/frigate", ar: "كشف الأجسام في كاميراتك على جهازك", en: "object detection on your own cameras, on your machine", status: "idea" },
+  { cat: "cam", name: "OpenCV", licence: "Apache-2.0", repo: "https://github.com/opencv/opencv", ar: "تحليل صور الكاميرات المفتوحة (زحمة، طقس)", en: "analyse open camera stills (traffic, weather)", status: "idea" },
+  { cat: "cam", name: "Ultralytics YOLO", licence: "AGPL-3.0", repo: "https://github.com/ultralytics/ultralytics", ar: "عدّ السيارات والسفن في الصور؛ ترخيص يلزم نشر الكود", en: "count cars and ships in stills; copyleft licence", status: "idea" },
+  { cat: "quant", name: "StatsForecast (Nixtla)", licence: "Apache-2.0", repo: "https://github.com/Nixtla/statsforecast", ar: "توقعات سريعة للنفط والذهب (ARIMA, ETS) مع نطاق ثقة", en: "fast oil and gold forecasts (ARIMA, ETS) with intervals", status: "idea" },
+  { cat: "quant", name: "Darts", licence: "Apache-2.0", repo: "https://github.com/unit8co/darts", ar: "مكتبة توقع سلاسل زمنية مع اختبار رجعي", en: "time-series forecasting with backtests", status: "idea" },
+  { cat: "quant", name: "Prophet", licence: "MIT", repo: "https://github.com/facebook/prophet", ar: "توقع موسمي بسيط وواضح", en: "simple seasonal forecasting", status: "idea" },
+  { cat: "quant", name: "QuantStats", licence: "Apache-2.0", repo: "https://github.com/ranaroussi/quantstats", ar: "تقارير أداء المحفظة الورقية", en: "performance reports for the paper portfolio", status: "idea" },
+  { cat: "quant", name: "NautilusTrader", licence: "LGPL-3.0", repo: "https://github.com/nautechsystems/nautilus_trader", ar: "محرك اختبار رجعي ومحاكاة؛ الأوامر الحقيقية مقفلة", en: "backtest and simulation engine; live orders stay locked", status: "idea" },
+  { cat: "quant", name: "freqtrade (dry-run)", licence: "GPL-3.0", repo: "https://github.com/freqtrade/freqtrade", ar: "بوت كريبتو بوضع تجريبي فقط؛ لا مفاتيح منصة", en: "crypto bot in dry-run only; no exchange keys", status: "idea" },
+  { cat: "quant", name: "CCXT (public data only)", licence: "MIT", repo: "https://github.com/ccxt/ccxt", ar: "بيانات عامة من منصات كثيرة؛ بدون توقيع أوامر", en: "public data from many exchanges; no order signing", status: "idea" },
+  { cat: "osint", name: "OpenCTI", licence: "Apache-2.0", repo: "https://github.com/OpenCTI-Platform/opencti", ar: "قاعدة معرفة التهديدات السيبرانية", en: "cyber threat knowledge base", status: "idea" },
+  { cat: "osint", name: "MISP", licence: "AGPL-3.0", repo: "https://github.com/MISP/MISP", ar: "مشاركة مؤشرات التهديد؛ وسومه مستخدمة في CSTI", en: "threat sharing platform; its taxonomy tags already feed CSTI", status: "in use" },
+  { cat: "osint", name: "OpenBB", licence: "AGPL-3.0", repo: "https://github.com/OpenBB-finance/OpenBB", ar: "منصة بيانات مالية مفتوحة", en: "open financial data platform", status: "idea" },
+  { cat: "osint", name: "AIS-catcher", licence: "GPL-3.0", repo: "https://github.com/jvde-github/AIS-catcher", ar: "التقاط إشارات السفن بجهاز SDR رخيص", en: "receive ship AIS with a cheap SDR dongle", status: "idea" },
+  { cat: "osint", name: "SearXNG", licence: "AGPL-3.0", repo: "https://github.com/searxng/searxng", ar: "محرك بحث خاص على اللابتوب", en: "private metasearch on the laptop", status: "in use" },
+  { cat: "ai", name: "Ollama", licence: "MIT", repo: "https://github.com/ollama/ollama", ar: "تشغيل نموذج لغوي محلي (جسر /llm/ollama)", en: "run a local language model (the /llm/ollama bridge)", status: "in use" },
+  { cat: "ai", name: "llama.cpp", licence: "MIT", repo: "https://github.com/ggml-org/llama.cpp", ar: "تشغيل نماذج صغيرة على المعالج بلا بطاقة", en: "run small models on the CPU", status: "idea" },
+  { cat: "ai", name: "LangGraph", licence: "MIT", repo: "https://github.com/langchain-ai/langgraph", ar: "رسم مسار الوكلاء خطوة بخطوة مع ذاكرة", en: "agent workflows as graphs with memory", status: "idea" },
+  { cat: "ai", name: "n8n", licence: "Sustainable Use License (fair-code, not OSI)", repo: "https://github.com/n8n-io/n8n", ar: "أتمتة على اللابتوب؛ مجاني للاستخدام الشخصي لكنه ليس مفتوح المصدر بالمعنى الكامل", en: "automation on the laptop; free for own use but not OSI open source", status: "in use" },
+  { cat: "brain", name: "Logseq", licence: "AGPL-3.0", repo: "https://github.com/logseq/logseq", ar: "ملاحظات مترابطة على جهازك", en: "linked notes on your device", status: "idea" },
+  { cat: "brain", name: "SiYuan", licence: "AGPL-3.0", repo: "https://github.com/siyuan-note/siyuan", ar: "قاعدة معرفة محلية بالكامل", en: "fully local knowledge base", status: "idea" },
+  { cat: "brain", name: "Trilium Notes", licence: "AGPL-3.0", repo: "https://github.com/TriliumNext/Notes", ar: "شجرة ملاحظات هرمية مع خريطة روابط", en: "hierarchical notes with a link map", status: "idea" },
+  { cat: "brain", name: "Khoj", licence: "AGPL-3.0", repo: "https://github.com/khoj-ai/khoj", ar: "بحث في ملاحظاتك بنموذج محلي", en: "search your notes with a local model", status: "idea" },
+  { cat: "ui", name: "Lightweight Charts", licence: "Apache-2.0", repo: "https://github.com/tradingview/lightweight-charts", ar: "شموع أسعار سريعة (المكتبة فقط، لا خدمة TradingView)", en: "fast candle charts (the library, not the TradingView service)", status: "idea" },
+  { cat: "ui", name: "uPlot", licence: "MIT", repo: "https://github.com/leeoniya/uPlot", ar: "رسوم زمنية خفيفة جداً", en: "very small time-series charts", status: "idea" },
+  { cat: "ui", name: "Apache ECharts", licence: "Apache-2.0", repo: "https://github.com/apache/echarts", ar: "رسوم بيانية غنية", en: "rich charts", status: "idea" },
+  { cat: "ui", name: "Lucide", licence: "ISC", repo: "https://github.com/lucide-icons/lucide", ar: "أيقونات خطية نظيفة", en: "clean line icons", status: "idea" },
+  { cat: "ui", name: "culori + apca-w3", licence: "MIT / W3C", repo: "https://github.com/Evercoder/culori", ar: "فحص تباين الألوان (بوابة التباين)", en: "colour contrast checks (the contrast gate)", status: "in use" },
+  { cat: "sec", name: "OSV-Scanner", licence: "Apache-2.0", repo: "https://github.com/google/osv-scanner", ar: "فحص ثغرات المكتبات", en: "scan dependencies for known vulnerabilities", status: "idea" },
+  { cat: "sec", name: "Gitleaks", licence: "MIT", repo: "https://github.com/gitleaks/gitleaks", ar: "منع تسريب المفاتيح في git", en: "stop secrets from entering git", status: "idea" },
+  { cat: "sec", name: "Trivy", licence: "Apache-2.0", repo: "https://github.com/aquasecurity/trivy", ar: "فحص حاويات Docker", en: "scan Docker images", status: "idea" },
+  { cat: "sec", name: "Semgrep CE", licence: "LGPL-2.1", repo: "https://github.com/semgrep/semgrep", ar: "قواعد فحص الكود", en: "code scanning rules", status: "idea" },
+  { cat: "sec", name: "ZAP", licence: "Apache-2.0", repo: "https://github.com/zaproxy/zaproxy", ar: "فحص أمان الموقع على اللابتوب فقط", en: "web security testing of our own site, on the laptop only", status: "idea" }
+]);
 // Split a block of text into idea-sized pieces: Markdown bullets, numbered lines or paragraphs.
 function splitIdeas(text) {
   const out = [];
@@ -104,6 +160,9 @@ function gather(input) {
       if (m) for (const t of splitIdeas(m[1])) add("chain", `${ticker}: ${t}`, 0, "chain:" + ticker);
     }
   }
+  // ADR-125: the open-source library joins as ideas when the page asks for it; its category words let the
+  // clustering group it by what each tool would add.
+  if (i.library === true) for (const x of LIBRARY) add("library", `${LIBRARY_CATS[x.cat].ar} · ${x.name}: ${x.ar} · ${LIBRARY_CATS[x.cat].en}, ${x.en} (${x.licence})`, 0, "lib:" + x.name);
   for (const f of Array.isArray(i.files) ? i.files : []) if (f && typeof f.text === "string") for (const t of splitIdeas(f.text).slice(0, 400)) add("file", t, +f.at, "file:" + clean(f.name || "", 80));
   return items.slice(0, 600);
 }
@@ -257,5 +316,5 @@ function toMarkdown(res, at) {
 }
 
 export const OMEGA_BRAIN = Object.freeze({
-  VERSION: "omega-brain-v1", SOURCES, normAr, stemAr, stemEn, tokens, splitIdeas, gather, vectorize, cosine, merge, cluster, organise, develop, layout, toMarkdown, clean
+  VERSION: "omega-brain-v1", SOURCES, LIBRARY, LIBRARY_CATS, normAr, stemAr, stemEn, tokens, splitIdeas, gather, vectorize, cosine, merge, cluster, organise, develop, layout, toMarkdown, clean
 });

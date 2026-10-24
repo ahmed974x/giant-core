@@ -290,6 +290,37 @@ test("Marine shape and sea state at the five straits", () => {
   let threw = false; try { M.shape.marine([pt(1, 1)]); } catch { threw = true; }
   ok(threw, "an answer for fewer than five points must throw");
 });
+test("Open cameras: three groups, host allowlist, a failed group named (ADR-125)", () => {
+  const tfl = [{ id: "JamCams_00001.01251", commonName: "Old Street", lat: 51.5246, lon: -0.0877, additionalProperties: [{ key: "available", value: "true" }, { key: "imageUrl", value: "https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.01251.jpg" }] },
+    { id: "JamCams_x", commonName: "Elsewhere", lat: 51, lon: 0, additionalProperties: [{ key: "imageUrl", value: "https://evil.example/cam.jpg" }] },
+    { id: "JamCams_y", commonName: "Wrong bucket", lat: 51, lon: 0, additionalProperties: [{ key: "imageUrl", value: "https://s3-eu-west-1.amazonaws.com/other-bucket/a.jpg" }] },
+    { id: "JamCams_z", commonName: "Off", lat: 51, lon: 0, additionalProperties: [{ key: "available", value: "false" }, { key: "imageUrl", value: "https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/z.jpg" }] }];
+  const fi = { features: [{ geometry: { coordinates: [24.94, 60.17, 0] }, properties: { id: "C01503", name: "Helsinki, Kehä I", collectionStatus: "GATHERING", state: null, presets: [{ id: "C0150301", inCollection: true }] } },
+    { geometry: { coordinates: [25, 61, 0] }, properties: { id: "C09999", name: "Removed", collectionStatus: "REMOVED_TEMPORARILY", presets: [{ id: "C0999901", inCollection: true }] } }] };
+  const sg = { items: [{ cameras: [{ camera_id: "1001", timestamp: "2026-10-24T20:00:00+08:00", image: "https://images.data.gov.sg/api/traffic-images/2026/10/x.jpg", location: { latitude: 1.29, longitude: 103.87 } }] }] };
+  const set = M.shape.camsSet([tfl, fi, sg], "2026-10-24T12:00:00Z");
+  ok(set.format === "omega-cams-v1" && set.cams.length === 3 && set.groups.every(g => g.ok && g.n === 1), JSON.stringify(set.groups));
+  ok(set.cams[0].img.endsWith("/jamcams.tfl.gov.uk/00001.01251.jpg") && set.cams[1].img === "https://weathercam.digitraffic.fi/C0150301.jpg" && set.cams[2].lat === 1.29, JSON.stringify(set.cams));
+  const part = M.shape.camsSet([tfl, { nope: 1 }, null], "t");
+  ok(part.cams.length === 1 && part.groups[1].ok === false && part.groups[2].ok === false, "failed groups are named, not filled");
+  let threw = false; try { M.shape.camsSet([null, null, null]); } catch { threw = true; }
+  ok(threw, "no group at all must throw");
+  ok(M.urls.cams().length === 3 && M.urls.cams().every(u => u.startsWith("https://")), "camera list URLs");
+});
+test("Oil and gold watch: FRED CSV, PAXG candles and the paper reading (ADR-125)", () => {
+  const days = Array.from({ length: 60 }, (_, i) => new Date(Date.UTC(2026, 7, 1) + i * 864e5).toISOString().slice(0, 10));
+  const csv = "observation_date,DCOILWTICO\n" + days.map((d, i) => `${d},${i === 10 ? "." : (70 + i * 0.1).toFixed(2)}`).join("\n");
+  const f = M.shape.fredCsv(csv, "DCOILWTICO");
+  ok(f.rows.length === 59 && f.rows[0][1] === 70 && f.id === "DCOILWTICO", "a '.' day is dropped, never 0");
+  const k = days.map((d, i) => [Date.parse(d), "0", "0", "0", String(2600 + i), "0"]);
+  const set = M.shape.oilGoldSet([csv, "not a csv", k], "t");
+  ok(set.series.length === 2 && set.missing.join() === "brent" && set.series[1].key === "gold" && set.series[1].rows[59][1] === 2659, JSON.stringify(set.missing));
+  const up = M.oilGold(set.series[1].rows.map(r => r[1]));
+  ok(up.trend === "up" && up.lo < up.last && up.hi > up.last && up.n === 60 && Math.abs(up.chg5 - (2659 / 2654 - 1) * 100) < 1e-9, JSON.stringify(up));
+  near(Math.log(up.hi / up.last), Math.sqrt(5) * up.volAnn / 100 / Math.sqrt(252), 1e-12, "1-sigma band from the daily volatility");
+  ok(M.oilGold([1, 2, 3]) === null, "fewer than 21 closes gives no reading");
+  ok(M.urls.fred("DCOILBRENTEU") === "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU", "FRED URL");
+});
 test("Ops Room inline copy matches the library", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-brain2-inline.mjs"), "--check"], { encoding: "utf8" });
   ok(r.status === 0, (r.stdout + r.stderr).trim() || "parity check failed");

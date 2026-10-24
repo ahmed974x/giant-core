@@ -121,6 +121,18 @@ test("the engine never uses innerHTML, eval or a string timer", () => {
   ok(!/innerHTML|eval\(|new Function|setTimeout\(\s*["'`]/.test(src), "unsafe call");
 });
 
+/* ---------- open-source library (ADR-125) ---------- */
+test("the open-source library joins only when asked, grouped by category, every repo https on github", () => {
+  const off = B.gather({ own: [{ text: "فكرة واحدة عن البيتكوين", at: 1 }] });
+  ok(off.every(x => x.src !== "library"), "library must not join unless asked");
+  const on = B.gather({ library: true });
+  ok(on.length === B.LIBRARY.length && on.every(x => x.src === "library" && x.ref.startsWith("lib:")), "one idea per library entry");
+  ok(B.LIBRARY.every(x => B.LIBRARY_CATS[x.cat] && /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(x.repo) && x.licence && ["idea", "in use"].includes(x.status)), "fields");
+  ok(new Set(B.LIBRARY.map(x => x.name)).size === B.LIBRARY.length, "names unique");
+  const r = B.organise({ library: true }, { now: 0 });
+  ok(r.themes.length >= 3 && r.ideas.length === B.LIBRARY.length, "the library forms themes: " + r.themes.length);
+});
+
 /* ---------- inline copies ---------- */
 test("the second brain page carries the current engine copy", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-brain-inline.mjs"), "--check"], { encoding: "utf8" });
