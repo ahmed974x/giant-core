@@ -45,5 +45,7 @@ export const ORACLE = [
   ["أقوى الأدلة المحكّمة", "Strongest peer-reviewed evidence"], ["أحدث ما نُشر", "Latest work"], ["الأعمال التأسيسية", "Foundational work"], ["السياق العربي", "Arabic context"], ["الأخبار والمتابعة", "News and follow-up"],
   ["مصادر بعد الدمج", "Sources after merging"], ["أوراق محكّمة", "Peer-reviewed papers"], ["فهارس أجابت", "Indexes that answered"], ["مؤكّد في فهرسين+", "Confirmed in 2+ indexes"], ["نص كامل مفتوح", "Open full text"], ["أحدث سنة", "Latest year"],
   ["أعمال مسحوبة", "Retracted works"], ["ثغرات منشورة", "Published vulnerabilities"], ["مستغلة فعلاً KEV", "Exploited (KEV)"], ["حجم التغطية", "Coverage volume"], ["النبرة", "Tone"],
-  ["أحدث ما نُشر منذ {n}", "Latest work since {n}"], ["المرحلة: تخطيط…", "Stage: plan…"], ["المرحلة: جمع…", "Stage: gather…"], ["المرحلة: تقييم…", "Stage: evaluate…"], ["المرحلة: كتابة…", "Stage: write…"]
+  ["أحدث ما نُشر منذ {n}", "Latest work since {n}"], ["المرحلة: تخطيط…", "Stage: plan…"], ["المرحلة: جمع…", "Stage: gather…"], ["المرحلة: تقييم…", "Stage: evaluate…"], ["المرحلة: كتابة…", "Stage: write…"],
+  ["لم يبدأ", "Not started"],
+  ["استخبارات مفتوحة سلبية: الكيان، والأخبار بالعربية والإنجليزية، ومنحنى التغطية ونبرتها 3 أشهر، والثغرات المنشورة في 120 يوماً (NVD عبر السيرفر المحلي). لا مسح ولا فحص.", "Passive open intelligence: the entity, news in Arabic and English, the coverage curve and its tone over 3 months, and vulnerabilities published in the last 120 days (NVD through the local server). No scanning, no probing."],
 ];
