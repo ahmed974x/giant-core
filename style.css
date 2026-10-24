@@ -519,3 +519,8 @@ footer p { margin: var(--s-2) 0; }
 .suite-app small { font-size: 12px; line-height: 1.4; color: var(--content-secondary); overflow-wrap: anywhere; }
 .suite-app:active { transform: scale(0.98); }
 @media (prefers-reduced-motion: no-preference) { .suite-app { transition: transform var(--dur-fast, 180ms) var(--ease-apple-fluid, ease); } }
+
+/* Touch targets (DESIGN.md §5, ADR-113, ADR-115): the language link and the skip link reach 44 px under a coarse pointer. */
+@media (pointer: coarse) {
+  .lang-link, .skip { min-height: 44px; display: inline-flex; align-items: center; }
+}
