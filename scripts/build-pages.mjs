@@ -20,6 +20,7 @@ const FILES = [
   ["omega-ops-room-v1/omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html"],
   ["omega-ops-room-v1/the-chain.html", "omega-ops-room-v1/the-chain.html"],
   ["omega-ops-room-v1/omega-oracle.html", "omega-ops-room-v1/omega-oracle.html"],
+  ["omega-ops-room-v1/omega-trade-lab.html", "omega-ops-room-v1/omega-trade-lab.html"],
   ["omega-ops-room-v1/manifest.json", "omega-ops-room-v1/manifest.json"],
   ["omega-ops-room-v1/service-worker.js", "omega-ops-room-v1/service-worker.js"]
 ];
@@ -77,6 +78,7 @@ function redirect(name, target, title) {
 redirect("omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html", "OMEGA Ops Room");
 redirect("the-chain.html", "omega-ops-room-v1/the-chain.html", "THE CHAIN");
 redirect("omega-oracle.html", "omega-ops-room-v1/omega-oracle.html", "ORACLE");
+redirect("omega-trade-lab.html", "omega-ops-room-v1/omega-trade-lab.html", "TRADE LAB");
 writeFileSync(join(OUT, ".nojekyll"), "");
 
 if (problems.length) { console.error("Refusing to publish:\n  " + problems.join("\n  ")); process.exit(1); }

@@ -238,6 +238,16 @@
       "rule": "SEC-EXEC",
       "path": "scripts/test-research.mjs",
       "reason": "Test only (ADR-114): spawnSync(process.execPath, [scripts/build-research-inline.mjs, --check]) with no shell and no user input; it checks that the ORACLE page carries the current engine copy."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-tradelab.mjs",
+      "reason": "Test only (ADR-116): spawnSync(process.execPath, [scripts/build-tradelab-inline.mjs | scripts/build-api-docs.mjs, --check]) with no shell and no user input; it checks that the TRADE LAB page carries the current engine copy and that the API document covers every proxy route."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-trade-lab.html",
+      "reason": "Stores the theme choice, the suite's shared state, and the paper journal (ADR-116): the trading plan, trade notes, hand-written paper trades, challenge rules and the market-lens symbol; it reads the Ops Room's paper receipts. No credentials, keys or vault entries, and the page works without storage."
     }
   ]
 }

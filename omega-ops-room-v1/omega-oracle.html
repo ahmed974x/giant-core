@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-v3jwDar3GfMhxBofoQbp64A+U2VLeWjtT7w43mANu+Q=' 'sha256-aFfAcfsCyBaiu71VbhFcfuL7WjaDuwrNyjNaFdsm7+g=' 'sha256-ElAKIV0rVnsSCO7s7QnlyN1jCjF0fE/A3Q1KczYSRLo='; style-src 'sha256-nU1ktfhvN80aG8iJ9E/DTyuuaz/gOvlIQdx5imH3tos='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://api.openalex.org https://api.crossref.org https://www.ebi.ac.uk https://export.arxiv.org https://api.semanticscholar.org https://en.wikipedia.org https://ar.wikipedia.org https://api.gdeltproject.org https://archive.org https://doaj.org https://dblp.org https://www.wikidata.org; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-Xr5mzitk+Ka5fzkiTdaP09agS/63k2l4cNMrAy0FxXw=' 'sha256-aFfAcfsCyBaiu71VbhFcfuL7WjaDuwrNyjNaFdsm7+g=' 'sha256-ElAKIV0rVnsSCO7s7QnlyN1jCjF0fE/A3Q1KczYSRLo='; style-src 'sha256-nU1ktfhvN80aG8iJ9E/DTyuuaz/gOvlIQdx5imH3tos='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://api.openalex.org https://api.crossref.org https://www.ebi.ac.uk https://export.arxiv.org https://api.semanticscholar.org https://en.wikipedia.org https://ar.wikipedia.org https://api.gdeltproject.org https://archive.org https://doaj.org https://dblp.org https://www.wikidata.org; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -20,7 +20,7 @@
 -->
 <script>try { if (localStorage.getItem("omega-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}</script>
 <script>
-// OMEGA suite (ADR-107, ADR-114): one frosted-glass app switcher shared by NABD, the Ops Room, THE CHAIN and ORACLE, and
+// OMEGA suite (ADR-107, ADR-114): one frosted-glass app switcher shared by NABD, the Ops Room, THE CHAIN, ORACLE and TRADE LAB, and
 // cross-page state sync over a BroadcastChannel ("omega-suite"), mirrored to localStorage for pages opened later.
 // Synced: the light/dark choice, a read-only summary of the paper wallet (locked base, safe vault), the PWSI
 // reading and THE CHAIN's last ticker. Nothing leaves the browser. It also counts CSP violations from the
@@ -83,21 +83,23 @@
   new MutationObserver(() => { if (!applying) publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" }); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   if (state.theme) applyTheme(state.theme); else publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" });
 
-  // Links between the four pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
+  // Links between the five pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
   // a copy opened from disk keeps the repository layout (site-landing/ next to omega-ops-room-v1/).
   const disk = location.protocol === "file:", inLanding = /\/site-landing\//.test(location.pathname);
   const HREF = {
     nabd: PAGE === "nabd" ? "index.html" : disk ? "../site-landing/index.html" : "../index.html",
     ops: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-ops-room.html" : "omega-ops-room-v1/omega-ops-room.html") : "omega-ops-room.html",
     chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
-    oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html"
+    oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
+    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
     { k: "nabd", icon: "📡", en: "NABD portal", ar: "بوابة نبض", line: () => "Public site, paper simulations · الموقع العام" },
     { k: "ops", icon: "🎯", en: "Ops Room", ar: "غرفة العمليات", line: () => (state.wallet ? `Paper base ${usd(state.wallet.base)} · safe ${usd(state.wallet.safe)}` : "Paper desk, OSIRIS, receipts") + (Number.isFinite(state.pwsi) ? ` · PWSI ${state.pwsi}` : "") },
     { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
-    { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" }
+    { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
+    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {
