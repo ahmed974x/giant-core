@@ -1,6 +1,6 @@
 // Assemble the public GitHub Pages site (ADR-098) into _site/ from a fixed allowlist of files.
 //   node scripts/build-pages.mjs [out-dir]
-// Layout: NABD at the root, the Ops Room and THE CHAIN under omega-ops-room-v1/ (the same folder scopes the
+// Layout: NABD at the root, the Ops Room, THE CHAIN and ORACLE (ADR-114) under omega-ops-room-v1/ (the same folder scopes the
 // local server uses, so manifests and service workers work unchanged), plus two short redirect pages.
 // The build refuses to publish anything outside the allowlist, any e-mail address, any key-shaped string and
 // any reference to a local secret file, so no personal or wallet data can ride along. Paper only: the pages
@@ -19,6 +19,7 @@ const FILES = [
   ["site-landing/manifest.json", "manifest.json"], ["site-landing/service-worker.js", "service-worker.js"],
   ["omega-ops-room-v1/omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html"],
   ["omega-ops-room-v1/the-chain.html", "omega-ops-room-v1/the-chain.html"],
+  ["omega-ops-room-v1/omega-oracle.html", "omega-ops-room-v1/omega-oracle.html"],
   ["omega-ops-room-v1/manifest.json", "omega-ops-room-v1/manifest.json"],
   ["omega-ops-room-v1/service-worker.js", "omega-ops-room-v1/service-worker.js"]
 ];
@@ -75,6 +76,7 @@ function redirect(name, target, title) {
 }
 redirect("omega-ops-room.html", "omega-ops-room-v1/omega-ops-room.html", "OMEGA Ops Room");
 redirect("the-chain.html", "omega-ops-room-v1/the-chain.html", "THE CHAIN");
+redirect("omega-oracle.html", "omega-ops-room-v1/omega-oracle.html", "ORACLE");
 writeFileSync(join(OUT, ".nojekyll"), "");
 
 if (problems.length) { console.error("Refusing to publish:\n  " + problems.join("\n  ")); process.exit(1); }

@@ -1,4 +1,4 @@
-// OMEGA suite (ADR-107): one frosted-glass app switcher shared by NABD, the Ops Room and THE CHAIN, and
+// OMEGA suite (ADR-107, ADR-114): one frosted-glass app switcher shared by NABD, the Ops Room, THE CHAIN and ORACLE, and
 // cross-page state sync over a BroadcastChannel ("omega-suite"), mirrored to localStorage for pages opened later.
 // Synced: the light/dark choice, a read-only summary of the paper wallet (locked base, safe vault), the PWSI
 // reading and THE CHAIN's last ticker. Nothing leaves the browser. It also counts CSP violations from the
@@ -21,6 +21,7 @@
     if (patch.wallet && Number.isFinite(patch.wallet.base) && Number.isFinite(patch.wallet.safe)) out.wallet = { base: +patch.wallet.base, safe: +patch.wallet.safe };
     if (patch.pwsi === null || Number.isFinite(patch.pwsi)) out.pwsi = patch.pwsi === null ? null : Math.round(patch.pwsi);
     if (typeof patch.ticker === "string") out.ticker = patch.ticker.toUpperCase().replace(/[^A-Z0-9.\-]/g, "").slice(0, 12);
+    if (typeof patch.research === "string") out.research = patch.research.replace(/[\u0000-\u001F<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
     if (typeof patch.ping === "string") out.ping = patch.ping.slice(0, 40);
     return out;
   };
@@ -60,19 +61,21 @@
   new MutationObserver(() => { if (!applying) publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" }); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   if (state.theme) applyTheme(state.theme); else publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" });
 
-  // Links between the three pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
+  // Links between the four pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
   // a copy opened from disk keeps the repository layout (site-landing/ next to omega-ops-room-v1/).
   const disk = location.protocol === "file:", inLanding = /\/site-landing\//.test(location.pathname);
   const HREF = {
     nabd: PAGE === "nabd" ? "index.html" : disk ? "../site-landing/index.html" : "../index.html",
     ops: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-ops-room.html" : "omega-ops-room-v1/omega-ops-room.html") : "omega-ops-room.html",
-    chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html"
+    chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
+    oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
     { k: "nabd", icon: "📡", en: "NABD portal", ar: "بوابة نبض", line: () => "Public site, paper simulations · الموقع العام" },
     { k: "ops", icon: "🎯", en: "Ops Room", ar: "غرفة العمليات", line: () => (state.wallet ? `Paper base ${usd(state.wallet.base)} · safe ${usd(state.wallet.safe)}` : "Paper desk, OSIRIS, receipts") + (Number.isFinite(state.pwsi) ? ` · PWSI ${state.pwsi}` : "") },
-    { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" }
+    { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
+    { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {

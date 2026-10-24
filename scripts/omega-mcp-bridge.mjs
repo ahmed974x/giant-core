@@ -16,6 +16,8 @@
 // ADR-112: query_osiris_intel adds the layers liquidity (DefiLlama flow index), vulns (CIRCL records with MISP
 // tags) and sea (Open-Meteo Marine at the five straits); explain_with_local_model hands a list of readings to a
 // local Ollama model through the data proxy (which refuses :cloud models) and returns its explanation, labelled.
+// ADR-114: deep_research runs the ORACLE agent (scripts/lib/deep-research.mjs) over the eight keyless research APIs,
+// through the proxy's /research cache when it runs and directly otherwise, and returns the brief with numbered references.
 import { readFileSync, statSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, resolve, dirname, extname } from "node:path";
@@ -23,6 +25,7 @@ import { fileURLToPath } from "node:url";
 import { Buffer } from "node:buffer";
 import { OMEGA_MATH as M } from "./lib/brain2-math.mjs";
 import { classifyNga, STRAITS } from "./lib/osiris-sources.mjs";
+import { OMEGA_RESEARCH as RS } from "./lib/deep-research.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VERSION = "1.0.0";
@@ -302,6 +305,14 @@ async function selftest() {
     const m = merkleRoot([a.hash, b.hash]);
     return `2-receipt chain verifies, a changed amount is caught · Merkle root ${m.slice(0, 12)}…`;
   });
+  await check("Research engine: merge, rank and cite (ADR-114)", async () => {
+    const W = (id, t, y, c, doi) => ({ id: "https://openalex.org/" + id, doi: "https://doi.org/" + doi, display_name: t, publication_year: y, cited_by_count: c, abstract_inverted_index: { Heat: [0], drives: [1], coral: [2], bleaching: [3], across: [4], tropical: [5], reefs: [6], "worldwide.": [7] }, referenced_works: [] });
+    const fake = { clock: () => 0, get: async (s) => { if (s !== "openalex") throw new Error("offline"); return { data: { results: [W("W1", "Coral bleaching under heat", 2024, 30, "10.1/a"), W("W2", "Coral bleaching under heat", 2024, 31, "10.1/A")] }, tier: "test" }; } };
+    const o = await RS.run("coral bleaching", { now: Date.parse("2026-10-24T00:00:00Z"), depth: 1, wayback: false }, fake);
+    if (o.records.length !== 1 || o.records[0].cites !== 31) throw new Error("one DOI in two answers should merge into one record");
+    if (!o.report.gaps.some(g => /failed/.test(g.en))) throw new Error("offline sources must be listed as gaps");
+    return `merged ${o.runs.filter(x => x.ok).length} answers into ${o.records.length} record · ${o.report.gaps.length} gaps stated`;
+  });
   await check("Local data proxy 127.0.0.1:8796", async () => { if (!(await proxyUp())) throw new Error("not running; start it with start-omega or OMEGA-PRIME.bat (the bridge falls back to direct and snapshot)"); return "running"; });
   await check("Public snapshot", async () => { const s = await snapshot(); if (!s) throw new Error("no local or published snapshot reachable"); return `${s.where}, generated ${s.j.generated}`; });
   await check("Cyber & space feeds", async () => { const c = await cyberSpace(); if (!Number.isFinite(c.csti.score)) throw new Error("no CSTI part answered"); return `CSTI ${c.csti.score} from ${c.csti.coverage}`; });
@@ -321,6 +332,7 @@ const TOOLS = [
   { name: "lock_base_and_sweep", description: "Computes the paper profit sweep max(0, NetEquity - LockedBase). It cannot touch the browser wallet; the sweep itself is the S key in the Ops Room.", inputSchema: { type: "object", properties: { net_equity: { type: "number", minimum: 0, description: "paper net equity in USDT" }, locked_base: { type: "number", minimum: 0, description: "locked base in USDT (default 20)" } }, required: ["net_equity"], additionalProperties: false }, run: sweep },
   { name: "verify_sha256_receipt_chain", description: "Verifies an exported omega-receipt-chain-v1 file (receipts and Merkle checkpoints) with the same canonical SHA-256 form as the Ops Room and NABD verifiers. Give a path to the .json export or its text.", inputSchema: { type: "object", properties: { path: { type: "string", description: "path to the exported .json file" }, json: { type: "string", description: "the file's text, instead of a path" } }, additionalProperties: false }, run: verifyTool },
   { name: "explain_with_local_model", description: "Sends a list of readings (each with its source) to a local Ollama model through the data proxy and returns its Arabic explanation labelled [INFERENCE - local LLM]. Local models only (a :cloud model is refused); nothing is traded or sent elsewhere.", inputSchema: { type: "object", properties: { facts: { type: "array", items: { type: "string", maxLength: 300 }, minItems: 1, maxItems: 40, description: "readings with their sources, for example \"LFI +32 (DefiLlama)\"" }, question: { type: "string", maxLength: 300 } }, required: ["facts"], additionalProperties: false }, run: explainLocal },
+  { name: "deep_research", description: "ORACLE deep research agent (ADR-114): plans sub-questions, reads OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar, Wikipedia (ar/en), GDELT and the Wayback availability API (all free and keyless), merges by DOI, ranks by BM25 relevance, citations, recency and corroboration, chases citations, and returns a brief whose every quoted sentence carries its numbered reference, plus the gaps it could not verify. [INFERENCE]", inputSchema: { type: "object", properties: { query: { type: "string", minLength: 2, maxLength: 200, description: "the research question, Arabic or English" }, depth: { type: "integer", enum: [1, 2], description: "1 quick, 2 with citation chasing (default)" }, off: { type: "array", items: { type: "string", enum: ["wikipedia", "openalex", "crossref", "europepmc", "arxiv", "semanticscholar", "gdelt"] }, description: "sources to skip" }, markdown: { type: "boolean", description: "include the Markdown brief (default true)" } }, required: ["query"], additionalProperties: false }, run: deepResearch },
   { name: "run_selftest", description: "Runs the bridge's own checks (maths, receipt chain, proxy, snapshot, feeds) and returns the link to the Ops Room's 24-check browser self-test.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, run: selftest }
 ];
 async function osiris(a) {
@@ -366,6 +378,34 @@ async function explainLocal(a) {
   const j = await res.json().catch(() => ({ error: "no JSON from the proxy" }));
   if (!res.ok || !j.ok) throw new Error(j.error || "local model failed");
   return { model: j.model, ms: j.ms, answer: j.answer, label: j.label, note: PAPER };
+}
+
+// ADR-114: the ORACLE deep research agent. Proxy tier first (shared cache, arXiv pacing), then the API directly.
+const researchGap = new Map();
+async function researchGet(source, url, type) {
+  const errs = [];
+  if (await proxyUp() && RS.allowed(source, url)) {
+    try { const res = await get(`${PROXY}/research/${source}?url=${encodeURIComponent(url)}`, 30000, type === "text"); return { data: type === "text" ? res.toString("utf8") : res, tier: "proxy" }; }
+    catch (e) { errs.push("proxy: " + e.message); }
+  }
+  if (!RS.allowed(source, url)) throw new Error("not an allowed request for " + source);
+  const host = new URL(url).hostname, wait = { "api.gdeltproject.org": 5500, "export.arxiv.org": 3100, "api.semanticscholar.org": 1100 }[host] || 0;
+  const at = Math.max(Date.now(), researchGap.get(host) || 0);
+  researchGap.set(host, at + wait);
+  if (at > Date.now()) await new Promise(ok => setTimeout(ok, at - Date.now()));
+  try { const res = await get(url, 25000, type === "text"); return { data: type === "text" ? res.toString("utf8") : res, tier: "direct" }; }
+  catch (e) { errs.push("direct: " + e.message); throw new Error(errs.join("; ")); }
+}
+async function deepResearch(a) {
+  const q = RS.cleanQuery(a && a.query);
+  if (!q) throw new Error("give a question in query");
+  const out = await RS.run(q, { now: Date.now(), depth: a.depth === 1 ? 1 : 2, off: Array.isArray(a.off) ? a.off.map(String) : [] }, { clock: () => Date.now(), get: researchGet });
+  const rep = out.report;
+  return { question: rep.query, bridge_term: rep.bridge, generated: rep.generatedAt, kpi: rep.kpi, gaps: rep.gaps.map(g => g.en + " / " + g.ar),
+    sources: out.runs.map(x => ({ step: x.step, source: RS.SOURCES[x.source] ? RS.SOURCES[x.source].name : x.source, ok: x.ok, results: x.n, tier: x.tier, error: x.error || undefined })),
+    references: rep.references.map(r => ({ n: r.n, grade: r.grade, kind: r.kind, title: r.title, year: r.year, venue: r.venue, doi: r.doi, url: r.url, open_access: r.oa, cites: r.cites, indexes: r.via, archived: r.archive && r.archive.archived ? r.archive.url : undefined })),
+    markdown: a.markdown === false ? undefined : out.markdown, label: rep.label,
+    page: "omega-ops-room-v1/omega-oracle.html?q=" + encodeURIComponent(q), note: "Research help only. Quoted sentences are verbatim from the cited abstracts; nothing here is advice or places an order." };
 }
 
 function send(msg) { process.stdout.write(JSON.stringify(msg) + "\n"); }

@@ -50,12 +50,21 @@
 //                              with the liquidity flow index (cached 15 min)
 //   /cyber/circl            -> CIRCL Vulnerability-Lookup, latest published records cut to id, CVSS, CWE (cached 30 min)
 //   /osiris/marine          -> Open-Meteo Marine waves and currents at the five strait points    (cached 30 min)
+// Deep research agent (ADR-114), keyless scholarly and news APIs, one fixed API path per source:
+//   /research/<source>?url=<upstream>  where source is wikipedia, openalex, crossref, europepmc, arxiv,
+//                              semanticscholar, gdelt or wayback, and the upstream address must be that source's own
+//                              https host and API path (OMEGA_RESEARCH.allowed). arXiv sends no browser CORS, so the
+//                              ORACLE page reads it only through here; the rest use this as a shared cache (6 h,
+//                              GDELT 30 min, Wayback 24 h). arXiv gets one call every 3 s, as its API terms ask.
 // Local model bridge (ADR-112), optional, this machine only (connections from 127.0.0.1 or ::1):
 //   GET  /llm/ollama/status  -> whether Ollama answers on 127.0.0.1:11434 and which local models it has
 //   POST /llm/ollama/explain -> {facts: [strings], question?} (at most 16 KB) to the chosen local model with a fixed
 //                              instruction: explain the readings in Arabic, paper trading only, no order advice.
 //                              Models whose name ends in :cloud or -cloud are refused, because Ollama runs those on
 //                              its own servers. OMEGA_OLLAMA_MODEL picks one; otherwise the first local "glm" model.
+//   POST /llm/ollama/research -> {question, sources: [{n, text}]} (at most 24 KB) to the same local model with a fixed
+//                              instruction: an Arabic brief from the numbered sources only, each sentence ending in
+//                              its [n]; the ORACLE page then checks every mark (ADR-114).
 // Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
 // identical requests in flight share one upstream call; each host keeps a minimum gap between calls
 // (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
@@ -78,6 +87,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { classifyNga, compactAis } from "./lib/osiris-sources.mjs";
 import { OMEGA_MATH } from "./lib/brain2-math.mjs";
+import { OMEGA_RESEARCH } from "./lib/deep-research.mjs";
 
 const PORT = Number(process.env.OMEGA_PROXY_PORT || 8796);
 // 127.0.0.1 by default (AGENTS.md §4). --lan is the owner's opt-in for the iPhone on the same Wi-Fi.
@@ -162,7 +172,10 @@ const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "o
   "celestrak.org", "eonet.gsfc.nasa.gov", "services.swpc.noaa.gov", "www.cisa.gov", "stat.ripe.net", "api.ioda.inetintel.cc.gatech.edu", "www.deribit.com",
   "www.okx.com", "www.seismicportal.eu", "api.reliefweb.int",
   "isc.sans.edu", "internetdb.shodan.io", "api.adsb.lol",
-  "stablecoins.llama.fi", "api.llama.fi", "vulnerability.circl.lu", "marine-api.open-meteo.com"]);
+  "stablecoins.llama.fi", "api.llama.fi", "vulnerability.circl.lu", "marine-api.open-meteo.com",
+  ...OMEGA_RESEARCH.HOSTS]);
+// ADR-114: cache life of each research source; the request shape itself is checked by OMEGA_RESEARCH.allowed.
+const RESEARCH_TTL = { wikipedia: 6 * HOUR, openalex: 6 * HOUR, crossref: 6 * HOUR, europepmc: 6 * HOUR, arxiv: 6 * HOUR, semanticscholar: 6 * HOUR, gdelt: HOUR / 2, wayback: 24 * HOUR };
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -171,6 +184,7 @@ const SNAPSHOT = "/data/public-intel-snapshot.json";
 const SHORT = {
   "/omega-ops-room.html": "/omega-ops-room-v1/omega-ops-room.html",
   "/the-chain.html": "/omega-ops-room-v1/the-chain.html",
+  "/omega-oracle.html": "/omega-ops-room-v1/omega-oracle.html",
   "/index.html": "/site-landing/index.html",
   "/en.html": "/site-landing/en.html",
   "/site-landing": "/site-landing/index.html",
@@ -218,7 +232,8 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 // CelesTrak blocks clients that ask for the same group more than its update cycle; RIPEstat and IODA get 1 s.
 // SANS asks for light use of its API, adsb.lol for about one request a second (ADR-110).
 const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
-  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000, "vulnerability.circl.lu": 2000, "api.llama.fi": 1000 };
+  "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000, "vulnerability.circl.lu": 2000, "api.llama.fi": 1000,
+  "export.arxiv.org": 3100, "api.semanticscholar.org": 1100, "archive.org": 500, "en.wikipedia.org": 100, "ar.wikipedia.org": 100 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -342,6 +357,12 @@ const LLM_SYSTEM = "You explain readings from OMEGA, a paper-trading research pa
   "Use only the facts you are given and name the source of each number you use. If a fact is missing, say تعذر التحقق منها. " +
   "Everything on this page is paper trading and a decision aid: never tell the reader to place a real order, move real money, sign anything or connect an exchange account. " +
   "End with the label [INFERENCE - local LLM].";
+// ADR-114: the research brief instruction. Sources arrive numbered; the page verifies every [n] afterwards.
+const LLM_RESEARCH = "You write a short research brief in Arabic for the question you are given, using only the numbered sources below. " +
+  "End every sentence with the number of the source it rests on, written like [2] or [1, 3]. Do not add any fact, number, name, date or link that is not in the sources. " +
+  "If the sources do not answer part of the question, write تعذر التحقق منها for that part. Quote numbers exactly. Mention disagreement or limits when a source states them. " +
+  "At most 12 sentences. This is research help only: no medical, financial or legal advice, and never tell the reader to trade or move money. " +
+  "End with the label [INFERENCE - local LLM].";
 // Reads a request body of at most `max` bytes within `ms`; a client that stalls is cut off.
 function readBody(req, max, ms = 10000) {
   return new Promise((done, fail) => {
@@ -372,7 +393,25 @@ async function llmRoute(req, path) {
     llmBusy.on = true;
     try { return await explain(req); } finally { llmBusy.on = false; }
   }
+  if (path === "/llm/ollama/research" && req.method === "POST") {
+    if (!/^application\/json\b/i.test(String(req.headers["content-type"] || ""))) throw Object.assign(new Error("send Content-Type: application/json"), { status: 415 });
+    if (llmBusy.on) throw Object.assign(new Error("the local model is already answering; try again when it finishes"), { status: 429 });
+    llmBusy.on = true;
+    try { return await researchBrief(req); } finally { llmBusy.on = false; }
+  }
   return null;
+}
+async function researchBrief(req) {
+  let q;
+  try { q = JSON.parse(await readBody(req, 24576)); } catch (e) { throw Object.assign(new Error(e.status ? e.message : "send JSON: {\"question\": \"...\", \"sources\": [{\"n\": 1, \"text\": \"...\"}]}"), { status: e.status || 400 }); }
+  const sources = (Array.isArray(q && q.sources) ? q.sources : []).filter(x => x && Number.isInteger(x.n) && x.n > 0 && x.n < 1000)
+    .map(x => `[${x.n}] ` + String(x.text || "").replace(/^\[\d+\]\s*/, "").replace(/\s+/g, " ").slice(0, 900)).slice(0, 40);
+  if (!sources.length) throw Object.assign(new Error("no numbered sources to write from"), { status: 400 });
+  const question = String(q.question || "").replace(/\s+/g, " ").slice(0, 200) || "Summarise what the sources say.";
+  const { model } = await ollamaPick(), t0 = Date.now(), gone = new AbortController();
+  req.socket.once("close", () => gone.abort());
+  const j = await ollamaFetch("/api/generate", { model, system: LLM_RESEARCH, prompt: "Question: " + question + "\n\nSources:\n" + sources.join("\n"), stream: false, options: { temperature: 0.1, num_predict: 900 } }, 180000, gone.signal);
+  return { ok: true, model, ms: Date.now() - t0, answer: String(j.response || "").slice(0, 6000), label: "[INFERENCE - local LLM]", sources: sources.length };
 }
 async function explain(req) {
     let q;
@@ -416,6 +455,13 @@ const server = createServer(async (req, res) => {
   }
   let route, m;
   for (const r of ROUTES) { m = r.re.exec(path); if (m) { route = r; break; } }
+  // ADR-114: research sources, one fixed host and API path each.
+  const rs = /^\/research\/([a-z]{4,16})$/.exec(path);
+  if (!route && rs) {
+    const target = new URL(req.url, "http://x").searchParams.get("url") || "";
+    if (!OMEGA_RESEARCH.allowed(rs[1], target)) return send(400, JSON.stringify({ error: "not an allowed request for this research source" }));
+    route = { url: () => target, ttl: RESEARCH_TTL[rs[1]], type: rs[1] === "arxiv" ? "application/atom+xml; charset=utf-8" : "application/json", sec: false };
+  }
   if (!route) return send(404, JSON.stringify({ error: "unknown route" }));
   const url = route.url(m);
   const cached = readCache(url, route.ttl);
@@ -467,6 +513,14 @@ const PROBES = [
   { name: "DefiLlama chains and DEX", via: "browser + proxy /market/llama", url: OMEGA_MATH.urls.llama()[1] },
   { name: "CIRCL Vulnerability-Lookup", via: "proxy /cyber/circl", url: OMEGA_MATH.urls.circl() },
   { name: "Open-Meteo Marine", via: "browser + proxy /osiris/marine", url: OMEGA_MATH.urls.marine() },
+  // ADR-114: deep research sources (ORACLE)
+  { name: "OpenAlex", via: "proxy /research/openalex", url: "https://api.openalex.org/works?search=coral&per-page=1&select=id" },
+  { name: "Crossref", via: "proxy /research/crossref", url: "https://api.crossref.org/works?query=coral&rows=1&select=DOI" },
+  { name: "Europe PMC", via: "proxy /research/europepmc", url: "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=coral&format=json&pageSize=1" },
+  { name: "arXiv API", via: "proxy /research/arxiv", url: "https://export.arxiv.org/api/query?search_query=all:coral&max_results=1" },
+  { name: "Semantic Scholar", via: "proxy /research/semanticscholar", url: "https://api.semanticscholar.org/graph/v1/paper/search?query=coral&limit=1&fields=title" },
+  { name: "Wikipedia (ar)", via: "proxy /research/wikipedia", url: "https://ar.wikipedia.org/w/api.php?action=query&list=search&srsearch=%D9%85%D8%B1%D8%AC%D8%A7%D9%86&srlimit=1&format=json" },
+  { name: "Wayback availability", via: "proxy /research/wayback", url: "https://archive.org/wayback/available?url=example.com" },
   { name: "Ollama (optional, this machine)", via: "proxy /llm/ollama", url: OLLAMA + "/api/tags", local: true }
 ];
 const tty = process.stdout.isTTY;

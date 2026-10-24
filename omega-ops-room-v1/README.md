@@ -41,6 +41,10 @@ The gate opens only when the browser actually reads `/api/health` and it returns
 
 When `omega-core-api` runs on `127.0.0.1:8000`, the page asks it for n8n and Newton health first (tags show `VIA CORE`), which solves the CORS limitation above without touching Newton. Open it through the API at http://127.0.0.1:8000/ops/omega-ops-room.html. If the API is not running, the page falls back to probing each service directly.
 
+## ORACLE · العرّاف, deep research agent (ADR-114)
+
+`omega-oracle.html` sits next to the Ops Room and THE CHAIN and also opens by double-click. Type a question in Arabic or English: the agent plans seven sub-questions, reads OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar, Wikipedia, GDELT and the Wayback availability API (all free and keyless), merges by DOI, ranks, chases citations and writes a brief where every quoted sentence carries its numbered reference, with the gaps it could not verify. arXiv and the optional Arabic summary by a local Ollama model need the local server; the rest work from GitHub Pages too. Deep link: `omega-oracle.html?q=coral%20bleaching&depth=2`. The same agent is the `deep_research` tool of the local MCP bridge.
+
 ## THE CHAIN · سلسلة الوكلاء الماليين (ADR-088)
 
 `the-chain.html` sits next to the Ops Room (link in the agents section) and also opens by double-click. Research only: nothing in it trades.
