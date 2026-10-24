@@ -28,7 +28,27 @@
     "ioda.inetintel.cc.gatech.edu",
     "www.deribit.com",
     "nvd.nist.gov",
-    "www.submarinecablemap.com"
+    "www.submarinecablemap.com",
+    "api.openalex.org",
+    "openalex.org",
+    "api.crossref.org",
+    "www.crossref.org",
+    "www.ebi.ac.uk",
+    "europepmc.org",
+    "export.arxiv.org",
+    "arxiv.org",
+    "api.semanticscholar.org",
+    "www.semanticscholar.org",
+    "wikipedia.org",
+    "archive.org",
+    "doi.org",
+    "isnad.adriai.org",
+    "scholar.google.com",
+    "www.base-search.net",
+    "core.ac.uk",
+    "pubmed.ncbi.nlm.nih.gov",
+    "qspace.qu.edu.qa",
+    "doaj.org"
   ],
   "suppress": [
     {
@@ -205,6 +225,16 @@
       "rule": "SEC-ENV",
       "path": "mcp/omega-sentinel/server/**",
       "reason": "Git-ignored esbuild output of `npm run build` (mcp/omega-sentinel/.gitignore): the first-party src/ (scanned on its own) bundled with @modelcontextprotocol/sdk, zod and ajv from node_modules. Flagged lines are third-party library code (ajv's code generator, spec links, SDK env defaults); never committed."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-oracle.html",
+      "reason": "Stores the theme choice, the suite's shared state (theme, paper summary, last question) and the last 8 research questions with their source counts (ADR-114); no reports, no credentials, no personal data."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-research.mjs",
+      "reason": "Test only (ADR-114): spawnSync(process.execPath, [scripts/build-research-inline.mjs, --check]) with no shell and no user input; it checks that the ORACLE page carries the current engine copy."
     }
   ]
 }

@@ -18,6 +18,8 @@ jobs:
           node-version: 22
       - name: Brain 2 maths tests and the Ops Room inline copy (ADR-108)
         run: node scripts/test-brain2.mjs
+      - name: Deep research engine tests and the ORACLE inline copy (ADR-114)
+        run: node scripts/test-research.mjs
       - name: SkillSpector strict scan of the whole repo (critical or high fails the job)
         run: node scripts/skillspector-audit.mjs --strict --json skillspector-report.json .
       - uses: actions/upload-artifact@v4
