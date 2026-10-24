@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-S8IJ486Mgmq96OJ2tu7U6AdaYqjZYI1DzyuYOEZZsEE=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4=' 'sha256-TkbS21ercVu4xUOqXVZrWu0j8ggb1jFsKutlZqiLf+c='; style-src 'sha256-LheFKa9s+OAPEgSNb+ug86uHUw2ms9Bl+3q988Cde2E='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-S8IJ486Mgmq96OJ2tu7U6AdaYqjZYI1DzyuYOEZZsEE=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4=' 'sha256-+vxtmC72NGZlFEsjpX38w2TRoDhvALdV6+ZnXVEgweE='; style-src 'sha256-XjV1UzIRBTCVxO6yCtpYh/llsxRcSY0PwITnsjx+z9k='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -365,6 +365,12 @@
   .skip:focus-visible { top: var(--s-3); }
   .bar { padding: var(--s-1) var(--s-5) var(--s-1) var(--s-1); }
   .brand { letter-spacing: 0.04em; }
+  /* Arabic is never tracked and never set in a monospace face (DESIGN.md §2, ADR-120): the brand, the status pill
+     and the word headers of number columns switch when the page is in Arabic. */
+  :root[lang="ar"] .brand, :root[lang="ar"] .status-pill { letter-spacing: 0; }
+  :root[lang="ar"] table.data th.n { font-family: var(--font-ar); }
+  /* In English the translated brand already reads "Second brain"; its Latin caption would repeat it. */
+  :root[lang="en"] .brand .en { display: none; }
   .ticker-field { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 36px; padding: 0 var(--s-1) 0 var(--s-3); border-radius: var(--r-pill); background: var(--surface-2); }
   .ticker-field label { font-size: var(--text-caption); font-weight: 700; color: var(--content-secondary); }
   .ticker-field input { width: 7.5em; min-height: 28px; border: 0; background: transparent; font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; direction: ltr; text-align: center; }
@@ -568,7 +574,7 @@
       <div class="bar-right">
         <div class="ticker-field">
           <label for="ticker">الرمز</label>
-          <input id="ticker" name="ticker" type="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="مثل AAPL…" translate="no" />
+          <input id="ticker" name="ticker" type="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="AAPL…" translate="no" />
         </div>
         <a class="back-link" href="omega-ops-room.html">غرفة العمليات</a>
         <button class="icon-btn" id="themeToggle" type="button" aria-label="تبديل الوضع الداكن" aria-pressed="false">
@@ -2302,15 +2308,20 @@ function mount(opts) {
   }
   // Arabic written into a box styled for Latin (tracked capitals, a left-to-right number line) gets letter-spacing 0
   // and its own paragraph direction through the CSSOM, and gets the page's style back when the text does.
+  // A monospace box also gets the Arabic font (ADR-120): a monospace fallback draws each Arabic letter in a
+  // fixed cell, which breaks the joins ("هادئ" showed as "ها دئ"); digits keep tabular-nums.
   const fixed = new WeakMap();
+  const MONO = /mono|courier|consolas|menlo/i;
   function fitBox(e, arabic) {
     if (!e || !e.style) return;
     if (arabic && !fixed.has(e)) {
-      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform });
+      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform, ff: e.style.fontFamily });
       e.style.letterSpacing = "0"; e.style.unicodeBidi = "plaintext"; e.style.textTransform = "none";
+      const g = typeof getComputedStyle === "function" ? getComputedStyle(e) : null;
+      if (g && MONO.test(String(g.fontFamily).split(",")[0])) e.style.fontFamily = "var(--font-ar, system-ui, sans-serif)";
     } else if (!arabic && fixed.has(e)) {
       const o = fixed.get(e); fixed.delete(e);
-      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt;
+      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt; e.style.fontFamily = o.ff;
     }
   }
   function doText(n) {
@@ -2343,7 +2354,9 @@ function mount(opts) {
     if (source === "both") fitBox(e, h === "ar" && lang === "ar");
   }
   function doAttrs(e) {
-    if (skip(e) || frozen(e)) return;
+    // A text field's typed value is never touched, but its placeholder, label and title are the page's own words
+    // and switch with the language (ADR-120: textarea placeholders stayed Arabic on the English page).
+    if (e.closest("script,style,[data-i18n-skip]") || frozen(e)) return;
     let o = origAttr.get(e);
     for (const a of ATTRS) {
       if (!e.hasAttribute(a)) continue;
@@ -2399,9 +2412,12 @@ function mount(opts) {
         btn.title = btn.getAttribute("aria-label");
       }
     } finally { busy = false; mo.takeRecords(); }
-    if (from !== "remote") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
+    if (from !== "remote" && from !== "init") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
     if (typeof opts.onChange === "function") opts.onChange(lang);
-    try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ }
+    const fire = () => { try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ } };
+    // The first apply runs inside mount(), before the page has stored the handle mount() returns in window.OMEGA_LANG,
+    // so its event waits one microtask: a page that re-renders on "omega-lang" then reads the chosen language (ADR-120).
+    if (from === "init") Promise.resolve().then(fire); else fire();
   }
   mo.observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
 
@@ -2419,7 +2435,7 @@ function mount(opts) {
   let first = pickLang(typeof location !== "undefined" ? location.search : "", store.get(), source === "en" ? "en" : "ar");
   // A page that is bilingual by design opens bilingual until someone picks a language.
   if (source === "both" && !/[?&]lang=(ar|en)\b/.test(typeof location !== "undefined" ? location.search : "") && store.get() !== "ar" && store.get() !== "en") first = "both";
-  apply(first, "remote");
+  apply(first, "init");
   return {
     get lang() { return lang; }, set: v => apply(v), t: (ar, en) => lang === "en" ? en : ar, size: table.size,
     coverage: () => { const out = []; const w = doc.createTreeWalker(doc.body, 4); let n; while ((n = w.nextNode())) { const e = n.parentElement; if (!skip(n) && n.nodeValue.trim() && e && e.offsetParent !== null) out.push(n.nodeValue); } return coverage(out, lang === "both" ? "en" : lang); }
