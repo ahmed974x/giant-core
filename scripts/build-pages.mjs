@@ -23,6 +23,7 @@ const FILES = [
   ["omega-ops-room-v1/omega-trade-lab.html", "omega-ops-room-v1/omega-trade-lab.html"],
   ["omega-ops-room-v1/omega-second-brain.html", "omega-ops-room-v1/omega-second-brain.html"],
   ["omega-ops-room-v1/omega-core.html", "omega-ops-room-v1/omega-core.html"],
+  ["omega-ops-room-v1/omega-knowledge.html", "omega-ops-room-v1/omega-knowledge.html"],
   ["omega-ops-room-v1/manifest.json", "omega-ops-room-v1/manifest.json"],
   ["omega-ops-room-v1/service-worker.js", "omega-ops-room-v1/service-worker.js"]
 ];
@@ -83,6 +84,7 @@ redirect("omega-oracle.html", "omega-ops-room-v1/omega-oracle.html", "ORACLE");
 redirect("omega-trade-lab.html", "omega-ops-room-v1/omega-trade-lab.html", "TRADE LAB");
 redirect("omega-second-brain.html", "omega-ops-room-v1/omega-second-brain.html", "Second brain");
 redirect("omega-core.html", "omega-ops-room-v1/omega-core.html", "Core");
+redirect("omega-knowledge.html", "omega-ops-room-v1/omega-knowledge.html", "Knowledge domain");
 writeFileSync(join(OUT, ".nojekyll"), "");
 
 if (problems.length) { console.error("Refusing to publish:\n  " + problems.join("\n  ")); process.exit(1); }

@@ -8,7 +8,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const LIB = join(REPO, "scripts", "lib", "second-brain.mjs"), PAGE = join(REPO, "omega-ops-room-v1", "omega-second-brain.html");
+// The second brain page and, since ADR-126, the knowledge domain page, which organises the same ideas.
+const LIB = join(REPO, "scripts", "lib", "second-brain.mjs"), PAGES = ["omega-second-brain.html", "omega-knowledge.html"].map(f => join(REPO, "omega-ops-room-v1", f));
 const BEGIN = "<!-- OMEGA_BRAIN begin: generated from scripts/lib/second-brain.mjs by scripts/build-brain-inline.mjs, do not edit here -->";
 const END = "<!-- OMEGA_BRAIN end -->";
 
@@ -18,12 +19,17 @@ if (/^\s*import\s/m.test(lib)) throw new Error("second-brain.mjs must not import
 const body = lib.replace("export const OMEGA_BRAIN = ", "const OMEGA_BRAIN = ").trimEnd();
 const block = `${BEGIN}\n<script>\n(() => {\n"use strict";\n${body}\nwindow.OMEGA_BRAIN = OMEGA_BRAIN;\n})();\n</script>\n${END}`;
 
-const page = readFileSync(PAGE, "utf8");
-const i = page.indexOf(BEGIN), j = page.indexOf(END);
-if (i < 0 || j < i) throw new Error("omega-second-brain.html: the OMEGA_BRAIN markers are missing");
-const next = page.slice(0, i) + block + page.slice(j + END.length);
-if (process.argv.includes("--check")) {
-  if (next !== page) { console.error("The second brain page's OMEGA_BRAIN copy differs from scripts/lib/second-brain.mjs. Run node scripts/build-brain-inline.mjs"); process.exit(1); }
-  console.log("OMEGA_BRAIN copy in the second brain page matches the library");
-} else if (next !== page) { writeFileSync(PAGE, next); console.log("OMEGA_BRAIN copied into the second brain page; now re-pin the CSP with skillspector --fix"); }
-else console.log("OMEGA_BRAIN already up to date");
+let bad = 0;
+for (const PAGE of PAGES) {
+  const name = PAGE.slice(REPO.length + 1);
+  const page = readFileSync(PAGE, "utf8");
+  const i = page.indexOf(BEGIN), j = page.indexOf(END);
+  if (i < 0 || j < i) { console.error(`${name}: the OMEGA_BRAIN markers are missing`); bad++; continue; }
+  const next = page.slice(0, i) + block + page.slice(j + END.length);
+  if (process.argv.includes("--check")) {
+    if (next !== page) { console.error(`${name}: the OMEGA_BRAIN copy differs from scripts/lib/second-brain.mjs. Run node scripts/build-brain-inline.mjs`); bad++; }
+    else console.log(`${name}: OMEGA_BRAIN copy matches the library`);
+  } else if (next !== page) { writeFileSync(PAGE, next); console.log(`${name}: OMEGA_BRAIN copied; now re-pin the CSP with skillspector --fix`); }
+  else console.log(`${name}: OMEGA_BRAIN already up to date`);
+}
+process.exit(bad ? 1 : 0);

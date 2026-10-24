@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LIB = join(REPO, "scripts", "lib", "agent-core.mjs");
-const PAGES = ["omega-ops-room-v1/omega-core.html", "omega-ops-room-v1/omega-ops-room.html"];
+const PAGES = ["omega-ops-room-v1/omega-core.html", "omega-ops-room-v1/omega-ops-room.html", "omega-ops-room-v1/omega-knowledge.html"];
 const BEGIN = "<!-- OMEGA_CORE begin: generated from scripts/lib/agent-core.mjs by scripts/build-core-inline.mjs, do not edit here -->";
 const END = "<!-- OMEGA_CORE end -->";
 

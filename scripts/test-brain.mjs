@@ -13,6 +13,7 @@ import { CHAIN } from "./lib/i18n/chain.mjs";
 import { ORACLE } from "./lib/i18n/oracle.mjs";
 import { TRADELAB } from "./lib/i18n/tradelab.mjs";
 import { BRAIN } from "./lib/i18n/brain.mjs";
+import { KNOW } from "./lib/i18n/know.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 let failed = 0, passed = 0;
@@ -103,7 +104,7 @@ test("coverage counts letters of the chosen script", () => {
   ok(Math.abs(I.coverage(["abc", "ابت"], "en") - 0.5) < 1e-9 && I.coverage([], "ar") === 1, "coverage");
 });
 test("every dictionary pair is well formed, with matching slots and no duplicate source line", () => {
-  for (const [name, list] of Object.entries({ COMMON, OPS, CHAIN, ORACLE, TRADELAB, BRAIN })) {
+  for (const [name, list] of Object.entries({ COMMON, OPS, CHAIN, ORACLE, TRADELAB, BRAIN, KNOW })) {
     const seen = new Map();
     for (const p of COMMON.concat(name === "COMMON" ? [] : list)) {
       ok(Array.isArray(p) && p.length === 2 && typeof p[0] === "string" && typeof p[1] === "string" && p[0].trim() && p[1].trim(), name + ": bad pair " + JSON.stringify(p));
