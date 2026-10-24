@@ -174,5 +174,31 @@ test("the proxy API document covers every proxy route and matches the generated 
   ok(r.status === 0, (r.stderr || r.stdout).trim());
 });
 
+test("live readiness gate: the fixture fails, counts only receipt trips and never unlocks", () => {
+  const trips = L.tripsFromReceipts(fixture()).trips;
+  const g = L.liveGate(trips, {}, true);
+  ok(g.locked === true && g.ready === false && g.total === 6, "gate shape");
+  ok(g.checks.find(x => x.key === "chain").pass, "chain check passes on a verified chain");
+  ok(g.checks.find(x => x.key === "trips").value === 2 && !g.checks.find(x => x.key === "trips").pass, "two trips, needs 100");
+  ok(!L.liveGate(trips, {}, false).checks[0].pass, "unverified chain fails");
+  const manual = trips.map(t => ({ ...t, src: "manual" }));
+  ok(L.liveGate(manual, {}, true).checks.find(x => x.key === "trips").value === 0, "manual trips do not count");
+});
+test("live readiness gate: a long clean winning record passes every check but stays locked", () => {
+  const ev = [{ ts: T0, type: "LOCK", amount: 20, before: S(0, 0), after: S(20, 20), reason: "Lock base 20.00" }];
+  let eq = 20;
+  for (let i = 0; i < 120; i++) {
+    const ts = T0 + i * 7 * 3600000, win = i % 3 !== 0, sell = win ? 1.06 : 0.98;
+    ev.push({ ts, type: "FILL_BUY", amount: 1, before: S(eq, eq), after: S(eq, eq), reason: "BUY score 0.40; L2 VWAP 100.00 over 1 of 25 levels", exec: { vwap: 100, qty: 0.01, quote: 1, slippage_bps: 1, taker_fee: 0 } });
+    const next = +(eq + sell - 1).toFixed(6);
+    ev.push({ ts: ts + 30 * MIN, type: "FILL_SELL", amount: sell, before: S(eq, eq), after: S(next, next), reason: "TP1 reached at L2 VWAP 106.00 over 1 of 25 levels", exec: { vwap: 100 * sell, qty: 0.01, quote: sell, slippage_bps: 1, taker_fee: 0 } });
+    eq = next;
+  }
+  const trips = L.tripsFromReceipts(L.buildChain(ev)).trips;
+  const g = L.liveGate(trips, { maxTradesPerDay: 10, maxPositionPct: 100, riskPct: 20 }, true);
+  ok(g.checks.find(x => x.key === "trips").pass && g.checks.find(x => x.key === "days").pass, "trips and days: " + JSON.stringify(g.checks.map(x => [x.key, x.show])));
+  ok(g.checks.find(x => x.key === "pf").pass && g.checks.find(x => x.key === "dd").pass, "pf and dd: " + JSON.stringify(g.checks.map(x => [x.key, x.show])));
+  ok(g.locked === true, "passing the gate unlocks nothing");
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

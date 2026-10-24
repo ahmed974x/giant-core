@@ -22,6 +22,8 @@ jobs:
         run: node scripts/test-research.mjs
       - name: Trade lab engine tests, the TRADE LAB inline copy and the proxy API document (ADR-116)
         run: node scripts/test-tradelab.mjs
+      - name: Second brain engine, Arabic / English engine and dictionaries, and their inline copies (ADR-119)
+        run: node scripts/test-brain.mjs
       - name: SkillSpector strict scan of the whole repo (critical or high fails the job)
         run: node scripts/skillspector-audit.mjs --strict --json skillspector-report.json .
       - uses: actions/upload-artifact@v4

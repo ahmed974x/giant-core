@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-wbEJzMUYTp0iMWLDcbVBHbwTLnFPhXp08Z/wVVh29dI=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4='; style-src 'sha256-LheFKa9s+OAPEgSNb+ug86uHUw2ms9Bl+3q988Cde2E='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-S8IJ486Mgmq96OJ2tu7U6AdaYqjZYI1DzyuYOEZZsEE=' 'sha256-fxJjT+Whr3nATgqzzFWEdQm5C9rQMekTP82hToemgz4=' 'sha256-TkbS21ercVu4xUOqXVZrWu0j8ggb1jFsKutlZqiLf+c='; style-src 'sha256-LheFKa9s+OAPEgSNb+ug86uHUw2ms9Bl+3q988Cde2E='; font-src data:; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'self' https://api.gdeltproject.org http://127.0.0.1:8796 https://data-api.binance.vision https://api.coingecko.com https://api.llama.fi; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#f9fafb" />
@@ -93,7 +93,8 @@
     ops: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-ops-room.html" : "omega-ops-room-v1/omega-ops-room.html") : "omega-ops-room.html",
     chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
-    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html"
+    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
+    brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -101,7 +102,8 @@
     { k: "ops", icon: "🎯", en: "Ops Room", ar: "غرفة العمليات", line: () => (state.wallet ? `Paper base ${usd(state.wallet.base)} · safe ${usd(state.wallet.safe)}` : "Paper desk, OSIRIS, receipts") + (Number.isFinite(state.pwsi) ? ` · PWSI ${state.pwsi}` : "") },
     { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
-    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" }
+    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
+    { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {
@@ -2163,5 +2165,274 @@
   }
 })();
 </script>
+<!-- OMEGA_I18N begin: generated from scripts/lib/i18n.mjs and scripts/lib/i18n/ by scripts/build-i18n-inline.mjs, do not edit here -->
+<script>
+(() => {
+"use strict";
+// Arabic / English switch for every OMEGA page (ADR-119). One engine, shared by the Ops Room, THE CHAIN, ORACLE,
+// TRADE LAB and the second brain, inlined between the OMEGA_I18N markers by scripts/build-i18n-inline.mjs because
+// the pages must work from file:// with no build step. Tests: scripts/test-i18n.mjs.
+//
+// The pages were written in one language each (the Ops Room in English with Arabic notes, the others in Arabic).
+// Rather than rewriting thousands of elements, the engine swaps whole text nodes and a few attributes against a
+// page dictionary of [arabic, english] pairs. A pair may hold {n} slots for numbers and short codes, so "نجح 2 من 6"
+// and "2 of 6 passed" match one entry. Text the dictionary does not know stays as written: nothing is machine
+// translated and nothing leaves the browser. Brand names and code tokens under translate="no" are never touched.
+// The choice lives in localStorage "omega-lang" (wrapped in try/catch) and syncs across open pages over the
+// BroadcastChannel "omega-suite-lang"; ?lang=ar|en in the address wins for that visit.
+
+const WS = /\s+/g;
+const norm = s => String(s).replace(WS, " ").trim();
+const SLOT = "{n}";
+// What a {n} slot may hold: a number with its sign, separators, unit or percent, a time, a dash or a short code.
+const SLOT_RE = "([-+−]?[\\d٠-٩][\\d٠-٩.,:/٫٬]*\\s?(?:%|٪|R|bps|USDT|\\$|ms|µs|s|x)?|[—–∞✓✗]|[A-Z0-9_./-]{1,16})";
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function compile(pairs) {
+  const exact = { ar: new Map(), en: new Map() }, patterns = { ar: [], en: [] };
+  for (const p of pairs || []) {
+    if (!Array.isArray(p) || p.length < 2 || typeof p[0] !== "string" || typeof p[1] !== "string") continue;
+    const ar = norm(p[0]), en = norm(p[1]);
+    if (!ar || !en) continue;
+    if (ar.includes(SLOT) || en.includes(SLOT)) {
+      const nA = ar.split(SLOT).length - 1, nE = en.split(SLOT).length - 1;
+      if (nA !== nE) continue;
+      // Slots keep their order unless the pair names them {n1} {n2}… (not needed so far).
+      patterns.en.push({ re: new RegExp("^" + ar.split(SLOT).map(esc).join(SLOT_RE) + "$"), out: en });
+      patterns.ar.push({ re: new RegExp("^" + en.split(SLOT).map(esc).join(SLOT_RE) + "$"), out: ar });
+    } else {
+      if (!exact.en.has(ar)) exact.en.set(ar, en);
+      if (!exact.ar.has(en)) exact.ar.set(en, ar);
+    }
+  }
+  return { exact, patterns, size: exact.en.size + patterns.en.length };
+}
+
+// Translate one string into `to` ("ar" or "en"). Returns null when the dictionary has no entry, so the caller keeps
+// the original. Leading and trailing white space is kept exactly.
+function translate(text, table, to) {
+  if (typeof text !== "string" || !table || (to !== "ar" && to !== "en")) return null;
+  const core = norm(text);
+  if (!core) return null;
+  let out = table.exact[to].get(core);
+  if (out == null) {
+    for (const p of table.patterns[to]) {
+      const m = core.match(p.re);
+      if (m) { let i = 1; out = p.out.split(SLOT).reduce((s, part, k) => k === 0 ? part : s + m[i++] + part, ""); break; }
+    }
+  }
+  if (out == null) return null;
+  const lead = text.match(/^\s*/)[0], trail = text.match(/\s*$/)[0];
+  return lead + out + trail;
+}
+
+function pickLang(search, stored, fallback) {
+  const q = /[?&]lang=(ar|en)\b/.exec(search || "");
+  if (q) return q[1];
+  if (stored === "ar" || stored === "en") return stored;
+  return fallback === "en" ? "en" : "ar";
+}
+
+// Share of the page's visible text (by characters, Arabic or Latin letters only) that is in the target language.
+function coverage(texts, to) {
+  let want = 0, other = 0;
+  const AR = /[؀-ۿ]/g, EN = /[A-Za-z]/g;
+  for (const t of texts) { const a = (t.match(AR) || []).length, e = (t.match(EN) || []).length; if (to === "en") { want += e; other += a; } else { want += a; other += e; } }
+  return want + other ? want / (want + other) : 1;
+}
+
+// Letters of each script, used to tell which language a text node is in.
+const HAS = { ar: /[\u0600-\u06FF]/, en: /[A-Za-z]/ };
+const other = l => l === "ar" ? "en" : "ar";
+// A trailing separator left when the other half of a bilingual label is hidden ("Run again · ").
+const SEP_TAIL = /\s*[·•|/]\s*$/;
+// Labels that stay as written in both languages: [INFERENCE…] tags and similar bracketed codes.
+const TOKEN = /^\s*\[[A-Z][A-Za-z0-9 .:_-]*\]\s*$/;
+
+// The DOM part. `opts`: { pairs, source: "ar" | "en" | "both", button: id of the control to place the switch
+// before, flipDir: false to keep the page's direction }. A page in "both" was written bilingual: English text with
+// an Arabic <span class="ar"> beside it (the Ops Room). Arabic pages mark English sub-labels with class "en". For a
+// label that has both halves, the chosen language shows its own half and the other half is hidden; a label with one
+// half is translated through the dictionary when it can be.
+function mount(opts) {
+  const doc = typeof document !== "undefined" ? document : null;
+  if (!doc || !doc.body) return null;
+  const table = compile(opts.pairs), source = opts.source === "en" || opts.source === "both" ? opts.source : "ar";
+  const modes = source === "both" ? ["both", "ar", "en"] : ["ar", "en"];
+  const root = doc.documentElement, srcDir = root.getAttribute("dir") || (source === "ar" ? "rtl" : "ltr"), srcLang = root.getAttribute("lang") || "ar";
+  const origText = new WeakMap(), wrote = new WeakMap(), origAttr = new WeakMap(), hiddenBy = new WeakSet(), superseded = new WeakSet();
+  const ATTRS = ["aria-label", "placeholder", "title", "alt"];
+  const skip = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest("script,style,textarea,[data-i18n-skip]"); };
+  const frozen = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !!(e && e.closest("[translate=\"no\"]")); };
+  const half = e => e && e.nodeType === 1 && (e.classList.contains("ar") || e.classList.contains("en")) ? (e.classList.contains("ar") ? "ar" : "en") : null;
+  let lang = source, busy = false, chan = null, btn = null;
+  const store = { get() { try { return localStorage.getItem("omega-lang"); } catch (e) { return null; } }, set(v) { try { localStorage.setItem("omega-lang", v); } catch (e) { /* the page works without storage */ } } };
+  const docTitle = doc.title;
+
+  // The bilingual partner of a text node: a marked half among its parent's children, or the half it sits inside.
+  function partnerOf(n) {
+    const e = n.parentElement;
+    if (!e) return null;
+    const own = half(e.closest(".ar,.en"));
+    if (own) return { inside: own };
+    for (const c of e.children) { const h = half(c); if (h) return { beside: h, el: c }; }
+    // A plain inline wrapper (<span id="…">English</span> <span class="ar">…</span>) pairs one level up.
+    if (e.tagName === "SPAN" && e.id && !e.children.length && e.parentElement) for (const c of e.parentElement.children) { const h = half(c); if (h && c !== e) return { beside: h, el: c }; }
+    return null;
+  }
+  function wantText(n, src) {
+    if (lang === "both" || lang === source && source !== "both") return src;
+    const p = partnerOf(n);
+    // A marked half is shown or hidden whole; it is rewritten only when the dictionary knows it (a lone half).
+    if (p && p.inside) return HAS[other(lang)].test(src) ? (translate(src, table, lang) ?? src) : src;
+    if (p && p.beside) {
+      // This node is the other half of a pair whose marked half is in the chosen language: it gives way.
+      // Translated when the dictionary knows it (the marked half then reads as a sub-label, as on the source page).
+      // On a bilingual page the marked half already says it, so this half gives way.
+      // A dictionary line that says more (a live state such as "OFF") replaces both halves.
+      if (p.beside === lang && HAS[other(lang)].test(src) && !HAS[lang].test(src) && !TOKEN.test(src)) {
+        const t = translate(src, table, lang);
+        if (source === "both") { if (t != null && /[:：]/.test(src)) { superseded.add(p.el); return t; } superseded.delete(p.el); return ""; }
+        return t ?? "";
+      }
+      if (p.beside !== lang && HAS[lang].test(src)) return src.replace(SEP_TAIL, "");
+    }
+    if (!HAS[other(lang)].test(src) || TOKEN.test(src)) return src;
+    return translate(src, table, lang) ?? src;
+  }
+  // Arabic written into a box styled for Latin (tracked capitals, a left-to-right number line) gets letter-spacing 0
+  // and its own paragraph direction through the CSSOM, and gets the page's style back when the text does.
+  const fixed = new WeakMap();
+  function fitBox(e, arabic) {
+    if (!e || !e.style) return;
+    if (arabic && !fixed.has(e)) {
+      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform });
+      e.style.letterSpacing = "0"; e.style.unicodeBidi = "plaintext"; e.style.textTransform = "none";
+    } else if (!arabic && fixed.has(e)) {
+      const o = fixed.get(e); fixed.delete(e);
+      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt;
+    }
+  }
+  function doText(n) {
+    if (skip(n) || frozen(n)) return;
+    const cur = n.nodeValue;
+    // A value the page wrote after us is the new source text.
+    if (!origText.has(n) || (wrote.has(n) && wrote.get(n) !== cur)) origText.set(n, cur);
+    const src = origText.get(n), want = wantText(n, src);
+    if (cur !== want) n.nodeValue = want;
+    wrote.set(n, want);
+    if (source !== "ar") fitBox(n.parentElement, want !== src && HAS.ar.test(want));
+  }
+  function doHalf(e) {
+    const h = half(e);
+    if (!h) return;
+    let hide = lang !== "both" && h === lang && superseded.has(e);
+    // A page in its own language shows both halves as written; only a switched page hides one.
+    if (lang !== "both" && h !== lang && (source === "both" || lang !== source)) {
+      // Hide the half in the other language only when its partner carries the chosen language (or a translation).
+      const par = e.parentElement;
+      if (par) for (const c of par.childNodes) {
+        if (c === e) continue;
+        const t = c.nodeType === 3 ? origText.get(c) ?? c.nodeValue : c.nodeType === 1 && !half(c) ? c.textContent : "";
+        if (t && (HAS[lang].test(t) || (HAS[other(lang)].test(t) && translate(t, table, lang) != null))) { hide = true; break; }
+      }
+    }
+    if (hide) { if (e.style.display !== "none") { e.style.display = "none"; hiddenBy.add(e); } }
+    else if (hiddenBy.has(e)) { e.style.display = ""; hiddenBy.delete(e); }
+    // An Arabic half shown on its own inside a tracked-capitals label loses the tracking.
+    if (source === "both") fitBox(e, h === "ar" && lang === "ar");
+  }
+  function doAttrs(e) {
+    if (skip(e) || frozen(e)) return;
+    let o = origAttr.get(e);
+    for (const a of ATTRS) {
+      if (!e.hasAttribute(a)) continue;
+      const v = e.getAttribute(a);
+      if (!o) { o = {}; origAttr.set(e, o); }
+      if (!(a in o) || (o["w" + a] != null && o["w" + a] !== v)) o[a] = v;
+      let want = o[a];
+      if (lang !== "both" && !(lang === source && source !== "both")) {
+        const parts = want.split(" · ");
+        // "English · العربية" labels keep the chosen half.
+        if (parts.length === 2 && HAS.en.test(parts[0]) && HAS.ar.test(parts[1]) && !HAS.ar.test(parts[0])) want = lang === "ar" ? parts[1] : parts[0];
+        else if (HAS[other(lang)].test(want)) want = translate(want, table, lang) ?? want;
+      }
+      if (v !== want) e.setAttribute(a, want);
+      o["w" + a] = want;
+    }
+  }
+  function walk(node) {
+    if (node.nodeType === 3) { doText(node); if (node.parentElement) for (const c of node.parentElement.children) doHalf(c); return; }
+    if (node.nodeType !== 1 || skip(node)) return;
+    doAttrs(node);
+    const w = doc.createTreeWalker(node, 5 /* elements and text */);
+    const halves = [];
+    if (half(node)) halves.push(node);
+    let n; while ((n = w.nextNode())) { if (n.nodeType === 3) doText(n); else { doAttrs(n); if (half(n)) halves.push(n); } }
+    for (const e of halves) doHalf(e);
+  }
+  const mo = new MutationObserver(list => {
+    if (busy || lang === "both" || (lang === source && source !== "both")) return;
+    for (const m of list) pending.add(m.target);
+    if (!queued && pending.size) {
+      queued = true;
+      Promise.resolve().then(() => { queued = false; busy = true; try { for (const n of pending) if (n.isConnected) walk(n); } finally { busy = false; pending.clear(); mo.takeRecords(); } });
+    }
+  });
+  const pending = new Set();
+  let queued = false;
+  const LABEL = { both: "ع+EN", ar: "ع", en: "EN" };
+  function apply(next, from) {
+    lang = modes.includes(next) ? next : source;
+    busy = true;
+    try {
+      root.lang = lang === "both" ? srcLang : lang;
+      root.dir = opts.flipDir === false || lang === "both" ? srcDir : (lang === "ar" ? "rtl" : "ltr");
+      root.dataset.lang = lang;
+      walk(doc.body);
+      const t = lang === source || lang === "both" ? docTitle : (translate(docTitle, table, lang) ?? docTitle);
+      if (doc.title !== t) doc.title = t;
+      if (btn) {
+        const nx = modes[(modes.indexOf(lang) + 1) % modes.length];
+        btn.textContent = LABEL[lang];
+        btn.setAttribute("aria-label", `Language: ${LABEL[lang]}, switch to ${LABEL[nx]} · اللغة`);
+        btn.title = btn.getAttribute("aria-label");
+      }
+    } finally { busy = false; mo.takeRecords(); }
+    if (from !== "remote") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
+    if (typeof opts.onChange === "function") opts.onChange(lang);
+    try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ }
+  }
+  mo.observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+
+  const anchor = opts.button && doc.getElementById(opts.button);
+  if (anchor && anchor.parentNode && !doc.getElementById("langToggle")) {
+    btn = doc.createElement("button");
+    btn.type = "button"; btn.id = "langToggle"; btn.className = anchor.className || "icon-btn"; btn.setAttribute("translate", "no");
+    btn.classList.add("lang-btn");
+    // The label is text, not an icon, so the square icon button grows to fit it (CSSOM, allowed by the CSP).
+    btn.style.width = "auto"; btn.style.minWidth = "44px"; btn.style.paddingInline = "10px"; btn.style.fontWeight = "700";
+    btn.addEventListener("click", () => apply(modes[(modes.indexOf(lang) + 1) % modes.length]));
+    anchor.parentNode.insertBefore(btn, anchor);
+  }
+  try { chan = new BroadcastChannel("omega-suite-lang"); chan.onmessage = e => { const v = e && e.data && e.data.lang; if ((v === "ar" || v === "en" || v === "both") && v !== lang) apply(v === "both" && !modes.includes("both") ? source : v, "remote"); }; } catch (e) { chan = null; }
+  let first = pickLang(typeof location !== "undefined" ? location.search : "", store.get(), source === "en" ? "en" : "ar");
+  // A page that is bilingual by design opens bilingual until someone picks a language.
+  if (source === "both" && !/[?&]lang=(ar|en)\b/.test(typeof location !== "undefined" ? location.search : "") && store.get() !== "ar" && store.get() !== "en") first = "both";
+  apply(first, "remote");
+  return {
+    get lang() { return lang; }, set: v => apply(v), t: (ar, en) => lang === "en" ? en : ar, size: table.size,
+    coverage: () => { const out = []; const w = doc.createTreeWalker(doc.body, 4); let n; while ((n = w.nextNode())) { const e = n.parentElement; if (!skip(n) && n.nodeValue.trim() && e && e.offsetParent !== null) out.push(n.nodeValue); } return coverage(out, lang === "both" ? "en" : lang); }
+  };
+}
+
+const OMEGA_I18N = Object.freeze({ VERSION: "omega-i18n-v1", compile, translate, pickLang, coverage, norm, mount });
+const PAIRS = [["بوابة نبض","NABD portal"],["Public site, paper simulations · الموقع العام","Public site, paper simulations"],["غرفة العمليات","Ops Room"],["السلسلة","THE CHAIN"],["العرّاف","ORACLE"],["مختبر المتداول","TRADE LAB"],["المخ الثاني","Second brain"],["Switch app · تبديل التطبيق","Switch app"],["OMEGA apps · تطبيقات أوميغا","OMEGA apps"],["تبديل الوضع الداكن","Toggle dark mode"],["«قيد الموافقة»","«Pending approval»"],["قيد الموافقة","Pending approval"],["تعذر التحقق منها","Could not be verified"],["مثال تعليمي — أرقام افتراضية","Teaching example — hypothetical numbers"],["نعم","Yes"],["لا","No"],["إلغاء","Cancel"],["احذف","Delete"],["عدّل","Edit"],["اكتب","Write"],["تم","Done"],["الحالة","Status"],["المصدر","Source"],["المصادر","Sources"],["الآن","Now"],["المطلوب","Required"],["الشرط","Condition"],["متوفر","Available"],["جزئي","Partial"],["لا بيانات","No data"],["لا ينطبق","Not applicable"],["سليم","Healthy"],["انتبه","Watch"],["تصرّف","Act"],["توقف","Stop"],["ناجح","Passed"],["لم يكتمل","Not yet"],["مفتوحة","Open"],["مستبعدة","Excluded"],["كيف يعمل","How it works"],["المدير 00","Director 00"],["ليس نصيحة مالية.","Not financial advice."],["اللغة","Language"],["THE CHAIN · السلسلة","THE CHAIN"],["تخطَّ إلى مساحة العمل","Skip to the workspace"],["فُتح الملف من القرص والسيرفر متوقف. شغّل start-omega ثم افتح الرابط.","Opened from disk and the server is off. Run start-omega, then open the link."],["الرمز","Symbol"],["سلسلة الوكلاء الماليين","Finance agent chain"],["كل حلقة تسلّم ما وجدته للحلقة التالية ثم إلى ملف notes.md الخاص بالرمز. لا شيء هنا ينفّذ صفقة.","Each link hands what it found to the next link and then to the symbol's notes.md file. Nothing here executes a trade."],["باحث السوق","Market researcher"],["لم يبدأ","Not started"],["باني النماذج المؤسسية","Institutional model builder"],["مراجع الأرباح","Earnings reviewer"],["دفتر الملاحظات","Notebook"],["فارغ","Empty"],["يعمل للعرض","Display only"],["وكيل الرصد المفتوح","Open watch agent"],["الكرة الأرضية والكاميرات المفتوحة في غرفة العمليات. يغذّي الباحث بالسياق فقط.","The globe and open cameras in the Ops Room. It feeds the researcher context only."],["افتح في غرفة العمليات","Open in the Ops Room"],["وكيل التداول على مدار الساعة","Around-the-clock trading agent"],["مقفل. لا ينفّذ أي أمر. يحتاج موافقة صريحة منفصلة من أحمد ومراجعة قانونية قبل أي تفعيل.","Locked. It executes no order. It needs a separate explicit approval from Ahmad and a legal review before anything is switched on."],["محفظة النسخ وتقسيم الأرباح","Copy vault and profit split"],["مقفلة. لا تقبل أموالاً ولا توزّع أرباحاً. تحتاج ترخيصاً ومراجعة قانونية وموافقة منفصلة.","Locked. It accepts no money and splits no profit. It needs a licence, a legal review and a separate approval."],["01 · باحث السوق","01 · Market researcher"],["أخبار 90 يوماً مصنّفة، نطاق المحللين على 6 أشهر، الثيران مقابل الدببة، تصريحات الإدارة وتغيّر لغتها، وفجوات المعلومات. كل ادعاء بمصدر وتاريخ.","90 days of sorted news, the 6-month analyst range, bulls against bears, management's statements and how their wording changed, and the information gaps. Every claim has a source and a date."],["أخبار آخر 90 يوماً","News of the last 90 days"],["اسم الشركة كما يكتب في الأخبار","Company name as written in the news"],["يُبحث بالاسم بين علامتي تنصيص، مع الرمز إن وُجد.","The name is searched in quotes, with the symbol if there is one."],["لغة المصادر","Source language"],["الإنجليزية","English"],["العربية","Arabic"],["كل اللغات","All languages"],["اجلب الأخبار","Fetch the news"],["الكل","All"],["الشركة","Company"],["تنظيمي","Regulatory"],["القطاع","Sector"],["لم تُجلب أخبار بعد لهذا الرمز.","No news fetched yet for this symbol."],["التصنيف بالكلمات المفتاحية في العنوان، لذا كل تصنيف موسوم","Sorting uses keywords in the headline, so every label is tagged"],[". افتح الرابط للتحقق بنفسك.",". Open the link to check it yourself."],["نطاق المحللين على 6 أشهر","6-month analyst range"],["لا يوجد مصدر مجاني مفتوح لأسعار المحللين المستهدفة، فأدخلها من تقارير تراها بنفسك مع رابطها وتاريخها. الإدخال بلا رابط أو تاريخ يُعرض لكنه لا يدخل الحساب.","There is no free open source for analyst price targets, so enter them from reports you see yourself, with their link and date. An entry without a link or date is shown but left out of the maths."],["الجهة","Firm"],["السعر المستهدف","Price target"],["التوصية","Rating"],["شراء","Buy"],["احتفاظ","Hold"],["بيع","Sell"],["التاريخ","Date"],["رابط المصدر","Source link"],["أضف التقدير","Add the estimate"],["تعذر التحقق منها: لا تقديرات محللين بمصدر بعد.","Could not be verified: no sourced analyst estimates yet."],["النطاق الكمي المستنتج","Inferred quant range"],["نطاق محسوب آلياً بجانب تقديرات المحللين اليدوية: محاكاة مونت كارلو لسعر السهم من التقلب التاريخي، ومحاكاة لعدم اليقين في افتراضات DCF من ورقة INPUTS. هذا استنتاج رياضي وليس توصية ولا توقعاً لاتجاه السعر.","A computed range beside the hand-entered analyst estimates: a Monte Carlo simulation of the share price from historical volatility, and a simulation of the uncertainty in the DCF assumptions from the INPUTS sheet. This is a mathematical inference, not a recommendation or a price forecast."],["مصدر التقلب التاريخي","Historical volatility source"],["Binance (عملة رقمية)","Binance (crypto)"],["Stooq عبر الخادم المحلي (سهم)","Stooq through the local server (stock)"],["يدوي","Manual"],["الرمز في المصدر","Symbol at the source"],["التقلب السنوي %","Annual volatility %"],["السعر الحالي","Current price"],["الأفق بالأيام","Horizon in days"],["عدد المسارات","Number of paths"],["انحراف WACC والنمو النهائي (نقطة)","WACC and terminal growth spread (points)"],["انحراف الهامش والنمو (نقطة)","Margin and growth spread (points)"],["البذرة العشوائية","Random seed"],["اجلب التقلب التاريخي","Fetch historical volatility"],["احسب النطاق","Compute the range"],["أرسل إلى notes.md","Send to notes.md"],["الحركة السعرية: نموذج حركة براونية هندسية بانجراف لوغاريتمي صفري، فالوسيط يساوي السعر الحالي تقريباً. النطاق المجمّع يمزج العيّنتين بالتساوي. كل الأرقام هنا موسومة","Price path: a geometric Brownian motion with zero log drift, so the median is about the current price. The combined range mixes the two samples equally. Every number here is tagged"],["الأصول الرقمية والسيولة","Digital assets and liquidity"],["مصادر مجانية بلا مفاتيح. اكتب اسم العملة أو رمزها.","Free keyless sources. Type the coin's name or symbol."],["العملة","Coin"],["اجلب البيانات","Fetch the data"],["استخدمها في النطاق الكمي","Use it in the quant range"],["الثيران مقابل الدببة","Bulls against bears"],["حجج كل طرف مع مصدرها. المقترحات الآلية من العناوين موسومة [INFERENCE] حتى تؤكدها.","Each side's arguments with their source. Automatic suggestions from headlines are tagged [INFERENCE] until you confirm them."],["الطرف","Side"],["ثور (صاعد)","Bull (up)"],["دب (هابط)","Bear (down)"],["الحجة","Argument"],["أضف الحجة","Add the argument"],["اقترح من الأخبار","Suggest from the news"],["لا حجج بعد.","No arguments yet."],["ثور","Bull"],["دب","Bear"],["احذف الحجة","Delete the argument"],["تصريحات الإدارة وتغيّر صياغتها","Management statements and how their wording changed"],["الصق الاقتباس حرفياً. عند وجود اقتباسين بتاريخين مختلفين على الأقل تُقارن الكلمات بين أقدم نصف وأحدث نصف.","Paste the quote word for word. With at least two quotes on different dates, the words of the older half are compared with the newer half."],["المتحدث","Speaker"],["الاقتباس الحرفي","Verbatim quote"],["أضف الاقتباس","Add the quote"],["تعذر التحقق منها: لا اقتباسات للإدارة بعد.","Could not be verified: no management quotes yet."],["تغيّر الصياغة","Wording change"],["يلزم اقتباسان موثّقان بتاريخين مختلفين على الأقل.","At least two sourced quotes on different dates are needed."],["احذف الاقتباس","Delete the quote"],["متحدث غير محدد","Speaker not named"],["لا شيء لافت","Nothing notable"],["كلمات زاد استخدامها","Words used more"],["كلمات قلّ استخدامها","Words used less"],["فجوات المعلومات","Information gaps"],["ما لا نعرفه بعد، محسوباً مما جُمع أعلاه. أي ادعاء بلا مصدر وتاريخ يظهر هنا بوسم «تعذر التحقق منها».","What we do not know yet, worked out from what was gathered above. Any claim without a source and a date shows here tagged «could not be verified»."],["لا رمز محدد. اكتب الرمز في الشريط العلوي.","No symbol chosen. Type the symbol in the top bar."],["الأخبار: لم تُجلب بعد.","News: not fetched yet."],["نطاق المحللين على 6 أشهر: تعذر التحقق منها (لا تقديرات بمصدر وتاريخ).","6-month analyst range: could not be verified (no estimates with a source and a date)."],["لا حجة صعود مؤكدة بمصدر.","No sourced bull argument."],["لا حجة هبوط مؤكدة بمصدر.","No sourced bear argument."],["تصريحات الإدارة: تعذر التحقق منها (لا اقتباسات بمصدر وتاريخ).","Management statements: could not be verified (no quotes with a source and a date)."],["أرسل الملخص إلى notes.md","Send the summary to notes.md"],["ملفات SEC EDGAR","SEC EDGAR filings"],["02 · باني النماذج المؤسسية","02 · Institutional model builder"],["خمس أوراق. كل رقم في الإسقاط والتقييم مشتق من ورقة INPUTS والبيانات التاريخية فقط، ولا أرقام مكتوبة داخل المعادلات.","Five sheets. Every number in the projection and valuation comes only from the INPUTS sheet and the historical data; no numbers are written inside the formulas."],["كل الافتراضات هنا. النسب بالمئة، والمبالغ بالملايين بعملة الشركة.","All assumptions live here. Ratios are in percent and amounts in millions of the company's currency."],["اسم الشركة","Company name"],["سعر السهم الحالي","Current share price"],["عدد الأسهم (مليون)","Shares (millions)"],["صافي الدين (مليون)","Net debt (millions)"],["مصروف الفائدة السنوي (مليون)","Annual interest expense (millions)"],["سنوات الإسقاط","Projection years"],["نمو الإيراد في السنة الأولى %","Revenue growth in the first year %"],["نمو الإيراد في السنة الأخيرة %","Revenue growth in the last year %"],["هامش EBIT المستهدف في السنة الأخيرة %","Target EBIT margin in the last year %"],["معدل الضريبة %","Tax rate %"],["الإهلاك % من الإيراد","D&A % of revenue"],["الإنفاق الرأسمالي % من الإيراد","Capex % of revenue"],["رأس المال العامل % من الإيراد الإضافي","Working capital % of added revenue"],["متوسط تكلفة رأس المال WACC %","Weighted average cost of capital WACC %"],["النمو النهائي %","Terminal growth %"],["مضاعفات EV/EBITDA للنظراء (مفصولة بفاصلة)","Peer EV/EBITDA multiples (comma separated)"],["مضاعفات P/E للنظراء (مفصولة بفاصلة)","Peer P/E multiples (comma separated)"],["حجم المصفوفة (عدد فردي)","Grid size (odd number)"],["خطوة المصفوفة لـ WACC والنمو النهائي (نقطة مئوية)","Grid step for WACC and terminal growth (percentage points)"],["خطوة المصفوفة لبقية النسب (نقطة مئوية)","Grid step for the other ratios (percentage points)"],["حساسية الترتيب % (تغيير نسبي)","Ranking sensitivity % (relative change)"],["عتبة الكسر % (تغيّر السعر)","Break threshold % (price change)"],["حمّل المثال التعليمي","Load the teaching example"],["صفّر النموذج","Reset the model"],["سنوات مالية سابقة من التقارير السنوية. السطر الأخير هو سنة الأساس للإسقاط.","Past fiscal years from the annual reports. The last row is the base year of the projection."],["السنة","Year"],["الإيراد","Revenue"],["الإهلاك","D&A"],["الإنفاق الرأسمالي","Capex"],["صافي الربح","Net income"],["لا سنوات بعد. أضف سنة أو استورد CSV أو حمّل المثال التعليمي.","No years yet. Add a year, import a CSV or load the teaching example."],["أضف سنة","Add a year"],["احذف آخر سنة","Delete the last year"],["اسحب من SEC EDGAR","Pull from SEC EDGAR"],["السحب يمر عبر الخادم المحلي","The pull goes through the local server"],["لأن SEC لا تسمح بالطلب المباشر من المتصفح. الأرقام بالملايين من نماذج 10-K السنوية مع رقم الإيداع وتاريخه.","because SEC does not allow direct requests from the browser. Numbers are in millions from the annual 10-K forms, with the filing number and date."],["استيراد CSV","Import CSV"],["الأعمدة بالترتيب: year,revenue,ebit,da,capex,netIncome","Columns in order: year,revenue,ebit,da,capex,netIncome"],["بيانات CSV","CSV data"],["استورد البيانات","Import the data"],["التدفق الحر = EBIT × (1 − الضريبة) + الإهلاك − الإنفاق الرأسمالي − التغيّر في رأس المال العامل. الخصم في نهاية كل سنة.","Free cash flow = EBIT × (1 − tax) + D&A − capex − change in working capital. Discounted at the end of each year."],["المقارنات","Comparables"],["نطاق القيمة للسهم","Value range per share"],["متغيّر الصفوف","Row variable"],["متغيّر الأعمدة","Column variable"],["مصفوفة ثنائية: قيمة السهم","Two-way grid: share value"],["أهم 3 افتراضات تحرّك النتيجة","Top 3 assumptions that move the result"],["تغيير كل افتراض بنسبة «حساسية الترتيب» من INPUTS صعوداً وهبوطاً، والترتيب حسب أثره على السعر.","Each assumption moved up and down by the INPUTS «ranking sensitivity», ranked by its effect on the price."],["أهم 3 مخاطر","Top 3 risks"],["أقرب مستوى لكل افتراض يغيّر السعر بنسبة «عتبة الكسر» من INPUTS، مرتباً حسب قربه من القيمة الحالية.","The nearest level of each assumption that moves the price by the INPUTS «break threshold», ranked by how close it is to the current value."],["صدّر CSV","Export CSV"],["صدّر Excel","Export Excel"],["أرسل الخلاصة إلى notes.md","Send the summary to notes.md"],["03 · مراجع الأرباح","03 · Earnings reviewer"],["ماذا قيل مقابل التوقعات، كيف قيل مقارنة بالربع السابق، أي أسئلة أُجيبت وأيها تُهرّب منها، واختبار أطروحتك باقتباسات حرفية.","What was said against expectations, how it was said against last quarter, which questions were answered and which were dodged, and a test of your thesis with verbatim quotes."],["المدخلات","Inputs"],["الربع","Quarter"],["ربحية السهم المتوقعة","Expected EPS"],["ربحية السهم الفعلية","Actual EPS"],["الإيراد المتوقع (مليون)","Expected revenue (millions)"],["الإيراد الفعلي (مليون)","Actual revenue (millions)"],["مصدر التوقعات","Source of expectations"],["تاريخ التوقعات","Date of expectations"],["مصدر النتائج الفعلية","Source of actual results"],["نص المكالمة لهذا الربع","This quarter's call transcript"],["نص مكالمة الربع السابق","Last quarter's call transcript"],["أطروحتك في 3 جمل","Your thesis in 3 sentences"],["حلّل المكالمة","Analyse the call"],["ما قيل مقابل التوقعات","What was said against expectations"],["كيف قيل مقارنة بالربع السابق","How it was said against last quarter"],["أسئلة المحللين: أُجيبت أم تُهرّب منها","Analyst questions: answered or dodged"],["اختبار الأطروحة باقتباسات حرفية","Thesis test with verbatim quotes"],["معايير الدحض","Falsification criteria"],["شروط قابلة للقياس لو تحققت تعني أن أطروحتك خاطئة.","Measurable conditions that, if met, mean your thesis is wrong."],["المقياس","Metric"],["أقل من","Less than"],["أكبر من","Greater than"],["القيمة","Value"],["بحلول","By"],["أضف المعيار","Add the criterion"],["أرسل المراجعة إلى notes.md","Send the review to notes.md"],["لا معايير دحض بعد. الأطروحة بلا معيار دحض لا يمكن اختبارها.","No falsification criteria yet. A thesis without one cannot be tested."],["04 · دفتر الملاحظات","04 · Notebook"],["ملف تراكمي لكل رمز يُحفظ في هذا المتصفح. «مراجعة جديدة» تحدّث التاريخ وتسجّل ما تغيّر في رأيك منذ آخر مراجعة.","A running file for each symbol, saved in this browser. «New review» updates the date and records what changed in your view since the last review."],["لا رموز بعد","No symbols yet"],["محرر notes.md","notes.md editor"],["مراجعة جديدة","New review"],["نزّل notes.md","Download notes.md"],["استورد ملف .md","Import a .md file"],["المعاينة","Preview"],["اكتب الرمز في الشريط العلوي لبدء ملف notes.md.","Type the symbol in the top bar to start a notes.md file."],["أداة بحث وعرض فقط. ليست نصيحة استثمارية ولا تنفّذ أي صفقة. التداول الفعلي ومحافظ النسخ وتقسيم الأرباح مقفلة «قيد الموافقة».","A research and display tool only. Not investment advice, and it executes no trade. Real trading, copy vaults and profit split are locked «pending approval»."],["الأخبار من","News from"],["(مجاني ومفتوح). كل ما عداها تدخله أنت بمصدره وتاريخه. البيانات تبقى في هذا المتصفح.","(free and open). Everything else you enter yourself with its source and date. The data stays in this browser."],["مثل AAPL…","e.g. AAPL…"],["حلقات السلسلة","Chain links"],["وكلاء مرتبطون","Linked agents"],["مثل Apple…","e.g. Apple…"],["تصنيف الأخبار","News sorting"],["مثل Morgan Stanley…","e.g. Morgan Stanley…"],["مثل BTCUSDT أو aapl.us…","e.g. BTCUSDT or aapl.us…"],["يُملأ من المصدر…","Filled from the source…"],["من INPUTS أو المصدر…","From INPUTS or the source…"],["النطاق الكمي مقارنة بنطاق المحللين","Quant range against the analyst range"],["مثل bitcoin أو ETH…","e.g. bitcoin or ETH…"],["مثل نمو الخدمات يعوّض تباطؤ الأجهزة…","e.g. services growth offsets slower hardware…"],["مثل المدير المالي…","e.g. the CFO…"],["الصق النص كما قيل…","Paste the text as it was said…"],["أوراق النموذج","Model sheets"],["نطاق قيمة السهم حسب الطريقة","Share value range by method"],["مثل Q3 2026…","e.g. Q3 2026…"],["الصق النص. ابدأ الأسئلة بـ Q: أو Analyst: والأجوبة بـ A: …","Paste the text. Start questions with Q: or Analyst: and answers with A: …"],["الصق نص الربع السابق للمقارنة…","Paste last quarter's text to compare…"],["الجملة الأولى. الجملة الثانية. الجملة الثالثة…","First sentence. Second sentence. Third sentence…"],["مثل هامش الربح الإجمالي…","e.g. gross margin…"],["مثل Q1 2027…","e.g. Q1 2027…"],["تاريخ غير معروف","Unknown date"],["اكتب اسم الشركة أو الرمز أولاً.","Type the company name or symbol first."],["جارٍ الجلب من GDELT…","Fetching from GDELT…"],["رد غير مفهوم","Unreadable reply"],["لا أخبار في هذا التصنيف.","No news in this category."],["كل الأخبار","All news"],["المدى الزمني","Time range"],["اكتب الجهة والسعر المستهدف.","Type the firm and the price target."],["أُضيف التقدير.","Estimate added."],["الأدنى","Low"],["الوسيط","Median"],["الأعلى","High"],["تغيّر الوسيط","Median change"],["أقدم من 6 أشهر","Older than 6 months"],["اجلب الأخبار أولاً ليُقترح منها.","Fetch the news first to suggest from it."],["لم تحمل العناوين اتجاهاً واضحاً.","The headlines carry no clear direction."],["شركة مثال تعليمي","Teaching example company"],["هامش EBIT %","EBIT margin %"],["نمو السنة الأولى %","First-year growth %"],["نمو السنة الأخيرة %","Last-year growth %"],["الضريبة %","Tax %"],["الإنفاق الرأسمالي %","Capex %"],["الإهلاك %","D&A %"],["يُعرض أحدث 80 من {n}.","Showing the latest 80 of {n}."],["فجوات: {n}","Gaps: {n}"]];
+window.OMEGA_I18N = OMEGA_I18N;
+const start = () => { window.OMEGA_LANG = OMEGA_I18N.mount(Object.assign({ pairs: PAIRS }, {"source":"ar","button":"themeToggle","flipDir":true})); };
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();
+})();
+</script>
+<!-- OMEGA_I18N end -->
 </body>
 </html>

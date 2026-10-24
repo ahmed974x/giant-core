@@ -69,7 +69,8 @@
     ops: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-ops-room.html" : "omega-ops-room-v1/omega-ops-room.html") : "omega-ops-room.html",
     chain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/the-chain.html" : "omega-ops-room-v1/the-chain.html") : "the-chain.html",
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
-    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html"
+    lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
+    brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -77,7 +78,8 @@
     { k: "ops", icon: "🎯", en: "Ops Room", ar: "غرفة العمليات", line: () => (state.wallet ? `Paper base ${usd(state.wallet.base)} · safe ${usd(state.wallet.safe)}` : "Paper desk, OSIRIS, receipts") + (Number.isFinite(state.pwsi) ? ` · PWSI ${state.pwsi}` : "") },
     { k: "chain", icon: "⛓️", en: "THE CHAIN", ar: "السلسلة", line: () => state.ticker ? `Last ticker ${state.ticker}` : "Research chain, local notes" },
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
-    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" }
+    { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
+    { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {

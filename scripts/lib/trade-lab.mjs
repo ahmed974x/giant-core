@@ -357,6 +357,28 @@ const MISTAKES = Object.freeze([
   { k: "hesitation", ar: "تردد وفوّت الدخول الصحيح", en: "hesitated on a valid entry" }
 ]);
 const MISTAKE_KEYS = new Set(MISTAKES.map(m => m.k));
+// Live readiness gate (ADR-119, docs/LIVE-TRADING-READINESS.md): the paper track record that must pass before a
+// live route may even be proposed. It measures only trips rebuilt from the verified Ops Room receipt chain (manual
+// trips and the teaching example do not count). Passing it unlocks nothing: real trading stays locked until
+// Director 00 approves the limits in his own words and the legal and security reviews are done.
+const LIVE_GATE_DEFAULTS = Object.freeze({ minTrips: 100, minDays: 30, minProfitFactor: 1.2, maxDrawdownPct: 10, minCompliancePct: 90 });
+function liveGate(allTrips, planIn, chainOk, rulesIn) {
+  const r = { ...LIVE_GATE_DEFAULTS, ...(rulesIn || {}) };
+  const ops = (allTrips || []).filter(t => t && t.src === "ops");
+  const m = metrics(ops, planIn), c = compliance(ops, planIn), closed = closedOf(ops);
+  const span = closed.length ? (Math.max(...closed.map(t => t.closeTs)) - Math.min(...closed.map(t => t.openTs))) / DAY : 0;
+  const pf = m.profitFactor;
+  const checks = [
+    { key: "chain", ar: "سلسلة الإيصالات سليمة", en: "receipt chain verified", value: chainOk ? 1 : 0, need: 1, pass: !!chainOk, show: chainOk ? "✓" : "✗", needShow: "✓" },
+    { key: "trips", ar: "صفقات ورقية مغلقة", en: "closed paper round trips", value: m.n, need: r.minTrips, pass: m.n >= r.minTrips, show: String(m.n), needShow: "≥ " + r.minTrips },
+    { key: "days", ar: "أيام التداول الورقي", en: "days of paper trading", value: span, need: r.minDays, pass: span >= r.minDays, show: span.toFixed(1), needShow: "≥ " + r.minDays },
+    { key: "pf", ar: "معامل الربح", en: "profit factor", value: pf, need: r.minProfitFactor, pass: m.n > 0 && (pf === Infinity || (finite(pf) && pf >= r.minProfitFactor)), show: pf === Infinity ? "∞" : finite(pf) ? pf.toFixed(2) : "—", needShow: "≥ " + r.minProfitFactor.toFixed(2) },
+    { key: "dd", ar: "أقصى تراجع", en: "max drawdown", value: m.maxDD * 100, need: r.maxDrawdownPct, pass: m.n > 0 && m.maxDD * 100 <= r.maxDrawdownPct, show: m.n ? (m.maxDD * 100).toFixed(1) + "%" : "—", needShow: "≤ " + r.maxDrawdownPct + "%" },
+    { key: "plan", ar: "الالتزام بالخطة", en: "plan compliance", value: c.rate * 100, need: r.minCompliancePct, pass: c.n > 0 && c.rate * 100 >= r.minCompliancePct, show: c.n ? (c.rate * 100).toFixed(0) + "%" : "—", needShow: "≥ " + r.minCompliancePct + "%" }
+  ];
+  const passed = checks.filter(x => x.pass).length;
+  return { rules: r, checks, passed, total: checks.length, ready: passed === checks.length, locked: true, progress: passed / checks.length };
+}
 function sanitizeNote(n) {
   if (!n || typeof n !== "object") return null;
   const txt = (v, max) => typeof v === "string" ? v.replace(/[\u0000-\u0008\u000B-\u001F]/g, "").slice(0, max) : "";
@@ -599,7 +621,7 @@ export const OMEGA_TRADELAB = Object.freeze({
   VERSION: "omega-tradelab-v1", GENESIS, PLAN_DEFAULTS, CHALLENGE_DEFAULTS, RULES, MISTAKES, INTERVALS,
   canon, sha256Hex, hashOf, merkleRoot, verifyChain, parseExport, buildChain,
   tripsFromReceipts, manualTrip, sanitizePlan, riskUnit, metrics, equityCurve, histogramR, byBucket,
-  compliance, challenge, sanitizeNote, mistakeStats,
+  compliance, challenge, LIVE_GATE_DEFAULTS, liveGate, sanitizeNote, mistakeStats,
   klinesUrl, parseKlines, sma, ema, rsi, macd, bollinger, atr, marketLens,
   monteCarlo, layers, coach, teachingExample
 });

@@ -1,0 +1,25 @@
+// Shared [arabic, english] pairs for the suite chrome (ADR-119): app switcher, theme, skip links, status words.
+export const COMMON = [
+  ["بوابة نبض", "NABD portal"],
+  ["Public site, paper simulations · الموقع العام", "Public site, paper simulations"],
+  ["غرفة العمليات", "Ops Room"],
+  ["السلسلة", "THE CHAIN"],
+  ["العرّاف", "ORACLE"],
+  ["مختبر المتداول", "TRADE LAB"],
+  ["المخ الثاني", "Second brain"],
+  ["Switch app · تبديل التطبيق", "Switch app"],
+  ["OMEGA apps · تطبيقات أوميغا", "OMEGA apps"],
+  ["تبديل الوضع الداكن", "Toggle dark mode"],
+  ["«قيد الموافقة»", "«Pending approval»"],
+  ["قيد الموافقة", "Pending approval"],
+  ["تعذر التحقق منها", "Could not be verified"],
+  ["مثال تعليمي — أرقام افتراضية", "Teaching example — hypothetical numbers"],
+  ["نعم", "Yes"], ["لا", "No"], ["إلغاء", "Cancel"], ["احذف", "Delete"], ["عدّل", "Edit"], ["اكتب", "Write"], ["تم", "Done"],
+  ["الحالة", "Status"], ["المصدر", "Source"], ["المصادر", "Sources"], ["الآن", "Now"], ["المطلوب", "Required"], ["الشرط", "Condition"],
+  ["متوفر", "Available"], ["جزئي", "Partial"], ["لا بيانات", "No data"], ["لا ينطبق", "Not applicable"],
+  ["سليم", "Healthy"], ["انتبه", "Watch"], ["تصرّف", "Act"], ["توقف", "Stop"],
+  ["ناجح", "Passed"], ["لم يكتمل", "Not yet"], ["مفتوحة", "Open"], ["مستبعدة", "Excluded"],
+  ["كيف يعمل", "How it works"], ["المدير 00", "Director 00"],
+  ["ليس نصيحة مالية.", "Not financial advice."],
+  ["اللغة", "Language"]
+];
