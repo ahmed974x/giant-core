@@ -43,6 +43,7 @@ Each input is squashed to about [-1, 1] with a stated formula (shown in the osci
 5. The oscilloscope is the one glass panel in this card, top right on ≥ 600 px and static below the canvas on a phone, with an opaque fallback.
 6. Threads are clickable (ADR-117). Every thread in one column gap is the same Bézier scaled to its ends, x(t) = x₀ + Δx·(1.5t − 1.5t² + t³), y(t) = y₀ + Δy·(3t² − 2t³), and x(t) is strictly increasing, so one inverse per gap gives every thread's height at the pointer. Of the threads within 6 px, the one with the largest |w·a| wins. The thread view shows w, a, w·a, its share of Σ|w·a| into the target, the weight over the kept training versions (steps) and w·a over the ring. The neuron view's strongest-weights rows are buttons that open the thread; Enter on a selected neuron opens its strongest incoming thread; Esc clears. Zoomed in, a press that moves more than 4 px pans, a still press is a tap.
 7. Hidden neurons are never named as agents or concepts: they have no meaning a person assigned. Agent teams live in the court and the agent wiring card, which draw only links the code has.
+8. Knock-out and paths (ADR-118). The thread view runs the heads feed-forward three times on the shown reading (as trained, weight at 0, weight ±1e-4) and lists Δ and ∂o/∂w per head; nothing is changed. The strongest path goes backwards by the largest incoming |w·a| and forwards by the largest outgoing |w|, input to head, drawn as one chain (button or P).
 
 ## 5. Chrono-scrubber
 
@@ -50,7 +51,7 @@ Every reading stores inputs, activations, pre-activations, rule targets, micropr
 
 ## 6. Probe and checks
 
-`window.OMEGA_NEURAL` is read-only: `sizes`, `weights`, `inputs`, `forward`, `inspect`, `inspectEdge`, `edgeAt`, `bezS`, `layoutOf`, `state`, `pulse`, `counterfactual`, `xray`, `xrayBadges`, `scrub`, `regime`. Self-test checks 19 and 20, `node scripts/test-brain2.mjs`, the three sizes in light and dark, SkillSpector strict.
+`window.OMEGA_NEURAL` is read-only: `sizes`, `weights`, `inputs`, `forward`, `inspect`, `inspectEdge`, `tracePath`, `edgeAt`, `bezS`, `layoutOf`, `state`, `pulse`, `counterfactual`, `xray`, `xrayBadges`, `scrub`, `regime`. Self-test checks 19 and 20, `node scripts/test-brain2.mjs`, the three sizes in light and dark, SkillSpector strict.
 
 ## Agent wiring card (ADR-111)
 
