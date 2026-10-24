@@ -158,3 +158,7 @@ Same tokens as `site-landing/style.css`. Contrast gate: `node audits/verify-cont
 - No credentials anywhere in the file; requests use `credentials: "omit"`.
 - Network text is never inserted as HTML (`textContent` only).
 - Future write actions go through an authenticated local gateway (spec section 5), not this page.
+
+## TRADE LAB · مختبر المتداول, paper journal and desk manager agent (ADR-116)
+
+`omega-trade-lab.html` reads this folder's paper receipts (same browser, or the file from Export in the receipts card), checks every hash, and measures the closed trips against a written plan: win rate, profit factor, expectancy, R multiples, drawdown, plan breaks, a paper discipline challenge, journal notes with mistake tags, and a market lens on Binance public candles. The desk manager agent turns those numbers into graded findings and proposals for Director 00; nothing changes until you apply one. Open `?example=1` for the labelled teaching example. Paper only.

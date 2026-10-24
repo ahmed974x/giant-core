@@ -5,6 +5,8 @@
 //   OMEGA_SEC_UA="Your Name your@email" node scripts/omega-data-proxy.mjs
 //
 // SEC asks every client to send a User-Agent with a contact (https://www.sec.gov/os/accessing-edgar-data).
+// The full API document is docs/api/omega-data-proxy.openapi.json (OpenAPI 3.1) and its Markdown copy
+// docs/api/OMEGA-DATA-PROXY-API.md, both checked against the route table below by scripts/build-api-docs.mjs (ADR-116).
 // Routes (GET only, except the local model bridge below):
 //   /health                 -> {"ok":true}
 //   /sec/tickers            -> https://www.sec.gov/files/company_tickers.json        (cached 24 h)
@@ -38,6 +40,7 @@
 //   /market/deribit/dvol/BTC    -> Deribit DVOL hourly candles, last 48 h                    (cached 15 min)
 //   /market/depth/<SYM>, /market/trades/<SYM> -> Binance spot book (100 levels) and the last 300
 //                              trades, for the local MCP bridge (cached 5 s)
+//   /market/klines/<SYM>/<1h|4h|1d> -> Binance spot candles, last 300, for the TRADE LAB market lens (ADR-116, cached 60 s)
 // Cyber storm and air radar (ADR-110), keyless:
 //   /cyber/infocon          -> SANS Internet Storm Center InfoCON level                       (cached 15 min)
 //   /cyber/internetdb/<ip>  -> Shodan InternetDB record of one of four public resolvers (1.1.1.1, 8.8.8.8,
@@ -163,6 +166,8 @@ const ROUTES = [
   { re: /^\/osiris\/adsb\/zone\/(hormuz|bab|suez|malacca|panama|taiwan)$/, url: m => U.adsbZone(m[1]), ttl: 5 * 60 * 1000, type: "application/json", sec: false, transform: json(j => S.adsb(j)) },
   { re: /^\/market\/depth\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/depth?symbol=${m[1]}&limit=100`, ttl: 5000, type: "application/json", sec: false },
   { re: /^\/market\/trades\/([A-Z0-9]{5,20})$/, url: m => `https://data-api.binance.vision/api/v3/aggTrades?symbol=${m[1]}&limit=300`, ttl: 5000, type: "application/json", sec: false },
+  // ADR-116: public candles for the TRADE LAB market lens (RSI, MACD, averages, Bollinger, ATR), three intervals only.
+  { re: /^\/market\/klines\/([A-Z0-9]{5,20})\/(1h|4h|1d)$/, url: m => `https://data-api.binance.vision/api/v3/klines?symbol=${m[1]}&interval=${m[2]}&limit=300`, ttl: 60 * 1000, type: "application/json", sec: false },
   // ADR-112: three DefiLlama answers in one set, fetched in order (one host gap apart).
   { re: /^\/market\/llama$/, url: () => U.llama()[0], ttl: HOUR / 4, type: "application/json", sec: false, chain: () => [
     async r => { const list = []; for (const u of U.llama()) list.push(await upJson(r, u)); return S.llamaSet(list); }
@@ -189,6 +194,7 @@ const SHORT = {
   "/omega-ops-room.html": "/omega-ops-room-v1/omega-ops-room.html",
   "/the-chain.html": "/omega-ops-room-v1/the-chain.html",
   "/omega-oracle.html": "/omega-ops-room-v1/omega-oracle.html",
+  "/omega-trade-lab.html": "/omega-ops-room-v1/omega-trade-lab.html",
   "/index.html": "/site-landing/index.html",
   "/en.html": "/site-landing/en.html",
   "/site-landing": "/site-landing/index.html",

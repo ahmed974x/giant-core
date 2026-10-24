@@ -1,0 +1,1467 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OMEGA local data proxy",
+    "version": "1.16.0",
+    "summary": "Free, keyless public data for the OMEGA pages, cached on disk and bound to 127.0.0.1.",
+    "description": "scripts/omega-data-proxy.mjs (ADR-089 to ADR-116). GET only except the local model bridge. CORS is added for local pages only; any other Origin gets 403 and an unknown Host gets 421. Every route reads one fixed public upstream; nothing here signs, sends or routes an order, holds a key or writes outside its cache. Generated Markdown: docs/api/OMEGA-DATA-PROXY-API.md (node scripts/build-api-docs.mjs).",
+    "license": {
+      "name": "Data under each upstream's own terms; see the footer of each page"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8796",
+      "description": "local proxy (./start-omega.sh or start-omega.bat)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "meta"
+    },
+    {
+      "name": "filings"
+    },
+    {
+      "name": "market"
+    },
+    {
+      "name": "osiris"
+    },
+    {
+      "name": "cyber"
+    },
+    {
+      "name": "research"
+    },
+    {
+      "name": "local model"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Proxy is up",
+        "description": "Always answers; says whether the SEC contact User-Agent is set.",
+        "x-omega-examples": [
+          "/health"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "secUserAgent": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sec/tickers": {
+      "get": {
+        "tags": [
+          "filings"
+        ],
+        "summary": "SEC company tickers",
+        "description": "CIK, ticker and name for every SEC filer. Needs OMEGA_SEC_UA.",
+        "x-upstream": "https://www.sec.gov/files/company_tickers.json",
+        "x-cache-seconds": 86400,
+        "x-omega-examples": [
+          "/sec/tickers"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/sec/facts/{cik}": {
+      "get": {
+        "tags": [
+          "filings"
+        ],
+        "summary": "SEC XBRL company facts",
+        "description": "All reported XBRL facts of one company. Needs OMEGA_SEC_UA.",
+        "x-upstream": "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
+        "x-cache-seconds": 43200,
+        "x-omega-examples": [
+          "/sec/facts/0000320193"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cik",
+            "in": "path",
+            "required": true,
+            "description": "10-digit CIK with leading zeros",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{10}$"
+            }
+          }
+        ]
+      }
+    },
+    "/stooq/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Stooq daily candles (CSV)",
+        "description": "Daily OHLCV history as CSV.",
+        "x-upstream": "https://stooq.com/q/d/l/?s={symbol}&i=d",
+        "x-cache-seconds": 21600,
+        "x-omega-examples": [
+          "/stooq/aapl.us"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Stooq symbol, lower case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9.\\-^]{1,20}$"
+            }
+          }
+        ]
+      }
+    },
+    "/osiris/aviation": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "OpenSky states over the Gulf and Red Sea",
+        "description": "Aircraft state vectors in the box 10–32° N, 30–62° E.",
+        "x-upstream": "https://opensky-network.org/api/states/all",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/osiris/aviation"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/gdacs": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "GDACS disaster alerts",
+        "description": "Orange and red alerts as omega-alerts-v1; falls back to GDACS search, then EMSC M6+ (+ ReliefWeb). `via` names the source.",
+        "x-upstream": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/osiris/gdacs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/gdelt": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "GDELT shipping and energy headlines",
+        "description": "GDELT DOC 2.0 article list, last 6 h.",
+        "x-upstream": "https://api.gdeltproject.org/api/v2/doc/doc",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/osiris/gdelt"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/ais": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "Digitraffic AIS positions",
+        "description": "Baltic AIS positions compacted to [lon, lat, sog].",
+        "x-upstream": "https://meri.digitraffic.fi/api/ais/v1/locations",
+        "x-cache-seconds": 300,
+        "x-omega-examples": [
+          "/osiris/ais"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/nga": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "NGA broadcast warnings by strait",
+        "description": "NGA MSI warnings sorted into Hormuz, Bab el-Mandeb, Suez, Malacca and Panama.",
+        "x-upstream": "https://msi.nga.mil/api/publications/broadcast-warn",
+        "x-cache-seconds": 1800,
+        "x-omega-examples": [
+          "/osiris/nga"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/gdelt-sea": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "GDELT headlines naming a strait",
+        "description": "Last 24 h of articles that name one of the five straits.",
+        "x-upstream": "https://api.gdeltproject.org/api/v2/doc/doc",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/osiris/gdelt-sea"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/eonet": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "NASA EONET natural events",
+        "description": "Open events of the last 30 days, compact form.",
+        "x-upstream": "https://eonet.gsfc.nasa.gov/api/v3/events",
+        "x-cache-seconds": 1800,
+        "x-omega-examples": [
+          "/osiris/eonet"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/kp": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "NOAA planetary K index",
+        "description": "Kp readings, compact form.",
+        "x-upstream": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/osiris/kp"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/osiris/marine": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "Open-Meteo Marine at the five straits",
+        "description": "Waves, swell, currents and sea temperature at one sea point per strait.",
+        "x-upstream": "https://marine-api.open-meteo.com/v1/marine",
+        "x-cache-seconds": 1800,
+        "x-omega-examples": [
+          "/osiris/marine"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/cyber/kev": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "CISA Known Exploited Vulnerabilities",
+        "description": "Count and the last 30 days.",
+        "x-upstream": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "x-cache-seconds": 3600,
+        "x-omega-examples": [
+          "/cyber/kev"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/cyber/ioda": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "IODA country outages",
+        "description": "Georgia Tech IODA outage events, last 24 h.",
+        "x-upstream": "https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/cyber/ioda"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/cyber/infocon": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "SANS ISC InfoCON",
+        "description": "Internet Storm Center threat level.",
+        "x-upstream": "https://isc.sans.edu/api/infocon?json",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/cyber/infocon"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/cyber/circl": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "CIRCL Vulnerability-Lookup",
+        "description": "Latest published records cut to id, CVSS and CWE.",
+        "x-upstream": "https://vulnerability.circl.lu/api/last",
+        "x-cache-seconds": 1800,
+        "x-omega-examples": [
+          "/cyber/circl"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/market/llama": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "DefiLlama liquidity set",
+        "description": "Stablecoin supply, chain TVL and DEX volume with the liquidity flow index (omega-llama-v1).",
+        "x-upstream": "https://stablecoins.llama.fi and https://api.llama.fi",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/market/llama"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/market/deribit/options/BTC": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Deribit BTC option book summary",
+        "description": "IV and open interest per instrument, compact form.",
+        "x-upstream": "https://www.deribit.com/api/v2/public/get_book_summary_by_currency",
+        "x-cache-seconds": 120,
+        "x-omega-examples": [
+          "/market/deribit/options/BTC"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/market/deribit/dvol/BTC": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Deribit DVOL",
+        "description": "Hourly DVOL candles, last 48 h.",
+        "x-upstream": "https://www.deribit.com/api/v2/public/get_volatility_index_data",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/market/deribit/dvol/BTC"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/market/binance/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Binance 24 h ticker",
+        "description": "Spot 24 h ticker of one symbol.",
+        "x-upstream": "https://data-api.binance.vision/api/v3/ticker/24hr",
+        "x-cache-seconds": 30,
+        "x-omega-examples": [
+          "/market/binance/BTCUSDT"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Binance spot symbol, upper case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5,20}$"
+            }
+          }
+        ]
+      }
+    },
+    "/market/fapi/{kind}/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Binance USD-M futures public data",
+        "description": "premium (falls back to OKX then Deribit for BTCUSDT and ETHUSDT, `venue` names it), funding, open interest, top-trader and global long/short and taker ratios.",
+        "x-upstream": "https://fapi.binance.com",
+        "x-cache-seconds": 60,
+        "x-omega-examples": [
+          "/market/fapi/premium/BTCUSDT",
+          "/market/fapi/oi/ETHUSDT"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "description": "which public series",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "funding",
+                "oi",
+                "top",
+                "global",
+                "taker"
+              ]
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Binance spot symbol, upper case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5,20}$"
+            }
+          }
+        ]
+      }
+    },
+    "/market/coingecko/{id}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "CoinGecko simple price",
+        "description": "USD price with 24 h change.",
+        "x-upstream": "https://api.coingecko.com/api/v3/simple/price",
+        "x-cache-seconds": 120,
+        "x-omega-examples": [
+          "/market/coingecko/bitcoin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "CoinGecko coin id",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{2,40}$"
+            }
+          }
+        ]
+      }
+    },
+    "/market/depth/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Binance order book",
+        "description": "100 levels per side, for the MCP bridge.",
+        "x-upstream": "https://data-api.binance.vision/api/v3/depth",
+        "x-cache-seconds": 5,
+        "x-omega-examples": [
+          "/market/depth/BTCUSDT"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Binance spot symbol, upper case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5,20}$"
+            }
+          }
+        ]
+      }
+    },
+    "/market/trades/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Binance aggregate trades",
+        "description": "Last 300 aggregate trades.",
+        "x-upstream": "https://data-api.binance.vision/api/v3/aggTrades",
+        "x-cache-seconds": 5,
+        "x-omega-examples": [
+          "/market/trades/BTCUSDT"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Binance spot symbol, upper case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5,20}$"
+            }
+          }
+        ]
+      }
+    },
+    "/market/klines/{symbol}/{interval}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Binance candles (ADR-116)",
+        "description": "Last 300 spot candles for the TRADE LAB market lens.",
+        "x-upstream": "https://data-api.binance.vision/api/v3/klines",
+        "x-cache-seconds": 60,
+        "x-omega-examples": [
+          "/market/klines/BTCUSDT/4h",
+          "/market/klines/ETHUSDT/1d"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "description": "Binance spot symbol, upper case",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5,20}$"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "description": "candle size",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1h",
+                "4h",
+                "1d"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/osiris/celestrak/{group}": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "CelesTrak GP elements",
+        "description": "Mean elements of a fixed group.",
+        "x-upstream": "https://celestrak.org/NORAD/elements/gp.php",
+        "x-cache-seconds": 7200,
+        "x-omega-examples": [
+          "/osiris/celestrak/stations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "required": true,
+            "description": "satellite group",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stations",
+                "visual"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/cyber/ripe/{asn}": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "RIPEstat routing status",
+        "description": "Visibility of one of five tier-1 backbones.",
+        "x-upstream": "https://stat.ripe.net/data/routing-status/data.json",
+        "x-cache-seconds": 900,
+        "x-omega-examples": [
+          "/cyber/ripe/AS3356"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "asn",
+            "in": "path",
+            "required": true,
+            "description": "AS number with AS prefix",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AS3356",
+                "AS1299",
+                "AS174",
+                "AS2914",
+                "AS6453"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/cyber/internetdb/{ip}": {
+      "get": {
+        "tags": [
+          "cyber"
+        ],
+        "summary": "Shodan InternetDB of a public resolver",
+        "description": "A lookup of Shodan's weekly data for one of four fixed public resolvers; never an address taken from input, never a scan.",
+        "x-upstream": "https://internetdb.shodan.io/{ip}",
+        "x-cache-seconds": 21600,
+        "x-omega-examples": [
+          "/cyber/internetdb/1.1.1.1"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "ip",
+            "in": "path",
+            "required": true,
+            "description": "one of four public resolvers",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.1.1.1",
+                "8.8.8.8",
+                "9.9.9.9",
+                "208.67.222.222"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/osiris/adsb/sqk/{code}": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "adsb.lol emergency squawks",
+        "description": "Aircraft squawking 7500, 7600 or 7700 worldwide (ODbL).",
+        "x-upstream": "https://api.adsb.lol/v2/sqk/{code}",
+        "x-cache-seconds": 120,
+        "x-omega-examples": [
+          "/osiris/adsb/sqk/7700"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "emergency squawk",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7500",
+                "7600",
+                "7700"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/osiris/adsb/zone/{zone}": {
+      "get": {
+        "tags": [
+          "osiris"
+        ],
+        "summary": "adsb.lol aircraft near a strait",
+        "description": "Aircraft within 150 nm of a strait or the Taiwan Strait.",
+        "x-upstream": "https://api.adsb.lol/v2/point/{lat}/{lon}/150",
+        "x-cache-seconds": 300,
+        "x-omega-examples": [
+          "/osiris/adsb/zone/hormuz"
+        ],
+        "responses": {
+          "200": {
+            "description": "Upstream answer or its compact OMEGA form. Header X-Omega-Cache is HIT, MISS or STALE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        },
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "strait key",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hormuz",
+                "bab",
+                "suez",
+                "malacca",
+                "panama",
+                "taiwan"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/research/{source}": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "ORACLE research source (ADR-114, ADR-115)",
+        "description": "`url` must be that source's own https host and API path (OMEGA_RESEARCH.allowed in scripts/lib/deep-research.mjs); anything else is refused with 400. arXiv is paced at one call per 3 s and NVD at one per 6.5 s.",
+        "x-upstream": "one fixed API path per source",
+        "x-cache-seconds": 21600,
+        "x-omega-special": true,
+        "parameters": [
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "description": "research source",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "wikipedia",
+                "openalex",
+                "crossref",
+                "europepmc",
+                "arxiv",
+                "semanticscholar",
+                "gdelt",
+                "wayback",
+                "doaj",
+                "dblp",
+                "wikidata",
+                "nvd"
+              ]
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "the upstream API address",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "upstream answer (Atom XML for arXiv)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "not an allowed request for this research source"
+          },
+          "502": {
+            "$ref": "#/components/responses/Upstream"
+          }
+        }
+      }
+    },
+    "/llm/ollama/status": {
+      "get": {
+        "tags": [
+          "local model"
+        ],
+        "summary": "Local Ollama model status (ADR-112)",
+        "description": "Loopback sockets and pages from http://127.0.0.1 only; Ollama must be on a loopback address and :cloud models are refused.",
+        "x-omega-special": true,
+        "responses": {
+          "200": {
+            "description": "model chosen and models seen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "not this machine, or not a page from 127.0.0.1"
+          }
+        }
+      }
+    },
+    "/llm/ollama/explain": {
+      "post": {
+        "tags": [
+          "local model"
+        ],
+        "summary": "Explain page readings with the local model",
+        "description": "Used by the Ops Room neural flow and, from ADR-116, the TRADE LAB desk manager. Fixed paper-only system prompt; the answer changes nothing.",
+        "x-omega-special": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "facts"
+                ],
+                "properties": {
+                  "facts": {
+                    "type": "array",
+                    "maxItems": 40,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  },
+                  "question": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "ms": {
+                      "type": "number"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "const": "[INFERENCE - local LLM]"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "send Content-Type: application/json"
+          },
+          "429": {
+            "description": "the local model is already answering"
+          },
+          "403": {
+            "description": "not this machine, or not a page from 127.0.0.1"
+          }
+        }
+      }
+    },
+    "/llm/ollama/research": {
+      "post": {
+        "tags": [
+          "local model"
+        ],
+        "summary": "Write an ORACLE brief from numbered sources",
+        "description": "Every sentence must carry a source number; the page checks them.",
+        "x-omega-special": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sources"
+                ],
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "sources": {
+                    "type": "array",
+                    "maxItems": 40,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "n": {
+                          "type": "integer"
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 900
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "ms": {
+                      "type": "number"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "const": "[INFERENCE - local LLM]"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "send Content-Type: application/json"
+          },
+          "429": {
+            "description": "the local model is already answering"
+          },
+          "403": {
+            "description": "not this machine, or not a page from 127.0.0.1"
+          }
+        }
+      }
+    },
+    "/data/public-intel-snapshot.json": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Hourly public intel snapshot (ADR-104)",
+        "description": "The one file served from data/; rows older than 6 hours are ignored by the pages.",
+        "x-omega-special": true,
+        "responses": {
+          "200": {
+            "description": "snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "no snapshot on this machine"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "Upstream": {
+        "description": "the upstream did not answer and no cached copy exists",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
