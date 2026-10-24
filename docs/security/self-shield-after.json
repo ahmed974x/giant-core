@@ -1,0 +1,357 @@
+{
+  "format": "omega-self-shield-v1",
+  "at": "2026-10-24T17:23:28.879Z",
+  "sandbox": {
+    "url": "http://127.0.0.1:43097",
+    "offline": true,
+    "pid": 245
+  },
+  "stages": [
+    {
+      "name": "sandbox",
+      "ok": true,
+      "note": "http://127.0.0.1:43097, offline, temporary home"
+    },
+    {
+      "name": "probes",
+      "ok": true,
+      "note": "31 probes, 0 open"
+    },
+    {
+      "name": "pages",
+      "ok": true,
+      "note": "8 pages, 0 findings"
+    },
+    {
+      "name": "secrets",
+      "ok": true,
+      "note": "650 tracked text files, 0 key-shaped strings"
+    },
+    {
+      "name": "skillspector",
+      "ok": true,
+      "note": "critical 0, high 0"
+    },
+    {
+      "name": "dependencies (OSV)",
+      "ok": null,
+      "note": "off; run with --deps on the laptop (sends package names and versions to api.osv.dev)"
+    }
+  ],
+  "score": {
+    "value": 100,
+    "worst": null,
+    "open": 0,
+    "verdict": "clear"
+  },
+  "pass": 34,
+  "fail": 0,
+  "skip": 0,
+  "findings": [
+    {
+      "id": "trav-dotdot",
+      "area": "files",
+      "severity": "critical",
+      "ar": "قراءة ملف خارج المجلد بـ ../",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "staticFile() must refuse any path part that starts with a dot"
+    },
+    {
+      "id": "trav-encoded",
+      "area": "files",
+      "severity": "critical",
+      "ar": "تجاوز المجلد بترميز %2e%2e",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "decode before checking the parts, refuse dot parts"
+    },
+    {
+      "id": "trav-slash",
+      "area": "files",
+      "severity": "critical",
+      "ar": "تجاوز المجلد بشرطة مرمّزة %2f",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "decode before splitting into parts"
+    },
+    {
+      "id": "trav-backslash",
+      "area": "files",
+      "severity": "critical",
+      "ar": "تجاوز المجلد بشرطة خلفية (ويندوز)",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "refuse parts that contain a backslash"
+    },
+    {
+      "id": "file-dotgit",
+      "area": "files",
+      "severity": "critical",
+      "ar": "قراءة مجلد git",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "refuse dotfiles and dot folders"
+    },
+    {
+      "id": "file-env",
+      "area": "files",
+      "severity": "critical",
+      "ar": "قراءة ملف أسرار .env",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "serve only the page folders, never web/"
+    },
+    {
+      "id": "ssrf-host",
+      "area": "ssrf",
+      "severity": "critical",
+      "ar": "إجبار السيرفر على طلب موقع غريب",
+      "status": "pass",
+      "evidence": "HTTP 400",
+      "fix": "OMEGA_RESEARCH.allowed(): fixed host and path per source"
+    },
+    {
+      "id": "ssrf-loopback",
+      "area": "ssrf",
+      "severity": "critical",
+      "ar": "إجبار السيرفر على طلب خدمة داخلية",
+      "status": "pass",
+      "evidence": "HTTP 400",
+      "fix": "https only, fixed host"
+    },
+    {
+      "id": "secrets-clean",
+      "area": "secrets",
+      "severity": "critical",
+      "ar": "لا نص يشبه مفتاحاً سرياً في الملفات المتتبّعة",
+      "status": "pass",
+      "evidence": "650 files"
+    },
+    {
+      "id": "trav-null",
+      "area": "files",
+      "severity": "high",
+      "ar": "قطع المسار ببايت صفري",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "refuse paths with control characters"
+    },
+    {
+      "id": "file-source",
+      "area": "files",
+      "severity": "high",
+      "ar": "قراءة شيفرة السيرفر نفسه",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "serve only the page folders, never scripts/"
+    },
+    {
+      "id": "file-data",
+      "area": "files",
+      "severity": "high",
+      "ar": "قراءة ملفات data الخاصة",
+      "status": "pass",
+      "evidence": "HTTP 404",
+      "fix": "serve only data/public-intel-snapshot.json from data/"
+    },
+    {
+      "id": "host-rebind",
+      "area": "origin",
+      "severity": "high",
+      "ar": "إعادة ربط DNS باسم مضيف غريب",
+      "status": "pass",
+      "evidence": "HTTP 421",
+      "fix": "check Host against the allowed names before routing"
+    },
+    {
+      "id": "cors-evil",
+      "area": "origin",
+      "severity": "high",
+      "ar": "قراءة البيانات من موقع غريب",
+      "status": "pass",
+      "evidence": "HTTP 403",
+      "fix": "answer CORS only for local origins"
+    },
+    {
+      "id": "cors-evil-sub",
+      "area": "origin",
+      "severity": "high",
+      "ar": "موقع يتنكر باسم localhost",
+      "status": "pass",
+      "evidence": "HTTP 403",
+      "fix": "anchor the origin pattern at both ends"
+    },
+    {
+      "id": "ssrf-userinfo",
+      "area": "ssrf",
+      "severity": "high",
+      "ar": "خداع المضيف بـ user@host",
+      "status": "pass",
+      "evidence": "HTTP 400",
+      "fix": "parse with URL and compare the hostname"
+    },
+    {
+      "id": "ssrf-proto",
+      "area": "ssrf",
+      "severity": "high",
+      "ar": "اسم مصدر من نموذج الكائن (__proto__)",
+      "status": "pass",
+      "evidence": "HTTP 400",
+      "fix": "own-property lookup of the source"
+    },
+    {
+      "id": "ssrf-port",
+      "area": "ssrf",
+      "severity": "high",
+      "ar": "منفذ غير معتاد على مضيف مسموح",
+      "status": "pass",
+      "evidence": "HTTP 400",
+      "fix": "refuse an explicit port"
+    },
+    {
+      "id": "llm-null",
+      "area": "llm",
+      "severity": "high",
+      "ar": "صفحة من القرص أو iframe تستعمل النموذج المحلي",
+      "status": "pass",
+      "evidence": "HTTP 403",
+      "fix": "llmOrigin(): loopback http origins only, never null"
+    },
+    {
+      "id": "llm-evil",
+      "area": "llm",
+      "severity": "high",
+      "ar": "موقع غريب يستعمل النموذج المحلي",
+      "status": "pass",
+      "evidence": "HTTP 403",
+      "fix": "refuse foreign origins before reading the body"
+    },
+    {
+      "id": "alive",
+      "area": "http",
+      "severity": "high",
+      "ar": "السيرفر ما زال يعمل بعد كل الهجمات",
+      "status": "pass",
+      "evidence": "HTTP 200",
+      "fix": "no probe may crash the proxy"
+    },
+    {
+      "id": "pages-clean",
+      "area": "page",
+      "severity": "high",
+      "ar": "8 صفحة: CSP صارمة، بلا معالجات داخلية ولا style ولا سكربت خارجي بلا SRI",
+      "status": "pass",
+      "evidence": "8 pages"
+    },
+    {
+      "id": "skillspector",
+      "area": "code",
+      "severity": "high",
+      "ar": "SkillSpector على المستودع كله (0 حرجة، 0 عالية)",
+      "status": "pass",
+      "evidence": "critical 0 · high 0 · medium 379 · low 180",
+      "fix": "node scripts/skillspector-audit.mjs --strict . and fix each finding"
+    },
+    {
+      "id": "pna-null",
+      "area": "origin",
+      "severity": "medium",
+      "ar": "صفحة من موقع عام داخل iframe معزول (Origin null) تطلب إذن الشبكة الخاصة",
+      "status": "pass",
+      "evidence": "HTTP 204",
+      "fix": "send Access-Control-Allow-Private-Network only to http(s) loopback origins; file:// pages are local already and need no grant"
+    },
+    {
+      "id": "llm-simple",
+      "area": "llm",
+      "severity": "medium",
+      "ar": "طلب بسيط بلا preflight (text/plain)",
+      "status": "pass",
+      "evidence": "HTTP 415",
+      "fix": "require application/json so every cross-site call needs a preflight"
+    },
+    {
+      "id": "llm-big",
+      "area": "llm",
+      "severity": "medium",
+      "ar": "جسم طلب ضخم للنموذج المحلي",
+      "status": "pass",
+      "evidence": "HTTP 413",
+      "fix": "readBody() caps the body"
+    },
+    {
+      "id": "redir-open",
+      "area": "http",
+      "severity": "medium",
+      "ar": "إعادة توجيه مفتوحة إلى موقع آخر",
+      "status": "pass",
+      "evidence": "HTTP 302",
+      "fix": "redirect only to fixed local paths"
+    },
+    {
+      "id": "hdr-page",
+      "area": "headers",
+      "severity": "medium",
+      "ar": "رؤوس الحماية على الصفحات",
+      "status": "pass",
+      "evidence": "HTTP 200",
+      "fix": "add Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Resource-Policy: same-site to every answer"
+    },
+    {
+      "id": "slow-headers",
+      "area": "dos",
+      "severity": "medium",
+      "ar": "اتصال بطيء يرسل الرؤوس حرفاً حرفاً (Slowloris، اتصال واحد)",
+      "status": "pass",
+      "evidence": "HTTP closed after 11919 ms",
+      "fix": "server.headersTimeout ≤ 10 s and server.requestTimeout ≤ 30 s"
+    },
+    {
+      "id": "method-put",
+      "area": "http",
+      "severity": "low",
+      "ar": "طريقة PUT",
+      "status": "pass",
+      "evidence": "HTTP 405",
+      "fix": "GET only outside /llm/"
+    },
+    {
+      "id": "method-trace",
+      "area": "http",
+      "severity": "low",
+      "ar": "طريقة TRACE",
+      "status": "pass",
+      "evidence": "HTTP 405",
+      "fix": "GET only outside /llm/"
+    },
+    {
+      "id": "hdr-api",
+      "area": "headers",
+      "severity": "low",
+      "ar": "رؤوس الحماية على واجهات البيانات",
+      "status": "pass",
+      "evidence": "HTTP 200",
+      "fix": "add Cross-Origin-Resource-Policy: same-site"
+    },
+    {
+      "id": "err-leak",
+      "area": "http",
+      "severity": "low",
+      "ar": "تسريب مسارات الجهاز في رسالة الخطأ",
+      "status": "pass",
+      "evidence": "HTTP 503",
+      "fix": "send the error message only, never a stack or a file path"
+    },
+    {
+      "id": "url-huge",
+      "area": "http",
+      "severity": "low",
+      "ar": "عنوان طلب طوله 20 ألف حرف",
+      "status": "pass",
+      "evidence": "HTTP 431",
+      "fix": "keep Node's header size limit"
+    }
+  ],
+  "scope": "Defensive self-test of this repository and its own local proxy in a sandbox (127.0.0.1, offline). No third party is contacted or tested."
+}

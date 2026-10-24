@@ -28,6 +28,8 @@ jobs:
         run: node scripts/test-core.mjs
       - name: Static page checks, CSS braces, Arabic faces, self-test badge (ADR-120)
         run: node scripts/test-pages.mjs
+      - name: Self-shield, OMEGA attacks its own proxy in an offline sandbox and lints its pages and files (ADR-122)
+        run: node scripts/test-self-shield.mjs
       - name: SkillSpector strict scan of the whole repo (critical or high fails the job)
         run: node scripts/skillspector-audit.mjs --strict --json skillspector-report.json .
       - uses: actions/upload-artifact@v4

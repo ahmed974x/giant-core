@@ -15,6 +15,12 @@
 // tone over three months (GDELT), which published vulnerabilities name it in the last 120 days (NVD, with the CISA
 // KEV flag NVD carries), and the research behind it. Nothing is scanned, probed or looked up by address.
 //
+// Fields (ADR-122): in scholar mode a field lens adds the specialist open sources of that field: medicine
+// (ClinicalTrials.gov registered trials, PubMed through NCBI E-utilities), science (Zenodo open data and software,
+// OSTI.GOV technical reports), industry (OSTI.GOV reports, Zenodo, patent offices as link-outs only) and algorithms
+// (Zenodo software next to dblp and arXiv). Intel mode adds FIRST EPSS, the published 30-day exploitation
+// probability of each CVE NVD returned. All keyless; nothing here is medical, legal or financial advice.
+//
 // Contents
 //   plan(query, opts)        sub-questions, each with the sources that answer it; Arabic and English bridge terms;
 //                            opts.mode "scholar" (default) or "intel" (ADR-115)
@@ -34,7 +40,7 @@
 //   run(query, opts, io)     the whole agent over an injected transport io.get(source, url, type) -> {data, tier}
 export const OMEGA_RESEARCH = (() => {
   "use strict";
-  const VERSION = "omega-research-v2";
+  const VERSION = "omega-research-v3";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const finite = v => typeof v === "number" && Number.isFinite(v);
   const enc = encodeURIComponent;
@@ -87,9 +93,30 @@ export const OMEGA_RESEARCH = (() => {
     doaj: { name: "DOAJ", terms: "CC0 article metadata", kind: "paper", cors: true, home: "https://doaj.org/" },
     dblp: { name: "dblp", terms: "CC0, computer science", kind: "paper", cors: true, home: "https://dblp.org/" },
     wikidata: { name: "Wikidata", terms: "CC0", kind: "entity", cors: true, home: "https://www.wikidata.org/" },
-    nvd: { name: "NVD (NIST)", terms: "public domain, 5 requests per 30 s", kind: "advisory", cors: false, home: "https://nvd.nist.gov/" }
+    nvd: { name: "NVD (NIST)", terms: "public domain, 5 requests per 30 s", kind: "advisory", cors: false, home: "https://nvd.nist.gov/" },
+    // ADR-122
+    clinicaltrials: { name: "ClinicalTrials.gov", terms: "US NLM, public domain records", kind: "trial", cors: true, home: "https://clinicaltrials.gov/" },
+    pubmed: { name: "PubMed (NCBI E-utilities)", terms: "NLM, 3 requests per second without a key", kind: "paper", cors: true, home: "https://pubmed.ncbi.nlm.nih.gov/" },
+    zenodo: { name: "Zenodo", terms: "CERN, CC0 metadata, 25 per page anonymous", kind: "dataset", cors: true, home: "https://zenodo.org/" },
+    osti: { name: "OSTI.GOV", terms: "US DOE, public metadata", kind: "report", cors: false, home: "https://www.osti.gov/" },
+    epss: { name: "FIRST EPSS", terms: "FIRST.org, free use with attribution", kind: "score", cors: false, home: "https://www.first.org/epss/" }
   });
   const MODES = Object.freeze(["scholar", "intel"]);
+  // Field lenses (ADR-122): each adds steps with the specialist sources of its field; "general" adds none.
+  const FIELDS = Object.freeze({
+    general: { ar: "عام", en: "General", steps: [] },
+    medicine: { ar: "طب وصحة", en: "Medicine and health", steps: [
+      { id: "trials", ar: "التجارب السريرية المسجّلة", en: "Registered clinical trials", sources: ["clinicaltrials"] },
+      { id: "medline", ar: "أدبيات PubMed الطبية", en: "PubMed medical literature", sources: ["pubmed"] }] },
+    science: { ar: "علوم", en: "Science", steps: [
+      { id: "data", ar: "البيانات والبرمجيات المفتوحة", en: "Open data and software", sources: ["zenodo"] },
+      { id: "reports", ar: "التقارير التقنية الحكومية", en: "Government technical reports", sources: ["osti"] }] },
+    industry: { ar: "صناعة وهندسة", en: "Industry and engineering", steps: [
+      { id: "reports", ar: "التقارير التقنية والهندسية", en: "Technical and engineering reports", sources: ["osti"] },
+      { id: "data", ar: "البيانات والنماذج المفتوحة", en: "Open data and models", sources: ["zenodo"] }] },
+    algorithms: { ar: "خوارزميات وحوسبة", en: "Algorithms and computing", steps: [
+      { id: "code", ar: "الشيفرة والبرمجيات المنشورة", en: "Published code and software", sources: ["zenodo"] }] }
+  });
   // plan(): the sub-questions in order. `bridge` holds the other-language term found through Wikipedia language links
   // (filled in after the define step), so an Arabic question also searches the English literature and back.
   function plan(query, opts = {}) {
@@ -99,12 +126,14 @@ export const OMEGA_RESEARCH = (() => {
     const lang = isArabic(q) ? "ar" : "en";
     const depth = opts.depth === 1 ? 1 : 2;
     const mode = opts.mode === "intel" ? "intel" : "scholar";
+    const field = mode === "scholar" && Object.prototype.hasOwnProperty.call(FIELDS, opts.field) ? opts.field : "general";
     const off = new Set(Array.isArray(opts.off) ? opts.off : []);
     const steps = mode === "intel" ? [
       { id: "define", ar: "من هو أو ما هو", en: "Who or what it is", sources: ["wikipedia", "wikidata"] },
       { id: "news", ar: "الأخبار بالعربية والإنجليزية في آخر 3 أشهر", en: "News in Arabic and English, last 3 months", sources: ["gdelt"] },
       { id: "trend", ar: "حجم التغطية ونبرتها عبر 3 أشهر", en: "Coverage volume and tone over 3 months", sources: ["gdelt"] },
       { id: "cyber", ar: "الثغرات المنشورة في آخر 120 يوماً", en: "Published vulnerabilities, last 120 days", sources: ["nvd"] },
+      { id: "exploit", ar: "احتمال الاستغلال خلال 30 يوماً (EPSS)", en: "Exploitation probability in 30 days (EPSS)", sources: ["epss"] },
       { id: "evidence", ar: "البحث المحكّم وراء الموضوع", en: "Peer-reviewed research behind it", sources: ["openalex", "semanticscholar"] },
       { id: "recent", ar: `أحدث ما نُشر منذ ${year - 2}`, en: `Newest work since ${year - 2}`, sources: ["openalex"] }
     ] : [
@@ -116,9 +145,10 @@ export const OMEGA_RESEARCH = (() => {
       { id: "arabic", ar: "المصادر العربية", en: "Arabic-language sources", sources: ["openalex", "doaj", "wikipedia"] },
       { id: "news", ar: "الأخبار في آخر 3 أشهر", en: "News, last 3 months", sources: ["gdelt"] }
     ];
+    if (mode === "scholar") for (const f of FIELDS[field].steps) steps.splice(steps.length - 1, 0, { ...f, sources: f.sources.slice() });
     if (depth === 2 && mode === "scholar") steps.push({ id: "snowball", ar: "تتبّع الاستشهادات (كرة الثلج)", en: "Citation chasing (snowball)", sources: ["openalex"] });
     for (const s of steps) s.sources = s.sources.filter(k => !off.has(k));
-    return { format: VERSION + "-plan", query: q, lang, year, depth, mode, steps: steps.filter(s => s.sources.length), terms: tokens(q).slice(0, 12) };
+    return { format: VERSION + "-plan", query: q, lang, year, depth, mode, field, steps: steps.filter(s => s.sources.length), terms: tokens(q).slice(0, 12) };
   }
 
   /* ---------------- requests ---------------- */
@@ -166,7 +196,17 @@ export const OMEGA_RESEARCH = (() => {
       const end = new Date(finite(now) ? now : Date.parse("2026-01-01T00:00:00Z")), start = new Date(end.getTime() - 119 * 864e5);
       const iso = d => d.toISOString().slice(0, 19) + ".000";
       return `https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=${enc(w.join(" "))}&pubStartDate=${enc(iso(start))}&pubEndDate=${enc(iso(end))}&resultsPerPage=20&noRejected`;
-    }
+    },
+    // ADR-122. ClinicalTrials.gov API v2: registered studies that match the words, most relevant first.
+    clinicaltrials: q => { const w = words(q).slice(0, 8); return w.length ? `https://clinicaltrials.gov/api/v2/studies?query.term=${enc(w.join(" "))}&pageSize=15&format=json&countTotal=true` : null; },
+    // PubMed: esearch finds the PMIDs, esummary reads their titles, journals, dates and publication types.
+    pubmedSearch: q => { const w = words(q).slice(0, 8); return w.length ? `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${enc(w.join(" "))}&retmode=json&retmax=15&sort=relevance&tool=omega-oracle` : null; },
+    pubmedSummary: ids => { const list = (ids || []).map(String).filter(i => /^\d{1,10}$/.test(i)).slice(0, 15); return list.length ? `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${list.join(",")}&retmode=json&tool=omega-oracle` : null; },
+    // Zenodo records; `type` narrows to software (the algorithms lens) or dataset. 25 per page is the anonymous maximum.
+    zenodo: (q, type) => { const w = words(q).slice(0, 8); return w.length ? `https://zenodo.org/api/records?q=${enc(w.join(" "))}&size=15&sort=bestmatch${type === "software" || type === "dataset" ? "&type=" + type : ""}` : null; },
+    osti: q => { const w = words(q).slice(0, 8); return w.length ? `https://www.osti.gov/api/v1/records?q=${enc(w.join(" "))}&rows=15` : null; },
+    // FIRST EPSS for up to 20 CVE ids at once.
+    epss: ids => { const list = [...new Set((ids || []).map(String).filter(i => /^CVE-\d{4}-\d{4,7}$/.test(i)))].slice(0, 20); return list.length ? `https://api.first.org/data/v1/epss?cve=${list.join(",")}` : null; }
   };
   function gdeltTerm(q, lang) {
     const w = q.split(" ").filter(x => x.length >= 3);
@@ -175,23 +215,27 @@ export const OMEGA_RESEARCH = (() => {
   }
   // The proxy (and the static page) refuse every other host.
   const HOSTS = Object.freeze(["en.wikipedia.org", "ar.wikipedia.org", "api.openalex.org", "api.crossref.org", "www.ebi.ac.uk", "export.arxiv.org", "api.semanticscholar.org", "api.gdeltproject.org", "archive.org",
-    "doaj.org", "dblp.org", "www.wikidata.org", "services.nvd.nist.gov"]);
+    "doaj.org", "dblp.org", "www.wikidata.org", "services.nvd.nist.gov",
+    "clinicaltrials.gov", "eutils.ncbi.nlm.nih.gov", "zenodo.org", "www.osti.gov", "api.first.org"]);
   // allowed(): the one request shape each source may take through the local proxy: https, its own host, its one
   // API path, no credentials or port in the address. Anything else is refused before a byte leaves the laptop.
   // A third entry `true` means the path is a prefix followed by one encoded segment (DOAJ puts the query there).
+  // The path may be a list when one source has two fixed API paths (PubMed's esearch and esummary, ADR-122).
   const ENDPOINTS = Object.freeze({
     wikipedia: [/^(ar|en)\.wikipedia\.org$/, "/w/api.php"], openalex: [/^api\.openalex\.org$/, "/works"], crossref: [/^api\.crossref\.org$/, "/works"],
     europepmc: [/^www\.ebi\.ac\.uk$/, "/europepmc/webservices/rest/search"], arxiv: [/^export\.arxiv\.org$/, "/api/query"], semanticscholar: [/^api\.semanticscholar\.org$/, "/graph/v1/paper/search"],
     gdelt: [/^api\.gdeltproject\.org$/, "/api/v2/doc/doc"], wayback: [/^archive\.org$/, "/wayback/available"],
     doaj: [/^doaj\.org$/, "/api/search/articles/", true], dblp: [/^dblp\.org$/, "/search/publ/api"], wikidata: [/^www\.wikidata\.org$/, "/w/api.php"],
-    nvd: [/^services\.nvd\.nist\.gov$/, "/rest/json/cves/2.0"]
+    nvd: [/^services\.nvd\.nist\.gov$/, "/rest/json/cves/2.0"],
+    clinicaltrials: [/^clinicaltrials\.gov$/, "/api/v2/studies"], pubmed: [/^eutils\.ncbi\.nlm\.nih\.gov$/, ["/entrez/eutils/esearch.fcgi", "/entrez/eutils/esummary.fcgi"]],
+    zenodo: [/^zenodo\.org$/, "/api/records"], osti: [/^www\.osti\.gov$/, "/api/v1/records"], epss: [/^api\.first\.org$/, "/data/v1/epss"]
   });
   function allowed(source, url) {
     const e = Object.prototype.hasOwnProperty.call(ENDPOINTS, source) ? ENDPOINTS[source] : null;
     if (!e || typeof url !== "string" || url.length > 2000) return false;
     try {
       const u = new URL(url);
-      const path = e[2] ? u.pathname.startsWith(e[1]) && /^[^/]{1,400}$/.test(u.pathname.slice(e[1].length)) : u.pathname === e[1];
+      const path = e[2] ? u.pathname.startsWith(e[1]) && /^[^/]{1,400}$/.test(u.pathname.slice(e[1].length)) : Array.isArray(e[1]) ? e[1].includes(u.pathname) : u.pathname === e[1];
       return u.protocol === "https:" && e[0].test(u.hostname) && path && !u.username && !u.password && !u.port && !u.hash;
     } catch { return false; }
   }
@@ -321,6 +365,70 @@ export const OMEGA_RESEARCH = (() => {
         kev: !!c.cisaExploitAdd, kevDate: c.cisaExploitAdd ? str(c.cisaExploitAdd, 10) : null };
       return r;
     }).filter(Boolean),
+    // ADR-122. ClinicalTrials.gov v2: one record per registered study, with its status, phase, size and sponsor.
+    clinicaltrials: (j, step) => ((j && j.studies) || []).map(st => {
+      const p = (st && st.protocolSection) || {}, id = p.identificationModule || {}, sm = p.statusModule || {}, dm = p.designModule || {};
+      const nct = str(id.nctId, 12);
+      if (!/^NCT\d{8}$/.test(nct)) return null;
+      const start = str(sm.startDateStruct && sm.startDateStruct.date, 10), y = /^\d{4}/.test(start) ? Number(start.slice(0, 4)) : null;
+      const phases = (Array.isArray(dm.phases) ? dm.phases : []).map(x => str(x, 16)).filter(x => /^[A-Z0-9_]+$/.test(x));
+      const status = str(sm.overallStatus, 32) || null, sponsor = str(p.sponsorCollaboratorsModule && p.sponsorCollaboratorsModule.leadSponsor && p.sponsorCollaboratorsModule.leadSponsor.name, 160) || null;
+      const n = Number(dm.enrollmentInfo && dm.enrollmentInfo.count);
+      const r = rec({ kind: "trial", title: id.briefTitle || id.officialTitle, year: y, date: start || null, venue: "ClinicalTrials.gov",
+        url: `https://clinicaltrials.gov/study/${nct}`, abstract: p.descriptionModule && p.descriptionModule.briefSummary, authors: sponsor ? [sponsor] : [],
+        topics: (p.conditionsModule && Array.isArray(p.conditionsModule.conditions) ? p.conditionsModule.conditions : []).slice(0, 5), via: "clinicaltrials", step });
+      r.key = "nct:" + nct;
+      r.trial = { id: nct, status, phases, type: str(dm.studyType, 20) || null, enrollment: Number.isFinite(n) && n >= 0 ? n : null, sponsor, results: !!st.hasResults,
+        updated: str(sm.lastUpdatePostDateStruct && sm.lastUpdatePostDateStruct.date, 10) || null };
+      return r;
+    }).filter(Boolean),
+    pubmedSearch: j => ((j && j.esearchresult && j.esearchresult.idlist) || []).map(String).filter(i => /^\d{1,10}$/.test(i)).slice(0, 15),
+    // esummary: PubMed's own publication types say when a work is a preprint or has been retracted.
+    pubmedSummary: (j, step) => {
+      const res = (j && j.result) || {};
+      return (Array.isArray(res.uids) ? res.uids : []).map(uid => {
+        const d = res[uid];
+        if (!d || !/^\d{1,10}$/.test(String(uid)) || d.error) return null;
+        const types = (Array.isArray(d.pubtype) ? d.pubtype : []).map(t => str(t, 60));
+        const doi = (Array.isArray(d.articleids) ? d.articleids : []).find(a => a && a.idtype === "doi");
+        const y = /^(\d{4})/.exec(str(d.pubdate || d.epubdate, 40));
+        const lang = Array.isArray(d.lang) && d.lang[0] ? str(d.lang[0], 3).toLowerCase() : null;
+        return rec({ kind: types.some(t => /preprint/i.test(t)) ? "preprint" : "paper", title: str(d.title, 400).replace(/\.$/, ""), authors: (Array.isArray(d.authors) ? d.authors : []).map(a => a && a.name),
+          year: y ? Number(y[1]) : null, date: y ? str(d.sortpubdate || d.pubdate, 10).replace(/\//g, "-") : null, venue: d.fulljournalname || d.source, doi: normDoi(doi && doi.value),
+          url: `https://pubmed.ncbi.nlm.nih.gov/${uid}/`, retracted: types.some(t => /retracted publication/i.test(t)), lang: lang === "eng" ? "en" : lang === "ara" ? "ar" : lang, via: "pubmed", step });
+      }).filter(r => r && r.title);
+    },
+    // Zenodo: datasets and software are "dataset" records (archived, not peer reviewed); other uploads are preprints.
+    zenodo: (j, step) => ((j && j.hits && j.hits.hits) || []).map(h => {
+      const m = (h && h.metadata) || {}, type = str(m.resource_type && m.resource_type.type, 20), d = str(m.publication_date, 10);
+      const open = String(m.access_right || (h.access && h.access.record) || "").toLowerCase() === "open" || (h.access && h.access.record === "public");
+      const page = (h.links && (h.links.self_html || h.links.html)) || (h.id ? `https://zenodo.org/records/${enc(String(h.id))}` : null);
+      const r = rec({ kind: type === "dataset" || type === "software" ? "dataset" : "preprint", title: m.title, authors: (m.creators || []).map(c => c && c.name), year: /^\d{4}/.test(d) ? Number(d.slice(0, 4)) : null,
+        date: d || null, venue: "Zenodo" + (type ? " · " + type : ""), doi: normDoi(h.doi || m.doi), url: page, oa: open ? page : null, abstract: m.description ? stripTags(m.description) : null,
+        topics: Array.isArray(m.keywords) ? m.keywords.slice(0, 5) : [], via: "zenodo", step });
+      r.licence = str(m.license && (m.license.id || m.license), 40) || null;
+      r.resource = type || null;
+      return r;
+    }).filter(r => r.title),
+    // OSTI.GOV: journal articles count as papers, everything else (technical reports, conference papers) as reports.
+    osti: (j, step) => (Array.isArray(j) ? j : []).map(x => {
+      if (!x || !x.title) return null;
+      const links = Array.isArray(x.links) ? x.links : [], cit = links.find(l => l && l.rel === "citation"), ft = links.find(l => l && l.rel === "fulltext");
+      const d = str(x.publication_date, 10), type = str(x.product_type, 40);
+      return rec({ kind: /journal article/i.test(type) ? "paper" : "report", title: x.title, authors: (Array.isArray(x.authors) ? x.authors : []).map(a => String(a).replace(/\s*\[.*$/, "")),
+        year: /^\d{4}/.test(d) ? Number(d.slice(0, 4)) : null, date: d || null, venue: x.journal_name || ("OSTI.GOV" + (type ? " · " + type : "")), doi: normDoi(x.doi),
+        url: (cit && cit.href) || (/^\d{1,12}$/.test(String(x.osti_id)) ? `https://www.osti.gov/biblio/${x.osti_id}` : null), oa: ft && ft.href, abstract: x.description ? stripTags(x.description) : null,
+        topics: Array.isArray(x.subjects) ? x.subjects.slice(0, 5) : [], via: "osti", step });
+    }).filter(Boolean),
+    // EPSS: CVE id -> {epss 0..1, percentile 0..1, date} as FIRST publishes them.
+    epss: j => {
+      const out = {};
+      for (const d of (j && Array.isArray(j.data) ? j.data : [])) {
+        const id = str(d && d.cve, 24), e = Number(d && d.epss), p = Number(d && d.percentile);
+        if (/^CVE-\d{4}-\d{4,7}$/.test(id) && Number.isFinite(e) && e >= 0 && e <= 1) out[id] = { epss: +e.toFixed(5), percentile: Number.isFinite(p) ? +p.toFixed(5) : null, date: str(d.date, 10) || null };
+      }
+      return out;
+    },
     // GDELT timelines -> [{date, value}] per day (volume: % of all monitored articles; tone: average, about -10..+10).
     gdeltTimeline: j => {
       const s = j && Array.isArray(j.timeline) ? j.timeline[0] : null;
@@ -361,7 +469,7 @@ export const OMEGA_RESEARCH = (() => {
   }
 
   /* ---------------- score ---------------- */
-  const KIND_W = { paper: 1, preprint: 0.85, advisory: 0.9, encyclopedia: 0.75, news: 0.6 };
+  const KIND_W = { paper: 1, preprint: 0.85, advisory: 0.9, trial: 0.9, report: 0.8, dataset: 0.7, encyclopedia: 0.75, news: 0.6 };
   // score(): BM25 (k1 1.2, b 0.75; title counted twice) normalised to the best record, then a weighted blend.
   // A retracted record keeps its place in the list with score 0 and a red flag. [INFERENCE]
   function score(records, terms, now) {
@@ -389,11 +497,13 @@ export const OMEGA_RESEARCH = (() => {
     }).sort((a, b) => b.score - a.score || (b.cites || 0) - (a.cites || 0));
   }
   // grade(): A = peer-reviewed and (found in two or more indexes or cited 50+ times); B = peer-reviewed;
-  // C = preprint or encyclopedia; D = news; G = official public record (an NVD CVE entry, ADR-115); X = retracted.
-  // Fixed rules, not a judgement of quality. [INFERENCE]
+  // C = preprint or encyclopedia; D = news; G = official public record (an NVD CVE entry, ADR-115, or a registered
+  // clinical trial, ADR-122); R = technical report, dataset or software, archived but not peer reviewed (ADR-122);
+  // X = retracted. Fixed rules, not a judgement of quality. [INFERENCE]
   function grade(r) {
     if (r.retracted) return "X";
-    if (r.kind === "advisory") return "G";
+    if (r.kind === "advisory" || r.kind === "trial") return "G";
+    if (r.kind === "report" || r.kind === "dataset") return "R";
     if (r.kind === "paper") return r.via.length >= 2 || (r.cites || 0) >= 50 ? "A" : "B";
     if (r.kind === "preprint" || r.kind === "encyclopedia") return "C";
     return "D";
@@ -485,6 +595,11 @@ export const OMEGA_RESEARCH = (() => {
     if (intel && !extra.trend && runs.some(x => x.step === "trend")) gaps.push({ level: "amber", ar: "لا منحنى للتغطية الإخبارية: GDELT لم يرجع 14 يوماً على الأقل.", en: "No coverage curve: GDELT returned fewer than 14 days." });
     if (intel && ranked.filter(r => r.kind === "news").length < 3) gaps.push({ level: "amber", ar: "أقل من 3 أخبار؛ الصورة الإخبارية ناقصة.", en: "Fewer than 3 news items." });
     if (ranked.length && !ranked.some(r => r.year && r.year >= year - 2 && r.kind !== "news")) gaps.push({ level: "amber", ar: `لا بحث منشور منذ ${year - 2}، قد تكون المعرفة قديمة.`, en: `Nothing published since ${year - 2}.` });
+    const field = planned.field || "general";
+    if (field === "medicine" && !ranked.some(r => r.kind === "trial")) gaps.push({ level: "amber", ar: "لا تجربة سريرية مسجّلة تطابق السؤال في ClinicalTrials.gov.", en: "No registered clinical trial matched." });
+    if (field === "medicine") gaps.push({ level: "amber", ar: "هذا ملخص أدلة منشورة وليس نصيحة طبية؛ القرار العلاجي للطبيب المختص.", en: "A summary of published evidence, not medical advice." });
+    if (field === "industry") gaps.push({ level: "amber", ar: "براءات الاختراع لا تُقرأ آلياً (لا واجهة مفتوحة بلا مفتاح)؛ افتح Espacenet أو WIPO Patentscope من روابط البحث الخارجي.", en: "Patents are not read automatically (no keyless open API); use the patent link-outs." });
+    if (intel && ranked.some(r => r.cve) && !ranked.some(r => r.cve && r.cve.epss)) gaps.push({ level: "amber", ar: "لا درجة EPSS للثغرات: FIRST لم يُجب أو لم ينشر درجة بعد.", en: "No EPSS score for the CVEs." });
     if (!intel && !ranked.some(r => r.lang === "ar" || isArabic(r.title))) gaps.push({ level: "amber", ar: "لا مصدر عربي في النتائج. جرّب منصة إسناد أو مستودع QSpace من روابط البحث الخارجي.", en: "No Arabic-language source found." });
     const retracted = ranked.filter(r => r.retracted);
     if (retracted.length) gaps.push({ level: "red", ar: `${retracted.length} عمل مسحوب (retracted) استُبعد من الخلاصة.`, en: `${retracted.length} retracted work(s) excluded.` });
@@ -494,14 +609,15 @@ export const OMEGA_RESEARCH = (() => {
     if (top5.length && !top5.some(r => r.oa)) gaps.push({ level: "amber", ar: "لا نص كامل مفتوح لأعلى خمسة مصادر؛ الخلاصة مبنية على الملخصات فقط.", en: "No open full text for the top five." });
     const failed = [...new Set(runs.filter(x => !x.ok).map(x => x.source))];
     if (failed.length) gaps.push({ level: "amber", ar: `مصادر لم تُجب: ${failed.map(k => (SOURCES[k] || { name: k }).name).join("، ")}.`, en: `Sources that failed: ${failed.join(", ")}.` });
-    const kinds = { paper: 0, preprint: 0, advisory: 0, encyclopedia: 0, news: 0 };
+    const kinds = { paper: 0, preprint: 0, advisory: 0, trial: 0, report: 0, dataset: 0, encyclopedia: 0, news: 0 };
     for (const r of ranked) kinds[r.kind] = (kinds[r.kind] || 0) + 1;
     const indexes = new Set(ranked.flatMap(r => r.via));
     const years = ranked.map(r => r.year).filter(finite);
     return { steps, gaps, kpi: { records: ranked.length, peer: peer.length, preprints: kinds.preprint, encyclopedia: kinds.encyclopedia, news: kinds.news,
       indexes: indexes.size, corroborated: ranked.filter(r => r.via.length >= 2).length, oaShare: ranked.length ? +(ranked.filter(r => r.oa).length / ranked.length).toFixed(3) : 0,
       retracted: retracted.length, newest: years.length ? Math.max(...years) : null, oldest: years.length ? Math.min(...years) : null,
-      advisories: kinds.advisory, kev: ranked.filter(r => r.cve && r.cve.kev).length } };
+      advisories: kinds.advisory, kev: ranked.filter(r => r.cve && r.cve.kev).length, trials: kinds.trial, reports: kinds.report, datasets: kinds.dataset,
+      epssHigh: ranked.filter(r => r.cve && r.cve.epss && r.cve.epss.epss >= 0.1).length } };
   }
 
   /* ---------------- report ---------------- */
@@ -513,10 +629,16 @@ export const OMEGA_RESEARCH = (() => {
     const cite = r => { if (!index.has(r.key)) { refs.push(r); index.set(r.key, refs.length); } return index.get(r.key); };
     const intel = planned.mode === "intel";
     const scholarly = live.filter(r => r.kind === "paper" || r.kind === "preprint");
-    const advisories = live.filter(r => r.kind === "advisory").sort((a, b) => (b.cve && b.cve.kev ? 1 : 0) - (a.cve && a.cve.kev ? 1 : 0) || ((b.cve && b.cve.score) || 0) - ((a.cve && a.cve.score) || 0) || String(b.date || "").localeCompare(String(a.date || "")));
+    // Exploited first (CISA KEV), then the higher EPSS probability (ADR-122), then CVSS, then the newest.
+    const ep = r => (r.cve && r.cve.epss ? r.cve.epss.epss : -1);
+    const advisories = live.filter(r => r.kind === "advisory").sort((a, b) => (b.cve && b.cve.kev ? 1 : 0) - (a.cve && a.cve.kev ? 1 : 0) || ep(b) - ep(a) || ((b.cve && b.cve.score) || 0) - ((a.cve && a.cve.score) || 0) || String(b.date || "").localeCompare(String(a.date || "")));
+    // Trials: those with posted results first, then completed, then recruiting, then the rest; newest start first.
+    const TRIAL_RANK = { COMPLETED: 1, RECRUITING: 2, ACTIVE_NOT_RECRUITING: 3, ENROLLING_BY_INVITATION: 3, NOT_YET_RECRUITING: 4 };
+    const tr = r => (r.trial && r.trial.results ? 0 : (r.trial && TRIAL_RANK[r.trial.status]) || 5);
+    const trials = live.filter(r => r.kind === "trial").sort((a, b) => tr(a) - tr(b) || String(b.date || "").localeCompare(String(a.date || "")));
     const pick = (list, n) => list.slice(0, n).map(r => ({ n: cite(r), r }));
     // In intel mode the brief opens with the newest exploited or most severe advisories, then the research.
-    const pool = intel ? advisories.slice(0, 6).concat(scholarly) : scholarly;
+    const pool = intel ? advisories.slice(0, 6).concat(scholarly) : scholarly.concat(trials.slice(0, 4));
     const summary = keySentences(pool.length ? pool : live, terms, { n: opts.summary || 6 }).map(s => ({ text: s.text, n: cite(live.find(r => r.key === s.key)) }));
     const counterS = keySentences(scholarly.filter(r => r.steps.includes("counter")).concat(scholarly), terms, { n: 3, mode: "counter" }).map(s => ({ text: s.text, n: cite(live.find(r => r.key === s.key)) }));
     const define = live.find(r => r.kind === "encyclopedia" && r.steps.includes("define"));
@@ -529,18 +651,20 @@ export const OMEGA_RESEARCH = (() => {
       arabic: pick(live.filter(r => r.lang === "ar" || isArabic(r.title)), 5),
       news: pick(live.filter(r => r.kind === "news"), intel ? 10 : 6),
       advisories: pick(advisories, 8),
+      trials: pick(trials, 6),
+      technical: pick(live.filter(r => r.kind === "report" || r.kind === "dataset").sort((a, b) => b.score - a.score), 6),
       entity: opts.entity || null,
       trend: opts.trend || null
     };
     for (const r of live.slice(0, 30)) cite(r);
-    return { format: VERSION, query: planned.query, lang: planned.lang, mode: planned.mode || "scholar", bridge: opts.bridge || null, generatedAt: at, depth: planned.depth,
+    return { format: VERSION, query: planned.query, lang: planned.lang, mode: planned.mode || "scholar", field: planned.field || "general", bridge: opts.bridge || null, generatedAt: at, depth: planned.depth,
       label: "[INFERENCE] ranking, grades and grouping are fixed rules; quoted sentences are verbatim from the cited abstract",
       sections, gaps: evaluation.gaps, kpi: evaluation.kpi, steps: evaluation.steps,
       references: refs.map((r, i) => ({ n: i + 1, key: r.key, kind: r.kind, grade: grade(r), title: r.title, authors: r.authors, year: r.year, date: r.date, venue: r.venue, doi: r.doi, url: r.url, oa: r.oa,
-        cites: r.cites, via: r.via, score: r.score, retracted: r.retracted, archive: r.archive || null, lang: r.lang, cve: r.cve || null })),
+        cites: r.cites, via: r.via, score: r.score, retracted: r.retracted, archive: r.archive || null, lang: r.lang, cve: r.cve || null, trial: r.trial || null, licence: r.licence || null })),
       retracted: ranked.filter(r => r.retracted).map(r => ({ title: r.title, doi: r.doi, url: r.url })) };
   }
-  const GRADE_AR = { A: "محكّم ومؤكد", B: "محكّم", C: "مسودة أو موسوعة", D: "خبر", G: "سجل رسمي", X: "مسحوب" };
+  const GRADE_AR = { A: "محكّم ومؤكد", B: "محكّم", C: "مسودة أو موسوعة", D: "خبر", G: "سجل رسمي", R: "تقرير أو بيانات", X: "مسحوب" };
   const DIR_AR = { rising: "صاعد", falling: "هابط", steady: "مستقر" };
   const pct = v => (Math.round(v * 1e4) / 1e4).toString();
   function markdown(rep) {
@@ -564,17 +688,23 @@ export const OMEGA_RESEARCH = (() => {
     }
     if (rep.sections.advisories.length) {
       L.push("## الثغرات المنشورة (NVD، آخر 120 يوماً)", "");
-      for (const x of rep.sections.advisories) { const c = x.r.cve || {}; L.push(`- ${c.id}${c.score !== null && c.score !== undefined ? ` · CVSS ${c.score}${c.severity ? " " + c.severity : ""}` : ""}${c.kev ? ` · مستغلة فعلاً (CISA KEV ${c.kevDate})` : ""} · نُشرت ${x.r.date || "؟"} ${ref(x.n)}`); }
+      for (const x of rep.sections.advisories) { const c = x.r.cve || {}; L.push(`- ${c.id}${c.score !== null && c.score !== undefined ? ` · CVSS ${c.score}${c.severity ? " " + c.severity : ""}` : ""}${c.epss ? ` · EPSS ${(c.epss.epss * 100).toFixed(2)}% (المئين ${c.epss.percentile !== null ? Math.round(c.epss.percentile * 100) : "؟"}، ${c.epss.date || "؟"})` : ""}${c.kev ? ` · مستغلة فعلاً (CISA KEV ${c.kevDate})` : ""} · نُشرت ${x.r.date || "؟"} ${ref(x.n)}`); }
       L.push("");
     }
     L.push("## الخلاصة المستخرجة", "", "جمل منقولة حرفياً من ملخصات منشورة، بلغتها الأصلية، مع رقم مرجعها.", "");
     if (rep.sections.summary.length) for (const s of rep.sections.summary) L.push(`- «${s.text}» ${ref(s.n)}`); else L.push("- تعذر التحقق منها: لا ملخص يطابق السؤال.");
     L.push("");
     const sec = (title, list) => { if (!list.length) return; L.push(`## ${title}`, ""); for (const x of list) L.push(item(x)); L.push(""); };
+    if (rep.sections.trials && rep.sections.trials.length) {
+      L.push("## التجارب السريرية المسجّلة (ClinicalTrials.gov)", "");
+      for (const x of rep.sections.trials) { const t = x.r.trial || {}; L.push(`- ${t.id} · ${x.r.title}${t.status ? ` · ${t.status}` : ""}${t.phases && t.phases.length ? ` · ${t.phases.join("/")}` : ""}${t.enrollment !== null && t.enrollment !== undefined ? ` · المشاركون ${t.enrollment}` : ""}${t.results ? " · نتائج منشورة" : ""}${x.r.date ? ` · بدأت ${x.r.date}` : ""} ${ref(x.n)}`); }
+      L.push("");
+    }
     sec("أقوى الأدلة المحكّمة", rep.sections.strongest);
     sec("أحدث ما نُشر", rep.sections.recent);
     sec("الأعمال التأسيسية", rep.sections.foundations);
     if (rep.sections.counter.length) { L.push("## قيود وأدلة معاكسة", ""); for (const s of rep.sections.counter) L.push(`- «${s.text}» ${ref(s.n)}`); L.push(""); }
+    sec("التقارير التقنية والبيانات والبرمجيات", rep.sections.technical || []);
     sec("السياق العربي", rep.sections.arabic);
     if (!intel) sec("الأخبار والمتابعة", rep.sections.news);
     else if (rep.sections.news.length) { L.push("## الأخبار (GDELT)", ""); for (const x of rep.sections.news) L.push(`- ${x.r.title}${x.r.date ? ` (${x.r.date})` : ""}${x.r.venue ? ` · ${x.r.venue}` : ""} ${ref(x.n)}`); L.push(""); }
@@ -589,6 +719,7 @@ export const OMEGA_RESEARCH = (() => {
       L.push(`${r.n}. ${who}${r.title}.${r.venue ? ` ${r.venue}` : ""}${r.year ? `، ${r.year}` : ""}. ${r.doi ? "https://doi.org/" + r.doi : r.url || ""} · الدرجة ${r.grade} (${GRADE_AR[r.grade]}) · الفهارس: ${r.via.map(v => (SOURCES[v] || { name: v }).name).join("، ")}${r.oa && r.oa !== r.url ? ` · نص مفتوح: ${r.oa}` : ""}${r.archive && r.archive.archived ? ` · أرشيف ${r.archive.at}: ${r.archive.url}` : ""}`);
     }
     if (rep.retracted.length) { L.push("", "### أعمال مسحوبة استُبعدت", ""); for (const r of rep.retracted) L.push(`- ${r.title}${r.doi ? " · https://doi.org/" + r.doi : ""}`); }
+    if (intel && rep.references.some(r => r.cve && r.cve.epss)) L.push("", "درجات EPSS من FIRST.org (Exploit Prediction Scoring System)، احتمال منشور لا حكم من الوكيل.");
     L.push("", "---", intel ? "استخبارات مفتوحة سلبية: قراءة واجهات عامة فقط، بلا مسح ولا فحص منافذ ولا بحث عن عناوين. للمساعدة في القرار فقط، ولا ينفّذ أي أمر." : "قرار المساعدة فقط. لا شيء هنا نصيحة مالية أو طبية أو قانونية، ولا ينفّذ أي أمر.");
     return L.join("\n");
   }
@@ -641,7 +772,7 @@ export const OMEGA_RESEARCH = (() => {
       if (shared && !edges.some(e => (e.a === i && e.b === j) || (e.a === j && e.b === i))) edges.push({ a: i, b: j, type: "topic", w: shared });
     }
     const n = nodes.length || 1, K = Math.sqrt(1 / n) * 0.9;
-    const order = { paper: 0, preprint: 1, encyclopedia: 2, news: 3, advisory: 4 };
+    const order = { paper: 0, preprint: 1, encyclopedia: 2, news: 3, advisory: 4, trial: 5, report: 6, dataset: 7 };
     nodes.forEach((p, k) => { const ang = (2 * Math.PI * k) / n + (order[p.kind] || 0) * 0.35; const rad = 0.18 + 0.22 * (1 - clamp(p.score, 0, 1)); p.x = 0.5 + rad * Math.cos(ang); p.y = 0.5 + rad * Math.sin(ang); });
     let temp = 0.08;
     for (let it = 0; it < 160; it++) {
@@ -668,7 +799,8 @@ export const OMEGA_RESEARCH = (() => {
   // run(): the whole agent over an injected transport, so the page, the proxy-less bridge and the tests share it.
   //   io.get(source, url, "json" | "text") -> Promise<{data, tier}>   (throws when the source fails)
   //   io.clock() -> milliseconds, for the per-call timings (optional)
-  //   opts: {now, depth: 1 | 2, mode: "scholar" | "intel", off: [source keys], wayback: true, onEvent(type, data)}
+  //   opts: {now, depth: 1 | 2, mode: "scholar" | "intel", field: one of FIELDS (scholar only), off: [source keys],
+  //          wayback: true, onEvent(type, data)}
   async function run(query, opts, io) {
     const o = opts || {}, now = finite(o.now) ? o.now : Date.parse("2026-01-01T00:00:00Z");
     const P = plan(query, { ...o, now });
@@ -743,11 +875,29 @@ export const OMEGA_RESEARCH = (() => {
       call("foundations", "openalex", urls.openalex(sq, "cited"), j => shape.openalex(j, "foundations")),
       call("counter", "openalex", urls.openalex(sq, "counter"), j => shape.openalex(j, "counter")),
       call("arabic", "openalex", urls.openalex(arq || sq, "ar"), j => shape.openalex(j, "arabic")),
-      call("news", "gdelt", urls.gdelt(sq), j => shape.gdelt(j, "news"))
+      call("news", "gdelt", urls.gdelt(sq), j => shape.gdelt(j, "news")),
+      // ADR-122 field lenses (each call is skipped unless the plan has its step)
+      call("trials", "clinicaltrials", urls.clinicaltrials(sq), j => shape.clinicaltrials(j, "trials")),
+      (async () => {
+        const ids = await call("medline", "pubmed", urls.pubmedSearch(sq), shape.pubmedSearch, "json", false);
+        if (ids.length) await call("medline", "pubmed", urls.pubmedSummary(ids), j => shape.pubmedSummary(j, "medline"));
+      })(),
+      call("data", "zenodo", urls.zenodo(sq), j => shape.zenodo(j, "data")),
+      call("code", "zenodo", urls.zenodo(sq, "software"), j => shape.zenodo(j, "code")),
+      call("reports", "osti", urls.osti(sq), j => shape.osti(j, "reports"))
     ];
     if (P.mode !== "intel" && P.lang === "en" && arq) jobs.push(call("arabic", "wikipedia", urls.wikiPage("ar", arq, "en"), j => { const w = shape.wikiPage(j, "ar", "arabic"); return w ? [w.record] : []; }));
     if (P.mode !== "intel" && P.lang === "ar") jobs.push(call("news", "gdelt", urls.gdelt(P.query, "ar"), j => shape.gdelt(j, "news")));
     await Promise.all(jobs);
+    // ADR-122: FIRST EPSS for the CVEs NVD returned, joined onto their records (no records of its own).
+    if (P.mode === "intel" && want("exploit", "epss")) {
+      const cves = lists.flat().filter(r => r && r.cve).map(r => r.cve.id);
+      if (cves.length) {
+        const scores = {};
+        await call("exploit", "epss", urls.epss(cves), j => { Object.assign(scores, shape.epss(j)); return Object.keys(scores); }, "json", false);
+        for (const r of lists.flat()) if (r && r.cve && scores[r.cve.id]) r.cve.epss = scores[r.cve.id];
+      }
+    }
     const terms = [...P.terms, ...tokens(bridge || "")];
     emit("stage", { stage: "evaluate" });
     let ranked = score(merge(lists), terms, now);
@@ -785,9 +935,13 @@ export const OMEGA_RESEARCH = (() => {
     { name: "PubMed", en: "PubMed", url: q => `https://pubmed.ncbi.nlm.nih.gov/?term=${enc(q)}` },
     { name: "QSpace", en: "Qatar University repository", url: q => `https://qspace.qu.edu.qa/discover?query=${enc(q)}` },
     { name: "DOAJ", en: "Directory of Open Access Journals", url: q => `https://doaj.org/search/articles?source=${enc(JSON.stringify({ query: { query_string: { query: q } } }))}` },
-    { name: "arXiv", en: "arXiv", url: q => `https://arxiv.org/search/?query=${enc(q)}&searchtype=all` }
+    { name: "arXiv", en: "arXiv", url: q => `https://arxiv.org/search/?query=${enc(q)}&searchtype=all` },
+    // ADR-122: patent offices have no keyless open API, so they stay links the reader opens.
+    { name: "Espacenet", en: "European Patent Office", url: q => `https://worldwide.espacenet.com/patent/search?q=${enc(q)}` },
+    { name: "Patentscope", en: "WIPO patents", url: q => `https://patentscope.wipo.int/search/en/result.jsf?query=${enc(q)}` },
+    { name: "ClinicalTrials.gov", en: "Registered clinical trials", url: q => `https://clinicaltrials.gov/search?term=${enc(q)}` }
   ]);
 
-  return Object.freeze({ VERSION, SOURCES, MODES, HOSTS, ENDPOINTS, allowed, LINKOUTS, GRADE_AR, DIR_AR, run, plan, urls, shape, merge, score, grade, snowball, keySentences, sentences, evaluate, report, markdown, facts, checkCitations, graph, trend,
+  return Object.freeze({ VERSION, SOURCES, MODES, FIELDS, HOSTS, ENDPOINTS, allowed, LINKOUTS, GRADE_AR, DIR_AR, run, plan, urls, shape, merge, score, grade, snowball, keySentences, sentences, evaluate, report, markdown, facts, checkCitations, graph, trend,
     tokens, words, isArabic, normDoi, normTitle, safeUrl, cleanQuery, abstractFromIndex, arxivQuery });
 })();

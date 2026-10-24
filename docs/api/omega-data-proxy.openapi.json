@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OMEGA local data proxy",
-    "version": "1.16.0",
+    "version": "1.17.0",
     "summary": "Free, keyless public data for the OMEGA pages, cached on disk and bound to 127.0.0.1.",
-    "description": "scripts/omega-data-proxy.mjs (ADR-089 to ADR-116). GET only except the local model bridge. CORS is added for local pages only; any other Origin gets 403 and an unknown Host gets 421. Every route reads one fixed public upstream; nothing here signs, sends or routes an order, holds a key or writes outside its cache. Generated Markdown: docs/api/OMEGA-DATA-PROXY-API.md (node scripts/build-api-docs.mjs).",
+    "description": "scripts/omega-data-proxy.mjs (ADR-089 to ADR-122). GET only except the local model bridge. CORS is added for local pages only; any other Origin gets 403 and an unknown Host gets 421. Every route reads one fixed public upstream; nothing here signs, sends or routes an order, holds a key or writes outside its cache. Generated Markdown: docs/api/OMEGA-DATA-PROXY-API.md (node scripts/build-api-docs.mjs). Every answer carries X-Content-Type-Options nosniff, Referrer-Policy no-referrer, Cross-Origin-Opener-Policy same-origin and Cross-Origin-Resource-Policy same-site; the private-network grant goes to http(s) loopback origins only, and a client that has not sent its headers within 10 s is cut off (ADR-122, found by scripts/self-shield.mjs). OMEGA_OFFLINE=1 refuses every upstream call (the self-shield sandbox).",
     "license": {
       "name": "Data under each upstream's own terms; see the footer of each page"
     }
@@ -1160,8 +1160,8 @@
         "tags": [
           "research"
         ],
-        "summary": "ORACLE research source (ADR-114, ADR-115)",
-        "description": "`url` must be that source's own https host and API path (OMEGA_RESEARCH.allowed in scripts/lib/deep-research.mjs); anything else is refused with 400. arXiv is paced at one call per 3 s and NVD at one per 6.5 s.",
+        "summary": "ORACLE research source (ADR-114, ADR-115, ADR-122)",
+        "description": "`url` must be that source's own https host and API path (OMEGA_RESEARCH.allowed in scripts/lib/deep-research.mjs); anything else is refused with 400. arXiv is paced at one call per 3 s, NVD at one per 6.5 s, Zenodo at one per 2.1 s and PubMed at one per 0.4 s. PubMed has two fixed paths (esearch, esummary).",
         "x-upstream": "one fixed API path per source",
         "x-cache-seconds": 21600,
         "x-omega-special": true,
@@ -1185,7 +1185,12 @@
                 "doaj",
                 "dblp",
                 "wikidata",
-                "nvd"
+                "nvd",
+                "clinicaltrials",
+                "pubmed",
+                "zenodo",
+                "osti",
+                "epss"
               ]
             }
           },

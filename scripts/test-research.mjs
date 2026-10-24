@@ -1,4 +1,4 @@
-// Tests for the deep research engine (scripts/lib/deep-research.mjs, ADR-114 and ADR-115) and the ORACLE page's inline copy.
+// Tests for the deep research engine (scripts/lib/deep-research.mjs, ADR-114, ADR-115 and ADR-122) and the ORACLE page's inline copy.
 //   node scripts/test-research.mjs        exits 0 when every test passes
 // No network, no dependencies. The answers below are small hand-made test fixtures in the shape each public API
 // documents; they are never shown on a page. CI runs this in the skillspector workflow.
@@ -69,6 +69,27 @@ const FIX = {
     { cve: { id: "not-a-cve" } }
   ] },
   gdeltVol: { timeline: [{ series: "Volume Intensity", data: Array.from({ length: 30 }, (_, i) => ({ date: `202609${String(i + 1).padStart(2, "0")}T000000Z`, value: i >= 23 ? 0.3 : 0.1 })) }] },
+  // ADR-122
+  ct: { totalCount: 2, studies: [
+    { protocolSection: { identificationModule: { nctId: "NCT01234567", briefTitle: "Heat-tolerant symbionts for coral restoration divers' health" }, statusModule: { overallStatus: "COMPLETED", startDateStruct: { date: "2023-05" }, lastUpdatePostDateStruct: { date: "2025-01-10" } },
+      designModule: { studyType: "INTERVENTIONAL", phases: ["PHASE2"], enrollmentInfo: { count: 120 } }, sponsorCollaboratorsModule: { leadSponsor: { name: "Reef Health Institute" } },
+      descriptionModule: { briefSummary: "This trial tests whether divers exposed to marine heatwaves during coral bleaching surveys show heat strain, and whether cooling vests reduce it significantly." }, conditionsModule: { conditions: ["Heat Stress"] } }, hasResults: true },
+    { protocolSection: { identificationModule: { nctId: "NCT0BAD" } } },
+    { protocolSection: { identificationModule: { nctId: "NCT07654321", briefTitle: "Coral bleaching exposure and skin irritation" }, statusModule: { overallStatus: "RECRUITING", startDateStruct: { date: "2026-02-01" } }, designModule: { studyType: "OBSERVATIONAL" } } }
+  ] },
+  pmSearch: { esearchresult: { count: "2", idlist: ["40000001", "40000002", "bad"] } },
+  pmSummary: { result: { uids: ["40000001", "40000002"],
+    "40000001": { uid: "40000001", title: "Coral bleaching physiology under marine heatwaves.", pubdate: "2024 May", sortpubdate: "2024/05/01 00:00", fulljournalname: "Marine Biology", authors: [{ name: "Doe J" }], articleids: [{ idtype: "doi", value: "10.1000/cb.2024.1" }], pubtype: ["Journal Article"], lang: ["eng"] },
+    "40000002": { uid: "40000002", title: "Retracted: coral bleaching cure", pubdate: "2021", fulljournalname: "Fake Journal", authors: [], articleids: [], pubtype: ["Journal Article", "Retracted Publication"], lang: ["eng"] } } },
+  zenodo: { hits: { hits: [
+    { id: 777, doi: "10.5281/zenodo.777", links: { self_html: "https://zenodo.org/records/777" }, metadata: { title: "Coral bleaching heatwave dataset 1985-2025", publication_date: "2025-06-01", creators: [{ name: "Reef Lab" }], description: "<p>Daily degree heating weeks for coral reefs.</p>", resource_type: { type: "dataset" }, access_right: "open", license: { id: "cc-by-4.0" }, keywords: ["coral", "bleaching"] } },
+    { id: 778, links: { self_html: "javascript:alert(1)" }, metadata: { title: "Bleaching detector code", publication_date: "2024-01-01", resource_type: { type: "software" }, access_right: "closed" } }
+  ] } },
+  osti: [
+    { osti_id: "1990001", title: "Thermal stress modelling of reef-building corals", authors: ["Smith, A [Sandia]", "Lee, B"], publication_date: "2024-03-01T00:00:00Z", product_type: "Technical Report", description: "We model coral bleaching thresholds under marine heatwaves for desalination outfalls.", links: [{ rel: "citation", href: "https://www.osti.gov/biblio/1990001" }, { rel: "fulltext", href: "https://www.osti.gov/servlets/purl/1990001" }] },
+    { osti_id: "x", title: "" }
+  ],
+  epss: { status: "OK", data: [{ cve: "CVE-2026-2222", epss: "0.42100", percentile: "0.97200", date: "2026-10-23" }, { cve: "CVE-2026-1111", epss: "0.03000", percentile: "0.81000", date: "2026-10-23" }, { cve: "bad", epss: "2" }] },
   gdeltTone: { timeline: [{ series: "Average Tone", data: Array.from({ length: 30 }, (_, i) => ({ date: `202609${String(i + 1).padStart(2, "0")}T000000Z`, value: i >= 23 ? -4 : -1 })) }] }
 };
 const io = (fail = new Set()) => ({
@@ -90,6 +111,11 @@ const io = (fail = new Set()) => ({
     else if (source === "dblp") data = FIX.dblp;
     else if (source === "wikidata") data = u.searchParams.get("action") === "wbsearchentities" ? FIX.wdSearch : FIX.wdEntity;
     else if (source === "nvd") data = FIX.nvd;
+    else if (source === "clinicaltrials") data = FIX.ct;
+    else if (source === "pubmed") data = u.pathname.endsWith("esearch.fcgi") ? FIX.pmSearch : FIX.pmSummary;
+    else if (source === "zenodo") data = FIX.zenodo;
+    else if (source === "osti") data = FIX.osti;
+    else if (source === "epss") data = FIX.epss;
     else throw new Error("unknown source " + source);
     return { data: JSON.parse(JSON.stringify(data)), tier: "direct" };
   }
@@ -257,7 +283,7 @@ await test("ADR-115 trend: last 7 days against the 3-month mean, by fixed rules"
 });
 await test("ADR-115 plan: intel mode reads news, trend and NVD, not the snowball", () => {
   const p = R.plan("reef sensor firmware", { now: NOW, mode: "intel", depth: 2 });
-  ok(p.mode === "intel" && p.steps.map(s => s.id).join() === "define,news,trend,cyber,evidence,recent", "steps " + p.steps.map(s => s.id));
+  ok(p.mode === "intel" && p.steps.map(s => s.id).join() === "define,news,trend,cyber,exploit,evidence,recent", "steps " + p.steps.map(s => s.id));
   ok(R.plan("coral", {}).mode === "scholar" && R.plan("coral", { mode: "evil" }).mode === "scholar", "default and unknown modes are scholar");
   ok(R.plan("coral", { now: NOW }).steps.find(s => s.id === "evidence").sources.includes("doaj"), "DOAJ in scholar evidence");
 });
@@ -283,6 +309,58 @@ await test("ADR-115 run: intel mode gives the trend, exploited CVEs first and an
   const offline = await R.run("reef sensor firmware", { now: NOW, mode: "intel" }, io(new Set(["gdelt", "nvd"])));
   const g = offline.evaluation.gaps.map(x => x.ar).join(" | ");
   ok(!offline.report.sections.trend && /لم يُجب أي مصدر/.test(g) && /أقل من 3 أخبار/.test(g), "honest gaps offline: " + g);
+});
+await test("ADR-122 plan: field lenses add their specialist steps in scholar mode only", () => {
+  const ids = f => R.plan("coral bleaching", { now: NOW, depth: 1, field: f }).steps.map(s => s.id).join();
+  ok(ids("medicine") === "define,evidence,recent,foundations,counter,arabic,trials,medline,news", "medicine " + ids("medicine"));
+  ok(ids("science").includes("data,reports,news") && ids("industry").includes("reports,data,news") && ids("algorithms").includes("code,news"), "science, industry, algorithms");
+  ok(ids("general") === ids(undefined) && ids("evil") === ids("general") && R.plan("x y", { field: "toString" }).field === "general", "unknown fields are general");
+  ok(R.plan("coral", { mode: "intel", field: "medicine" }).field === "general", "no field lens in intel mode");
+  ok(R.plan("coral", { field: "medicine", off: ["pubmed"] }).steps.every(s => s.id !== "medline"), "a switched-off source drops its step");
+});
+await test("ADR-122 urls: the new sources stay on their fixed API paths", () => {
+  const u = { clinicaltrials: R.urls.clinicaltrials("coral bleaching"), pubmed: R.urls.pubmedSearch("coral bleaching"), zenodo: R.urls.zenodo("coral", "software"), osti: R.urls.osti("coral"), epss: R.urls.epss(["CVE-2026-1111", "CVE-2026-1111", "x"]) };
+  for (const [k, url] of Object.entries(u)) { ok(R.HOSTS.includes(new URL(url).hostname), "host " + url); ok(R.allowed(k, url), "proxy shape for " + k); }
+  ok(R.allowed("pubmed", R.urls.pubmedSummary(["1", "2"])) && !R.allowed("pubmed", "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=1"), "two PubMed paths, not efetch");
+  ok(u.epss.endsWith("cve=CVE-2026-1111") && R.urls.epss(["x"]) === null && R.urls.pubmedSummary(["1;drop"]) === null, "ids are checked");
+  ok(u.zenodo.includes("type=software") && !R.urls.zenodo("coral", "evil").includes("type="), "zenodo type allow-list");
+  ok(!R.allowed("osti", "https://www.osti.gov/api/v1/records/../../etc") && !R.allowed("epss", "https://api.first.org.evil.example/data/v1/epss") && !R.allowed("zenodo", "http://zenodo.org/api/records"), "other shapes refused");
+});
+await test("ADR-122 shapes: trials, PubMed, Zenodo, OSTI and EPSS", () => {
+  const t = R.shape.clinicaltrials(FIX.ct, "trials");
+  ok(t.length === 2 && t[0].trial.id === "NCT01234567" && t[0].trial.results && t[0].trial.enrollment === 120 && t[0].year === 2023 && R.grade(t[0]) === "G", "trial " + JSON.stringify(t[0].trial));
+  ok(t[0].url === "https://clinicaltrials.gov/study/NCT01234567" && t[0].key === "nct:NCT01234567", "trial link and key");
+  const pm = R.shape.pubmedSummary(FIX.pmSummary, "medline");
+  ok(R.shape.pubmedSearch(FIX.pmSearch).join() === "40000001,40000002", "esearch ids");
+  ok(pm[0].doi === "10.1000/cb.2024.1" && pm[0].lang === "en" && pm[0].year === 2024 && pm[1].retracted === true, "pubmed " + JSON.stringify(pm[0]));
+  const z = R.shape.zenodo(FIX.zenodo, "data");
+  ok(z[0].kind === "dataset" && z[0].oa && z[0].licence === "cc-by-4.0" && z[0].abstract === "Daily degree heating weeks for coral reefs." && R.grade(z[0]) === "R", "zenodo " + JSON.stringify(z[0]));
+  ok(z[1].url === null && z[1].oa === null, "unsafe link dropped, closed record has no oa");
+  const o = R.shape.osti(FIX.osti, "reports");
+  ok(o.length === 1 && o[0].kind === "report" && o[0].authors[0] === "Smith, A" && o[0].oa && o[0].year === 2024, "osti " + JSON.stringify(o[0]));
+  const e = R.shape.epss(FIX.epss);
+  ok(e["CVE-2026-2222"].epss === 0.421 && e["CVE-2026-2222"].percentile === 0.972 && !e.bad && Object.keys(e).length === 2, "epss " + JSON.stringify(e));
+});
+await test("ADR-122 run: the medicine lens reads trials and PubMed; retracted PubMed work is named", async () => {
+  const out = await R.run("Coral bleaching and marine heatwaves", { now: NOW, depth: 1, field: "medicine" }, io());
+  const rep = out.report;
+  ok(rep.field === "medicine" && rep.sections.trials.length === 2 && rep.sections.trials[0].r.trial.results, "trials with results first");
+  const cb = out.records.find(r => r.doi === "10.1000/cb.2024.1");
+  ok(cb.via.includes("pubmed") && cb.via.includes("europepmc"), "PubMed joined by DOI " + JSON.stringify(cb.via));
+  ok(rep.retracted.some(r => /cure/.test(r.title)) && rep.kpi.trials === 2, "retracted named, kpi");
+  ok(rep.gaps.some(g => /ليس نصيحة طبية/.test(g.ar)) && out.markdown.includes("التجارب السريرية المسجّلة") && out.markdown.includes("NCT01234567"), "not medical advice, markdown");
+  const sci = await R.run("Coral bleaching and marine heatwaves", { now: NOW, depth: 1, field: "industry" }, io());
+  ok(sci.report.sections.technical.length >= 2 && sci.report.gaps.some(g => /براءات/.test(g.ar)) && sci.markdown.includes("التقارير التقنية"), "industry lens");
+  const off = await R.run("Coral bleaching and marine heatwaves", { now: NOW, depth: 1, field: "medicine" }, io(new Set(["clinicaltrials", "pubmed"])));
+  ok(off.report.gaps.some(g => /لا تجربة سريرية/.test(g.ar)) && !off.report.sections.trials.length, "honest gap when trials fail");
+});
+await test("ADR-122 run: intel mode joins EPSS and ranks exploited, then likely-exploited CVEs", async () => {
+  const out = await R.run("reef sensor firmware", { now: NOW, mode: "intel" }, io());
+  const adv = out.report.sections.advisories;
+  ok(adv[0].r.cve.id === "CVE-2026-1111" && adv[1].r.cve.epss.epss === 0.421, "KEV first, EPSS joined");
+  ok(out.report.kpi.epssHigh === 1 && out.markdown.includes("EPSS 42.10%") && out.markdown.includes("FIRST.org"), "kpi and markdown");
+  const off = await R.run("reef sensor firmware", { now: NOW, mode: "intel" }, io(new Set(["epss"])));
+  ok(off.report.gaps.some(g => /لا درجة EPSS/.test(g.ar)) && !off.records.some(r => r.cve && r.cve.epss), "honest gap without EPSS");
 });
 await test("the ORACLE page carries the current library copy", () => {
   const r = spawnSync(process.execPath, [join(HERE, "build-research-inline.mjs"), "--check"], { encoding: "utf8" });
