@@ -114,6 +114,10 @@ const CACHE = process.env.OMEGA_CACHE_DIR || join(homedir(), ".omega", "cache", 
 const HOUR = 3600 * 1000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CHECK_ONLY = process.argv.includes("--check");
+// ADR-122: the self-shield sandbox runs this proxy with OMEGA_OFFLINE=1, so no probe can make it reach the internet,
+// and OMEGA_NO_STATUS=1, so it skips the live source table at start.
+const OFFLINE = process.env.OMEGA_OFFLINE === "1";
+const NO_STATUS = process.env.OMEGA_NO_STATUS === "1";
 mkdirSync(CACHE, { recursive: true });
 
 const S = OMEGA_MATH.shape, U = OMEGA_MATH.urls;
@@ -189,7 +193,9 @@ const ALLOWED_UPSTREAM = new Set(["www.sec.gov", "data.sec.gov", "stooq.com", "o
   ...OMEGA_RESEARCH.HOSTS]);
 // ADR-114: cache life of each research source; the request shape itself is checked by OMEGA_RESEARCH.allowed.
 const RESEARCH_TTL = { wikipedia: 6 * HOUR, openalex: 6 * HOUR, crossref: 6 * HOUR, europepmc: 6 * HOUR, arxiv: 6 * HOUR, semanticscholar: 6 * HOUR, gdelt: HOUR / 2, wayback: 24 * HOUR,
-  doaj: 6 * HOUR, dblp: 6 * HOUR, wikidata: 6 * HOUR, nvd: HOUR };
+  doaj: 6 * HOUR, dblp: 6 * HOUR, wikidata: 6 * HOUR, nvd: HOUR,
+  // ADR-122
+  clinicaltrials: 6 * HOUR, pubmed: 6 * HOUR, zenodo: 6 * HOUR, osti: 6 * HOUR, epss: 6 * HOUR };
 
 // Static files: only these folders of the checkout, only these types, never dotfiles.
 const STATIC_DIRS = ["omega-ops-room-v1", "site-landing"];
@@ -249,7 +255,9 @@ const localOrigin = (o, host) => o === "null" || /^https?:\/\/(127\.0\.0\.1|loca
 const GAP = { "www.sec.gov": 200, "data.sec.gov": 200, "api.gdeltproject.org": 5000, "opensky-network.org": 10000, "celestrak.org": 2000, "stat.ripe.net": 1000, "api.ioda.inetintel.cc.gatech.edu": 1000,
   "isc.sans.edu": 2000, "internetdb.shodan.io": 1000, "api.adsb.lol": 3000, "vulnerability.circl.lu": 2000, "api.llama.fi": 1000,
   "export.arxiv.org": 3100, "api.semanticscholar.org": 1100, "archive.org": 500, "en.wikipedia.org": 100, "ar.wikipedia.org": 100,
-  "services.nvd.nist.gov": 6500, "dblp.org": 1000, "doaj.org": 300, "www.wikidata.org": 100 };
+  "services.nvd.nist.gov": 6500, "dblp.org": 1000, "doaj.org": 300, "www.wikidata.org": 100,
+  // ADR-122: NCBI allows 3 requests a second without a key, Zenodo 30 a minute anonymous.
+  "eutils.ncbi.nlm.nih.gov": 400, "zenodo.org": 2100, "clinicaltrials.gov": 300, "www.osti.gov": 500, "api.first.org": 500 };
 const nextSlot = new Map();
 async function hostSlot(host) {
   const now = Date.now(), at = Math.max(now, nextSlot.get(host) || 0);
@@ -311,6 +319,7 @@ const upJson = async (route, url) => JSON.parse((await upstream(route, url)).toS
 async function upstream(route, url) {
   const host = new URL(url).hostname;
   if (!ALLOWED_UPSTREAM.has(host)) throw Object.assign(new Error("host not allowed"), { status: 400 });
+  if (OFFLINE) throw Object.assign(new Error("offline sandbox: upstream calls are off"), { status: 503 });
   if (route.sec && !UA) throw Object.assign(new Error("Set OMEGA_SEC_UA to \"Your Name your@email\" before pulling from SEC."), { status: 503 });
   const until = pausedUntil.get(host) || 0;
   if (until > Date.now()) throw Object.assign(new Error(`${host} is paused for ${Math.ceil((until - Date.now()) / 1000)} s after a rate limit`), { status: 503, retry: Math.ceil((until - Date.now()) / 1000) });
@@ -466,13 +475,18 @@ async function explain(req) {
     return { ok: true, model, ms: Date.now() - t0, answer: String(j.response || "").slice(0, 4000), label: "[INFERENCE - local LLM]", facts: facts.length };
 }
 const loopback = a => ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(String(a || ""));
+// ADR-122 (found by scripts/self-shield.mjs): a sandboxed iframe on any public site also sends Origin "null", so the
+// private-network grant goes only to http(s) pages on this machine's loopback address; file:// pages are local already.
+const pnaOrigin = o => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(o || "");
 
-const server = createServer(async (req, res) => {
+// ADR-122: a client that trickles its headers is cut off after 10 s (Node's default is 60 s, checked every 30 s).
+const server = createServer({ headersTimeout: 10000, requestTimeout: 30000, connectionsCheckingInterval: 2000 }, async (req, res) => {
   const origin = req.headers.origin, host = String(req.headers.host || "");
-  const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
-  if (!hostAllowed(host)) { res.writeHead(421, { "Content-Type": "application/json", "Cache-Control": "no-store" }); return res.end(JSON.stringify({ error: "unknown host name; open the page at http://127.0.0.1:" + PORT })); }
+  // ADR-122: no other site may open these pages in its own window group or embed the answers.
+  const headers = { "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Resource-Policy": "same-site" };
+  if (!hostAllowed(host)) { res.writeHead(421, { ...headers, "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "unknown host name; open the page at http://127.0.0.1:" + PORT })); }
   const okOrigin = localOrigin(origin, host);
-  if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Private-Network": "true", "Access-Control-Expose-Headers": "X-Omega-Cache, Retry-After" });
+  if (okOrigin) Object.assign(headers, { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Expose-Headers": "X-Omega-Cache, Retry-After" }, pnaOrigin(origin) ? { "Access-Control-Allow-Private-Network": "true" } : {});
   const send = (status, body, type = "application/json") => { res.writeHead(status, { ...headers, "Content-Type": type }); res.end(body); };
   if (req.method === "OPTIONS") { res.writeHead(204, { ...headers, "Access-Control-Allow-Methods": "GET, POST", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "600" }); return res.end(); }
   if (origin && !okOrigin) return send(403, JSON.stringify({ error: "local pages only" }));
@@ -567,6 +581,12 @@ const PROBES = [
   { name: "dblp", via: "browser + proxy /research/dblp", url: "https://dblp.org/search/publ/api?q=coral&format=json&h=1" },
   { name: "Wikidata", via: "browser + proxy /research/wikidata", url: "https://www.wikidata.org/w/api.php?action=wbsearchentities&search=coral&language=en&type=item&limit=1&format=json" },
   { name: "NVD CVE API 2.0", via: "proxy /research/nvd", url: "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=1" },
+  // ADR-122
+  { name: "ClinicalTrials.gov API v2", via: "browser + proxy /research/clinicaltrials", url: "https://clinicaltrials.gov/api/v2/studies?query.term=coral&pageSize=1&format=json" },
+  { name: "PubMed E-utilities", via: "browser + proxy /research/pubmed", url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=coral&retmode=json&retmax=1&tool=omega-oracle" },
+  { name: "Zenodo records", via: "browser + proxy /research/zenodo", url: "https://zenodo.org/api/records?q=coral&size=1" },
+  { name: "OSTI.GOV records", via: "proxy /research/osti", url: "https://www.osti.gov/api/v1/records?q=coral&rows=1" },
+  { name: "FIRST EPSS", via: "proxy /research/epss", url: "https://api.first.org/data/v1/epss?cve=CVE-2021-44228" },
   { name: "Ollama (optional, this machine)", via: "proxy /llm/ollama", url: OLLAMA + "/api/tags", local: true }
 ];
 const tty = process.stdout.isTTY;
@@ -618,5 +638,6 @@ server.listen(PORT, HOST, () => {
     console.log("           Plain http on the LAN is not a secure context, so WebCrypto is off there. Use Tailscale HTTPS for the vault and capsule.");
   }
   if (!UA) console.log('SEC routes are off until you set OMEGA_SEC_UA="Your Name your@email". Stooq works now.');
-  statusTable().catch(e => console.warn("status check failed:", e.message));
+  if (OFFLINE) console.log("Offline sandbox (OMEGA_OFFLINE=1): every upstream call is refused.");
+  if (!NO_STATUS) statusTable().catch(e => console.warn("status check failed:", e.message));
 });

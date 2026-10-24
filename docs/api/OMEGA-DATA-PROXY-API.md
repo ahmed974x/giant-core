@@ -1,10 +1,10 @@
 # OMEGA local data proxy · API reference
 
-Generated from [omega-data-proxy.openapi.json](omega-data-proxy.openapi.json) (OpenAPI 3.1.0, version 1.16.0) by `node scripts/build-api-docs.mjs`. Do not edit by hand.
+Generated from [omega-data-proxy.openapi.json](omega-data-proxy.openapi.json) (OpenAPI 3.1.0, version 1.17.0) by `node scripts/build-api-docs.mjs`. Do not edit by hand.
 
 Free, keyless public data for the OMEGA pages, cached on disk and bound to 127.0.0.1.
 
-scripts/omega-data-proxy.mjs (ADR-089 to ADR-116). GET only except the local model bridge. CORS is added for local pages only; any other Origin gets 403 and an unknown Host gets 421. Every route reads one fixed public upstream; nothing here signs, sends or routes an order, holds a key or writes outside its cache. Generated Markdown: docs/api/OMEGA-DATA-PROXY-API.md (node scripts/build-api-docs.mjs).
+scripts/omega-data-proxy.mjs (ADR-089 to ADR-122). GET only except the local model bridge. CORS is added for local pages only; any other Origin gets 403 and an unknown Host gets 421. Every route reads one fixed public upstream; nothing here signs, sends or routes an order, holds a key or writes outside its cache. Generated Markdown: docs/api/OMEGA-DATA-PROXY-API.md (node scripts/build-api-docs.mjs). Every answer carries X-Content-Type-Options nosniff, Referrer-Policy no-referrer, Cross-Origin-Opener-Policy same-origin and Cross-Origin-Resource-Policy same-site; the private-network grant goes to http(s) loopback origins only, and a client that has not sent its headers within 10 s is cut off (ADR-122, found by scripts/self-shield.mjs). OMEGA_OFFLINE=1 refuses every upstream call (the self-shield sandbox).
 
 Server: `http://127.0.0.1:8796` (local proxy (./start-omega.sh or start-omega.bat)).
 
@@ -43,7 +43,7 @@ Server: `http://127.0.0.1:8796` (local proxy (./start-omega.sh or start-omega.ba
 | GET | `/cyber/internetdb/{ip}` | Shodan InternetDB of a public resolver | 6 h | https://internetdb.shodan.io/{ip} |
 | GET | `/osiris/adsb/sqk/{code}` | adsb.lol emergency squawks | 2 min | https://api.adsb.lol/v2/sqk/{code} |
 | GET | `/osiris/adsb/zone/{zone}` | adsb.lol aircraft near a strait | 5 min | https://api.adsb.lol/v2/point/{lat}/{lon}/150 |
-| GET | `/research/{source}` | ORACLE research source (ADR-114, ADR-115) | 6 h | one fixed API path per source |
+| GET | `/research/{source}` | ORACLE research source (ADR-114, ADR-115, ADR-122) | 6 h | one fixed API path per source |
 | GET | `/llm/ollama/status` | Local Ollama model status (ADR-112) | — | — |
 | POST | `/llm/ollama/explain` | Explain page readings with the local model | — | — |
 | POST | `/llm/ollama/research` | Write an ORACLE brief from numbered sources | — | — |
@@ -372,11 +372,11 @@ Answers: 200 Upstream answer or its compact OMEGA form. Header X-Omega-Cache is 
 
 ### GET `/research/{source}`
 
-`url` must be that source's own https host and API path (OMEGA_RESEARCH.allowed in scripts/lib/deep-research.mjs); anything else is refused with 400. arXiv is paced at one call per 3 s and NVD at one per 6.5 s.
+`url` must be that source's own https host and API path (OMEGA_RESEARCH.allowed in scripts/lib/deep-research.mjs); anything else is refused with 400. arXiv is paced at one call per 3 s, NVD at one per 6.5 s, Zenodo at one per 2.1 s and PubMed at one per 0.4 s. PubMed has two fixed paths (esearch, esummary).
 
 | Parameter | In | Rule | Description |
 |---|---|---|---|
-| `source` | path | `wikipedia`, `openalex`, `crossref`, `europepmc`, `arxiv`, `semanticscholar`, `gdelt`, `wayback`, `doaj`, `dblp`, `wikidata`, `nvd` | research source |
+| `source` | path | `wikipedia`, `openalex`, `crossref`, `europepmc`, `arxiv`, `semanticscholar`, `gdelt`, `wayback`, `doaj`, `dblp`, `wikidata`, `nvd`, `clinicaltrials`, `pubmed`, `zenodo`, `osti`, `epss` | research source |
 | `url` | query | uri | the upstream API address |
 
 Answers: 200 upstream answer (Atom XML for arXiv); 400 not an allowed request for this research source; 502 the upstream did not answer and no cached copy exists.

@@ -62,7 +62,16 @@
     "artificialanalysis.ai",
     "datanorth.ai",
     "llmgateway.io",
-    "futureagi.com"
+    "futureagi.com",
+    "clinicaltrials.gov",
+    "eutils.ncbi.nlm.nih.gov",
+    "zenodo.org",
+    "www.osti.gov",
+    "api.first.org",
+    "www.first.org",
+    "api.osv.dev",
+    "worldwide.espacenet.com",
+    "patentscope.wipo.int"
   ],
   "suppress": [
     {
@@ -284,6 +293,16 @@
       "rule": "SEC-EXEC",
       "path": "scripts/test-core.mjs",
       "reason": "Test only (ADR-121): spawnSync(process.execPath, [scripts/build-core-inline.mjs, --check]) with no shell and no user input; it checks that the core page and the Ops Room carry the current engine copy."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/self-shield.mjs",
+      "reason": "ADR-122 self-shield: spawn(process.execPath, [scripts/omega-data-proxy.mjs]) starts the sandboxed proxy with a minimal env (temporary HOME, OMEGA_OFFLINE=1, no keys) and kills it afterwards; spawnSync runs only `git ls-files -z` and scripts/skillspector-audit.mjs with fixed argv, no shell, and no user input reaches argv."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-self-shield.mjs",
+      "reason": "ADR-122 test: spawnSync(process.execPath, [scripts/self-shield.mjs, --ci, --no-skillspector, --json <temp file>]) with fixed argv, no shell, 120 s timeout; the sandbox it starts is offline and on 127.0.0.1."
     }
   ]
 }
