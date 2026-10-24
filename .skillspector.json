@@ -62,7 +62,7 @@
     {
       "rule": "SEC-STORAGE",
       "path": "omega-ops-room-v1/omega-ops-room.html",
-      "reason": "Stores theme choice, the AES-GCM vault ciphertext, the paper wallet balances, the SHA-256 receipt chain, the court's learned weights a 12-hour cache of public Binance daily candles, the Brain 2 gym's trained agent weights (ADR-108), the neural flow's 11,972 trained parameters (ADR-109) and a 2-hour cache of public CelesTrak orbit elements; no credentials. The encrypted capsule (ADR-093) reads and writes only these keys and THE CHAIN notes. The self-check row flags any plaintext key found in localStorage."
+      "reason": "Stores theme choice, the AES-GCM vault ciphertext, the paper wallet balances, the SHA-256 receipt chain, the court's learned weights a 12-hour cache of public Binance daily candles, the Brain 2 gym's trained agent weights (ADR-108), the neural flow's 11,972 trained parameters (ADR-109) a 2-hour cache of public CelesTrak orbit elements and the PRIME agent's journal and run state (ADR-118); no credentials. The encrypted capsule (ADR-093) reads and writes only these keys and THE CHAIN notes. The self-check row flags any plaintext key found in localStorage."
     },
     {
       "rule": "SEC-STORAGE",
