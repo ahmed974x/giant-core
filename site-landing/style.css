@@ -457,6 +457,8 @@ code { font-size: max(12px, 0.875em); background: var(--surface-2); padding: 0 v
 html[dir="rtl"] .calc-table td:not(:first-child) { text-align: left; }
 html[dir="ltr"] .calc-table td:not(:first-child) { text-align: right; }
 .calc-table td:first-child { direction: inherit; unicode-bidi: plaintext; }
+/* The "Start" row label is Arabic on the Arabic page: no monospace face for Arabic letters (ADR-120). */
+html[lang="ar"] .calc-table td:first-child { font-family: var(--font-ar); }
 .calc-table td.reason { font-family: var(--font-ar, inherit); direction: inherit; unicode-bidi: plaintext; white-space: normal; text-align: start; }
 .calc-table td.neg { color: var(--danger); }
 .calc-table td.fee { color: var(--warning); }

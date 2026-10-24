@@ -131,15 +131,20 @@ function mount(opts) {
   }
   // Arabic written into a box styled for Latin (tracked capitals, a left-to-right number line) gets letter-spacing 0
   // and its own paragraph direction through the CSSOM, and gets the page's style back when the text does.
+  // A monospace box also gets the Arabic font (ADR-120): a monospace fallback draws each Arabic letter in a
+  // fixed cell, which breaks the joins ("هادئ" showed as "ها دئ"); digits keep tabular-nums.
   const fixed = new WeakMap();
+  const MONO = /mono|courier|consolas|menlo/i;
   function fitBox(e, arabic) {
     if (!e || !e.style) return;
     if (arabic && !fixed.has(e)) {
-      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform });
+      fixed.set(e, { ls: e.style.letterSpacing, ub: e.style.unicodeBidi, tt: e.style.textTransform, ff: e.style.fontFamily });
       e.style.letterSpacing = "0"; e.style.unicodeBidi = "plaintext"; e.style.textTransform = "none";
+      const g = typeof getComputedStyle === "function" ? getComputedStyle(e) : null;
+      if (g && MONO.test(String(g.fontFamily).split(",")[0])) e.style.fontFamily = "var(--font-ar, system-ui, sans-serif)";
     } else if (!arabic && fixed.has(e)) {
       const o = fixed.get(e); fixed.delete(e);
-      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt;
+      e.style.letterSpacing = o.ls; e.style.unicodeBidi = o.ub; e.style.textTransform = o.tt; e.style.fontFamily = o.ff;
     }
   }
   function doText(n) {
@@ -172,7 +177,9 @@ function mount(opts) {
     if (source === "both") fitBox(e, h === "ar" && lang === "ar");
   }
   function doAttrs(e) {
-    if (skip(e) || frozen(e)) return;
+    // A text field's typed value is never touched, but its placeholder, label and title are the page's own words
+    // and switch with the language (ADR-120: textarea placeholders stayed Arabic on the English page).
+    if (e.closest("script,style,[data-i18n-skip]") || frozen(e)) return;
     let o = origAttr.get(e);
     for (const a of ATTRS) {
       if (!e.hasAttribute(a)) continue;
@@ -228,9 +235,12 @@ function mount(opts) {
         btn.title = btn.getAttribute("aria-label");
       }
     } finally { busy = false; mo.takeRecords(); }
-    if (from !== "remote") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
+    if (from !== "remote" && from !== "init") { store.set(lang); if (chan) try { chan.postMessage({ lang }); } catch (e) { /* closed channel */ } }
     if (typeof opts.onChange === "function") opts.onChange(lang);
-    try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ }
+    const fire = () => { try { doc.dispatchEvent(new CustomEvent("omega-lang", { detail: lang })); } catch (e) { /* old browser: pages re-render on their own */ } };
+    // The first apply runs inside mount(), before the page has stored the handle mount() returns in window.OMEGA_LANG,
+    // so its event waits one microtask: a page that re-renders on "omega-lang" then reads the chosen language (ADR-120).
+    if (from === "init") Promise.resolve().then(fire); else fire();
   }
   mo.observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
 
@@ -248,7 +258,7 @@ function mount(opts) {
   let first = pickLang(typeof location !== "undefined" ? location.search : "", store.get(), source === "en" ? "en" : "ar");
   // A page that is bilingual by design opens bilingual until someone picks a language.
   if (source === "both" && !/[?&]lang=(ar|en)\b/.test(typeof location !== "undefined" ? location.search : "") && store.get() !== "ar" && store.get() !== "en") first = "both";
-  apply(first, "remote");
+  apply(first, "init");
   return {
     get lang() { return lang; }, set: v => apply(v), t: (ar, en) => lang === "en" ? en : ar, size: table.size,
     coverage: () => { const out = []; const w = doc.createTreeWalker(doc.body, 4); let n; while ((n = w.nextNode())) { const e = n.parentElement; if (!skip(n) && n.nodeValue.trim() && e && e.offsetParent !== null) out.push(n.nodeValue); } return coverage(out, lang === "both" ? "en" : lang); }
