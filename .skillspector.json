@@ -51,7 +51,18 @@
     "doaj.org",
     "dblp.org",
     "www.wikidata.org",
-    "services.nvd.nist.gov"
+    "services.nvd.nist.gov",
+    "benchlm.ai",
+    "techcrunch.com",
+    "smartscope.blog",
+    "wavect.io",
+    "www.unite.ai",
+    "gigazine.net",
+    "www.eweek.com",
+    "artificialanalysis.ai",
+    "datanorth.ai",
+    "llmgateway.io",
+    "futureagi.com"
   ],
   "suppress": [
     {
@@ -263,6 +274,16 @@
       "rule": "SEC-EXEC",
       "path": "scripts/test-brain.mjs",
       "reason": "Test only (ADR-119): spawnSync(process.execPath, [scripts/build-brain-inline.mjs | scripts/build-i18n-inline.mjs, --check]) with no shell and no user input; it checks that the pages carry the current engine and dictionary copies."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "omega-ops-room-v1/omega-core.html",
+      "reason": "Stores the theme choice, the suite's shared state, the language choice and the 3D view's filter and memory size (omega-core-view-v1, ADR-121); it reads PRIME's journal (omega-prime-v1) and its mission, memory and lessons (omega-prime-core-v1). No credentials, keys or vault entries; the page has no network and works without storage."
+    },
+    {
+      "rule": "SEC-EXEC",
+      "path": "scripts/test-core.mjs",
+      "reason": "Test only (ADR-121): spawnSync(process.execPath, [scripts/build-core-inline.mjs, --check]) with no shell and no user input; it checks that the core page and the Ops Room carry the current engine copy."
     }
   ]
 }

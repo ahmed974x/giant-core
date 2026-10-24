@@ -71,6 +71,10 @@
 //   POST /llm/ollama/research -> {question, sources: [{n, text}]} (at most 24 KB) to the same local model with a fixed
 //                              instruction: an Arabic brief from the numbered sources only, each sentence ending in
 //                              its [n]; the ORACLE page then checks every mark (ADR-114).
+//   POST /llm/ollama/plan    -> {goal} (at most 2 KB) to the same local model with a fixed instruction: a JSON plan
+//                              that uses only the core's read-only tools. The answer is checked here with
+//                              OMEGA_CORE.checkPlan (known tools, nothing order-like, no loops) and again by the
+//                              Ops Room before PRIME runs it as a paper mission (ADR-121).
 // Rate-limit shield (ADR-095): every route answers from a memory cache, then the disk cache, within its TTL;
 // identical requests in flight share one upstream call; each host keeps a minimum gap between calls
 // (SEC 200 ms, GDELT 5 s, OpenSky 10 s); an upstream 429, 403 or 418 pauses that host for its Retry-After
@@ -94,6 +98,7 @@ import { createHash } from "node:crypto";
 import { classifyNga, compactAis } from "./lib/osiris-sources.mjs";
 import { OMEGA_MATH } from "./lib/brain2-math.mjs";
 import { OMEGA_RESEARCH } from "./lib/deep-research.mjs";
+import { OMEGA_CORE } from "./lib/agent-core.mjs";
 
 const PORT = Number(process.env.OMEGA_PROXY_PORT || 8796);
 // 127.0.0.1 by default (AGENTS.md §4). --lan is the owner's opt-in for the iPhone on the same Wi-Fi.
@@ -374,6 +379,13 @@ const LLM_RESEARCH = "You write a short research brief in Arabic for the questio
   "If the sources do not answer part of the question, write تعذر التحقق منها for that part. Quote numbers exactly. Mention disagreement or limits when a source states them. " +
   "At most 12 sentences. This is research help only: no medical, financial or legal advice, and never tell the reader to trade or move money. " +
   "End with the label [INFERENCE - local LLM].";
+// ADR-121: the planning instruction. The tool list comes from the core library, so the model can only name tools the
+// checker knows; whatever it writes is still checked before anything runs.
+const LLM_PLAN = "You plan a short paper-only research mission for OMEGA's PRIME agent. Reply with one JSON object and nothing else, in the form " +
+  '{"steps":[{"id":"s1","tool":"scout","after":[],"why":"..."}]}. Use 2 to 8 steps. "tool" must be one of: ' +
+  Object.entries(OMEGA_CORE.TOOLS).map(([k, v]) => `${k} (${v})`).join("; ") + ". " +
+  '"after" lists the ids that must finish first. A step may repeat with "repeat":{"every":3600000,"times":6} (every is in milliseconds, 60000 to 86400000; times 1 to 96). ' +
+  "End with a note step that waits for the others. Never plan an order, a trade, a key, a wallet move or anything outside these tools.";
 // Reads a request body of at most `max` bytes within `ms`; a client that stalls is cut off.
 function readBody(req, max, ms = 10000) {
   return new Promise((done, fail) => {
@@ -410,6 +422,12 @@ async function llmRoute(req, path) {
     llmBusy.on = true;
     try { return await researchBrief(req); } finally { llmBusy.on = false; }
   }
+  if (path === "/llm/ollama/plan" && req.method === "POST") {
+    if (!/^application\/json\b/i.test(String(req.headers["content-type"] || ""))) throw Object.assign(new Error("send Content-Type: application/json"), { status: 415 });
+    if (llmBusy.on) throw Object.assign(new Error("the local model is already answering; try again when it finishes"), { status: 429 });
+    llmBusy.on = true;
+    try { return await planMission(req); } finally { llmBusy.on = false; }
+  }
   return null;
 }
 async function researchBrief(req) {
@@ -423,6 +441,18 @@ async function researchBrief(req) {
   req.socket.once("close", () => gone.abort());
   const j = await ollamaFetch("/api/generate", { model, system: LLM_RESEARCH, prompt: "Question: " + question + "\n\nSources:\n" + sources.join("\n"), stream: false, options: { temperature: 0.1, num_predict: 900 } }, 180000, gone.signal);
   return { ok: true, model, ms: Date.now() - t0, answer: String(j.response || "").slice(0, 6000), label: "[INFERENCE - local LLM]", sources: sources.length };
+}
+async function planMission(req) {
+  let q;
+  try { q = JSON.parse(await readBody(req, 2048)); } catch (e) { throw Object.assign(new Error(e.status ? e.message : "send JSON: {\"goal\": \"...\"}"), { status: e.status || 400 }); }
+  const goal = String(q && q.goal || "").replace(/[\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+  if (!goal) throw Object.assign(new Error("no goal to plan"), { status: 400 });
+  const { model } = await ollamaPick(), t0 = Date.now(), gone = new AbortController();
+  req.socket.once("close", () => gone.abort());
+  const j = await ollamaFetch("/api/generate", { model, system: LLM_PLAN, prompt: "Goal: " + goal, format: "json", stream: false, options: { temperature: 0.1, num_predict: 600 } }, 120000, gone.signal);
+  const answer = String(j.response || "").slice(0, 6000), check = OMEGA_CORE.parseModelPlan(answer);
+  if (!check.ok) throw Object.assign(new Error("the model's plan was refused: " + check.errors.slice(0, 3).join("; ")), { status: 422 });
+  return { ok: true, model, ms: Date.now() - t0, answer, steps: check.steps.length, label: "[INFERENCE - local LLM]" };
 }
 async function explain(req) {
     let q;

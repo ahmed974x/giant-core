@@ -47,6 +47,7 @@ Server: `http://127.0.0.1:8796` (local proxy (./start-omega.sh or start-omega.ba
 | GET | `/llm/ollama/status` | Local Ollama model status (ADR-112) | — | — |
 | POST | `/llm/ollama/explain` | Explain page readings with the local model | — | — |
 | POST | `/llm/ollama/research` | Write an ORACLE brief from numbered sources | — | — |
+| POST | `/llm/ollama/plan` | Plan a paper mission for PRIME | — | — |
 | GET | `/data/public-intel-snapshot.json` | Hourly public intel snapshot (ADR-104) | — | — |
 
 ## Meta
@@ -403,3 +404,11 @@ Every sentence must carry a source number; the page checks them.
 Body (`application/json`): `["question","sources"]`
 
 Answers: 200 answer; 403 not this machine, or not a page from 127.0.0.1; 415 send Content-Type: application/json; 429 the local model is already answering.
+
+### POST `/llm/ollama/plan`
+
+The local model writes a JSON plan that may use only the core's read-only tools; the proxy checks it with OMEGA_CORE.checkPlan and the Ops Room checks it again before it runs (ADR-121).
+
+Body (`application/json`): `["goal"]`
+
+Answers: 200 answer; 403 not this machine, or not a page from 127.0.0.1; 415 send Content-Type: application/json; 422 the model's plan was refused by the checker; 429 the local model is already answering.
