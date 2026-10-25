@@ -28,6 +28,8 @@ jobs:
         run: node scripts/test-core.mjs
       - name: Knowledge domain tests (graph, PageRank, bridges, missing links, gaps, ask, plan review, enrichment shapes) and its inline copies (ADR-126)
         run: node scripts/test-knowledge.mjs
+      - name: APEX council tests (field helpers, routing, plans through checkPlan, inboxes, network, dark gold tone on every page) and its inline copy (ADR-127)
+        run: node scripts/test-apex.mjs
       - name: Static page checks, CSS braces, Arabic faces, self-test badge (ADR-120)
         run: node scripts/test-pages.mjs
       - name: Self-shield, OMEGA attacks its own proxy in an offline sandbox and lints its pages and files (ADR-122)

@@ -23,6 +23,7 @@
     if (typeof patch.ticker === "string") out.ticker = patch.ticker.toUpperCase().replace(/[^A-Z0-9.\-]/g, "").slice(0, 12);
     if (typeof patch.research === "string") out.research = patch.research.replace(/[\u0000-\u001F<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
     if (typeof patch.ping === "string") out.ping = patch.ping.slice(0, 40);
+    if (patch.tone === "gold" || patch.tone === "none") out.tone = patch.tone;
     return out;
   };
   // Theme: a change on any page is applied on the others and stored under each page's own key.
@@ -35,14 +36,43 @@
     try { localStorage.setItem(THEME_KEY, t); } catch { /* storage blocked */ }
     const btn = document.getElementById("themeToggle"), meta = document.querySelector('meta[name="theme-color"]');
     if (btn) btn.setAttribute("aria-pressed", String(t === "dark"));
-    if (meta) meta.setAttribute("content", t === "dark" ? "#000000" : "#F5F5F7");
+    if (meta) meta.setAttribute("content", t === "dark" ? (root.dataset.tone === "gold" ? "#070502" : "#000000") : "#F5F5F7");
     applying = false;
+  }
+  // ADR-127: the dark gold peak is a tone over the dark theme (data-tone="gold"), stored under "omega-tone" and
+  // synced like the theme. It changes only colours; the light theme ignores it.
+  let toneBtn = null;
+  const toneNow = () => root.dataset.tone === "gold" ? "gold" : "none";
+  function syncTone() {
+    if (!toneBtn) return;
+    const on = toneNow() === "gold" && root.dataset.theme === "dark";
+    toneBtn.setAttribute("aria-pressed", String(on));
+    const s = toneBtn.querySelector("small"); if (s) s.textContent = on ? "On, gold on warm black · مفعّلة" : "Off · Tap for gold on warm black · غير مفعّلة";
+  }
+  function applyTone(t) {
+    if (t !== "gold" && t !== "none") return;
+    if (toneNow() !== t) {
+      if (t === "gold") root.dataset.tone = "gold"; else delete root.dataset.tone;
+      try { localStorage.setItem("omega-tone", t); } catch { /* storage blocked */ }
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta && root.dataset.theme === "dark") meta.setAttribute("content", t === "gold" ? "#070502" : "#000000");
+    }
+    syncTone();
+  }
+  function setTone(t) {
+    if (t !== "gold" && t !== "none") return;
+    applyTone(t);
+    if (t === "gold") applyTheme("dark");
+    syncTone();
+    publish({ tone: t, theme: root.dataset.theme === "dark" ? "dark" : "light" });
   }
   function receive(raw) {
     const patch = clean(raw || {});
     if (!Object.keys(patch).length) return;
     Object.assign(state, patch);
     if (patch.theme) applyTheme(patch.theme);
+    if (patch.tone) applyTone(patch.tone);
+    syncTone();
     render();
     for (const f of listeners) { try { f(patch); } catch { /* a listener's error stays local */ } }
   }
@@ -58,10 +88,12 @@
   }
   if (ch) ch.addEventListener("message", e => receive(e.data));
   window.addEventListener("storage", e => { if (e.key === KEY) receive(read()); });
-  new MutationObserver(() => { if (!applying) publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" }); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  new MutationObserver(() => { syncTone(); if (!applying) publish({ theme: root.dataset.theme === "dark" ? "dark" : "light", tone: toneNow() }); }).observe(root, { attributes: true, attributeFilter: ["data-theme", "data-tone"] });
   if (state.theme) applyTheme(state.theme); else publish({ theme: root.dataset.theme === "dark" ? "dark" : "light" });
+  if (state.tone) applyTone(state.tone); else publish({ tone: toneNow() });
+  { const q = new URLSearchParams(location.search).get("tone"); if (q === "gold" || q === "none") setTone(q); }
 
-  // Links between the five pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
+  // Links between the pages. GitHub Pages and the local server put NABD one folder above the Ops Room;
   // a copy opened from disk keeps the repository layout (site-landing/ next to omega-ops-room-v1/).
   const disk = location.protocol === "file:", inLanding = /\/site-landing\//.test(location.pathname);
   const HREF = {
@@ -72,7 +104,8 @@
     lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
     brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html",
     core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html",
-    know: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-knowledge.html" : "omega-ops-room-v1/omega-knowledge.html") : "omega-knowledge.html"
+    know: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-knowledge.html" : "omega-ops-room-v1/omega-knowledge.html") : "omega-knowledge.html",
+    apex: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-apex.html" : "omega-ops-room-v1/omega-apex.html") : "omega-apex.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -83,7 +116,8 @@
     { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
     { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" },
     { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" },
-    { k: "know", icon: "🕸️", en: "Knowledge domain", ar: "نطاق المعرفة", line: () => "Ideas, tools, sources, agents and decisions in one graph" }
+    { k: "know", icon: "🕸️", en: "Knowledge domain", ar: "نطاق المعرفة", line: () => "Ideas, tools, sources, agents and decisions in one graph" },
+    { k: "apex", icon: "◆", en: "APEX council", ar: "مجلس القمة", line: () => "The lead and fifteen field helpers, paper only" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {
@@ -108,6 +142,8 @@
     for (const [x, y] of [[4, 4], [10, 4], [16, 4], [4, 10], [10, 10], [16, 10], [4, 16], [10, 16], [16, 16]]) { const r = document.createElementNS(NS, "rect"); r.setAttribute("x", x); r.setAttribute("y", y); r.setAttribute("width", 4); r.setAttribute("height", 4); r.setAttribute("rx", 1.2); svg.append(r); }
     btn.append(svg);
     theme.parentNode.insertBefore(btn, theme);
+    // ADR-127: a page without its own theme handler marks its button data-suite-toggle, and the suite toggles it.
+    if (theme.hasAttribute("data-suite-toggle")) theme.addEventListener("click", () => { const t = root.dataset.theme === "dark" ? "light" : "dark"; applyTheme(t); syncTone(); publish({ theme: t }); });
     pop = el("nav", "suite-pop");
     pop.id = "suitePop"; pop.hidden = true;
     pop.setAttribute("aria-label", "OMEGA apps · تطبيقات أوميغا");
@@ -120,11 +156,19 @@
       link.append(ico, name, el("small", "", a.line()));
       pop.append(link);
     }
+    toneBtn = el("button", "suite-app suite-tone");
+    toneBtn.type = "button"; toneBtn.id = "suiteTone";
+    const toneIco = el("span", "suite-ico", "◆"); toneIco.setAttribute("aria-hidden", "true");
+    const toneName = el("b", "", "Dark gold peak · "), toneAr = el("span", "ar", "الذروة الذهبية المظلمة"); toneAr.lang = "ar"; toneName.append(toneAr);
+    toneBtn.append(toneIco, toneName, el("small", "", ""));
+    toneBtn.addEventListener("click", () => setTone(toneNow() === "gold" && root.dataset.theme === "dark" ? "none" : "gold"));
+    pop.prepend(toneBtn);
+    syncTone();
     document.body.append(pop);
     btn.addEventListener("click", e => { e.stopPropagation(); open(pop.hidden); });
     document.addEventListener("click", e => { if (!pop.hidden && !pop.contains(e.target)) open(false); });
     document.addEventListener("keydown", e => { if (e.key === "Escape" && !pop.hidden) { open(false); btn.focus(); } });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
-  window.OMEGA_SUITE = Object.freeze({ publish, state: () => JSON.parse(JSON.stringify(state)), on: f => { listeners.push(f); }, violations: () => violations, channel: () => !!ch });
+  window.OMEGA_SUITE = Object.freeze({ publish, setTone, tone: () => toneNow(), state: () => JSON.parse(JSON.stringify(state)), on: f => { listeners.push(f); }, violations: () => violations, channel: () => !!ch });
 })();

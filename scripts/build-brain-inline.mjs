@@ -8,8 +8,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-// The second brain page and, since ADR-126, the knowledge domain page, which organises the same ideas.
-const LIB = join(REPO, "scripts", "lib", "second-brain.mjs"), PAGES = ["omega-second-brain.html", "omega-knowledge.html"].map(f => join(REPO, "omega-ops-room-v1", f));
+// The second brain page and, since ADR-126, the knowledge domain page, and since ADR-127 the APEX council, which organise the same ideas.
+const LIB = join(REPO, "scripts", "lib", "second-brain.mjs"), PAGES = ["omega-second-brain.html", "omega-knowledge.html", "omega-apex.html"].map(f => join(REPO, "omega-ops-room-v1", f));
 const BEGIN = "<!-- OMEGA_BRAIN begin: generated from scripts/lib/second-brain.mjs by scripts/build-brain-inline.mjs, do not edit here -->";
 const END = "<!-- OMEGA_BRAIN end -->";
 

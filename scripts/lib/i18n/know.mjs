@@ -45,7 +45,7 @@ export const KNOW = [
   ["مضاف", "Added"],
   ["مهارة المشروع omega-knowledge-domain: قواعد نصية فقط كُتبت من كود هذا المستودع، بلا سكربتات.", "Project skill omega-knowledge-domain: text rules only, written from this repository's code, with no scripts."],
   ["العقد:", "Nodes:"],
-  ["15 مجالاً، 8 صفحات، PRIME و9 مساعدين، 17 مصدراً مفتوحاً من العرّاف، أدوات المكتبة وأدوات الرسم المعرفي، كل قرار في docs/adr، وأفكار المخ الثاني ومحاوره من هذا المتصفح.", "15 domains, 8 pages, PRIME and 9 helpers, ORACLE's 17 open sources, the library and knowledge-graph tools, every decision in docs/adr, and the second brain's ideas and themes from this browser."],
+  ["15 مجالاً، 9 صفحات، PRIME و9 مساعدين، 17 مصدراً مفتوحاً من العرّاف، أدوات المكتبة وأدوات الرسم المعرفي، كل قرار في docs/adr، وأفكار المخ الثاني ومحاوره من هذا المتصفح.", "15 domains, 9 pages, PRIME and 9 helpers, ORACLE's 17 open sources, the library and knowledge-graph tools, every decision in docs/adr, and the second brain's ideas and themes from this browser."],
   ["الروابط:", "Links:"],
   ["من جداول ثابتة (مصدر يغذي مجالاً، وكيل يراقبه، أداة تخدمه، قرار يذكر قراراً) أو من كلمات مشتركة بعد التوحيد العربي والإنجليزي [INFERENCE]. كل رابط يقول سببه.", "From fixed tables (a source feeds a domain, an agent watches it, a tool serves it, a decision cites a decision) or from shared words after Arabic and English normalisation [INFERENCE]. Every link says why it exists."],
   ["الأهمية والجسور:", "Rank and bridges:"], ["PageRank موزون بتخميد 0.85، وبينية Brandes على أقصر الطرق.", "Weighted PageRank with damping 0.85, and Brandes betweenness on shortest paths."],
