@@ -151,7 +151,8 @@ test("the Markdown and JSON exports name every domain and mark word links", () =
   ok(j.format === "omega-knowledge-graph-v1" && j.nodes.length === g.nodes.length && j.edges.length === g.edges.length, "json");
 });
 test("the knowledge-graph tools are https GitHub repositories with a licence, ideas only, Kùzu left out", () => {
-  ok(K.KG_TOOLS.every(t => /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(t.repo) && t.licence && t.status === "idea"), "fields");
+  ok(K.KG_TOOLS.every(t => /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(t.repo) && t.licence && (t.status === "idea" || (t.status === "local option" && t.review && /^\d/.test(t.review.pin)))), "fields");
+  ok(K.KG_TOOLS.filter(t => t.status === "local option").map(t => t.name).sort().join() === "Docling,LightRAG,Oxigraph", "local options");
   ok(!K.KG_TOOLS.some(t => /kuzu|kùzu/i.test(t.name)), "Kùzu is archived");
   const names = B.LIBRARY.map(x => x.name).concat(K.KG_TOOLS.map(x => x.name));
   ok(new Set(names).size === names.length, "a tool is listed twice");

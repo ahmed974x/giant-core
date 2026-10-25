@@ -42,6 +42,7 @@ echo.
 echo Optional laptop services, the Ops Room shows them grey when they are off:
 curl.exe -s -o nul -m 2 http://127.0.0.1:5678/healthz && (echo   n8n 5678: running.) || (echo   n8n 5678: off. Start Docker Desktop, then run "docker compose up -d n8n" in the giant-core folder that holds your .env file.)
 curl.exe -s -o nul -m 2 http://127.0.0.1:8095/api/health && (echo   Newton 8095: running.) || (echo   Newton 8095: off. Optional: "py -m pip install -r newton\requirements.txt", then "py -m newton.http_api" in this folder.)
+curl.exe -s -o nul -m 2 http://127.0.0.1:8097/api/health && (echo   OMEGA tools 8097: running.) || (echo   OMEGA tools 8097: off. Optional: run "omega_tools\install-omega-tools.ps1" once, then start-omega-tools.bat. ADR-129.)
 findstr /c:"windows-mcp==0.8.8" "%APPDATA%\Claude\claude_desktop_config.json" >nul 2>nul && (echo Laptop control: Windows-MCP 0.8.8 is set up for Claude Desktop.) || (echo Laptop control: Windows-MCP is not set up yet. Run OMEGA-PRIME.bat once to set it up.)
 start "" "%OMEGA_URL%"
 endlocal

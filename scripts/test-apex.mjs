@@ -37,9 +37,26 @@ test("the register: one tool or two per field, licence, GitHub repo, a source pa
     ok(doms.has(t.domain), `${t.name}: unknown field ${t.domain}`);
     ok(/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(t.repo) && /^https:\/\//.test(t.src) && t.licence.length > 2 && t.ar && t.en, `${t.name} row`);
     ok(!lib.has(t.name.toLowerCase()), `${t.name} is already in the library`);
-    ok(!("status" in t) || t.status === "idea", `${t.name} claims to be in use`);
+    ok(!("status" in t) || t.status === "idea" || (t.status === "local option" && t.review && t.review.verdict === "pass"), `${t.name} claims to be in use`);
+    ok(!t.review || (["pass", "conditional"].includes(t.review.verdict) && /^\d/.test(t.review.pin) && t.review.at === A.LOCAL_ASOF), `${t.name}: review fields`);
   }
   ok(new Set(A.REGISTER.map(t => t.name)).size === A.REGISTER.length, "duplicate tool");
+});
+test("local tools (ADR-129): each has a field helper, a route in omega_tools, the installer's pin, and is off by default", () => {
+  const api = readFileSync(join(REPO, "omega_tools", "http_api.py"), "utf8"), flags = readFileSync(join(REPO, "omega_tools", "flags.py"), "utf8");
+  const lock = readFileSync(join(REPO, "omega_tools", "requirements-full.in"), "utf8"), doms = new Set(K.DOMAINS.map(d => d.id));
+  ok(A.LOCAL_TOOLS.length === 5, `${A.LOCAL_TOOLS.length} local tools`);
+  for (const t of A.LOCAL_TOOLS) {
+    ok(doms.has(t.domain) && ["pass", "conditional"].includes(t.verdict) && t.ar && t.en, `${t.name} row`);
+    ok(new RegExp(`"${t.route}":`).test(api), `${t.name}: route ${t.route} is not in omega_tools/http_api.py`);
+    const [pkg, ver] = t.pin.split(" ");
+    ok(lock.includes(`${pkg}==${ver}`) && flags.includes(`"${ver}")`), `${t.name}: pin ${t.pin} differs from the installer`);
+  }
+  ok(/raw = os\.environ\.get\("OMEGA_TOOLS", ""\)/.test(flags), "tools are not off by default");
+  const f = A.fields(REG);
+  ok(f.find(x => x.domain === "space").local.some(t => t.route === "sat_track") && f.find(x => x.domain === "knowledge").local.length === 2, "field helpers miss their local tools");
+  const md = A.toMarkdown(A.council(REG, "solar storm satellites", opt), "2026-10-25T00:00:00Z");
+  ok(/Local options \(off until switched on\): Skyfield → \/api\/sat_track/.test(md), "markdown misses the local option");
 });
 test("routing: oil in Hormuz seats the oil and straits helpers, medicine seats the medical researcher", () => {
   const r = A.council(REG, "كيف أراقب ناقلات النفط في مضيق هرمز وسعر برنت", opt);

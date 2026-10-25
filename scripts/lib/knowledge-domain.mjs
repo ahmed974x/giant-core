@@ -55,16 +55,18 @@ const PAGES = Object.freeze([
 const HELPER_TOOL = Object.freeze({ scout: "scout", analyst: "analyst", quant: "quant", sentinel: "sentinel", risk: "risk", exec: null, audit: "audit", research: "research", ops: "ops" });
 // ADR-126: free, open-source knowledge-graph tools, as ideas only (nothing installed). Licences as each project
 // publishes them, read 2026-10-24. Kùzu was left out: its repository was archived in October 2025.
+// ADR-129: Oxigraph, LightRAG and Docling passed a read-only security review and are "local option": wired into
+// omega_tools on the laptop and off until OMEGA_TOOLS names them. Not "in use" until Ahmad runs the installer.
 const KG_TOOLS = Object.freeze([
   { cat: "kg", name: "graphology", licence: "MIT", repo: "https://github.com/graphology/graphology", ar: "بنية رسم معرفي في جافاسكربت مع خوارزميات جاهزة", en: "a JavaScript graph structure with ready algorithms", status: "idea" },
   { cat: "kg", name: "sigma.js", licence: "MIT", repo: "https://github.com/jacomyal/sigma.js", ar: "رسم آلاف العقد بسرعة عبر WebGL", en: "draw thousands of nodes fast with WebGL", status: "idea" },
   { cat: "kg", name: "Cytoscape.js", licence: "MIT", repo: "https://github.com/cytoscape/cytoscape.js", ar: "تحليل وعرض الشبكات في المتصفح", en: "network analysis and views in the browser", status: "idea" },
-  { cat: "kg", name: "Oxigraph", licence: "MIT OR Apache-2.0", repo: "https://github.com/oxigraph/oxigraph", ar: "قاعدة RDF واستعلام SPARQL محلية على اللابتوب", en: "a local RDF store with SPARQL on the laptop", status: "idea" },
+  { cat: "kg", name: "Oxigraph", licence: "MIT OR Apache-2.0", repo: "https://github.com/oxigraph/oxigraph", ar: "قاعدة RDF واستعلام SPARQL محلية على اللابتوب", en: "a local RDF store with SPARQL on the laptop", status: "local option", review: { verdict: "pass", pin: "0.5.11", at: "2026-10-25", route: "kg_query" } },
   { cat: "kg", name: "QLever", licence: "Apache-2.0", repo: "https://github.com/ad-freiburg/qlever", ar: "استعلام SPARQL سريع على نسخة ويكي داتا كاملة محلياً", en: "fast SPARQL over a full local Wikidata copy", status: "idea" },
   { cat: "kg", name: "Apache Jena", licence: "Apache-2.0", repo: "https://github.com/apache/jena", ar: "أدوات الويب الدلالي والاستدلال", en: "semantic web tools and reasoning", status: "idea" },
-  { cat: "kg", name: "LightRAG", licence: "MIT", repo: "https://github.com/HKUDS/LightRAG", ar: "بحث بالرسم المعرفي مع نموذج محلي (Ollama)", en: "graph-based retrieval with a local model (Ollama)", status: "idea" },
+  { cat: "kg", name: "LightRAG", licence: "MIT", repo: "https://github.com/HKUDS/LightRAG", ar: "بحث بالرسم المعرفي مع نموذج محلي (Ollama)", en: "graph-based retrieval with a local model (Ollama)", status: "local option", review: { verdict: "conditional", pin: "1.5.7", at: "2026-10-25", route: "rag_query" } },
   { cat: "kg", name: "GraphRAG (Microsoft)", licence: "MIT", repo: "https://github.com/microsoft/graphrag", ar: "استخراج كيانات ومجتمعات من النصوص", en: "entity and community extraction from text", status: "idea" },
-  { cat: "kg", name: "Docling", licence: "MIT", repo: "https://github.com/docling-project/docling", ar: "تحويل ملفات PDF إلى نص منظم للمخ الثاني", en: "turn PDFs into structured text for the second brain", status: "idea" },
+  { cat: "kg", name: "Docling", licence: "MIT", repo: "https://github.com/docling-project/docling", ar: "تحويل ملفات PDF إلى نص منظم للمخ الثاني", en: "turn PDFs into structured text for the second brain", status: "local option", review: { verdict: "conditional", pin: "2.137.0", at: "2026-10-25", route: "doc_markdown" } },
   { cat: "kg", name: "txtai", licence: "Apache-2.0", repo: "https://github.com/neuml/txtai", ar: "بحث دلالي بالمتجهات على الجهاز", en: "on-device semantic search with embeddings", status: "idea" }
 ]);
 const KG_CAT = Object.freeze({ kg: { ar: "الرسم المعرفي", en: "Knowledge graphs" } });
@@ -154,7 +156,7 @@ function build(reg, input = {}, opts = {}) {
   const tools = (Array.isArray(reg.library) ? reg.library : []).concat(KG_TOOLS);
   for (const t of tools) {
     const id = "t:" + t.name;
-    add({ id, kind: "tool", ar: t.name, en: t.name, text: `${t.name} ${t.en} ${(cats[t.cat] || {}).en || ""}`, ref: t.cat, licence: clean(t.licence, 80), url: t.repo, status: t.status === "in use" ? "in use" : "idea", note: { ar: clean(t.ar, 200), en: clean(t.en, 200) }, sub: t.cat });
+    add({ id, kind: "tool", ar: t.name, en: t.name, text: `${t.name} ${t.en} ${(cats[t.cat] || {}).en || ""}`, ref: t.cat, licence: clean(t.licence, 80), url: t.repo, status: t.status === "in use" || t.status === "local option" ? t.status : "idea", note: { ar: clean(t.ar, 200), en: clean(t.en, 200) }, sub: t.cat });
     for (const d of DOMAINS) if (d.lib.includes(t.cat)) link(id, "d:" + d.id, "serves");
   }
 
