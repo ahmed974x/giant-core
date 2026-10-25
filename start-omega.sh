@@ -36,6 +36,8 @@ open_browser() {
     else echo "n8n 5678: off. Start Docker, then run 'docker compose up -d n8n' in the giant-core folder that holds your .env file."; fi
     if curl -fsS -m 2 -o /dev/null http://127.0.0.1:8095/api/health 2>/dev/null; then echo "Newton 8095: running."
     else echo "Newton 8095: off. Optional: 'python3 -m pip install -r newton/requirements.txt', then 'python3 -m newton.http_api' in this folder."; fi
+    if curl -fsS -m 2 -o /dev/null http://127.0.0.1:8097/api/health 2>/dev/null; then echo "OMEGA tools 8097: running."
+    else echo "OMEGA tools 8097: off. Optional: './omega_tools/install-omega-tools.sh' once, then './start-omega-tools.sh'. ADR-129."; fi
   fi
   if command -v open >/dev/null 2>&1; then open "$URL"
   elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1

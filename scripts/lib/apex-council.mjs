@@ -69,17 +69,18 @@ const FIELD_HELPERS = Object.freeze([
 
 /* ---------- open-source register (ideas only) ---------- */
 // One tool per field that the library (ADR-125) and the knowledge-graph tools (ADR-126) do not already list, read on
-// 2026-10-24 from the page named in `src`. Nothing here is installed: each needs Ahmad's approval and a written
-// security review first (AGENTS.md §1), and OpenSSF Scorecard is the first look that review would take.
+// 2026-10-24 from the page named in `src`. Nothing here is installed by a page: each needs Ahmad's approval and a written
+// security review first (AGENTS.md §1). ADR-129 reviewed four of them (`review`); the two marked "local option" are
+// wired into omega_tools, which stays off until OMEGA_TOOLS names the tool on the laptop.
 const REG_ASOF = "2026-10-24";
 const REGISTER = Object.freeze([
   { domain: "markets", name: "Qlib", licence: "MIT", repo: "https://github.com/microsoft/qlib", src: "https://gitee.com/lightsp/qlib", ar: "منصة بحث كمي: بيانات وعوامل واختبار رجعي على الورق", en: "quant research platform: data, factors and paper backtests" },
-  { domain: "risk", name: "PyPortfolioOpt", licence: "MIT", repo: "https://github.com/PyPortfolio/PyPortfolioOpt", src: "https://cdn.jsdelivr.net/gh/robertmartin8/pyportfolioopt@main/README.md", ar: "توزيع المحافظ وحدود المخاطرة (للتعلم على الورق)", en: "portfolio allocation and risk limits (to learn on paper)" },
+  { domain: "risk", name: "PyPortfolioOpt", licence: "MIT", repo: "https://github.com/PyPortfolio/PyPortfolioOpt", src: "https://cdn.jsdelivr.net/gh/robertmartin8/pyportfolioopt@main/README.md", ar: "توزيع المحافظ وحدود المخاطرة (للتعلم على الورق)", en: "portfolio allocation and risk limits (to learn on paper)", status: "local option", review: { verdict: "pass", pin: "1.6.0", at: "2026-10-25" } },
   { domain: "energy", name: "PyPSA", licence: "MIT", repo: "https://github.com/PyPSA/PyPSA", src: "https://docs.pypsa.org/latest/home/license/", ar: "نمذجة أنظمة الطاقة والشبكات", en: "energy system and grid modelling" },
   { domain: "sea", name: "MovingPandas", licence: "BSD-3-Clause", repo: "https://github.com/movingpandas/movingpandas", src: "https://summary.ecosyste.ms/projects/74892", ar: "تحليل مسارات السفن والطائرات", en: "trajectory analysis for ships and aircraft" },
   { domain: "cyber", name: "Wazuh", licence: "GPL-2.0-only", repo: "https://github.com/wazuh/wazuh", src: "https://www.opentechhub.io/wazuh/", ar: "مراقبة أمنية دفاعية لأجهزتك أنت فقط", en: "defensive security monitoring of your own machines only" },
-  { domain: "space", name: "Skyfield", licence: "MIT", repo: "https://github.com/skyfielders/python-skyfield", src: "https://pypi.org/project/skyfield/", ar: "مواقع دقيقة للكواكب والأقمار الصناعية", en: "research-grade positions of planets and Earth satellites" },
-  { domain: "news", name: "Trafilatura", licence: "Apache-2.0 (from v1.8.0; GPLv3+ before)", repo: "https://github.com/adbar/trafilatura", src: "https://pypi.org/project/trafilatura/2.2.0/", ar: "استخراج نص المقال النظيف من صفحة خبر", en: "clean article text from a news page" },
+  { domain: "space", name: "Skyfield", licence: "MIT", repo: "https://github.com/skyfielders/python-skyfield", src: "https://pypi.org/project/skyfield/", ar: "مواقع دقيقة للكواكب والأقمار الصناعية", en: "research-grade positions of planets and Earth satellites", status: "local option", review: { verdict: "pass", pin: "1.55", at: "2026-10-25" } },
+  { domain: "news", name: "Trafilatura", licence: "Apache-2.0 (from v1.8.0; GPLv3+ before)", repo: "https://github.com/adbar/trafilatura", src: "https://pypi.org/project/trafilatura/2.2.0/", ar: "استخراج نص المقال النظيف من صفحة خبر", en: "clean article text from a news page", review: { verdict: "pass", pin: "2.3.1", at: "2026-10-25", ar: "لم تُوصل: العرّاف يقرأ واجهاته المفتوحة فقط", en: "not wired: ORACLE reads only its open APIs" } },
   { domain: "vision", name: "supervision", licence: "MIT", repo: "https://github.com/roboflow/supervision", src: "https://supervision.roboflow.com/latest/about/", ar: "أدوات رؤية حاسوبية مستقلة عن النموذج", en: "model-agnostic computer vision tools" },
   { domain: "ai", name: "DSPy", licence: "MIT", repo: "https://github.com/stanfordnlp/dspy", src: "https://summary.ecosyste.ms/projects/371500", ar: "برمجة خطوات النموذج المحلي بدل كتابة الأوامر يدوياً", en: "program a local model's steps instead of hand-written prompts" },
   { domain: "ai", name: "Langfuse", licence: "MIT (outside the /ee folders)", repo: "https://github.com/langfuse/langfuse", src: "https://langfuse.com/docs/open-source", ar: "تتبع ومراجعة كل خطوة للوكيل محلياً", en: "trace and review every agent step, self-hosted" },
@@ -88,7 +89,18 @@ const REGISTER = Object.freeze([
   { domain: "design", name: "Open Props", licence: "MIT", repo: "https://github.com/argyleink/open-props", src: "https://npmjs.com/package/open-props", ar: "متغيرات CSS جاهزة للحركة والمسافات (مرجع فقط)", en: "ready CSS variables for motion and spacing (reference only)" },
   { domain: "security", name: "OpenSSF Scorecard", licence: "Apache-2.0", repo: "https://github.com/ossf/scorecard", src: "https://pkg.go.dev/github.com/ossf/scorecard", ar: "يقيّم أمان أي مشروع مفتوح قبل أن نقترحه", en: "scores the security posture of any open project before we propose it" },
   { domain: "medicine", name: "scispaCy", licence: "Apache-2.0", repo: "https://github.com/allenai/scispacy", src: "https://awesome.ecosyste.ms/projects/github.com%2Fallenai%2Fscispacy", ar: "قراءة النصوص الطبية والحيوية", en: "biomedical text processing" },
-  { domain: "science", name: "SymPy", licence: "BSD-3-Clause", repo: "https://github.com/sympy/sympy", src: "https://github.com/sympy/sympy", ar: "رياضيات رمزية (مقترحة سابقاً لعقل نيوتن)", en: "symbolic maths (proposed before for the Newton brain)" }
+  { domain: "science", name: "SymPy", licence: "BSD-3-Clause", repo: "https://github.com/sympy/sympy", src: "https://github.com/sympy/sympy", ar: "رياضيات رمزية (مقترحة سابقاً لعقل نيوتن)", en: "symbolic maths (proposed before for the Newton brain)", review: { verdict: "pass", pin: "1.14.0", at: "2026-10-25", ar: "نيوتن يطلبها أصلاً (newton/requirements.txt)", en: "Newton already requires it (newton/requirements.txt)" } }
+]);
+
+// ADR-129: the reviewed tools wired into omega_tools (loopback 127.0.0.1:8097, each off until switched on), with the
+// field helper that would use them and the route that runs them. Review: docs/security/TOOLS-SECURITY-REVIEW-2026-10-25.md.
+const LOCAL_ASOF = "2026-10-25";
+const LOCAL_TOOLS = Object.freeze([
+  { name: "Oxigraph", domain: "knowledge", route: "kg_query", pin: "pyoxigraph 0.5.11", verdict: "pass", ar: "استعلام SPARQL للقراءة فقط على تصدير نطاق المعرفة", en: "read-only SPARQL over the knowledge domain's export" },
+  { name: "Docling", domain: "knowledge", route: "doc_markdown", pin: "docling 2.137.0", verdict: "conditional", ar: "تحويل ملفات صندوق الوارد إلى نص، بلا إنترنت بعد تنزيل النماذج مرة", en: "inbox files to Markdown, offline after a one-time model download" },
+  { name: "LightRAG", domain: "ai", route: "rag_query", pin: "lightrag-hku 1.5.7", verdict: "conditional", ar: "بحث بالرسم المعرفي في ملاحظاتك مع نموذج Ollama محلي فقط", en: "graph retrieval over your notes with a local Ollama model only" },
+  { name: "Skyfield", domain: "space", route: "sat_track", pin: "skyfield 1.55", verdict: "pass", ar: "مسار القمر الصناعي بنموذج SGP4 من سطري TLE", en: "SGP4 satellite track from a TLE" },
+  { name: "PyPortfolioOpt", domain: "risk", route: "min_volatility", pin: "pyportfolioopt 1.6.0", verdict: "pass", ar: "أوزان أقل تذبذب على الورق [INFERENCE - Quant Model]", en: "minimum-volatility paper weights [INFERENCE - Quant Model]" }
 ]);
 
 // PRIME tools by helper (scripts/lib/agent-core.mjs TOOLS). The paper executor has none: it acts only on the risk
@@ -109,7 +121,8 @@ function fields(reg) {
       field: { ar: d.ar || f.domain, en: d.en || f.domain }, trade: !!d.trade, words: String(d.words || ""),
       sources: (d.sources || []).filter(s => reg.sources && reg.sources[s]), partners: (d.helpers || []).slice(), pages: (d.pages || []).slice(),
       tools: REGISTER.filter(t => t.domain === f.domain).map(t => t.name)
-        .concat((reg.library || []).filter(t => (d.lib || []).includes(t.cat)).map(t => t.name))
+        .concat((reg.library || []).filter(t => (d.lib || []).includes(t.cat)).map(t => t.name)),
+      local: LOCAL_TOOLS.filter(t => t.domain === f.domain).map(t => ({ name: t.name, route: t.route, verdict: t.verdict }))
     };
   });
 }
@@ -149,7 +162,7 @@ function council(reg, question, opts = {}) {
     return {
       id: f.id, domain: f.domain, ar: f.ar, en: f.en, share: x.share, hits: x.hits, field: f.field, guard: f.guard, role: f.role,
       read: f.sources.map(s => ({ id: s, name: reg.sources[s].name, terms: reg.sources[s].terms, home: reg.sources[s].home })),
-      oracle: oracleQuery(f, r.question), pages: f.pages, partners: f.partners, study: f.tools.slice(0, 4)
+      oracle: oracleQuery(f, r.question), pages: f.pages, partners: f.partners, study: f.tools.slice(0, 4), local: f.local
     };
   });
   const doms = new Set(briefs.map(b => b.domain));
@@ -159,7 +172,7 @@ function council(reg, question, opts = {}) {
   const say = (helper, verdict, ar, en) => review.push({ helper, verdict, ar, en });
   say("risk", trade ? "stop-only" : "ok", trade ? "سؤال يمس التداول: الخطة ورقية فقط، وبوابة المخاطر بعد كل قراءة تستطيع الإيقاف فقط" : "لا تداول في السؤال", trade ? "The question touches trading: the plan is paper only, and the risk gate after every reading can only stop" : "No trading in the question");
   const unknown = briefs.flatMap(b => b.read).filter(s => !reg.sources[s.id]);
-  say("audit", unknown.length ? "fix" : "ok", `كل المصادر من قائمة العرّاف المفتوحة بلا مفاتيح (${briefs.reduce((n, b) => n + b.read.length, 0)})؛ كل أداة فكرة فقط وتحتاج موافقتك ومراجعة أمنية`, `Every source is from ORACLE's keyless list (${briefs.reduce((n, b) => n + b.read.length, 0)}); every tool is an idea only and needs your approval and a security review`);
+  say("audit", unknown.length ? "fix" : "ok", `كل المصادر من قائمة العرّاف المفتوحة بلا مفاتيح (${briefs.reduce((n, b) => n + b.read.length, 0)})؛ الأدوات أفكار، والمراجَعة منها خيارات محلية مطفأة حتى تشغّلها على اللابتوب`, `Every source is from ORACLE's keyless list (${briefs.reduce((n, b) => n + b.read.length, 0)}); tools are ideas, and the reviewed ones are local options that stay off until you switch them on on the laptop`);
   if (geo) say("sentinel", "passive", "استخبارات سلبية فقط: مواضيع عامة، لا عنوان ولا شخص ولا حساب", "Passive OSINT only: public topics, no address, person or account");
   if (doms.has("medicine")) say("research", "note", "الموجز الطبي ليس نصيحة طبية", "The medical brief is not medical advice");
   say("exec", "ok", "المنفذ الورقي لا يفتح صفقة من خطة؛ فقط على OPEN من حكم المخاطر", "The paper executor opens nothing from a plan; only on the risk judge's OPEN");
@@ -256,7 +269,7 @@ function toMarkdown(res, at) {
   const out = [`# APEX council · مجلس القمة`, "", `Question: ${res.question}`, `Read: ${at || ""} · every route, share, brief and plan is [INFERENCE] (fixed rules over words). Paper only.`, "", `## Verdict`, res.verdict.en, res.verdict.ar, "", "## Seats"];
   for (const b of res.briefs) {
     out.push(`### ${b.en} · ${b.ar} (${Math.round(b.share * 100)}%)`, `- Field: ${b.field.en}`, `- Matched words: ${b.hits.join(", ") || "none"}`,
-      `- Read: ${b.read.map(s => `${s.name} (${s.terms})`).join("; ") || "none"}`, `- Pages: ${b.pages.join(", ")}`, `- Study (ideas only): ${b.study.join(", ") || "none"}`, `- Never: ${b.guard.en}`);
+      `- Read: ${b.read.map(s => `${s.name} (${s.terms})`).join("; ") || "none"}`, `- Pages: ${b.pages.join(", ")}`, `- Study (ideas only): ${b.study.join(", ") || "none"}`, `- Local options (off until switched on): ${(b.local || []).map(t => `${t.name} → /api/${t.route}`).join(", ") || "none"}`, `- Never: ${b.guard.en}`);
   }
   out.push("", "## Core review");
   for (const v of res.review) out.push(`- ${v.helper} [${v.verdict}]: ${v.en}`);
@@ -266,6 +279,6 @@ function toMarkdown(res, at) {
 }
 
 export const OMEGA_APEX = Object.freeze({
-  VERSION: "omega-apex-v1", REG_ASOF, FIELD_HELPERS, REGISTER, HELPER_TOOL, SEAT_MIN, SEATS,
+  VERSION: "omega-apex-v1", REG_ASOF, FIELD_HELPERS, REGISTER, LOCAL_ASOF, LOCAL_TOOLS, HELPER_TOOL, SEAT_MIN, SEATS,
   clean, plainTokens, fields, route, council, inboxes, network, layout, toMarkdown
 });

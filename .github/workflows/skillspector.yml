@@ -32,6 +32,14 @@ jobs:
         run: node scripts/test-apex.mjs
       - name: Suite search tests (word matcher, copies on every page, NABD tools grid) (ADR-128)
         run: node scripts/test-suite.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Local tools (ADR-129), the hash-locked light group and the guard tests
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary ":all:" -r omega_tools/requirements-light.txt
+          python -m pip install pytest==8.4.2
+          python -m pytest -q omega_tools/tests
       - name: Static page checks, CSS braces, Arabic faces, self-test badge (ADR-120)
         run: node scripts/test-pages.mjs
       - name: Self-shield, OMEGA attacks its own proxy in an offline sandbox and lints its pages and files (ADR-122)
