@@ -18,7 +18,8 @@ export const PAGES = [
   { page: "omega-ops-room-v1/omega-oracle.html", dict: ["oracle.mjs", "ORACLE"], source: "ar" },
   { page: "omega-ops-room-v1/omega-trade-lab.html", dict: ["tradelab.mjs", "TRADELAB"], source: "ar" },
   { page: "omega-ops-room-v1/omega-second-brain.html", dict: ["brain.mjs", "BRAIN"], source: "ar" },
-  { page: "omega-ops-room-v1/omega-core.html", dict: ["core.mjs", "CORE"], source: "ar" }
+  { page: "omega-ops-room-v1/omega-core.html", dict: ["core.mjs", "CORE"], source: "ar" },
+  { page: "omega-ops-room-v1/omega-knowledge.html", dict: ["know.mjs", "KNOW"], source: "ar" }
 ];
 
 const lib = readFileSync(LIB, "utf8");

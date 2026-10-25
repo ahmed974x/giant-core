@@ -26,6 +26,8 @@ jobs:
         run: node scripts/test-brain.mjs
       - name: Core engine tests (planner, retries, breaker, memory, lessons, missions, 3D maths) and its inline copies (ADR-121)
         run: node scripts/test-core.mjs
+      - name: Knowledge domain tests (graph, PageRank, bridges, missing links, gaps, ask, plan review, enrichment shapes) and its inline copies (ADR-126)
+        run: node scripts/test-knowledge.mjs
       - name: Static page checks, CSS braces, Arabic faces, self-test badge (ADR-120)
         run: node scripts/test-pages.mjs
       - name: Self-shield, OMEGA attacks its own proxy in an offline sandbox and lints its pages and files (ADR-122)

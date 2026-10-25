@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-fzOFitHYhGYr9im1KNKYWsukUlMXqltOfNbi508UZH4=' 'sha256-Dr6fyd2pJ4TCrZYugaW6N+B4X3+TnqoNibAjdo9h4vE=' 'sha256-e4v08M6RrrqY2vo9f0kZTp18UFJGVrOB1IQL2WXlhbg=' 'sha256-PhDfTgiMjGOZ+YclItKqf8ie6uAWvCA5CCFbGIRcl2c='; style-src 'sha256-blfjLkaUvVjV8S71CoqTma7YuqR3FSOypcyv0DQJ7CQ='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://api.openalex.org https://api.crossref.org https://www.ebi.ac.uk https://export.arxiv.org https://api.semanticscholar.org https://en.wikipedia.org https://ar.wikipedia.org https://api.gdeltproject.org https://archive.org https://doaj.org https://dblp.org https://www.wikidata.org https://clinicaltrials.gov https://eutils.ncbi.nlm.nih.gov https://zenodo.org; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SUcWcN8baqRqjQmSvUfoK36eHz7FVror+lh4TP0BCGc=' 'sha256-zKzAA7uZ93WO0befIXgjORP+JIDAb/87Hx3/Xyhxdsg=' 'sha256-Dr6fyd2pJ4TCrZYugaW6N+B4X3+TnqoNibAjdo9h4vE=' 'sha256-e4v08M6RrrqY2vo9f0kZTp18UFJGVrOB1IQL2WXlhbg=' 'sha256-PhDfTgiMjGOZ+YclItKqf8ie6uAWvCA5CCFbGIRcl2c='; style-src 'sha256-blfjLkaUvVjV8S71CoqTma7YuqR3FSOypcyv0DQJ7CQ='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://api.openalex.org https://api.crossref.org https://www.ebi.ac.uk https://export.arxiv.org https://api.semanticscholar.org https://en.wikipedia.org https://ar.wikipedia.org https://api.gdeltproject.org https://archive.org https://doaj.org https://dblp.org https://www.wikidata.org https://clinicaltrials.gov https://eutils.ncbi.nlm.nih.gov https://zenodo.org; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -93,7 +93,8 @@
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
     lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
     brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html",
-    core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html"
+    core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html",
+    know: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-knowledge.html" : "omega-ops-room-v1/omega-knowledge.html") : "omega-knowledge.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -103,7 +104,8 @@
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
     { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
     { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" },
-    { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" }
+    { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" },
+    { k: "know", icon: "🕸️", en: "Knowledge domain", ar: "نطاق المعرفة", line: () => "Ideas, tools, sources, agents and decisions in one graph" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {

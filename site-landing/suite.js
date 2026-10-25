@@ -71,7 +71,8 @@
     oracle: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-oracle.html" : "omega-ops-room-v1/omega-oracle.html") : "omega-oracle.html",
     lab: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-trade-lab.html" : "omega-ops-room-v1/omega-trade-lab.html") : "omega-trade-lab.html",
     brain: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-second-brain.html" : "omega-ops-room-v1/omega-second-brain.html") : "omega-second-brain.html",
-    core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html"
+    core: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-core.html" : "omega-ops-room-v1/omega-core.html") : "omega-core.html",
+    know: PAGE === "nabd" ? (inLanding ? "../omega-ops-room-v1/omega-knowledge.html" : "omega-ops-room-v1/omega-knowledge.html") : "omega-knowledge.html"
   };
   const usd = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
   const APPS = [
@@ -81,7 +82,8 @@
     { k: "oracle", icon: "🔭", en: "ORACLE", ar: "العرّاف", line: () => state.research ? `Last question: ${state.research}` : "Deep research agent, open sources" },
     { k: "lab", icon: "📒", en: "TRADE LAB", ar: "مختبر المتداول", line: () => "Paper journal, desk manager agent" },
     { k: "brain", icon: "🧠", en: "Second brain", ar: "المخ الثاني", line: () => "Ideas merged and ranked, on this device" },
-    { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" }
+    { k: "core", icon: "🧬", en: "Core", ar: "النواة", line: () => "3D agent core, AI models and their sources" },
+    { k: "know", icon: "🕸️", en: "Knowledge domain", ar: "نطاق المعرفة", line: () => "Ideas, tools, sources, agents and decisions in one graph" }
   ];
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function render() {
