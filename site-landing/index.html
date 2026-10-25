@@ -2,13 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-pmbgn0nMIgJW34kTauOTlw+JiiKnpmZ2FjE3KqBffZo='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-XbinJtBT0Ry8CuPS04O8ErVNLviWP8pY0hGWIHHzC0M=' 'sha256-2Te5216QbHcqC3at5GkTsCOyqFdb9fbc6OKnRYkkxIs='; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>نبض NABD</title>
   <meta name="description" content="نبض: أدوات بحث وتعلّم مفتوحة لفهم الأسواق، بخمسة وكلاء مخطَّطين يعمل اثنان منهم جزئياً اليوم، وحساب تدريب وهمي، ونشر صريح لما لم ينجح.">
   <!-- DRAFT (ADR-071, ADR-087): not published. Domain, legal review and waitlist form wait for approval. -->
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#f9fafb">
+  <meta name="theme-color" content="#F5F5F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="NABD">
@@ -95,8 +95,40 @@
       <h2 id="agents-h">خمسة وكلاء، كل واحد بدور واضح</h2>
       <p class="lead">كل وكيل يكتب ما فعله ولماذا، ويمر عبر بوابات فحص قبل أن يصل أثره إلى أي رقم. الحالة بجانب كل وكيل هي حالته الحقيقية اليوم.</p>
     </div>
-    <div class="panel"><div class="grid grid-agents">
-      <article class="card">
+    <div class="panel">
+    <figure class="card threads" id="threads" aria-labelledby="threads-h">
+      <h3 id="threads-h">كيف يتصل الوكلاء ببعض</h3>
+      <p class="th-lead">كل خيط رابط حقيقي: من يقرأ ممن، ومن يكتب أين. لون النقطة حالة الوكيل اليوم. لا خيط يصل إلى منصة تداول حقيقية.</p>
+      <div class="th-stage" data-links="t-market>t-quant:data t-world>t-osint:data t-news>t-osint:data t-osint>t-quant:informs t-quant>t-exec:decides t-exec>t-paper:acts t-exec>t-receipts:acts t-paper>t-audit:informs t-audit>t-inbox:decides t-folio>t-inbox:locked">
+        <svg class="th-svg" aria-hidden="true" focusable="false"></svg>
+        <ul class="th-col th-src" aria-label="المصادر">
+          <li class="th-node" id="t-market" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>أسعار السوق العامة <bdi translate="no">Binance</bdi></span></li>
+          <li class="th-node" id="t-world" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>السفن والطيران والكوارث</span></li>
+          <li class="th-node" id="t-news" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>الأخبار والأحداث <bdi translate="no">GDELT</bdi></span></li>
+        </ul>
+        <ul class="th-col th-agents" aria-label="الوكلاء">
+          <li class="th-node agent live" id="t-quant" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>الرياضيات الكمّي</span></li>
+          <li class="th-node agent live" id="t-osint" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>الاستخبارات المفتوحة</span></li>
+          <li class="th-node agent gated" id="t-exec" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>التنفيذ · ورقي فقط</span></li>
+          <li class="th-node agent design" id="t-audit" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>التدقيق والتخطيط</span></li>
+          <li class="th-node agent closed" id="t-folio" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>المحافظ وتقسيم الأرباح</span></li>
+        </ul>
+        <ul class="th-col th-out" aria-label="النتيجة">
+          <li class="th-node out" id="t-paper" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>الحساب الوهمي</span></li>
+          <li class="th-node out" id="t-receipts" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>فواتير مختومة <bdi translate="no">SHA-256</bdi></span></li>
+          <li class="th-node out" id="t-inbox" tabindex="0"><span class="th-dot" aria-hidden="true"></span><span>صندوق موافقاتك</span></li>
+        </ul>
+      </div>
+      <ul class="th-legend" aria-label="مفتاح الخيوط">
+        <li><i class="sw data" aria-hidden="true"></i>يقرأ بيانات</li>
+        <li><i class="sw decides" aria-hidden="true"></i>يقرر أو يقترح</li>
+        <li><i class="sw acts" aria-hidden="true"></i>يكتب على الورق</li>
+        <li><i class="sw informs" aria-hidden="true"></i>يُعلم فقط</li>
+        <li><i class="sw locked" aria-hidden="true"></i>مقفل · قيد الموافقة</li>
+      </ul>
+    </figure>
+    <div class="grid grid-agents">
+      <article class="card" data-thread="t-quant">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 15l4-6 4 3 4-7"/></svg></span>
         <span class="status live">يعمل جزئياً</span>
         <h3>وكيل الرياضيات الكمّي</h3>
@@ -106,7 +138,7 @@
           <li>يعمل اليوم عبر نيوتن ومختبر الاستراتيجيات، على الحساب الوهمي فقط.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-osint">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
         <span class="status live">يعمل جزئياً</span>
         <h3>وكيل الاستخبارات المفتوحة</h3>
@@ -116,7 +148,7 @@
           <li>تحليل الصور الآلي (OpenCV / YOLO) مخطط ولم يُبنَ بعد.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-exec">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
         <span class="status gated">مقفل · يحتاج موافقة صريحة</span>
         <h3>وكيل التنفيذ</h3>
@@ -126,7 +158,7 @@
           <li>أي تداول حقيقي يحتاج موافقة منفصلة وصريحة من صاحب الحساب.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-audit">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span>
         <span class="status design">تصميم</span>
         <h3>وكيل التدقيق والتخطيط اليومي</h3>
@@ -135,7 +167,7 @@
           <li>يقترح فقط. أي تغيير في الاستراتيجية يمر بموافقتك.</li>
         </ul>
       </article>
-      <article class="card">
+      <article class="card" data-thread="t-folio">
         <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span>
         <span class="status closed">مغلق · مراجعة قانونية</span>
         <h3>وكيل المحافظ وتقسيم الأرباح</h3>
@@ -412,6 +444,7 @@
 </footer>
 
 <script src="vis.js" defer></script>
+<script src="threads.js" defer></script>
 <script src="calc.js" defer></script>
 <script src="desk-sim.js" defer></script>
 <script src="pwa.js" defer></script>
@@ -422,7 +455,7 @@
   function apply(theme) {
     if (theme === "dark") root.dataset.theme = "dark"; else delete root.dataset.theme;
     btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-    meta.setAttribute("content", theme === "dark" ? "#0d0f15" : "#f9fafb");
+    meta.setAttribute("content", theme === "dark" ? "#000000" : "#F5F5F7");
   }
   apply(root.dataset.theme === "dark" ? "dark" : "light");
   btn.addEventListener("click", function () {
