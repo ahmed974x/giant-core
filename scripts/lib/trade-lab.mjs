@@ -10,6 +10,7 @@
 // those numbers into findings and proposals with fixed rules; every heuristic carries [INFERENCE] and every model
 // figure [INFERENCE - Quant Model]. Paper only: nothing here signs, sends or routes an order, moves money or
 // accepts a subscriber. Proposals go to Director 00 and change nothing until he applies them himself.
+// ADR-130 adds the rule desk: an ATR risk card (stop, target, size within the plan) and a backtest of one fixed rule.
 
 const GENESIS = "0".repeat(64);
 const DAY = 86400000, MIN = 60000;
@@ -468,7 +469,7 @@ function atr(kl, n = 14) {
 function marketLens(kl) {
   if (kl.length < 60) return { ok: false, why: `only ${kl.length} candles; the lens needs at least 60` };
   const c = kl.map(k => k.c), last = c.length - 1, px = c[last];
-  const s50 = sma(c, 50), s200 = sma(c, 200), e20 = ema(c, 20), r = rsi(c), m = macd(c), bb = bollinger(c), a = atr(kl);
+  const s50 = sma(c, 50), s200 = sma(c, 200), e20 = ema(c, 20), e50 = ema(c, 50), r = rsi(c), m = macd(c), bb = bollinger(c), a = atr(kl);
   const widths = bb.up.map((u, i) => finite(u) ? (u - bb.lo[i]) / bb.mid[i] : NaN).filter(finite).slice(-120);
   const wNow = (bb.up[last] - bb.lo[last]) / bb.mid[last], wRank = widths.length ? widths.filter(w => w <= wNow).length / widths.length : NaN;
   const trend = !finite(s200[last]) ? (px > s50[last] ? "up-short" : "down-short") : px > s200[last] && s50[last] > s200[last] ? "up" : px < s200[last] && s50[last] < s200[last] ? "down" : "mixed";
@@ -486,7 +487,105 @@ function marketLens(kl) {
   const atrPct = a[last] / px;
   if (finite(wRank) && wRank <= 0.1) readings.push({ k: "squeeze", level: "watch", ar: "عرض بولنجر في أدنى 10% من آخر 120 شمعة: انضغاط قد يسبق حركة قوية", en: "Bollinger width in the lowest 10% of 120 candles: a squeeze often comes before a large move" });
   if (finite(wRank) && wRank >= 0.9) readings.push({ k: "volatile", level: "act", ar: "تذبذب في أعلى 10%: صغّر الحجم ليبقى 1R كما هو", en: "volatility in the top 10%: cut size so 1R stays the same" });
-  return { ok: true, px, ts: kl[last].t, rsi: R, s50: s50[last], s200: s200[last], e20: e20[last], macd: m.line[last], signal: m.signal[last], hist: m.hist[last], up: bb.up[last], lo: bb.lo[last], atr: a[last], atrPct, bbRank: wRank, trend, readings, series: { c, s50, s200, up: bb.up, lo: bb.lo, rsi: r, hist: m.hist, t: kl.map(k => k.t) } };
+  return { ok: true, px, ts: kl[last].t, rsi: R, s50: s50[last], s200: s200[last], e20: e20[last], e50: e50[last], macd: m.line[last], signal: m.signal[last], hist: m.hist[last], up: bb.up[last], lo: bb.lo[last], atr: a[last], atrPct, bbRank: wRank, trend, readings, series: { c, s50, s200, e20, e50, up: bb.up, lo: bb.lo, rsi: r, hist: m.hist, t: kl.map(k => k.t) } };
+}
+
+/* ---------- rule desk (ADR-130): ATR risk card and one fixed-rule backtest ---------- */
+// Taken from a pasted "AI fund manager" plan and rebuilt in the browser, paper only. riskParams sizes a position so
+// that the stop, k × ATR away, costs riskPct of the paper balance, then caps it at the plan's position limit.
+// ruleBacktest replays one long-only rule on the candles already read: EMA fast above EMA slow and RSI between
+// rsiMin and rsiMax at a close; the fill is the next candle's open plus slippage; stop k × ATR below, target rr × that
+// distance above; a candle that touches both counts as the stop; fees on both sides. It sends nothing and opens
+// nothing: the result is a measurement of the past [INFERENCE - Quant Model], not a forecast.
+const RULE_DEFAULTS = Object.freeze({ fast: 20, slow: 50, rsiMin: 40, rsiMax: 70, atrMult: 2, rr: 2, feeBps: 10, slipBps: 2 });
+function sanitizeRule(r = {}) {
+  const o = { ...RULE_DEFAULTS };
+  const num = (k, a, b, int) => { const v = Number(r[k]); if (finite(v)) o[k] = clamp(int ? Math.round(v) : v, a, b); };
+  num("fast", 2, 100, true); num("slow", 3, 300, true); num("rsiMin", 0, 99); num("rsiMax", 1, 100);
+  num("atrMult", 0.25, 10); num("rr", 0.25, 20); num("feeBps", 0, 100); num("slipBps", 0, 100);
+  if (o.slow <= o.fast) o.slow = Math.min(300, o.fast + 1);
+  if (o.rsiMax <= o.rsiMin) o.rsiMax = Math.min(100, o.rsiMin + 1);
+  return o;
+}
+function riskParams(o = {}) {
+  const entry = Number(o.entry), atrV = Number(o.atr), balance = Number(o.balance), riskPct = Number(o.riskPct);
+  const atrMult = finite(Number(o.atrMult)) ? clamp(Number(o.atrMult), 0.25, 10) : RULE_DEFAULTS.atrMult;
+  const rr = finite(Number(o.rr)) ? clamp(Number(o.rr), 0.25, 20) : RULE_DEFAULTS.rr;
+  const maxPos = finite(Number(o.maxPositionPct)) ? clamp(Number(o.maxPositionPct), 0.1, 100) : 100;
+  const feeBps = finite(Number(o.feeBps)) ? clamp(Number(o.feeBps), 0, 100) : RULE_DEFAULTS.feeBps;
+  const side = String(o.side || "long").toLowerCase() === "short" ? "short" : "long";
+  if (![entry, atrV, balance, riskPct].every(v => finite(v) && v > 0)) return { ok: false, why: "entry, ATR, balance and risk % must all be positive numbers" };
+  if (riskPct > 100) return { ok: false, why: "risk % cannot be above 100" };
+  const dist = atrMult * atrV, dir = side === "long" ? 1 : -1;
+  const stop = entry - dir * dist, target = entry + dir * rr * dist;
+  if (stop <= 0) return { ok: false, why: `the stop (${atrMult} × ATR) falls at or below zero; use a smaller multiple` };
+  const riskBudget = balance * riskPct / 100, cap = balance * maxPos / 100;
+  let qty = riskBudget / dist, capped = false;
+  if (qty * entry > cap) { qty = cap / entry; capped = true; }
+  const notional = qty * entry, fees = notional * feeBps / 1e4 * 2;
+  return {
+    ok: true, side, entry, stop, target, dist, stopPct: dist / entry, targetPct: rr * dist / entry, rr, atrMult,
+    qty: round(qty, 8), notional: round(notional, 6), riskUsd: round(qty * dist, 6), rewardUsd: round(qty * rr * dist, 6), riskBudget: round(riskBudget, 6),
+    capped, capUsd: round(cap, 6), fees: round(fees, 6), feeShareOfRisk: qty * dist > 0 ? fees / (qty * dist) : NaN,
+    paper: true, label: "[INFERENCE - Quant Model]"
+  };
+}
+function ruleBacktest(kl, opts = {}) {
+  const r = sanitizeRule(opts), start = finite(Number(opts.balance)) && Number(opts.balance) > 0 ? Number(opts.balance) : 10000;
+  const riskPct = finite(Number(opts.riskPct)) ? clamp(Number(opts.riskPct), 0.01, 100) : 1;
+  const maxPos = finite(Number(opts.maxPositionPct)) ? clamp(Number(opts.maxPositionPct), 0.1, 100) : 95;
+  const need = Math.max(r.slow, 15) + 5;
+  if (!Array.isArray(kl) || kl.length < need + 10) return { ok: false, why: `${Array.isArray(kl) ? kl.length : 0} candles; this rule needs at least ${need + 10}` };
+  const c = kl.map(k => k.c), ef = ema(c, r.fast), es = ema(c, r.slow), rs = rsi(c), a = atr(kl);
+  const fee = r.feeBps / 1e4, slip = r.slipBps / 1e4;
+  let cash = start, pos = null, peak = start, maxDD = 0, inBars = 0;
+  const trades = [], equity = [];
+  const first = kl.findIndex((_, i) => finite(ef[i]) && finite(es[i]) && finite(rs[i]) && finite(a[i]));
+  if (first < 0 || first >= kl.length - 2) return { ok: false, why: "the indicators never warmed up" };
+  const close = (i, px, why) => {
+    const gross = pos.qty * px, out = gross * (1 - fee), pnl = out - pos.cost;
+    cash += out;
+    trades.push({ inT: pos.t, outT: kl[i].t, entry: pos.entry, exit: px, qty: pos.qty, pnl, ret: pnl / pos.cost, r: pnl / pos.risk, why, bars: i - pos.i });
+    pos = null;
+  };
+  for (let i = first; i < kl.length; i++) {
+    const k = kl[i];
+    if (pos) {
+      inBars++;
+      const hitStop = k.l <= pos.stop, hitTarget = k.h >= pos.target;
+      if (hitStop) close(i, Math.min(k.o, pos.stop) * (1 - slip), "stop");
+      else if (hitTarget) close(i, Math.max(k.o, pos.target) * (1 - slip), "target");
+    }
+    const eq = cash + (pos ? pos.qty * k.c * (1 - fee) : 0);
+    equity.push({ t: k.t, eq });
+    if (eq > peak) peak = eq; else maxDD = Math.max(maxDD, (peak - eq) / peak);
+    if (!pos && i < kl.length - 1 && ef[i] > es[i] && rs[i] > r.rsiMin && rs[i] < r.rsiMax && a[i] > 0) {
+      const nx = kl[i + 1], fill = nx.o * (1 + slip), dist = r.atrMult * a[i];
+      if (fill - dist <= 0) continue;
+      let qty = cash * riskPct / 100 / dist;
+      const capQ = cash * maxPos / 100 / (fill * (1 + fee));
+      if (qty > capQ) qty = capQ;
+      const cost = qty * fill * (1 + fee);
+      if (qty <= 0 || cost > cash) continue;
+      cash -= cost;
+      pos = { i: i + 1, t: nx.t, entry: fill, qty, cost, stop: fill - dist, target: fill + r.rr * dist, risk: qty * dist };
+    }
+  }
+  const lastK = kl[kl.length - 1];
+  if (pos) close(kl.length - 1, lastK.c * (1 - slip), "end");
+  const endEq = cash; equity[equity.length - 1] = { t: lastK.t, eq: endEq };
+  if (endEq < peak) maxDD = Math.max(maxDD, (peak - endEq) / peak);
+  const wins = trades.filter(t => t.pnl > 0), losses = trades.filter(t => t.pnl <= 0);
+  const gw = wins.reduce((s, t) => s + t.pnl, 0), gl = -losses.reduce((s, t) => s + t.pnl, 0);
+  const holdIn = kl[first + 1] ? kl[first + 1].o : kl[first].c, hold = lastK.c * (1 - fee) / (holdIn * (1 + fee)) - 1;
+  return {
+    ok: true, rule: r, start, end: round(endEq, 6), retPct: endEq / start - 1, holdPct: hold, maxDD, n: trades.length,
+    wins: wins.length, losses: losses.length, winRate: trades.length ? wins.length / trades.length : NaN,
+    profitFactor: gl > 0 ? gw / gl : (gw > 0 ? Infinity : NaN), avgR: mean(trades.map(t => t.r)),
+    exposure: inBars / Math.max(1, kl.length - first), from: kl[first].t, to: lastK.t, bars: kl.length - first,
+    trades, equity, label: "[INFERENCE - Quant Model]",
+    warning: "in-sample replay of one fixed rule on the candles read; past results do not predict, and a few trades prove nothing"
+  };
 }
 
 /* ---------- bootstrap of trip returns ---------- */
@@ -623,5 +722,6 @@ export const OMEGA_TRADELAB = Object.freeze({
   tripsFromReceipts, manualTrip, sanitizePlan, riskUnit, metrics, equityCurve, histogramR, byBucket,
   compliance, challenge, LIVE_GATE_DEFAULTS, liveGate, sanitizeNote, mistakeStats,
   klinesUrl, parseKlines, sma, ema, rsi, macd, bollinger, atr, marketLens,
+  RULE_DEFAULTS, sanitizeRule, riskParams, ruleBacktest,
   monteCarlo, layers, coach, teachingExample
 });

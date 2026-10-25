@@ -200,5 +200,44 @@ test("live readiness gate: a long clean winning record passes every check but st
   ok(g.checks.find(x => x.key === "pf").pass && g.checks.find(x => x.key === "dd").pass, "pf and dd: " + JSON.stringify(g.checks.map(x => [x.key, x.show])));
   ok(g.locked === true, "passing the gate unlocks nothing");
 });
+test("rule desk: the ATR risk card sizes the stop to the risk budget and caps at the plan limit", () => {
+  const r = L.riskParams({ entry: 100, atr: 2, balance: 10000, riskPct: 1, atrMult: 2, rr: 2 });
+  ok(r.ok && r.stop === 96 && r.target === 108 && Math.abs(r.qty - 25) < 1e-9 && Math.abs(r.riskUsd - 100) < 1e-9, "long card " + JSON.stringify(r));
+  const s = L.riskParams({ entry: 100, atr: 2, balance: 10000, riskPct: 1, side: "short" });
+  ok(s.ok && s.stop === 104 && s.target === 92, "short card mirrors the long one");
+  const c = L.riskParams({ entry: 100, atr: 0.1, balance: 20, riskPct: 1, maxPositionPct: 25 });
+  ok(c.ok && c.capped && Math.abs(c.notional - 5) < 1e-9 && c.riskUsd < c.riskBudget, "the plan's 25% position limit caps a tight stop");
+  ok(!L.riskParams({ entry: 100, atr: 60, balance: 1000, riskPct: 1 }).ok, "a stop below zero is refused");
+  ok(!L.riskParams({ entry: 100, atr: 0, balance: 1000, riskPct: 1 }).ok, "zero ATR is refused");
+  ok(r.paper === true && r.label === "[INFERENCE - Quant Model]", "paper label");
+});
+test("rule desk: the backtest replays the rule without lookahead, counts fees and stays a measurement", () => {
+  const kl = [];
+  let px = 100;
+  for (let i = 0; i < 260; i++) { const o = px; px = px * (1 + (i % 7 < 4 ? 0.006 : -0.004)); kl.push({ t: T0 + i * 3600000, o, h: Math.max(o, px) * 1.002, l: Math.min(o, px) * 0.998, c: px, v: 1 }); }
+  const b = L.ruleBacktest(kl, { balance: 10000, riskPct: 1 });
+  ok(b.ok && b.n > 0 && b.n === b.wins + b.losses, "trades counted " + JSON.stringify({ n: b.n, w: b.wins }));
+  ok(b.trades.every(t => t.inT > kl[0].t && kl.some(k => k.t === t.inT)), "every entry is at a later candle's open");
+  ok(b.maxDD >= 0 && b.maxDD < 1 && b.exposure > 0 && b.exposure <= 1, "drawdown and exposure in range");
+  ok(Number.isFinite(b.holdPct) && b.holdPct > 0, "buy and hold compared on the same candles");
+  const free = L.ruleBacktest(kl, { balance: 10000, riskPct: 1, feeBps: 0, slipBps: 0 });
+  ok(free.end > b.end, "fees and slippage lower the result");
+  ok(b.equity.length === b.bars && b.label === "[INFERENCE - Quant Model]" && /do not predict/.test(b.warning), "labelled replay");
+  ok(!L.ruleBacktest(kl.slice(0, 30)).ok, "too few candles");
+  const sr = L.sanitizeRule({ fast: 50, slow: 20 });
+  ok(sr.slow > sr.fast, "slow EMA is kept above the fast one");
+});
+test("rule desk: a candle that touches both the stop and the target counts as the stop", () => {
+  const kl = [];
+  let px = 100;
+  for (let i = 0; i < 120; i++) { const o = px; px *= i % 3 ? 1.006 : 0.995; kl.push({ t: T0 + i * 3600000, o, h: Math.max(o, px) * 1.001, l: Math.min(o, px) * 0.999, c: px, v: 1 }); }
+  const base = L.ruleBacktest(kl, { rsiMax: 100 });
+  const firstIn = base.trades.length ? base.trades[0].inT : null;
+  const idx = kl.findIndex(k => k.t === firstIn);
+  ok(idx > 0, "a first entry exists");
+  kl[idx] = { ...kl[idx], h: kl[idx].o * 1.5, l: kl[idx].o * 0.5 };
+  const b = L.ruleBacktest(kl, { rsiMax: 100 });
+  ok(b.trades[0].inT === firstIn && b.trades[0].why === "stop" && b.trades[0].pnl < 0, "both touched: stop first " + JSON.stringify(b.trades[0]));
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

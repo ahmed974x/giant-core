@@ -19,6 +19,8 @@
 // ADR-114: deep_research runs the ORACLE agent (scripts/lib/deep-research.mjs) over the keyless research APIs (twelve
 // since ADR-115, which also adds mode "intel": passive OSINT with GDELT coverage and tone and NVD CVEs),
 // through the proxy's /research cache when it runs and directly otherwise, and returns the brief with numbered references.
+// ADR-130: analyze_asset_technicals reads TRADE LAB's market lens and rule backtest on Binance public candles, and
+// calculate_risk_parameters sizes an ATR stop within a paper risk budget. Both use scripts/lib/trade-lab.mjs and only compute.
 import { readFileSync, statSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, resolve, dirname, extname } from "node:path";
@@ -27,6 +29,7 @@ import { Buffer } from "node:buffer";
 import { OMEGA_MATH as M } from "./lib/brain2-math.mjs";
 import { classifyNga, STRAITS } from "./lib/osiris-sources.mjs";
 import { OMEGA_RESEARCH as RS } from "./lib/deep-research.mjs";
+import { OMEGA_TRADELAB as TL } from "./lib/trade-lab.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VERSION = "1.0.0";
@@ -106,6 +109,7 @@ const SRC = {
   llama: () => cascade([["proxy", viaProxy("/market/llama")], ["direct", async () => { const l = []; for (const u of M.urls.llama()) l.push(await get(u, 30000)); return { data: M.shape.llamaSet(l) }; }], ["snapshot", snap("llama")]]),
   circl: () => cascade([["proxy", viaProxy("/cyber/circl")], ["direct", direct(M.urls.circl(), M.shape.circl)], ["snapshot", snap("circl")]]),
   marine: () => cascade([["proxy", viaProxy("/osiris/marine")], ["direct", direct(M.urls.marine(), M.shape.marine)], ["snapshot", snap("marine")]]),
+  candles: (sym, int) => cascade([["proxy", viaProxy(`/market/klines/${sym}/${int}`)], ["direct", direct(TL.klinesUrl(sym, int), j => j)]]),
   klines: sym => cascade([["direct", direct(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1m&limit=240`, j => j)]])
 };
 const meta = (x, name) => ({ source: name, tier: x.error ? "offline" : x.tier, fetched: x.error ? null : iso(x.at), ...(x.error ? { error: x.error, tried: x.tried } : {}) });
@@ -231,6 +235,38 @@ async function court(a) {
   votes.push({ agent: "Judge", verdict, why: [reason] });
   return { symbol: q.symbol, verdict, label: "[INFERENCE]", votes, pwsi: p.pwsi, csti: p.csti.score, opens_trade: false, note: "Rule-based summary of the numbers in query_quant_spiderweb and get_live_pwsi. It opens nothing; in the Ops Room the person opens every paper trade. " + PAPER };
 }
+// ADR-130: the TRADE LAB lens and rule desk, the same functions the page inlines.
+const INTS = ["1h", "4h", "1d"];
+async function technicals(a) {
+  const s = sym(a), int = INTS.includes(a && a.interval) ? a.interval : "4h";
+  const k = await SRC.candles(s, int);
+  if (k.error) return { symbol: s, interval: int, ...meta(k, "Binance public klines"), note: "No candles, so no reading. Start the local proxy (start-omega) or check the internet." };
+  const kl = TL.parseKlines(k.data), lens = TL.marketLens(kl);
+  if (!lens.ok) return { symbol: s, interval: int, error: lens.why, ...meta(k, "Binance public klines") };
+  const d = lens.px < 10 ? 6 : 2, out = {
+    symbol: s, interval: int, candles: kl.length, last_close: r(lens.px, d), last_candle: iso(lens.ts),
+    ema_20: r(lens.e20, d), ema_50: r(lens.e50, d), sma_50: r(lens.s50, d), sma_200: r(lens.s200, d), rsi_14: r(lens.rsi, 2), atr_14: r(lens.atr, d), atr_pct: r(lens.atrPct * 100, 3),
+    macd_hist: r(lens.hist, d), bollinger: { up: r(lens.up, d), lo: r(lens.lo, d), width_rank_120: r(lens.bbRank, 3) }, trend: lens.trend, ema_trend: lens.e20 > lens.e50 ? "EMA 20 above EMA 50" : "EMA 20 below EMA 50",
+    readings: lens.readings.map(x => ({ level: x.level, en: x.en, ar: x.ar })), label: "[INFERENCE]", source: meta(k, "Binance public klines")
+  };
+  if (a && a.backtest) {
+    const b = TL.ruleBacktest(kl, { ...(a.rule || {}), balance: Number(a.balance) > 0 ? Number(a.balance) : 10000, riskPct: Number(a.risk_pct) > 0 ? Number(a.risk_pct) : 1 });
+    out.backtest = b.ok ? { rule: b.rule, from: iso(b.from), to: iso(b.to), bars: b.bars, trades: b.n, win_rate: r(b.winRate, 3), return_pct: r(b.retPct * 100, 2), buy_and_hold_pct: r(b.holdPct * 100, 2),
+      max_drawdown_pct: r(b.maxDD * 100, 2), profit_factor: Number.isFinite(b.profitFactor) ? r(b.profitFactor, 2) : String(b.profitFactor), avg_r: r(b.avgR, 2), exposure: r(b.exposure, 3),
+      last_trades: b.trades.slice(-5).map(t => ({ in: iso(t.inT), out: iso(t.outT), entry: r(t.entry, d), exit: r(t.exit, d), why: t.why, r: r(t.r, 2) })), label: b.label, warning: b.warning } : { error: b.why };
+  }
+  out.note = PAPER;
+  return out;
+}
+function riskTool(a) {
+  const x = TL.riskParams({ entry: a.entry_price, atr: a.atr_value, balance: a.account_balance, riskPct: a.risk_percentage, side: a.direction, atrMult: a.atr_multiplier, rr: a.reward_risk, maxPositionPct: a.max_position_pct, feeBps: a.fee_bps });
+  if (!x.ok) throw new Error(x.why);
+  const d = x.entry < 10 ? 6 : 4;
+  return { direction: x.side, entry: x.entry, stop: r(x.stop, d), target: r(x.target, d), stop_distance: r(x.dist, d), stop_pct: r(x.stopPct * 100, 3), reward_risk: x.rr, atr_multiplier: x.atrMult,
+    quantity: x.qty, notional_usd: r(x.notional, 6), loss_at_stop_usd: r(x.riskUsd, 6), gain_at_target_usd: r(x.rewardUsd, 6), risk_budget_usd: r(x.riskBudget, 6), capped_by_position_limit: x.capped,
+    round_trip_fees_usd: r(x.fees, 6), label: x.label, note: PAPER + " The size is for the paper ledger; the person opens every paper trade in the Ops Room." };
+}
+
 function sweep(a) {
   const equity = Number(a && a.net_equity), base = Number(a && a.locked_base !== undefined ? a.locked_base : 20);
   if (!Number.isFinite(equity) || equity < 0) throw new Error("net_equity must be a number of USDT, 0 or more");
@@ -330,6 +366,8 @@ const TOOLS = [
   { name: "query_osiris_intel", description: "OSIRIS public intel by layer: space (Kp, ISS position from CelesTrak), cyber (CISA KEV, RIPEstat backbones, IODA outages), events (NASA EONET), straits (NGA warnings per chokepoint), quakes (USGS), liquidity (DefiLlama stablecoin flow index), vulns (CIRCL records with MISP tags), sea (waves and currents at the five straits). Each with source, tier and fetch time.", inputSchema: { type: "object", properties: { layer: { type: "string", enum: ["space", "cyber", "events", "straits", "quakes", "liquidity", "vulns", "sea", "all"], description: "which layer (default all)" } }, additionalProperties: false }, run: osiris },
   { name: "query_quant_spiderweb", description: "Brain 2 quant readings for one symbol: Kalman latent price, BOCPD regime-change probability, order-book stats, Deribit dealer gamma, DVOL and 25-delta risk reversal (BTC), perpetual funding and basis with the crowded-trade flag. [INFERENCE - Quant Model]", inputSchema: { type: "object", properties: SYM_ARG, additionalProperties: false }, run: quant },
   { name: "run_6_agent_court", description: "Six rule-based voices (Bull, Bear, Researcher, Modeler, Auditor, Judge) over the quant readings and PWSI, each with its reasons, and the judge's BUY / SELL / HOLD. A paper decision aid that opens nothing. [INFERENCE]", inputSchema: { type: "object", properties: SYM_ARG, additionalProperties: false }, run: court },
+  { name: "analyze_asset_technicals", description: "TRADE LAB market lens on Binance public candles (1h, 4h or 1d, keyless): EMA 20 and 50, SMA 50 and 200, Wilder RSI 14 and ATR 14, MACD, Bollinger width rank and the fixed-rule readings. With backtest true it also replays one long-only rule (EMA fast above slow, RSI between two limits, k x ATR stop, reward-risk target, fees and slippage, next-candle fills) and compares it with buy and hold. A measurement of the past, not a forecast; it opens nothing. [INFERENCE - Quant Model]", inputSchema: { type: "object", properties: { ...SYM_ARG, interval: { type: "string", enum: ["1h", "4h", "1d"], description: "candle interval (default 4h)" }, backtest: { type: "boolean", description: "also replay the rule (default false)" }, balance: { type: "number", exclusiveMinimum: 0, description: "paper balance for the replay (default 10000)" }, risk_pct: { type: "number", exclusiveMinimum: 0, maximum: 100, description: "risk per trade in % (default 1)" }, rule: { type: "object", properties: { fast: { type: "integer" }, slow: { type: "integer" }, rsiMin: { type: "number" }, rsiMax: { type: "number" }, atrMult: { type: "number" }, rr: { type: "number" }, feeBps: { type: "number" }, slipBps: { type: "number" } }, additionalProperties: false, description: "rule settings; defaults 20, 50, 40, 70, 2, 2, 10, 2" } }, additionalProperties: false }, run: technicals },
+  { name: "calculate_risk_parameters", description: "Paper position sizing: the stop k x ATR from the entry, the target at a reward-risk multiple, and the quantity whose stop loses risk_percentage of the paper balance, capped at a position limit, with round-trip fees. Computes only; it cannot place an order.", inputSchema: { type: "object", properties: { account_balance: { type: "number", exclusiveMinimum: 0 }, risk_percentage: { type: "number", exclusiveMinimum: 0, maximum: 100 }, entry_price: { type: "number", exclusiveMinimum: 0 }, atr_value: { type: "number", exclusiveMinimum: 0 }, direction: { type: "string", enum: ["long", "short", "LONG", "SHORT"], description: "default long" }, atr_multiplier: { type: "number", minimum: 0.25, maximum: 10, description: "default 2" }, reward_risk: { type: "number", minimum: 0.25, maximum: 20, description: "default 2" }, max_position_pct: { type: "number", minimum: 0.1, maximum: 100, description: "position cap in % of the balance (default 100)" }, fee_bps: { type: "number", minimum: 0, maximum: 100, description: "fee per side in bps (default 10)" } }, required: ["account_balance", "risk_percentage", "entry_price", "atr_value"], additionalProperties: false }, run: riskTool },
   { name: "lock_base_and_sweep", description: "Computes the paper profit sweep max(0, NetEquity - LockedBase). It cannot touch the browser wallet; the sweep itself is the S key in the Ops Room.", inputSchema: { type: "object", properties: { net_equity: { type: "number", minimum: 0, description: "paper net equity in USDT" }, locked_base: { type: "number", minimum: 0, description: "locked base in USDT (default 20)" } }, required: ["net_equity"], additionalProperties: false }, run: sweep },
   { name: "verify_sha256_receipt_chain", description: "Verifies an exported omega-receipt-chain-v1 file (receipts and Merkle checkpoints) with the same canonical SHA-256 form as the Ops Room and NABD verifiers. Give a path to the .json export or its text.", inputSchema: { type: "object", properties: { path: { type: "string", description: "path to the exported .json file" }, json: { type: "string", description: "the file's text, instead of a path" } }, additionalProperties: false }, run: verifyTool },
   { name: "explain_with_local_model", description: "Sends a list of readings (each with its source) to a local Ollama model through the data proxy and returns its Arabic explanation labelled [INFERENCE - local LLM]. Local models only (a :cloud model is refused); nothing is traded or sent elsewhere.", inputSchema: { type: "object", properties: { facts: { type: "array", items: { type: "string", maxLength: 300 }, minItems: 1, maxItems: 40, description: "readings with their sources, for example \"LFI +32 (DefiLlama)\"" }, question: { type: "string", maxLength: 300 } }, required: ["facts"], additionalProperties: false }, run: explainLocal },

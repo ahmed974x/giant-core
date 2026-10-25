@@ -327,7 +327,7 @@ test("Ops Room inline copy matches the library", () => {
 });
 test("MCP bridge loads and lists its tools", () => {
   const r = spawnSync(process.execPath, [join(HERE, "omega-mcp-bridge.mjs"), "--list"], { encoding: "utf8" });
-  ok(r.status === 0 && r.stdout.trim().split("\n").length === 10 && r.stdout.includes("deep_research"), (r.stdout + r.stderr).trim());
+  ok(r.status === 0 && r.stdout.trim().split("\n").length === 12 && r.stdout.includes("deep_research") && r.stdout.includes("calculate_risk_parameters"), (r.stdout + r.stderr).trim());
 });
 
 console.log(`${passed} passed, ${failed} failed`);
