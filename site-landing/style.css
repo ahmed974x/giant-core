@@ -208,6 +208,26 @@
 }
 .suite-tone { width: 100%; border: 0; background: transparent; font: inherit; text-align: start; cursor: pointer; }
 .suite-tone[aria-pressed="true"] .suite-ico { background: var(--gold-fill); color: var(--on-gold-fill); }
+/* ADR-128: suite search (Ctrl+K / ⌘K). Glass only with the opaque fallback, motion off under reduced motion. */
+.suite-find small { direction: ltr; unicode-bidi: plaintext; }
+.suite-cmd { position: fixed; inset: 0; z-index: 90; display: grid; justify-items: center; align-content: start; padding: calc(env(safe-area-inset-top, 0px) + 72px) max(12px, env(safe-area-inset-right, 0px)) 12px max(12px, env(safe-area-inset-left, 0px)); background: oklch(0% 0 0 / 0.32); }
+.suite-cmd[hidden] { display: none; }
+.suite-cmd-box { width: min(560px, 100%); max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 96px); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; gap: 8px; padding: 12px; border-radius: 28px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular, oklch(100% 0 0 / 0.6)), var(--shadow-soft); color: var(--content-primary); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .suite-cmd-box { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
+}
+.suite-cmd-label { font-size: 13px; font-weight: 700; color: var(--content-secondary); padding-inline: 8px; }
+.suite-cmd-q { width: 100%; min-height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--hairline-color); background: var(--surface-2); color: var(--content-primary); font: inherit; font-size: 17px; }
+.suite-cmd-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.suite-cmd-count { margin: 0; padding-inline: 8px; unicode-bidi: plaintext; text-align: start; font-size: 12px; color: var(--content-secondary); }
+.suite-cmd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.suite-cmd-opt { cursor: pointer; }
+.suite-cmd-opt[aria-selected="true"] { background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--accent); }
+.suite-cmd-keys { margin: 0; padding-inline: 8px; unicode-bidi: plaintext; text-align: start; font-size: 12px; color: var(--content-tertiary); }
+@media (prefers-reduced-motion: no-preference) {
+  .suite-cmd:not([hidden]) .suite-cmd-box { animation: suite-cmd-in 240ms var(--ease-apple-fluid, ease) both; }
+  @keyframes suite-cmd-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
+}
 
 *, *::before, *::after { box-sizing: border-box; }
 html {
@@ -381,6 +401,15 @@ html[lang="ar"] .section-head h2 { line-height: 1.4; letter-spacing: 0; }
   border-radius: var(--r-inner); background: var(--tint-accent); color: var(--accent);
 }
 .card .glyph svg { width: 22px; height: 22px; }
+/* ADR-128: the tools grid on NABD. Each card is one link; it keeps the card hover and adds a press and a focus ring. */
+.grid.grid-tools { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+@media (min-width: 1200px) { .grid.grid-tools { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tool-card { display: grid; grid-template-rows: auto auto 1fr auto; align-items: start; color: var(--content-primary); text-decoration: none; }
+.tool-card .glyph { font-size: 20px; line-height: 1; }
+.tool-card .status { justify-self: start; margin-top: var(--s-4); }
+.tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.tool-card:active { transform: scale(0.98); }
+.section-head kbd { font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace; font-size: 0.85em; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); border: var(--hairline) solid var(--hairline-color); direction: ltr; unicode-bidi: isolate; }
 
 .status {
   display: inline-flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-3);
@@ -545,7 +574,7 @@ footer p { margin: var(--s-2) 0; }
 
 /* OMEGA suite app switcher (ADR-107): frosted glass, concentric radii 24 = 16 + 8 */
 .suite-btn .suite-ico-svg { width: 20px; height: 20px; fill: currentColor; }
-.suite-pop { position: fixed; z-index: 80; top: calc(env(safe-area-inset-top, 0px) + 64px); inset-inline-end: max(12px, env(safe-area-inset-right, 0px)); width: min(340px, calc(100vw - 24px)); padding: 8px; display: grid; gap: 4px; border-radius: 24px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular, oklch(100% 0 0 / 0.6)), var(--shadow-soft); }
+.suite-pop { position: fixed; z-index: 80; top: calc(env(safe-area-inset-top, 0px) + 64px); inset-inline-end: max(12px, env(safe-area-inset-right, 0px)); width: min(340px, calc(100vw - 24px)); max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 76px); overflow-y: auto; overscroll-behavior: contain; padding: 8px; display: grid; gap: 4px; border-radius: 24px; background: var(--surface); border: 0.5px solid var(--hairline-color); box-shadow: inset 0 0.5px 0 var(--specular, oklch(100% 0 0 / 0.6)), var(--shadow-soft); }
 .suite-pop[hidden] { display: none; }
 @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .suite-pop { background: var(--glass); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
