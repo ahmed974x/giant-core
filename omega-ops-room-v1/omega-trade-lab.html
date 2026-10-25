@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-U/8AqaZcjOFPVek3hV9gLT1LXBcKkqwEiEkQv5hBhSs=' 'sha256-hqp833N17NsKUBkQW7csENN0QUeLQEDXSUL3kECPEGs=' 'sha256-2p1T4jL4gPw8cl8lBmPJMXOvX0X8vSWAQQjhkqZNQ40=' 'sha256-FfzUv1ZoYuG9GMaRHt4ClBPOZ+SEew7pqee/Ic+w5F8=' 'sha256-cTA+B1C2RqCdaGn986krsidskRacgNm6IbmrVV0OkmY='; style-src 'sha256-1YK4btWECbSs+cL/ugB9J7Ls1Bb5syqrpInG+jb1Bro='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://data-api.binance.vision; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-U/8AqaZcjOFPVek3hV9gLT1LXBcKkqwEiEkQv5hBhSs=' 'sha256-hqp833N17NsKUBkQW7csENN0QUeLQEDXSUL3kECPEGs=' 'sha256-tqI+bCoAOMW2rABQnKBoj9ebwc0MmGsqgIZoqGRswuI=' 'sha256-rMidCtZSOVxhHnPI8XUS3tbRQXR8GZvV/EUVWNUI6zE=' 'sha256-cTA+B1C2RqCdaGn986krsidskRacgNm6IbmrVV0OkmY='; style-src 'sha256-Hj2GBRCfBT9/pYyjpXZMGK2js29YhBYBN72V4M8ZOEA='; font-src data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8796 https://data-api.binance.vision; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="referrer" content="no-referrer" />
 <meta name="theme-color" content="#F5F5F7" />
@@ -776,6 +776,11 @@
   .chart .c-s50 { fill: none; stroke: var(--apple-orange); stroke-width: 1.4; }
   .chart .c-s200 { fill: none; stroke: var(--apple-purple); stroke-width: 1.4; }
   .chart .c-band { fill: var(--apple-cyan); opacity: 0.14; }
+  .chart .c-e20 { fill: none; stroke: var(--apple-cyan); stroke-width: 1.4; stroke-dasharray: 5 3; }
+  .chart .c-e50 { fill: none; stroke: var(--apple-indigo); stroke-width: 1.4; stroke-dasharray: 5 3; }
+  .chart .c-hold { fill: none; stroke: var(--apple-purple); stroke-width: 1.4; stroke-dasharray: 4 3; }
+  .chart .c-in { fill: var(--apple-green); } .chart .c-out { fill: var(--apple-red); }
+  .legend i.l-e20 { background: var(--apple-cyan); } .legend i.l-e50 { background: var(--apple-indigo); } .legend i.l-hold { background: var(--apple-purple); }
   .chart .c-rsi { fill: none; stroke: var(--apple-indigo); stroke-width: 1.6; }
   .chart .c-zone { fill: var(--apple-orange); opacity: 0.1; }
   .chart .c-dot { fill: var(--apple-blue); stroke: var(--surface); stroke-width: 1.5; }
@@ -1012,7 +1017,7 @@
 
       <section class="card" aria-labelledby="lensTitle" id="lens">
         <h3 id="lensTitle">عدسة السوق <span class="en" translate="no">MARKET LENS</span></h3>
-        <p class="lead">شموع Binance العامة (بلا مفتاح، قراءة فقط): RSI 14 بطريقة وايلدر، MACD 12/26/9، المتوسطات 50 و200، نطاقات بولنجر 20/2 وATR 14. القراءات قواعد ثابتة <span class="lvl lvl-watch" translate="no">[INFERENCE]</span>، لا إشارة دخول.</p>
+        <p class="lead">شموع Binance العامة (بلا مفتاح، قراءة فقط): RSI 14 بطريقة وايلدر، MACD 12/26/9، المتوسطات 50 و200 وEMA 20 و50، نطاقات بولنجر 20/2 وATR 14. القراءات قواعد ثابتة <span class="lvl lvl-watch" translate="no">[INFERENCE]</span>، لا إشارة دخول.</p>
         <div class="form mt-3">
           <div class="field"><label for="lSym">الرمز</label><select id="lSym" name="lens-symbol" autocomplete="off"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></div>
           <div class="field"><span class="label" id="lIntLabel">الإطار</span><div class="seg" id="lInt" role="group" aria-labelledby="lIntLabel"><button type="button" data-int="1h" aria-pressed="false">1h</button><button type="button" data-int="4h" aria-pressed="true">4h</button><button type="button" data-int="1d" aria-pressed="false">1d</button></div></div>
@@ -1021,9 +1026,34 @@
         <div class="kpis" id="lensKpis"></div>
         <div class="chart-wrap"><svg class="chart wide" id="lensChart" viewBox="0 0 600 200" preserveAspectRatio="none" role="img" aria-labelledby="lensCap"></svg>
           <svg class="chart strip" id="rsiChart" viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-labelledby="rsiCap"></svg>
-          <div class="legend"><span><i class="l-px"></i>الإغلاق</span><span><i class="l-s50"></i>متوسط 50</span><span><i class="l-s200"></i>متوسط 200</span><span><i class="l-band"></i>بولنجر</span><span><i class="l-rsi"></i>RSI مع منطقتي 30 و70</span></div>
+          <div class="legend"><span><i class="l-px"></i>الإغلاق</span><span><i class="l-s50"></i>متوسط 50</span><span><i class="l-s200"></i>متوسط 200</span><span><i class="l-e20"></i>EMA 20</span><span><i class="l-e50"></i>EMA 50</span><span><i class="l-band"></i>بولنجر</span><span><i class="l-rsi"></i>RSI مع منطقتي 30 و70</span></div>
           <p class="note" id="lensCap">آخر 300 شمعة.</p><p class="note sr-only" id="rsiCap">RSI 14 لآخر 300 شمعة.</p></div>
         <ul class="findings" id="lensReadings"></ul>
+      </section>
+      <section class="card span-all" aria-labelledby="ruleTitle" id="rules">
+        <h3 id="ruleTitle">مكتب القاعدة <span class="en" translate="no">RULE DESK</span> <span class="pill cat">ورقي فقط</span></h3>
+        <p class="lead">من الخطة التي وصلتنا: وقف على بعد k × ATR، هدف بنسبة عائد إلى مخاطرة، وحجم يجعل الوقف يكلّف نسبة المخاطرة من خطتك ولا يتجاوز حد المركز فيها. ثم اختبار قاعدة واحدة ثابتة على الشموع نفسها التي قرأتها العدسة: شراء عند إغلاق فيه EMA السريع فوق البطيء وRSI بين الحدّين، التنفيذ عند افتتاح الشمعة التالية مع انزلاق ورسوم، وشمعة تلمس الوقف والهدف معاً تُحسب وقفاً. النتيجة قياس للماضي <span class="lvl lvl-watch" translate="no">[INFERENCE - Quant Model]</span> لا توقع، ولا تفتح صفقة ولا ترسل أمراً.</p>
+        <div class="form mt-3">
+          <div class="field"><label for="rAtr">مضاعف ATR للوقف</label><input type="number" id="rAtr" name="rule-atr-mult" autocomplete="off" min="0.25" max="10" step="0.25" value="2" /></div>
+          <div class="field"><label for="rRr">العائد إلى المخاطرة</label><input type="number" id="rRr" name="rule-rr" autocomplete="off" min="0.25" max="20" step="0.25" value="2" /></div>
+          <div class="field"><label for="rFast">EMA سريع</label><input type="number" id="rFast" name="rule-fast" autocomplete="off" min="2" max="100" step="1" value="20" /></div>
+          <div class="field"><label for="rSlow">EMA بطيء</label><input type="number" id="rSlow" name="rule-slow" autocomplete="off" min="3" max="300" step="1" value="50" /></div>
+          <div class="field"><label for="rRsiMin">RSI أدنى</label><input type="number" id="rRsiMin" name="rule-rsi-min" autocomplete="off" min="0" max="99" step="1" value="40" /></div>
+          <div class="field"><label for="rRsiMax">RSI أعلى</label><input type="number" id="rRsiMax" name="rule-rsi-max" autocomplete="off" min="1" max="100" step="1" value="70" /></div>
+          <div class="field"><label for="rFee">الرسوم لكل جهة (bps)</label><input type="number" id="rFee" name="rule-fee" autocomplete="off" min="0" max="100" step="1" value="10" /></div>
+          <div class="field"><label for="rSlip">الانزلاق (bps)</label><input type="number" id="rSlip" name="rule-slip" autocomplete="off" min="0" max="100" step="1" value="2" /></div>
+        </div>
+        <div class="actions"><button class="btn primary" id="btnRule" type="button">احسب واختبر</button><span class="status-line" id="ruleStatus" role="status" aria-live="polite">اقرأ الشموع في عدسة السوق أولاً.</span></div>
+        <h4>بطاقة المخاطرة على آخر إغلاق</h4>
+        <div class="kpis" id="riskKpis"></div>
+        <h4>إعادة تشغيل القاعدة</h4>
+        <div class="kpis" id="btKpis"></div>
+        <div class="chart-wrap"><svg class="chart wide" id="btChart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-labelledby="btCap"></svg>
+          <div class="legend"><span><i class="l-eq"></i>رصيد القاعدة</span><span><i class="l-hold"></i>الشراء والاحتفاظ</span></div>
+          <p class="note" id="btCap">رصيد القاعدة مقابل الشراء والاحتفاظ على الشموع نفسها.</p></div>
+        <div class="table-scroll mt-3"><table class="data" id="btTable"><thead><tr><th scope="col">الدخول (UTC)</th><th scope="col" class="n">سعر الدخول</th><th scope="col" class="n">سعر الخروج</th><th scope="col">السبب</th><th scope="col" class="n">R</th><th scope="col" class="n">صافي</th></tr></thead><tbody></tbody></table></div>
+        <p class="empty" id="btEmpty">لا اختبار بعد.</p>
+        <ul class="locked mt-3"><li><span class="pill lock">«قيد الموافقة»</span> إرسال الأمر إلى أي منصة أو حساب تجريبي لدى وسيط (مثل Alpaca Paper)، والتشغيل الآلي كل ساعة، وتنبيهات تيليجرام: غير مبنية، تنتظر موافقة أحمد ومراجعة أمنية.</li></ul>
       </section>
     </div>
 
@@ -1061,6 +1091,7 @@
 // those numbers into findings and proposals with fixed rules; every heuristic carries [INFERENCE] and every model
 // figure [INFERENCE - Quant Model]. Paper only: nothing here signs, sends or routes an order, moves money or
 // accepts a subscriber. Proposals go to Director 00 and change nothing until he applies them himself.
+// ADR-130 adds the rule desk: an ATR risk card (stop, target, size within the plan) and a backtest of one fixed rule.
 
 const GENESIS = "0".repeat(64);
 const DAY = 86400000, MIN = 60000;
@@ -1519,7 +1550,7 @@ function atr(kl, n = 14) {
 function marketLens(kl) {
   if (kl.length < 60) return { ok: false, why: `only ${kl.length} candles; the lens needs at least 60` };
   const c = kl.map(k => k.c), last = c.length - 1, px = c[last];
-  const s50 = sma(c, 50), s200 = sma(c, 200), e20 = ema(c, 20), r = rsi(c), m = macd(c), bb = bollinger(c), a = atr(kl);
+  const s50 = sma(c, 50), s200 = sma(c, 200), e20 = ema(c, 20), e50 = ema(c, 50), r = rsi(c), m = macd(c), bb = bollinger(c), a = atr(kl);
   const widths = bb.up.map((u, i) => finite(u) ? (u - bb.lo[i]) / bb.mid[i] : NaN).filter(finite).slice(-120);
   const wNow = (bb.up[last] - bb.lo[last]) / bb.mid[last], wRank = widths.length ? widths.filter(w => w <= wNow).length / widths.length : NaN;
   const trend = !finite(s200[last]) ? (px > s50[last] ? "up-short" : "down-short") : px > s200[last] && s50[last] > s200[last] ? "up" : px < s200[last] && s50[last] < s200[last] ? "down" : "mixed";
@@ -1537,7 +1568,105 @@ function marketLens(kl) {
   const atrPct = a[last] / px;
   if (finite(wRank) && wRank <= 0.1) readings.push({ k: "squeeze", level: "watch", ar: "عرض بولنجر في أدنى 10% من آخر 120 شمعة: انضغاط قد يسبق حركة قوية", en: "Bollinger width in the lowest 10% of 120 candles: a squeeze often comes before a large move" });
   if (finite(wRank) && wRank >= 0.9) readings.push({ k: "volatile", level: "act", ar: "تذبذب في أعلى 10%: صغّر الحجم ليبقى 1R كما هو", en: "volatility in the top 10%: cut size so 1R stays the same" });
-  return { ok: true, px, ts: kl[last].t, rsi: R, s50: s50[last], s200: s200[last], e20: e20[last], macd: m.line[last], signal: m.signal[last], hist: m.hist[last], up: bb.up[last], lo: bb.lo[last], atr: a[last], atrPct, bbRank: wRank, trend, readings, series: { c, s50, s200, up: bb.up, lo: bb.lo, rsi: r, hist: m.hist, t: kl.map(k => k.t) } };
+  return { ok: true, px, ts: kl[last].t, rsi: R, s50: s50[last], s200: s200[last], e20: e20[last], e50: e50[last], macd: m.line[last], signal: m.signal[last], hist: m.hist[last], up: bb.up[last], lo: bb.lo[last], atr: a[last], atrPct, bbRank: wRank, trend, readings, series: { c, s50, s200, e20, e50, up: bb.up, lo: bb.lo, rsi: r, hist: m.hist, t: kl.map(k => k.t) } };
+}
+
+/* ---------- rule desk (ADR-130): ATR risk card and one fixed-rule backtest ---------- */
+// Taken from a pasted "AI fund manager" plan and rebuilt in the browser, paper only. riskParams sizes a position so
+// that the stop, k × ATR away, costs riskPct of the paper balance, then caps it at the plan's position limit.
+// ruleBacktest replays one long-only rule on the candles already read: EMA fast above EMA slow and RSI between
+// rsiMin and rsiMax at a close; the fill is the next candle's open plus slippage; stop k × ATR below, target rr × that
+// distance above; a candle that touches both counts as the stop; fees on both sides. It sends nothing and opens
+// nothing: the result is a measurement of the past [INFERENCE - Quant Model], not a forecast.
+const RULE_DEFAULTS = Object.freeze({ fast: 20, slow: 50, rsiMin: 40, rsiMax: 70, atrMult: 2, rr: 2, feeBps: 10, slipBps: 2 });
+function sanitizeRule(r = {}) {
+  const o = { ...RULE_DEFAULTS };
+  const num = (k, a, b, int) => { const v = Number(r[k]); if (finite(v)) o[k] = clamp(int ? Math.round(v) : v, a, b); };
+  num("fast", 2, 100, true); num("slow", 3, 300, true); num("rsiMin", 0, 99); num("rsiMax", 1, 100);
+  num("atrMult", 0.25, 10); num("rr", 0.25, 20); num("feeBps", 0, 100); num("slipBps", 0, 100);
+  if (o.slow <= o.fast) o.slow = Math.min(300, o.fast + 1);
+  if (o.rsiMax <= o.rsiMin) o.rsiMax = Math.min(100, o.rsiMin + 1);
+  return o;
+}
+function riskParams(o = {}) {
+  const entry = Number(o.entry), atrV = Number(o.atr), balance = Number(o.balance), riskPct = Number(o.riskPct);
+  const atrMult = finite(Number(o.atrMult)) ? clamp(Number(o.atrMult), 0.25, 10) : RULE_DEFAULTS.atrMult;
+  const rr = finite(Number(o.rr)) ? clamp(Number(o.rr), 0.25, 20) : RULE_DEFAULTS.rr;
+  const maxPos = finite(Number(o.maxPositionPct)) ? clamp(Number(o.maxPositionPct), 0.1, 100) : 100;
+  const feeBps = finite(Number(o.feeBps)) ? clamp(Number(o.feeBps), 0, 100) : RULE_DEFAULTS.feeBps;
+  const side = String(o.side || "long").toLowerCase() === "short" ? "short" : "long";
+  if (![entry, atrV, balance, riskPct].every(v => finite(v) && v > 0)) return { ok: false, why: "entry, ATR, balance and risk % must all be positive numbers" };
+  if (riskPct > 100) return { ok: false, why: "risk % cannot be above 100" };
+  const dist = atrMult * atrV, dir = side === "long" ? 1 : -1;
+  const stop = entry - dir * dist, target = entry + dir * rr * dist;
+  if (stop <= 0) return { ok: false, why: `the stop (${atrMult} × ATR) falls at or below zero; use a smaller multiple` };
+  const riskBudget = balance * riskPct / 100, cap = balance * maxPos / 100;
+  let qty = riskBudget / dist, capped = false;
+  if (qty * entry > cap) { qty = cap / entry; capped = true; }
+  const notional = qty * entry, fees = notional * feeBps / 1e4 * 2;
+  return {
+    ok: true, side, entry, stop, target, dist, stopPct: dist / entry, targetPct: rr * dist / entry, rr, atrMult,
+    qty: round(qty, 8), notional: round(notional, 6), riskUsd: round(qty * dist, 6), rewardUsd: round(qty * rr * dist, 6), riskBudget: round(riskBudget, 6),
+    capped, capUsd: round(cap, 6), fees: round(fees, 6), feeShareOfRisk: qty * dist > 0 ? fees / (qty * dist) : NaN,
+    paper: true, label: "[INFERENCE - Quant Model]"
+  };
+}
+function ruleBacktest(kl, opts = {}) {
+  const r = sanitizeRule(opts), start = finite(Number(opts.balance)) && Number(opts.balance) > 0 ? Number(opts.balance) : 10000;
+  const riskPct = finite(Number(opts.riskPct)) ? clamp(Number(opts.riskPct), 0.01, 100) : 1;
+  const maxPos = finite(Number(opts.maxPositionPct)) ? clamp(Number(opts.maxPositionPct), 0.1, 100) : 95;
+  const need = Math.max(r.slow, 15) + 5;
+  if (!Array.isArray(kl) || kl.length < need + 10) return { ok: false, why: `${Array.isArray(kl) ? kl.length : 0} candles; this rule needs at least ${need + 10}` };
+  const c = kl.map(k => k.c), ef = ema(c, r.fast), es = ema(c, r.slow), rs = rsi(c), a = atr(kl);
+  const fee = r.feeBps / 1e4, slip = r.slipBps / 1e4;
+  let cash = start, pos = null, peak = start, maxDD = 0, inBars = 0;
+  const trades = [], equity = [];
+  const first = kl.findIndex((_, i) => finite(ef[i]) && finite(es[i]) && finite(rs[i]) && finite(a[i]));
+  if (first < 0 || first >= kl.length - 2) return { ok: false, why: "the indicators never warmed up" };
+  const close = (i, px, why) => {
+    const gross = pos.qty * px, out = gross * (1 - fee), pnl = out - pos.cost;
+    cash += out;
+    trades.push({ inT: pos.t, outT: kl[i].t, entry: pos.entry, exit: px, qty: pos.qty, pnl, ret: pnl / pos.cost, r: pnl / pos.risk, why, bars: i - pos.i });
+    pos = null;
+  };
+  for (let i = first; i < kl.length; i++) {
+    const k = kl[i];
+    if (pos) {
+      inBars++;
+      const hitStop = k.l <= pos.stop, hitTarget = k.h >= pos.target;
+      if (hitStop) close(i, Math.min(k.o, pos.stop) * (1 - slip), "stop");
+      else if (hitTarget) close(i, Math.max(k.o, pos.target) * (1 - slip), "target");
+    }
+    const eq = cash + (pos ? pos.qty * k.c * (1 - fee) : 0);
+    equity.push({ t: k.t, eq });
+    if (eq > peak) peak = eq; else maxDD = Math.max(maxDD, (peak - eq) / peak);
+    if (!pos && i < kl.length - 1 && ef[i] > es[i] && rs[i] > r.rsiMin && rs[i] < r.rsiMax && a[i] > 0) {
+      const nx = kl[i + 1], fill = nx.o * (1 + slip), dist = r.atrMult * a[i];
+      if (fill - dist <= 0) continue;
+      let qty = cash * riskPct / 100 / dist;
+      const capQ = cash * maxPos / 100 / (fill * (1 + fee));
+      if (qty > capQ) qty = capQ;
+      const cost = qty * fill * (1 + fee);
+      if (qty <= 0 || cost > cash) continue;
+      cash -= cost;
+      pos = { i: i + 1, t: nx.t, entry: fill, qty, cost, stop: fill - dist, target: fill + r.rr * dist, risk: qty * dist };
+    }
+  }
+  const lastK = kl[kl.length - 1];
+  if (pos) close(kl.length - 1, lastK.c * (1 - slip), "end");
+  const endEq = cash; equity[equity.length - 1] = { t: lastK.t, eq: endEq };
+  if (endEq < peak) maxDD = Math.max(maxDD, (peak - endEq) / peak);
+  const wins = trades.filter(t => t.pnl > 0), losses = trades.filter(t => t.pnl <= 0);
+  const gw = wins.reduce((s, t) => s + t.pnl, 0), gl = -losses.reduce((s, t) => s + t.pnl, 0);
+  const holdIn = kl[first + 1] ? kl[first + 1].o : kl[first].c, hold = lastK.c * (1 - fee) / (holdIn * (1 + fee)) - 1;
+  return {
+    ok: true, rule: r, start, end: round(endEq, 6), retPct: endEq / start - 1, holdPct: hold, maxDD, n: trades.length,
+    wins: wins.length, losses: losses.length, winRate: trades.length ? wins.length / trades.length : NaN,
+    profitFactor: gl > 0 ? gw / gl : (gw > 0 ? Infinity : NaN), avgR: mean(trades.map(t => t.r)),
+    exposure: inBars / Math.max(1, kl.length - first), from: kl[first].t, to: lastK.t, bars: kl.length - first,
+    trades, equity, label: "[INFERENCE - Quant Model]",
+    warning: "in-sample replay of one fixed rule on the candles read; past results do not predict, and a few trades prove nothing"
+  };
 }
 
 /* ---------- bootstrap of trip returns ---------- */
@@ -1674,6 +1803,7 @@ const OMEGA_TRADELAB = Object.freeze({
   tripsFromReceipts, manualTrip, sanitizePlan, riskUnit, metrics, equityCurve, histogramR, byBucket,
   compliance, challenge, LIVE_GATE_DEFAULTS, liveGate, sanitizeNote, mistakeStats,
   klinesUrl, parseKlines, sma, ema, rsi, macd, bollinger, atr, marketLens,
+  RULE_DEFAULTS, sanitizeRule, riskParams, ruleBacktest,
   monteCarlo, layers, coach, teachingExample
 });
 window.OMEGA_TRADELAB = OMEGA_TRADELAB;
@@ -1714,7 +1844,7 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
   let notes = {}; for (const [k, v] of Object.entries(store.get(KEY.notes, {}) || {})) { const n = L.sanitizeNote(v); if (n && /^[TSM][A-Za-z0-9]{1,24}$/.test(k)) notes[k] = n; }
   let manual = (store.get(KEY.manual, []) || []).map(f => L.manualTrip(f, f && f.id)).filter(r => r && r.ok).map(r => r.trip);
   let chRules = { ...L.CHALLENGE_DEFAULTS, ...(store.get(KEY.challenge, {}) || {}) };
-  let lens = null, lensSym = "BTCUSDT", lensInt = "4h", lensAt = 0, lensTier = "";
+  let lensKl = [], lens = null, lensSym = "BTCUSDT", lensInt = "4h", lensAt = 0, lensTier = "";
   let trips = [], view = null, editing = null, proxyUp = false;
   const exampleNotes = {};
 
@@ -2086,11 +2216,11 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
       if (!raw) { const u = L.klinesUrl(lensSym, lensInt); try { raw = await getJson(u, 10000); lensTier = "Binance مباشرة"; } catch (e) { errs.push("direct: " + e.message); } }
       const kl = raw ? L.parseKlines(raw) : [];
       const r = kl.length ? L.marketLens(kl) : { ok: false, why: "no candles" };
-      if (!r.ok) { lens = null; st.className = "status-line bad"; st.textContent = `تعذر التحقق منها: لم تصل الشموع (${errs.concat(r.why ? [r.why] : []).join("; ")}). جرّب لاحقاً أو شغّل السيرفر المحلي.`; clearLens(); recompute(); return; }
-      lens = r; lensAt = Date.now();
+      if (!r.ok) { lens = null; lensKl = []; clearRule(); st.className = "status-line bad"; st.textContent = `تعذر التحقق منها: لم تصل الشموع (${errs.concat(r.why ? [r.why] : []).join("; ")}). جرّب لاحقاً أو شغّل السيرفر المحلي.`; clearLens(); recompute(); return; }
+      lens = r; lensKl = kl; lensAt = Date.now();
       store.set(KEY.lens, { sym: lensSym, int: lensInt });
       st.className = "status-line ok"; st.textContent = `${lensSym} ${lensInt} · Binance public klines عبر ${lensTier} · آخر شمعة ${dt(r.ts)} UTC`;
-      renderLens(); recompute();
+      renderLens(); renderRule(); recompute();
     } finally { $("btnLens").disabled = false; }
   }
   function clearLens() { clear($("lensKpis")); clear($("lensChart")); clear($("rsiChart")); clear($("lensReadings")); }
@@ -2104,13 +2234,58 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
     const seg = arr => { const pts = []; arr.forEach((v, i) => { if (Number.isFinite(v)) pts.push([X(i), Y(v)]); }); return pts.length > 1 ? path(pts) : ""; };
     const up = [], dn = []; S.up.forEach((v, i) => { if (Number.isFinite(v)) { up.push([X(i), Y(v)]); dn.unshift([X(i), Y(S.lo[i])]); } });
     if (up.length > 1) s.append(svg("path", { d: path(up) + " " + dn.map(p => "L" + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ") + " Z", class: "c-band" }));
-    for (const [arr, cls] of [[S.s200, "c-s200"], [S.s50, "c-s50"], [S.c, "c-px"]]) { const d = seg(arr); if (d) s.append(svg("path", { d, class: cls })); }
+    for (const [arr, cls] of [[S.s200, "c-s200"], [S.s50, "c-s50"], [S.e50, "c-e50"], [S.e20, "c-e20"], [S.c, "c-px"]]) { const d = seg(arr); if (d) s.append(svg("path", { d, class: cls })); }
     const q = $("rsiChart"); clear(q);
     q.append(svg("rect", { x: 0, y: 0, width: 600, height: 30, class: "c-zone" }), svg("rect", { x: 0, y: 70, width: 600, height: 30, class: "c-zone" }));
     const rp = []; S.rsi.forEach((v, i) => { if (Number.isFinite(v)) rp.push([X(i), 100 - v]); });
     if (rp.length > 1) q.append(svg("path", { d: path(rp), class: "c-rsi" }));
     const ul = $("lensReadings"); clear(ul);
     for (const x of r.readings) { const li = el("li", "f-" + x.level), row = el("div", "row"); row.append(el("span", "lvl lvl-" + x.level, LEVEL_AR[x.level]), el("span", "txt", x.ar)); li.append(row); const ev = el("span", "ev", x.en + " [INFERENCE]"); ev.dir = "ltr"; li.append(ev); ul.append(li); }
+  }
+
+  /* ---------- rule desk (ADR-130) ---------- */
+  function ruleInputs() {
+    const v = id => Number($(id).value);
+    return L.sanitizeRule({ atrMult: v("rAtr"), rr: v("rRr"), fast: v("rFast"), slow: v("rSlow"), rsiMin: v("rRsiMin"), rsiMax: v("rRsiMax"), feeBps: v("rFee"), slipBps: v("rSlip") });
+  }
+  function clearRule() { clear($("riskKpis")); clear($("btKpis")); clear($("btChart")); clear($("btTable").tBodies[0]); $("btEmpty").hidden = false; }
+  function renderRule() {
+    const st = $("ruleStatus");
+    if (!lens || lensKl.length < 2) { clearRule(); st.className = "status-line"; st.textContent = "اقرأ الشموع في عدسة السوق أولاً."; return; }
+    const r = ruleInputs(), d = lens.px < 10 ? 4 : 2;
+    for (const [id, k] of [["rAtr", "atrMult"], ["rRr", "rr"], ["rFast", "fast"], ["rSlow", "slow"], ["rRsiMin", "rsiMin"], ["rRsiMax", "rsiMax"], ["rFee", "feeBps"], ["rSlip", "slipBps"]]) $(id).value = String(r[k]);
+    const card = L.riskParams({ entry: lens.px, atr: lens.atr, balance: plan.startEquity, riskPct: plan.riskPct, maxPositionPct: plan.maxPositionPct, atrMult: r.atrMult, rr: r.rr, feeBps: r.feeBps });
+    if (card.ok) kpis($("riskKpis"), [["الدخول (آخر إغلاق)", nf(card.entry, d)], ["الوقف", nf(card.stop, d), "neg"], ["الهدف", nf(card.target, d), "pos"], ["بعد الوقف", pct(card.stopPct, 2)], ["الكمية", nf(card.qty, 6)], ["قيمة المركز", usd(card.notional)], ["خسارة الوقف", usd(-card.riskUsd), "neg"], ["الرسوم ذهاباً وإياباً", usd(-card.fees)], [card.capped ? "مقيّد بحد المركز" : "ضمن ميزانية المخاطرة", card.capped ? usd(card.capUsd) : usd(card.riskBudget)]]);
+    else { clear($("riskKpis")); }
+    const b = L.ruleBacktest(lensKl, { ...r, balance: plan.startEquity, riskPct: plan.riskPct, maxPositionPct: plan.maxPositionPct });
+    const notes = [];
+    if (card.ok && r.rr < plan.minRR) notes.push(`العائد إلى المخاطرة ${nf(r.rr, 2)} أقل من حد خطتك ${nf(plan.minRR, 2)}.`);
+    if (card.ok && card.feeShareOfRisk >= 0.2) notes.push(`الرسوم ${pct(card.feeShareOfRisk, 0)} من خسارة الوقف: الوقف قريب جداً على هذا الإطار.`);
+    if (!b.ok) { clear($("btKpis")); clear($("btChart")); clear($("btTable").tBodies[0]); $("btEmpty").hidden = false; st.className = "status-line bad"; st.textContent = `تعذر الاختبار: ${b.why}.`; return; }
+    kpis($("btKpis"), [["الصفقات", String(b.n)], ["نسبة الفوز", pct(b.winRate, 0)], ["عائد القاعدة", pct(b.retPct, 2), b.retPct >= 0 ? "pos" : "neg"], ["الشراء والاحتفاظ", pct(b.holdPct, 2), b.holdPct >= 0 ? "pos" : "neg"], ["أقصى تراجع", pct(b.maxDD, 2), "neg"], ["معامل الربح", Number.isFinite(b.profitFactor) ? nf(b.profitFactor, 2) : b.profitFactor === Infinity ? "∞" : "—"], ["متوسط R", nf(b.avgR, 2)], ["وقت في السوق", pct(b.exposure, 0)]]);
+    const s = $("btChart"); clear(s);
+    const eq = b.equity, n = eq.length, base = lensKl[lensKl.length - b.bars], hold0 = base ? base.o : eq[0].eq;
+    const holdLine = lensKl.slice(lensKl.length - b.bars).map(k => b.start * k.c / hold0);
+    const vals = eq.map(e => e.eq).concat(holdLine), lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+    const X = i => i * (600 / Math.max(1, n - 1)), Y = v => 156 - (v - lo) / span * 150;
+    const line = eq.map((e, i) => [X(i), Y(e.eq)]);
+    if (line.length > 1) {
+      s.append(svg("path", { d: path(line) + ` L${X(n - 1).toFixed(1)} 158 L0 158 Z`, class: "c-eq-area" }));
+      s.append(svg("path", { d: path(holdLine.map((v, i) => [X(i), Y(v)])), class: "c-hold" }));
+      s.append(svg("path", { d: path(line), class: "c-eq" }));
+      const at = new Map(eq.map((e, i) => [e.t, i]));
+      for (const t of b.trades) { const i = at.get(t.inT), j = at.get(t.outT); if (i != null) s.append(svg("circle", { cx: X(i).toFixed(1), cy: Y(eq[i].eq).toFixed(1), r: 3, class: "c-in" })); if (j != null) s.append(svg("circle", { cx: X(j).toFixed(1), cy: Y(eq[j].eq).toFixed(1), r: 3, class: "c-out" })); }
+    }
+    $("btCap").textContent = `رصيد القاعدة من ${usd(b.start)} (رأس مال خطتك) مقابل الشراء والاحتفاظ على ${b.bars} شمعة ${lensInt} من ${dt(b.from)} إلى ${dt(b.to)} UTC. نقاط خضراء دخول وحمراء خروج.`;
+    const tb = $("btTable").tBodies[0]; clear(tb);
+    const WHY = { stop: "الوقف", target: "الهدف", end: "نهاية البيانات" };
+    for (const t of b.trades.slice(-12).reverse()) {
+      const tr = el("tr");
+      tr.append(el("td", "num", dt(t.inT)), el("td", "n num", nf(t.entry, d)), el("td", "n num", nf(t.exit, d)), el("td", "", WHY[t.why] || t.why), el("td", "n num " + (t.r >= 0 ? "pos" : "neg"), nf(t.r, 2)), el("td", "n num " + (t.pnl >= 0 ? "pos" : "neg"), usd(t.pnl)));
+      tb.append(tr);
+    }
+    $("btEmpty").hidden = b.n > 0; if (!b.n) $("btEmpty").textContent = "لم تتحقق شروط القاعدة على هذه الشموع.";
+    st.className = "status-line"; st.textContent = `${lensSym} ${lensInt} · ${b.n} صفقة في الماضي، قياس لا توقع [INFERENCE - Quant Model]. ${b.n < 30 ? "أقل من 30 صفقة: لا تبني عليها حكماً. " : ""}${notes.join(" ")}`;
   }
 
   /* ---------- local model ---------- */
@@ -2165,6 +2340,7 @@ window.OMEGA_TRADELAB = OMEGA_TRADELAB;
     }
     $("lSym").addEventListener("change", () => { lensSym = $("lSym").value; });
     $("btnLens").addEventListener("click", loadLens);
+    $("btnRule").addEventListener("click", renderRule);
     $("btnLedger").addEventListener("click", readLocal);
     $("fileReceipts").addEventListener("change", e => readFile(e.target, "receipts"));
     $("fileJournal").addEventListener("change", e => readFile(e.target, "journal"));
