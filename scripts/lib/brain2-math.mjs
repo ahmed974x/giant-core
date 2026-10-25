@@ -24,6 +24,8 @@
 //   cvss3 / circlSummary    CVSS 3.x base score from a vector; CIRCL Vulnerability-Lookup entries with MISP
 //                           taxonomy tags and a 0-100 vulnerability pressure part for CSTI (ADR-112)
 //   seaState(marine)        Open-Meteo Marine waves and currents at the five straits (ADR-112)
+//   shape.cams*             open public cameras: TfL JamCams, Fintraffic weather cameras, Singapore LTA (ADR-125)
+//   oilGold(...)            WTI/Brent/gold paper watch: trend, volatility, z-score and a 1-sigma range (ADR-125)
 export const OMEGA_MATH = (() => {
   "use strict";
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -537,6 +539,26 @@ export const OMEGA_MATH = (() => {
     { key: "suez", en: "Suez Canal, Port Said approach", lat: 31.45, lon: 32.35 }, { key: "malacca", en: "Strait of Malacca", lat: 2.5, lon: 101.0 },
     { key: "panama", en: "Panama Canal, Pacific approach", lat: 8.75, lon: -79.5 }
   ];
+  // ADR-125: open camera groups and the only hosts their still images may come from (https).
+  const CAM_GROUPS = [
+    { key: "tfl", fn: "camsTfl", en: "London JamCams", source: "Transport for London open data", licence: "Powered by TfL Open Data (OGL v2.0)", home: "https://tfl.gov.uk/info-for/open-data-users/" },
+    { key: "fi", fn: "camsFi", en: "Finland road weather cameras", source: "Fintraffic / Digitraffic", licence: "CC BY 4.0", home: "https://www.digitraffic.fi/en/road-traffic/" },
+    { key: "sg", fn: "camsSg", en: "Singapore traffic cameras", source: "Land Transport Authority via data.gov.sg", licence: "Singapore Open Data Licence", home: "https://data.gov.sg/" }
+  ];
+  const CAM_HOSTS = ["s3-eu-west-1.amazonaws.com", "weathercam.digitraffic.fi", "images.data.gov.sg"], CAM_MAX = 600;
+  const camImg = u => {
+    let x;
+    try { x = new URL(String(u || "")); } catch { return ""; }
+    if (x.protocol !== "https:" || !CAM_HOSTS.includes(x.hostname) || x.username || x.password || x.port) return "";
+    if (x.hostname === "s3-eu-west-1.amazonaws.com" && !x.pathname.startsWith("/jamcams.tfl.gov.uk/")) return "";
+    return x.href.slice(0, 300);
+  };
+  // ADR-125: the three markets of the oil and gold watch, with their free daily source.
+  const OIL_GOLD = [
+    { key: "wti", en: "WTI crude, Cushing spot", unit: "USD/bbl", fred: "DCOILWTICO", source: "U.S. EIA via FRED (St. Louis Fed)", home: "https://fred.stlouisfed.org/series/DCOILWTICO" },
+    { key: "brent", en: "Brent crude, Europe spot", unit: "USD/bbl", fred: "DCOILBRENTEU", source: "U.S. EIA via FRED (St. Louis Fed)", home: "https://fred.stlouisfed.org/series/DCOILBRENTEU" },
+    { key: "gold", en: "Gold, via PAXG (1 token = 1 fine troy oz)", unit: "USD/oz", fred: "", source: "Binance public candles, PAXGUSDT", home: "https://www.binance.com/en/trade/PAXG_USDT" }
+  ];
   // Sea-state part for PWSI, 0-100: 0 with every significant wave height at 2 m or less, 100 at 6 m or more;
   // a current of 4 knots or more adds the same as 1 m of wave. Fixed rule, [INFERENCE].
   function seaState(m) {
@@ -981,6 +1003,88 @@ export const OMEGA_MATH = (() => {
       if (!out.length) throw new Error("empty CIRCL list");
       return { format: "omega-circl-v1", source: "CIRCL Vulnerability-Lookup", items: out };
     },
+    // ADR-125. Open public cameras. Each list is cut to id, name, position and one still-image URL whose host is
+    // in CAM_HOSTS (https only), so a changed upstream can never point the page at another site.
+    camsTfl(j) {
+      if (!Array.isArray(j)) throw new Error("not a TfL JamCam list");
+      const out = [];
+      for (const c of j) {
+        const props = Array.isArray(c && c.additionalProperties) ? c.additionalProperties : [], prop = k => (props.find(x => x && x.key === k) || {}).value;
+        if (String(prop("available")) === "false") continue;
+        const img = camImg(prop("imageUrl")), lat = +c.lat, lon = +c.lon;
+        if (!img || !finite(lat) || !finite(lon)) continue;
+        out.push({ id: "tfl:" + String(c.id || "").replace(/^JamCams_/, "").slice(0, 24), g: "tfl", name: String(c.commonName || "").slice(0, 80), lat: +lat.toFixed(5), lon: +lon.toFixed(5), img });
+        if (out.length >= CAM_MAX) break;
+      }
+      if (!out.length) throw new Error("no TfL camera with an image");
+      return out;
+    },
+    // Fintraffic weather cameras (tie.digitraffic.fi/api/weathercam/v1/stations, GeoJSON): first preset in collection.
+    camsFi(j) {
+      const fs = j && Array.isArray(j.features) ? j.features : null;
+      if (!fs) throw new Error("not a Digitraffic weathercam list");
+      const out = [];
+      for (const f of fs) {
+        const p = f && f.properties || {}, c = f && f.geometry && f.geometry.coordinates;
+        if (p.collectionStatus && p.collectionStatus !== "GATHERING") continue;
+        if (p.state && !/^(OK|null)$/i.test(String(p.state))) continue;
+        const pr = (Array.isArray(p.presets) ? p.presets : []).find(x => x && x.inCollection !== false && /^C\w{4,12}$/.test(String(x.id || "")));
+        if (!pr || !Array.isArray(c) || !finite(+c[0]) || !finite(+c[1])) continue;
+        out.push({ id: "fi:" + pr.id, g: "fi", name: String(p.name || p.id || "").slice(0, 80), lat: +(+c[1]).toFixed(5), lon: +(+c[0]).toFixed(5), img: `https://weathercam.digitraffic.fi/${pr.id}.jpg` });
+        if (out.length >= CAM_MAX) break;
+      }
+      if (!out.length) throw new Error("no Fintraffic camera in collection");
+      return out;
+    },
+    // Singapore LTA traffic cameras through data.gov.sg (api.data.gov.sg/v1/transport/traffic-images).
+    camsSg(j) {
+      const cams = j && Array.isArray(j.items) && j.items[0] && Array.isArray(j.items[0].cameras) ? j.items[0].cameras : null;
+      if (!cams) throw new Error("not a data.gov.sg traffic-images answer");
+      const out = [];
+      for (const c of cams) {
+        const loc = c && c.location || {}, img = camImg(c && c.image), lat = +loc.latitude, lon = +loc.longitude;
+        if (!img || !finite(lat) || !finite(lon)) continue;
+        out.push({ id: "sg:" + String(c.camera_id || "").slice(0, 12), g: "sg", name: "LTA camera " + String(c.camera_id || "").slice(0, 12), lat: +lat.toFixed(5), lon: +lon.toFixed(5), img, at: String(c.timestamp || "").slice(0, 25) });
+        if (out.length >= CAM_MAX) break;
+      }
+      if (!out.length) throw new Error("no Singapore camera with an image");
+      return out;
+    },
+    // One set from the three answers in CAM_GROUPS order; a failed group is left out and named, never filled in.
+    camsSet(list, at) {
+      if (!Array.isArray(list) || list.length !== CAM_GROUPS.length) throw new Error("camera set needs 3 answers");
+      const groups = [], cams = [];
+      CAM_GROUPS.forEach((g, i) => {
+        let rows = null;
+        try { rows = list[i] == null ? null : shape[g.fn](list[i]); } catch { rows = null; }
+        groups.push({ key: g.key, en: g.en, source: g.source, licence: g.licence, home: g.home, n: rows ? rows.length : 0, ok: !!rows });
+        if (rows) cams.push(...rows);
+      });
+      if (!cams.length) throw new Error("no camera group answered");
+      return { format: "omega-cams-v1", at: String(at || ""), groups, cams };
+    },
+    // ADR-125. FRED's keyless CSV (fred.stlouisfed.org/graph/fredgraph.csv?id=...): date,value rows, "." or an
+    // empty cell for a day without a price, which is dropped, never set to 0. Keeps the last 260 trading days.
+    fredCsv(text, id) {
+      const lines = String(text || "").trim().split(/\r?\n/);
+      if (lines.length < 2 || !/^(observation_date|DATE),/i.test(lines[0])) throw new Error("not a FRED CSV");
+      const rows = [];
+      for (const l of lines.slice(1)) { const [d, v] = l.split(","); const x = +v; if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v !== "." && v !== "" && finite(x) && x > 0) rows.push([d, x]); }
+      if (rows.length < 21) throw new Error("FRED series too short");
+      return { id: String(id || lines[0].split(",")[1] || "").slice(0, 20), rows: rows.slice(-260) };
+    },
+    // Binance public daily candles of PAXGUSDT (a token backed by one fine troy ounce of London gold): date, close.
+    paxgDaily(k) {
+      if (!Array.isArray(k) || k.length < 21) throw new Error("not enough PAXG candles");
+      return { id: "PAXGUSDT", rows: k.filter(r => Array.isArray(r) && finite(+r[4])).map(r => [new Date(+r[0]).toISOString().slice(0, 10), +r[4]]).slice(-260) };
+    },
+    // WTI, Brent and gold in one set (OIL_GOLD order); a failed series is null and named in `missing`.
+    oilGoldSet(list, at) {
+      if (!Array.isArray(list) || list.length !== OIL_GOLD.length) throw new Error("oil and gold set needs 3 answers");
+      const series = OIL_GOLD.map((m, i) => { try { return list[i] == null ? null : { ...m, ...(m.fred ? shape.fredCsv(list[i], m.fred) : shape.paxgDaily(list[i])) }; } catch { return null; } });
+      if (!series.some(Boolean)) throw new Error("no oil or gold series answered");
+      return { format: "omega-oilgold-v1", at: String(at || ""), series: series.filter(Boolean), missing: OIL_GOLD.filter((m, i) => !series[i]).map(m => m.key) };
+    },
     // Open-Meteo Marine for MARINE_POINTS (one answer per point, in order).
     marine(j) {
       const arr = Array.isArray(j) ? j : [j];
@@ -994,6 +1098,20 @@ export const OMEGA_MATH = (() => {
       }) };
     }
   };
+  // ADR-125: oil and gold paper watch from daily closes (oldest first). Trend = last close against its 20- and
+  // 50-day means, volatility = annualised stdev of daily log returns over 20 days, z = distance of the last close
+  // from the 20-day mean in stdevs, range = the 1-sigma band for the next `days` under a random walk. A model
+  // reading for paper decisions only ([INFERENCE - Quant Model]), never a forecast or an order.
+  function oilGold(closes, days = 5) {
+    const c = (Array.isArray(closes) ? closes : []).map(Number).filter(v => finite(v) && v > 0);
+    if (c.length < 21) return null;
+    const last = c[c.length - 1], m = k => mean(c.slice(-k)), r = [];
+    for (let i = c.length - 20; i < c.length; i++) r.push(Math.log(c[i] / c[i - 1]));
+    const sd = Math.sqrt(variance(r)), sd20 = Math.sqrt(variance(c.slice(-20))), m20 = m(20), m50 = c.length >= 50 ? m(50) : NaN;
+    const trend = last > m20 && (!finite(m50) || m20 > m50) ? "up" : last < m20 && (!finite(m50) || m20 < m50) ? "down" : "mixed";
+    const band = sd * Math.sqrt(days);
+    return { last, m20, m50, trend, volAnn: sd * Math.sqrt(252) * 100, z: sd20 > 0 ? (last - m20) / sd20 : 0, days, lo: last * Math.exp(-band), hi: last * Math.exp(band), chg5: c.length > 5 ? (last / c[c.length - 6] - 1) * 100 : NaN, n: c.length };
+  }
   // Time windows rounded to 15 minutes, so proxy and snapshot caches hit for repeated asks.
   const win15 = now => Math.floor(now / 900e3) * 900;
   const urls = {
@@ -1026,10 +1144,14 @@ export const OMEGA_MATH = (() => {
     llama: () => ["https://stablecoins.llama.fi/stablecoins?includePrices=true", "https://api.llama.fi/v2/chains", "https://api.llama.fi/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true"],
     // CIRCL Vulnerability-Lookup (keyless): the most recently published records.
     circl: () => "https://vulnerability.circl.lu/api/last",
+    // ADR-125. Open camera lists (keyless): TfL, Fintraffic weather cameras, Singapore LTA via data.gov.sg.
+    fred: id => `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`,
+    paxg: () => "https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=1d&limit=260",
+    cams: () => ["https://api.tfl.gov.uk/Place/Type/JamCam", "https://tie.digitraffic.fi/api/weathercam/v1/stations", "https://api.data.gov.sg/v1/transport/traffic-images"],
     // Open-Meteo Marine (keyless): current sea state and today's hourly wave height at the five strait points.
     marine: () => "https://marine-api.open-meteo.com/v1/marine?latitude=" + MARINE_POINTS.map(p => p.lat).join(",") + "&longitude=" + MARINE_POINTS.map(p => p.lon).join(",")
       + "&current=wave_height,wave_direction,wave_period,swell_wave_height,ocean_current_velocity,ocean_current_direction,sea_surface_temperature&hourly=wave_height&forecast_days=1&cell_selection=sea&timezone=UTC"
   };
 
-  return Object.freeze({ shape, urls, RIPE_ASNS, RIS_WATCH, INTERNETDB_HOSTS, AIR_ZONES, AIR_RADIUS_NM, SQUAWKS, MARINE_POINTS, lfi, cvss3, priorityLevel, mispTags, circlSummary, seaState, risSummary, risSubscribe, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
+  return Object.freeze({ shape, urls, CAM_GROUPS, CAM_HOSTS, OIL_GOLD, oilGold, RIPE_ASNS, RIS_WATCH, INTERNETDB_HOSTS, AIR_ZONES, AIR_RADIUS_NM, SQUAWKS, MARINE_POINTS, lfi, cvss3, priorityLevel, mispTags, circlSummary, seaState, risSummary, risSubscribe, nnFactory, nn, clamp, mean, variance, kalman, bocpd, lgamma, kyleLambda, iceberg, entropy, ncdf, bs, parseOption, gex, gexAt, chain, rr25, dvol, basisTrap, epochMs, gmst, kepler, groundTrack, l2Fill, csti, micro, excess, canon });
 })();
