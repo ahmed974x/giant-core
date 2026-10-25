@@ -526,3 +526,45 @@ footer p { margin: var(--s-2) 0; }
 @media (pointer: coarse) {
   .lang-link, .skip { min-height: 44px; display: inline-flex; align-items: center; }
 }
+
+/* ---------- Agent threads (ADR-124): the agents drawn as nodes joined by the links they really have ---------- */
+.card.threads { margin: 0 0 var(--pad-panel); }
+@media (hover: hover) { .card.threads:hover { transform: none; } .card.threads:hover::after { opacity: 0; } }
+.th-lead { max-width: 60ch; }
+.th-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: var(--s-6) clamp(var(--s-8), 6vw, 96px); margin-top: var(--s-6); padding: var(--s-6) var(--s-4); border-radius: calc(var(--r-card) - var(--pad-card)); background: var(--surface-2); }
+.th-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.th-col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.th-node { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; margin: 0; padding: var(--s-2) var(--s-4); border-radius: var(--r-pill); background: var(--surface); border: var(--hairline) solid var(--hairline-color); color: var(--content-primary); font-size: var(--text-footnote); font-weight: 600; line-height: 1.35; cursor: default; transition: transform var(--dur-base) var(--ease-apple-fluid), opacity var(--dur-base) var(--ease-apple-fluid); }
+.th-node.agent { font-weight: 700; box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 6px 16px -6px hsl(var(--shadow-color) / 0.08); }
+.th-node bdi { color: var(--content-secondary); font-weight: 600; }
+.th-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--apple-cyan); }
+.th-node.out .th-dot { background: var(--apple-indigo); }
+.th-node.live .th-dot { background: var(--apple-green); }
+.th-node.design .th-dot { background: var(--apple-blue); }
+.th-node.gated .th-dot { background: var(--apple-orange); }
+.th-node.closed .th-dot { background: var(--apple-red); }
+.th-link { fill: none; stroke-width: 1.75; stroke-linecap: round; opacity: 0.6; transition: opacity var(--dur-base) var(--ease-apple-fluid); }
+.th-link.data { stroke: var(--apple-cyan); }
+.th-link.decides { stroke: var(--apple-indigo); }
+.th-link.acts { stroke: var(--apple-green); }
+.th-link.informs { stroke: var(--apple-purple); stroke-dasharray: 4 6; }
+.th-link.locked { stroke: var(--violet); stroke-dasharray: 2 6; }
+.th-end { opacity: 0.6; transition: opacity var(--dur-base) var(--ease-apple-fluid); }
+.th-end.data { fill: var(--apple-cyan); } .th-end.decides { fill: var(--apple-indigo); } .th-end.acts { fill: var(--apple-green); } .th-end.informs { fill: var(--apple-purple); } .th-end.locked { fill: var(--violet); }
+.threads.focus .th-link, .threads.focus .th-end { opacity: 0.12; }
+.threads.focus .th-link.on, .threads.focus .th-end.on { opacity: 1; }
+.threads.focus .th-node { opacity: 0.45; }
+.threads.focus .th-node.on { opacity: 1; transform: scale(1.02); }
+.th-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.th-legend { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); margin: var(--s-4) 0 0; padding: 0; list-style: none; color: var(--content-secondary); font-size: var(--text-caption); }
+.th-legend li { display: inline-flex; align-items: center; gap: var(--s-2); }
+.th-legend .sw { display: inline-block; width: 22px; height: 0; border-top: 2px solid; }
+.th-legend .sw.data { border-color: var(--apple-cyan); } .th-legend .sw.decides { border-color: var(--apple-indigo); } .th-legend .sw.acts { border-color: var(--apple-green); }
+.th-legend .sw.informs { border-top-style: dashed; border-color: var(--apple-purple); } .th-legend .sw.locked { border-top-style: dotted; border-color: var(--violet); }
+@media (max-width: 719px) {
+  .th-stage { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); padding: var(--s-4) var(--s-3); padding-inline-end: clamp(72px, 24vw, 120px); }
+  .th-col { align-items: flex-start; gap: var(--s-2); }
+  .th-node { padding: var(--s-2) var(--s-3); }
+  .card li.th-node + li.th-node { margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .th-node, .th-link, .th-end { transition: none; } .threads.focus .th-node.on { transform: none; } }
