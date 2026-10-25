@@ -2,7 +2,8 @@
 rem OMEGA one-click launcher for Windows (ADR-093, ADR-112).
 rem Starts the local data proxy on 127.0.0.1:8796, which also serves the Ops Room, THE CHAIN and NABD pages,
 rem prints a live status table for every free data source, waits until the proxy answers, says whether the
-rem optional local model (Ollama) and laptop control (Windows-MCP) are ready, then opens the Ops Room.
+rem optional local model (Ollama), n8n (5678), Newton (8095) and laptop control (Windows-MCP) are ready, then opens
+rem the Ops Room (ADR-125).
 rem   start-omega.bat            open the Ops Room
 rem   start-omega.bat selftest   open it with the 24-check self-test (?selftest=1)
 rem Paper only: nothing started here can place an order or move money.
@@ -38,6 +39,9 @@ echo.
 echo Local model (optional, Ollama on this computer):
 curl.exe -s http://127.0.0.1:%OMEGA_PROXY_PORT%/llm/ollama/status
 echo.
+echo Optional laptop services, the Ops Room shows them grey when they are off:
+curl.exe -s -o nul -m 2 http://127.0.0.1:5678/healthz && (echo   n8n 5678: running.) || (echo   n8n 5678: off. Start Docker Desktop, then run "docker compose up -d n8n" in the giant-core folder that holds your .env file.)
+curl.exe -s -o nul -m 2 http://127.0.0.1:8095/api/health && (echo   Newton 8095: running.) || (echo   Newton 8095: off. Optional: "py -m pip install -r newton\requirements.txt", then "py -m newton.http_api" in this folder.)
 findstr /c:"windows-mcp==0.8.8" "%APPDATA%\Claude\claude_desktop_config.json" >nul 2>nul && (echo Laptop control: Windows-MCP 0.8.8 is set up for Claude Desktop.) || (echo Laptop control: Windows-MCP is not set up yet. Run OMEGA-PRIME.bat once to set it up.)
 start "" "%OMEGA_URL%"
 endlocal
