@@ -1,0 +1,269 @@
+{
+  "generated": "2026-11-04T21:38:34.914Z",
+  "summary": {
+    "scanned": 87,
+    "critical": 0,
+    "high": 0,
+    "medium": 25,
+    "low": 0,
+    "suppressed": 6
+  },
+  "findings": [
+    {
+      "file": ".claude/skills/algorithmic-art/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 342,
+      "excerpt": "<input type=\"number\" id=\"seed-input\" class=\"seed-input\" value=\"12345\" onchange=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 344,
+      "excerpt": "<button class=\"button secondary\" onclick=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 345,
+      "excerpt": "<button class=\"button secondary\" onclick=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 347,
+      "excerpt": "<button class=\"button tertiary regen-button\" onclick=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 358,
+      "excerpt": "<input type=\"range\" id=\"particleCount\" min=\"1000\" max=\"10000\" step=\"500\" value=\"",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 367,
+      "excerpt": "<input type=\"range\" id=\"flowSpeed\" min=\"0.1\" max=\"2.0\" step=\"0.1\" value=\"0.5\" on",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 376,
+      "excerpt": "<input type=\"range\" id=\"noiseScale\" min=\"0.001\" max=\"0.02\" step=\"0.001\" value=\"0",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 385,
+      "excerpt": "<input type=\"range\" id=\"trailLength\" min=\"2\" max=\"20\" step=\"1\" value=\"8\" oninput",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 399,
+      "excerpt": "<input type=\"color\" id=\"color1\" value=\"#d97757\" onchange=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 408,
+      "excerpt": "<input type=\"color\" id=\"color2\" value=\"#6a9bcc\" onchange=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 417,
+      "excerpt": "<input type=\"color\" id=\"color3\" value=\"#788c5d\" onchange=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-INLINE-HANDLER",
+      "sev": "medium",
+      "line": 427,
+      "excerpt": "<button class=\"button\" onclick=",
+      "msg": "Inline event handler. A strict CSP blocks it; attach with addEventListener."
+    },
+    {
+      "file": ".claude/skills/build-mcpb/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/build-mcpb/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/frontend-design/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/mcp-builder/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/mcp-builder/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/theme-factory/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/theme-factory/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/web-artifacts-builder/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/web-artifacts-builder/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/webapp-testing/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 4,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/webapp-testing/LICENSE.txt",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 196,
+      "excerpt": "http://www.apache.org",
+      "msg": "Plain http:// to an outside host. Use https://."
+    }
+  ],
+  "suppressed": [
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-SRI",
+      "sev": "high",
+      "line": 23,
+      "excerpt": "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js\">",
+      "msg": "External script or stylesheet without Subresource Integrity (auto-fixable with --fetch).",
+      "reason": "templates/viewer.html (p5.js and Google Fonts from CDNs) is a vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-SRI",
+      "sev": "high",
+      "line": 26,
+      "excerpt": "<link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&fa",
+      "msg": "External script or stylesheet without Subresource Integrity (auto-fixable with --fetch).",
+      "reason": "templates/viewer.html (p5.js and Google Fonts from CDNs) is a vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "file": ".claude/skills/algorithmic-art/templates/viewer.html",
+      "rule": "SEC-CSP",
+      "sev": "high",
+      "line": 1,
+      "excerpt": "no CSP meta",
+      "msg": "HTML page without a Content-Security-Policy meta.",
+      "reason": "templates/viewer.html is a vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "file": ".claude/skills/web-artifacts-builder/scripts/init-artifact.sh",
+      "rule": "SEC-HOST",
+      "sev": "high",
+      "line": 283,
+      "excerpt": "https://ui.shadcn.com",
+      "msg": "Outside host not in the allowlist (.skillspector.json allowHosts).",
+      "reason": "scripts/init-artifact.sh links ui.shadcn.com; vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "file": ".claude/skills/webapp-testing/scripts/with_server.py",
+      "rule": "SEC-EXEC",
+      "sev": "high",
+      "line": 69,
+      "excerpt": "subprocess.Popen(",
+      "msg": "Starts a process. Inside a skill or plugin this needs a manual review.",
+      "reason": "scripts/with_server.py starts dev servers for Playwright; vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    },
+    {
+      "file": ".claude/skills/webapp-testing/scripts/with_server.py",
+      "rule": "SEC-EXEC",
+      "sev": "high",
+      "line": 88,
+      "excerpt": "subprocess.run(",
+      "msg": "Starts a process. Inside a skill or plugin this needs a manual review.",
+      "reason": "scripts/with_server.py starts dev servers for Playwright; vendored third-party skill from anthropics/skills@683bc88 (Apache-2.0, see .claude/skills/README.md); not first-party, not edited, its scripts are not run on Ahmad's machine without a security review (CLAUDE.md)."
+    }
+  ]
+}

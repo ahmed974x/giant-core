@@ -7,7 +7,7 @@ switcher, dense central workspace, command palette), never any product's code,
 copy, logo, icons or colours.
 For: Ahmad (Director 00) first; later a product others can use.
 Date: 2026-11-04
-Written by `/replica-recon` (ADR-132).
+Written by `/replica-recon` (ADR-132); Studio and Skill Mixer added in ADR-133.
 
 ## Sources
 
@@ -28,7 +28,9 @@ inbox), which Jarvis will eventually surface.
 ## Core loop
 
 Create an agent, give it a workflow, run it, watch the run step by step, and
-approve or reject anything it wants to do outside its sandbox.
+approve or reject anything it wants to do outside its sandbox. Second loop
+(ADR-133): design a website live in the Studio, and mix the installed skills
+into a build plan.
 
 ## Screens
 
@@ -46,6 +48,8 @@ approve or reject anything it wants to do outside its sandbox.
 | S10 | Logs & audit | `/logs` | searchable event log of every action | Table, FilterBar, DateRange, Pagination | empty, loading, filled, overflow |
 | S11 | Settings | `/settings/*` | workspace, members, models, keys (vaulted), limits | Sidebar sub-nav, Form, Table, Dialog (danger zone) | default, saving, error, permission denied |
 | S12 | Design system | `/design` | every primitive in every state and theme | all | light, dark, RTL |
+| S13 | Studio (live builder) | `/studio` | split screen: block and theme controls on one side, a sandboxed live preview on the other | BlockList, TextField, ColorField, SegmentedControl (AR/EN, 375/768/1440), ContrastBadge, PreviewFrame (`<iframe sandbox="allow-scripts" srcdoc>`), ApprovalCard (locked publish) | empty site, editing, contrast failing, RTL, each width, export done |
+| S14 | Skill Mixer | `/skills` | installed skills with their SkillSpector status; mix them into an ordered plan; check a new SKILL.md | SkillCard, StatusBadge, Switch, ReorderList, CodeEditor (textarea), CheckList, ApprovalCard (locked install) | loading, filled, empty mix, check passing, check failing |
 
 ## Flows
 
@@ -72,6 +76,21 @@ F04 Investigate a failure
 F05 Jump anywhere
     Ctrl+K / ⌘K -> type -> Enter
     happy path clicks: 0 (keyboard only)
+
+F06 Design a site live
+    S13 -> pick blocks -> edit text -> switch AR/EN and 375/768/1440 -> fix any red contrast badge -> Download HTML
+    happy path clicks: 6
+    edge: every block off, a colour that fails Lc 60, very long Arabic headline, Publish asked (locked)
+
+F07 Mix skills into a plan
+    S14 -> switch on skills -> order them -> copy the plan into Claude Code
+    happy path clicks: 5
+    edge: a skill with a SkillSpector high finding (shown, not blocked from reading), empty mix
+
+F08 Check a new skill
+    S14 -> "Check a SKILL.md" -> paste -> read the checklist -> Download
+    happy path clicks: 3
+    edge: no frontmatter, description over 1024 characters, a prompt-injection phrase, install asked (locked)
 ```
 
 ## Components
@@ -96,6 +115,14 @@ F05 Jump anywhere
 | Toast | info, success, warning, danger | auto-dismiss, with action | all |
 | EmptyState | — | — | S02, S03, S06, S09, S10 |
 | Skeleton | line, block, row | — | all |
+| SegmentedControl | 2–3 options | default, selected, focus | S13 |
+| ColorField | native colour input + hex text | valid, invalid hex | S13 |
+| ContrastBadge | pass, fail | WCAG ratio + APCA Lc shown as text | S13 |
+| PreviewFrame | 375, 768, 1440 wide, scaled to fit | loading, ready | S13 |
+| SkillCard | project, vendored | clean, findings (count by severity) | S14 |
+| ReorderList | — | item, moving, empty | S13, S14 |
+| CheckList | — | pass, warn, fail rows with text | S14 |
+| GlassPanel | top bar, sidebar, palette, popover, toast | glass, solid (reduced transparency) | S01 |
 
 ## Inferred data model
 
@@ -120,12 +147,20 @@ Event      id, workspace_id, actor, kind, target, at, data (json)
            evidence: S10                           confidence: high
 ```
 
+Site       id, workspace_id, name, lang_default (en | ar), theme (json), blocks (json), updated_at
+           evidence: S13                           confidence: high (own design)
+Skill      name, description, source (project | vendored), review_doc, findings (json by severity), scanned_at
+           evidence: S14, .claude/skills, SkillSpector  confidence: high (read from the repo at build time)
+Mix        id, workspace_id, name, skills (ordered names), created_at
+           evidence: S14                           confidence: high
+
 Relationships: Workspace 1-n Agent, Workspace 1-n Workflow, Workflow 1-n Run,
-Agent 1-n Run, Run 1-n Step, Step 0-1 Approval, Workspace 1-n Event.
+Agent 1-n Run, Run 1-n Step, Step 0-1 Approval, Workspace 1-n Event,
+Workspace 1-n Site, Workspace 1-n Mix, Mix n-n Skill (by name).
 
 ## Feature matrix
 
-See `features.csv`. Must: 16, should: 9, could: 6, skip: 2.
+See `features.csv`. Must: 24, should: 13, could: 6, skip: 2.
 
 ## Out of scope (cannot or should not be cloned)
 
@@ -135,9 +170,14 @@ See `features.csv`. Must: 16, should: 9, could: 6, skip: 2.
   by AGENTS.md §1 until Ahmad approves it separately with legal and security
   review. Jarvis shows such actions only as approval items marked
   «قيد الموافقة».
+- Publishing a site to an outside domain, changing repository permissions,
+  and installing a skill into the repo: Ahmad's decisions (AGENTS.md §1).
+  Jarvis shows them as locked violet «قيد الموافقة» cards that no agent can
+  approve; the Studio only downloads a file and the Mixer only copies a plan.
 
 ## Size
 
-Screens 12, flows 5, entities 8. Hard parts: live run streaming, the
-workflow canvas, a safe approval gate. Size: L (UI shell and design system
-first; canvas and streaming later).
+Screens 14, flows 8, entities 11. Hard parts: live run streaming, the
+workflow canvas, a safe approval gate, a live preview that runs under the
+strict CSP with no network. Size: L (UI shell and design system first;
+canvas and streaming later).

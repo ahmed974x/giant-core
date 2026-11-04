@@ -26,7 +26,10 @@ module.exports = {
         "success": "var(--color-success)",
         "warning": "var(--color-warning)",
         "info": "var(--color-info)",
-        "approval": "var(--color-approval)"
+        "approval": "var(--color-approval)",
+        "glass": "var(--color-glass)",
+        "glass-rim": "var(--color-glass-rim)",
+        "glass-edge": "var(--color-glass-edge)"
       },
       "fontFamily": {
         "sans": [
@@ -99,6 +102,7 @@ module.exports = {
         "sm": "var(--radius-sm)",
         "md": "var(--radius-md)",
         "lg": "var(--radius-lg)",
+        "xl": "var(--radius-xl)",
         "pill": "var(--radius-pill)"
       },
       "boxShadow": {
@@ -107,7 +111,8 @@ module.exports = {
       },
       "transitionDuration": {
         "fast": "var(--motion-fast)",
-        "base": "var(--motion-base)"
+        "base": "var(--motion-base)",
+        "slow": "var(--motion-slow)"
       },
       "maxWidth": {
         "content": "var(--layout-content-max)"

@@ -7,7 +7,9 @@
 
 Pairs come from the token file's "pairs" list: [fg, bg] or [fg, bg, size]
 where size is "normal" (4.5:1), "large" (3:1; >=24px or >=18.66px bold) or
-"ui" (3:1; input borders, focus rings, meaningful icons). Every pair is
+"ui" (3:1; input borders, focus rings, meaningful icons). A fourth item names
+the backdrop a translucent background (#rrggbbaa, e.g. glass) is composited
+over; it defaults to "bg". Every pair is
 checked in "color" (light) and, if present, "color-dark" (roles missing from
 color-dark inherit the light value). Exit 1 if any pair fails AA, 2 on bad input.
 """
@@ -17,18 +19,32 @@ import json
 import re
 import sys
 
-HEX = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+HEX = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 NEEDS = {"normal": (4.5, 7.0), "large": (3.0, 4.5), "ui": (3.0, 3.0)}
 
 
-def parse_hex(value):
+def parse_rgba(value):
+    """'#rgb', '#rrggbb' or '#rrggbbaa' -> (r, g, b, alpha 0..1)."""
     m = HEX.match(value.strip())
     if not m:
         raise ValueError("not a hex colour: %r" % value)
     h = m.group(1)
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    alpha = int(h[6:8], 16) / 255.0 if len(h) == 8 else 1.0
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (alpha,)
+
+
+def parse_hex(value):
+    return parse_rgba(value)[:3]
+
+
+def over(top, below):
+    """Composite a translucent colour over an opaque one in sRGB, as browsers do."""
+    r, g, b, a = parse_rgba(top)
+    br, bg_, bb = parse_hex(below)
+    mix = (round(r * a + br * (1 - a)), round(g * a + bg_ * (1 - a)), round(b * a + bb * (1 - a)))
+    return "#%02x%02x%02x" % mix
 
 
 def luminance(rgb):
@@ -92,23 +108,39 @@ def default_pairs(cols):
 
 
 def check(theme, cols, pairs, min_lc=0.0):
+    """Pairs: [fg, bg], [fg, bg, size] or [fg, bg, size, backdrop]. A translucent bg
+    (#rrggbbaa, e.g. glass) is composited over the backdrop token (default "bg")."""
     rows = []
     for p in pairs:
         if len(p) < 2:
             continue
         fg, bg = p[0], p[1]
         size = p[2] if len(p) > 2 and p[2] in NEEDS else "normal"
+        under = p[3] if len(p) > 3 else "bg"
         row = {"theme": theme, "fg": fg, "bg": bg, "size": size}
-        if fg not in cols or bg not in cols:
+        if fg not in cols or bg not in cols or under not in cols and len(p) > 3:
             row["error"] = "unknown token"
-        else:
-            r = ratio(cols[fg], cols[bg])
-            aa, aaa = NEEDS[size]
-            lc = abs(apca(cols[fg], cols[bg]))
-            # APCA applies to text; "ui" pairs (borders, rings) are judged by WCAG 3:1 only.
-            lc_ok = size == "ui" or lc >= min_lc
-            row.update(ratio=round(r, 2), lc=round(lc, 1), aa=r >= aa and lc_ok,
-                       aaa=r >= aaa and lc_ok, fg_hex=cols[fg], bg_hex=cols[bg])
+            rows.append(row)
+            continue
+        if parse_rgba(cols[fg])[3] < 1:
+            row["error"] = "translucent text colour; give text an opaque token"
+            rows.append(row)
+            continue
+        bg_hex = cols[bg]
+        if parse_rgba(bg_hex)[3] < 1:
+            if under not in cols:
+                row["error"] = "translucent background needs a backdrop token"
+                rows.append(row)
+                continue
+            bg_hex = over(bg_hex, cols[under])
+            row["bg"] = "%s/%s" % (bg, under)
+        r = ratio(cols[fg], bg_hex)
+        aa, aaa = NEEDS[size]
+        lc = abs(apca(cols[fg], bg_hex))
+        # APCA applies to text; "ui" pairs (borders, rings) are judged by WCAG 3:1 only.
+        lc_ok = size == "ui" or lc >= min_lc
+        row.update(ratio=round(r, 2), lc=round(lc, 1), aa=r >= aa and lc_ok,
+                   aaa=r >= aaa and lc_ok, fg_hex=cols[fg], bg_hex=bg_hex)
         rows.append(row)
     return rows
 

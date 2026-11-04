@@ -7,11 +7,9 @@
 <meta name="color-scheme" content="dark light" />
 <title>Jarvis · Design system</title>
 <style>
-@font-face { font-family: "JetBrains Mono Variable"; font-weight: 100 800; font-display: swap;
-  src: url(data:font/woff2;base64,@MONO_WOFF2@) format("woff2"); }
+/*@FONTS@*/
 /*@TOKENS@*/
 :root {
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --sb: var(--layout-sidebar);
   --hairline: 1px;
 }
@@ -51,7 +49,6 @@ svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
   position: relative; display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 10px;
   border-radius: var(--radius-sm); color: var(--color-text-muted); text-decoration: none;
   font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
-  transition: background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease);
 }
 .nav a:hover { background: var(--color-surface-raised); color: var(--color-text); }
 .nav a[aria-current="page"] { color: var(--color-accent); background: var(--color-surface-raised); }
@@ -75,7 +72,7 @@ svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
   background: var(--color-bg); border-bottom: var(--hairline) solid var(--color-border);
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .topbar { background: color-mix(in oklch, var(--color-bg) 82%, transparent); -webkit-backdrop-filter: blur(32px) saturate(190%); backdrop-filter: blur(32px) saturate(190%); }
+  .topbar, .sidebar { box-shadow: inset 0 1px 0 var(--color-glass-rim); background: var(--color-glass); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); }
 }
 .topbar .spacer { flex: 1; }
 .topbar .menu-btn { display: none; }
@@ -123,7 +120,7 @@ section.block > h2 { font-size: var(--text-headline); line-height: var(--text-he
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 14px;
   border-radius: var(--radius-sm); border: var(--hairline) solid transparent; cursor: pointer;
   font-size: var(--text-sm); font-weight: 600; white-space: nowrap; text-decoration: none;
-  transition: background-color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+  transition: transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
 }
 .btn:active:not(:disabled) { transform: scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -149,7 +146,6 @@ section.block > h2 { font-size: var(--text-headline); line-height: var(--text-he
 .input, .select, .textarea {
   width: 100%; min-height: 36px; padding: 0 12px; border-radius: var(--radius-sm);
   background: var(--color-surface-sunken); border: 1px solid var(--color-border-input); color: var(--color-text);
-  transition: border-color var(--motion-fast) var(--motion-ease);
 }
 .textarea { padding: 8px 12px; min-height: 88px; resize: vertical; }
 .input::placeholder, .textarea::placeholder { color: var(--color-text-subtle); opacity: 1; }
@@ -164,7 +160,7 @@ section.block > h2 { font-size: var(--text-headline); line-height: var(--text-he
 fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 10px; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); cursor: pointer; }
 .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--color-accent); }
-.switch input { appearance: none; -webkit-appearance: none; position: relative; width: 36px; height: 20px; margin: 0; border-radius: var(--radius-pill); background: var(--color-surface-sunken); border: 1px solid var(--color-border-input); cursor: pointer; transition: background-color var(--motion-fast) var(--motion-ease); }
+.switch input { appearance: none; -webkit-appearance: none; position: relative; width: 36px; height: 20px; margin: 0; border-radius: var(--radius-pill); background: var(--color-surface-sunken); border: 1px solid var(--color-border-input); cursor: pointer; }
 .switch input::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-text-muted); transition: transform var(--motion-base) var(--motion-ease); }
 .switch input:checked { background: var(--color-accent); border-color: var(--color-accent); }
 .switch input:checked::after { transform: translateX(16px); background: var(--color-on-accent); }
@@ -605,7 +601,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
   document.addEventListener("click", e => { if (!wsMenu.hidden && !e.target.closest(".ws")) wsOpen(false); });
 
   /* Colour roles, read from the live tokens. */
-  const ROLES = ["bg", "surface", "surface-raised", "surface-sunken", "border", "border-input", "text", "text-muted", "text-subtle", "accent", "accent-hover", "on-accent", "focus", "danger", "success", "warning", "info", "approval"];
+  const ROLES = ["bg", "surface", "surface-raised", "surface-sunken", "border", "border-input", "text", "text-muted", "text-subtle", "accent", "accent-hover", "on-accent", "focus", "danger", "success", "warning", "info", "approval", "glass", "glass-rim", "glass-edge"];
   function swatches() {
     const box = $("#swatches"); box.replaceChildren();
     const cs = getComputedStyle(root);

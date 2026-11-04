@@ -75,6 +75,19 @@ class Contrast(unittest.TestCase):
         ui = contrast.check("light", {"t": "#767676", "b": "#ffffff"}, [["t", "b", "ui"]], 80)
         self.assertTrue(ui[0]["aa"])
 
+    def test_glass_composited_over_backdrop(self):
+        cols = {"text": "#ffffff", "glass": "#00000080", "bg": "#ffffff", "dark": "#000000"}
+        self.assertEqual(contrast.over("#00000080", "#ffffff"), "#7f7f7f")
+        on_white = contrast.check("dark", cols, [["text", "glass", "normal", "bg"]])[0]
+        on_black = contrast.check("dark", cols, [["text", "glass", "normal", "dark"]])[0]
+        self.assertEqual(on_white["bg"], "glass/bg")
+        self.assertFalse(on_white["aa"])
+        self.assertTrue(on_black["aa"])
+
+    def test_translucent_text_is_refused(self):
+        rows = contrast.check("x", {"t": "#ffffff80", "b": "#000000"}, [["t", "b"]])
+        self.assertIn("error", rows[0])
+
     def test_unknown_token_fails(self):
         rows = contrast.check("light", {"a": "#fff"}, [["a", "nope"]])
         self.assertTrue(contrast.failed(rows[0]))
@@ -112,6 +125,26 @@ class Build(unittest.TestCase):
         self.assertIn("--color-bg: %s;" % t["color-dark"]["bg"], root)
         self.assertIn(':root[data-theme="light"]', css)
         self.assertNotIn("prefers-color-scheme", css)
+
+    def test_glass_and_alpha_output(self):
+        self.assertEqual(build_tokens.oklch("#00000080"), "oklch(0.0% 0.000 0.0 / 0.50)")
+        t = {"color": {"bg": "#ffffff", "glass": "#ffffffc0", "surface-raised": "#ffffff"},
+             "glass": {"blur": 16, "saturate": 180},
+             "motion": {"fast": "120ms", "slow": "420ms", "ease": "x", "ease-spring": "y"}}
+        css = build_tokens.build_css(t)
+        self.assertIn("--glass-blur: 16px;", css)
+        self.assertIn("--glass-saturate: 180%;", css)
+        self.assertIn("prefers-reduced-transparency", css)
+        self.assertIn("--color-glass: var(--color-surface-raised)", css)
+        self.assertIn(':root, :root[data-theme="light"], :root[data-theme="dark"] {', css)
+        self.assertIn("--motion-fast: 0ms; --motion-slow: 0ms;", css)
+        self.assertNotIn("--motion-ease-spring: 0ms", css)
+
+    def test_language_type_scale(self):
+        t = {"color": {"bg": "#ffffff"}, "type-ar": {"_note": "x", "base": {"size": 15, "line": 26, "weight": 400}}}
+        css = build_tokens.build_css(t)
+        self.assertIn(":root:lang(ar), :lang(ar) {", css)
+        self.assertIn("--text-base--line-height: 26px;", css)
 
     def test_tailwind4(self):
         with tempfile.TemporaryDirectory() as d:

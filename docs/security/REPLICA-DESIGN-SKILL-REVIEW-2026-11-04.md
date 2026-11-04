@@ -13,17 +13,17 @@ It is a rewrite of `replica-design` from [Jakeschincariol/replica-skill](https:/
 1. The upstream repository was cloned into an empty scratch folder and **read, not run**. The sandbox's permission check refused to run its tests or tools, and that refusal was kept.
 2. Every file in the new skill was written in this session and read in full before it was committed.
 3. Imports, process starts, network calls, dynamic code, file writes and prompt-injection phrases were checked by hand and with `node scripts/skillspector-audit.mjs --strict .claude/skills/replica-design`.
-4. The tools were then run here on test fixtures only: `python3 -m unittest discover -s tests` (13 tests), plus a real Chromium screenshot for `sample.py`.
+4. The tools were then run here on test fixtures only: `python3 -m unittest discover -s tests` (13 tests at ADR-132, 17 at ADR-133), plus a real Chromium screenshot for `sample.py`.
 
 | File | SHA-256 (first 16) |
 |---|---|
 | SKILL.md | 689fe7858d7f22a7 |
-| contrast.py | f6c638925aa00aaf |
-| build_tokens.py | ea3b1351f6ab4297 |
+| contrast.py | bceca18abdc26be7 (ADR-133) |
+| build_tokens.py | 9a8eca49f1380edf (ADR-133) |
 | sample.py | 2f4bc40dbee5c734 |
 | templates/tokens.json | fee17fed117f66c4 |
 | templates/components.md | c87d195b312afbfe |
-| tests/test_tools.py | 85a579615b0c77b3 |
+| tests/test_tools.py | 52c75bf81d1823c4 (ADR-133) |
 | upstream replica-design/SKILL.md @77c9436 (read only) | 34f0375bef33a713 |
 | upstream replica-design/contrast.py @77c9436 (read only) | 2c4b57890fddb799 |
 
@@ -50,3 +50,13 @@ It is a rewrite of `replica-design` from [Jakeschincariol/replica-skill](https:/
 
 - Running the **other ten** upstream Replica skills (recon, build, backend, deploy and the rest) is not covered by this review. Their scripts were not reviewed and are not in the repo.
 - A future update of this skill gets a new review if it adds an import outside the standard library, a network call or a process start.
+
+## Update, ADR-133 (same day)
+
+Re-read after these changes:
+
+- `contrast.py` accepts `#rrggbbaa` and composites a translucent background over a named backdrop token.
+- `build_tokens.py` writes `oklch(… / a)` for alpha colours. It also adds a `prefers-reduced-transparency` block, `:lang(xx)` type scales from `type-xx` keys, and reduced-motion for every duration.
+
+Both still import only the standard library (`build_tokens.py` adds nothing new). They make no network calls, start no processes, and write the same two files as before. SkillSpector `--strict` on the folder reports 0 findings. **Verdict unchanged: pass.**
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds jarvis/design/index.html (the /design route, S12, ADR-132) from page.src.tmpl:
-// inlines the generated tokens.css and the vendored JetBrains Mono (OFL) so the page works
+// inlines the generated tokens.css and the vendored fonts (Inter, Geist Mono, Readex Pro; OFL) so the page works
 // from file:// with a strict CSP and no network. Node standard library only.
 //
 //   python3 .claude/skills/replica-design/build_tokens.py jarvis/replica/design/tokens.json --oklch
@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fontFaceCss } from "./lib/fonts.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
@@ -17,13 +18,12 @@ const src = join(here, "..", "design", "page.src.tmpl");
 const out = join(here, "..", "design", "index.html");
 const tokens = readFileSync(join(here, "..", "replica", "design", "tokens.css"), "utf8")
   .replace(/^\/\*[^*]*Generated[^*]*\*\/\s*/, "").trim();
-const mono = readFileSync(join(repo, "site-landing", "fonts", "jetbrains-mono-latin-wght-normal.woff2")).toString("base64");
 
 let html = readFileSync(src, "utf8");
-for (const marker of ["/*@TOKENS@*/", "@MONO_WOFF2@"]) {
+for (const marker of ["/*@TOKENS@*/", "/*@FONTS@*/"]) {
   if (!html.includes(marker)) { console.error(`build-design-page: marker ${marker} missing in page.src.tmpl`); process.exit(2); }
 }
-html = html.replace("/*@TOKENS@*/", tokens).replace("@MONO_WOFF2@", mono);
+html = html.replace("/*@TOKENS@*/", () => tokens).replace("/*@FONTS@*/", () => fontFaceCss(repo));
 
 // Keep the CSP the audit already pinned in index.html, so --check compares content only.
 const cspRe = /<meta http-equiv="Content-Security-Policy" content="[^"]*" \/>/;

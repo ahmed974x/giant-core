@@ -323,6 +323,16 @@
       "rule": "SEC-EXEC",
       "path": "scripts/test-apex.mjs",
       "reason": "Test only (ADR-127): spawnSync(process.execPath, [scripts/build-apex-inline.mjs, --check]) with no shell and no user input; it checks that the APEX page carries the current engine and registry copy."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "jarvis/app/index.html",
+      "reason": "Stores the theme, direction and sidebar choice, the labelled sample workspace (jarvis-sample-v1: sample agents, runs, approvals, events), the Studio draft (jarvis-studio-v1: section text and colours) and the Skill Mixer order (jarvis-mix-v1), ADR-133. No credentials, keys or vault entries: Jarvis has no key field. Every access is wrapped in try/catch and the page works without storage."
+    },
+    {
+      "rule": "SEC-STORAGE",
+      "path": "jarvis/design/index.html",
+      "reason": "Stores the theme, direction and sidebar choice only (ADR-132); no credentials. Wrapped in try/catch; the page works without storage."
     }
   ]
 }

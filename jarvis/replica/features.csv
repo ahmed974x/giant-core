@@ -1,29 +1,41 @@
 feature,area,priority,original,clone,notes
-App shell with sidebar top bar and content slot,shell,must,yes,no,S01
-Collapsible sidebar (expanded / icon rail / mobile drawer),shell,must,yes,no,S01
-Workspace switcher,shell,must,yes,no,S01
-Command palette (Ctrl+K / Cmd+K),shell,must,yes,no,S01 F05
-Dark theme default with light theme toggle,shell,must,yes,no,user brief
-RTL-ready layout (logical properties),shell,must,yes,no,user brief: English now Arabic later
-Overview with stat tiles and activity feed,overview,must,yes,no,S02
-Agents list with status filter and search,agents,must,yes,no,S03
-Agent detail with tabs (config tools runs),agents,must,yes,no,S04
-Create and edit an agent with validation,agents,must,yes,no,S05 F01
-Run an agent and watch the run timeline,runs,must,yes,no,S08 F01
-Approvals inbox with approve and reject (reason required),approvals,must,yes,no,S09 F02
-Approval count badge in the sidebar,approvals,must,yes,no,S01 F02
-Empty loading and error states on every list,quality,must,yes,no,all lists
-Keyboard access and visible focus everywhere,quality,must,yes,no,WCAG 2.2 AA
-Contrast WCAG AA and APCA Lc 60 in both themes,quality,must,yes,no,DESIGN.md gate
-Workflows list,workflows,should,yes,no,S06
-Workflow canvas with inspector,workflows,should,yes,no,S07 F03
-Live log streaming in the run view,runs,should,yes,no,S08
-Logs and audit with filters,logs,should,yes,no,S10
-Settings: workspace members and roles,settings,should,yes,no,S11
-Settings: model and API keys stored in the vault only,settings,should,yes,no,AGENTS.md §4
-Toasts for async results,quality,should,yes,no,
-Design system page /design,quality,should,yes,no,S12
-Cost and duration per run,runs,should,yes,no,S08
+App shell with sidebar top bar and content slot,shell,must,yes,yes,S01
+Collapsible sidebar (expanded / icon rail / mobile drawer),shell,must,yes,yes,S01
+Workspace switcher,shell,must,yes,partial,S01; phase 1 has one workspace; its name shows in the top bar; switcher pattern built on /design
+Command palette (Ctrl+K / Cmd+K),shell,must,yes,yes,S01 F05
+Dark theme default with light theme toggle,shell,must,yes,yes,user brief
+RTL-ready layout (logical properties),shell,must,yes,yes,user brief: English now Arabic later
+Overview with stat tiles and activity feed,overview,must,yes,yes,S02
+Agents list with status filter and search,agents,must,yes,yes,S03
+Agent detail with tabs (config tools runs),agents,must,yes,yes,S04
+Create and edit an agent with validation,agents,must,yes,partial,S05 F01; create with validation done; editing comes with the phase 2 API
+Run an agent and watch the run timeline,runs,must,yes,partial,"S08 F01; the timeline and log are live, but the run is simulated (no model or tool called) until the phase 2 runtime"
+Approvals inbox with approve and reject (reason required),approvals,must,yes,yes,S09 F02
+Approval count badge in the sidebar,approvals,must,yes,yes,S01 F02
+Empty loading and error states on every list,quality,must,yes,yes,all lists; Settings → Test error states shows every error state
+Keyboard access and visible focus everywhere,quality,must,yes,yes,WCAG 2.2 AA; flow tests drive the palette and tabs by keyboard
+Contrast WCAG AA and APCA Lc 60 in both themes,quality,must,yes,yes,DESIGN.md gate; 118 token pairs (contrast.py) and 108 (verify-contrast.mjs)
+Studio split screen with a sandboxed live preview (srcdoc and no network),studio,must,yes,yes,S13 F06
+Studio AR RTL / EN LTR switch flips the preview,studio,must,yes,yes,S13
+Studio width switch 375 / 768 / 1440,studio,must,yes,yes,S13
+Studio live WCAG and APCA contrast badge,studio,must,yes,yes,S13
+Studio blocks on/off and reorder with text editing,studio,must,yes,yes,S13
+Skill Mixer lists installed skills with their SkillSpector status,skills,must,yes,yes,S14 F07; snapshot taken at build time
+Skill Mixer builds an ordered plan to copy,skills,must,yes,yes,S14 F07
+Locked approval cards for publish / permissions / money (no self-approval),approvals,must,yes,yes,AGENTS.md §1; also install and outbound; enforced in schema.sql too
+Workflows list,workflows,should,yes,no,S06; phase 2
+Workflow canvas with inspector,workflows,should,yes,no,S07 F03; phase 2
+Live log streaming in the run view,runs,should,yes,partial,S08; updates live from the simulated run; real streaming is phase 2 (SSE on loopback)
+Logs and audit with filters,logs,should,yes,yes,S10
+Settings: workspace members and roles,settings,should,yes,partial,S11; members listed; inviting and roles are phase 2
+Settings: model and API keys stored in the vault only,settings,should,yes,yes,AGENTS.md §4; Jarvis has no key field at all
+Toasts for async results,quality,should,yes,yes,
+Design system page /design,quality,should,yes,yes,S12
+Cost and duration per run,runs,should,yes,partial,S08; duration shown; cost needs the phase 2 runtime
+Studio downloads the site as one HTML file with a pinned CSP,studio,should,yes,yes,S13; the file renders alone with no CSP errors (test-app.mjs)
+Studio theme presets and custom colours,studio,should,yes,yes,S13
+Check a new SKILL.md in the browser against the SkillSpector rules,skills,should,yes,yes,S14 F08
+Liquid Glass chrome with a reduced-transparency fallback,shell,should,yes,yes,ADR-133
 Arabic translation,i18n,could,yes,no,after RTL layout
 Run comparison side by side,runs,could,yes,no,
 Agent templates gallery,agents,could,yes,no,

@@ -8,7 +8,8 @@ Standard library only.
     python3 build_tokens.py tokens.json --oklch                   # colours as oklch(), hex in a comment
 
 "theme-default": "dark" in tokens.json makes :root dark whatever the OS says,
-with light only under [data-theme="light"].
+with light only under [data-theme="light"]. "type-ar" (any "type-xx") writes
+that language's sizes and line heights under :lang(xx).
 
 Outputs next to tokens.json (or --out):
   tokens.css          :root light vars, dark via prefers-color-scheme and
@@ -31,6 +32,7 @@ def oklch(hexv):
     h = hexv.lstrip("#")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
+    alpha = int(h[6:8], 16) / 255.0 if len(h) == 8 else None
     def lin(c):
         c = c / 255.0
         return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
@@ -43,6 +45,8 @@ def oklch(hexv):
     B = 0.0259040371 * lm + 0.7827717662 * mm - 0.8086757660 * sm
     C = (A * A + B * B) ** 0.5
     H = (math.degrees(math.atan2(B, A)) + 360) % 360 if C > 0.0005 else 0.0
+    if alpha is not None:
+        return "oklch(%.1f%% %.3f %.1f / %.2f)" % (L * 100, C if C > 0.0005 else 0, H, alpha)
     return "oklch(%.1f%% %.3f %.1f)" % (L * 100, C if C > 0.0005 else 0, H)
 
 
@@ -77,6 +81,11 @@ def static_vars(t):
         lines.append("--motion-%s: %s;" % (k, v))
     for k, v in t.get("layout", {}).items():
         lines.append("--layout-%s: %s;" % (k, px(v)))
+    glass = t.get("glass", {})
+    if "blur" in glass:
+        lines.append("--glass-blur: %s;" % px(glass["blur"]))
+    if "saturate" in glass:
+        lines.append("--glass-saturate: %s%%;" % glass["saturate"])
     return lines
 
 
@@ -110,8 +119,29 @@ def build_css(t, tailwind4=False):
                 color_block(dark), "}",
                 "", ":root[data-theme=\"light\"] {", "  color-scheme: light;",
                 color_block(light), "}"]
-    out += ["", "@media (prefers-reduced-motion: reduce) {",
-            "  :root { --motion-fast: 0ms; --motion-base: 0ms; }", "}"]
+    # "type-ar", "type-he", …: per-language line heights and sizes under :lang(xx).
+    for key in sorted(k for k in t if k.startswith("type-") and len(k) == 7):
+        lang = key[5:]
+        rows = []
+        for k, v in t[key].items():
+            if k.startswith("_"):
+                continue
+            rows.append("  --text-%s: %s;" % (k, px(v["size"])))
+            rows.append("  --text-%s--line-height: %s;" % (k, px(v["line"])))
+            rows.append("  --text-%s--font-weight: %s;" % (k, v["weight"]))
+        out += ["", ":root:lang(%s), :lang(%s) {" % (lang, lang)] + rows + ["}"]
+    if t.get("glass"):
+        # Glass is opt-in per element (.glass); people who ask for less transparency get the solid surface.
+        solid = t["glass"].get("fallback", "surface-raised")
+        out += ["", "@media (prefers-reduced-transparency: reduce) {",
+                # Same specificity as the theme blocks and later in the file, so it wins in every theme.
+                "  :root, :root[data-theme=\"light\"], :root[data-theme=\"dark\"] {",
+                "    --color-glass: var(--color-%s); --glass-blur: 0px; --glass-saturate: 100%%;" % solid,
+                "  }", "}"]
+    durations = [k for k in t.get("motion", {}) if k != "ease" and not k.startswith("ease")]
+    if durations:
+        out += ["", "@media (prefers-reduced-motion: reduce) {",
+                "  :root { %s }" % " ".join("--motion-%s: 0ms;" % k for k in durations), "}"]
     if tailwind4:
         out += ["", "/* Tailwind v4: utilities read these. Values point at the runtime vars. */",
                 "@theme inline {"]
@@ -138,7 +168,7 @@ def build_tailwind(t):
         "borderRadius": {k: "var(--radius-%s)" % k for k in t.get("radius", {})},
         "boxShadow": {k: "var(--shadow-%s)" % k for k in t.get("shadow", {})},
         "transitionDuration": {k: "var(--motion-%s)" % k
-                               for k in t.get("motion", {}) if k != "ease"},
+                               for k in t.get("motion", {}) if not k.startswith("ease")},
         "maxWidth": {"content": "var(--layout-content-max)"} if "content-max" in t.get("layout", {}) else {},
     }
     colors = t.get("color", {})

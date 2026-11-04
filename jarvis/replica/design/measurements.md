@@ -1,67 +1,99 @@
 # Measurements: Jarvis
 
-**Every value here is estimated, not sampled.** `replica/screens/` is empty:
-Jarvis is an original product that borrows a common dashboard *layout
-pattern*, and the cloud sandbox has no browser session on any target. Values
-come from the brief (dark first, high contrast, electric-blue accent), from
-`DESIGN.md` (binding in this repo) and from the contrast gate. When reference
-screenshots are added, run `sample.py` on them and replace the "estimated"
-cells with the screen ID.
+Final values (ADR-133). Each value names where it comes from. Five sources:
 
-## Colour roles
+- **[font]** read from the vendored font files with `node jarvis/scripts/font-metrics.mjs jarvis/fonts/*.woff2`.
+- **[gate]** set or moved until `contrast.py --apca 60` and `audits/verify-contrast.mjs` pass (WCAG ≥ 4.5:1 and APCA Lc ≥ 60 on every text pair).
+- **[DESIGN]** a rule in `DESIGN.md`.
+- **[brief]** Ahmad's request: dark first, high contrast, electric-blue accent, Liquid Glass, spring motion.
+- **[pattern]** the dashboard layout pattern in `recon.md`.
 
-| role | dark (default) | light (toggle) | source |
+No reference screenshots of another product were measured. `replica/screens/` stays empty.
+
+## Fonts [font]
+
+| face | file | licence | UPM | ascent | descent | natural line | cap height | x-height |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Inter Variable (wght 100–900) | `jarvis/fonts/inter-latin-wght-normal.woff2` (48.3 KB) | OFL 1.1 | 2048 | 0.969 | 0.241 | 1.210 | 0.728 | 0.546 |
+| Geist Mono Variable (wght 100–900) | `jarvis/fonts/geist-mono-latin-wght-normal.woff2` (23.1 KB) | OFL 1.1 | 1000 | 1.005 | 0.295 | 1.300 | 0.710 | 0.530 |
+| Readex Pro Variable, Arabic (wght 160–700) | `jarvis/fonts/readex-pro-arabic-wght-normal.woff2` (22.9 KB) | OFL 1.1 | 1000 | 1.000 | 0.250 | 1.250 | 0.700 | 0.525 |
+
+All three come from Fontsource 5.3.0 (`@fontsource-variable/*`, published 2026-07-19). The packages were downloaded with `npm pack`, so no install scripts ran. Each licence is beside the font as `OFL-*.txt`.
+
+- **Arabic face.** Readex Pro, not IBM Plex Sans Arabic. Readex is one variable file; Plex Arabic ships one static file per weight.
+- **Mixing.** Inter and Readex have nearly the same x-height (0.546 and 0.525), so mixed Arabic/English lines sit on one optical size without `size-adjust`.
+- **Fallback.** `Inter Fallback` maps Arial, Helvetica Neue, Liberation Sans or Roboto onto Inter's measured ascent (96.9%) and descent (24.1%). If the embedded face fails, line boxes do not move.
+
+## Type scale
+
+| step | Latin size / line | Arabic size / line (`:lang(ar)`) | weight | source |
+| --- | --- | --- | --- | --- |
+| caption | 12 / 16 | 12 / 20 | 500 | [DESIGN] nothing below 12px |
+| sm | 13 / 20 | 13 / 22 | 400 | [DESIGN] footnote 13 |
+| base | 15 / 22 | 15 / 26 | 400 | [DESIGN] body 15 |
+| headline | 17 / 24 | 17 / 28 | 600 | [DESIGN] headline 17 |
+| title | 22 / 28 | 22 / 34 | 650 | [DESIGN] title clamp range 20–24 |
+| display | 32 / 38 | 32 / 46 | 700 | [DESIGN] large clamp range 28–40 |
+
+How the line heights were set [font]:
+
+- **Latin.** Lines are 1.19–1.47 × size. That is at least Inter's natural line (1.21) for text steps, and slightly under it for display, where there is one line and no descender clash.
+- **Arabic.** Lines are 1.44–1.73 × size. Readex's natural line is 1.25em, but Arabic marks (harakat) sit above the ascender and below the descender, so body text gets about 0.45em more.
+- **Letter-spacing.** Arabic keeps 0 [DESIGN §2].
+
+## Colour roles [gate] [brief] [DESIGN]
+
+| role | dark (default) | light (toggle) | note |
 | --- | --- | --- | --- |
-| bg | `#090b10` | `#f4f6f9` | estimated; near-black with a blue cast, not pure black |
-| surface | `#10141b` | `#ffffff` | estimated; sidebar, cards |
-| surface-raised | `#161b24` | `#ffffff` | estimated; popovers, dialogs, hovered rows |
-| surface-sunken | `#06080b` | `#eceff4` | added role: log viewer, code blocks, inputs inside cards |
-| border | `#242b37` | `#dfe3ea` | estimated; hairlines (decorative, not gated) |
-| border-input | `#636d7e` | `#7d8696` | tuned to ≥ 3:1 on bg and surface (gate: ui) |
-| text | `#eef2f8` | `#0f131a` | gate |
-| text-muted | `#b9c1cd` | `#454e5c` | gate: APCA Lc ≥ 60 |
-| text-subtle | `#afb7c3` | `#535c6b` | raised until Lc ≥ 60 on surface-raised; hierarchy comes from size and weight, not from dimmer grey |
-| accent | `#77bcff` | `#0b5ed7` | electric blue; the one accent (DESIGN.md §1). Dark value lightened from `#4fa8ff` to pass Lc 60 |
-| accent-hover | `#9ccfff` | `#094fb6` | lighter on dark, darker on light |
-| on-accent | `#04101f` | `#ffffff` | dark text on the bright fill in dark mode (Lc 64) |
+| bg | `#090b10` | `#f4f6f9` | near-black with a blue cast; pure black is reserved for OMEGA's OLED theme |
+| surface | `#10141b` | `#ffffff` | sidebar, cards |
+| surface-raised | `#161b24` | `#ffffff` | popovers, dialogs, hovered rows; also the solid glass fallback |
+| surface-sunken | `#06080b` | `#eceff4` | inputs, logs, code, diffs |
+| border | `#242b37` | `#dfe3ea` | decorative hairline |
+| border-input | `#636d7e` | `#7d8696` | ≥ 3:1 on bg and surface (ui) |
+| text | `#eef2f8` | `#0f131a` | |
+| text-muted | `#b9c1cd` | `#454e5c` | |
+| text-subtle | `#afb7c3` | `#535c6b` | raised until Lc ≥ 60 on raised surfaces; hierarchy comes from size and weight |
+| accent | `#77bcff` | `#0b5ed7` | electric blue, the one accent |
+| accent-hover | `#9ccfff` | `#094fb6` | |
+| on-accent | `#04101f` | `#ffffff` | |
 | focus | `#8cc6ff` | `#0b5ed7` | 2px ring, 2px offset |
 | danger / on-danger | `#ff9a9a` / `#1d0404` | `#b42323` / `#ffffff` | status only |
-| success | `#4fdba0` | `#116a43` | status only: running ok, succeeded |
-| warning | `#f7c066` | `#8a4f00` | status only: retrying, checking |
-| info | `#6cc8ff` | `#0b5ed7` | status only: queued |
-| approval | `#c2adff` | `#6234c4` | added role: «awaiting approval», the repo's violet meaning (DESIGN.md §1) |
+| success | `#4fdba0` | `#116a43` | status only |
+| warning | `#f7c066` | `#8a4f00` | status only |
+| info | `#6cc8ff` | `#0b5ed7` | status only |
+| approval | `#c2adff` | `#6234c4` | violet, only for «awaiting approval» and locked cards |
 
-No gradients. The brief asked for neon blue *or* purple accents. DESIGN.md
-allows one accent and bans the purple-blue "AI gradient", so blue is the
-accent and violet appears only as the approval status colour.
+The gate checks 118 pairs: 59 per theme, including every text colour on glass over bg, surface and surface-raised. All 118 pass.
 
-## Type
+## Liquid Glass [brief] [DESIGN]
 
-| step | size / line | weight | use |
+| token | dark | light | use |
 | --- | --- | --- | --- |
-| caption | 12 / 16 | 500 | table headers, meta (nothing below 12px, DESIGN.md §2) |
-| sm | 13 / 20 | 400 | dense tables, sidebar items |
-| base | 15 / 22 | 400 | body (DESIGN.md body 15) |
-| headline | 17 / 24 | 600 | card titles |
-| title | 22 / 28 | 650 | page titles |
-| display | 32 / 38 | 700 | overview numbers |
+| glass | `#161b24` at 78% | `#ffffff` at 78% | tint of floating chrome |
+| glass-rim | white at 14% | white at 70% | 1px **inset** highlight on the top edge (the refraction rim) |
+| glass-edge | black at 40% | `#0f131a` at 12% | 1px outer hairline that separates glass from what is behind it |
+| blur / saturate | 16px / 180% | same | `backdrop-filter: blur(16px) saturate(180%)` |
 
-Fonts: Inter → system-ui for Latin UI; Cairo (vendored in `site-landing/fonts`,
-OFL) for Arabic later; JetBrains Mono (vendored, OFL) for ids, logs and
-numbers with `tabular-nums slashed-zero`.
+- **Where glass goes.** Only on sticky or floating chrome: top bar, sidebar, command palette, popovers, toasts [DESIGN §4]. Cards and table rows stay solid.
+- **Reduced transparency.** `prefers-reduced-transparency: reduce` swaps glass for solid `surface-raised` with no blur.
+- **No backdrop-filter support.** `@supports` keeps the solid tint.
+- **No gradients.**
 
-## Spacing, radius, shadow, motion
+## Shape, space and motion
 
-- Base 4px; scale 0 4 8 12 16 20 24 32 48 (DESIGN.md §3).
-- Radius 6 / 8 / 12 / 20 / pill. Concentric: card 20 = 8 padding + 12 inner.
-- Shadows tinted, alpha ≤ 0.09 (DESIGN.md: below 0.1).
-- Motion 120 / 200ms, `cubic-bezier(0.32, 0.72, 0, 1)`, transform and opacity
-  only, off under `prefers-reduced-motion`.
+- **Spacing** [DESIGN §3]: base 4px; scale 0 4 8 12 16 20 24 32 48.
+- **Radius**, concentric (outer = inner + padding) [DESIGN §3]: xs 6, sm 8, md 12, lg 20 = md 12 + 8, xl 28 = lg 20 + 8, pill 999.
+- **Shadows** [DESIGN §1]: tinted, alpha ≤ 0.09.
+- **Motion** [brief]:
+  - Durations 120 / 200 / 420ms.
+  - Easing `cubic-bezier(0.22, 1, 0.36, 1)`, a spring-like ease-out with no overshoot.
+  - Animates `transform` and `opacity` only. All durations become 0 under `prefers-reduced-motion` [DESIGN §4].
 
-## Layout
+## Layout [pattern] [DESIGN]
 
-- Sidebar 248px expanded, 64px rail at 768–1279px, drawer under 768px.
-- Top bar 56px. Table rows 36px. Content max 1440px; wider screens get margins.
-- Touch targets ≥ 44px under `pointer: coarse`.
-- Logical properties only (`margin-inline-start`, `inset-inline-end`), so
-  `dir="rtl"` mirrors the shell without new CSS.
+- **Sidebar:** 248px expanded; a 64px rail at 768–1279px; a drawer under 768px.
+- **Rows:** top bar 56px, table rows 36px.
+- **Width:** content max 1440px.
+- **Touch:** targets ≥ 44px under `pointer: coarse` [DESIGN §5].
+- **Direction:** logical properties only (`margin-inline`, `padding-inline`, `inset-inline`, `border-inline`, `text-align: start`). `dir="rtl"` mirrors the layout with no extra CSS. Numbers keep `direction: ltr; unicode-bidi: isolate`.

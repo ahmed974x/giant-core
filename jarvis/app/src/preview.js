@@ -1,0 +1,141 @@
+// Jarvis Studio preview runtime (ADR-133). Runs inside <iframe sandbox="allow-scripts" srcdoc>
+// (opaque origin, no network: it inherits the parent's CSP, which pins this exact text by hash).
+// It reads the site as JSON and builds the page with createElement + textContent only.
+(() => {
+  "use strict";
+  const TYPES = new Set(["nav", "hero", "features", "stats", "faq", "cta", "footer"]);
+  const HEX = /^#[0-9a-fA-F]{6}$/;
+  const VARS = { bg: "--bg", surface: "--surface", text: "--text", muted: "--muted", accent: "--accent", onAccent: "--on-accent", border: "--border" };
+  const str = (v, max) => (typeof v === "string" ? v.slice(0, max || 400) : "");
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  }
+  function link(text, href, cls) {
+    const a = el("a", cls, text);
+    a.href = href;
+    return a;
+  }
+  function wrapIn(section) {
+    const w = el("div", "wrap");
+    section.appendChild(w);
+    return w;
+  }
+
+  const BUILD = {
+    nav(t) {
+      const s = el("header", "nav");
+      const w = wrapIn(s);
+      w.appendChild(el("span", "brand", str(t.brand, 60)));
+      const ul = el("ul", "links");
+      str(t.links, 200).split(/[,،]/).map(x => x.trim()).filter(Boolean).slice(0, 5).forEach((x, i) => {
+        const li = el("li");
+        li.appendChild(link(x, "#b" + (i + 1)));
+        ul.appendChild(li);
+      });
+      w.appendChild(ul);
+      if (str(t.cta)) w.appendChild(link(str(t.cta, 40), "#cta", "btn primary"));
+      return s;
+    },
+    hero(t) {
+      const s = el("section", "hero");
+      const w = wrapIn(s);
+      if (str(t.kicker)) w.appendChild(el("p", "kicker", str(t.kicker, 80)));
+      w.appendChild(el("h1", null, str(t.title, 160)));
+      if (str(t.body)) w.appendChild(el("p", null, str(t.body, 400)));
+      const a = el("div", "actions");
+      if (str(t.primary)) a.appendChild(link(str(t.primary, 40), "#cta", "btn primary"));
+      if (str(t.secondary)) a.appendChild(link(str(t.secondary, 40), "#b1", "btn ghost"));
+      w.appendChild(a);
+      return s;
+    },
+    features(t) {
+      const s = el("section");
+      const w = wrapIn(s);
+      w.appendChild(el("h2", null, str(t.title, 120)));
+      const g = el("div", "grid");
+      for (let i = 1; i <= 3; i++) {
+        if (!str(t["f" + i + "t"])) continue;
+        const c = el("article", "card");
+        c.append(el("h3", null, str(t["f" + i + "t"], 80)), el("p", null, str(t["f" + i + "b"], 240)));
+        g.appendChild(c);
+      }
+      w.appendChild(g);
+      return s;
+    },
+    stats(t) {
+      const s = el("section", "stats");
+      const w = wrapIn(s);
+      const g = el("div", "grid");
+      for (let i = 1; i <= 3; i++) {
+        if (!str(t["s" + i + "v"])) continue;
+        const c = el("div", "stat");
+        c.append(el("b", null, str(t["s" + i + "v"], 20)), el("span", null, str(t["s" + i + "l"], 60)));
+        g.appendChild(c);
+      }
+      w.appendChild(g);
+      return s;
+    },
+    faq(t) {
+      const s = el("section");
+      const w = wrapIn(s);
+      w.appendChild(el("h2", null, str(t.title, 120)));
+      for (let i = 1; i <= 3; i++) {
+        if (!str(t["q" + i])) continue;
+        const d = el("details");
+        d.append(el("summary", null, str(t["q" + i], 160)), el("p", null, str(t["a" + i], 400)));
+        w.appendChild(d);
+      }
+      return s;
+    },
+    cta(t) {
+      const s = el("section", "cta");
+      s.id = "cta";
+      const w = wrapIn(s);
+      w.appendChild(el("h2", null, str(t.title, 120)));
+      if (str(t.body)) w.appendChild(el("p", null, str(t.body, 300)));
+      if (str(t.button)) w.appendChild(link(str(t.button, 40), "#top", "btn primary"));
+      return s;
+    },
+    footer(t) {
+      const f = el("footer");
+      wrapIn(f).appendChild(el("p", null, str(t.text, 200)));
+      return f;
+    },
+  };
+
+  function render(site) {
+    if (!site || typeof site !== "object" || !Array.isArray(site.blocks)) return;
+    const lang = site.lang === "ar" ? "ar" : "en";
+    const root = document.documentElement;
+    root.lang = lang;
+    root.dir = lang === "ar" ? "rtl" : "ltr";
+    const theme = site.theme || {};
+    for (const [k, v] of Object.entries(VARS)) if (HEX.test(theme[k] || "")) root.style.setProperty(v, theme[k]);
+    document.title = str(site.name, 80) || "Site";
+    const body = document.body;
+    body.id = "top";
+    const keep = [...body.querySelectorAll("script")];
+    body.replaceChildren(...keep);
+    let n = 0, shown = 0;
+    for (const b of site.blocks.slice(0, 20)) {
+      if (!b || !TYPES.has(b.type) || !b.on) continue;
+      const t = (b.t && b.t[lang]) || {};
+      const node = BUILD[b.type](t);
+      if (b.type !== "nav" && b.type !== "footer") node.id = node.id || "b" + (++n);
+      body.insertBefore(node, keep[0] || null);
+      shown++;
+    }
+    if (!shown) body.insertBefore(el("p", "empty", lang === "ar" ? "لا توجد أقسام مفعّلة." : "No sections switched on."), keep[0] || null);
+  }
+
+  const data = document.getElementById("site");
+  try { render(JSON.parse(data ? data.textContent : "null")); } catch (e) { /* bad JSON: leave the page empty */ }
+  window.addEventListener("message", e => {
+    if (e.source !== window.parent || window.parent === window) return;
+    render(e.data);
+  });
+})();
