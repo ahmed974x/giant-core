@@ -34,6 +34,7 @@ To update: re-copy the folders from a fresh clone of the source repo named in ea
 | `stablecoin-cyber-vuln-intel` | DefiLlama liquidity flow index, CIRCL Vulnerability-Lookup with MISP taxonomy tags, the 8-part CSTI and the Open-Meteo Marine sea state at the five straits (ADR-112) |
 | `omega-deep-research-agent` | ORACLE deep research agent: plan, gather, evaluate, write over eight keyless scholarly and news APIs, citation chasing, numbered quotes and the local-model brief check (ADR-114) |
 | `neural-139-inputs-heads` | What enters the 139 inputs, what the 8 heads mean (the $20 base, protected wallet and SHA-256 receipt heads are Director 00 proposals), the frozen oscilloscope and the causal "why" table (ADR-112) |
+| `replica-design` | Clean-room design systems from screenshots: colour sampling, tokens to OKLCH CSS and Tailwind, WCAG + APCA gate; used for Jarvis. Reviewed rewrite of Jakeschincariol/replica-skill (MIT), standard-library tools only (ADR-132) |
 | `local-glm-agent-windows-mcp` | The loopback-only Ollama bridge for local GLM models, the MCP explain tool, the launchers and the locked Windows-MCP setup (ADR-112) |
 
 These hold text rules distilled from taste-skill, web-interface-guidelines, agent-skills and awesome-design-md, and (the five ADR-108 skills) written from this repo's own code and the papers they cite; no third-party scripts were copied.

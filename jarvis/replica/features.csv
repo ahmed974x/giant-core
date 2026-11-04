@@ -1,0 +1,34 @@
+feature,area,priority,original,clone,notes
+App shell with sidebar top bar and content slot,shell,must,yes,no,S01
+Collapsible sidebar (expanded / icon rail / mobile drawer),shell,must,yes,no,S01
+Workspace switcher,shell,must,yes,no,S01
+Command palette (Ctrl+K / Cmd+K),shell,must,yes,no,S01 F05
+Dark theme default with light theme toggle,shell,must,yes,no,user brief
+RTL-ready layout (logical properties),shell,must,yes,no,user brief: English now Arabic later
+Overview with stat tiles and activity feed,overview,must,yes,no,S02
+Agents list with status filter and search,agents,must,yes,no,S03
+Agent detail with tabs (config tools runs),agents,must,yes,no,S04
+Create and edit an agent with validation,agents,must,yes,no,S05 F01
+Run an agent and watch the run timeline,runs,must,yes,no,S08 F01
+Approvals inbox with approve and reject (reason required),approvals,must,yes,no,S09 F02
+Approval count badge in the sidebar,approvals,must,yes,no,S01 F02
+Empty loading and error states on every list,quality,must,yes,no,all lists
+Keyboard access and visible focus everywhere,quality,must,yes,no,WCAG 2.2 AA
+Contrast WCAG AA and APCA Lc 60 in both themes,quality,must,yes,no,DESIGN.md gate
+Workflows list,workflows,should,yes,no,S06
+Workflow canvas with inspector,workflows,should,yes,no,S07 F03
+Live log streaming in the run view,runs,should,yes,no,S08
+Logs and audit with filters,logs,should,yes,no,S10
+Settings: workspace members and roles,settings,should,yes,no,S11
+Settings: model and API keys stored in the vault only,settings,should,yes,no,AGENTS.md §4
+Toasts for async results,quality,should,yes,no,
+Design system page /design,quality,should,yes,no,S12
+Cost and duration per run,runs,should,yes,no,S08
+Arabic translation,i18n,could,yes,no,after RTL layout
+Run comparison side by side,runs,could,yes,no,
+Agent templates gallery,agents,could,yes,no,
+Scheduled runs,runs,could,yes,no,
+Webhooks out,integrations,could,yes,no,
+Usage analytics charts,overview,could,yes,no,
+Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
+Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

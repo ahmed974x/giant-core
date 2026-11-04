@@ -1,0 +1,64 @@
+  AAA   light  17.19:1  Lc  99.7  text             on bg               
+  AAA   light  18.61:1  Lc 105.2  text             on surface          
+  AAA   light  18.61:1  Lc 105.2  text             on surface-raised   
+  AAA   light  16.15:1  Lc  95.5  text             on surface-sunken   
+  AAA   light   7.77:1  Lc  83.5  text-muted       on bg               
+  AAA   light   8.41:1  Lc  89.0  text-muted       on surface          
+  AAA   light   8.41:1  Lc  89.0  text-muted       on surface-raised   
+  AA    light   6.23:1  Lc  77.8  text-subtle      on bg               
+  AA    light   6.75:1  Lc  83.3  text-subtle      on surface          
+  AA    light   6.75:1  Lc  83.3  text-subtle      on surface-raised   
+  AA    light   5.84:1  Lc  83.6  on-accent        on accent           
+  AAA   light   7.49:1  Lc  90.1  on-accent        on accent-hover     
+  AA    light   5.39:1  Lc  72.9  accent           on bg               
+  AA    light   5.84:1  Lc  78.4  accent           on surface          
+  AA    light   5.84:1  Lc  78.4  accent           on surface-raised   
+  AA    light   6.55:1  Lc  86.0  on-danger        on danger           
+  AA    light   6.05:1  Lc  75.3  danger           on bg               
+  AA    light   6.55:1  Lc  80.8  danger           on surface          
+  AA    light   6.13:1  Lc  76.9  success          on bg               
+  AA    light   6.63:1  Lc  82.4  success          on surface          
+  AA    light   6.06:1  Lc  76.6  warning          on bg               
+  AA    light   6.56:1  Lc  82.1  warning          on surface          
+  AA    light   5.39:1  Lc  72.9  info             on bg               
+  AA    light   5.84:1  Lc  78.4  info             on surface          
+  AA    light   6.91:1  Lc  79.7  approval         on bg               
+  AAA   light   7.48:1  Lc  85.1  approval         on surface          
+  PASS  light   3.39:1  Lc  58.8  border-input     on bg               ui
+  PASS  light   3.67:1  Lc  64.3  border-input     on surface          ui
+  PASS  light   5.39:1  Lc  72.9  focus            on bg               ui
+  PASS  light   5.84:1  Lc  78.4  focus            on surface          ui
+  PASS  light   5.84:1  Lc  78.4  focus            on surface-raised   ui
+  AAA   dark   17.52:1  Lc  98.9  text             on bg               
+  AAA   dark   16.43:1  Lc  98.4  text             on surface          
+  AAA   dark   15.37:1  Lc  97.6  text             on surface-raised   
+  AAA   dark   17.85:1  Lc  99.0  text             on surface-sunken   
+  AAA   dark   10.85:1  Lc  68.6  text-muted       on bg               
+  AAA   dark   10.17:1  Lc  68.0  text-muted       on surface          
+  AAA   dark    9.51:1  Lc  67.3  text-muted       on surface-raised   
+  AAA   dark    9.73:1  Lc  62.9  text-subtle      on bg               
+  AAA   dark    9.13:1  Lc  62.3  text-subtle      on surface          
+  AAA   dark    8.54:1  Lc  61.6  text-subtle      on surface-raised   
+  AAA   dark    9.48:1  Lc  64.3  on-accent        on accent           
+  AAA   dark   11.63:1  Lc  74.7  on-accent        on accent-hover     
+  AAA   dark    9.77:1  Lc  63.2  accent           on bg               
+  AAA   dark    9.16:1  Lc  62.7  accent           on surface          
+  AAA   dark    8.57:1  Lc  62.0  accent           on surface-raised   
+  AAA   dark    9.65:1  Lc  64.2  on-danger        on danger           
+  AAA   dark    9.69:1  Lc  62.9  danger           on bg               
+  AAA   dark    9.09:1  Lc  62.4  danger           on surface          
+  AAA   dark   11.22:1  Lc  70.8  success          on bg               
+  AAA   dark   10.52:1  Lc  70.3  success          on surface          
+  AAA   dark   11.89:1  Lc  73.9  warning          on bg               
+  AAA   dark   11.15:1  Lc  73.3  warning          on surface          
+  AAA   dark   10.63:1  Lc  67.7  info             on bg               
+  AAA   dark    9.97:1  Lc  67.2  info             on surface          
+  AAA   dark   10.04:1  Lc  64.6  approval         on bg               
+  AAA   dark    9.42:1  Lc  64.0  approval         on surface          
+  PASS  dark    3.77:1  Lc  25.6  border-input     on bg               ui
+  PASS  dark    3.53:1  Lc  25.1  border-input     on surface          ui
+  PASS  dark   10.91:1  Lc  69.0  focus            on bg               ui
+  PASS  dark   10.23:1  Lc  68.5  focus            on surface          ui
+  PASS  dark    9.57:1  Lc  67.7  focus            on surface-raised   ui
+
+  62 checks, 0 failing AA
