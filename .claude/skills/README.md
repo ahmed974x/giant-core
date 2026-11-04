@@ -35,6 +35,7 @@ To update: re-copy the folders from a fresh clone of the source repo named in ea
 | `omega-deep-research-agent` | ORACLE deep research agent: plan, gather, evaluate, write over eight keyless scholarly and news APIs, citation chasing, numbered quotes and the local-model brief check (ADR-114) |
 | `neural-139-inputs-heads` | What enters the 139 inputs, what the 8 heads mean (the $20 base, protected wallet and SHA-256 receipt heads are Director 00 proposals), the frozen oscilloscope and the causal "why" table (ADR-112) |
 | `replica-architect`, `replica-build`, `replica-test`, `replica-diff` | Stack and schema plans, screen-by-screen builds, flow test plans and parity scores for Jarvis; vendored from Jakeschincariol/replica-skill (MIT) with a giant-core section on top, reviewed in `docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md` (ADR-133) |
+| `replica-backend`, `replica-entrepreneur` | Backend rules (payments and outward actions locked in giant-core) and the linked-quotes review ranker `reviews.py`; vendored from Jakeschincariol/replica-skill (MIT), reviewed in `docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md` (ADR-134) |
 | `replica-design` | Clean-room design systems from screenshots: colour sampling, tokens to OKLCH CSS and Tailwind, WCAG + APCA gate; used for Jarvis. Reviewed rewrite of Jakeschincariol/replica-skill (MIT), standard-library tools only (ADR-132) |
 | `local-glm-agent-windows-mcp` | The loopback-only Ollama bridge for local GLM models, the MCP explain tool, the launchers and the locked Windows-MCP setup (ADR-112) |
 

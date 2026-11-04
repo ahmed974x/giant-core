@@ -58,23 +58,44 @@
     return rel.format(Math.round(s / 86400), "day");
   }
   const timeEl = ts => h("time", { class: "subtle t-caption", datetime: new Date(ts).toISOString(), title: fmtDate.format(ts), text: ago(ts) });
+  const plural = (n, word) => fmtN.format(n) + " " + word + (n === 1 ? "" : "s");
   const dur = ms => (ms == null ? "—" : ms < 1000 ? fmtN.format(ms) + " ms" : (ms / 1000).toFixed(1) + " s");
 
   /* ── Data layer (phase 1: in-page sample data; phase 2 swaps in /api with the same names) ── */
   const LOCKED = { money: "moves money", publish: "publishes to an outside domain", permissions: "changes repository permissions", install: "installs a skill into the repo", outbound: "sends a message outside" };
-  const store = (() => {
+  const TOOL_LIST = ["files.read", "notes.read", "notes.write", "runs.read", "git.log", "web.read"];
+  const WORKSPACES = [["omega-prime", "OMEGA PRIME"], ["jarvis-studio", "Jarvis Studio"], ["giant-core", "giant-core"]];
+
+  // Shared validation (the server runs the same rules and has the final say).
+  function validateAgentInput(input, existing, exceptId) {
+    const errs = {};
+    const name = String(input.name || "").trim();
+    if (!name) errs.name = "Give the agent a name.";
+    else if (name.length > 60) errs.name = "Use 60 characters or fewer.";
+    else if (existing.some(a => a.id !== exceptId && a.name.toLowerCase() === name.toLowerCase())) errs.name = "Another agent already has this name.";
+    if (String(input.rolePrompt || "").length > 2000) errs.rolePrompt = "Keep the role under 2,000 characters.";
+    const ms = Number(input.maxSteps);
+    if (!Number.isInteger(ms) || ms < 1 || ms > 200) errs.maxSteps = "Enter a whole number from 1 to 200.";
+    return errs;
+  }
+  const permsOf = tools => ({ writeNotes: tools.includes("notes.write"), readWeb: tools.includes("web.read") });
+
+  /* Sample store: opened from disk (file://). Labelled sample data, simulated runs, three workspaces. */
+  function sampleStore() {
     const uid = p => p + "_" + Math.random().toString(36).slice(2, 9);
     let db, failMode = false;
     const subs = new Set();
     const MIN = 60000;
-    function seed() {
-      const t = Date.now();
+    function ev(actor, kind, target, at) { return { id: uid("ev"), actor, kind, target, at: at || Date.now() }; }
+    function mkSteps(tools, status, n) { return tools.slice(0, n == null ? tools.length : n + 1).map((tool, i) => ({ idx: i, tool, status, ms: 400 + i * 350, tries: 1 })); }
+    const agent = (id, name, model, rolePrompt, tools, maxSteps, status, createdAt, skills) => ({ id, name, model, rolePrompt, tools, skills: skills || [], maxSteps, permissions: permsOf(tools), status, createdAt });
+    function seedPrime(t) {
       const agents = [
-        { id: "ag_research", name: "Research assistant", model: "Local model (loopback)", rolePrompt: "Reads public pages on a topic and writes a short, sourced summary. Never acts outside the project folder.", tools: ["web.read", "notes.write"], maxSteps: 20, status: "idle", createdAt: t - 9 * 86400000 },
-        { id: "ag_inbox", name: "Inbox triage", model: "Local model (loopback)", rolePrompt: "Sorts incoming notes into topics. Drafts replies but never sends them.", tools: ["notes.read", "notes.write"], maxSteps: 12, status: "idle", createdAt: t - 7 * 86400000 },
-        { id: "ag_weekly", name: "Weekly report", model: "Local model (loopback)", rolePrompt: "Collects the week's runs and writes a plain summary for Director 00.", tools: ["runs.read", "notes.write"], maxSteps: 15, status: "idle", createdAt: t - 5 * 86400000 },
-        { id: "ag_docs", name: "Docs indexer", model: "Local model (loopback)", rolePrompt: "Builds a searchable index of the docs folder.", tools: ["files.read"], maxSteps: 30, status: "failed", createdAt: t - 3 * 86400000 },
-        { id: "ag_release", name: "Release notes writer", model: "Hosted model (key in vault)", rolePrompt: "Turns merged changes into release notes. Publishing them is Ahmad's call.", tools: ["git.log", "notes.write"], maxSteps: 10, status: "idle", createdAt: t - 2 * 86400000 },
+        agent("ag_research", "Research assistant", "Local model (loopback)", "Reads public pages on a topic and writes a short, sourced summary. Never acts outside the project folder.", ["web.read", "notes.write"], 20, "idle", t - 9 * 86400000, ["omega-deep-research-agent"]),
+        agent("ag_inbox", "Inbox triage", "Local model (loopback)", "Sorts incoming notes into topics. Drafts replies but never sends them.", ["notes.read", "notes.write"], 12, "idle", t - 7 * 86400000),
+        agent("ag_weekly", "Weekly report", "Local model (loopback)", "Collects the week's runs and writes a plain summary for Director 00.", ["runs.read", "notes.write"], 15, "idle", t - 5 * 86400000),
+        agent("ag_docs", "Docs indexer", "Local model (loopback)", "Builds a searchable index of the docs folder.", ["files.read"], 30, "failed", t - 3 * 86400000),
+        agent("ag_release", "Release notes writer", "Hosted model (key in vault)", "Turns merged changes into release notes. Publishing them is Ahmad's call.", ["git.log", "notes.write"], 10, "idle", t - 2 * 86400000, ["replica-build"]),
       ];
       const runs = [
         { id: "run_a1", agentId: "ag_research", status: "succeeded", trigger: "manual", createdAt: t - 26 * MIN, startedAt: t - 26 * MIN, finishedAt: t - 25 * MIN, steps: mkSteps(["plan", "web.read", "web.read", "notes.write"], "ok"), log: ["plan  3 steps, budget 20", "web.read  200", "web.read  200", "notes.write  approval requested"], simulated: true },
@@ -92,149 +113,204 @@
         { id: "ap_7", category: "install", agentId: "ag_research", action: "Install a new skill into .claude/skills", payload: "skill: a third-party SKILL.md", status: "pending", createdAt: t - 90 * MIN },
         { id: "ap_8", category: "outbound", agentId: "ag_inbox", action: "Send a reply email", payload: "to: one contact", status: "pending", createdAt: t - 40 * MIN },
       ];
-      const events = [
-        ev("member:owner", "workspace.open", "Personal", t - 9 * 86400000),
-        ev("agent:ag_inbox", "run.succeeded", "run_a3", t - 5 * 60 * MIN + 41000),
-        ev("member:owner", "approval.approved", "ap_3", t - 4 * 60 * MIN),
-        ev("agent:ag_docs", "run.failed", "run_a2", t - 69 * MIN),
-        ev("agent:ag_research", "approval.requested", "ap_1", t - 25 * MIN),
-        ev("agent:ag_research", "run.succeeded", "run_a1", t - 25 * MIN),
-      ];
-      return { workspace: { name: "Personal" }, members: [{ id: "member:owner", email: "owner (Director 00)", role: "owner" }], agents, runs, approvals, events };
+      const events = [ev("member:owner", "workspace.open", "OMEGA PRIME", t - 9 * 86400000), ev("agent:ag_inbox", "run.succeeded", "run_a3", t - 5 * 60 * MIN + 41000), ev("member:owner", "approval.approved", "ap_3", t - 4 * 60 * MIN), ev("agent:ag_docs", "run.failed", "run_a2", t - 69 * MIN), ev("agent:ag_research", "approval.requested", "ap_1", t - 25 * MIN), ev("agent:ag_research", "run.succeeded", "run_a1", t - 25 * MIN)];
+      return { members: [{ id: "member:owner", email: "owner (Director 00)", role: "owner" }], agents, runs, approvals, events };
     }
-    function mkSteps(tools, status, n) {
-      return tools.slice(0, n == null ? tools.length : n + 1).map((tool, i) => ({ idx: i, tool, status, ms: 400 + i * 350, tries: 1 }));
+    function seedSmall(t, list, locked) {
+      return { members: [{ id: "member:owner", email: "owner (Director 00)", role: "owner" }],
+        agents: list.map(([id, name, tools, role, skills], i) => agent(id, name, "Local rules (no model)", role, tools, 12, "idle", t - (i + 1) * 3600000, skills)),
+        runs: [], events: [ev("system", "workspace.created", "", t - 86400000)],
+        approvals: locked.map(([category, action], i) => ({ id: uid("ap"), category, agentId: null, action, payload: "Sample request: seeded so the locked card is visible.", status: "pending", createdAt: t - (i + 1) * 1800000 })) };
     }
-    function ev(actor, kind, target, at) { return { id: uid("ev"), actor, kind, target, at: at || Date.now() }; }
+    function seed() {
+      const t = Date.now();
+      return { v: 2, workspaces: WORKSPACES.map(([slug, name]) => ({ slug, name })), data: {
+        "omega-prime": seedPrime(t),
+        "jarvis-studio": seedSmall(t, [["ag_tokens", "Design token auditor", ["files.read", "notes.write"], "Reads jarvis/replica/design and reports which tokens changed.", ["replica-design"]], ["ag_notes", "Release notes writer", ["git.log", "notes.write"], "Turns recent commits into release notes.", ["replica-build"]]], [["publish", "Publish the Studio site to a public domain"], ["install", "Install a new skill into .claude/skills"]]),
+        "giant-core": seedSmall(t, [["ag_commits", "Commit summariser", ["git.log", "notes.write"], "Summarises the latest commits on this branch.", []], ["ag_lib", "Notes librarian", ["notes.read", "files.read"], "Lists the notes this workspace has written.", []]], [["permissions", "Give an agent push access to giant-core"]]),
+      } };
+    }
     function load() {
-      const saved = store$.get("jarvis-sample-v1");
-      if (saved) { try { const d = JSON.parse(saved); if (d && Array.isArray(d.agents)) return d; } catch (e) { /* ignore and reseed */ } }
+      const saved = store$.get("jarvis-sample-v2");
+      if (saved) { try { const d = JSON.parse(saved); if (d && d.v === 2 && d.data) return d; } catch (e) { /* reseed */ } }
       return seed();
     }
-    function save() { store$.set("jarvis-sample-v1", JSON.stringify(db)); subs.forEach(fn => fn()); }
+    let slug = store$.get("jarvis-ws") || "omega-prime";
     db = load();
-    // Runs that were mid-flight when the page closed cannot resume: mark them cancelled.
-    for (const r of db.runs) if (r.status === "running" || r.status === "queued") { r.status = "cancelled"; r.finishedAt = Date.now(); }
-    for (const a of db.agents) if (a.status === "running") a.status = "idle";
+    if (!db.data[slug]) slug = db.workspaces[0].slug;
+    for (const w of Object.values(db.data)) {
+      for (const r of w.runs) if (r.status === "running" || r.status === "queued") { r.status = "cancelled"; r.finishedAt = Date.now(); }
+      for (const a of w.agents) if (a.status === "running") a.status = "idle";
+    }
+    const W = () => db.data[slug];
+    const save = () => { store$.set("jarvis-sample-v2", JSON.stringify(db)); subs.forEach(fn => fn()); };
     const clone = v => JSON.parse(JSON.stringify(v));
-    // A short delay stands in for the network of phase 2, so loading states are real code paths.
+    // A short delay stands in for the network of live mode, so loading states are real code paths.
     const ok = v => new Promise((res, rej) => setTimeout(() => (failMode ? rej(new Error("The data layer is set to fail on purpose (Settings → Test error states).")) : res(clone(v))), 60));
     const bad = msg => new Promise((res, rej) => setTimeout(() => rej(new Error(msg)), 60));
-    const activeRun = agentId => db.runs.find(r => r.agentId === agentId && (r.status === "running" || r.status === "queued"));
-
+    const activeRun = id => W().runs.find(r => r.agentId === id && (r.status === "running" || r.status === "queued"));
     const api = {
+      mode: "sample",
       subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
       setFail(on) { failMode = !!on; },
       get failMode() { return failMode; },
+      get slug() { return slug; },
       reset() { db = seed(); save(); },
-      workspace() { return ok(db.workspace); },
+      listWorkspaces() { return ok(db.workspaces); },
+      switchWorkspace(s) { if (!db.data[s]) return bad("No workspace called “" + s + "”."); slug = s; store$.set("jarvis-ws", s); subs.forEach(fn => fn()); return ok(db.workspaces.find(w => w.slug === s)); },
+      workspace() { return ok(db.workspaces.find(w => w.slug === slug)); },
       renameWorkspace(name) {
         const n = String(name || "").trim();
         if (!n || n.length > 80) return bad("Use 1 to 80 characters.");
-        db.workspace.name = n; db.events.push(ev("member:owner", "workspace.renamed", n)); save(); return ok(db.workspace);
+        db.workspaces.find(w => w.slug === slug).name = n; W().events.push(ev("member:owner", "workspace.renamed", n)); save(); return ok(db.workspaces.find(w => w.slug === slug));
       },
-      members() { return ok(db.members); },
+      members() { return ok(W().members); },
       listAgents({ status, q } = {}) {
         const query = String(q || "").trim().toLowerCase();
-        return ok(db.agents.filter(a => (!status || a.status === status) && (!query || (a.name + " " + a.model + " " + a.tools.join(" ")).toLowerCase().includes(query)))
-          .map(a => ({ ...a, runs: db.runs.filter(r => r.agentId === a.id).length, lastRun: Math.max(0, ...db.runs.filter(r => r.agentId === a.id).map(r => r.createdAt)) || null })));
+        return ok(W().agents.filter(a => (!status || a.status === status) && (!query || (a.name + " " + a.model + " " + a.tools.join(" ")).toLowerCase().includes(query)))
+          .map(a => ({ ...a, runs: W().runs.filter(r => r.agentId === a.id).length, lastRun: Math.max(0, ...W().runs.filter(r => r.agentId === a.id).map(r => r.createdAt)) || null })));
       },
       getAgent(id) {
-        const a = db.agents.find(x => x.id === id);
-        if (!a) return bad("No agent with that id. It may have been removed.");
-        return ok({ ...a, runs: db.runs.filter(r => r.agentId === id).sort((x, y) => y.createdAt - x.createdAt), active: !!activeRun(id) });
-      },
-      validateAgent(input, exceptId) {
-        const errs = {};
-        const name = String(input.name || "").trim();
-        if (!name) errs.name = "Give the agent a name.";
-        else if (name.length > 60) errs.name = "Use 60 characters or fewer.";
-        else if (db.agents.some(a => a.id !== exceptId && a.name.toLowerCase() === name.toLowerCase())) errs.name = "Another agent already has this name.";
-        if (String(input.rolePrompt || "").length > 2000) errs.rolePrompt = "Keep the role under 2,000 characters.";
-        const ms = Number(input.maxSteps);
-        if (!Number.isInteger(ms) || ms < 1 || ms > 200) errs.maxSteps = "Enter a whole number from 1 to 200.";
-        return errs;
+        const a = W().agents.find(x => x.id === id);
+        if (!a) return bad("No agent with that id in this workspace.");
+        return ok({ ...a, runs: W().runs.filter(r => r.agentId === id).sort((x, y) => y.createdAt - x.createdAt), active: !!activeRun(id) });
       },
       createAgent(input) {
-        const errs = api.validateAgent(input);
+        const errs = validateAgentInput(input, W().agents);
         if (Object.keys(errs).length) return bad(Object.values(errs)[0]);
-        const a = { id: uid("ag"), name: input.name.trim(), model: input.model, rolePrompt: String(input.rolePrompt || "").trim(), tools: input.tools || [], maxSteps: Number(input.maxSteps), status: "idle", createdAt: Date.now() };
-        db.agents.push(a); db.events.push(ev("member:owner", "agent.created", a.id)); save(); return ok(a);
+        const tools = input.tools || [];
+        const a = agent(uid("ag"), input.name.trim(), input.model, String(input.rolePrompt || "").trim(), tools, Number(input.maxSteps), "idle", Date.now(), input.skills || []);
+        W().agents.push(a); W().events.push(ev("member:owner", "agent.created", a.id)); save(); return ok(a);
       },
-      listRuns() {
-        return ok(db.runs.slice().sort((x, y) => y.createdAt - x.createdAt).map(r => ({ ...r, agentName: (db.agents.find(a => a.id === r.agentId) || {}).name || "Removed agent" })));
+      updateAgent(id, input) {
+        const a = W().agents.find(x => x.id === id);
+        if (!a) return bad("No agent with that id in this workspace.");
+        const errs = validateAgentInput(input, W().agents, id);
+        if (Object.keys(errs).length) return bad(Object.values(errs)[0]);
+        Object.assign(a, { name: input.name.trim(), model: input.model, rolePrompt: String(input.rolePrompt || "").trim(), tools: input.tools || [], skills: input.skills || [], maxSteps: Number(input.maxSteps), permissions: permsOf(input.tools || []) });
+        W().events.push(ev("member:owner", "agent.updated", id)); save(); return ok(a);
       },
+      listRuns() { return ok(W().runs.slice().sort((x, y) => y.createdAt - x.createdAt).map(r => ({ ...r, agentName: (W().agents.find(a => a.id === r.agentId) || {}).name || "Removed agent" }))); },
       getRun(id) {
-        const r = db.runs.find(x => x.id === id);
-        if (!r) return bad("No run with that id.");
-        return ok({ ...r, agentName: (db.agents.find(a => a.id === r.agentId) || {}).name || "Removed agent", approval: db.approvals.find(p => p.runId === id) || null });
+        const r = W().runs.find(x => x.id === id);
+        if (!r) return bad("No run with that id in this workspace.");
+        return ok({ ...r, agentName: (W().agents.find(a => a.id === r.agentId) || {}).name || "Removed agent", approval: W().approvals.find(p => p.runId === id) || null });
       },
-      // A simulated run: no model or tool is called. It walks the agent's tools so the timeline,
-      // the log and the approval gate can be exercised end to end before the phase 2 runtime exists.
+      // Simulated: no model or tool is called. Live mode (the local server) runs real tools.
       startRun(agentId) {
-        const a = db.agents.find(x => x.id === agentId);
-        if (!a) return bad("No agent with that id.");
+        const ws = W();
+        const a = ws.agents.find(x => x.id === agentId);
+        if (!a) return bad("No agent with that id in this workspace.");
         if (activeRun(agentId)) return bad("This agent already has a run in progress. Wait for it or cancel it first.");
         const tools = ["plan", ...a.tools.filter(t => t !== "notes.write"), ...(a.tools.includes("notes.write") ? ["notes.write"] : [])];
         const r = { id: uid("run"), agentId, status: "queued", trigger: "manual", createdAt: Date.now(), startedAt: null, finishedAt: null, steps: tools.map((tool, idx) => ({ idx, tool, status: "queued", ms: null, tries: 0 })), log: [], simulated: true };
-        db.runs.push(r); a.status = "running"; db.events.push(ev("member:owner", "run.started", r.id)); save();
+        ws.runs.push(r); a.status = "running"; ws.events.push(ev("member:owner", "run.started", r.id)); save();
         let i = -1;
         const tick = () => {
-          const run = db.runs.find(x => x.id === r.id);
+          const run = ws.runs.find(x => x.id === r.id);
           if (!run || run.status === "cancelled") return;
           if (i >= 0) {
             const s = run.steps[i];
             s.status = "ok"; s.ms = 300 + ((i * 397) % 900); s.tries = 1;
             if (s.tool === "notes.write") {
-              const ap = { id: uid("ap"), category: "file_write", runId: run.id, agentId, action: "Save the result to notes/" + a.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".md", payload: "+ notes/" + a.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".md", status: "pending", createdAt: Date.now() };
-              db.approvals.push(ap); db.events.push(ev("agent:" + agentId, "approval.requested", ap.id));
+              const file = "notes/" + a.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".md";
+              const ap = { id: uid("ap"), category: "file_write", runId: run.id, agentId, action: "Save the result to " + file, payload: "+ " + file, status: "pending", createdAt: Date.now() };
+              ws.approvals.push(ap); ws.events.push(ev("agent:" + agentId, "approval.requested", ap.id));
               run.log.push(s.tool + "  approval requested (" + ap.id + ")");
             } else run.log.push(s.tool + "  ok  " + s.ms + " ms (simulated)");
           } else { run.status = "running"; run.startedAt = Date.now(); run.log.push("plan  " + (run.steps.length - 1) + " steps, budget " + a.maxSteps + " (simulated)"); }
           i++;
           if (i < run.steps.length) { run.steps[i].status = "running"; save(); setTimeout(tick, 650); return; }
           run.status = "succeeded"; run.finishedAt = Date.now(); a.status = "idle";
-          db.events.push(ev("agent:" + agentId, "run.succeeded", run.id)); save();
+          ws.events.push(ev("agent:" + agentId, "run.succeeded", run.id)); save();
         };
         setTimeout(tick, 400);
         return ok(r);
       },
       cancelRun(id) {
-        const r = db.runs.find(x => x.id === id);
+        const r = W().runs.find(x => x.id === id);
         if (!r || !(r.status === "running" || r.status === "queued")) return bad("This run is not running.");
         r.status = "cancelled"; r.finishedAt = Date.now(); r.steps.forEach(s => { if (s.status !== "ok") s.status = "skipped"; });
-        const a = db.agents.find(x => x.id === r.agentId); if (a) a.status = "idle";
-        db.events.push(ev("member:owner", "run.cancelled", id)); save(); return ok(r);
+        const a = W().agents.find(x => x.id === r.agentId); if (a) a.status = "idle";
+        W().events.push(ev("member:owner", "run.cancelled", id)); save(); return ok(r);
       },
-      listApprovals() {
-        return ok(db.approvals.slice().sort((x, y) => y.createdAt - x.createdAt).map(p => ({ ...p, locked: !!LOCKED[p.category], agentName: (db.agents.find(a => a.id === p.agentId) || {}).name || "Removed agent" })));
-      },
-      // Only a person decides (the UI is the person; agents have no member id). Locked categories
-      // cannot be approved here at all, matching approvals_locked_never_approved in schema.sql.
+      listApprovals() { return ok(W().approvals.slice().sort((x, y) => y.createdAt - x.createdAt).map(p => ({ ...p, locked: !!LOCKED[p.category], agentName: (W().agents.find(a => a.id === p.agentId) || {}).name || (p.agentId ? "Removed agent" : "Sample request") }))); },
+      // Only a person decides; locked categories cannot be approved, as in schema.sql.
       decide(id, decision, reason) {
-        const p = db.approvals.find(x => x.id === id);
-        if (!p) return bad("No approval with that id.");
+        const p = W().approvals.find(x => x.id === id);
+        if (!p) return bad("No approval with that id in this workspace.");
         if (p.status !== "pending") return bad("Someone already decided this one.");
         if (LOCKED[p.category] && decision === "approved") return bad("Locked: this " + LOCKED[p.category] + ". It needs Director 00's separate approval outside Jarvis.");
         if (decision === "rejected" && !String(reason || "").trim()) return bad("Say why, so the agent can do something else.");
         p.status = decision; p.decidedBy = "member:owner"; p.decidedAt = Date.now(); p.reason = decision === "rejected" ? String(reason).trim() : null;
-        db.events.push(ev("member:owner", "approval." + decision, id)); save(); return ok(p);
+        W().events.push(ev("member:owner", "approval." + decision, id)); save(); return ok(p);
       },
-      listEvents() { return ok(db.events.slice().sort((x, y) => y.at - x.at)); },
+      listEvents() { return ok(W().events.slice().sort((x, y) => y.at - x.at)); },
       stats() {
-        const day = Date.now() - 86400000;
-        return ok({
-          agents: db.agents.filter(a => a.status !== "archived").length,
-          runsToday: db.runs.filter(r => r.createdAt > day).length,
-          waiting: db.approvals.filter(p => p.status === "pending" && !LOCKED[p.category]).length,
-          locked: db.approvals.filter(p => p.status === "pending" && LOCKED[p.category]).length,
-          failed: db.runs.filter(r => r.status === "failed" && r.createdAt > day).length,
-        });
+        const day = Date.now() - 86400000, w = W();
+        return ok({ agents: w.agents.filter(a => a.status !== "archived").length, runsToday: w.runs.filter(r => r.createdAt > day).length,
+          waiting: w.approvals.filter(p => p.status === "pending" && !LOCKED[p.category]).length, locked: w.approvals.filter(p => p.status === "pending" && LOCKED[p.category]).length,
+          failed: w.runs.filter(r => r.status === "failed" && r.createdAt > day).length });
       },
-      waitingCount() { return db.approvals.filter(p => p.status === "pending" && !LOCKED[p.category]).length; },
+      waitingCount() { return Promise.resolve(W().approvals.filter(p => p.status === "pending" && !LOCKED[p.category]).length); },
+      cleanClone() { return bad("The clean-room cloner runs on the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798"); },
     };
     return api;
-  })();
+  }
+
+  /* Live store: served by jarvis/server on 127.0.0.1. Real data, real runs, the database's rules. */
+  function liveStore(info) {
+    const subs = new Set();
+    let slug = store$.get("jarvis-ws") || "omega-prime", version = null, timer = null, failMode = false;
+    async function req(method, path, body) {
+      if (failMode && method === "GET") throw new Error("The data layer is set to fail on purpose (Settings → Test error states).");
+      const r = await fetch(path, { method, cache: "no-store", credentials: "same-origin", headers: body !== undefined ? { "content-type": "application/json", "x-jarvis": "1" } : {}, body: body !== undefined ? JSON.stringify(body) : undefined });
+      let j = null;
+      try { j = await r.json(); } catch (e) { /* not JSON */ }
+      if (!r.ok) throw new Error((j && j.error) || "The server answered " + r.status + ".");
+      return j;
+    }
+    const w = p => "/api/w/" + encodeURIComponent(slug) + p;
+    const poll = async () => {
+      try { const v = (await req("GET", w("/version"))).v; if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; } catch (e) { /* keep the page; the next poll retries */ }
+    };
+    const startPolling = () => { if (!timer) timer = setInterval(() => { if (!document.hidden && subs.size) poll(); }, 1500); };
+    const api = {
+      mode: "live",
+      info,
+      subscribe(fn) { subs.add(fn); startPolling(); return () => subs.delete(fn); },
+      setFail(on) { failMode = !!on; },
+      get failMode() { return failMode; },
+      get slug() { return slug; },
+      reset() { return Promise.reject(new Error("Live data is not reset from the page. Stop the server and delete jarvis/server/.data to start over.")); },
+      listWorkspaces: () => req("GET", "/api/workspaces"),
+      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); subs.forEach(fn => fn()); return ws; },
+      workspace: () => req("GET", w("")),
+      renameWorkspace: name => req("PATCH", w(""), { name }),
+      members: () => req("GET", w("/members")),
+      listAgents: ({ status, q } = {}) => req("GET", w("/agents?status=" + encodeURIComponent(status || "") + "&q=" + encodeURIComponent(q || ""))),
+      getAgent: id => req("GET", w("/agents/" + encodeURIComponent(id))),
+      createAgent: input => req("POST", w("/agents"), input),
+      updateAgent: (id, input) => req("PATCH", w("/agents/" + encodeURIComponent(id)), input),
+      listRuns: () => req("GET", w("/runs")),
+      getRun: id => req("GET", w("/runs/" + encodeURIComponent(id))),
+      startRun: (agentId, input) => req("POST", w("/agents/" + encodeURIComponent(agentId) + "/runs"), input || {}),
+      cancelRun: id => req("POST", w("/runs/" + encodeURIComponent(id) + "/cancel"), {}),
+      listApprovals: () => req("GET", w("/approvals")),
+      decide: (id, decision, reason) => req("POST", w("/approvals/" + encodeURIComponent(id) + "/decide"), { decision, reason }),
+      listEvents: async () => (await req("GET", w("/events"))).map(e => ({ ...e, at: e.at })),
+      stats: () => req("GET", w("/stats")),
+      waitingCount: async () => (await req("GET", w("/stats"))).waiting,
+      cleanClone: body => req("POST", "/api/studio/clean-clone", body),
+    };
+    return api;
+  }
+
+  // Live when served by the local server and it answers; the sample store otherwise.
+  let store = sampleStore();
+  const liveCheck = (location.protocol === "http:" && ["127.0.0.1", "localhost"].includes(location.hostname))
+    ? fetch("/api/health", { cache: "no-store" }).then(r => (r.ok ? r.json() : null)).then(info => { if (info && info.ok) store = liveStore(info); }, () => {})
+    : Promise.resolve();
 
   /* ── Contrast maths (WCAG 2 ratio and APCA-W3 0.0.98G-4g), same as the skill's contrast.py ── */
   const C = {
@@ -316,7 +392,13 @@
   function pageHead(title, lede, ...actions) {
     return h("div", { class: "page-head" }, h("div", null, h("h1", { dir: "auto", text: title }), lede ? h("p", { class: "lede", dir: "auto", text: lede }) : null), actions.length ? h("div", { class: "row" }, actions) : null);
   }
-  const sampleNote = text => h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), text || "Sample workspace: placeholder data. No agent runtime is connected yet.");
+  // Says where the data comes from: the labelled sample store (file://) or the local server (live).
+  const sampleNote = text => (store.mode === "live" && !text)
+    ? h("p", { class: "sample-note live-note", dir: "auto" }, icon("i-check", "sm"), "Live: real data from the local server (" + (store.info && store.info.mode === "postgres" ? "PostgreSQL" : "SQLite") + "). Runs use real tools; planning follows fixed rules, no model.")
+    : h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), text || "Sample workspace: placeholder data. Start jarvis/server for live data and real runs.");
+  // Approval payloads are text in the sample store and objects from the server.
+  const payloadText = p => typeof p.payload === "string" ? p.payload : p.payload && p.payload.path ? "+ " + p.payload.path + " (" + fmtN.format(p.payload.bytes || 0) + " bytes)\n\n" + (p.payload.preview || "") : (p.payload && p.payload.note) || "";
+  const isSampleRequest = p => (p.payload && p.payload.sample) || (typeof p.payload === "string" && /^Sample request/.test(p.payload));
   function badge(status, label) {
     return h("span", { class: "badge s-" + status }, h("span", { class: "dot", "aria-hidden": "true" }), label || ({ idle: "Idle", running: "Running", succeeded: "Succeeded", failed: "Failed", queued: "Queued", cancelled: "Cancelled", paused: "Paused", ok: "Done", skipped: "Skipped", pending: "Awaiting approval", approved: "Approved", rejected: "Rejected", expired: "Expired" }[status] || status));
   }
@@ -344,7 +426,7 @@
       h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("span", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pending human approval" })),
       h("h3", { id: "t-" + p.id, dir: "auto", text: p.action }),
       h("p", { class: "muted t-sm", text: "Locked: this " + (LOCKED[p.category] || "action") + ". No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1)." }),
-      h("p", { class: "subtle t-caption" }, (p.agentName ? "Asked by " + p.agentName + " · " : ""), timeEl(p.createdAt)));
+      h("p", { class: "subtle t-caption" }, isSampleRequest(p) ? h("span", { class: "badge", text: "Sample request" }) : null, isSampleRequest(p) ? " " : null, (p.agentName && !isSampleRequest(p) ? "Asked by " + p.agentName + " · " : ""), timeEl(p.createdAt)));
   }
 
   /* ── Pages ──────────────────────────────────────────────────── */
@@ -369,7 +451,13 @@
     return wrap;
   };
 
-  function agentDialog(from) {
+  // Create or edit an agent: name, model, role, limits, tools (which set its permissions) and linked
+  // skills. Locked permissions are shown and can never be switched on (AGENTS.md §1).
+  async function agentDialog(from, existingAgent) {
+    let others = [];
+    try { others = await store.listAgents(); } catch (e) { toast("error", e.message); return; }
+    const editing = !!existingAgent;
+    const a = existingAgent || { name: "", model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)", rolePrompt: "", maxSteps: 20, tools: ["notes.write"], skills: [] };
     const f = {};
     const err = {};
     const field = (key, label, control, hint) => {
@@ -379,19 +467,29 @@
       f[key] = control;
       return h("div", { class: "field" }, h("label", { htmlFor: "f-" + key, text: label }), control, hint ? h("span", { class: "hint", id: "h-" + key, text: hint }) : null, err[key]);
     };
-    const tools = ["web.read", "files.read", "notes.read", "notes.write", "runs.read", "git.log"];
-    const toolBoxes = tools.map(t => h("label", { class: "check" }, h("input", { type: "checkbox", name: "tool", value: t, checked: t === "notes.write" }), h("span", { class: "mono t-sm", text: t })));
+    const models = store.mode === "live" ? ["Local rules (no model)"] : ["Local model (loopback)", "Hosted model (key in vault)"];
+    if (!models.includes(a.model)) models.push(a.model);
+    const TOOL_NOTES = { "files.read": "read docs/ and jarvis/replica/", "notes.read": "list this workspace's notes", "notes.write": "save a note, asks you first", "runs.read": "read this workspace's runs", "git.log": "read recent commits", "web.read": "read one public page" };
+    const toolBoxes = TOOL_LIST.map(t => h("label", { class: "check" }, h("input", { type: "checkbox", name: "tool", value: t, checked: a.tools.includes(t) }), h("span", { class: "mono t-sm", text: t }), h("span", { class: "subtle t-caption", text: "— " + TOOL_NOTES[t] })));
+    const skillNames = (DATA.skills || []).map(s => s.name).sort();
+    const skillFilter = h("input", { class: "input", type: "search", id: "f-skillq", name: "skill-q", autocomplete: "off", placeholder: "Filter skills", "aria-label": "Filter skills" });
+    const skillBox = h("div", { class: "skill-pick", role: "group", "aria-label": "Linked skills" }, skillNames.map(n => h("label", { class: "check", dataset: { skill: n } }, h("input", { type: "checkbox", name: "skill", value: n, checked: (a.skills || []).includes(n) }), h("span", { class: "mono t-sm", translate: "no", text: n }))));
+    skillFilter.addEventListener("input", () => { const q = skillFilter.value.trim().toLowerCase(); $$("label", skillBox).forEach(l => { l.hidden = !!q && !l.dataset.skill.includes(q); }); });
+    const lockedRows = Object.entries(LOCKED).map(([k, why]) => h("label", { class: "check locked-perm" }, h("input", { type: "checkbox", disabled: true, name: "locked-" + k, "aria-describedby": "h-locked" }), icon("i-lock", "sm"), h("span", { text: k[0].toUpperCase() + k.slice(1) + " — " + why })));
     const body = h("div", { class: "stack" },
-      field("name", "Name", h("input", { class: "input", name: "agent-name", autocomplete: "off", maxLength: 80, placeholder: "Research assistant" }), "Shown in lists and run logs."),
-      field("model", "Model", h("select", { class: "select", name: "model", autocomplete: "off" }, h("option", { text: "Local model (loopback)" }), h("option", { text: "Hosted model (key in vault)" }))),
-      field("rolePrompt", "Role", h("textarea", { class: "textarea", name: "role", autocomplete: "off", placeholder: "What this agent does, and what it must never do." })),
-      field("maxSteps", "Max steps per run", h("input", { class: "input num", name: "max-steps", inputmode: "numeric", autocomplete: "off", value: "20" })),
-      h("fieldset", null, h("legend", { class: "legend", text: "Tools" }), toolBoxes),
-      h("p", { class: "hint", text: "Writing files asks for your approval each time. Money, publishing, permissions and installs are locked." }));
-    const save = h("button", { class: "btn btn-primary", type: "button", text: "Create agent" });
+      field("name", "Name", h("input", { class: "input", name: "agent-name", autocomplete: "off", maxLength: 80, value: a.name, placeholder: "Research assistant" }), "Shown in lists and run logs."),
+      field("model", "Model", h("select", { class: "select", name: "model", autocomplete: "off" }, models.map(m => h("option", { text: m, selected: m === a.model })))),
+      field("rolePrompt", "Role", h("textarea", { class: "textarea", name: "role", autocomplete: "off", value: a.rolePrompt || "", placeholder: "What this agent does, and what it must never do." })),
+      field("maxSteps", "Max steps per run", h("input", { class: "input num", name: "max-steps", inputmode: "numeric", autocomplete: "off", value: String(a.maxSteps) })),
+      h("fieldset", null, h("legend", { class: "legend", text: "Tools and permissions" }), toolBoxes),
+      h("fieldset", null, h("legend", { class: "legend", text: "Linked skills" }), h("span", { class: "hint", text: "Skills this agent follows. They come from .claude/skills in this repo." }), skillFilter, skillBox),
+      h("fieldset", null, h("legend", { class: "legend" }, "Locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" })), lockedRows,
+        h("p", { class: "hint", id: "h-locked", text: "No agent can be given these. They are Director 00's decisions outside Jarvis (AGENTS.md §1)." })));
+    const save = h("button", { class: "btn btn-primary", type: "button", text: editing ? "Save changes" : "Create agent" });
     save.addEventListener("click", () => {
-      const input = { name: f.name.value, model: f.model.value, rolePrompt: f.rolePrompt.value, maxSteps: f.maxSteps.value.trim() === "" ? NaN : Number(f.maxSteps.value), tools: $$("input[name=tool]:checked", body).map(x => x.value) };
-      const errs = store.validateAgent(input);
+      const input = { name: f.name.value, model: f.model.value, rolePrompt: f.rolePrompt.value, maxSteps: f.maxSteps.value.trim() === "" ? NaN : Number(f.maxSteps.value),
+        tools: $$("input[name=tool]:checked", body).map(x => x.value), skills: $$("input[name=skill]:checked", body).map(x => x.value) };
+      const errs = validateAgentInput(input, others, editing ? a.id : undefined);
       for (const k of Object.keys(err)) {
         const msg = errs[k];
         err[k].hidden = !msg; err[k].replaceChildren(...(msg ? [icon("i-alert", "sm"), msg] : []));
@@ -400,10 +498,13 @@
       const firstBad = Object.keys(errs)[0];
       if (firstBad) { f[firstBad].focus(); return; }
       save.disabled = true; save.setAttribute("aria-busy", "true");
-      store.createAgent(input).then(a => { closeDialog(); toast("ok", "Agent “" + a.name + "” created."); location.hash = "#/agents/" + a.id; },
-        e => { toast("error", e.message); save.disabled = false; save.removeAttribute("aria-busy"); });
+      (editing ? store.updateAgent(a.id, input) : store.createAgent(input)).then(saved => {
+        closeDialog();
+        toast("ok", editing ? "Saved “" + saved.name + "”." : "Agent “" + saved.name + "” created.");
+        if (editing) route(); else location.hash = "#/agents/" + saved.id;
+      }, e => { toast("error", e.message); save.disabled = false; save.removeAttribute("aria-busy"); });
     });
-    openDialog("New agent", body, [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), save], from);
+    openDialog(editing ? "Edit " + a.name : "New agent", body, [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), save], from);
   }
 
   pages.agents = () => {
@@ -434,27 +535,50 @@
       box);
   };
 
+  // Live mode asks for the run's input when a tool needs one (a path under docs/, or a public address).
+  function runDialog(a, from) {
+    const needsPath = a.tools.includes("files.read"), needsUrl = a.tools.includes("web.read");
+    const go = input => store.startRun(a.id, input).then(r => {
+      if (dlg.open) closeDialog();
+      toast("info", store.mode === "live" ? "Run started." : "Run started (simulated).");
+      location.hash = "#/runs/" + r.id;
+    }, e => toast("error", e.message));
+    if (store.mode !== "live" || (!needsPath && !needsUrl)) return go({});
+    const path = needsPath ? h("input", { class: "input mono", id: "f-runpath", name: "run-path", autocomplete: "off", value: /token|design/i.test(a.name) ? "jarvis/replica/design" : "docs/adr/ADR-13*" }) : null;
+    const url = needsUrl ? h("input", { class: "input mono", id: "f-runurl", name: "run-url", type: "url", autocomplete: "off", placeholder: "https://example.com/" }) : null;
+    const start = h("button", { class: "btn btn-primary", type: "button", text: "Start run" });
+    start.addEventListener("click", () => { start.disabled = true; go({ path: path ? path.value : undefined, url: url ? url.value : undefined }).finally(() => { start.disabled = false; }); });
+    openDialog("Run " + a.name, h("div", { class: "stack" },
+      path ? h("div", { class: "field" }, h("label", { htmlFor: "f-runpath", text: "Path to read" }), path, h("span", { class: "hint", text: "A file, a folder, or a folder/prefix* under docs/ or jarvis/replica/." })) : null,
+      url ? h("div", { class: "field" }, h("label", { htmlFor: "f-runurl", text: "Public page to read" }), url, h("span", { class: "hint", text: "One request; robots.txt is respected; private addresses are refused." })) : null),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), start], from);
+  }
+
   pages.agent = id => {
     const box = h("div", { class: "stack" });
     const render = a => {
       const runBtn = h("button", { class: "btn btn-primary", type: "button", disabled: a.active }, icon("i-run", "sm"), a.active ? "Running…" : "Run once");
-      runBtn.addEventListener("click", () => {
-        runBtn.disabled = true;
-        store.startRun(a.id).then(r => { toast("info", "Run started (simulated)."); location.hash = "#/runs/" + r.id; }, e => { toast("error", e.message); runBtn.disabled = false; });
-      });
+      runBtn.addEventListener("click", e => runDialog(a, e.currentTarget));
+      const editBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Edit", onclick: e => agentDialog(e.currentTarget, a) });
+      const perms = a.permissions || { writeNotes: a.tools.includes("notes.write"), readWeb: a.tools.includes("web.read") };
       const tabs = [["Config", () => h("dl", { class: "stack t-sm" },
         h("div", null, h("dt", { class: "muted", text: "Role" }), h("dd", { dir: "auto", text: a.rolePrompt || "No role written yet." })),
-        h("div", null, h("dt", { class: "muted", text: "Model" }), h("dd", { text: a.model + (a.model.includes("Hosted") ? " — the key lives in the Ops Room vault, never in Jarvis." : "") })),
-        h("div", null, h("dt", { class: "muted", text: "Max steps per run" }), h("dd", { class: "num", text: String(a.maxSteps) })))],
+        h("div", null, h("dt", { class: "muted", text: "Model" }), h("dd", { text: a.model + (a.model.includes("Hosted") ? " — the key lives in the Ops Room vault, never in Jarvis." : a.model.includes("no model") ? " — planning and summaries follow fixed rules." : "") })),
+        h("div", null, h("dt", { class: "muted", text: "Max steps per run" }), h("dd", { class: "num", text: String(a.maxSteps) })),
+        h("div", null, h("dt", { class: "muted", text: "Permissions" }), h("dd", { class: "row" },
+          badge(perms.writeNotes ? "approved" : "idle", perms.writeNotes ? "Writes notes (asks first)" : "No note writing"),
+          badge(perms.readWeb ? "approved" : "idle", perms.readWeb ? "Reads public pages" : "No web reading"),
+          h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), "Money, publish, permissions, install, outbound: locked"))),
+        h("div", null, h("dt", { class: "muted", text: "Linked skills" }), h("dd", null, (a.skills || []).length ? h("ul", { class: "row" }, a.skills.map(s => h("li", { class: "badge mono", translate: "no", text: s }))) : h("span", { class: "subtle", text: "None" }))))],
       ["Tools", () => a.tools.length ? h("ul", { class: "row" }, a.tools.map(t => h("li", { class: "badge mono", text: t }))) : h("p", { class: "muted t-sm", text: "No tools. This agent can only think, not act." })],
       ["Runs", () => a.runs.length ? h("div", { class: "table-scroll" }, h("table", null, h("thead", null, h("tr", null, ["Run", "Status", "Started", "Steps"].map(c => h("th", { scope: "col", text: c })))),
-        h("tbody", null, a.runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", null, badge(r.status)), h("td", null, timeEl(r.createdAt)), h("td", { class: "num", text: String(r.steps.length) })))))) : emptyState("i-run", "No runs yet", "Press Run once to try this agent.")]];
+        h("tbody", null, a.runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: String(r.id).slice(0, 12) })), h("td", null, badge(r.status)), h("td", null, timeEl(r.createdAt)), h("td", { class: "num", text: String((r.steps || []).length) })))))) : emptyState("i-run", "No runs yet", "Press Run once to try this agent.")]];
       return h("div", { class: "stack" },
-        pageHead(a.name, null, badge(a.status), runBtn),
+        pageHead(a.name, null, badge(a.status), editBtn, runBtn),
         tabsWidget("agent", tabs));
     };
     loadInto(box, () => store.getAgent(id), render);
-    const off = store.subscribe(() => { if (!box.isConnected) { off(); return; } store.getAgent(id).then(a => box.replaceChildren(render(a)), () => {}); });
+    const off = store.subscribe(() => { if (!box.isConnected) { off(); return; } if (dlg.open) return; store.getAgent(id).then(a => box.replaceChildren(render(a)), () => {}); });
     return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/agents", text: "← Agents" })), sampleNote(), box);
   };
 
@@ -491,6 +615,22 @@
     return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first."), sampleNote(), box);
   };
 
+  // One line about what a real step produced (live mode), or its try count (sample mode).
+  function stepSummary(s) {
+    const o = s.output;
+    if (!o) return s.tries ? "try " + s.tries : "waiting";
+    if (o.error) return o.error;
+    if (o.files) return o.files.length + " files: " + o.files.slice(0, 3).map(f => f.path.split("/").pop()).join(", ") + (o.files.length > 3 ? "…" : "");
+    if (o.commits) return o.commits.length + " commits, latest: " + (o.commits[0] ? o.commits[0].message : "—");
+    if (o.notes) return o.notes.length + " notes";
+    if (o.byStatus) return o.total + " runs read";
+    if (o.steps) return o.steps.length + " steps by " + o.by;
+    if (o.markdown) return fmtN.format(o.markdown.length) + " characters of summary";
+    if (o.approval) return "asked to save " + o.path;
+    if (o.url) return o.title || o.url;
+    return "done";
+  }
+
   pages.run = id => {
     const box = h("div", { class: "stack" });
     const render = r => {
@@ -498,11 +638,11 @@
       const cancel = live ? h("button", { class: "btn btn-secondary", type: "button", text: "Cancel run", onclick: e => { e.currentTarget.disabled = true; store.cancelRun(r.id).then(() => toast("warn", "Run cancelled."), err => toast("error", err.message)); } }) : null;
       return h("div", { class: "stack" },
         pageHead("Run · " + r.agentName, null, badge(r.status), cancel),
-        r.simulated ? sampleNote("Simulated run: no model or tool was called. The phase 2 runtime replaces this.") : null,
+        r.simulated ? sampleNote("Simulated run: no model or tool was called. Start jarvis/server for real runs.") : sampleNote(),
         h("div", { class: "grid-2" },
           h("div", { class: "card" }, h("ol", { class: "timeline", "aria-label": "Steps" }, r.steps.map(s => h("li", { class: "step" },
             h("span", { class: "idx num", text: String(s.idx + 1) }),
-            h("div", { class: "what" }, h("b", { class: "mono", text: s.tool }), h("span", { text: s.tries ? "try " + s.tries : "waiting" })),
+            h("div", { class: "what" }, h("b", { class: "mono", text: s.tool }), h("span", { text: stepSummary(s) })),
             h("div", { class: "row" }, badge(s.status), h("span", { class: "num subtle t-caption", text: dur(s.ms) })))))),
           h("pre", { class: "log", tabindex: "0", "aria-label": "Run log", text: r.log.length ? r.log.map((l, i) => String(i + 1).padStart(2, "0") + "  " + l).join("\n") : "Waiting for the first step…" })),
         r.approval ? h("p", { class: "t-sm" }, "This run asked for approval: ", h("a", { href: "#/approvals", text: r.approval.action }), " — ", badge(r.approval.status)) : null);
@@ -532,7 +672,7 @@
       const card = p => h("article", { class: "approval", "aria-labelledby": "t-" + p.id },
         h("div", { class: "row" }, badge("pending"), h("span", { class: "subtle t-caption" }, p.agentName + " · ", timeEl(p.createdAt))),
         h("h3", { id: "t-" + p.id, dir: "auto", text: p.action }),
-        h("pre", { class: "diff", text: p.payload }),
+        h("pre", { class: "diff", text: payloadText(p) }),
         h("div", { class: "row" },
           h("button", { class: "btn btn-primary", type: "button", text: "Approve", onclick: e => { e.currentTarget.disabled = true; store.decide(p.id, "approved").then(() => toast("ok", "Approved."), err => toast("error", err.message)); } }),
           h("button", { class: "btn btn-secondary", type: "button", text: "Reject…", onclick: e => rejectDialog(p, e.currentTarget) })));
@@ -588,7 +728,7 @@
       fail.addEventListener("change", () => { store.setFail(fail.checked); toast(fail.checked ? "warn" : "ok", fail.checked ? "Lists now fail on purpose. Open any page to see its error state." : "Error test off."); });
       const reset = h("button", { class: "btn btn-danger", type: "button", text: "Reset sample data…" });
       reset.addEventListener("click", e => openDialog("Reset the sample workspace?", h("p", { class: "muted t-sm", text: "Agents, runs, approvals and logs go back to the starting sample. Your theme and Studio draft stay." }),
-        [h("button", { class: "btn btn-secondary", type: "button", text: "Keep data", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Reset", onclick: () => { store.reset(); closeDialog(); toast("ok", "Sample data reset."); route(); } })], e.currentTarget));
+        [h("button", { class: "btn btn-secondary", type: "button", text: "Keep data", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Reset", onclick: () => { Promise.resolve(store.reset()).then(() => { closeDialog(); toast("ok", "Sample data reset."); route(); }, err => { closeDialog(); toast("error", err.message); }); } })], e.currentTarget));
       return h("div", { class: "grid-2" },
         h("section", { class: "panel", "aria-labelledby": "h-ws" }, h("h2", { id: "h-ws", text: "Workspace" }), h("div", { class: "field" }, h("label", { htmlFor: "f-ws", text: "Name" }), name), h("div", null, save)),
         h("section", { class: "panel", "aria-labelledby": "h-keys" }, h("h2", { id: "h-keys", text: "Model keys" }),
@@ -617,13 +757,16 @@
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
     sand: { label: "Sand", bg: "#f6f1e7", surface: "#fffaf0", text: "#2a2118", muted: "#5c4d3c", accent: "#8a4b0f", onAccent: "#fffaf0", border: "#e6dccb" },
   };
-  const BLOCK_NAMES = { nav: "Navigation", hero: "Hero", features: "Features", stats: "Facts", faq: "Questions", cta: "Call to action", footer: "Footer" };
+  const BLOCK_NAMES = { nav: "Navigation", hero: "Hero", features: "Features", stats: "Facts", faq: "Questions", table: "Table", text: "Text section", cta: "Call to action", footer: "Footer" };
+  const six = (fn) => [1, 2, 3, 4, 5, 6].flatMap(fn);
   const FIELDS = {
     nav: [["brand", "Brand"], ["links", "Links (comma separated)"], ["cta", "Button"]],
     hero: [["kicker", "Small line above"], ["title", "Headline"], ["body", "Text", true], ["primary", "Main button"], ["secondary", "Second button"]],
-    features: [["title", "Title"], ["f1t", "Feature 1"], ["f1b", "Feature 1 text", true], ["f2t", "Feature 2"], ["f2b", "Feature 2 text", true], ["f3t", "Feature 3"], ["f3b", "Feature 3 text", true]],
-    stats: [["s1v", "Fact 1"], ["s1l", "Fact 1 label"], ["s2v", "Fact 2"], ["s2l", "Fact 2 label"], ["s3v", "Fact 3"], ["s3l", "Fact 3 label"]],
-    faq: [["title", "Title"], ["q1", "Question 1"], ["a1", "Answer 1", true], ["q2", "Question 2"], ["a2", "Answer 2", true], ["q3", "Question 3"], ["a3", "Answer 3", true]],
+    features: [["title", "Title"], ...six(i => [["f" + i + "t", "Feature " + i], ["f" + i + "b", "Feature " + i + " text", true]])],
+    stats: six(i => [["s" + i + "v", "Fact " + i], ["s" + i + "l", "Fact " + i + " label"]]),
+    faq: [["title", "Title"], ...six(i => [["q" + i, "Question " + i], ["a" + i, "Answer " + i, true]])],
+    table: [["title", "Title"], ...six(i => [["c" + i, "Column " + i]]), ["cell", "Cell text"]],
+    text: [["title", "Title"], ["body", "Text", true]],
     cta: [["title", "Title"], ["body", "Text", true], ["button", "Button"]],
     footer: [["text", "Text"]],
   };
@@ -679,7 +822,7 @@
     const widthNote = h("span", { class: "subtle t-caption num" });
     if (typeof ResizeObserver === "function") new ResizeObserver(fit).observe(stage);
 
-    const PAIRS = [["Body text on page", "text", "bg"], ["Muted text on page", "muted", "bg"], ["Text on cards", "text", "surface"], ["Button text", "onAccent", "accent"], ["Links on page", "accent", "bg"]];
+    const PAIRS = [["Body text on page", "text", "bg"], ["Muted text on page", "muted", "bg"], ["Text on cards", "text", "surface"], ["Muted text on cards", "muted", "surface"], ["Button text", "onAccent", "accent"], ["Links on page", "accent", "bg"]];
     const checkContrast = () => {
       let fails = 0;
       badges.replaceChildren(...PAIRS.map(([label, fg, bg]) => {
@@ -753,12 +896,52 @@
     resetBtn.addEventListener("click", e => openDialog("Start the site over?", h("p", { class: "muted t-sm", text: "Sections, text and colours go back to the starting sample." }),
       [h("button", { class: "btn btn-secondary", type: "button", text: "Keep my site", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Start over", onclick: () => { site = defaultSite(); save(); closeDialog(); route(); } })], e.currentTarget));
 
+    // Clean-room clone: the local server reads one public page (or pasted HTML), keeps only its layout,
+    // and returns blocks filled with our own copy. Publishing stays locked.
+    const cloneUrl = h("input", { class: "input mono", id: "f-clone-url", name: "clone-url", type: "url", autocomplete: "off", placeholder: "https://example.com/", "aria-describedby": "h-clone" });
+    const cloneHtml = h("textarea", { class: "textarea code", id: "f-clone-html", name: "clone-html", autocomplete: "off", spellcheck: false, rows: 5, placeholder: "<!doctype html>…" });
+    const report = h("div", { class: "report", "aria-live": "polite" });
+    const live = store.mode === "live";
+    const cloneBtn = h("button", { class: "btn btn-primary", type: "button", disabled: !live }, icon("i-copy", "sm"), "Clean-room clone");
+    cloneBtn.addEventListener("click", async () => {
+      const body = cloneHtml.value.trim() ? { html: cloneHtml.value } : { url: cloneUrl.value.trim() };
+      if (!body.html && !body.url) { toast("warn", "Paste an address or some HTML first."); cloneUrl.focus(); return; }
+      cloneBtn.disabled = true; cloneBtn.setAttribute("aria-busy", "true");
+      report.replaceChildren(h("p", { class: "muted", text: "Reading the structure…" }));
+      try {
+        const out = await store.cleanClone(body);
+        site.blocks = out.blocks.map(b => ({ id: b.id, type: b.type, on: true, t: b.t, cols: b.cols || null, rows: b.rows || null }));
+        site.name = "Clean template";
+        nameIn.value = site.name;
+        changed(); renderBlocks();
+        const r = out.report, d = r.dropped;
+        report.replaceChildren(h("dl", null,
+          h("dt", { text: "Source" }), h("dd", { class: "mono", translate: "no", text: r.source + (r.fetch ? " · robots: " + r.fetch.robots : "") }),
+          h("dt", { text: "Kept" }), h("dd", { text: r.kept }),
+          h("dt", { text: "Sections" }), h("dd", { text: r.sections.join(" · ") }),
+          h("dt", { text: "Dropped" }), h("dd", { text: [plural(d.scripts, "script") + " (" + plural(d.trackers, "tracker") + ")", plural(d.stylesheets, "stylesheet"), plural(d.images, "image"), plural(d.frames, "frame"), plural(d.textCharacters, "character") + " of their text"].join(", ") }),
+          h("dt", { text: "Sweep" }), h("dd", null, r.sweep.leaks ? badge("failed", r.sweep.leaks + " possible leaks: " + r.sweep.leaked.join(", ")) : badge("ok", "0 leaks · " + plural(r.sweep.brandTermsChecked, "brand term") + " and " + plural(r.sweep.sourcePhrasesChecked, "phrase") + " checked"))));
+        toast("ok", "Rebuilt " + out.blocks.length + " sections with your design and new copy. Nothing of the source was kept.");
+      } catch (e) {
+        report.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message));
+        toast("error", e.message);
+      } finally { cloneBtn.disabled = !live; cloneBtn.removeAttribute("aria-busy"); }
+    });
+    const clonePanel = h("section", { class: "panel clone-bar", "aria-labelledby": "h-clone-t" }, h("h2", { id: "h-clone-t", text: "Clean-room clone" }),
+      h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-clone-url", text: "Page address" }), cloneUrl), cloneBtn),
+      h("details", null, h("summary", { text: "Or paste HTML" }), h("div", { class: "field" }, h("label", { htmlFor: "f-clone-html", text: "HTML" }), cloneHtml)),
+      h("p", { class: "hint", id: "h-clone", text: live
+        ? "Keeps only the layout (sections, card counts, table shapes). Text, images, colours, scripts and trackers are dropped and replaced with your design and our own copy. One request; robots.txt is respected."
+        : "Runs on the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798." }),
+      report);
+
     renderColors(); renderBlocks(); checkContrast();
     requestAnimationFrame(fit);
     return h("div", { class: "stack" },
       pageHead("Studio", "Design a page live. The preview runs in a sandbox with no network."),
       h("div", { class: "studio" },
         h("div", { class: "studio-controls" },
+          clonePanel,
           h("section", { class: "panel", "aria-labelledby": "h-site" }, h("h2", { id: "h-site", text: "Site" }), h("div", { class: "field" }, h("label", { htmlFor: "f-site", text: "Name" }), nameIn),
             h("div", { class: "field" }, h("span", { class: "legend", text: "Language" }), langSeg)),
           h("section", { class: "panel", "aria-labelledby": "h-colors" }, h("h2", { id: "h-colors", text: "Colours" }), h("div", { class: "field" }, h("label", { htmlFor: "f-preset", text: "Preset" }), presetSel), colorBox,
@@ -937,9 +1120,51 @@
     first = false;
   }
   window.addEventListener("hashchange", route);
-  const updateCount = () => { const n = store.waitingCount(); const c = $("#approvalCount"); c.hidden = !n; c.textContent = String(n); c.setAttribute("aria-label", n + " waiting"); };
-  store.subscribe(updateCount);
-  store.workspace().then(w => { $("#wsName").textContent = w.name; }, () => {});
+  const updateCount = () => store.waitingCount().then(n => { const c = $("#approvalCount"); c.hidden = !n; c.textContent = String(n); c.setAttribute("aria-label", n + " waiting"); }, () => {});
+
+  /* ── Workspace switcher (APG menu button). Switching reloads every screen's data. ── */
+  const wsBtn = $("#wsBtn"), wsMenu = $("#wsMenu");
+  function wsOpen(open, focusIdx) {
+    wsMenu.hidden = !open; wsBtn.setAttribute("aria-expanded", String(open));
+    const items = $$("[role=menuitemradio]", wsMenu);
+    if (open && items.length) items[Math.max(0, Math.min(items.length - 1, focusIdx || 0))].focus();
+  }
+  async function buildWsMenu() {
+    let list = [];
+    try { list = await store.listWorkspaces(); } catch (e) { return; }
+    const cur = store.slug;
+    const curWs = list.find(w => w.slug === cur) || list[0];
+    if (curWs) $("#wsName").textContent = curWs.name;
+    wsMenu.replaceChildren(...list.map((w, i) => {
+      const li = h("li", { role: "menuitemradio", "aria-checked": String(w.slug === cur), tabindex: "-1", dataset: { slug: w.slug }, translate: "no", text: w.name });
+      const pick = async () => {
+        wsOpen(false); wsBtn.focus();
+        if (w.slug === store.slug) return;
+        try {
+          await store.switchWorkspace(w.slug);
+          await buildWsMenu();
+          updateCount();
+          toast("info", "Switched to " + w.name + ".");
+          const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/");
+          if (parts.length > 1) location.hash = "#/" + parts[0]; else route();
+        } catch (e) { toast("error", e.message); }
+      };
+      li.addEventListener("click", pick);
+      li.addEventListener("keydown", e => {
+        const items = $$("[role=menuitemradio]", wsMenu);
+        if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+        else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
+        else if (e.key === "End") { e.preventDefault(); items[items.length - 1].focus(); }
+        else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+        else if (e.key === "Escape" || e.key === "Tab") { wsOpen(false); wsBtn.focus(); }
+      });
+      return li;
+    }));
+  }
+  wsBtn.addEventListener("click", () => wsOpen(wsMenu.hidden, Math.max(0, $$("[role=menuitemradio]", wsMenu).findIndex(x => x.getAttribute("aria-checked") === "true"))));
+  wsBtn.addEventListener("keydown", e => { if (e.key === "ArrowDown") { e.preventDefault(); wsOpen(true, 0); } });
+  document.addEventListener("click", e => { if (!wsMenu.hidden && !e.target.closest(".ws")) wsOpen(false); });
 
   /* ── Command palette (APG combobox in a modal dialog) ────────── */
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
@@ -952,6 +1177,7 @@
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],
     ["Switch direction", "Action", () => setDir(root.dir === "rtl" ? "ltr" : "rtl")],
+    ["Switch workspace", "Action", () => wsOpen(true, 0)],
   ];
   function renderPal() {
     const words = palIn.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -987,6 +1213,11 @@
     else if (e.key === "Escape" && app.classList.contains("drawer-open")) drawer(false);
   });
 
-  updateCount();
-  route();
+  // Boot once we know whether the local server answers (live) or not (sample).
+  liveCheck.then(() => {
+    store.subscribe(updateCount);
+    buildWsMenu();
+    updateCount();
+    route();
+  });
 })();

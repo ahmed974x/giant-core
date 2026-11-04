@@ -1,0 +1,16 @@
+{
+  "name": "jarvis-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jarvis local server (ADR-134): loopback API on SQLite or PostgreSQL 16.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.mjs",
+    "test": "node --disable-warning=ExperimentalWarning test/test-server.mjs"
+  },
+  "dependencies": {
+    "pg": "8.23.0"
+  }
+}

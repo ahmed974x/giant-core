@@ -3,7 +3,7 @@
 // It reads the site as JSON and builds the page with createElement + textContent only.
 (() => {
   "use strict";
-  const TYPES = new Set(["nav", "hero", "features", "stats", "faq", "cta", "footer"]);
+  const TYPES = new Set(["nav", "hero", "features", "stats", "faq", "table", "text", "cta", "footer"]);
   const HEX = /^#[0-9a-fA-F]{6}$/;
   const VARS = { bg: "--bg", surface: "--surface", text: "--text", muted: "--muted", accent: "--accent", onAccent: "--on-accent", border: "--border" };
   const str = (v, max) => (typeof v === "string" ? v.slice(0, max || 400) : "");
@@ -52,12 +52,14 @@
       w.appendChild(a);
       return s;
     },
-    features(t) {
+    features(t, b) {
       const s = el("section");
       const w = wrapIn(s);
-      w.appendChild(el("h2", null, str(t.title, 120)));
+      if (str(t.title)) w.appendChild(el("h2", null, str(t.title, 120)));
       const g = el("div", "grid");
-      for (let i = 1; i <= 3; i++) {
+      const cols = Number(b && b.cols);
+      if (cols >= 1 && cols <= 4) { g.classList.add("fixed"); g.style.setProperty("--cols", String(cols)); }
+      for (let i = 1; i <= 6; i++) {
         if (!str(t["f" + i + "t"])) continue;
         const c = el("article", "card");
         c.append(el("h3", null, str(t["f" + i + "t"], 80)), el("p", null, str(t["f" + i + "b"], 240)));
@@ -70,7 +72,7 @@
       const s = el("section", "stats");
       const w = wrapIn(s);
       const g = el("div", "grid");
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 6; i++) {
         if (!str(t["s" + i + "v"])) continue;
         const c = el("div", "stat");
         c.append(el("b", null, str(t["s" + i + "v"], 20)), el("span", null, str(t["s" + i + "l"], 60)));
@@ -82,13 +84,34 @@
     faq(t) {
       const s = el("section");
       const w = wrapIn(s);
-      w.appendChild(el("h2", null, str(t.title, 120)));
-      for (let i = 1; i <= 3; i++) {
+      if (str(t.title)) w.appendChild(el("h2", null, str(t.title, 120)));
+      for (let i = 1; i <= 6; i++) {
         if (!str(t["q" + i])) continue;
         const d = el("details");
         d.append(el("summary", null, str(t["q" + i], 160)), el("p", null, str(t["a" + i], 400)));
         w.appendChild(d);
       }
+      return s;
+    },
+    table(t, b) {
+      const s = el("section");
+      const w = wrapIn(s);
+      if (str(t.title)) w.appendChild(el("h2", null, str(t.title, 120)));
+      const cols = Math.max(2, Math.min(6, Number(b && b.cols) || 3)), rows = Math.max(1, Math.min(8, Number(b && b.rows) || 3));
+      const scroll = el("div", "table-wrap");
+      const table = el("table"), head = el("tr");
+      for (let c = 1; c <= cols; c++) { const th = el("th", null, str(t["c" + c], 40) || "—"); th.scope = "col"; head.appendChild(th); }
+      const thead = el("thead"); thead.appendChild(head);
+      const tbody = el("tbody");
+      for (let r = 0; r < rows; r++) { const tr = el("tr"); for (let c = 1; c <= cols; c++) tr.appendChild(el("td", null, str(t.cell, 20) || "—")); tbody.appendChild(tr); }
+      table.append(thead, tbody); scroll.appendChild(table); w.appendChild(scroll);
+      return s;
+    },
+    text(t) {
+      const s = el("section");
+      const w = wrapIn(s);
+      if (str(t.title)) w.appendChild(el("h2", null, str(t.title, 120)));
+      if (str(t.body)) w.appendChild(el("p", "lead", str(t.body, 600)));
       return s;
     },
     cta(t) {
@@ -124,7 +147,7 @@
     for (const b of site.blocks.slice(0, 20)) {
       if (!b || !TYPES.has(b.type) || !b.on) continue;
       const t = (b.t && b.t[lang]) || {};
-      const node = BUILD[b.type](t);
+      const node = BUILD[b.type](t, b);
       if (b.type !== "nav" && b.type !== "footer") node.id = node.id || "b" + (++n);
       body.insertBefore(node, keep[0] || null);
       shown++;

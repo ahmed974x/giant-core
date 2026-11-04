@@ -7,7 +7,7 @@ strict CSP, local services on `127.0.0.1`.
 
 ## Stack
 
-Two phases. Phase 1 ships in this change. Phase 2 is planned; its schema is in `schema.sql`.
+Two phases, both built. Phase 1 is the static page (ADR-133). Phase 2 is the local server (ADR-134), whose schema is `schema.sql` in PostgreSQL and `jarvis/server/lib/schema-sqlite.sql` in the zero-setup mode.
 
 | layer | choice | why |
 | --- | --- | --- |
@@ -83,4 +83,12 @@ Tables: 11 (`schema.sql`).
    - Screens: Overview (S02), the Studio (S13), the Skill Mixer (S14), locked approval cards, contrast, keyboard, RTL.
    - S05 is a dialog form on S03, not a separate route.
 3. **Should-haves (this change, where marked done in `features.csv`).** Logs (S10), Settings (S11), toasts, downloading the Studio HTML, checking a SKILL.md, glass chrome.
-4. **Phase 2 (next).** `jarvis/server` and the `db/jarvis` migration, swapping the store for the API, run streaming, the workflow canvas (S07).
+4. **Phase 2 (built, ADR-134).**
+   - `jarvis/server` on SQLite or PostgreSQL 16.
+   - The page switches to the API when the server serves it.
+   - Real tool runs, an approval-gated note writer, workspaces, the agent editor, and the clean-room cloner (`POST /api/studio/clean-clone`).
+5. **Next.**
+   - Workflows (S06, S07).
+   - Server push instead of polling.
+   - Wiring in the loopback model bridge, after its own review.
+   - A second user with roles.

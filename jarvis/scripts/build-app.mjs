@@ -97,9 +97,23 @@ fill("/*@DATA@*/", JSON.stringify(data).replace(/</g, "\\u003c"));
 // before scanning (the same way the Ops Room carries it), so the patterns do not flag themselves.
 fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */"));
 
-// Keep the CSP that SkillSpector already pinned, so --check compares content only.
-const cspRe = /<meta http-equiv="Content-Security-Policy" content="[^"]*" \/>/;
-if (existsSync(out)) { const pinned = readFileSync(out, "utf8").match(cspRe); if (pinned) html = html.replace(cspRe, () => pinned[0]); }
+// The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
+// carried over, so --check compares content and a policy change in the template still takes effect.
+const cspRe = /<meta http-equiv="Content-Security-Policy" content="([^"]*)" \/>/;
+if (existsSync(out)) {
+  const pinned = readFileSync(out, "utf8").match(cspRe);
+  if (pinned) {
+    const dir = (csp, name) => (new RegExp(`(?:^|;)\\s*${name}\\s+([^;]*)`).exec(csp) || [])[1];
+    html = html.replace(cspRe, (all, tmplCsp) => {
+      let csp = tmplCsp;
+      for (const name of ["script-src", "style-src"]) {
+        const v = dir(pinned[1], name);
+        if (v) csp = csp.replace(new RegExp(`(^|;\\s*)${name}\\s+[^;]*`), (m, pre) => `${pre}${name} ${v}`);
+      }
+      return all.replace(tmplCsp, () => csp);
+    });
+  }
+}
 
 if (process.argv.includes("--check")) {
   const current = existsSync(out) ? readFileSync(out, "utf8") : "";

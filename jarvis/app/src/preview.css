@@ -30,6 +30,13 @@ section { padding-block: 56px; border-block-end: 1px solid var(--border); }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 h2 { font-size: clamp(24px, 3.5vw, 34px); margin-block-end: 24px; }
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+@media (min-width: 900px) { .grid.fixed { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); } }
+.table-wrap { overflow-x: auto; border-radius: var(--r); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 12px 16px; text-align: start; border-block-end: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; background: var(--surface); }
+tbody tr:last-child td { border-block-end: 0; }
+.lead { color: var(--muted); font-size: 18px; max-width: 65ch; }
 .card { padding: 20px; border-radius: calc(var(--r) + 8px); background: var(--surface); border: 1px solid var(--border); }
 .card h3 { font-size: 18px; margin-block-end: 8px; }
 .card p { color: var(--muted); font-size: 15px; }

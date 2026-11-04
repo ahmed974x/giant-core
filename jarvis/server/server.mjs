@@ -1,0 +1,138 @@
+#!/usr/bin/env node
+// Jarvis local server (ADR-134): serves the app and its API on 127.0.0.1 only.
+//
+//   node --disable-warning=ExperimentalWarning jarvis/server/server.mjs           # SQLite, zero setup
+//   JARVIS_DB=postgres DATABASE_URL=postgres://jarvis@127.0.0.1:5432/jarvis \
+//     node jarvis/server/server.mjs                                              # local PostgreSQL 16
+//   open http://127.0.0.1:8798
+//
+// Guards: binds 127.0.0.1; the Host header must be 127.0.0.1 or localhost on this port (DNS
+// rebinding); every write needs the X-Jarvis header and, when the browser sends one, a same-origin
+// Origin (cross-site requests); JSON bodies only, size-capped; no CORS headers at all.
+// What it never does: move money, publish, change permissions, install skills or send messages.
+// Those exist only as approval rows the database refuses to approve (AGENTS.md §1).
+import http from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { openSqlite, openPostgres } from "./lib/db.mjs";
+import { createStore, seed, StoreError } from "./lib/store.mjs";
+import { createRunner } from "./lib/runner.mjs";
+import { cleanClone } from "./lib/clean-clone.mjs";
+import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, "..", "..");
+
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, quiet = false } = {}) {
+  const db = mode === "postgres" ? await openPostgres(databaseUrl || "") : await openSqlite(sqliteFile || join(dataDir, "jarvis.sqlite"));
+  await seed(db);
+  const store = createStore(db);
+  const runner = createRunner({ store, repoRoot, dataDir });
+  const pages = { "/": join(repoRoot, "jarvis", "app", "index.html"), "/design": join(repoRoot, "jarvis", "design", "index.html") };
+
+  const server = http.createServer(async (req, res) => {
+    const send = (status, body, type = "application/json; charset=utf-8") => {
+      res.writeHead(status, {
+        "Content-Type": type, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY", "Cross-Origin-Resource-Policy": "same-origin",
+        ...(type.startsWith("application/json") ? { "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'" } : {}),
+      });
+      res.end(type.startsWith("application/json") ? JSON.stringify(body) : body);
+    };
+    const fail = (status, message) => send(status, { error: message });
+    try {
+      const actualPort = server.address().port;
+      const okHosts = [`127.0.0.1:${actualPort}`, `localhost:${actualPort}`];
+      if (!okHosts.includes(String(req.headers.host || ""))) return fail(421, "Wrong Host header. Open http://127.0.0.1:" + actualPort + ".");
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const path = url.pathname;
+
+      if (req.method === "GET" && pages[path]) {
+        if (!existsSync(pages[path])) return fail(404, "Build the page first: node jarvis/scripts/build-app.mjs");
+        return send(200, readFileSync(pages[path]), "text/html; charset=utf-8");
+      }
+      if (!path.startsWith("/api/")) return fail(404, "Not found.");
+
+      let body = {};
+      if (req.method !== "GET") {
+        if (req.headers["x-jarvis"] !== "1") return fail(403, "Missing the X-Jarvis header.");
+        const origin = req.headers.origin;
+        if (origin && !okHosts.map(h => "http://" + h).includes(origin)) return fail(403, "Cross-origin writes are refused.");
+        if (!/^application\/json\b/.test(String(req.headers["content-type"] || ""))) return fail(415, "Send JSON.");
+        const limit = path === "/api/studio/clean-clone" ? 2.5 * 1024 * 1024 : 64 * 1024;
+        const chunks = [];
+        let size = 0;
+        for await (const c of req) { size += c.length; if (size > limit) return fail(413, "The request is too large."); chunks.push(c); }
+        try { body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {}; } catch (e) { return fail(400, "The request is not valid JSON."); }
+        if (!body || typeof body !== "object" || Array.isArray(body)) return fail(400, "The request must be a JSON object.");
+      }
+
+      const R = (method, re) => req.method === method && re.exec(path);
+      let m;
+      if (R("GET", /^\/api\/health$/)) return send(200, { ok: true, mode: db.kind, where: db.where, runs: "real (fixed-rule planner, no model)", version: 1 });
+      if (R("GET", /^\/api\/workspaces$/)) return send(200, await store.listWorkspaces());
+      if (R("POST", /^\/api\/studio\/clean-clone$/)) {
+        let html = typeof body.html === "string" ? body.html : "", host = "", src = null;
+        if (body.url) {
+          try { const page = await fetchPage(body.url); html = page.html; host = page.host; src = { url: page.url, bytes: page.bytes, robots: page.robots, fetchedAt: page.fetchedAt }; }
+          catch (e) { return fail(e instanceof FetchError && ["blocked", "bad_url", "robots"].includes(e.code) ? 400 : 502, e.message); }
+        }
+        if (!html.trim()) return fail(400, "Give a public https:// address or paste some HTML.");
+        const out = cleanClone(html, { host, url: src && src.url });
+        out.report.fetch = src;
+        return send(200, out);
+      }
+      if ((m = /^\/api\/w\/([a-z0-9-]{1,40})(\/.*)?$/.exec(path))) {
+        const slug = m[1], rest = m[2] || "";
+        let k;
+        if (req.method === "GET" && rest === "") return send(200, await store.workspace(slug));
+        if (req.method === "PATCH" && rest === "") return send(200, await store.renameWorkspace(slug, body.name));
+        if (req.method === "GET" && rest === "/members") return send(200, await store.members(slug));
+        if (req.method === "GET" && rest === "/stats") return send(200, await store.stats(slug));
+        if (req.method === "GET" && rest === "/version") return send(200, await store.version(slug));
+        if (req.method === "GET" && rest === "/agents") return send(200, await store.listAgents(slug, { status: url.searchParams.get("status") || "", q: url.searchParams.get("q") || "" }));
+        if (req.method === "POST" && rest === "/agents") return send(201, await store.createAgent(slug, body));
+        if ((k = /^\/agents\/([\w-]{1,64})$/.exec(rest))) {
+          if (req.method === "GET") return send(200, await store.getAgent(slug, k[1]));
+          if (req.method === "PATCH") return send(200, await store.updateAgent(slug, k[1], body));
+        }
+        if (req.method === "POST" && (k = /^\/agents\/([\w-]{1,64})\/runs$/.exec(rest))) {
+          const input = {};
+          if (typeof body.path === "string" && body.path.trim()) input.path = body.path.trim().slice(0, 300);
+          if (typeof body.url === "string" && body.url.trim()) input.url = body.url.trim().slice(0, 2000);
+          return send(201, { id: await runner.start(slug, k[1], input) });
+        }
+        if (req.method === "GET" && rest === "/runs") return send(200, await store.listRuns(slug));
+        if (req.method === "GET" && (k = /^\/runs\/([\w-]{1,64})$/.exec(rest))) return send(200, await store.getRun(slug, k[1]));
+        if (req.method === "POST" && (k = /^\/runs\/([\w-]{1,64})\/cancel$/.exec(rest))) return send(200, await store.cancelRun(slug, k[1]));
+        if (req.method === "GET" && rest === "/approvals") return send(200, await store.listApprovals(slug));
+        if (req.method === "POST" && (k = /^\/approvals\/([\w-]{1,64})\/decide$/.exec(rest))) {
+          const decided = await store.decide(slug, k[1], body.decision, body.reason);
+          let written = null;
+          if (decided.status === "approved") {
+            written = runner.applyApproval(slug, decided);
+            if (written) await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "file.written", written);
+          }
+          return send(200, { ...decided, written });
+        }
+        if (req.method === "GET" && rest === "/events") return send(200, await store.listEvents(slug));
+      }
+      return fail(404, "No such route.");
+    } catch (e) {
+      if (e instanceof StoreError) return fail(e.status, e.message);
+      if (e && e.status) return fail(e.status, e.message);
+      if (!quiet) console.error("jarvis-server:", e);
+      return fail(500, "The server hit an error. The log on this computer has the details.");
+    }
+  });
+
+  await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
+  const addr = server.address();
+  if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
+  return { server, port: addr.port, store, runner, db, async close() { await new Promise(r => server.close(r)); await db.close(); } };
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer().catch(e => { console.error("jarvis-server: " + e.message); process.exit(1); });
+}

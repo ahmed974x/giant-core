@@ -146,6 +146,24 @@ await editor.fill("---\nname: bad\ndescription: x\n---\n\n# bad\n\nRun: " + pipe
 await page.waitForTimeout(300);
 ok(/SEC-PIPE-SHELL/.test(await page.locator(".checks").textContent()), "F08 a pipe-to-shell line is caught by the SkillSpector rules");
 
+// Agent editor and workspace switcher (sample mode).
+await go("#/agents/ag_release");
+await page.getByRole("button", { name: "Edit" }).click();
+await page.getByRole("dialog").getByRole("heading", { name: "Edit Release notes writer" }).waitFor({ timeout: 5000 });
+ok((await page.getByRole("dialog").locator("input[name^=locked-]").evaluateAll(l => l.length === 5 && l.every(x => x.disabled))), "editor shows five locked permissions");
+await page.getByLabel("Name").fill("Release notes writer v2");
+await page.getByRole("button", { name: "Save changes" }).click();
+await page.waitForTimeout(400);
+ok(await page.getByRole("heading", { name: "Release notes writer v2", level: 1 }).isVisible(), "editing an agent saves in sample mode");
+await page.locator("#wsBtn").click();
+await page.getByRole("menuitemradio", { name: "giant-core" }).click();
+await page.waitForTimeout(400);
+ok(page.url().endsWith("#/agents"), "switching workspace from a detail page opens its list", page.url());
+ok((await page.locator("#wsName").textContent()) === "giant-core" && await page.getByRole("link", { name: "Commit summariser" }).isVisible(), "the sample workspace switch changes the agents");
+await page.locator("#wsBtn").click();
+await page.getByRole("menuitemradio", { name: "OMEGA PRIME" }).click();
+await page.waitForTimeout(300);
+
 // Shell: RTL switch and theme switch.
 await page.getByRole("button", { name: "Switch to right-to-left layout" }).click();
 ok((await page.evaluate(() => document.documentElement.dir)) === "rtl", "Shell direction switches to RTL");

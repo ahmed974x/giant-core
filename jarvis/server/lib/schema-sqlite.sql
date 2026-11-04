@@ -1,0 +1,159 @@
+-- Jarvis schema for the zero-setup mode (ADR-134): Node's built-in SQLite (node:sqlite).
+-- Same tables, columns and named constraints as jarvis/replica/schema.sql (PostgreSQL), so the same
+-- rules hold in both modes: a locked approval can never be approved, only a member decides, a
+-- rejection needs a reason, one active run per agent, and the event log is append-only.
+-- Ids are UUIDs made by the server; times are ISO 8601 UTC strings; json columns hold JSON text.
+pragma foreign_keys = on;
+
+create table if not exists workspaces (
+  id text primary key,
+  name text not null check (length(name) between 1 and 80),
+  slug text not null unique check (length(slug) between 1 and 40 and slug not glob '*[^a-z0-9-]*'),
+  created_at text not null,
+  updated_at text not null
+);
+
+create table if not exists members (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  email text not null,
+  role text not null check (role in ('owner', 'admin', 'operator', 'viewer')),
+  created_at text not null,
+  updated_at text not null,
+  unique (workspace_id, email)
+);
+create index if not exists members_ws on members (workspace_id);
+
+create table if not exists agents (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 60),
+  role_prompt text not null default '',
+  model text not null,
+  tools text not null default '[]' check (json_valid(tools)),
+  skills text not null default '[]' check (json_valid(skills)),
+  limits text not null default '{"max_steps": 20}' check (json_valid(limits)),
+  status text not null default 'idle' check (status in ('idle', 'running', 'paused', 'failed', 'archived')),
+  created_at text not null,
+  updated_at text not null,
+  unique (workspace_id, name)
+);
+create index if not exists agents_ws_status on agents (workspace_id, status);
+
+create table if not exists workflows (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 80),
+  graph text not null default '{"nodes": [], "edges": []}' check (json_valid(graph)),
+  version integer not null default 1 check (version > 0),
+  created_at text not null,
+  updated_at text not null
+);
+create index if not exists workflows_ws on workflows (workspace_id);
+
+create table if not exists runs (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  agent_id text references agents(id) on delete set null,
+  workflow_id text references workflows(id) on delete set null,
+  trigger text not null default 'manual' check (trigger in ('manual', 'schedule', 'workflow')),
+  status text not null default 'queued' check (status in ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  cost_micro_usd integer not null default 0 check (cost_micro_usd >= 0),
+  input text not null default '{}' check (json_valid(input)),
+  log text not null default '[]' check (json_valid(log)),
+  started_at text,
+  finished_at text,
+  created_at text not null,
+  updated_at text not null,
+  constraint runs_has_target check (agent_id is not null or workflow_id is not null),
+  constraint runs_times check (finished_at is null or started_at is null or finished_at >= started_at)
+);
+create index if not exists runs_ws_created on runs (workspace_id, created_at);
+create index if not exists runs_agent on runs (agent_id);
+create unique index if not exists runs_one_active_per_agent on runs (agent_id)
+  where status in ('queued', 'running') and agent_id is not null;
+
+create table if not exists steps (
+  id text primary key,
+  run_id text not null references runs(id) on delete cascade,
+  idx integer not null check (idx >= 0),
+  agent_id text references agents(id) on delete set null,
+  tool text not null,
+  input text not null default '{}' check (json_valid(input)),
+  output text check (output is null or json_valid(output)),
+  status text not null default 'queued' check (status in ('queued', 'running', 'ok', 'failed', 'skipped')),
+  ms integer check (ms >= 0),
+  tries integer not null default 0 check (tries between 0 and 10),
+  created_at text not null,
+  updated_at text not null,
+  unique (run_id, idx)
+);
+
+create table if not exists approvals (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  run_id text references runs(id) on delete set null,
+  step_id text references steps(id) on delete set null,
+  category text not null check (category in ('sandbox', 'file_write', 'outbound', 'publish', 'permissions', 'install', 'money')),
+  action text not null,
+  payload text not null default '{}' check (json_valid(payload)),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired')),
+  decided_by text references members(id) on delete set null,
+  reason text,
+  decided_at text,
+  created_at text not null,
+  updated_at text not null,
+  constraint approvals_locked_never_approved
+    check (not (status = 'approved' and category in ('money', 'publish', 'permissions', 'install', 'outbound'))),
+  constraint approvals_decided_by_member
+    check (status not in ('approved', 'rejected') or decided_by is not null),
+  constraint approvals_reject_has_reason
+    check (status <> 'rejected' or length(coalesce(reason, '')) > 0)
+);
+create index if not exists approvals_ws_status on approvals (workspace_id, status, created_at);
+create index if not exists approvals_run on approvals (run_id);
+
+create table if not exists events (
+  id integer primary key autoincrement,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  actor text not null,
+  kind text not null,
+  target text,
+  data text not null default '{}' check (json_valid(data)),
+  at text not null
+);
+create index if not exists events_ws_at on events (workspace_id, at);
+
+create trigger if not exists events_no_update before update on events
+  begin select raise(abort, 'jarvis.events is append-only'); end;
+create trigger if not exists events_no_delete before delete on events
+  begin select raise(abort, 'jarvis.events is append-only'); end;
+
+create table if not exists sites (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 80),
+  lang_default text not null default 'en' check (lang_default in ('en', 'ar')),
+  theme text not null default '{}' check (json_valid(theme)),
+  blocks text not null default '[]' check (json_valid(blocks)),
+  created_at text not null,
+  updated_at text not null
+);
+
+create table if not exists skills (
+  name text primary key,
+  description text not null,
+  source text not null check (source in ('project', 'vendored', 'reviewed')),
+  review_doc text,
+  findings text not null default '{}' check (json_valid(findings)),
+  scanned_at text not null
+);
+
+create table if not exists mixes (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 80),
+  skills text not null check (json_valid(skills) and json_array_length(skills) between 1 and 20),
+  created_at text not null,
+  updated_at text not null
+);

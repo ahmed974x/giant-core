@@ -2,12 +2,35 @@
 
 A dark-first web dashboard for running AI agents: agents, runs, approvals and logs, plus a live
 **Studio** for designing websites and a **Skill Mixer** for this repo's Claude skills. English UI,
-RTL-ready. Decision records: ADR-132 (design system) and ADR-133 (app, glass, Studio, Mixer).
+RTL-ready. Decision records: ADR-132 (design system), ADR-133 (app, glass, Studio, Mixer) and
+ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 
-Open `jarvis/app/index.html` straight from disk. It needs no server and no network (strict CSP,
-`connect-src 'none'`).
+The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
+opened from disk it uses no network at all.
 
-**Status: phase 1.** All screens run on a labelled sample workspace, and runs are simulated (no model or tool is called). Phase 2 is planned in `replica/architecture.md` and `replica/schema.sql`: the repo's local Postgres, a loopback service, and PRIME's plan checker as the runtime. Parity is 83.2 (`replica/parity.md`).
+**Status: phase 1 and 2 built.** All 27 must-haves are done; parity is 88.5 (`replica/parity.md`).
+
+Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
+
+```bash
+node --disable-warning=ExperimentalWarning jarvis/server/server.mjs
+```
+
+Then open http://127.0.0.1:8798. That uses SQLite with nothing to install.
+
+For PostgreSQL 16, install the locked `pg` client once:
+
+```bash
+npm ci --ignore-scripts --prefix jarvis/server
+```
+
+Then start the server against your local database:
+
+```bash
+JARVIS_DB=postgres DATABASE_URL=postgres://USER@127.0.0.1:5432/jarvis node jarvis/server/server.mjs
+```
+
+Opened straight from disk instead, the page uses a labelled sample workspace and simulated runs.
 
 | Path | What it is |
 | --- | --- |
@@ -20,7 +43,8 @@ Open `jarvis/app/index.html` straight from disk. It needs no server and no netwo
 | `replica/architecture.md`, `schema.sql` | stack, API, 11-table schema with the approval rules |
 | `replica/design/` | tokens (source of truth), generated CSS and Tailwind, specs, measurements, contrast report |
 | `replica/build-log.md`, `parity.md` | what is built, what is not, and the score |
-| `scripts/` | `build-app.mjs`, `build-design-page.mjs`, `test-app.mjs`, `font-metrics.mjs`, `lib/fonts.mjs` |
+| `server/` | local server: `server.mjs`, `lib/` (database adapters, store, runner, public-page fetcher, clean-room cloner, SQLite schema), `test/test-server.mjs` |
+| `scripts/` | `build-app.mjs`, `build-design-page.mjs`, `test-app.mjs` (sample mode), `test-live.mjs` (live server), `font-metrics.mjs`, `lib/fonts.mjs` |
 
 ## Change the design
 
@@ -84,6 +108,16 @@ Run the flow tests (needs `playwright-core`):
 node jarvis/scripts/test-app.mjs
 ```
 
+Run the live-server flow tests and the server tests:
+
+```bash
+node --disable-warning=ExperimentalWarning jarvis/scripts/test-live.mjs
+```
+
+```bash
+node --disable-warning=ExperimentalWarning jarvis/server/test/test-server.mjs
+```
+
 Run the three-size check:
 
 ```bash
@@ -93,5 +127,5 @@ node scripts/ui-three-sizes.mjs "file://$PWD/jarvis/app/index.html#/studio"
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.
-- **The Studio** only downloads a file.
+- **The Studio** only downloads a file. The cloner reads one public page, obeys `robots.txt`, refuses private addresses, and keeps only its layout: no text, images, colours, scripts or brand.
 - **The Skill Mixer** only copies a plan.

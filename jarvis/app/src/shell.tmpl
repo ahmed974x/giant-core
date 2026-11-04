@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PIN'; style-src 'sha256-PIN'; font-src data:; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PIN'; style-src 'sha256-PIN'; font-src data:; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="color-scheme" content="dark light" />
 <title>Jarvis</title>
 <style>
@@ -73,7 +73,10 @@
   <div class="main-col">
     <header class="topbar glass">
       <button class="btn btn-ghost btn-icon menu-btn" id="menu" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
-      <span class="ws-name" id="wsName" translate="no">Personal</span>
+      <div class="ws">
+        <button class="btn btn-ghost" id="wsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="wsMenu"><span class="ws-name" id="wsName" translate="no">Workspace</span><svg class="i sm" aria-hidden="true"><use href="#i-down"/></svg></button>
+        <ul class="ws-menu glass" id="wsMenu" role="menu" aria-label="Workspaces" hidden></ul>
+      </div>
       <button class="btn btn-secondary search-trigger" id="searchBtn" type="button" aria-label="Search (Ctrl+K)" aria-haspopup="dialog">
         <span class="row"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><span class="search-word">Search…</span></span><span class="kbd" id="kbdHint">Ctrl K</span>
       </button>

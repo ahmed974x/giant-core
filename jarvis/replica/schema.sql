@@ -1,9 +1,10 @@
--- Jarvis schema (ADR-133), PostgreSQL 15+. Phase 2: copy to db/jarvis/01-schema.sql for the
--- repo's local Postgres (127.0.0.1). Times are timestamptz in UTC. Access: one data-layer
+-- Jarvis schema (ADR-133, ADR-134), PostgreSQL 15+. Used by jarvis/server in Postgres mode
+-- (JARVIS_DB=postgres); jarvis/server/lib/schema-sqlite.sql is the same model for the zero-setup mode.
+-- The repo's local Postgres listens on 127.0.0.1. Times are timestamptz in UTC. Access: one data-layer
 -- authorisation check per query in jarvis/server (single local owner); row level security
 -- policies are added when a second user exists.
 
-create extension if not exists pgcrypto;  -- gen_random_uuid()
+-- gen_random_uuid() is built into PostgreSQL 13+, so no extension is needed.
 create schema if not exists jarvis;
 set search_path = jarvis, public;
 
@@ -32,7 +33,8 @@ create table agents (
   name text not null check (length(name) between 1 and 60),
   role_prompt text not null default '',
   model text not null,
-  tools text[] not null default '{}',
+  tools jsonb not null default '[]',
+  skills jsonb not null default '[]',               -- names of linked .claude/skills
   limits jsonb not null default '{"max_steps": 20}',  -- never secrets: keys live in the vault
   status text not null default 'idle'
     check (status in ('idle', 'running', 'paused', 'failed', 'archived')),
@@ -62,6 +64,8 @@ create table runs (
   status text not null default 'queued'
     check (status in ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
   cost_micro_usd bigint not null default 0 check (cost_micro_usd >= 0),  -- model cost estimate, not a payment
+  input jsonb not null default '{}',
+  log jsonb not null default '[]',
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now(),
@@ -156,7 +160,7 @@ create index on sites (workspace_id, updated_at desc);
 create table skills (
   name text primary key check (name ~ '^[a-z0-9:-]{1,64}$'),
   description text not null,
-  source text not null check (source in ('project', 'vendored')),
+  source text not null check (source in ('project', 'vendored', 'reviewed')),
   review_doc text,
   findings jsonb not null default '{"critical": 0, "high": 0, "medium": 0, "low": 0}',
   scanned_at timestamptz not null
