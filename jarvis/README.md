@@ -124,6 +124,43 @@ Run the three-size check:
 node scripts/ui-three-sizes.mjs "file://$PWD/jarvis/app/index.html#/studio"
 ```
 
+## Mission Control (ADR-135)
+
+`#/missions` runs long tasks in ordered phases. The steps of one phase run in parallel.
+
+- **Tool steps** use the runner's real read tools.
+- **Gate steps** (TDD, Lint, Contrast, Security) read saved evidence and never run anything:
+  - `jarvis/replica/evidence/*.log`;
+  - the contrast report;
+  - the SkillSpector scan.
+- **Approval steps** wait for a person. Money, publishing, permissions, installs and outbound messages wait for good as «بانتظار الموافقة» cards; steps that do not need them carry on.
+- **Capsules.** After each phase, a SHA-256 chained capsule is saved. Inspect, verify or restore it from the side panel.
+- **Plan files.** Each mission also keeps the `replica-long-horizon` files (`task_plan.md`, `findings.md`, `progress.md`) under `jarvis/server/.data/workspaces/<slug>/missions/<id>/`.
+
+Refresh the evidence after running the checks:
+
+```bash
+JARVIS_TEST_PG_URL=postgres://… node --disable-warning=ExperimentalWarning jarvis/server/test/test-server.mjs > jarvis/replica/evidence/tests-server.log
+```
+
+```bash
+node jarvis/scripts/test-app.mjs > jarvis/replica/evidence/tests-app.log
+```
+
+```bash
+node --disable-warning=ExperimentalWarning jarvis/scripts/test-live.mjs > jarvis/replica/evidence/tests-live.log
+```
+
+```bash
+python3 -m unittest discover -s .claude/skills/replica-long-horizon/tests -v > jarvis/replica/evidence/tests-long-horizon.log 2>&1
+```
+
+```bash
+ruff check .claude/skills/replica-long-horizon > jarvis/replica/evidence/lint-long-horizon.log
+```
+
+Then rebuild the page, so sample mode's gates read the new snapshot.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

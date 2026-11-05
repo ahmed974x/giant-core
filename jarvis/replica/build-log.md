@@ -17,6 +17,7 @@ One line per screen. Build: `node jarvis/scripts/build-app.mjs`. Tests: `node ja
 | S11 | Settings | 2026-11-04 | partial | invites and roles need a second user | — |
 | S12 | Design system (`jarvis/design/index.html`) | 2026-11-04 | done | — | — |
 | S13 | Studio, with the clean-room cloner (ADR-134) | 2026-11-04 | done | — | the cloner keeps only layout shape; a sweep proves no source text survives | the sandboxed `srcdoc` frame inherits the parent CSP, so its one style and one script live in a `<template>` and are pinned by hash; site text goes in as JSON, never markup |
+| S15 | Mission Control (ADR-135) | 2026-11-05 | done | — | right after a workspace switch the page had no change marker, so a fast mission could finish before the first poll; the switch now reads the marker at once |
 | S14 | Skill Mixer | 2026-11-04 | done | live rescan (needs the phase 2 service) | the embedded SkillSpector rules flagged themselves until they sat between the scanner's data markers |
 
-Screens built: 12 of 14 (11 done; S11 partial). Not started: S06, S07 (workflows). Must-haves: 27 of 27. Parity 88.5 (`parity.md`). Backend: `jarvis/server` (ADR-134).
+Screens built: 13 of 15 (12 done; S11 partial). Not started: S06, S07 (workflows). Must-haves: 34 of 34. Parity 90.3 (`parity.md`). Backend: `jarvis/server` (ADR-134), missions engine `jarvis/server/lib/missions.mjs` (ADR-135).

@@ -1,0 +1,44 @@
+PASS live mode says where the data comes from
+PASS first workspace is OMEGA PRIME
+PASS OMEGA PRIME shows its own agents
+PASS keyboard switch to Jarvis Studio
+PASS the agent list changes with the workspace
+PASS locked cards belong to the workspace
+PASS locked cards have no approve button
+PASS seeded locked requests are labelled sample
+PASS click switch back to OMEGA PRIME
+PASS edit dialog opens with the agent
+PASS five locked permissions, all off and disabled
+PASS the new name shows after saving
+PASS the linked skill shows in Config
+PASS the server stored the edit
+PASS run dialog offers a default path
+PASS the real run succeeds
+PASS the files.read step lists the real files
+PASS the run is not labelled simulated
+PASS approving writes the note to disk
+PASS the report shows 0 leaks and what was dropped
+PASS the clone rebuilt the sections in order
+PASS the preview shows the rebuilt table and our own headline
+PASS no source text in the preview, the editors or the saved site
+PASS the clone flips to Arabic RTL
+PASS the download is clean, pinned and RTL
+PASS publishing the clone is a locked card
+PASS live mission runs to its approvals
+PASS live gates pass on the saved contrast report and SkillSpector scan
+PASS live tool step read the design folder
+PASS live locked install step waits with no approve button
+PASS the mission keeps task_plan.md and progress.md on disk
+PASS approving the mission note writes it and the next step runs
+PASS live capsule hash checks out
+PASS live restore pauses the mission and keeps the chain intact
+PASS live overview renders
+PASS live logs renders
+PASS live dates show as relative times
+PASS live runs renders
+PASS live missions renders
+PASS live settings renders
+PASS live skills renders
+PASS no console or page errors
+
+42 passed, 0 failed

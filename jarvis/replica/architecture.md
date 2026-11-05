@@ -27,7 +27,7 @@ Two phases, both built. Phase 1 is the static page (ADR-133). Phase 2 is the loc
 
 ## Schema
 
-Tables: 11 (`schema.sql`).
+Tables: 15 (`schema.sql`; ADR-135 adds `missions`, `mission_steps`, `capsules` and `gate_results`).
 
 **Access rules.** Phase 2 runs a data-layer check on every query in `jarvis/server`: the caller's member row and its role on the workspace. Row level security is noted in the SQL for when there is more than one user.
 
@@ -37,6 +37,9 @@ Tables: 11 (`schema.sql`).
 - **`approvals_decided_by_member`.** The decider is a member, never an agent. Agents have no member row, so an agent cannot approve its own request.
 - **`runs_one_active_per_agent`.** A partial unique index stops two runs of the same agent from being active at once.
 - **`events` is append-only.** A trigger refuses `update` and `delete`.
+- **`mission_steps_locked_never_done`** (ADR-135). A mission step in a locked category can never be marked done. It waits as a «بانتظار الموافقة» card while steps that do not need it carry on.
+- **`mission_steps_gate_before_done`.** A gate step is done only when its gate passed.
+- **`capsules` is append-only.** Its trigger works like the one on `events`. Each row's `hash` is the SHA-256 of its canonical JSON, chained by `prev_hash`.
 
 ## API (phase 2)
 
@@ -57,6 +60,12 @@ Tables: 11 (`schema.sql`).
 | GET /api/sites, PUT /api/sites/:id | Studio drafts | member | blocks, theme | `Site` | F06 |
 | GET /api/skills | skills snapshot plus SkillSpector status | member | – | `Skill[]` | F07 |
 | GET /api/mixes, POST | saved skill mixes | member | ordered names | `Mix` | F07 |
+| GET, POST /api/w/:slug/missions | list missions; create one from a template | member / operator+ | template, title, capsuleEvery | `Mission` | F09 |
+| GET /api/w/:slug/missions/:id | phases, steps, gate results, capsules, chain check, context health | member | – | `Mission` | F09 |
+| POST …/missions/:id/run, /pause | run or resume; pause saves a capsule | operator+ | – | `Mission` | F09 |
+| GET …/missions/:id/verify, /capsules/:seq | verify the chain; inspect one capsule | member | – | chain, `Capsule` | F09 |
+| POST …/missions/:id/capsules/:seq/restore | verify, rewind the steps, pause, seal a new capsule | operator+ | – | `Mission` | F09 |
+| POST …/missions/:id/steps/:idx/skip | carry on without a waiting step; its request stays pending | operator+ | – | `Mission` | F09 |
 
 - **Webhooks in or out:** none.
 - **Jobs:** `skills-scan`, on demand, re-runs SkillSpector over `.claude/skills` and refreshes `skills`.

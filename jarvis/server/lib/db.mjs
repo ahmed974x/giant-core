@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const JSON_COLS = new Set(["tools", "skills", "limits", "input", "log", "output", "payload", "data", "graph", "theme", "blocks", "findings"]);
+const JSON_COLS = new Set(["tools", "skills", "limits", "input", "log", "output", "payload", "data", "graph", "theme", "blocks", "findings", "depends_on", "criteria", "state"]);
 
 export function mapRow(row) {
   if (!row) return row;

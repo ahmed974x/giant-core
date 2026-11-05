@@ -1,0 +1,69 @@
+PASS F01 agents page renders
+PASS F01 empty name is refused with a message
+PASS F01 the name field is marked invalid
+PASS F01 duplicate name is refused
+PASS F01 max steps out of range is refused
+PASS F01 create opens the new agent
+PASS F01 run opens the run view
+PASS F01 the run says it is simulated
+PASS F01 the run finishes
+PASS F01 notes.write asks for approval
+PASS F01 sidebar count goes from 2 to 3
+PASS F02 reject without a reason is refused
+PASS F02 two decisions leave one waiting
+PASS F02 five locked cards (money, publish, permissions, install, outbound)
+PASS F02 locked cards have no approve button
+PASS F02 locked cards say «قيد الموافقة»
+PASS F02 the reject reason is kept
+PASS F05 Ctrl+K → appr → Enter opens approvals
+PASS F06 the sandboxed preview frame loads
+PASS F06 sandbox is allow-scripts only (no same-origin)
+PASS F06 preview renders the hero
+PASS F06 AR switch flips the preview to rtl/ar
+PASS F06 preview shows the Arabic text
+PASS F06 width switch sets 375px
+PASS F06 the preview lays out at 375px
+PASS F06 badge passes for the default theme
+PASS F06 badge fails when text gets too dark
+PASS F06 colour change reaches the preview live
+PASS F06 download is named .html
+PASS F06 download carries a strict pinned CSP
+PASS F06 download keeps the chosen language
+PASS F06 publish shows a locked card
+PASS F06 downloaded site renders alone with no CSP errors
+PASS F07 lists the repo's skills
+PASS F07 pipeline plan lists the installed Replica skills in order
+PASS F07 skills that are not installed are left out
+PASS F08 missing frontmatter fails
+PASS F08 a clean SKILL.md passes
+PASS F08 a pipe-to-shell line is caught by the SkillSpector rules
+PASS editor shows five locked permissions
+PASS editing an agent saves in sample mode
+PASS switching workspace from a detail page opens its list
+PASS the sample workspace switch changes the agents
+PASS F09 missions page lists the seeded mission
+PASS F09 mission view shows its three phases
+PASS F09 phase 1 runs two steps in parallel
+PASS F09 the mission stops at the approvals
+PASS F09 the TDD gate passes on the repo's saved test log
+PASS F09 the outbound step waits as a locked «بانتظار الموافقة» card with no approve button
+PASS F09 capsules are saved after each phase and the chain is intact
+PASS F09 context health is labelled [INFERENCE]
+PASS F09 approving the note finishes that step while the locked one still waits
+PASS F09 carrying on without the locked step finishes the mission
+PASS F09 inspecting a capsule checks its hash
+PASS F09 the page's capsule hash equals Node's SHA-256 of the canonical JSON
+PASS F09 restoring capsule 1 pauses the mission and records the restore
+PASS F09 a restored mission runs again from the capsule
+PASS F10 capsule interval out of range is refused
+PASS F10 the agent shows its long-horizon mode
+PASS F10 starting a long-horizon agent opens its mission
+PASS F11 the extractor's sweep finds no source text
+PASS F11 the preview shows the clean template without the brand
+PASS F11 the template wears the Jarvis night tokens
+PASS F11 the template's sticky bar is glass (blur 16, saturate 180)
+PASS Shell direction switches to RTL
+PASS Shell theme switches to light
+PASS no console or page errors
+
+67 passed, 0 failed

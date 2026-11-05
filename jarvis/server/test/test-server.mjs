@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { startServer } from "../server.mjs";
 import { cleanClone, parse } from "../lib/clean-clone.mjs";
 import { checkUrl, robotsAllows, isBlockedAddress, safeLookup, FetchError } from "../lib/fetch-public.mjs";
+import { canonical, sealCapsule, verifyChain, judge } from "../lib/missions.mjs";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 let passed = 0, failed = 0;
@@ -136,6 +137,88 @@ async function suite(mode, opts) {
   const evs = (await j("/api/w/omega-prime/events")).body;
   ok(evs.some(e => e.kind === "file.written") && evs.some(e => e.kind === "approval.approved"), tag("events record the write and the decision"));
 
+  // Long-horizon missions (ADR-135)
+  const waitMission = async (slugName, id, want) => { let d; for (let i = 0; i < 100; i++) { d = (await j(`/api/w/${slugName}/missions/${id}`)).body; if (want.includes(d.status)) return d; await sleep(40); } return d; };
+  const seeded = {};
+  for (const w of ["omega-prime", "jarvis-studio", "giant-core"]) seeded[w] = (await j(`/api/w/${w}/missions`)).body;
+  ok(seeded["giant-core"].length === 1 && seeded["giant-core"][0].template === "release-readiness" && seeded["jarvis-studio"][0].template === "design-audit" && seeded["omega-prime"][0].template === "adr-digest", tag("each workspace has a seeded draft mission"), Object.values(seeded).map(x => x.map(y => y.template)));
+  const mid = seeded["jarvis-studio"][0].id;
+  ok((await j(`/api/w/giant-core/missions/${mid}`)).status === 404, tag("a mission is not readable from another workspace"));
+  let md = (await j(`/api/w/jarvis-studio/missions/${mid}`)).body;
+  ok(md.status === "draft" && md.steps.length === 6 && new Set(md.steps.map(x => x.phase)).size === 4 && md.capsules.length === 0, tag("draft mission: 6 steps in 4 phases, no capsule yet"), md.steps && md.steps.map(x => x.phase));
+  ok((await post(`/api/w/jarvis-studio/missions/${mid}/run`, {})).status === 200, tag("start a mission"));
+  md = await waitMission("jarvis-studio", mid, ["awaiting_approval", "succeeded", "failed"]);
+  const st0 = md.steps;
+  ok(md.status === "awaiting_approval", tag("mission stops at the approvals, not before"), md.steps.map(x => x.idx + ":" + x.status));
+  ok(st0[0].status === "done" && st0[0].output.files.length > 3, tag("tool step read the real design folder"), st0[0].output);
+  ok(st0[1].gateStatus === "pass" && st0[1].status === "done" && /0 failing/.test(st0[1].output.results[0].detail), tag("contrast gate passed on the saved report"), st0[1].output);
+  ok(st0[2].gateStatus === "pass" && /critical 0, high 0/.test(st0[2].output.results[0].detail) && st0[2].gates.length === 1, tag("security gate passed on the SkillSpector scan and logged a gate row"), st0[2]);
+  ok(st0[3].status === "blocked" && st0[3].locked === true && st0[3].approval && st0[3].approval.status === "pending", tag("install step waits as a locked approval"), st0[3]);
+  ok(st0[4].status === "blocked" && st0[4].locked === false, tag("note step waits for a person"));
+  ok(st0[5].status === "queued", tag("the step that needs the note waits"));
+  ok(md.capsules.length >= 3 && md.chain.ok && md.capsules[0].prevHash === "0".repeat(64) && md.capsules[1].prevHash === md.capsules[0].hash, tag("capsules saved after each phase and chained"), md.chain);
+  ok(typeof md.health.score === "number" && /\[INFERENCE\]/.test(md.health.basis), tag("context health is a labelled heuristic"), md.health);
+  const mdir = join(dataDir, md.files.dir);
+  const planText = readFileSync(join(mdir, "task_plan.md"), "utf8");
+  ok(/- \[x\] T1: /.test(planText) && /- \[ \] T4: .*\{gate: approval; ac: AC2\}/.test(planText) && readFileSync(join(mdir, "progress.md"), "utf8").includes("Capsule #1") && /AC1: `jarvis\/replica\/design\/contrast-report.txt`/.test(readFileSync(join(mdir, "findings.md"), "utf8")), tag("the three plan files follow the mission"), planText);
+  // Locked approval from a mission: the API and the database refuse it.
+  const lockedDecide = await post(`/api/w/jarvis-studio/approvals/${st0[3].approvalId}/decide`, { decision: "approved" });
+  ok(lockedDecide.status === 403, tag("API: a mission's locked step cannot be approved"), lockedDecide.body);
+  let e5 = null; try { await s.db.run("update mission_steps set status = 'done' where id = $1", [st0[3].id]); } catch (e) { e5 = e; }
+  ok(e5 && /mission_steps_locked_never_done/.test(e5.message + (e5.constraint || "")), tag("SQL: a locked mission step can never be done"), e5 && e5.message);
+  let e6 = null; try { await s.db.run("update mission_steps set gate_status = 'fail' where id = $1", [st0[1].id]); } catch (e) { e6 = e; }
+  ok(e6 && /mission_steps_gate_before_done/.test(e6.message + (e6.constraint || "")), tag("SQL: a done gate step must have passed"), e6 && e6.message);
+  let e7 = null; try { await s.db.run("update capsules set label = 'edited' where mission_id = $1", [mid]); } catch (e) { e7 = e; }
+  let e8 = null; try { await s.db.run("delete from capsules where mission_id = $1", [mid]); } catch (e) { e8 = e; }
+  ok(e7 && e8 && /append-only/.test(e7.message) && /append-only/.test(e8.message), tag("SQL: capsules cannot be edited or deleted"));
+  // Approving the note writes it and the mission carries on with the steps that need it.
+  const noteOk = (await post(`/api/w/jarvis-studio/approvals/${st0[4].approvalId}/decide`, { decision: "approved" })).body;
+  ok(noteOk.mission === mid && noteOk.written && existsSync(join(dataDir, noteOk.written)) && readFileSync(join(dataDir, noteOk.written), "utf8").includes("## Gate evidence"), tag("approving the mission note writes it with the gate evidence"), noteOk);
+  md = await waitMission("jarvis-studio", mid, ["awaiting_approval"]);
+  for (let i = 0; i < 50 && md.steps[5].status !== "done"; i++) { await sleep(40); md = (await j(`/api/w/jarvis-studio/missions/${mid}`)).body; }
+  ok(md.steps[4].status === "done" && md.steps[5].status === "done" && md.steps[3].status === "blocked" && md.status === "awaiting_approval", tag("independent steps finished while the locked one still waits"), md.steps.map(x => x.idx + ":" + x.status));
+  ok((await post(`/api/w/jarvis-studio/missions/${mid}/steps/0/skip`, {})).status === 409, tag("only a waiting step can be skipped"));
+  await post(`/api/w/jarvis-studio/missions/${mid}/steps/3/skip`, {});
+  md = await waitMission("jarvis-studio", mid, ["succeeded", "failed"]);
+  ok(md.status === "succeeded" && md.steps[3].status === "skipped" && md.capsules[md.capsules.length - 1].label === "finished", tag("carrying on without the locked step finishes the mission"), md.status);
+  ok((await j("/api/w/jarvis-studio/approvals")).body.find(p => p.id === st0[3].approvalId).status === "pending", tag("the skipped locked request stays pending in the inbox"));
+  const ver = (await j(`/api/w/jarvis-studio/missions/${mid}/verify`)).body;
+  const cap1 = (await j(`/api/w/jarvis-studio/missions/${mid}/capsules/1`)).body;
+  ok(ver.ok && ver.count === md.capsules.length && cap1.hashOk && cap1.state.steps.length === 6, tag("verify the chain and inspect a capsule"), ver);
+  ok((await post(`/api/w/jarvis-studio/missions/${mid}/run`, {})).status === 409, tag("a finished mission does not run again without a restore"));
+  const restored = (await post(`/api/w/jarvis-studio/missions/${mid}/capsules/1/restore`, {})).body;
+  ok(restored.status === "paused" && restored.steps[0].status === "done" && restored.steps[1].status === "queued" && restored.steps[1].gateStatus === "none" && restored.capsules[restored.capsules.length - 1].label === "restored from #1" && restored.chain.ok, tag("restore puts every step back and seals a new capsule"), restored.steps && restored.steps.map(x => x.status));
+  await post(`/api/w/jarvis-studio/missions/${mid}/run`, {});
+  md = await waitMission("jarvis-studio", mid, ["awaiting_approval", "failed"]);
+  ok(md.status === "awaiting_approval" && md.steps[1].gateStatus === "pass" && md.steps[3].status === "blocked", tag("a restored mission runs again from the capsule"), md.steps.map(x => x.idx + ":" + x.status));
+  const again = (await post(`/api/w/jarvis-studio/missions/${mid}/capsules/1/restore`, {})).body;
+  ok(again.status === "paused" && again.chain.ok, tag("restore while waiting for approval is allowed"), again.status);
+  // A failing gate stops the steps that need it; others carry on.
+  s.missions.TEMPLATES["test-fail"] = { title: "Failing gate", goal: "Test", steps: [
+    { phase: 1, kind: "gate", title: "Missing evidence", criteria: [{ check: "tests", evidence: "jarvis/replica/evidence/does-not-exist.log" }] },
+    { phase: 1, kind: "gate", title: "Outside evidence", criteria: [{ check: "tests", evidence: "../../etc/passwd" }] },
+    { phase: 2, kind: "tool", title: "Needs the gate", tool: "git.log", depends: [0] },
+    { phase: 2, kind: "tool", title: "Independent", tool: "notes.read" },
+  ] };
+  const fm = (await post("/api/w/giant-core/missions", { template: "test-fail", title: "Failing gate test" })).body;
+  delete s.missions.TEMPLATES["test-fail"];
+  await post(`/api/w/giant-core/missions/${fm.id}/run`, {});
+  const fd = await waitMission("giant-core", fm.id, ["succeeded", "failed"]);
+  ok(fd.status === "failed" && fd.steps[0].gateStatus === "fail" && /No evidence file/.test(fd.steps[0].output.results[0].detail) && /must live under/.test(fd.steps[1].output.results[0].detail) && fd.steps[2].status === "skipped" && fd.steps[3].status === "done", tag("a failed gate skips what needs it; the rest still runs"), fd.steps && fd.steps.map(x => x.idx + ":" + x.status));
+  ok((await post("/api/w/giant-core/missions", { template: "nope" })).status === 400 && (await post("/api/w/giant-core/missions", { template: "release-readiness", capsuleEvery: 20 })).status === 400, tag("mission create validates template and capsule interval"));
+  // Pause saves a capsule.
+  const pm = (await post("/api/w/giant-core/missions", { template: "release-readiness", capsuleEvery: 2 })).body;
+  ok(pm.capsuleEvery === 2, tag("capsule interval is stored"));
+  // Agent long-horizon mode: a run becomes a mission.
+  const lhAgent = (await j("/api/w/giant-core/agents")).body.find(a => a.name === "Commit summariser");
+  const patched = (await post(`/api/w/giant-core/agents/${lhAgent.id}`, { name: lhAgent.name, model: lhAgent.model, rolePrompt: lhAgent.rolePrompt, maxSteps: 12, tools: lhAgent.tools, skills: lhAgent.skills, mode: "long_horizon", capsuleEvery: 1 }, "PATCH")).body;
+  ok(patched.mode === "long_horizon" && patched.capsuleEvery === 1, tag("agent editor stores the long-horizon mode"), patched);
+  ok((await post(`/api/w/giant-core/agents/${lhAgent.id}`, { name: lhAgent.name, maxSteps: 12, tools: [], mode: "forever" }, "PATCH")).status === 400, tag("agent editor refuses an unknown mode"));
+  const lhRun = (await post(`/api/w/giant-core/agents/${lhAgent.id}/runs`, {})).body;
+  ok(typeof lhRun.mission === "string", tag("a long-horizon agent starts a mission"), lhRun);
+  const lhd = await waitMission("giant-core", lhRun.mission, ["awaiting_approval", "succeeded", "failed"]);
+  ok(lhd.status === "awaiting_approval" && lhd.agentId === lhAgent.id && lhd.steps[0].tool === "git.log" && lhd.steps[0].status === "done" && lhd.steps[lhd.steps.length - 1].category === "file_write", tag("the agent's mission ran its tools and waits for the note"), lhd.steps && lhd.steps.map(x => x.title + ":" + x.status));
+
   // Clean-room clone through the API
   const cc = await post("/api/studio/clean-clone", { url: "https://www.acmeflow.example/" });
   ok(cc.status === 200 && cc.body.report.sweep.leaks === 0 && !JSON.stringify(cc.body.blocks).includes("Acmeflow"), tag("clean-clone by URL keeps no source text"), cc.body.report);
@@ -167,6 +250,20 @@ const p = parse("<p>a &amp; b <script>x</script><style>y</style>c</p>");
 ok(p.counts.scripts === 1 && p.counts.styles === 1, "parser skips script and style bodies");
 const solo = cleanClone("<h2>Only text here</h2><p>Some words</p>");
 ok(solo.blocks.some(b => b.type === "hero") && solo.report.sweep.leaks === 0, "a bare page still gets a hero and no leaks", solo.blocks.map(b => b.type));
+
+// Capsule hashing, chain checks and the gate's evidence rules
+ok(canonical({ b: 1, a: [1, "x", { d: null, c: "é" }] }) === '{"a":[1,"x",{"c":"é","d":null}],"b":1}', "canonical JSON sorts keys at every level (same as lhcommon.canonical)");
+const c1 = { mission_id: "m", seq: 1, label: "one", state: { a: 1 }, prev_hash: "0".repeat(64), created_at: "2026-11-04T00:00:00.000Z" };
+c1.hash = sealCapsule(c1);
+const c2 = { mission_id: "m", seq: 2, label: "two", state: { a: 2 }, prev_hash: c1.hash, created_at: "2026-11-04T00:00:01.000Z" };
+c2.hash = sealCapsule(c2);
+ok(verifyChain([c1, c2], "m").ok, "a sealed chain verifies");
+ok(!verifyChain([c1, { ...c2, state: { a: 3 } }], "m").ok, "an edited capsule breaks the chain");
+ok(!verifyChain([c2], "m").ok && !verifyChain([c1, { ...c2, prev_hash: "f".repeat(64) }], "m").ok, "a missing or relinked capsule breaks the chain");
+ok(judge("tests", "x\n12 passed, 0 failed\n").ok && !judge("tests", "12 passed, 1 failed").ok && !judge("tests", "0 passed, 0 failed").ok && judge("tests", "Ran 10 tests in 0.1s\n\nOK\n").ok, "tests evidence rules");
+ok(judge("contrast", "118 checks, 0 failing AA").ok && !judge("contrast", "FAIL  dark 3.1:1\n118 checks, 1 failing").ok, "contrast evidence rules");
+ok(judge("security", '{"summary":{"critical":0,"high":0}}').ok && !judge("security", '{"summary":{"critical":0,"high":2}}').ok && !judge("security", "not json").ok, "security evidence rules");
+ok(judge("lint", "All checks passed!").ok && !judge("lint", "error: x\n0 errors").ok, "lint evidence rules");
 
 await suite("sqlite", { mode: "sqlite" });
 if (process.env.JARVIS_TEST_PG_URL) await suite("postgres", { mode: "postgres", databaseUrl: process.env.JARVIS_TEST_PG_URL });

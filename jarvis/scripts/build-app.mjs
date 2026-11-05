@@ -16,6 +16,8 @@ import { fileURLToPath } from "node:url";
 import { fontFaceCss } from "./lib/fonts.mjs";
 // The scanner's main() only runs when it is the entry script, so this import just reads its rule set.
 import { RULES } from "../../scripts/skillspector-audit.mjs";
+// Mission templates and the gate's evidence rules come from the server's engine, so both modes agree.
+import { TEMPLATES, judge } from "../server/lib/missions.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
@@ -27,7 +29,7 @@ const fail = msg => { console.error("build-app: " + msg); process.exit(2); };
 // 1. Tokens and fonts.
 const tokens = readFileSync(join(here, "..", "replica", "design", "tokens.css"), "utf8").replace(/^\/\*[^*]*Generated[^*]*\*\/\s*/, "").trim();
 const fonts = fontFaceCss(repo);
-const previewFonts = fontFaceCss(repo, ["Inter Variable", "Readex Pro Variable"]);
+const previewFonts = fontFaceCss(repo, ["Inter Variable", "Readex Pro Variable", "Geist Mono Variable"]);
 
 // 2. Preview runtime: its exact text is what the parent CSP pins and what the download carries.
 const previewCss = src("preview.css").replace("/*@PREVIEW_FONTS@*/", previewFonts);
@@ -56,6 +58,9 @@ const REVIEWS = {
   "replica-build": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md",
   "replica-test": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md",
   "replica-diff": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md",
+  "replica-backend": "docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md",
+  "replica-entrepreneur": "docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md",
+  "replica-long-horizon": "docs/security/LONG-HORIZON-SKILL-REVIEW-2026-11-05.md",
 };
 const scanPath = join(dataDir, "skills-scan.json");
 if (!existsSync(scanPath)) fail("missing jarvis/app/data/skills-scan.json; run the skillspector --json command in the header first.");
@@ -74,11 +79,23 @@ for (const name of readdirSync(skillsDir).sort()) {
   for (const f of scan.suppressed || []) if (f.file.startsWith(prefix)) findings.suppressed++;
   skills.push({ name: fm.name || name, folder: name, description: fm.description, source, review: REVIEWS[name] || null, findings });
 }
+// 3b. Evidence snapshot for sample-mode gates: every file a template's gate names, judged at build time.
+const evidence = [];
+for (const t of Object.values(TEMPLATES)) for (const st of t.steps) for (const c of st.criteria || []) {
+  if (evidence.some(e => e.path === c.evidence && e.check === c.check)) continue;
+  const abs = join(repo, c.evidence);
+  if (!existsSync(abs)) { evidence.push({ path: c.evidence, check: c.check, ok: false, detail: "No evidence file at " + c.evidence + ".", sha256: null, savedAt: null }); continue; }
+  const buf = readFileSync(abs);
+  const j = judge(c.check, buf.toString("utf8"));
+  evidence.push({ path: c.evidence, check: c.check, ok: j.ok, detail: j.detail, sha256: createHash("sha256").update(buf).digest("hex").slice(0, 16), savedAt: null });
+}
 const data = {
   built: new Date(statSync(scanPath).mtimeMs).toISOString(),
   scan: { generated: scan.generated, summary: scan.summary },
   skills,
   preview: { cssHash: sha(previewCss), jsHash: sha(previewJs) },
+  templates: TEMPLATES,
+  evidence,
 };
 
 // 4. Assemble.
@@ -95,7 +112,9 @@ fill("/*@PREVIEW_JS@*/", previewJs);
 fill("/*@DATA@*/", JSON.stringify(data).replace(/</g, "\\u003c"));
 // The rule set goes into the app script between the scanner's own markers, which it blanks out
 // before scanning (the same way the Ops Room carries it), so the patterns do not flag themselves.
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */"));
+const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
+if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

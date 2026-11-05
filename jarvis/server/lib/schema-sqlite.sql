@@ -157,3 +157,75 @@ create table if not exists mixes (
   created_at text not null,
   updated_at text not null
 );
+
+
+-- Long-horizon missions (ADR-135); same tables and named constraints as schema.sql.
+create table if not exists missions (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  agent_id text references agents(id) on delete set null,
+  title text not null check (length(title) between 1 and 120),
+  goal text not null default '',
+  template text not null,
+  status text not null default 'draft' check (status in ('draft', 'running', 'awaiting_approval', 'succeeded', 'failed', 'paused')),
+  capsule_every integer not null default 1 check (capsule_every between 1 and 10),
+  started_at text,
+  finished_at text,
+  created_at text not null,
+  updated_at text not null
+);
+create index if not exists missions_ws on missions (workspace_id, created_at);
+
+create table if not exists mission_steps (
+  id text primary key,
+  mission_id text not null references missions(id) on delete cascade,
+  idx integer not null check (idx >= 0),
+  phase integer not null check (phase >= 1),
+  title text not null,
+  kind text not null check (kind in ('tool', 'gate', 'approval')),
+  tool text,
+  category text check (category is null or category in ('file_write', 'outbound', 'publish', 'permissions', 'install', 'money')),
+  input text not null default '{}' check (json_valid(input)),
+  depends_on text not null default '[]' check (json_valid(depends_on)),
+  criteria text not null default '[]' check (json_valid(criteria)),
+  approval_id text references approvals(id) on delete set null,
+  status text not null default 'queued' check (status in ('queued', 'running', 'done', 'failed', 'blocked', 'skipped')),
+  gate_status text not null default 'none' check (gate_status in ('none', 'pass', 'fail')),
+  output text check (output is null or json_valid(output)),
+  ms integer check (ms >= 0),
+  created_at text not null,
+  updated_at text not null,
+  unique (mission_id, idx),
+  constraint mission_steps_gate_before_done check (status <> 'done' or kind <> 'gate' or gate_status = 'pass'),
+  constraint mission_steps_locked_never_done
+    check (not (status = 'done' and kind = 'approval' and category in ('money', 'publish', 'permissions', 'install', 'outbound')))
+);
+create index if not exists mission_steps_m on mission_steps (mission_id, phase, idx);
+
+create table if not exists capsules (
+  id text primary key,
+  mission_id text not null references missions(id) on delete cascade,
+  seq integer not null check (seq >= 1),
+  label text not null,
+  state text not null check (json_valid(state)),
+  prev_hash text not null check (length(prev_hash) = 64),
+  hash text not null check (length(hash) = 64),
+  created_at text not null,
+  unique (mission_id, seq)
+);
+create trigger if not exists capsules_no_update before update on capsules
+  begin select raise(abort, 'jarvis.capsules is append-only'); end;
+create trigger if not exists capsules_no_delete before delete on capsules
+  begin select raise(abort, 'jarvis.capsules is append-only'); end;
+
+create table if not exists gate_results (
+  id text primary key,
+  mission_id text not null references missions(id) on delete cascade,
+  step_id text not null references mission_steps(id) on delete cascade,
+  check_name text not null,
+  status text not null check (status in ('pass', 'fail')),
+  detail text not null default '',
+  evidence text,
+  created_at text not null
+);
+create index if not exists gate_results_m on gate_results (mission_id, step_id);

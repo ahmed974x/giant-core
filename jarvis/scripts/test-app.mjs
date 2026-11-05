@@ -5,6 +5,7 @@
 // In the cloud sandbox Chromium is preinstalled (see AGENTS.md §6 and replica-test's giant-core notes).
 import { chromium } from "playwright-core";
 import { readFileSync, copyFileSync, mkdtempSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -163,6 +164,72 @@ ok((await page.locator("#wsName").textContent()) === "giant-core" && await page.
 await page.locator("#wsBtn").click();
 await page.getByRole("menuitemradio", { name: "OMEGA PRIME" }).click();
 await page.waitForTimeout(300);
+
+// F09: Mission Control in sample mode (OMEGA PRIME's seeded "Weekly decision digest").
+await go("#/missions");
+ok(await page.getByRole("heading", { name: "Missions", level: 1 }).isVisible() && (await page.locator(".mcard").count()) === 1, "F09 missions page lists the seeded mission");
+await page.locator(".mcard").first().click();
+await page.waitForTimeout(250);
+ok(/#\/missions\/ms_/.test(page.url()) && (await page.locator(".phase").count()) === 3, "F09 mission view shows its three phases", page.url());
+ok((await page.locator(".phase").first().getByText("parallel · 2 steps").count()) === 1, "F09 phase 1 runs two steps in parallel");
+await page.getByRole("button", { name: "Run mission" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Awaiting approval"), "F09 the mission stops at the approvals");
+ok(await page.locator(".gates").getByText(/TDD · pass/).isVisible(), "F09 the TDD gate passes on the repo's saved test log");
+const lockedStep = page.locator(".mstep.is-locked");
+ok((await lockedStep.count()) === 1 && await lockedStep.getByText("بانتظار الموافقة").isVisible() && (await lockedStep.getByRole("button", { name: "Approve" }).count()) === 0, "F09 the outbound step waits as a locked «بانتظار الموافقة» card with no approve button");
+ok((await page.locator(".caps li").count()) >= 3 && await page.getByText(/Chain intact/).isVisible(), "F09 capsules are saved after each phase and the chain is intact");
+ok(/\[INFERENCE\]/.test(await page.locator("#h-health").locator("xpath=..").textContent()), "F09 context health is labelled [INFERENCE]");
+await page.locator(".mstep:not(.is-locked)").getByRole("button", { name: "Approve" }).click();
+await page.waitForTimeout(1500);
+ok((await page.locator(".mstep[data-idx='4'] .badge").first().textContent()).includes("Done"), "F09 approving the note finishes that step while the locked one still waits");
+await lockedStep.getByRole("button", { name: "Carry on without it…" }).click();
+await page.getByRole("dialog").getByRole("button", { name: "Carry on" }).click();
+await page.waitForFunction(() => /Succeeded/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Succeeded"), "F09 carrying on without the locked step finishes the mission");
+await page.getByRole("button", { name: "Inspect capsule 1" }).click();
+await page.getByRole("dialog").getByText("Hash check").waitFor({ timeout: 5000 }).catch(() => {});
+ok(await page.getByRole("dialog").getByText("SHA-256 matches its content").isVisible(), "F09 inspecting a capsule checks its hash");
+await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+// The page's SHA-256 and canonical JSON must equal Node's: recompute capsule 1 here.
+const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("jarvis-sample-v2")));
+const m0 = saved.data["omega-prime"].missions[0], c1 = m0.capsules[0];
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v === undefined ? null : v);
+const nodeHash = createHash("sha256").update(canon({ mission_id: m0.id, seq: c1.seq, label: c1.label, state: c1.state, prev_hash: c1.prevHash, created_at: new Date(c1.createdAt).toISOString() })).digest("hex");
+ok(nodeHash === c1.hash && c1.prevHash === "0".repeat(64), "F09 the page's capsule hash equals Node's SHA-256 of the canonical JSON", nodeHash + " vs " + c1.hash);
+await page.getByRole("button", { name: "Restore capsule 1" }).click();
+await page.getByRole("dialog").getByRole("button", { name: "Restore" }).click();
+await page.waitForFunction(() => /Paused/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Paused") && await page.locator(".caps li").first().getByText(/restored from #1/).isVisible(), "F09 restoring capsule 1 pauses the mission and records the restore");
+await page.getByRole("button", { name: "Resume" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Awaiting approval"), "F09 a restored mission runs again from the capsule");
+
+// F10: the agent editor's long-horizon mode turns a run into a mission.
+await go("#/agents/ag_release");
+await page.getByRole("button", { name: "Edit" }).click();
+await page.getByRole("dialog").getByLabel("Long-horizon mission").check();
+await page.getByLabel("Save a capsule every … phases").fill("11");
+await page.getByRole("button", { name: "Save changes" }).click();
+ok(await page.getByText("Enter a whole number from 1 to 10.").isVisible(), "F10 capsule interval out of range is refused");
+await page.getByLabel("Save a capsule every … phases").fill("1");
+await page.getByRole("button", { name: "Save changes" }).click();
+await page.waitForTimeout(400);
+ok(await page.getByText(/Long-horizon mission: phases, gates/).isVisible(), "F10 the agent shows its long-horizon mode");
+await page.getByRole("button", { name: "Start mission" }).click();
+await page.waitForTimeout(400);
+ok(/#\/missions\/ms_/.test(page.url()), "F10 starting a long-horizon agent opens its mission", page.url());
+
+// F11: the Studio's clean-room template extractor works on pasted HTML with no network.
+await go("#/studio");
+await page.getByText("Or paste HTML").click();
+await page.locator("#f-clone-html").fill("<html><head><title>Brandco</title><script src='https://tracker.example/t.js'></script></head><body><nav><a>Brandco</a><a>Docs</a></nav><section><h1>Brandco makes widgets for everyone</h1><p>Buy Brandco today.</p></section><section><h2>Why Brandco</h2><div><div><h3>Fast</h3><p>Very fast</p></div><div><h3>Safe</h3><p>Very safe</p></div><div><h3>Cheap</h3><p>Very cheap</p></div></div></section><footer>© Brandco</footer></body></html>");
+await page.getByRole("button", { name: "Clean-room clone" }).click();
+await page.waitForTimeout(400);
+ok(/0 leaks/.test(await page.locator(".report").textContent()), "F11 the extractor's sweep finds no source text", await page.locator(".report").textContent());
+ok(!/Brandco/.test(await frame().locator("body").textContent()) && (await frame().locator("section, nav, footer").count()) >= 3, "F11 the preview shows the clean template without the brand");
+ok((await frame().evaluate(() => getComputedStyle(document.body).backgroundColor)) === "rgb(9, 11, 16)" && (await page.locator("#f-preset").inputValue()) === "night", "F11 the template wears the Jarvis night tokens");
+ok((await frame().evaluate(() => getComputedStyle(document.querySelector(".nav")).backdropFilter)).includes("blur(16px)"), "F11 the template's sticky bar is glass (blur 16, saturate 180)");
 
 // Shell: RTL switch and theme switch.
 await page.getByRole("button", { name: "Switch to right-to-left layout" }).click();

@@ -23,9 +23,16 @@ Studio blocks on/off and reorder with text editing,studio,must,yes,yes,S13
 Skill Mixer lists installed skills with their SkillSpector status,skills,must,yes,yes,S14 F07; snapshot taken at build time
 Skill Mixer builds an ordered plan to copy,skills,must,yes,yes,S14 F07
 Locked approval cards for publish / permissions / money (no self-approval),approvals,must,yes,yes,AGENTS.md §1; also install and outbound; enforced in schema.sql too
-Local server on SQLite (zero setup) and PostgreSQL 16 with the approval rules in the database,backend,must,yes,yes,ADR-134; 47 checks per database
+Local server on SQLite (zero setup) and PostgreSQL 16 with the approval rules in the database,backend,must,yes,yes,ADR-134 and ADR-135; the same server tests run on both databases
 "Real runs: files.read, notes.read, runs.read, git.log and web.read run for real; notes are written only after approval",runs,must,yes,yes,ADR-134
 "Clean-room clone of a public URL or pasted HTML into a clean template (layout only, sweep, our copy, RTL/LTR, download; publish locked)",studio,must,yes,yes,"ADR-134; robots.txt respected, private addresses refused"
+"Long-horizon missions: ordered phases, parallel steps in a phase, dependencies",missions,must,yes,yes,"ADR-135; S15 Mission Control, real engine in jarvis/server/lib/missions.mjs"
+"Evidence gates per step (TDD, Lint, Contrast, Security) judged from saved logs",missions,must,yes,yes,"ADR-135; same rules as replica-long-horizon gate.py"
+"State capsules: SHA-256 chain with inspect, verify and restore",missions,must,yes,yes,"ADR-135; append-only table, restore refuses a broken chain"
+Context health indicator per mission,missions,must,yes,yes,"ADR-135; a fixed rule labelled [INFERENCE]"
+"Locked mission steps wait as «بانتظار الموافقة» cards while independent steps carry on",missions,must,yes,yes,"ADR-135; mission_steps_locked_never_done in SQLite and PostgreSQL 16"
+Agent editor: long-horizon execution mode and capsule interval,agents,must,yes,yes,ADR-135
+"Studio clean-room template extractor in the Jarvis design system (pasted HTML works offline)",studio,must,yes,yes,"ADR-135; OKLCH tokens, accent #77bcff, glass blur 16 / saturate 180, Readex Pro, Inter, Geist Mono"
 Workflows list,workflows,should,yes,no,S06; phase 2
 Workflow canvas with inspector,workflows,should,yes,no,S07 F03; phase 2
 Live log streaming in the run view,runs,should,yes,partial,S08; the page polls a change marker every 1.5 s and redraws; no server push (SSE) yet

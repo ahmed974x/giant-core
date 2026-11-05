@@ -175,3 +175,81 @@ create table mixes (
   updated_at timestamptz not null default now()
 );
 create index on mixes (workspace_id);
+
+
+-- Long-horizon missions (ADR-135): ordered phases of steps with dependencies, evidence gates,
+-- approval steps, and SHA-256 chained state capsules. The rules live here, like the approvals ones.
+create table missions (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  agent_id uuid references agents(id) on delete set null,
+  title text not null check (length(title) between 1 and 120),
+  goal text not null default '',
+  template text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'running', 'awaiting_approval', 'succeeded', 'failed', 'paused')),
+  capsule_every int not null default 1 check (capsule_every between 1 and 10),
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index on missions (workspace_id, created_at desc);
+
+create table mission_steps (
+  id uuid primary key default gen_random_uuid(),
+  mission_id uuid not null references missions(id) on delete cascade,
+  idx int not null check (idx >= 0),
+  phase int not null check (phase >= 1),
+  title text not null,
+  kind text not null check (kind in ('tool', 'gate', 'approval')),
+  tool text,
+  category text check (category is null or category in ('file_write', 'outbound', 'publish', 'permissions', 'install', 'money')),
+  input jsonb not null default '{}',
+  depends_on jsonb not null default '[]',
+  criteria jsonb not null default '[]',
+  approval_id uuid references approvals(id) on delete set null,
+  status text not null default 'queued' check (status in ('queued', 'running', 'done', 'failed', 'blocked', 'skipped')),
+  gate_status text not null default 'none' check (gate_status in ('none', 'pass', 'fail')),
+  output jsonb,
+  ms int check (ms >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (mission_id, idx),
+  -- A gate step is done only when its gate passed.
+  constraint mission_steps_gate_before_done check (status <> 'done' or kind <> 'gate' or gate_status = 'pass'),
+  -- A step that needs money, publishing, permissions, an install or an outbound message is never done here (AGENTS.md §1).
+  constraint mission_steps_locked_never_done
+    check (not (status = 'done' and kind = 'approval' and category in ('money', 'publish', 'permissions', 'install', 'outbound')))
+);
+create index on mission_steps (mission_id, phase, idx);
+
+create table capsules (
+  id uuid primary key default gen_random_uuid(),
+  mission_id uuid not null references missions(id) on delete cascade,
+  seq int not null check (seq >= 1),
+  label text not null,
+  state jsonb not null,
+  prev_hash text not null check (length(prev_hash) = 64),
+  hash text not null check (length(hash) = 64),
+  created_at timestamptz not null default now(),
+  unique (mission_id, seq)
+);
+create function capsules_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.capsules is append-only';
+end $$;
+create trigger capsules_no_update before update or delete on capsules
+  for each row execute function capsules_append_only();
+
+create table gate_results (
+  id uuid primary key default gen_random_uuid(),
+  mission_id uuid not null references missions(id) on delete cascade,
+  step_id uuid not null references mission_steps(id) on delete cascade,
+  check_name text not null,
+  status text not null check (status in ('pass', 'fail')),
+  detail text not null default '',
+  evidence text,
+  created_at timestamptz not null default now()
+);
+create index on gate_results (mission_id, step_id);

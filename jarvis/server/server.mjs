@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import { openSqlite, openPostgres } from "./lib/db.mjs";
 import { createStore, seed, StoreError } from "./lib/store.mjs";
 import { createRunner } from "./lib/runner.mjs";
+import { createMissions } from "./lib/missions.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
 import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
 
@@ -29,6 +30,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await seed(db);
   const store = createStore(db);
   const runner = createRunner({ store, repoRoot, dataDir });
+  const missions = createMissions({ store, runner, db, repoRoot, dataDir });
+  await missions.seedMissions();
   const pages = { "/": join(repoRoot, "jarvis", "app", "index.html"), "/design": join(repoRoot, "jarvis", "design", "index.html") };
 
   const server = http.createServer(async (req, res) => {
@@ -101,6 +104,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           const input = {};
           if (typeof body.path === "string" && body.path.trim()) input.path = body.path.trim().slice(0, 300);
           if (typeof body.url === "string" && body.url.trim()) input.url = body.url.trim().slice(0, 2000);
+          const agent = await store.getAgent(slug, k[1]);
+          if (agent.mode === "long_horizon") return send(201, { mission: await missions.fromAgent(slug, agent, input) });
           return send(201, { id: await runner.start(slug, k[1], input) });
         }
         if (req.method === "GET" && rest === "/runs") return send(200, await store.listRuns(slug));
@@ -114,9 +119,23 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
             written = runner.applyApproval(slug, decided);
             if (written) await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "file.written", written);
           }
-          return send(200, { ...decided, written });
+          const mission = await missions.onDecision(slug, decided, written);
+          return send(200, { ...decided, written, mission });
         }
         if (req.method === "GET" && rest === "/events") return send(200, await store.listEvents(slug));
+        if (req.method === "GET" && rest === "/missions") return send(200, await missions.list(slug));
+        if (req.method === "POST" && rest === "/missions") return send(201, await missions.create(slug, body));
+        if ((k = /^\/missions\/([\w-]{1,64})(\/.*)?$/.exec(rest))) {
+          const id = k[1], sub = k[2] || "";
+          let n;
+          if (req.method === "GET" && sub === "") return send(200, await missions.detail(slug, id));
+          if (req.method === "POST" && sub === "/run") return send(200, await missions.run(slug, id));
+          if (req.method === "POST" && sub === "/pause") return send(200, await missions.pause(slug, id));
+          if (req.method === "GET" && sub === "/verify") return send(200, await missions.verify(slug, id));
+          if (req.method === "GET" && (n = /^\/capsules\/(\d{1,6})$/.exec(sub))) return send(200, await missions.capsule(slug, id, n[1]));
+          if (req.method === "POST" && (n = /^\/capsules\/(\d{1,6})\/restore$/.exec(sub))) return send(200, await missions.restore(slug, id, n[1]));
+          if (req.method === "POST" && (n = /^\/steps\/(\d{1,4})\/skip$/.exec(sub))) return send(200, await missions.skipStep(slug, id, n[1]));
+        }
       }
       return fail(404, "No such route.");
     } catch (e) {
@@ -130,7 +149,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, db, async close() { await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, db, async close() { await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

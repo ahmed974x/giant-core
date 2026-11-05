@@ -1,0 +1,15 @@
+test_approval_tasks_never_pass (test_long_horizon.LongHorizon.test_approval_tasks_never_pass) ... ok
+test_capsule_chain_verify_tamper_and_restore (test_long_horizon.LongHorizon.test_capsule_chain_verify_tamper_and_restore) ... ok
+test_capsule_refuses_paths_outside_root_and_bad_labels (test_long_horizon.LongHorizon.test_capsule_refuses_paths_outside_root_and_bad_labels) ... ok
+test_finish_needs_every_task (test_long_horizon.LongHorizon.test_finish_needs_every_task) ... ok
+test_gate_refuses_without_evidence_then_passes_and_ticks (test_long_horizon.LongHorizon.test_gate_refuses_without_evidence_then_passes_and_ticks) ... ok
+test_gate_rejects_failing_and_stale_evidence (test_long_horizon.LongHorizon.test_gate_rejects_failing_and_stale_evidence) ... ok
+test_init_writes_three_files_and_never_overwrites (test_long_horizon.LongHorizon.test_init_writes_three_files_and_never_overwrites) ... ok
+test_judges (test_long_horizon.LongHorizon.test_judges) ... ok
+test_status_and_log (test_long_horizon.LongHorizon.test_status_and_log) ... ok
+test_watch_outside_root_is_refused (test_long_horizon.LongHorizon.test_watch_outside_root_is_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.030s
+
+OK

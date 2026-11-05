@@ -1,20 +1,28 @@
-# Parity: Jarvis (ADR-134)
+# Parity: Jarvis (ADR-135)
 
-Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-04.
+Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
 
 Jarvis is an original product, so "original" in `features.csv` means "in Jarvis's planned scope". This is
 the feature score only: there are no reference screenshots, so there is no layout diff (by design).
 
-**Every must-have is done: 27 of 27.** That is the 24 from ADR-133 plus three added by ADR-134: the local server, real runs and the clean-room cloner. The weighted score is below 100 because should- and could-haves outside this request are still open:
+**Every must-have is done: 34 of 34.** That is the 27 from ADR-134 plus seven added by ADR-135:
+- missions in phases;
+- evidence gates;
+- state capsules;
+- context health;
+- locked mission steps;
+- the agent's long-horizon mode;
+- the template extractor.
 
+The weighted score is below 100 because should- and could-haves outside this request are still open:
 - workflows (S06, S07);
 - the Arabic UI translation;
 - run comparison, templates, scheduled runs, webhooks and analytics;
 - partial rows: members and roles, server push, model cost.
 
-## Score: 88.5 / 100
+## Score: 90.3 / 100
 
-features 88.5  (46 counted, must-haves 27 of 27 done)
+features 90.3  (53 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - workflows                      0.0  (2 features)
@@ -23,13 +31,14 @@ features 88.5  (46 counted, must-haves 27 of 27 done)
 - runs                          66.7  (6 features)
 - overview                      75.0  (2 features)
 - settings                      75.0  (2 features)
-- agents                        90.0  (4 features)
+- agents                        92.3  (5 features)
 - shell                        100.0  (7 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (5 features)
-- studio                       100.0  (8 features)
+- studio                       100.0  (9 features)
 - skills                       100.0  (3 features)
 - backend                      100.0  (1 features)
+- missions                     100.0  (5 features)
 - logs                         100.0  (1 features)
 
 ## Missing, in build order

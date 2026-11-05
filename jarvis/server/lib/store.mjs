@@ -19,6 +19,7 @@ function agentOut(a) {
   return {
     id: a.id, name: a.name, model: a.model, rolePrompt: a.role_prompt, tools: a.tools || [], skills: a.skills || [],
     maxSteps: limits.max_steps ?? 20, permissions: { writeNotes: !!limits.write_notes, readWeb: !!limits.read_web },
+    mode: limits.mode === "long_horizon" ? "long_horizon" : "single", capsuleEvery: limits.capsule_every ?? 1,
     status: a.status, createdAt: a.created_at, updatedAt: a.updated_at,
   };
 }
@@ -71,6 +72,9 @@ export function createStore(db) {
       if (!Number.isInteger(ms) || ms < 1 || ms > 200) errs.maxSteps = "Enter a whole number from 1 to 200.";
       const tools = Array.isArray(input.tools) ? input.tools : [];
       if (tools.some(t => !TOOLS.includes(t))) errs.tools = "Pick tools from the list.";
+      if (input.mode !== undefined && !["single", "long_horizon"].includes(input.mode)) errs.mode = "Pick single run or long-horizon mission.";
+      const ce = input.capsuleEvery === undefined ? 1 : Number(input.capsuleEvery);
+      if (!Number.isInteger(ce) || ce < 1 || ce > 10) errs.capsuleEvery = "Save a capsule every 1 to 10 phases.";
       if (!Array.isArray(input.skills || []) || (input.skills || []).some(s => !/^[a-z0-9:-]{1,64}$/.test(s))) errs.skills = "Skill names are lower-case letters, digits and hyphens.";
       return errs;
     },
@@ -96,7 +100,7 @@ export function createStore(db) {
       const errs = api.validateAgent(input, existing);
       if (Object.keys(errs).length) bad(Object.values(errs)[0]);
       const id = randomUUID(), t = iso();
-      const limits = { max_steps: Number(input.maxSteps), write_notes: (input.tools || []).includes("notes.write"), read_web: (input.tools || []).includes("web.read") };
+      const limits = { max_steps: Number(input.maxSteps), write_notes: (input.tools || []).includes("notes.write"), read_web: (input.tools || []).includes("web.read"), mode: input.mode === "long_horizon" ? "long_horizon" : "single", capsule_every: Number(input.capsuleEvery ?? 1) };
       await db.run("insert into agents (id, workspace_id, name, role_prompt, model, tools, skills, limits, status, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8, 'idle', $9, $9)",
         [id, wid, String(input.name).trim(), String(input.rolePrompt || "").trim(), String(input.model || "Local rules (no model)"), JSON.stringify(input.tools || []), JSON.stringify(input.skills || []), JSON.stringify(limits), t]);
       await event(wid, "member:owner", "agent.created", id);
@@ -109,7 +113,8 @@ export function createStore(db) {
       const existing = await db.all("select id, name from agents where workspace_id = $1", [wid]);
       const errs = api.validateAgent(input, existing, id);
       if (Object.keys(errs).length) bad(Object.values(errs)[0]);
-      const limits = { ...(cur.limits || {}), max_steps: Number(input.maxSteps), write_notes: (input.tools || []).includes("notes.write"), read_web: (input.tools || []).includes("web.read") };
+      const limits = { ...(cur.limits || {}), max_steps: Number(input.maxSteps), write_notes: (input.tools || []).includes("notes.write"), read_web: (input.tools || []).includes("web.read"),
+        mode: input.mode === undefined ? ((cur.limits || {}).mode || "single") : input.mode, capsule_every: Number(input.capsuleEvery ?? (cur.limits || {}).capsule_every ?? 1) };
       await db.run("update agents set name = $1, role_prompt = $2, model = $3, tools = $4, skills = $5, limits = $6, updated_at = $7 where id = $8",
         [String(input.name).trim(), String(input.rolePrompt || "").trim(), String(input.model || cur.model), JSON.stringify(input.tools || []), JSON.stringify(input.skills || []), JSON.stringify(limits), iso(), id]);
       await event(wid, "member:owner", "agent.updated", id);
@@ -239,8 +244,11 @@ export function createStore(db) {
         (select max(s.updated_at) from steps s join runs r2 on r2.id = s.run_id where r2.workspace_id = $1) as s,
         (select max(updated_at) from agents where workspace_id = $1) as a,
         (select max(updated_at) from approvals where workspace_id = $1) as p,
-        (select updated_at from workspaces where id = $1) as w`, [wid]);
-      return { v: [v.e, v.r, v.s, v.a, v.p, v.w].map(x => x == null ? "-" : String(x)).join("|") };
+        (select updated_at from workspaces where id = $1) as w,
+        (select max(updated_at) from missions where workspace_id = $1) as m,
+        (select max(ms.updated_at) from mission_steps ms join missions m2 on m2.id = ms.mission_id where m2.workspace_id = $1) as ms,
+        (select count(*) from capsules c join missions m3 on m3.id = c.mission_id where m3.workspace_id = $1) as c`, [wid]);
+      return { v: [v.e, v.r, v.s, v.a, v.p, v.w, v.m, v.ms, v.c].map(x => x == null ? "-" : String(x)).join("|") };
     },
   };
   return api;

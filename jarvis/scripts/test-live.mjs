@@ -120,8 +120,39 @@ await page.getByRole("button", { name: "Publish…" }).click();
 ok(await page.getByRole("dialog").getByText("قيد الموافقة").isVisible(), "publishing the clone is a locked card");
 await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
+// Mission Control on the real engine: Jarvis Studio's design audit (contrast and security gates on
+// the repo's saved evidence, a locked install step, a note that is written only after approval).
+await page.locator("#wsBtn").click();
+await page.getByRole("menuitemradio", { name: "Jarvis Studio" }).click();
+await page.waitForTimeout(400);
+await go("#/missions");
+await page.locator(".mcard").first().click();
+await page.waitForTimeout(300);
+const missionId = page.url().split("/").pop();
+await page.getByRole("button", { name: "Run mission" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Awaiting approval"), "live mission runs to its approvals");
+ok(await page.locator(".gates").getByText("Contrast · pass").isVisible() && await page.locator(".gates").getByText("Security · pass").isVisible(), "live gates pass on the saved contrast report and SkillSpector scan");
+ok(/files: .*contrast-report\.txt|4 files|files/.test(await page.locator(".mstep[data-idx='0']").textContent()), "live tool step read the design folder");
+const lk = page.locator(".mstep.is-locked");
+ok((await lk.count()) === 1 && await lk.getByText("بانتظار الموافقة").isVisible() && (await lk.getByRole("button", { name: "Approve" }).count()) === 0, "live locked install step waits with no approve button");
+const planDir = join(dataDir, "workspaces", "jarvis-studio", "missions", missionId);
+ok(existsSync(join(planDir, "task_plan.md")) && /Capsule #1/.test(readFileSync(join(planDir, "progress.md"), "utf8")), "the mission keeps task_plan.md and progress.md on disk");
+await page.locator(".mstep:not(.is-locked)").getByRole("button", { name: "Approve" }).click();
+await page.waitForFunction(() => /Done/.test(document.querySelector(".mstep[data-idx='5'] .badge")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+const mNotes = existsSync(join(dataDir, "workspaces", "jarvis-studio", "notes")) ? readdirSync(join(dataDir, "workspaces", "jarvis-studio", "notes")) : [];
+ok(mNotes.some(n => n.startsWith("mission-design-audit")) && (await page.locator(".mstep[data-idx='5'] .badge").first().textContent()).includes("Done"), "approving the mission note writes it and the next step runs", mNotes.join(","));
+await page.getByRole("button", { name: "Inspect capsule 1" }).click();
+await page.getByRole("dialog").getByText("Hash check").waitFor({ timeout: 5000 }).catch(() => {});
+ok(await page.getByRole("dialog").getByText("SHA-256 matches its content").isVisible(), "live capsule hash checks out");
+await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+await page.getByRole("button", { name: "Restore capsule 1" }).click();
+await page.getByRole("dialog").getByRole("button", { name: "Restore" }).click();
+await page.waitForFunction(() => /Paused/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+ok((await page.locator("main .page-head .badge").first().textContent()).includes("Paused") && await page.getByText(/Chain intact/).isVisible(), "live restore pauses the mission and keeps the chain intact");
+
 // Every screen renders in live mode (dates from the database included).
-for (const r of ["overview", "logs", "runs", "settings", "skills"]) {
+for (const r of ["overview", "logs", "runs", "missions", "settings", "skills"]) {
   await go("#/" + r);
   ok(!(await page.locator(".error-box").count()) && await page.locator("main h1").first().isVisible(), "live " + r + " renders");
   if (r === "logs") ok(/ago|just now/.test(await page.locator("main time").first().textContent({ timeout: 5000 })), "live dates show as relative times");

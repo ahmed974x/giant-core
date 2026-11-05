@@ -76,9 +76,82 @@
     if (String(input.rolePrompt || "").length > 2000) errs.rolePrompt = "Keep the role under 2,000 characters.";
     const ms = Number(input.maxSteps);
     if (!Number.isInteger(ms) || ms < 1 || ms > 200) errs.maxSteps = "Enter a whole number from 1 to 200.";
+    if (input.mode !== undefined && !["single", "long_horizon"].includes(input.mode)) errs.mode = "Pick single run or long-horizon mission.";
+    const ce = input.capsuleEvery === undefined ? 1 : Number(input.capsuleEvery);
+    if (!Number.isInteger(ce) || ce < 1 || ce > 10) errs.capsuleEvery = "Enter a whole number from 1 to 10.";
     return errs;
   }
   const permsOf = tools => ({ writeNotes: tools.includes("notes.write"), readWeb: tools.includes("web.read") });
+
+  /* ── Missions (ADR-135): shared helpers for both stores ─────── */
+  // SHA-256 in plain JS (FIPS 180-4), so capsules hash the same way from file:// and from the server.
+  const sha256hex = (() => {
+    const K = [], H0 = [], primes = [];
+    for (let n = 2; primes.length < 64; n++) if (primes.every(p => n % p)) primes.push(n);
+    const frac = x => ((x - Math.floor(x)) * 0x100000000) >>> 0;
+    primes.forEach((p, i) => { K[i] = frac(Math.cbrt(p)); if (i < 8) H0[i] = frac(Math.sqrt(p)); });
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    return str => {
+      const bytes = new TextEncoder().encode(str);
+      const l = bytes.length, n = ((l + 9 + 63) >> 6) << 6;
+      const m = new Uint8Array(n);
+      m.set(bytes); m[l] = 0x80;
+      const dv = new DataView(m.buffer);
+      dv.setUint32(n - 4, (l * 8) >>> 0); dv.setUint32(n - 8, Math.floor(l / 0x20000000));
+      const H = H0.slice(), W = new Uint32Array(64);
+      for (let o = 0; o < n; o += 64) {
+        for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+        for (let i = 16; i < 64; i++) {
+          const s0 = rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ (W[i - 15] >>> 3), s1 = rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ (W[i - 2] >>> 10);
+          W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, hh] = H;
+        for (let i = 0; i < 64; i++) {
+          const t1 = (hh + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) >>> 0;
+          const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+          hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        }
+        [a, b, c, d, e, f, g, hh].forEach((v, i) => { H[i] = (H[i] + v) >>> 0; });
+      }
+      return H.map(x => x.toString(16).padStart(8, "0")).join("");
+    };
+  })();
+  // Keys sorted at every level, no spaces: the same canonical form as the server and lhcommon.py.
+  const canonical = v => Array.isArray(v) ? "[" + v.map(canonical).join(",") + "]"
+    : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canonical(v[k])).join(",") + "}"
+    : JSON.stringify(v === undefined ? null : v);
+  const ZERO64 = "0".repeat(64);
+  const sealCapsule = c => sha256hex(canonical({ mission_id: c.mission_id, seq: c.seq, label: c.label, state: c.state, prev_hash: c.prev_hash, created_at: c.created_at }));
+  function verifyChain(list, missionId) {
+    const problems = [];
+    let prev = ZERO64;
+    list.forEach((c, i) => {
+      if (c.seq !== i + 1) problems.push("#" + c.seq + ": sequence gap");
+      if (c.prevHash !== prev) problems.push("#" + c.seq + ": prev_hash does not match the capsule before it");
+      if (sealCapsule({ mission_id: missionId, seq: c.seq, label: c.label, state: c.state, prev_hash: c.prevHash, created_at: new Date(c.createdAt).toISOString() }) !== c.hash) problems.push("#" + c.seq + ": hash does not match its content");
+      prev = c.hash;
+    });
+    return { ok: !problems.length, count: list.length, problems, head: list.length ? list[list.length - 1].hash : ZERO64 };
+  }
+  const HEALTH_BASIS = "[INFERENCE] fixed rule: 100 − 12 per step since the last capsule − 1 per 400 output tokens over 4,000 (tokens ≈ bytes ÷ 4).";
+  function missionHealth(m) {
+    const last = m.capsules[m.capsules.length - 1];
+    const lastAt = last ? last.createdAt : null;
+    const since = m.steps.filter(s => s.updatedAt && (lastAt == null || s.updatedAt > lastAt) && ["done", "failed", "skipped", "blocked"].includes(s.status)).length;
+    const tokens = Math.round(m.steps.reduce((n, s) => n + (s.output ? JSON.stringify(s.output).length : 0), 0) / 4);
+    const score = Math.max(0, Math.min(100, 100 - since * 12 - Math.max(0, Math.round((tokens - 4000) / 400))));
+    return { score, label: score >= 70 ? "good" : score >= 40 ? "save a capsule soon" : "save a capsule now", stepsSinceCapsule: since, outputTokens: tokens, capsules: m.capsules.length, basis: HEALTH_BASIS };
+  }
+  const GATE_LABEL = { tests: "TDD", lint: "Lint", contrast: "Contrast", security: "Security" };
+  const MISSION_TOOLS = ["files.read", "git.log", "notes.read", "runs.read"];
+  // The long-horizon mode of an agent: its read tools in phase 1, a security gate, then the note approval.
+  function agentMissionTemplate(a) {
+    const steps = a.tools.filter(t => MISSION_TOOLS.includes(t)).map(t => ({ phase: 1, kind: "tool", title: "Run " + t, tool: t }));
+    const reads = steps.map((_, i) => i);
+    steps.push({ phase: 2, kind: "gate", title: "Security gate (SkillSpector)", criteria: [{ check: "security", evidence: "jarvis/app/data/skills-scan.json" }] });
+    if (a.tools.includes("notes.write")) steps.push({ phase: 3, kind: "approval", title: "Save the mission note", category: "file_write", depends: [...reads, steps.length - 1] });
+    return { title: a.name + " · long run", goal: a.rolePrompt || "Run this agent's tools with gates and capsules.", steps };
+  }
 
   /* Sample store: opened from disk (file://). Labelled sample data, simulated runs, three workspaces. */
   function sampleStore() {
@@ -88,7 +161,7 @@
     const MIN = 60000;
     function ev(actor, kind, target, at) { return { id: uid("ev"), actor, kind, target, at: at || Date.now() }; }
     function mkSteps(tools, status, n) { return tools.slice(0, n == null ? tools.length : n + 1).map((tool, i) => ({ idx: i, tool, status, ms: 400 + i * 350, tries: 1 })); }
-    const agent = (id, name, model, rolePrompt, tools, maxSteps, status, createdAt, skills) => ({ id, name, model, rolePrompt, tools, skills: skills || [], maxSteps, permissions: permsOf(tools), status, createdAt });
+    const agent = (id, name, model, rolePrompt, tools, maxSteps, status, createdAt, skills) => ({ id, name, model, rolePrompt, tools, skills: skills || [], maxSteps, permissions: permsOf(tools), status, createdAt, mode: "single", capsuleEvery: 1 });
     function seedPrime(t) {
       const agents = [
         agent("ag_research", "Research assistant", "Local model (loopback)", "Reads public pages on a topic and writes a short, sourced summary. Never acts outside the project folder.", ["web.read", "notes.write"], 20, "idle", t - 9 * 86400000, ["omega-deep-research-agent"]),
@@ -180,6 +253,7 @@
         if (Object.keys(errs).length) return bad(Object.values(errs)[0]);
         const tools = input.tools || [];
         const a = agent(uid("ag"), input.name.trim(), input.model, String(input.rolePrompt || "").trim(), tools, Number(input.maxSteps), "idle", Date.now(), input.skills || []);
+        a.mode = input.mode === "long_horizon" ? "long_horizon" : "single"; a.capsuleEvery = Number(input.capsuleEvery || 1);
         W().agents.push(a); W().events.push(ev("member:owner", "agent.created", a.id)); save(); return ok(a);
       },
       updateAgent(id, input) {
@@ -187,7 +261,8 @@
         if (!a) return bad("No agent with that id in this workspace.");
         const errs = validateAgentInput(input, W().agents, id);
         if (Object.keys(errs).length) return bad(Object.values(errs)[0]);
-        Object.assign(a, { name: input.name.trim(), model: input.model, rolePrompt: String(input.rolePrompt || "").trim(), tools: input.tools || [], skills: input.skills || [], maxSteps: Number(input.maxSteps), permissions: permsOf(input.tools || []) });
+        Object.assign(a, { name: input.name.trim(), model: input.model, rolePrompt: String(input.rolePrompt || "").trim(), tools: input.tools || [], skills: input.skills || [], maxSteps: Number(input.maxSteps), permissions: permsOf(input.tools || []),
+          mode: input.mode === "long_horizon" ? "long_horizon" : (input.mode === undefined ? a.mode || "single" : "single"), capsuleEvery: Number(input.capsuleEvery || a.capsuleEvery || 1) });
         W().events.push(ev("member:owner", "agent.updated", id)); save(); return ok(a);
       },
       listRuns() { return ok(W().runs.slice().sort((x, y) => y.createdAt - x.createdAt).map(r => ({ ...r, agentName: (W().agents.find(a => a.id === r.agentId) || {}).name || "Removed agent" }))); },
@@ -202,6 +277,13 @@
         const a = ws.agents.find(x => x.id === agentId);
         if (!a) return bad("No agent with that id in this workspace.");
         if (activeRun(agentId)) return bad("This agent already has a run in progress. Wait for it or cancel it first.");
+        if (a.mode === "long_horizon") {
+          const tpl = agentMissionTemplate(a);
+          if (tpl.steps.length > a.maxSteps) return bad("This mission has " + tpl.steps.length + " steps; the agent's limit is " + a.maxSteps + ".");
+          const m = newMission(tpl, "agent", { title: tpl.title, capsuleEvery: a.capsuleEvery, agentId: a.id });
+          MS().push(m); ws.events.push(ev("member:owner", "mission.created", m.id));
+          return startSample(m).then(() => ({ mission: m.id }));
+        }
         const tools = ["plan", ...a.tools.filter(t => t !== "notes.write"), ...(a.tools.includes("notes.write") ? ["notes.write"] : [])];
         const r = { id: uid("run"), agentId, status: "queued", trigger: "manual", createdAt: Date.now(), startedAt: null, finishedAt: null, steps: tools.map((tool, idx) => ({ idx, tool, status: "queued", ms: null, tries: 0 })), log: [], simulated: true };
         ws.runs.push(r); a.status = "running"; ws.events.push(ev("member:owner", "run.started", r.id)); save();
@@ -234,7 +316,7 @@
         const a = W().agents.find(x => x.id === r.agentId); if (a) a.status = "idle";
         W().events.push(ev("member:owner", "run.cancelled", id)); save(); return ok(r);
       },
-      listApprovals() { return ok(W().approvals.slice().sort((x, y) => y.createdAt - x.createdAt).map(p => ({ ...p, locked: !!LOCKED[p.category], agentName: (W().agents.find(a => a.id === p.agentId) || {}).name || (p.agentId ? "Removed agent" : "Sample request") }))); },
+      listApprovals() { return ok(W().approvals.slice().sort((x, y) => y.createdAt - x.createdAt).map(p => ({ ...p, locked: !!LOCKED[p.category], agentName: p.agentLabel || (W().agents.find(a => a.id === p.agentId) || {}).name || (p.agentId ? "Removed agent" : "Sample request") }))); },
       // Only a person decides; locked categories cannot be approved, as in schema.sql.
       decide(id, decision, reason) {
         const p = W().approvals.find(x => x.id === id);
@@ -243,7 +325,9 @@
         if (LOCKED[p.category] && decision === "approved") return bad("Locked: this " + LOCKED[p.category] + ". It needs Director 00's separate approval outside Jarvis.");
         if (decision === "rejected" && !String(reason || "").trim()) return bad("Say why, so the agent can do something else.");
         p.status = decision; p.decidedBy = "member:owner"; p.decidedAt = Date.now(); p.reason = decision === "rejected" ? String(reason).trim() : null;
-        W().events.push(ev("member:owner", "approval." + decision, id)); save(); return ok(p);
+        W().events.push(ev("member:owner", "approval." + decision, id));
+        if (p.missionId) onDecisionSample(p);
+        save(); return ok(p);
       },
       listEvents() { return ok(W().events.slice().sort((x, y) => y.at - x.at)); },
       stats() {
@@ -253,8 +337,171 @@
           failed: w.runs.filter(r => r.status === "failed" && r.createdAt > day).length });
       },
       waitingCount() { return Promise.resolve(W().approvals.filter(p => p.status === "pending" && !LOCKED[p.category]).length); },
-      cleanClone() { return bad("The clean-room cloner runs on the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798"); },
+      // Pasted HTML is extracted in the page by the server's own module (inlined at build); an address needs the server.
+      cleanClone(body) {
+        if (!body || !body.html) return bad("Reading an address needs the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798. Or paste the HTML.");
+        const out = CleanRoom.cleanClone(String(body.html));
+        out.report.fetch = null;
+        return ok(out);
+      },
     };
+
+    /* Missions in the sample store: the same engine rules as jarvis/server/lib/missions.mjs, on this
+       browser's data. Tool steps are simulated; gate steps judge the evidence snapshot taken at build
+       time (real files from the repo); capsules are real SHA-256 chains over this browser's state. */
+    const MS = () => {
+      const w = W();
+      if (!w.missions) {
+        w.missions = [];
+        const tpl = { "omega-prime": "adr-digest", "jarvis-studio": "design-audit", "giant-core": "release-readiness" }[slug];
+        if (tpl && (DATA.templates || {})[tpl]) w.missions.push(newMission(DATA.templates[tpl], tpl, {}));
+      }
+      return w.missions;
+    };
+    function newMission(tpl, template, { title, capsuleEvery, agentId }) {
+      const t = Date.now();
+      return { id: uid("ms"), title: String(title || tpl.title).trim(), goal: tpl.goal, template, agentId: agentId || null, status: "draft", capsuleEvery: Number(capsuleEvery || 1), startedAt: null, finishedAt: null, createdAt: t, updatedAt: t,
+        steps: tpl.steps.map((s, idx) => ({ id: uid("st"), idx, phase: s.phase, title: s.title, kind: s.kind, tool: s.tool || null, category: s.category || null, input: s.input || {}, dependsOn: s.depends || [], criteria: s.criteria || [], approvalId: null, status: "queued", gateStatus: "none", output: null, ms: null, updatedAt: t, gates: [] })),
+        capsules: [], progress: [t + " Plan created from template " + template + "."], timer: null };
+    }
+    const findMission = id => MS().find(x => x.id === id);
+    const stepState = m => ({ mission: { status: m.status, title: m.title }, steps: m.steps.map(s => ({ idx: s.idx, status: s.status, gate: s.gateStatus, approval: s.approvalId || null, output: s.output == null ? null : s.output })) });
+    function capsule(m, label) {
+      const prev = m.capsules[m.capsules.length - 1];
+      const c = { mission_id: m.id, seq: prev ? prev.seq + 1 : 1, label, state: JSON.parse(JSON.stringify(stepState(m))), prev_hash: prev ? prev.hash : ZERO64, created_at: new Date(Date.now()).toISOString() };
+      const hash = sealCapsule(c);
+      m.capsules.push({ id: uid("cap"), seq: c.seq, label, hash, prevHash: c.prev_hash, createdAt: Date.parse(c.created_at), state: c.state });
+      m.progress.push(Date.now() + " Capsule #" + c.seq + " " + label + " saved (" + hash.slice(0, 12) + "…).");
+    }
+    const setS = (m, s, f) => { Object.assign(s, f, { updatedAt: Date.now() }); m.updatedAt = Date.now(); };
+    function evidenceFor(c) {
+      const e = (DATA.evidence || []).find(x => x.path === c.evidence && x.check === c.check);
+      return e ? { check: c.check, evidence: c.evidence, ok: e.ok, detail: e.detail, sha256: e.sha256, savedAt: e.savedAt, snapshot: true } : { check: c.check, evidence: c.evidence, ok: false, detail: "No evidence file at " + c.evidence + " in this build.", sha256: null, snapshot: true };
+    }
+    function runSampleStep(ws, m, s) {
+      if (s.kind === "tool") setS(m, s, { status: "done", ms: 120 + s.idx * 37, output: { simulated: true, tool: s.tool, note: "Simulated in sample mode: no tool ran. Start jarvis/server for real tools." } });
+      else if (s.kind === "gate") {
+        const results = s.criteria.map(evidenceFor), pass = results.length > 0 && results.every(r => r.ok);
+        s.gates = results.map(r => ({ check_name: r.check, status: r.ok ? "pass" : "fail", detail: r.detail, evidence: r.evidence }));
+        setS(m, s, { gateStatus: pass ? "pass" : "fail", status: pass ? "done" : "failed", ms: 8, output: { pass, results } });
+      } else {
+        const locked = !!LOCKED[s.category];
+        const ap = { id: uid("ap"), category: s.category, runId: null, agentId: null, missionId: m.id, missionStep: s.idx, agentLabel: "Mission: " + m.title, action: s.title,
+          payload: locked ? "Mission step: locked in Jarvis (" + LOCKED[s.category] + "). The mission carries on with steps that do not need it." : "+ notes/mission-" + m.template + ".md (sample: nothing is written from the browser)", status: "pending", createdAt: Date.now() };
+        ws.approvals.push(ap); ws.events.push(ev("mission:" + m.id, "approval.requested", ap.id));
+        setS(m, s, { status: "blocked", approvalId: ap.id, ms: 4, output: { approval: ap.id, locked } });
+      }
+      m.progress.push(Date.now() + " T" + (s.idx + 1) + " " + s.title + ": " + s.status + ".");
+    }
+    // One beat of the engine: skip what can no longer run, start the next phase's ready steps, or settle.
+    function advance(ws, m, phasesSince) {
+      m.timer = null;
+      if (m.status !== "running") return;
+      const by = new Map(m.steps.map(s => [s.idx, s]));
+      for (const s of m.steps.filter(x => x.status === "queued")) if (s.dependsOn.some(d => ["failed", "skipped"].includes(by.get(d).status))) setS(m, s, { status: "skipped", output: { reason: "A step it needs did not finish." } });
+      const running = m.steps.filter(s => s.status === "running");
+      if (running.length) {
+        running.forEach(s => runSampleStep(ws, m, s));
+        const phase = running[0].phase;
+        if (!m.steps.some(s => s.phase === phase && ["queued", "running"].includes(s.status)) && ++phasesSince >= m.capsuleEvery) { capsule(m, "phase " + phase + " done"); phasesSince = 0; }
+        save(); m.timer = setTimeout(() => advance(ws, m, phasesSince), 450); return;
+      }
+      const ready = m.steps.filter(s => s.status === "queued" && s.dependsOn.every(d => by.get(d).status === "done") && m.steps.every(o => o.phase >= s.phase || !["queued", "running"].includes(o.status)));
+      if (!ready.length) {
+        const open = m.steps.filter(s => !["done", "failed", "skipped"].includes(s.status));
+        if (!open.length) {
+          const failed = m.steps.some(s => s.status === "failed");
+          m.status = failed ? "failed" : "succeeded"; m.finishedAt = Date.now();
+          capsule(m, failed ? "finished with a failed step" : "finished");
+          ws.events.push(ev("system", "mission." + m.status, m.id));
+        } else if (m.steps.some(s => s.status === "blocked")) {
+          m.status = "awaiting_approval";
+          capsule(m, "waiting for approval (" + m.steps.filter(s => s.status === "blocked").length + ")");
+          ws.events.push(ev("system", "mission.waiting", m.id));
+        }
+        save(); return;
+      }
+      const phase = Math.min(...ready.map(s => s.phase));
+      ready.filter(s => s.phase === phase).forEach(s => setS(m, s, { status: "running" }));
+      save(); m.timer = setTimeout(() => advance(ws, m, phasesSince), 450);
+    }
+    const missionOut = m => { const { timer, progress, ...rest } = m; return { ...rest, steps: m.steps.map(s => ({ ...s, locked: s.kind === "approval" && !!LOCKED[s.category], approval: s.approvalId ? (W().approvals.find(p => p.id === s.approvalId) || null) : null })), chain: verifyChain(m.capsules, m.id), health: missionHealth(m), files: { dir: "this browser (sample)", names: ["task_plan.md", "findings.md", "progress.md"] }, progressLines: progress.length, simulated: true }; };
+    function startSample(m) {
+      if (["succeeded", "failed"].includes(m.status)) return bad("This mission has finished. Restore a capsule to run part of it again.");
+      if (m.status === "running" && m.timer) return ok(missionOut(m));
+      m.status = "running"; m.startedAt = m.startedAt || Date.now(); m.finishedAt = null;
+      W().events.push(ev("member:owner", "mission.started", m.id)); save();
+      const ws = W();
+      m.timer = setTimeout(() => advance(ws, m, 0), 300);
+      return ok(missionOut(m));
+    }
+    function onDecisionSample(p) {
+      for (const w of Object.values(db.data)) {
+        const m = (w.missions || []).find(x => x.id === p.missionId);
+        if (!m) continue;
+        const s = m.steps.find(x => x.approvalId === p.id);
+        if (!s || s.status !== "blocked") return;
+        setS(m, s, p.status === "approved" ? { status: "done", output: { approval: p.id, written: null, note: "Sample mode writes no file." } } : { status: "failed", output: { approval: p.id, rejected: p.reason } });
+        if (m.status === "awaiting_approval" || m.status === "running") { m.status = "running"; if (!m.timer) m.timer = setTimeout(() => advance(w, m, 0), 300); }
+      }
+    }
+    // After a reload no timer survives: a running sample mission picks up where its steps stand.
+    for (const w of Object.values(db.data)) for (const m of w.missions || []) { m.timer = null; for (const s of m.steps) if (s.status === "running") s.status = "queued"; if (m.status === "running") m.timer = setTimeout(() => advance(w, m, 0), 300); }
+    Object.assign(api, {
+      listMissions() { return ok(MS().slice().sort((a, b) => b.createdAt - a.createdAt).map(m => ({ id: m.id, title: m.title, template: m.template, status: m.status, createdAt: m.createdAt, steps: m.steps.length, done: m.steps.filter(s => s.status === "done").length, blocked: m.steps.filter(s => s.status === "blocked").length, failed: m.steps.filter(s => s.status === "failed").length, phases: new Set(m.steps.map(s => s.phase)).size, capsules: m.capsules.length, health: missionHealth(m) }))); },
+      getMission(id) { const m = findMission(id); return m ? ok(missionOut(m)) : bad("No mission with that id in this workspace."); },
+      createMission(input) {
+        const tpl = (DATA.templates || {})[input.template];
+        if (!tpl) return bad("Pick a template.");
+        const ce = Number(input.capsuleEvery);
+        if (!Number.isInteger(ce) || ce < 1 || ce > 10) return bad("Save a capsule every 1 to 10 phases.");
+        const t = String(input.title || tpl.title).trim();
+        if (!t || t.length > 120) return bad("Use 1 to 120 characters for the title.");
+        const m = newMission(tpl, input.template, { title: t, capsuleEvery: ce });
+        MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
+      runMission(id) { const m = findMission(id); return m ? startSample(m) : bad("No mission with that id in this workspace."); },
+      pauseMission(id) {
+        const m = findMission(id);
+        if (!m || !["running", "awaiting_approval"].includes(m.status)) return bad("Only a running mission can be paused.");
+        clearTimeout(m.timer); m.timer = null; m.steps.forEach(s => { if (s.status === "running") s.status = "queued"; });
+        m.status = "paused"; capsule(m, "paused"); W().events.push(ev("member:owner", "mission.paused", id)); save(); return ok(missionOut(m));
+      },
+      verifyMission(id) { const m = findMission(id); return m ? ok(verifyChain(m.capsules, m.id)) : bad("No mission with that id in this workspace."); },
+      getCapsule(id, seq) {
+        const m = findMission(id), c = m && m.capsules.find(x => x.seq === Number(seq));
+        if (!c) return bad("No capsule with that number.");
+        return ok({ ...c, hashOk: sealCapsule({ mission_id: m.id, seq: c.seq, label: c.label, state: c.state, prev_hash: c.prevHash, created_at: new Date(c.createdAt).toISOString() }) === c.hash, canonicalBytes: new TextEncoder().encode(canonical(c.state)).length });
+      },
+      restoreCapsule(id, seq) {
+        const m = findMission(id);
+        if (!m) return bad("No mission with that id in this workspace.");
+        if (m.status === "running") return bad("Pause the mission before you restore a capsule.");
+        const chain = verifyChain(m.capsules, m.id);
+        if (!chain.ok) return bad("The capsule chain is broken, so nothing was restored: " + chain.problems.join("; "));
+        const c = m.capsules.find(x => x.seq === Number(seq));
+        if (!c) return bad("No capsule with that number.");
+        for (const saved of c.state.steps) {
+          const s = m.steps.find(x => x.idx === saved.idx);
+          let status = saved.status === "running" ? "queued" : saved.status, approvalId = saved.approval;
+          const p = approvalId && W().approvals.find(x => x.id === approvalId);
+          if (status === "blocked" && (!p || p.status !== "pending")) { status = "queued"; approvalId = null; }
+          setS(m, s, { status, gateStatus: saved.gate, approvalId, output: saved.output, gates: status === "queued" ? [] : s.gates });
+        }
+        m.status = "paused"; m.finishedAt = null;
+        capsule(m, "restored from #" + c.seq);
+        W().events.push(ev("member:owner", "mission.restored", id)); save(); return ok(missionOut(m));
+      },
+      skipStep(id, idx) {
+        const m = findMission(id), s = m && m.steps.find(x => x.idx === Number(idx));
+        if (!s) return bad("No step with that number.");
+        if (s.status !== "blocked") return bad("Only a step that waits for approval can be skipped.");
+        setS(m, s, { status: "skipped", output: { approval: s.approvalId, skipped: "A person chose to carry on without it. The request stays in the inbox." } });
+        W().events.push(ev("member:owner", "mission.step_skipped", id));
+        if (m.status !== "paused") { m.status = "running"; if (!m.timer) { const ws = W(); m.timer = setTimeout(() => advance(ws, m, 0), 300); } }
+        save(); return ok(missionOut(m));
+      },
+    });
     return api;
   }
 
@@ -275,6 +522,7 @@
       try { const v = (await req("GET", w("/version"))).v; if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; } catch (e) { /* keep the page; the next poll retries */ }
     };
     const startPolling = () => { if (!timer) timer = setInterval(() => { if (!document.hidden && subs.size) poll(); }, 1500); };
+    poll();
     const api = {
       mode: "live",
       info,
@@ -284,7 +532,9 @@
       get slug() { return slug; },
       reset() { return Promise.reject(new Error("Live data is not reset from the page. Stop the server and delete jarvis/server/.data to start over.")); },
       listWorkspaces: () => req("GET", "/api/workspaces"),
-      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); subs.forEach(fn => fn()); return ws; },
+      // The change marker is read right away (not on the next poll), so a change that lands within the
+      // first poll interval after a switch is still noticed.
+      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); await poll(); subs.forEach(fn => fn()); return ws; },
       workspace: () => req("GET", w("")),
       renameWorkspace: name => req("PATCH", w(""), { name }),
       members: () => req("GET", w("/members")),
@@ -302,6 +552,15 @@
       stats: () => req("GET", w("/stats")),
       waitingCount: async () => (await req("GET", w("/stats"))).waiting,
       cleanClone: body => req("POST", "/api/studio/clean-clone", body),
+      listMissions: () => req("GET", w("/missions")),
+      getMission: id => req("GET", w("/missions/" + encodeURIComponent(id))),
+      createMission: input => req("POST", w("/missions"), input),
+      runMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/run"), {}),
+      pauseMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/pause"), {}),
+      verifyMission: id => req("GET", w("/missions/" + encodeURIComponent(id) + "/verify")),
+      getCapsule: (id, seq) => req("GET", w("/missions/" + encodeURIComponent(id) + "/capsules/" + Number(seq))),
+      restoreCapsule: (id, seq) => req("POST", w("/missions/" + encodeURIComponent(id) + "/capsules/" + Number(seq) + "/restore"), {}),
+      skipStep: (id, idx) => req("POST", w("/missions/" + encodeURIComponent(id) + "/steps/" + Number(idx) + "/skip"), {}),
     };
     return api;
   }
@@ -400,7 +659,8 @@
   const payloadText = p => typeof p.payload === "string" ? p.payload : p.payload && p.payload.path ? "+ " + p.payload.path + " (" + fmtN.format(p.payload.bytes || 0) + " bytes)\n\n" + (p.payload.preview || "") : (p.payload && p.payload.note) || "";
   const isSampleRequest = p => (p.payload && p.payload.sample) || (typeof p.payload === "string" && /^Sample request/.test(p.payload));
   function badge(status, label) {
-    return h("span", { class: "badge s-" + status }, h("span", { class: "dot", "aria-hidden": "true" }), label || ({ idle: "Idle", running: "Running", succeeded: "Succeeded", failed: "Failed", queued: "Queued", cancelled: "Cancelled", paused: "Paused", ok: "Done", skipped: "Skipped", pending: "Awaiting approval", approved: "Approved", rejected: "Rejected", expired: "Expired" }[status] || status));
+    return h("span", { class: "badge s-" + status }, h("span", { class: "dot", "aria-hidden": "true" }), label || ({ idle: "Idle", running: "Running", succeeded: "Succeeded", failed: "Failed", queued: "Queued", cancelled: "Cancelled", paused: "Paused", ok: "Done", skipped: "Skipped", pending: "Awaiting approval", approved: "Approved", rejected: "Rejected", expired: "Expired",
+      draft: "Draft", awaiting_approval: "Awaiting approval", done: "Done", blocked: "Waiting", pass: "Pass", fail: "Fail", none: "—" }[status] || status));
   }
   function skeleton(lines) {
     const s = h("div", { class: "skel", "aria-busy": "true", "aria-label": "Loading" });
@@ -481,6 +741,10 @@
       field("model", "Model", h("select", { class: "select", name: "model", autocomplete: "off" }, models.map(m => h("option", { text: m, selected: m === a.model })))),
       field("rolePrompt", "Role", h("textarea", { class: "textarea", name: "role", autocomplete: "off", value: a.rolePrompt || "", placeholder: "What this agent does, and what it must never do." })),
       field("maxSteps", "Max steps per run", h("input", { class: "input num", name: "max-steps", inputmode: "numeric", autocomplete: "off", value: String(a.maxSteps) })),
+      h("fieldset", null, h("legend", { class: "legend", text: "Execution" }),
+        h("label", { class: "check" }, h("input", { type: "radio", name: "mode", value: "single", checked: (a.mode || "single") === "single" }), h("span", { text: "Single run" }), h("span", { class: "subtle t-caption", text: "— one pass through the tools" })),
+        h("label", { class: "check" }, h("input", { type: "radio", name: "mode", value: "long_horizon", checked: a.mode === "long_horizon" }), h("span", { text: "Long-horizon mission" }), h("span", { class: "subtle t-caption", text: "— phases, evidence gates, capsules; locked steps wait" }))),
+      field("capsuleEvery", "Save a capsule every … phases", h("input", { class: "input num", name: "capsule-every", inputmode: "numeric", autocomplete: "off", value: String(a.capsuleEvery || 1) }), "Long-horizon mode only. 1 to 10."),
       h("fieldset", null, h("legend", { class: "legend", text: "Tools and permissions" }), toolBoxes),
       h("fieldset", null, h("legend", { class: "legend", text: "Linked skills" }), h("span", { class: "hint", text: "Skills this agent follows. They come from .claude/skills in this repo." }), skillFilter, skillBox),
       h("fieldset", null, h("legend", { class: "legend" }, "Locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" })), lockedRows,
@@ -488,6 +752,7 @@
     const save = h("button", { class: "btn btn-primary", type: "button", text: editing ? "Save changes" : "Create agent" });
     save.addEventListener("click", () => {
       const input = { name: f.name.value, model: f.model.value, rolePrompt: f.rolePrompt.value, maxSteps: f.maxSteps.value.trim() === "" ? NaN : Number(f.maxSteps.value),
+        mode: ($("input[name=mode]:checked", body) || { value: "single" }).value, capsuleEvery: f.capsuleEvery.value.trim() === "" ? NaN : Number(f.capsuleEvery.value),
         tools: $$("input[name=tool]:checked", body).map(x => x.value), skills: $$("input[name=skill]:checked", body).map(x => x.value) };
       const errs = validateAgentInput(input, others, editing ? a.id : undefined);
       for (const k of Object.keys(err)) {
@@ -540,8 +805,8 @@
     const needsPath = a.tools.includes("files.read"), needsUrl = a.tools.includes("web.read");
     const go = input => store.startRun(a.id, input).then(r => {
       if (dlg.open) closeDialog();
-      toast("info", store.mode === "live" ? "Run started." : "Run started (simulated).");
-      location.hash = "#/runs/" + r.id;
+      toast("info", r.mission ? "Mission started: phases, gates and capsules." : store.mode === "live" ? "Run started." : "Run started (simulated).");
+      location.hash = r.mission ? "#/missions/" + r.mission : "#/runs/" + r.id;
     }, e => toast("error", e.message));
     if (store.mode !== "live" || (!needsPath && !needsUrl)) return go({});
     const path = needsPath ? h("input", { class: "input mono", id: "f-runpath", name: "run-path", autocomplete: "off", value: /token|design/i.test(a.name) ? "jarvis/replica/design" : "docs/adr/ADR-13*" }) : null;
@@ -557,7 +822,8 @@
   pages.agent = id => {
     const box = h("div", { class: "stack" });
     const render = a => {
-      const runBtn = h("button", { class: "btn btn-primary", type: "button", disabled: a.active }, icon("i-run", "sm"), a.active ? "Running…" : "Run once");
+      const lh = a.mode === "long_horizon";
+      const runBtn = h("button", { class: "btn btn-primary", type: "button", disabled: a.active }, icon("i-run", "sm"), a.active ? "Running…" : lh ? "Start mission" : "Run once");
       runBtn.addEventListener("click", e => runDialog(a, e.currentTarget));
       const editBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Edit", onclick: e => agentDialog(e.currentTarget, a) });
       const perms = a.permissions || { writeNotes: a.tools.includes("notes.write"), readWeb: a.tools.includes("web.read") };
@@ -565,6 +831,7 @@
         h("div", null, h("dt", { class: "muted", text: "Role" }), h("dd", { dir: "auto", text: a.rolePrompt || "No role written yet." })),
         h("div", null, h("dt", { class: "muted", text: "Model" }), h("dd", { text: a.model + (a.model.includes("Hosted") ? " — the key lives in the Ops Room vault, never in Jarvis." : a.model.includes("no model") ? " — planning and summaries follow fixed rules." : "") })),
         h("div", null, h("dt", { class: "muted", text: "Max steps per run" }), h("dd", { class: "num", text: String(a.maxSteps) })),
+        h("div", null, h("dt", { class: "muted", text: "Execution" }), h("dd", { text: a.mode === "long_horizon" ? "Long-horizon mission: phases, gates, a capsule every " + plural(a.capsuleEvery || 1, "phase") + ", locked steps wait while the rest carries on." : "Single run: one pass through the tools." })),
         h("div", null, h("dt", { class: "muted", text: "Permissions" }), h("dd", { class: "row" },
           badge(perms.writeNotes ? "approved" : "idle", perms.writeNotes ? "Writes notes (asks first)" : "No note writing"),
           badge(perms.readWeb ? "approved" : "idle", perms.readWeb ? "Reads public pages" : "No web reading"),
@@ -751,7 +1018,196 @@
         h("p", { class: "muted t-sm", text: "Phase 1 has one local owner. Inviting people and changing roles come with the phase 2 service; changing repository permissions stays a locked approval." }), members));
   };
 
+  /* ── Mission Control (ADR-135) ──────────────────────────────── */
+  const TEMPLATE_LIST = () => Object.entries(DATA.templates || {});
+  function healthMeter(hl) {
+    const bar = h("span", { class: "bar " + (hl.score >= 70 ? "s-ok" : hl.score >= 40 ? "s-warn" : "s-failed") });
+    bar.style.inlineSize = hl.score + "%";
+    return h("div", { class: "health" },
+      h("div", { class: "row" }, h("b", { class: "num", text: String(hl.score) }), h("span", { class: "muted t-sm", text: "/ 100 · " + hl.label })),
+      h("div", { class: "meter", role: "img", "aria-label": "Context health " + hl.score + " of 100, " + hl.label }, bar));
+  }
+  function missionDialog(from) {
+    const tpl = h("select", { class: "select", id: "f-mtpl", name: "template", autocomplete: "off" }, TEMPLATE_LIST().map(([k, t]) => h("option", { value: k, text: t.title })));
+    const title = h("input", { class: "input", id: "f-mtitle", name: "mission-title", autocomplete: "off", maxLength: 120, placeholder: "Uses the template's title when empty" });
+    const every = h("input", { class: "input num", id: "f-mevery", name: "capsule-every", inputmode: "numeric", autocomplete: "off", value: "1" });
+    const info = h("p", { class: "hint", id: "h-mtpl" });
+    const show = () => { const t = DATA.templates[tpl.value]; info.textContent = t ? t.steps.length + " steps in " + new Set(t.steps.map(s => s.phase)).size + " phases · " + t.goal : ""; };
+    tpl.setAttribute("aria-describedby", "h-mtpl"); tpl.addEventListener("change", show); show();
+    const go = h("button", { class: "btn btn-primary", type: "button", text: "Create mission" });
+    go.addEventListener("click", () => {
+      go.disabled = true;
+      store.createMission({ template: tpl.value, title: title.value.trim() || undefined, capsuleEvery: every.value.trim() === "" ? NaN : Number(every.value) })
+        .then(m => { closeDialog(); toast("ok", "Mission created. Press Run when ready."); location.hash = "#/missions/" + m.id; }, e => { toast("error", e.message); go.disabled = false; });
+    });
+    openDialog("New mission", h("div", { class: "stack" },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-mtpl", text: "Template" }), tpl, info),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-mtitle", text: "Title" }), title),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-mevery", text: "Save a capsule every … phases" }), every, h("span", { class: "hint", text: "1 to 10. A capsule also saves when the mission waits, pauses, finishes or is restored." }))),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), go], from);
+  }
+
+  pages.missions = () => {
+    const box = h("div");
+    const render = list => list.length ? h("ul", { class: "mlist", "aria-label": "Missions" }, list.map(m => {
+      const bar = h("span", { class: "bar s-ok" });
+      bar.style.inlineSize = (m.steps ? Math.round(m.done / m.steps * 100) : 0) + "%";
+      return h("li", null, h("a", { class: "mcard", href: "#/missions/" + m.id },
+        h("div", { class: "row between" }, h("b", { dir: "auto", class: "trunc", text: m.title }), badge(m.status)),
+        h("span", { class: "mono t-caption subtle", translate: "no", text: m.template }),
+        h("div", { class: "meter", role: "img", "aria-label": m.done + " of " + m.steps + " steps done" }, bar),
+        h("div", { class: "row t-caption muted" },
+          h("span", { class: "num", text: m.done + "/" + m.steps + " steps" }), h("span", { text: "·" }), h("span", { text: plural(m.phases, "phase") }), h("span", { text: "·" }), h("span", { text: plural(m.capsules, "capsule") }),
+          m.blocked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), m.blocked + " waiting") : null,
+          m.failed ? badge("failed", m.failed + " failed") : null),
+        h("span", { class: "t-caption subtle" }, "Context health " + m.health.score + " · " + m.health.label + " ", h("span", { class: "tag-inf", text: "[INFERENCE]" }))));
+    })) : emptyState("i-layers", "No missions yet", "A mission is a long task in phases, with gates, capsules and approvals.", h("button", { class: "btn btn-primary", type: "button", text: "New mission", onclick: e => missionDialog(e.currentTarget) }));
+    loadInto(box, () => store.listMissions(), render);
+    // Changes made from a dialog land after it closes, so the close event refreshes too.
+    const refresh = () => { if (!box.isConnected) { off(); dlg.removeEventListener("close", refresh); return; } if (dlg.open) return; store.listMissions().then(l => box.replaceChildren(render(l)), () => {}); };
+    const off = store.subscribe(refresh);
+    dlg.addEventListener("close", refresh);
+    return h("div", { class: "stack" },
+      pageHead("Missions", "Long tasks in ordered phases. Gates need evidence, capsules keep a verified trail, and locked steps wait while the rest carries on.",
+        h("button", { class: "btn btn-primary", type: "button", onclick: e => missionDialog(e.currentTarget) }, icon("i-plus", "sm"), "New mission")),
+      sampleNote(), box);
+  };
+
+  function gateChips(s) {
+    const res = (s.output && s.output.results) || [];
+    if (!res.length) return h("div", { class: "row" }, s.criteria.map(c => h("span", { class: "badge s-idle" }, h("span", { class: "dot", "aria-hidden": "true" }), (GATE_LABEL[c.check] || c.check) + " · not run")));
+    return h("ul", { class: "gates", "aria-label": "Gate results" }, res.map(r => h("li", null,
+      h("span", { class: "badge " + (r.ok ? "s-ok" : "s-failed") }, h("span", { class: "dot", "aria-hidden": "true" }), (GATE_LABEL[r.check] || r.check) + " · " + (r.ok ? "pass" : "fail")),
+      h("span", { class: "t-caption muted", text: r.detail }),
+      h("code", { class: "t-caption subtle", translate: "no", text: r.evidence + (r.sha256 ? " · " + r.sha256.slice(0, 12) : "") + (r.snapshot ? " · build snapshot" : "") }))));
+  }
+  function missionStepSummary(s) {
+    const o = s.output;
+    if (s.status === "skipped") return (o && (o.reason || o.skipped)) || "Skipped.";
+    if (!o) return s.dependsOn.length ? "Needs " + s.dependsOn.map(d => "T" + (d + 1)).join(", ") : "Ready when its phase starts.";
+    if (o.simulated) return o.note;
+    if (o.error) return o.error;
+    if (o.rejected !== undefined) return "Rejected: " + o.rejected;
+    if (o.written !== undefined) return o.written ? "Approved and written to " + o.written : (o.note || "Approved.");
+    if (o.approval) return o.locked ? "Waiting for Director 00 outside Jarvis." : "Waiting for a person to approve.";
+    if (o.results) return (o.pass ? "Gate passed: " : "Gate failed: ") + plural(o.results.filter(r => r.ok).length, "check") + " of " + o.results.length + " passed on saved evidence.";
+    return stepSummary(s);
+  }
+  function lockedStepCard(m, s) {
+    const skip = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Carry on without it…" });
+    skip.addEventListener("click", e => openDialog("Carry on without “" + s.title + "”?", h("p", { class: "muted t-sm", text: "The step and the steps that need it are skipped, so the mission can finish. The locked request stays in the Approvals inbox for Director 00; nothing is approved." }),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Keep waiting", onclick: closeDialog }),
+        h("button", { class: "btn btn-primary", type: "button", text: "Carry on", onclick: () => store.skipStep(m.id, s.idx).then(() => { closeDialog(); toast("info", "Skipped. The request stays in the inbox."); }, err => toast("error", err.message)) })], e.currentTarget));
+    return h("div", { class: "approval locked mlock" },
+      h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Waiting for Director 00" })),
+      h("p", { class: "muted t-sm", text: "Locked: this " + LOCKED[s.category] + ". Jarvis has no approve button for it, and the database refuses to mark this step done (mission_steps_locked_never_done). Steps that do not need it carry on." }),
+      h("div", { class: "row" }, h("a", { class: "btn btn-ghost btn-sm", href: "#/approvals", text: "Open in Approvals" }), skip));
+  }
+  function stepItem(m, s) {
+    const kindIcon = { tool: "i-run", gate: "i-check", approval: "i-lock" }[s.kind];
+    const decide = s.kind === "approval" && s.status === "blocked" && !s.locked && s.approvalId
+      ? h("div", { class: "row" },
+        h("button", { class: "btn btn-primary btn-sm", type: "button", text: "Approve", onclick: e => { e.currentTarget.disabled = true; store.decide(s.approvalId, "approved").then(() => toast("ok", "Approved. The mission carries on."), err => toast("error", err.message)); } }),
+        h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Reject…", onclick: e => rejectDialog({ id: s.approvalId, action: s.title }, e.currentTarget) }))
+      : null;
+    return h("li", { class: "mstep k-" + s.kind + (s.locked && s.status === "blocked" ? " is-locked" : ""), dataset: { idx: String(s.idx) } },
+      h("div", { class: "mstep-head" },
+        h("span", { class: "idx num", text: "T" + (s.idx + 1) }),
+        h("div", { class: "what" }, h("b", { dir: "auto", text: s.title }),
+          h("span", { class: "t-caption subtle" }, icon(kindIcon, "sm"), " " + s.kind + (s.tool ? " · " : ""), s.tool ? h("code", { translate: "no", text: s.tool }) : null, s.category ? " · " + s.category : "", s.dependsOn.length ? " · needs " + s.dependsOn.map(d => "T" + (d + 1)).join(", ") : "")),
+        h("div", { class: "row" }, badge(s.status), h("span", { class: "num subtle t-caption", text: dur(s.ms) }))),
+      h("p", { class: "t-sm muted", dir: "auto", text: missionStepSummary(s) }),
+      s.kind === "gate" ? gateChips(s) : null,
+      s.locked && s.status === "blocked" ? lockedStepCard(m, s) : decide);
+  }
+  function capsuleDialog(m, seq, from) {
+    store.getCapsule(m.id, seq).then(c => openDialog("Capsule #" + c.seq + " · " + c.label, h("div", { class: "stack" },
+      h("dl", { class: "kv" },
+        h("dt", { text: "Hash check" }), h("dd", null, badge(c.hashOk ? "ok" : "failed", c.hashOk ? "SHA-256 matches its content" : "Does not match its content")),
+        h("dt", { text: "SHA-256" }), h("dd", { class: "mono hash", translate: "no", text: c.hash }),
+        h("dt", { text: "Previous" }), h("dd", { class: "mono hash", translate: "no", text: c.prevHash }),
+        h("dt", { text: "Saved" }), h("dd", null, timeEl(c.createdAt)),
+        h("dt", { text: "Canonical state" }), h("dd", { class: "num", text: fmtN.format(c.canonicalBytes) + " bytes" })),
+      h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Saved step states" }, h("table", null,
+        h("thead", null, h("tr", null, ["Step", "Status", "Gate"].map(x => h("th", { scope: "col", text: x })))),
+        h("tbody", null, c.state.steps.map(st => h("tr", null, h("td", { class: "num", text: "T" + (st.idx + 1) }), h("td", null, badge(st.status)), h("td", null, st.gate === "none" ? h("span", { class: "subtle", text: "—" }) : badge(st.gate)))))))),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Close", onclick: closeDialog })], from), e => toast("error", e.message));
+  }
+  function restoreDialog(m, c, from) {
+    if (m.status === "running") { toast("warn", "Pause the mission before you restore a capsule."); return; }
+    openDialog("Restore capsule #" + c.seq + "?", h("div", { class: "stack" },
+      h("p", { class: "t-sm", text: "Every step goes back to how it was at “" + c.label + "”. The chain is checked first; a broken chain restores nothing. The mission pauses, and a new capsule records the restore. Nothing is deleted: capsules are append-only." }),
+      h("p", { class: "mono t-caption subtle", translate: "no", text: c.hash })),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }),
+        h("button", { class: "btn btn-primary", type: "button", text: "Restore", onclick: () => store.restoreCapsule(m.id, c.seq).then(() => { closeDialog(); toast("ok", "Restored from #" + c.seq + ". Press Run to carry on."); }, e => toast("error", e.message)) })], from);
+  }
+
+  pages.mission = id => {
+    const box = h("div", { class: "stack" });
+    const render = m => {
+      const busy = m.status === "running";
+      const runBtn = ["draft", "paused", "awaiting_approval"].includes(m.status)
+        ? h("button", { class: "btn btn-primary", type: "button", onclick: e => { e.currentTarget.disabled = true; store.runMission(m.id).then(() => toast("info", m.simulated ? "Mission started (simulated tools)." : "Mission started."), err => toast("error", err.message)); } }, icon("i-run", "sm"), m.status === "draft" ? "Run mission" : "Resume")
+        : null;
+      const pauseBtn = ["running", "awaiting_approval"].includes(m.status)
+        ? h("button", { class: "btn btn-secondary", type: "button", text: "Pause", onclick: e => { e.currentTarget.disabled = true; store.pauseMission(m.id).then(() => toast("warn", "Paused. A capsule was saved."), err => toast("error", err.message)); } })
+        : null;
+      const phases = [...new Set(m.steps.map(s => s.phase))].sort((a, b) => a - b);
+      const done = m.steps.filter(s => s.status === "done").length;
+      const lockedWaiting = m.steps.filter(s => s.locked && s.status === "blocked").length;
+      const verifyBtn = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Verify chain" });
+      verifyBtn.addEventListener("click", () => store.verifyMission(m.id).then(v => toast(v.ok ? "ok" : "error", v.ok ? "Chain verified: " + plural(v.count, "capsule") + ", head " + v.head.slice(0, 12) + "…" : "Chain broken: " + v.problems.join("; ")), e => toast("error", e.message)));
+      const caps = m.capsules.slice().reverse();
+      return h("div", { class: "stack" },
+        pageHead(m.title, m.goal, badge(m.status), pauseBtn, runBtn),
+        m.simulated ? sampleNote("Sample mission: tool steps are simulated; gates judge the repo's evidence files as of the build; capsules are real SHA-256 chains in this browser. Start jarvis/server for real runs.") : sampleNote(),
+        lockedWaiting && m.status !== "succeeded" ? h("p", { class: "sample-note lock-note", role: "note" }, icon("i-lock", "sm"), plural(lockedWaiting, "locked step") + (lockedWaiting === 1 ? " waits" : " wait") + " for Director 00 outside Jarvis; every step that does not need " + (lockedWaiting === 1 ? "it" : "them") + " has carried on.") : null,
+        h("div", { class: "mission" },
+          h("div", { class: "stack" },
+            h("div", { class: "mstats" },
+              h("div", { class: "stat" }, h("span", { class: "label", text: "Steps done" }), h("span", { class: "value num", text: done + "/" + m.steps.length })),
+              h("div", { class: "stat" }, h("span", { class: "label", text: "Phases" }), h("span", { class: "value num", text: String(phases.length) })),
+              h("div", { class: "stat" }, h("span", { class: "label", text: "Capsules" }), h("span", { class: "value num", text: String(m.capsules.length) }))),
+            phases.map(ph => {
+              const steps = m.steps.filter(s => s.phase === ph);
+              const state = steps.every(s => ["done", "skipped"].includes(s.status)) ? "done" : steps.some(s => s.status === "running") ? "running" : steps.some(s => s.status === "failed") ? "failed" : steps.some(s => s.status === "blocked") ? "blocked" : "queued";
+              return h("section", { class: "phase", "aria-labelledby": "ph-" + ph },
+                h("header", { class: "row between" }, h("h2", { id: "ph-" + ph, text: "Phase " + ph }), h("div", { class: "row" }, h("span", { class: "t-caption muted", text: steps.length > 1 ? "parallel · " + steps.length + " steps" : "1 step" }), badge(state))),
+                h("ol", { class: "msteps" }, steps.map(s => stepItem(m, s))));
+            })),
+          h("aside", { class: "stack mside", "aria-label": "Mission state" },
+            h("section", { class: "panel", "aria-labelledby": "h-health" }, h("h2", { id: "h-health", text: "Context health" }), healthMeter(m.health),
+              h("p", { class: "t-caption muted", text: plural(m.health.stepsSinceCapsule, "step") + " since the last capsule · ≈" + fmtN.format(m.health.outputTokens) + " output tokens" }),
+              h("p", { class: "t-caption subtle", text: m.health.basis })),
+            h("section", { class: "panel", "aria-labelledby": "h-caps" }, h("h2", { id: "h-caps", text: "State capsules" }),
+              h("div", { class: "row between" }, badge(m.chain.ok ? "ok" : "failed", m.chain.ok ? "Chain intact · " + m.chain.count : "Chain broken"), verifyBtn),
+              caps.length ? h("ol", { class: "caps", "aria-label": "Capsules, newest first" }, caps.map(c => h("li", null,
+                h("div", { class: "what" }, h("b", null, h("span", { class: "num", text: "#" + c.seq }), " " + c.label), h("span", { class: "mono t-caption subtle", translate: "no", text: c.hash.slice(0, 16) + "… ← " + c.prevHash.slice(0, 8) + "…" }), timeEl(c.createdAt)),
+                h("div", { class: "row" },
+                  h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Inspect", "aria-label": "Inspect capsule " + c.seq, onclick: e => capsuleDialog(m, c.seq, e.currentTarget) }),
+                  h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Restore…", "aria-label": "Restore capsule " + c.seq, disabled: busy, onclick: e => restoreDialog(m, c, e.currentTarget) })))))
+                : h("p", { class: "muted t-sm", text: "No capsule yet. The first one is saved when phase 1 finishes." }),
+              busy ? h("p", { class: "hint", text: "Pause the mission to restore a capsule." }) : null),
+            h("section", { class: "panel", "aria-labelledby": "h-files" }, h("h2", { id: "h-files", text: "Plan files" }),
+              h("p", { class: "t-sm", text: "The replica-long-horizon record of this mission:" }),
+              h("ul", { class: "row" }, m.files.names.map(n => h("li", { class: "badge mono", translate: "no", text: n }))),
+              h("p", { class: "mono t-caption subtle", translate: "no", text: m.files.dir }),
+              h("p", { class: "t-caption muted", text: "gate.py and capsule.py from .claude/skills/replica-long-horizon read the same files." })))));
+    };
+    loadInto(box, () => store.getMission(id), render);
+    const refresh = () => { if (!box.isConnected) { off(); dlg.removeEventListener("close", refresh); return; } if (dlg.open) return; store.getMission(id).then(m => box.replaceChildren(render(m)), () => {}); };
+    const off = store.subscribe(refresh);
+    dlg.addEventListener("close", refresh);
+    return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/missions", text: "← Missions" })), box);
+  };
+
   /* ── Studio (S13): live builder in a sandboxed frame ─────────── */
+  // The clean-room extractor: jarvis/server/lib/clean-clone.mjs, inlined by the build (pure functions,
+  // no network), so pasted HTML is extracted in the page exactly as the server does it.
+  const CleanRoom = (() => {
+    /*@CLEAN_CLONE@*/
+    return { cleanClone };
+  })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
@@ -902,7 +1358,7 @@
     const cloneHtml = h("textarea", { class: "textarea code", id: "f-clone-html", name: "clone-html", autocomplete: "off", spellcheck: false, rows: 5, placeholder: "<!doctype html>…" });
     const report = h("div", { class: "report", "aria-live": "polite" });
     const live = store.mode === "live";
-    const cloneBtn = h("button", { class: "btn btn-primary", type: "button", disabled: !live }, icon("i-copy", "sm"), "Clean-room clone");
+    const cloneBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-copy", "sm"), "Clean-room clone");
     cloneBtn.addEventListener("click", async () => {
       const body = cloneHtml.value.trim() ? { html: cloneHtml.value } : { url: cloneUrl.value.trim() };
       if (!body.html && !body.url) { toast("warn", "Paste an address or some HTML first."); cloneUrl.focus(); return; }
@@ -913,6 +1369,9 @@
         site.blocks = out.blocks.map(b => ({ id: b.id, type: b.type, on: true, t: b.t, cols: b.cols || null, rows: b.rows || null }));
         site.name = "Clean template";
         nameIn.value = site.name;
+        // The template wears our design system, never the source's: Jarvis night tokens (accent #77bcff),
+        // the glass bar (blur 16, saturate 180) and Readex Pro, Inter and Geist Mono from the preview runtime.
+        site.theme = { ...PRESETS.night }; delete site.theme.label; site.preset = "night"; presetSel.value = "night"; renderColors();
         changed(); renderBlocks();
         const r = out.report, d = r.dropped;
         report.replaceChildren(h("dl", null,
@@ -921,18 +1380,19 @@
           h("dt", { text: "Sections" }), h("dd", { text: r.sections.join(" · ") }),
           h("dt", { text: "Dropped" }), h("dd", { text: [plural(d.scripts, "script") + " (" + plural(d.trackers, "tracker") + ")", plural(d.stylesheets, "stylesheet"), plural(d.images, "image"), plural(d.frames, "frame"), plural(d.textCharacters, "character") + " of their text"].join(", ") }),
           h("dt", { text: "Sweep" }), h("dd", null, r.sweep.leaks ? badge("failed", r.sweep.leaks + " possible leaks: " + r.sweep.leaked.join(", ")) : badge("ok", "0 leaks · " + plural(r.sweep.brandTermsChecked, "brand term") + " and " + plural(r.sweep.sourcePhrasesChecked, "phrase") + " checked"))));
-        toast("ok", "Rebuilt " + out.blocks.length + " sections with your design and new copy. Nothing of the source was kept.");
+        toast("ok", "Extracted " + out.blocks.length + " sections into a clean template in the Jarvis design system. Nothing of the source was kept.");
       } catch (e) {
         report.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message));
         toast("error", e.message);
-      } finally { cloneBtn.disabled = !live; cloneBtn.removeAttribute("aria-busy"); }
+      } finally { cloneBtn.disabled = false; cloneBtn.removeAttribute("aria-busy"); }
     });
-    const clonePanel = h("section", { class: "panel clone-bar", "aria-labelledby": "h-clone-t" }, h("h2", { id: "h-clone-t", text: "Clean-room clone" }),
+    const clonePanel = h("section", { class: "panel clone-bar", "aria-labelledby": "h-clone-t" }, h("h2", { id: "h-clone-t", text: "Clean-room template extractor" }),
       h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-clone-url", text: "Page address" }), cloneUrl), cloneBtn),
       h("details", null, h("summary", { text: "Or paste HTML" }), h("div", { class: "field" }, h("label", { htmlFor: "f-clone-html", text: "HTML" }), cloneHtml)),
       h("p", { class: "hint", id: "h-clone", text: live
-        ? "Keeps only the layout (sections, card counts, table shapes). Text, images, colours, scripts and trackers are dropped and replaced with your design and our own copy. One request; robots.txt is respected."
-        : "Runs on the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798." }),
+        ? "Keeps only the layout (sections, card counts, table shapes). Text, images, colours, scripts and trackers are dropped and replaced with our own copy in English and Arabic. One request; robots.txt is respected."
+        : "Pasted HTML is extracted right here, with no network. Reading an address needs the local server: node jarvis/server/server.mjs, then open http://127.0.0.1:8798." }),
+      h("ul", { class: "row ds-line", "aria-label": "Design system applied to the template" }, ["OKLCH tokens", "accent #77bcff", "glass blur 16 · saturate 180", "Readex Pro · Inter · Geist Mono", "EN LTR · AR RTL"].map(t => h("li", { class: "badge", translate: "no", text: t }))),
       report);
 
     renderColors(); renderBlocks(); checkContrast();
@@ -1097,7 +1557,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
   let first = true;
   function route() {
     const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/");
@@ -1105,9 +1565,10 @@
     let make;
     if (key === "agents" && arg) { make = () => pages.agent(decodeURIComponent(arg)); key = "agent"; }
     else if (key === "runs" && arg) { make = () => pages.run(decodeURIComponent(arg)); key = "run"; }
-    else if (pages[key] && key !== "agent" && key !== "run") make = pages[key];
+    else if (key === "missions" && arg) { make = () => pages.mission(decodeURIComponent(arg)); key = "mission"; }
+    else if (pages[key] && !["agent", "run", "mission"].includes(key)) make = pages[key];
     const main = $("#main");
-    const navKey = { agent: "agents", run: "runs" }[key] || key;
+    const navKey = { agent: "agents", run: "runs", mission: "missions" }[key] || key;
     $$(".nav a[data-route]").forEach(a => (a.dataset.route === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     if (!make) {
       main.replaceChildren(emptyState("i-search", "This page does not exist", "Check the address, or go back to the overview.", h("a", { class: "btn btn-primary", href: "#/overview", text: "Overview" })));
@@ -1173,8 +1634,9 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
+    ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],
     ["Switch direction", "Action", () => setDir(root.dir === "rtl" ? "ltr" : "rtl")],
     ["Switch workspace", "Action", () => wsOpen(true, 0)],
