@@ -47,3 +47,11 @@ Mission Control on the live server (giant-core's "Release readiness" mission, ru
 - `missions-list-*`.
 
 The Studio, Skill Mixer, agent editor and locked approval shots were retaken from the same build. The Studio shots now show the template extractor: Jarvis tokens and a glass bar.
+
+## ADR-136 (2026-11-05)
+
+Local model bridge, on the real server with a **fake Ollama on 127.0.0.1**. The sandbox has no Ollama, so the model answers shown are fixed test text. Dark and light, at 1440, 768 and 375:
+
+- `llm-mission-planner-*`: a mission planned by `jarvis-planner`, with its thinking folded as untrusted text and the publish step locked by rule;
+- `llm-settings-*`: the Local model panel;
+- `llm-studio-design-*`: a page designed from a description; only the layout was kept.
