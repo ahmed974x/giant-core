@@ -13,7 +13,8 @@ import { startServer } from "../server.mjs";
 import { cleanClone, parse } from "../lib/clean-clone.mjs";
 import { checkUrl, robotsAllows, isBlockedAddress, safeLookup, FetchError } from "../lib/fetch-public.mjs";
 import { canonical, sealCapsule, verifyChain, judge } from "../lib/missions.mjs";
-import { pinLoopback, BridgeError } from "../lib/ollama-bridge.mjs";
+import { pinLoopback, BridgeError, isLocalModelEngine } from "../lib/ollama-bridge.mjs";
+import { pinCompatUrl, thinkSplitter, profileOf, pickModel, MODEL_PROFILES, createOpenAICompatClient } from "../lib/openai-compat.mjs";
 import { checkGraph, topoLevels, graphToSteps, signBody, verifySignature, checkHookUrl } from "../lib/platform.mjs";
 import { bm25, tokenize } from "../lib/bm25.mjs";
 import { forgeSkill, readSkillMd, scanFiles } from "../lib/forge.mjs";
@@ -585,6 +586,83 @@ ok(/^JarvisOpenSearch\/1\.0 \(\+https:\/\/github\.com\//.test(SEARCH_UA), "an ho
   const brittle = createOpenWebSearch({ searxngUrl: "", request: async url => (new URL(url).hostname === "api.github.com" ? { items: "not an array" } : new URL(url).hostname === "hn.algolia.com" ? { hits: [{ title: "Kept", url: "https://kept.example/" }] } : null) });
   const br = await brittle.search({ q: "graph", mode: "web" });
   ok(br.results.some(r => r.title === "Kept") && br.sources.find(x => x.source === "github").ok === false, "one source that answers nonsense does not sink the others", br.sources);
+}
+
+// ADR-140: OpenAI-compatible local engine (vLLM, llama.cpp, Ollama /v1) for DeepSeek and Qwen open weights.
+for (const bad of ["http://localhost:8000/v1", "https://127.0.0.1:8000/v1", "http://127.0.0.1/v1", "http://127.0.0.1:8000/v2", "https://api.deepseek.com/v1", "http://10.0.0.5:8000/v1", "http://[::1]:8000/v1", "http://u:p@127.0.0.1:8000/v1", "http://127.0.0.1:8000/v1?x=1"]) {
+  let e7 = null; try { pinCompatUrl(bad); } catch (e) { e7 = e; } ok(e7 && e7.status === 400, "OpenAI-compatible address refused: " + bad);
+}
+ok(pinCompatUrl("http://127.0.0.1:8000") === "http://127.0.0.1:8000/v1" && pinCompatUrl("http://127.0.0.1:11434/v1/") === "http://127.0.0.1:11434/v1", "the OpenAI-compatible address is pinned to 127.0.0.1 and /v1");
+{
+  let badStart2 = null; try { await startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), "jarvis-bad2-")), quiet: true, openaiUrl: "https://api.deepseek.com/v1" }); } catch (e) { badStart2 = e; }
+  ok(badStart2 && /127\.0\.0\.1/.test(badStart2.message), "the server refuses to start with a hosted model endpoint", badStart2 && badStart2.message);
+}
+{
+  const parts = { text: "", think: "" };
+  const sp = thinkSplitter(t => { parts.text += t; }, t => { parts.think += t; });
+  for (const piece of ["Hel", "lo <th", "ink>step one", " and two</thi", "nk> world", "<", "think>more</think>!"]) sp.push(piece);
+  sp.end();
+  ok(parts.text === "Hello  world!" && parts.think === "step one and twomore", "the think splitter handles tags cut across pieces", parts);
+}
+ok(profileOf("deepseek-r1:14b").licence === "MIT" && profileOf("Qwen/Qwen2.5-Coder-32B-Instruct").role === "design" && profileOf("deepseek-ai/DeepSeek-V3-0324").role === "chat" && profileOf("llama3:8b") === null && MODEL_PROFILES.length === 3, "model profiles name each family, its licence and its job");
+ok(pickModel(["qwen2.5-coder:7b", "deepseek-r1:14b"], "plan") === "deepseek-r1:14b" && pickModel(["qwen2.5-coder:7b", "deepseek-r1:14b"], "design") === "qwen2.5-coder:7b" && pickModel(["jarvis-planner:latest", "deepseek-r1:14b"], "plan") === "jarvis-planner:latest", "each job picks its family, and the Jarvis Modelfiles first");
+{
+  // A fake OpenAI-compatible server on 127.0.0.1 (as vLLM would serve DeepSeek-R1 and Qwen2.5-Coder).
+  const compatCalls = [];
+  const compat = http.createServer(async (req, res) => {
+    let raw = ""; for await (const c of req) raw += c;
+    compatCalls.push({ path: req.url, body: raw });
+    if (req.url === "/v1/models") { res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ data: [{ id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" }, { id: "Qwen/Qwen2.5-Coder-32B-Instruct" }, { id: "deepseek-v3:cloud" }] })); }
+    const b = JSON.parse(raw);
+    const sys = b.messages[0].content;
+    if (b.stream) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const chunk = d => res.write("data: " + JSON.stringify({ choices: [{ delta: d }] }) + "\n\n");
+      chunk({ reasoning_content: "Think about BFS. " }); chunk({ content: "Breadth-first " }); chunk({ content: "search visits " }); chunk({ content: "level by level." });
+      res.write("data: [DONE]\n\n"); return res.end();
+    }
+    res.setHeader("content-type", "application/json");
+    const content = /plan long tasks/.test(sys) ? INJECTED_PLAN : /draft one web page/.test(sys) ? DESIGN_HTML : "Plain answer.";
+    res.end(JSON.stringify({ choices: [{ message: { content, reasoning_content: /plan long tasks/.test(sys) ? "Reasoning from the parser." : null } }], usage: { total_tokens: 42 } }));
+  });
+  await new Promise(r => compat.listen(0, "127.0.0.1", r));
+  const cs = await startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), "jarvis-compat-")), quiet: true, openaiUrl: "http://127.0.0.1:" + compat.address().port + "/v1" });
+  const B = "http://127.0.0.1:" + cs.port, HH = { "content-type": "application/json", "x-jarvis": "1" };
+  const cst = await (await fetch(B + "/api/llm/status")).json();
+  ok(cst.online && cst.api === "openai" && cst.engine === "openai-compat-loopback" && !cst.models.includes("deepseek-v3:cloud") && cst.planModel === "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" && cst.designModel === "Qwen/Qwen2.5-Coder-32B-Instruct", "OpenAI-compatible status lists local models, drops :cloud and picks R1 to plan and Qwen-Coder to design", cst);
+  ok(cst.profiles.some(p => p.family === "deepseek-r1" && p.licence === "MIT") && cst.profiles.some(p => p.family === "qwen2.5-coder" && /Apache 2\.0/.test(p.licence)) && cst.streaming === true, "status names each model's family and licence");
+  const cplan = await (await fetch(B + "/api/llm/run", { method: "POST", headers: HH, body: JSON.stringify({ mode: "plan", prompt: "Release the branch and publish the notes" }) })).json();
+  ok(cplan.engine === "openai-compat-loopback" && cplan.steps.some(x => x.locked && x.category === "publish") && /Reasoning from the parser/.test(cplan.thinking || ""), "a plan from the OpenAI-compatible engine is still locked by rule, with its reasoning kept apart", cplan.steps);
+  const cdes = await (await fetch(B + "/api/llm/run", { method: "POST", headers: HH, body: JSON.stringify({ mode: "design", prompt: "A pricing page" }) })).json();
+  ok(cdes.engine === "openai-compat-loopback" && cdes.blocks.length > 0 && !JSON.stringify(cdes.blocks).includes("Brandco"), "a design from Qwen-Coder keeps only its layout");
+  const sres = await fetch(B + "/api/llm/stream", { method: "POST", headers: HH, body: JSON.stringify({ prompt: "Explain breadth-first search", workspace: "giant-core" }) });
+  const sraw = await sres.text();
+  const events = sraw.split("\n\n").filter(Boolean).map(b => ({ ev: (/^event: (\w+)/m.exec(b) || [])[1], data: JSON.parse((/^data: (.*)$/m.exec(b) || [])[1] || "null") }));
+  ok(/text\/event-stream/.test(sres.headers.get("content-type")) && events.filter(e => e.ev === "token").map(e => e.data.t).join("") === "Breadth-first search visits level by level." && events.some(e => e.ev === "thinking" && /BFS/.test(e.data.t)), "the stream route sends answer tokens and reasoning as separate events", sraw.slice(0, 300));
+  const done = events.find(e => e.ev === "done");
+  ok(done && done.data.engine === "openai-compat-loopback" && done.data.model === "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" && /UNTRUSTED_MODEL_OUTPUT/.test(done.data.label), "the stream ends with the engine, model and the untrusted-output label", done);
+  ok(compatCalls.some(c => c.path === "/v1/chat/completions" && JSON.parse(c.body).stream === true), "the stream asks the local server with stream: true");
+  const remembered2 = await (await fetch(B + "/api/w/giant-core/memory?kind=answer")).json();
+  ok(remembered2.hits.some(h => h.body === "Breadth-first search visits level by level."), "a streamed answer is kept in memory");
+  const sbad = await (await fetch(B + "/api/llm/stream", { method: "POST", headers: HH, body: JSON.stringify({ prompt: "x y", model: "deepseek-v3:cloud" }) })).text();
+  ok(/event: error/.test(sbad) && /someone else's servers|Ollama's servers|not this machine/.test(sbad), "a :cloud model is refused in the stream route", sbad);
+  ok((await fetch(B + "/api/llm/stream", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: "x y" }) })).status === 403, "the stream route needs the X-Jarvis header like every write");
+  await cs.close(); compat.close();
+  // Ollama native stream (NDJSON) with <think> inline, through the same route.
+  const nd = http.createServer(async (req, res) => {
+    let raw = ""; for await (const c of req) raw += c;
+    if (req.url === "/api/tags") { res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ models: [{ name: "deepseek-r1:14b" }, { name: "qwen2.5-coder:7b" }] })); }
+    res.setHeader("content-type", "application/x-ndjson");
+    for (const piece of ["<think>Check", " the scale</think>", "Spacing ", "is 4/8."]) res.write(JSON.stringify({ message: { role: "assistant", content: piece }, done: false }) + "\n");
+    res.end(JSON.stringify({ done: true }) + "\n");
+  });
+  await new Promise(r => nd.listen(0, "127.0.0.1", r));
+  const ns = await startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), "jarvis-nd-")), quiet: true, ollamaUrl: "http://127.0.0.1:" + nd.address().port });
+  const ntext = await (await fetch("http://127.0.0.1:" + ns.port + "/api/llm/stream", { method: "POST", headers: HH, body: JSON.stringify({ prompt: "What spacing scale?" }) })).text();
+  const nev = ntext.split("\n\n").filter(Boolean).map(b => ({ ev: (/^event: (\w+)/m.exec(b) || [])[1], data: JSON.parse((/^data: (.*)$/m.exec(b) || [])[1] || "null") }));
+  ok(nev.filter(e => e.ev === "token").map(e => e.data.t).join("") === "Spacing is 4/8." && nev.filter(e => e.ev === "thinking").map(e => e.data.t).join("") === "Check the scale" && nev.find(e => e.ev === "done").data.engine === "ollama-local-loopback", "Ollama's native stream is split into answer and reasoning too", ntext.slice(0, 300));
+  await ns.close(); nd.close();
+  ok(isLocalModelEngine("openai-compat-loopback") && isLocalModelEngine("ollama-local-loopback") && !isLocalModelEngine("deterministic-rules"), "both local engines count as a local model");
 }
 
 // No Ollama listening: every route answers from the fixed rules.

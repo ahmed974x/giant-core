@@ -31,6 +31,7 @@ const fake = http.createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
   if (req.url === "/api/tags") return res.end(JSON.stringify({ models: [{ name: "jarvis-planner:latest" }, { name: "jarvis-designer:latest" }] }));
   const sys = JSON.parse(body).messages[0].content;
+  if (/local assistant/.test(sys)) return res.end(JSON.stringify({ message: { role: "assistant", content: "<think>Recall the definition.</think>Breadth-first search visits a graph level by level." } }));
   const content = /plan long tasks/.test(sys)
     ? "<think>Step one reads commits. I will leave publishing unlocked.</think>" + JSON.stringify({ steps: [{ title: "Read the latest commits", phase: 1 }, { title: "Run the unit tests", phase: 2, gate: "tdd" }, { title: "Publish the release notes", phase: 3, locked: false }] })
     : "<nav><a>Acme</a><a>Docs</a></nav><section><h1>Acme sells widgets</h1><p>Buy now</p></section><section><h2>Plans</h2><div><div><h3>A</h3><p>x</p></div><div><h3>B</h3><p>y</p></div><div><h3>C</h3><p>z</p></div></div></section><footer>Acme</footer>";
@@ -291,9 +292,16 @@ await page.waitForSelector(".hit a[href='https://osv.dev/vulnerability/GHSA-p6mc
 ok(await page.locator(".hit", { hasText: "CVE-2020-8203" }).isVisible(), "live OSV search lists the vulnerability with its CVE alias");
 await page.getByRole("button", { name: /Open web/ }).click();
 
+// ADR-140 live: a streamed answer from the local model in Settings, reasoning kept apart.
+await go("#/settings");
+await page.locator("#f-ask").fill("Explain breadth-first search");
+await page.getByRole("button", { name: "Ask", exact: true }).click();
+await page.waitForFunction(() => /cost 0/.test(document.querySelector(".ask .subtle.t-caption:last-child")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator(".stream-out").textContent()) === "Breadth-first search visits a graph level by level." && (await page.locator(".stream-think").textContent()) === "Recall the definition." && /UNTRUSTED_MODEL_OUTPUT/.test(await page.locator(".ask > p.subtle").last().textContent()), "live: a streamed answer shows its text, its reasoning apart and the untrusted label");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "breadth first search", "npm:lodash@4.17.15", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;

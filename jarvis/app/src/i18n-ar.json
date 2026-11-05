@@ -511,6 +511,10 @@
   [
    "^Write it as ecosystem:package (.+)$",
    "اكتبه بصيغة ecosystem:package $1"
+  ],
+  [
+   "^Streams from (.+)\\. The answer is untrusted text and changes nothing\\.$",
+   "يتدفق من $1. الإجابة نص غير موثوق ولا تغيّر شيئاً."
   ]
  ],
  "strings": {
@@ -1362,6 +1366,29 @@
   "Name the workspace the search belongs to.": "سمِّ مساحة العمل التي يتبع لها البحث.",
   "The API's free limit is used up for now; try again in a minute.": "استُنفد الحد المجاني للواجهة الآن؛ حاول بعد دقيقة.",
   "Reading an address needs the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798. Or paste the HTML.": "قراءة عنوان تحتاج الخادم المحلي. شغّله بالأمر: node jarvis/server/server.mjs ثم افتح http://127.0.0.1:8798. أو الصق الـ HTML.",
-  "1 result": "نتيجة واحدة"
+  "1 result": "نتيجة واحدة",
+  "Ask the local model": "اسأل النموذج المحلي",
+  "Ask": "اسأل",
+  "Stop": "إيقاف",
+  "Stopped.": "توقّف.",
+  "Explain breadth-first search in two sentences.": "اشرح البحث بالعرض أولاً في جملتين.",
+  "Reasoning (model's own words, untrusted)": "الاستدلال (كلام النموذج نفسه، غير موثوق)",
+  "Waiting for the first token…": "بانتظار أول رمز…",
+  "Streaming…": "يتدفّق…",
+  "Needs a local model on 127.0.0.1.": "يحتاج نموذجاً محلياً على 127.0.0.1.",
+  "Answers": "الإجابات",
+  "Ollama (native API)": "Ollama (الواجهة الأصلية)",
+  "OpenAI-compatible (vLLM, llama.cpp, LM Studio or Ollama /v1)": "متوافق مع OpenAI (vLLM أو llama.cpp أو LM Studio أو Ollama /v1)",
+  "OpenAI-compatible local · 0-token": "محلي متوافق مع OpenAI · صفر رموز",
+  "Local model · 0-token": "نموذج محلي · صفر رموز",
+  "No local model answers on 127.0.0.1. Missions and the Studio use the fixed rules until one does.": "لا يجيب أي نموذج محلي على 127.0.0.1. تستخدم المهام والاستوديو القواعد الثابتة حتى يجيب أحدها.",
+  "Open-weight model families found": "عائلات النماذج مفتوحة الأوزان الموجودة",
+  "Family": "العائلة",
+  "Licence": "الترخيص",
+  "Used for": "يُستخدم لـ",
+  "Designs and code": "التصاميم والشيفرة",
+  "Ollama: build the two Jarvis models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused.": "مع Ollama: ابنِ نموذجي Jarvis مرة واحدة (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile، والشيء نفسه لـ jarvis-designer. مع vLLM أو llama.cpp: شغّل الخادم على 127.0.0.1 واضبط JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. تُرفض النقاط المستضافة والنماذج المنتهية بـ :cloud.",
+  "Streaming answers come from a local model through the local server. Start jarvis/server and Ollama, vLLM or llama.cpp on this computer.": "الإجابات المتدفقة تأتي من نموذج محلي عبر الخادم المحلي. شغّل jarvis/server وOllama أو vLLM أو llama.cpp على هذا الجهاز.",
+  "The stream ended early.": "انتهى التدفق مبكراً."
  }
 }

@@ -62,5 +62,7 @@ Live open-web search across official APIs,search,should,yes,yes,"ADR-139: Wikipe
 Package and code search,search,should,yes,yes,"ADR-139: npm, PyPI JSON API by name, GitHub"
 Vulnerability lookup for a package,search,should,yes,yes,"ADR-139: OSV.dev query by ecosystem, package and version"
 Offline fallback and search memory,search,could,yes,yes,"ADR-139: no internet answers from BM25 memory and says so; results summarised into memory"
+OpenAI-compatible local model engine,models,should,yes,yes,"ADR-140: vLLM, llama.cpp, LM Studio or Ollama /v1 on 127.0.0.1; DeepSeek-R1/V3 and Qwen2.5-Coder profiles with licences"
+Streamed model answers,models,should,yes,yes,"ADR-140: POST /api/llm/stream (SSE), reasoning kept apart, untrusted label, stops when the tab closes"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

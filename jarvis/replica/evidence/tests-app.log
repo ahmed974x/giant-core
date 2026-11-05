@@ -102,6 +102,7 @@ PASS F17 with no network the search says so and answers from memory
 PASS F17 every source states why it did not answer
 PASS F17 the OSV mode shows the ecosystem:package form
 PASS F17 the clone mode hands the address to the Studio's clean-room cloner
+PASS F18 sample mode says streaming needs a local model and shows no invented answer
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -110,4 +111,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-111 passed, 0 failed
+112 passed, 0 failed

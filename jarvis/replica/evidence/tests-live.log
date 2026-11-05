@@ -60,6 +60,7 @@ PASS live search lists each source's status
 PASS live search is summarised into memory
 PASS live search asks only the official API hosts
 PASS live OSV search lists the vulnerability with its CVE alias
+PASS live: a streamed answer shows its text, its reasoning apart and the untrusted label
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -76,4 +77,4 @@ PASS live search renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-77 passed, 0 failed
+78 passed, 0 failed

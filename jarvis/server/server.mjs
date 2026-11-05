@@ -19,7 +19,7 @@ import { openSqlite, openPostgres } from "./lib/db.mjs";
 import { createStore, seed, StoreError } from "./lib/store.mjs";
 import { createRunner } from "./lib/runner.mjs";
 import { createMissions } from "./lib/missions.mjs";
-import { createOllamaBridge, BridgeError } from "./lib/ollama-bridge.mjs";
+import { createOllamaBridge, BridgeError, isLocalModelEngine } from "./lib/ollama-bridge.mjs";
 import { createPlatform } from "./lib/platform.mjs";
 import { createMemory } from "./lib/memory.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
@@ -29,11 +29,12 @@ import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, searchRequest, searxngUrl, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, quiet = false } = {}) {
   // Refuses at start any Ollama address that is not http://127.0.0.1:<port> (ADR-136).
   // Live open-web search (ADR-139): official keyless JSON APIs on fixed hosts; a bad SearXNG address is refused at start.
   const search = createOpenWebSearch({ ...(searchRequest ? { request: searchRequest } : {}), ...(searxngUrl !== undefined ? { searxngUrl } : {}) });
-  const llm = createOllamaBridge({ ...(ollamaUrl ? { baseUrl: ollamaUrl } : {}), ...(ollamaFetch ? { fetchImpl: ollamaFetch } : {}) });
+  // ADR-140: an OpenAI-compatible server (vLLM, llama.cpp, Ollama /v1) may replace Ollama native; also pinned to 127.0.0.1.
+  const llm = createOllamaBridge({ ...(ollamaUrl ? { baseUrl: ollamaUrl } : {}), ...(ollamaFetch ? { fetchImpl: ollamaFetch } : {}), ...(openaiUrl !== undefined ? { openaiUrl } : {}) });
   const db = mode === "postgres" ? await openPostgres(databaseUrl || "") : await openSqlite(sqliteFile || join(dataDir, "jarvis.sqlite"));
   await seed(db);
   const store = createStore(db);
@@ -125,9 +126,32 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           // Remember what was made: a design that kept no source text and passes contrast ranks higher.
           const summary = out.mode === "design" ? "Sections: " + out.report.sections.join(", ") : out.mode === "plan" ? out.steps.map(s => `${s.phase}. ${s.title} [${s.kind}${s.locked ? ", locked" : ""}]`).join("\n") : String(out.text || "");
           await memory.add(ws, { kind: out.mode === "chat" ? "answer" : out.mode, title: String(body.prompt).slice(0, 160), body: summary.slice(0, 8000) || "(empty)", tags: ["llm", out.engine],
-            outcome: out.mode === "design" ? { contrast: true, cleanRoom: out.report.sweep.leaks === 0 } : { engine: out.engine === "ollama-local-loopback" }, source: out.engine }).catch(() => {});
+            outcome: out.mode === "design" ? { contrast: true, cleanRoom: out.report.sweep.leaks === 0 } : { engine: isLocalModelEngine(out.engine) }, source: out.engine }).catch(() => {});
         }
         return send(200, { ok: true, ...out });
+      }
+      // ADR-140: a chat answer, token by token, as Server-Sent Events over this same-origin POST.
+      if (R("POST", /^\/api\/llm\/stream$/)) {
+        const ws = typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace) ? body.workspace : null;
+        if (ws) await store.workspaceIdOf(ws);
+        const prompt = String(body.prompt || "").trim();
+        if (!prompt) return fail(400, "Write what you want first.");
+        if (prompt.length > 8000) return fail(400, "Keep it under 8,000 characters.");
+        const examples = ws ? await memory.examples(ws, prompt) : [];
+        res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", Connection: "keep-alive" });
+        const ev = (name, data) => { if (!res.writableEnded) res.write("event: " + name + "\ndata: " + JSON.stringify(data) + "\n\n"); };
+        const stop = new AbortController();
+        res.on("close", () => stop.abort());
+        let out;
+        try {
+          out = await llm.streamChat({ prompt, model: body.model || undefined, examples, signal: stop.signal, onToken: t => ev("token", { t }), onThinking: t => ev("thinking", { t }) });
+        } catch (e) { ev("error", { message: e.message }); return res.end(); }
+        ev("done", { engine: out.engine, model: out.model, warning: out.warning, chars: out.content.length, memoryUsed: out.memoryUsed || [], label: isLocalModelEngine(out.engine) ? "[INFERENCE - local LLM] [UNTRUSTED_MODEL_OUTPUT]" : "fixed rules (no model)" });
+        if (ws && isLocalModelEngine(out.engine) && out.content) {
+          await usage(ws, out.engine, out.model, prompt.length + out.content.length + out.thinking.length, "llm.stream");
+          await memory.add(ws, { kind: "answer", title: prompt.slice(0, 160), body: out.content.slice(0, 8000), tags: ["llm", "stream", out.engine], outcome: { engine: true }, source: out.engine }).catch(() => {});
+        }
+        return res.end();
       }
       if (R("GET", /^\/api\/search\/status$/)) return send(200, search.status());
       if (R("POST", /^\/api\/search\/live$/)) {

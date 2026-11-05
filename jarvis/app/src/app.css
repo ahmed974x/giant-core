@@ -461,3 +461,10 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 .hit h3 a { color: var(--color-accent); text-decoration: none; }
 .hit h3 a:hover, .hit h3 a:focus-visible { text-decoration: underline; }
 .hit .url { margin: 0; overflow-wrap: anywhere; }
+
+/* Streamed local-model answer (ADR-140) */
+.ask .stream-out { margin: 0; min-block-size: 1lh; white-space: pre-wrap; overflow-wrap: anywhere; max-inline-size: 75ch; }
+.ask .stream-out:empty { display: none; }
+.ask .thinking { border-inline-start: 2px solid var(--color-border); padding-inline-start: 12px; }
+.ask .thinking summary { cursor: pointer; font-size: var(--text-caption); color: var(--color-text-muted); }
+.ask .stream-think { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-text-muted); }

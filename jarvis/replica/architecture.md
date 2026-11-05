@@ -51,6 +51,8 @@ Tables: 23 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` 
 
 ADR-139 adds `GET /api/search/status` and `POST /api/search/live {workspace, q, mode}`. The second asks official keyless JSON APIs on fixed hosts, saves a `search` episode to memory, and falls back to memory with `offline: true` when no source answers.
 
+ADR-140 adds `POST /api/llm/stream`: Server-Sent Events with `token`, `thinking`, `done` and `error` from the local model, whether Ollama native or an OpenAI-compatible server on 127.0.0.1.
+
 ## API (phase 2)
 
 | method path | does | who | input | output | flow |

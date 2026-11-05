@@ -18,6 +18,7 @@ import { forgeSkill, readSkillMd, scanFiles } from "./forge.mjs";
 import { selfCheckItem } from "./selfcheck.mjs";
 export { selfCheckItem } from "./selfcheck.mjs";
 import { RULES } from "../../../scripts/skillspector-audit.mjs";
+import { isLocalModelEngine } from "./ollama-bridge.mjs";
 
 const iso = () => new Date().toISOString();
 const bad = (msg, status = 400) => { throw new StoreError(status, msg); };
@@ -88,14 +89,14 @@ export function createMemory({ db, store, llm }) {
         if (status.online) {
           const r = await llm.run({ mode: "chat", prompt: it.question });
           reply = r.text || "";
-          ok = r.engine === "ollama-local-loopback" ? grade(it, reply) : null;
+          ok = isLocalModelEngine(r.engine) ? grade(it, reply) : null;
         }
         results.push({ ...it, reply: reply ? reply.slice(0, 400) : null, correct: ok });
         // Every computed answer becomes a lesson; a model's wrong answer is kept next to it.
         await api.add(slug, { kind: "lesson", title: it.question, body: it.answer + (ok === false ? "\n\nThe local model answered differently: " + String(reply).slice(0, 300) : ""), tags: ["self-check", it.category], outcome: { computed: true, modelCorrect: ok }, source: "self-check" });
       }
       const graded = results.filter(r => r.correct !== null);
-      return { engine: status.online ? "ollama-local-loopback" : "deterministic-rules", asked: results.length, graded: graded.length, correct: graded.filter(r => r.correct).length, items: results,
+      return { engine: status.online ? status.engine : "deterministic-rules", asked: results.length, graded: graded.length, correct: graded.filter(r => r.correct).length, items: results,
         note: status.online ? "Graded against answers Jarvis computed itself." : "No model running: the computed answers were stored as lessons for later." };
     },
 

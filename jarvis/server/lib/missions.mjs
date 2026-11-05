@@ -11,6 +11,7 @@
 // Each mission also keeps the replica-long-horizon files (task_plan.md, findings.md, progress.md)
 // under the workspace's data folder, so the skill's gate.py and capsule.py can read the same record.
 import { createHash, randomUUID } from "node:crypto";
+import { isLocalModelEngine } from "./ollama-bridge.mjs";
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { classify } from "./db.mjs";
@@ -321,7 +322,7 @@ export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent =
     const m = await db.one("select * from missions where id = $1", [id]);
     m._slug = slug;
     planFiles(m, await stepsOf(id), slug);
-    progress(m, "Planned by " + (planner && planner.engine === "ollama-local-loopback" ? "the local model " + planner.model + " [INFERENCE - local LLM]" : planner && planner.engine === "workflow" ? "the workflow graph" : "the fixed rules") + "; locks decided by rule.");
+    progress(m, "Planned by " + (planner && isLocalModelEngine(planner.engine) ? "the local model " + planner.model + " [INFERENCE - local LLM]" : planner && planner.engine === "workflow" ? "the workflow graph" : "the fixed rules") + "; locks decided by rule.");
     return detail(slug, id);
   }
   async function fromAgent(slug, agent, input) {

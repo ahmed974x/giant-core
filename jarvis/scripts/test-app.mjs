@@ -388,6 +388,14 @@ ok(page.url().endsWith("#/studio") && (await page.locator("#f-clone-url").inputV
 await go("#/search");
 await page.getByRole("button", { name: /Open web/ }).click();
 
+// F18: asking the local model (ADR-140). Sample mode has no model and says how to start one.
+await go("#/settings");
+await page.locator("#f-ask").fill("Explain breadth-first search");
+await page.getByRole("button", { name: "Ask", exact: true }).click();
+await page.waitForTimeout(300);
+ok(/Streaming answers come from a local model through the local server/.test(await page.locator(".ask > p.subtle").last().textContent()) && !(await page.locator(".stream-out").textContent()), "F18 sample mode says streaming needs a local model and shows no invented answer");
+await page.locator("#f-ask").fill("");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -400,7 +408,7 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["Explain breadth-first search", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);

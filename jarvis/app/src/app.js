@@ -593,6 +593,7 @@
           fallback: { from: "memory", note: "Live search runs on the local server (node jarvis/server/server.mjs). This sample page has no network, so these come from this browser's memory.", hits } });
       },
       searchStatus() { return ok({ sources: [], searxng: null }); },
+      llmStream() { return bad("Streaming answers come from a local model through the local server. Start jarvis/server and Ollama, vLLM or llama.cpp on this computer."); },
       // ADR-138 in sample mode: the same BM25, forge scan and computed self-check, on this browser's data.
       searchMemory({ q, kind } = {}) {
         const pool = (W().memory || []).filter(e => !kind || e.kind === kind).slice().reverse();
@@ -758,6 +759,26 @@
       llmStatus: () => req("GET", "/api/llm/status"),
       llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
       liveSearch: body => req("POST", "/api/search/live", { ...body, workspace: slug }),
+      // ADR-140: a chat answer token by token. Server-Sent Events over a same-origin POST, read with fetch.
+      async llmStream(body, on) {
+        const r = await fetch("/api/llm/stream", { method: "POST", cache: "no-store", credentials: "same-origin", headers: { "content-type": "application/json", "x-jarvis": "1" }, body: JSON.stringify({ ...body, workspace: slug }), signal: on.signal });
+        if (!r.ok || !r.body) { let j = null; try { j = await r.json(); } catch (e) { /* not JSON */ } throw new Error((j && j.error) || "The server answered " + r.status + "."); }
+        const reader = r.body.getReader(), dec = new TextDecoder();
+        let buf = "", done = null;
+        for (;;) {
+          const { value, done: end } = await reader.read();
+          if (end) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf("\n\n")) >= 0) {
+            const block = buf.slice(0, i); buf = buf.slice(i + 2);
+            const ev = (/^event: (\w+)/m.exec(block) || [])[1], line = (/^data: (.*)$/m.exec(block) || [])[1];
+            let data = null; try { data = JSON.parse(line); } catch (e) { continue; }
+            if (ev === "token") on.token(data.t); else if (ev === "thinking") on.thinking(data.t); else if (ev === "done") done = data; else if (ev === "error") throw new Error(data.message);
+          }
+        }
+        return done || { engine: "deterministic-rules", warning: "The stream ended early." };
+      },
       searchStatus: () => req("GET", "/api/search/status"),
       planMission: body => req("POST", w("/missions/plan"), body),
       // ADR-137
@@ -1317,16 +1338,51 @@
     return g;
   }
 
+  // Local model panel (ADR-136, ADR-140): engine, the open-weight families found, and a streamed answer.
+  const ENGINE_LABEL = { ollama: "Ollama (native API)", openai: "OpenAI-compatible (vLLM, llama.cpp, LM Studio or Ollama /v1)" };
+  function llmAsk(st) {
+    const q = h("textarea", { class: "textarea", id: "f-ask", name: "ask", rows: 3, autocomplete: "off", maxLength: 8000, dir: "auto", placeholder: "Explain breadth-first search in two sentences." });
+    const out = h("p", { class: "stream-out t-sm", dir: "auto", translate: "no", "aria-live": "polite" });
+    const think = h("p", { class: "stream-think t-caption", dir: "auto", translate: "no" });
+    const thinkBox = h("details", { class: "thinking", hidden: true }, h("summary", { text: "Reasoning (model's own words, untrusted)" }), think);
+    const meta = h("p", { class: "subtle t-caption" });
+    const go = h("button", { class: "btn btn-primary", type: "button" }, "Ask");
+    const stopBtn = h("button", { class: "btn btn-secondary", type: "button", hidden: true, text: "Stop" });
+    let ctl = null;
+    stopBtn.addEventListener("click", () => { if (ctl) ctl.abort(); });
+    go.addEventListener("click", async () => {
+      if (!q.value.trim()) { toast("warn", "Write what you want first."); q.focus(); return; }
+      out.textContent = ""; think.textContent = ""; thinkBox.hidden = true; meta.textContent = "Waiting for the first token…";
+      go.disabled = true; stopBtn.hidden = false; ctl = new AbortController();
+      const t0 = performance.now();
+      try {
+        const d = await store.llmStream({ prompt: q.value }, { signal: ctl.signal, token: t => { if (!out.textContent) meta.textContent = "Streaming…"; out.textContent += t; }, thinking: t => { thinkBox.hidden = false; think.textContent += t; } });
+        meta.textContent = (d.model ? d.model + " · " : "") + (d.label || "") + " · " + fmtN.format(Math.round(performance.now() - t0)) + " ms · cost 0" + (d.warning ? " · " + d.warning : "");
+      } catch (e) {
+        meta.textContent = e.name === "AbortError" ? "Stopped." : e.message;
+      } finally { go.disabled = false; stopBtn.hidden = true; ctl = null; }
+    });
+    return h("div", { class: "stack ask" },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-ask", text: "Ask the local model" }), q),
+      h("div", { class: "row" }, go, stopBtn, h("span", { class: "subtle t-caption", text: st.online ? "Streams from " + (st.chatModel || "the local model") + ". The answer is untrusted text and changes nothing." : "Needs a local model on 127.0.0.1." })),
+      thinkBox, out, meta);
+  }
   function llmPanel() {
     const box = h("div", { class: "stack" });
     loadInto(box, () => store.llmStatus(), st => h("div", { class: "stack" },
-      h("div", { class: "row" }, badge(st.online ? "ok" : "idle", st.online ? "Ollama local · 0-token" : "Fixed rules (no model)"), h("code", { class: "t-caption", translate: "no", text: st.host || "http://127.0.0.1:11434" })),
+      h("div", { class: "row" }, badge(st.online ? "ok" : "idle", st.online ? (st.api === "openai" ? "OpenAI-compatible local · 0-token" : "Ollama local · 0-token") : "Fixed rules (no model)"), h("code", { class: "t-caption", translate: "no", text: st.host || "http://127.0.0.1:11434" })),
       st.online ? h("dl", { class: "kv" },
+        h("dt", { text: "Engine" }), h("dd", { text: ENGINE_LABEL[st.api] || ENGINE_LABEL.ollama }),
         h("dt", { text: "Plans" }), h("dd", null, h("code", { translate: "no", text: st.planModel || "—" })),
         h("dt", { text: "Designs" }), h("dd", null, h("code", { translate: "no", text: st.designModel || "—" })),
+        h("dt", { text: "Answers" }), h("dd", null, h("code", { translate: "no", text: st.chatModel || "—" })),
         h("dt", { text: "Local models" }), h("dd", { class: "mono t-caption", translate: "no", text: st.models.join(", ") || "none" }))
-        : h("p", { class: "t-sm muted", text: st.sample ? "Sample mode has no model. Start jarvis/server and Ollama on this computer." : "Ollama does not answer on 127.0.0.1:11434. Missions and the Studio use the fixed rules until it does." }),
-      h("p", { class: "t-caption muted", text: "Build the two Jarvis models once on this computer (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. Models ending in :cloud are refused." })));
+        : h("p", { class: "t-sm muted", text: st.sample ? "Sample mode has no model. Start jarvis/server and Ollama on this computer." : "No local model answers on 127.0.0.1. Missions and the Studio use the fixed rules until one does." }),
+      st.profiles && st.profiles.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model families found" }, h("table", null,
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Model" }), h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Used for" }))),
+        h("tbody", null, st.profiles.map(p => h("tr", null, h("td", { class: "mono t-caption", translate: "no", text: p.model }), h("td", { translate: "no", text: p.maker + " " + p.family }), h("td", { class: "t-caption", translate: "no", text: p.licence }), h("td", { text: { plan: "Plans", design: "Designs and code", chat: "Answers" }[p.role] })))))) : null,
+      llmAsk(st),
+      h("p", { class: "t-caption muted", text: "Ollama: build the two Jarvis models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused." })));
     return h("section", { class: "panel", "aria-labelledby": "h-llm" }, h("h2", { id: "h-llm", text: "Local model" }), box,
       h("p", { class: "subtle t-caption", text: "Cost to you: 0 tokens. Everything runs on this computer; nothing leaves 127.0.0.1." }));
   }
@@ -2640,7 +2696,7 @@
     store.llmStatus().then(st => {
       const b = $("#llmBadge");
       b.className = "badge llm-badge " + (st.online ? "s-ok" : "s-idle");
-      $("#llmWord").textContent = st.online ? "Ollama local · 0-token" : "Fixed rules";
+      $("#llmWord").textContent = st.online ? (st.api === "openai" ? "Local model · 0-token" : "Ollama local · 0-token") : "Fixed rules";
       b.title = st.online ? "Local models on 127.0.0.1: " + st.models.join(", ") : "No local model: plans and designs use the fixed rules";
     }, () => {});
     store.subscribe(updateCount);

@@ -220,6 +220,22 @@ Without Ollama, the same buttons use the fixed rules.
 
 To add your own SearXNG, start the server with `JARVIS_SEARXNG_URL=http://127.0.0.1:8888` (or an https address); JSON format must be on in its settings. Results are links to read; a summary goes into memory. With no internet the page answers from memory and says so. No search page is scraped.
 
+## Open-weight models through vLLM, llama.cpp or Ollama (ADR-140)
+
+Jarvis can use any OpenAI-compatible server on this computer instead of Ollama's native API:
+
+```bash
+vllm serve Qwen/Qwen2.5-Coder-7B-Instruct --host 127.0.0.1 --port 8000
+```
+
+```bash
+JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1 node jarvis/server/server.mjs
+```
+
+- Plans go to a DeepSeek-R1 model and designs to Qwen2.5-Coder, when they are served. Answers go to DeepSeek-V3 if you run it, or else to any local model.
+- Settings → Local model shows each family's licence and has **Ask the local model**, which streams the answer token by token, with the reasoning folded apart.
+- Only `http://127.0.0.1` is accepted, so no hosted API and no key.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.
