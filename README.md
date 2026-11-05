@@ -36,3 +36,14 @@ Captured on 2026-11-04 from the live local server (`jarvis/server`, SQLite) with
 | --- | --- | --- | --- |
 | dark | ![locked-approvals dark 1440](retina/locked-approvals-dark-1440.png) | ![locked-approvals dark 768](retina/locked-approvals-dark-768.png) | ![locked-approvals dark 375](retina/locked-approvals-dark-375.png) |
 | light | ![locked-approvals light 1440](retina/locked-approvals-light-1440.png) | ![locked-approvals light 768](retina/locked-approvals-light-768.png) | ![locked-approvals light 375](retina/locked-approvals-light-375.png) |
+
+## ADR-135 (2026-11-05)
+
+Mission Control on the live server (giant-core's "Release readiness" mission, run for real), dark and light, at 1440, 768 and 375, deviceScaleFactor 2:
+
+- `mission-control-*`: phases, steps and the side panel (context health, capsules);
+- `mission-locked-step-*`: the locked publish step as a «بانتظار الموافقة» card while the other steps carried on;
+- `mission-capsules-*`: inspecting capsule #2 (hash check and saved states);
+- `missions-list-*`.
+
+The Studio, Skill Mixer, agent editor and locked approval shots were retaken from the same build. The Studio shots now show the template extractor: Jarvis tokens and a glass bar.
