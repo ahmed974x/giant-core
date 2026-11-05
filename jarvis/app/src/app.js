@@ -2397,7 +2397,7 @@
     const sourceRow = x => h("li", null,
       badge(x.skipped ? "idle" : x.ok ? "ok" : "failed", x.skipped ? "Skipped" : x.ok ? (x.cached ? "Cached" : "Answered") : "Failed"),
       h("span", { class: "t-sm", translate: "no", text: x.label || SEARCH_LABEL[x.source] }),
-      h("span", { class: "subtle t-caption", text: x.skipped ? x.note : x.ok ? x.count + " results" : x.error }),
+      h("span", { class: "subtle t-caption", text: x.skipped ? x.note : x.ok ? (x.count === 1 ? "1 result" : x.count + " results") : x.error }),
       h("span", { class: "num t-caption subtle", text: x.ms ? x.ms + " ms" : "" }));
     const resultCard = r => {
       const url = safeUrl(r.url);
@@ -2423,7 +2423,7 @@
         const body = [];
         if (r.offline) body.push(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), r.fallback ? r.fallback.note : "No source answered."));
         if (r.memoryId) body.push(h("p", { class: "sample-note live-note" }, icon("i-check", "sm"), "Saved to memory as a search episode: titles and links only."));
-        if (r.results.length) body.push(h("p", { class: "subtle t-caption", role: "status", text: r.results.length + " results from " + r.sources.filter(x => x.ok && !x.skipped && x.count).length + " sources" }), h("ul", { class: "memlist" }, r.results.map(resultCard)));
+        if (r.results.length) body.push(h("p", { class: "subtle t-caption", role: "status", text: (r.results.length === 1 ? "1 result" : r.results.length + " results") + " from " + ((n => n === 1 ? "1 source" : n + " sources")(r.sources.filter(x => x.ok && !x.skipped && x.count).length)) }), h("ul", { class: "memlist" }, r.results.map(resultCard)));
         else if (r.fallback && r.fallback.hits.length) body.push(h("h2", { text: "From this workspace's memory" }), h("ul", { class: "memlist" }, r.fallback.hits.map(e => h("li", { class: "mem" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", text: "score " + e.score }) : null), h("h3", { dir: "auto", translate: "no", text: e.title }), h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: e.body.slice(0, 300) })))));
         else body.push(emptyState("i-search", "Nothing found", r.offline ? "No source answered and memory has nothing that matches." : "Try other words, or another mode."));
         results.replaceChildren(...body);

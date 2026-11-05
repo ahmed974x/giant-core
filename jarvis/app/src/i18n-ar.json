@@ -1,6 +1,14 @@
 {
  "patterns": [
   [
+   "^1 result from 1 source$",
+   "نتيجة واحدة من مصدر واحد"
+  ],
+  [
+   "^(\\d+) results from 1 source$",
+   "$1 نتيجة من مصدر واحد"
+  ],
+  [
    "^1 locked step waits for Director 00 outside Jarvis; every step that does not need it has carried on\\.$",
    "خطوة مقفلة واحدة تنتظر المدير 00 خارج Jarvis؛ وكل خطوة لا تحتاجها أكملت."
   ],
@@ -1353,6 +1361,7 @@
   "Mode is web, packages or osv.": "الوضع هو web أو packages أو osv.",
   "Name the workspace the search belongs to.": "سمِّ مساحة العمل التي يتبع لها البحث.",
   "The API's free limit is used up for now; try again in a minute.": "استُنفد الحد المجاني للواجهة الآن؛ حاول بعد دقيقة.",
-  "Reading an address needs the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798. Or paste the HTML.": "قراءة عنوان تحتاج الخادم المحلي. شغّله بالأمر: node jarvis/server/server.mjs ثم افتح http://127.0.0.1:8798. أو الصق الـ HTML."
+  "Reading an address needs the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798. Or paste the HTML.": "قراءة عنوان تحتاج الخادم المحلي. شغّله بالأمر: node jarvis/server/server.mjs ثم افتح http://127.0.0.1:8798. أو الصق الـ HTML.",
+  "1 result": "نتيجة واحدة"
  }
 }
