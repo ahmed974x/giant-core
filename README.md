@@ -55,3 +55,13 @@ Local model bridge, on the real server with a **fake Ollama on 127.0.0.1**. The 
 - `llm-mission-planner-*`: a mission planned by `jarvis-planner`, with its thinking folded as untrusted text and the publish step locked by rule;
 - `llm-settings-*`: the Local model panel;
 - `llm-studio-design-*`: a page designed from a description; only the layout was kept.
+
+## ADR-137 (2026-11-05)
+
+Real server, giant-core workspace, dark and light, at 1440, 768 and 375, in **English and Arabic** (60 shots):
+
+- `workflow-editor-*`: the SVG editor with the locked publish step selected;
+- `workflow-mission-*`: the mission a workflow run made, with locked steps waiting;
+- `analytics-*`: creator mode, the numbers and the bar charts;
+- `webhooks-*`: an incoming hook, and an outside outgoing hook locked as «بانتظار الموافقة»;
+- `plans-tokens-*`: draft subscriber plans, the locked billing switch and the token ledger.
