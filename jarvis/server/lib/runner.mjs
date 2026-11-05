@@ -92,13 +92,13 @@ export function createRunner({ store, repoRoot, dataDir }) {
 
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("The step took longer than " + ms / 1000 + " s.")), ms))]);
 
-  async function start(slug, agentId, input) {
+  async function start(slug, agentId, input, trigger = "manual") {
     const agent = await store.getAgent(slug, agentId);
     const steps = plan(agent);
     if (steps.length > agent.maxSteps) throw Object.assign(new Error("This plan has " + steps.length + " steps; the agent's limit is " + agent.maxSteps + "."), { status: 400 });
     const runInput = { ...(input || {}) };
     if (agent.tools.includes("files.read") && !runInput.path) runInput.path = defaultPathFor(agent);
-    const { id, workspaceId } = await store.createRun(slug, agentId, runInput, steps);
+    const { id, workspaceId } = await store.createRun(slug, agentId, runInput, steps, trigger);
     // Run in the background; the page polls the run. A crash still ends the run as failed.
     setImmediate(() => execute(slug, workspaceId, agent, id, steps, runInput).catch(async e => {
       await store.setRun(id, { status: "failed", finished_at: new Date().toISOString() }).catch(() => {});

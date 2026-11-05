@@ -45,6 +45,8 @@ const page = await ctx.newPage();
 const errors = [];
 page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
 page.on("pageerror", e => errors.push("pageerror: " + e.message));
+const streamReqs = [];
+page.on("request", r => { if (r.url().includes("/stream")) streamReqs.push(r.resourceType()); });
 const go = async hash => { await page.goto(BASE + hash); await page.waitForSelector("main h1", { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(200); };
 
 // Live mode and the workspace switcher
@@ -184,8 +186,70 @@ await page.getByRole("button", { name: "Design with local model" }).click();
 await page.waitForSelector(".report dl", { timeout: 8000 }).catch(() => {});
 ok(await page.locator(".report").getByText("jarvis-designer:latest").isVisible() && /0 leaks/.test(await page.locator(".report").textContent()) && !/Acme/.test(await page.frames().find(f => f !== page.mainFrame()).locator("body").textContent()), "the Studio keeps only the layout of the model's page");
 
+// ADR-137 live: a workflow runs as a mission, webhooks with HMAC secrets and locks, members,
+// analytics, and server push instead of polling.
+await page.locator("#wsBtn").click();
+await page.getByRole("menuitemradio", { name: "giant-core" }).click();
+await page.waitForTimeout(400);
+await go("#/workflows");
+await page.locator("tbody a").first().click();
+await page.waitForSelector(".wf-node");
+ok((await page.locator(".wf-node.locked").count()) === 1, "live workflow editor draws the locked publish step");
+await page.getByRole("button", { name: "Run workflow" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator(".mstep.is-locked").filter({ hasText: "Publish the release notes" }).count()) === 1 && await page.locator(".planner").getByText(/Built from the workflow graph/).isVisible(), "live workflow run says where it came from and waits on the locked publish step");
+ok(streamReqs.includes("eventsource"), "live updates come over server-sent events", streamReqs.join(","));
+await go("#/webhooks");
+await page.locator("#f-whname").fill("CI results");
+await page.getByRole("button", { name: "Add webhook" }).click();
+await page.getByRole("dialog").getByRole("heading", { name: "Webhook secret" }).waitFor({ timeout: 5000 });
+ok(/^[0-9a-f]{64}$/.test((await page.getByRole("dialog").locator("pre").textContent()).trim()), "a new webhook shows its HMAC secret once");
+await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+await page.getByRole("button", { name: "Switch on" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator("article").filter({ hasText: "CI results" }).getByText("On", { exact: true }).isVisible(), "an incoming webhook switches on");
+await page.locator("#f-whname").fill("Team chat");
+await page.locator("#f-whdir").selectOption("out");
+await page.locator("#f-whurl").fill("https://hooks.example.com/x");
+await page.getByRole("button", { name: "Add webhook" }).click();
+await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+const ext = page.locator("article").filter({ hasText: "Team chat" });
+ok(await ext.getByText("بانتظار الموافقة").isVisible(), "an outgoing webhook to an outside address shows as locked");
+await ext.getByRole("button", { name: "Ask to switch on…" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator("article").filter({ hasText: "Team chat" }).getByText("Draft", { exact: true }).isVisible(), "asking to switch it on leaves it a draft (locked request)");
+await go("#/settings");
+await page.locator("#f-memail").fill("ops@example.com");
+await page.getByRole("button", { name: "Add member" }).click();
+await page.waitForTimeout(400);
+ok(await page.getByRole("cell", { name: "ops@example.com", exact: true }).isVisible(), "live: add a member");
+await go("#/analytics");
+ok(await page.getByText("Creator mode").isVisible() && (await page.locator(".bars").count()) >= 4, "live analytics renders");
+
+// The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
+const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
+const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com"];
+const englishLeft = () => page.evaluate(() => {
+  const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && !skip(n.parentElement)) { const r = n.parentElement.getBoundingClientRect(); if (r.width || r.height) out.add(t); } }
+  for (const el of document.querySelectorAll("[aria-label], [placeholder], [title]")) if (!skip(el)) for (const a of ["aria-label", "placeholder", "title"]) { const v = el.getAttribute(a); if (v) out.add(v); }
+  return [...out];
+}).then(l => l.filter(t => !TYPED.some(x => t.includes(x)) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
+await go("#/overview");
+await page.locator("#langBtn").click();
+await page.waitForTimeout(300);
+const leftLive = {};
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "webhooks", "settings"]) {
+  await go("#/" + r);
+  const l = await englishLeft(); if (l.length) leftLive[r] = l;
+}
+ok(Object.keys(leftLive).length === 0, "live: no interface text is left in English in Arabic mode", JSON.stringify(leftLive).slice(0, 1500));
+await page.locator("#langBtn").click();
+await page.waitForTimeout(300);
+
 // Every screen renders in live mode (dates from the database included).
-for (const r of ["overview", "logs", "runs", "missions", "settings", "skills"]) {
+for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "agents/templates"]) {
   await go("#/" + r);
   ok(!(await page.locator(".error-box").count()) && await page.locator("main h1").first().isVisible(), "live " + r + " renders");
   if (r === "logs") ok(/ago|just now/.test(await page.locator("main time").first().textContent({ timeout: 5000 })), "live dates show as relative times");

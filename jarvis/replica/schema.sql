@@ -254,3 +254,102 @@ create table gate_results (
   created_at timestamptz not null default now()
 );
 create index on gate_results (mission_id, step_id);
+
+
+-- ADR-137: one owner per workspace, scheduled runs, webhooks with deliveries, creator mode and the
+-- future subscriber plans. Money stays a person's decision outside Jarvis (AGENTS.md §1): billing can
+-- never be switched on here, a plan can never be activated here, and the creator's usage costs 0.
+create unique index members_one_owner on members (workspace_id) where role = 'owner';
+
+create table schedules (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  agent_id uuid not null references agents(id) on delete cascade,
+  every_minutes int not null check (every_minutes between 5 and 10080),
+  enabled boolean not null default true,
+  next_at timestamptz not null,
+  last_run_id uuid references runs(id) on delete set null,
+  last_error text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (agent_id)
+);
+create index on schedules (enabled, next_at);
+
+create table webhooks (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 80),
+  direction text not null check (direction in ('in', 'out')),
+  url text,
+  events jsonb not null default '["mission.finished"]',
+  status text not null default 'draft' check (status in ('draft', 'active', 'paused')),
+  approval_id uuid references approvals(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint webhooks_out_has_url check (direction = 'in' or url is not null),
+  -- An outgoing webhook may be active only towards this computer; anything else is an outbound message.
+  constraint webhooks_external_out_locked
+    check (direction = 'in' or status <> 'active' or url ~ '^http://127\.0\.0\.1:[0-9]{1,5}/')
+);
+create index on webhooks (workspace_id);
+
+create table webhook_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  webhook_id uuid not null references webhooks(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  direction text not null check (direction in ('in', 'out')),
+  status text not null check (status in ('verified', 'rejected', 'sent', 'failed')),
+  detail text not null default '',
+  body_sha256 text check (body_sha256 is null or length(body_sha256) = 64),
+  at timestamptz not null default now()
+);
+create index on webhook_deliveries (webhook_id, at desc);
+create function webhook_deliveries_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.webhook_deliveries is append-only';
+end $$;
+create trigger webhook_deliveries_no_update before update or delete on webhook_deliveries
+  for each row execute function webhook_deliveries_append_only();
+
+create table billing_settings (
+  workspace_id uuid primary key references workspaces(id) on delete cascade,
+  creator_zero_token boolean not null default true,
+  billing_enabled boolean not null default false,
+  updated_at timestamptz not null default now(),
+  constraint billing_settings_billing_locked check (billing_enabled = false)
+);
+
+create table subscriber_tiers (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 40),
+  monthly_tokens bigint not null check (monthly_tokens >= 0),
+  price_minor bigint not null default 0 check (price_minor >= 0),  -- a draft number, never charged here
+  currency text not null default 'USD' check (currency ~ '^[A-Z]{3}$'),
+  status text not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint subscriber_tiers_draft_only check (status = 'draft'),
+  unique (workspace_id, name)
+);
+
+create table token_ledger (
+  id bigint generated always as identity primary key,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  actor text not null,               -- 'creator' or, later, 'subscriber:<id>'
+  engine text not null,              -- 'ollama-local-loopback', 'deterministic-rules', 'fixed-rule-run'
+  model text,
+  tokens bigint not null check (tokens >= 0),
+  cost_micro_usd bigint not null default 0 check (cost_micro_usd >= 0),
+  ref text,
+  at timestamptz not null default now(),
+  constraint token_ledger_creator_free check (actor <> 'creator' or cost_micro_usd = 0)
+);
+create index on token_ledger (workspace_id, at desc);
+create function token_ledger_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.token_ledger is append-only';
+end $$;
+create trigger token_ledger_no_update before update or delete on token_ledger
+  for each row execute function token_ledger_append_only();

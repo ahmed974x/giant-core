@@ -127,7 +127,7 @@ export function agentTemplate(agent) {
   return { title: agent.name + " · long run", goal: agent.rolePrompt || "Run this agent's tools with gates and capsules.", steps };
 }
 
-export function createMissions({ store, runner, db, repoRoot, dataDir }) {
+export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent = () => {} }) {
   const EVIDENCE_ROOTS = ["jarvis/app/data", "jarvis/replica"].map(p => resolve(repoRoot, p));
   const missionDir = (slug, id) => join(dataDir, "workspaces", slug, "missions", id);
   const active = new Set();
@@ -292,7 +292,7 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
   // A plan from the local model (or the fixed-rule fallback), already passed through llm-plan.mjs's
   // enforceApprovalGates. The steps are re-checked here: kinds, tools and categories come only from
   // Jarvis's own lists, so nothing a model writes can create a step the engine would not create itself.
-  async function createFromPlan(slug, { goal, steps, planner, capsuleEvery }) {
+  async function createFromPlan(slug, { goal, steps, planner, capsuleEvery, template = "llm-plan" }) {
     const wid = await wsId(slug);
     const g = String(goal || "").trim();
     if (!g) bad("Write the goal first.");
@@ -306,11 +306,11 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
       return step;
     });
     const tpl = { title: g.slice(0, 120), goal: g.slice(0, 2000), steps: safe };
-    const id = await insertMission(wid, tpl, { template: "llm-plan", title: tpl.title, capsuleEvery: capsuleEvery || 1, planner });
+    const id = await insertMission(wid, tpl, { template: template === "workflow" ? "workflow" : "llm-plan", title: tpl.title, capsuleEvery: capsuleEvery || 1, planner });
     const m = await db.one("select * from missions where id = $1", [id]);
     m._slug = slug;
     planFiles(m, await stepsOf(id), slug);
-    progress(m, "Planned by " + (planner && planner.engine === "ollama-local-loopback" ? "the local model " + planner.model + " [INFERENCE - local LLM]" : "the fixed rules") + "; locks decided by rule.");
+    progress(m, "Planned by " + (planner && planner.engine === "ollama-local-loopback" ? "the local model " + planner.model + " [INFERENCE - local LLM]" : planner && planner.engine === "workflow" ? "the workflow graph" : "the fixed rules") + "; locks decided by rule.");
     return detail(slug, id);
   }
   async function fromAgent(slug, agent, input) {
@@ -411,6 +411,7 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
           planFiles(m, await stepsOf(id), slug);
           await saveCapsule(m, failed ? "finished with a failed step" : "finished");
           await store.logEvent(wid, "system", failed ? "mission.failed" : "mission.succeeded", id);
+          Promise.resolve(onEvent(slug, "mission.finished", { id, title: m.title, status: failed ? "failed" : "succeeded" })).catch(() => {});
         } else if (!blocked.length && !steps.some(s => s.status === "running")) {
           // Nothing runs, nothing waits, yet steps are open: their needs can never finish. Skip them
           // so the mission ends instead of hanging (a model's plan cannot deadlock the engine).

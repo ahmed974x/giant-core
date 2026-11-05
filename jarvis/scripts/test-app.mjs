@@ -245,6 +245,104 @@ await page.getByRole("button", { name: "Design with local model" }).click();
 await page.waitForTimeout(400);
 ok(/fixed rules/.test(await page.locator(".report").textContent()) && (await frame().locator("h1").count()) === 1, "F12 the Studio designs from a description with the fixed rules when there is no model");
 
+// F13: workflows (S06 list, S07 SVG editor) run as missions; locked nodes wait (ADR-137).
+await go("#/workflows");
+ok((await page.locator("tbody tr").count()) === 1, "F13 the workflows list shows the starter workflow");
+await page.locator("tbody a").first().click();
+await page.waitForSelector(".wf-node");
+ok((await page.locator(".wf-node").count()) === 6 && (await page.locator(".wf-node.locked").count()) === 1 && (await page.locator(".wf-edge").count()) === 5, "F13 the SVG graph draws six steps, five links and one locked step");
+const firstNode = page.locator(".wf-node").first();
+const before = await firstNode.getAttribute("transform");
+await firstNode.focus(); await page.keyboard.press("ArrowDown");
+ok((await page.locator(".wf-node").first().getAttribute("transform")) !== before && /Unsaved/.test(await page.locator(".page-head .subtle").textContent()), "F13 arrow keys move a step and mark the graph unsaved");
+await page.getByRole("button", { name: "Add step" }).click();
+await page.locator("#f-node-title").fill("Email the team the summary");
+ok((await page.locator(".wf-node").count()) === 7 && (await page.locator(".wf-node.locked").count()) === 2, "F13 a step about email is locked as soon as it is named");
+await page.locator("fieldset").filter({ hasText: "Needs" }).getByText("Save the release note").click();
+await page.locator(".wf-node").filter({ hasText: "Read the latest commits" }).click();
+await page.locator("fieldset").filter({ hasText: "Needs" }).getByText("Save the release note").click();
+ok(/loop/.test(await page.locator(".err[role=alert]").textContent()), "F13 a loop is refused with the steps named", await page.locator(".err[role=alert]").textContent());
+await page.locator("fieldset").filter({ hasText: "Needs" }).getByText("Save the release note").click();
+await page.getByRole("button", { name: "Save", exact: true }).click();
+await page.waitForTimeout(300);
+ok(/Saved · v2/.test(await page.locator(".page-head .subtle").textContent()), "F13 saving bumps the version");
+await page.getByRole("button", { name: "Run workflow" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok(/#\/missions\/ms_/.test(page.url()) && (await page.locator(".mstep.is-locked").filter({ hasText: "Publish the release notes" }).count()) === 1 && (await page.locator(".mstep.k-approval").filter({ hasText: "Email the team the summary" }).count()) === 1, "F13 running the workflow makes a mission: publish waits locked, the email step is an approval step", page.url());
+
+// F14: analytics, run comparison, agent templates, schedules, members, plans (ADR-137).
+await go("#/analytics");
+ok(await page.getByText("Creator mode").isVisible() && (await page.locator(".stats .stat").count()) === 4 && (await page.locator(".bars").count()) >= 4, "F14 analytics shows creator mode, four numbers and the bar charts");
+await go("#/runs");
+const picks = page.locator("input[name=compare]");
+await picks.nth(0).check(); await picks.nth(1).check();
+await page.getByRole("button", { name: "Compare 2 runs" }).click();
+await page.waitForTimeout(300);
+ok(/#\/runs\/compare\//.test(page.url()) && (await page.locator("tbody tr").count()) >= 2, "F14 two runs compare side by side", page.url());
+await go("#/agents/templates");
+ok((await page.locator(".mcard").count()) === 6, "F14 the templates gallery lists six agents");
+await page.getByRole("button", { name: "Use template" }).nth(1).click();
+await page.getByRole("dialog").getByRole("heading", { name: "New agent" }).waitFor({ timeout: 5000 });
+ok((await page.getByLabel("Name").inputValue()) === "Decision record reader", "F14 a template fills the agent editor");
+await page.getByRole("button", { name: "Create agent" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByRole("heading", { name: "Decision record reader", level: 1 }).isVisible(), "F14 the agent is created from the template");
+await page.getByRole("tab", { name: "Schedule" }).click();
+await page.locator("#f-every").selectOption("360");
+await page.getByRole("button", { name: "Schedule runs" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByRole("button", { name: "Save schedule" }).isVisible() && await page.getByText(/Next run/).isVisible(), "F14 an agent can be scheduled");
+await go("#/settings");
+await page.locator("#f-memail").fill("Reviewer@Example.com");
+await page.getByRole("button", { name: "Add member" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByRole("cell", { name: "reviewer@example.com", exact: true }).isVisible(), "F14 a member is added locally");
+await page.getByLabel("Role of reviewer@example.com").selectOption("admin");
+await page.waitForTimeout(200);
+ok((await page.getByLabel("Role of reviewer@example.com").inputValue()) === "admin", "F14 the member's role changes");
+await page.locator("#f-tname").fill("Pro"); await page.locator("#f-ttok").fill("2000000"); await page.locator("#f-tprice").fill("1900");
+await page.getByRole("button", { name: "Save draft plan" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByRole("cell", { name: "19.00 USD" }).isVisible(), "F14 a draft plan is saved");
+await page.getByRole("button", { name: "Turn on billing…" }).click();
+await page.waitForTimeout(400);
+await page.getByRole("tab", { name: /Locked/ }).click();
+ok(page.url().endsWith("#/approvals") && await page.locator("[role=tabpanel]:not([hidden])").getByText("Turn on billing and token plans for subscribers").isVisible(), "F14 turning on billing becomes a locked money card");
+await go("#/webhooks");
+ok(await page.getByText(/Webhooks run on the local server/).first().isVisible(), "F14 sample mode says webhooks need the local server");
+
+// F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
+// aria-label, placeholder or title still in English fails, except names kept as written
+// (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
+const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
+const englishLeft = () => page.evaluate(() => {
+  const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && !skip(n.parentElement)) { const r = n.parentElement.getBoundingClientRect(); if (r.width || r.height) out.add(t); } }
+  for (const el of document.querySelectorAll("[aria-label], [placeholder], [title]")) if (!skip(el)) for (const a of ["aria-label", "placeholder", "title"]) { const v = el.getAttribute(a); if (v) out.add(v); }
+  return [...out];
+}).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
+// Text this test typed itself is data, kept as written.
+const TYPED = new Set(["Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+await go("#/overview");
+await page.locator("#langBtn").click();
+await page.waitForTimeout(300);
+ok((await page.evaluate(() => document.documentElement.lang + "/" + document.documentElement.dir)) === "ar/rtl" && (await page.getByRole("link", { name: "نظرة عامة" }).isVisible()) && /نظرة عامة/.test(await page.title()), "F15 the language button switches the whole shell to Arabic, right to left");
+const left = {};
+for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "webhooks", "settings", "agents/ag_release"]) {
+  await go("#/" + r);
+  const l = await englishLeft(); if (l.length) left[r] = l;
+}
+await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click();
+const wl = await englishLeft(); if (wl.length) left["workflow editor"] = wl;
+await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300);
+const ml = await englishLeft(); if (ml.length) left["mission"] = ml;
+ok(Object.keys(left).length === 0, "F15 no interface text is left in English on any screen", JSON.stringify(left).slice(0, 600));
+ok(await page.evaluate(() => getComputedStyle(document.body).fontFamily.includes("Readex")), "F15 Arabic uses Readex Pro");
+await page.locator("#langBtn").click();
+await page.waitForTimeout(300);
+ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await page.getByRole("link", { name: "Overview" }).isVisible() && (await englishLeft()).length > 0, "F15 switching back restores English");
+
 // Shell: RTL switch and theme switch.
 await page.getByRole("button", { name: "Switch to right-to-left layout" }).click();
 ok((await page.evaluate(() => document.documentElement.dir)) === "rtl", "Shell direction switches to RTL");

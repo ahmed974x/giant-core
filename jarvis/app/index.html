@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hvFhRDVrPSmK95DAlmMzyvztE9l4P8QgOj9cJXGvJZM=' 'sha256-z3q8B/Xg1fFEmm9fUBv0xr95xyN7tQ7ciEywrcnq33I=' 'sha256-/dUI8b7HAlkBwMxPwRTaGuvj1FaWYsQxzJDW9n5/J34='; style-src 'sha256-m/ZYb5PLr20bt3sV5qMXtJvYWic7K8RTK4v12Njr74A=' 'sha256-MVUImQAqpkowmB73J6eHPT86I6VcUof+Z0NhF9MtfOA=' 'sha256-Q8Q1Yct9Wi1B0aGRhz0VEss/aiyeCNI5BBbPOWsacXk='; font-src data:; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hvFhRDVrPSmK95DAlmMzyvztE9l4P8QgOj9cJXGvJZM=' 'sha256-VhOYLEQQ+7DVXJ3lZjbZ6amq+4h9xFD718m9ruAXZb0=' 'sha256-wSC7zsZOz8spWMBCWJH5rxC6ZElUKnnrUqYrKj+JL5g='; style-src 'sha256-g1L5olHXDHZHxI+pUE8+sqbBIr9G6ElMfVjLzZKjIyk=' 'sha256-MVUImQAqpkowmB73J6eHPT86I6VcUof+Z0NhF9MtfOA=' 'sha256-Q8Q1Yct9Wi1B0aGRhz0VEss/aiyeCNI5BBbPOWsacXk='; font-src data:; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="color-scheme" content="dark light" />
 <title>Jarvis</title>
 <style>
@@ -521,6 +521,46 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 .think pre { white-space: pre-wrap; overflow-wrap: anywhere; max-block-size: 320px; overflow-y: auto; }
 @media (max-width: 767px) { .llm-badge .llm-word { display: none; } .llm-badge { padding-inline: 8px; } }
 @media (max-width: 480px) { .clone-row { grid-template-columns: minmax(0, 1fr); } .clone-row .btn { justify-self: start; } }
+/* ── Workflows, analytics, webhooks, plans (ADR-137) ──────── */
+.wf-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1100px) { .wf-layout { grid-template-columns: minmax(0, 1fr) 340px; } }
+.wf-name { min-width: min(100%, 320px); flex: 1; }
+.wf-canvas { overflow: auto; max-block-size: 70dvh; border-radius: var(--radius-md); background: var(--color-surface-sunken); border: var(--hairline) solid var(--color-border); touch-action: none; }
+.wf-canvas svg { display: block; }
+.wf-node { cursor: grab; outline: none; }
+.wf-node:active { cursor: grabbing; }
+.wf-box { fill: var(--color-surface); stroke: var(--color-border-input); stroke-width: 1; }
+.wf-node.k-gate .wf-box { stroke: var(--color-info); }
+.wf-node.locked .wf-box { stroke: var(--color-approval); stroke-dasharray: 5 4; }
+.wf-node.sel .wf-box, .wf-node:focus-visible .wf-box { stroke: var(--color-accent); stroke-width: 2.5; }
+.wf-title { fill: var(--color-text); font: 600 14px/1 var(--font-sans, inherit); }
+.wf-sub { fill: var(--color-text-muted); font: 500 12px/1 var(--font-mono); }
+.wf-node.locked .wf-sub { fill: var(--color-approval); }
+:lang(ar) .wf-sub, :lang(ar) .wf-title { font-family: var(--font-arabic); letter-spacing: 0; }
+.wf-edge { fill: none; stroke: var(--color-border-input); stroke-width: 1.5; }
+.wf-edge.to-locked { stroke: var(--color-approval); stroke-dasharray: 5 4; }
+.wf-arrowhead { fill: var(--color-border-input); }
+.wf-phase ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-sm); }
+.wf-phase li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bars li { display: grid; grid-template-columns: minmax(80px, 30%) minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: var(--text-sm); }
+.bar-label { overflow-wrap: anywhere; color: var(--color-text-muted); }
+.bar-value { font-size: var(--text-caption); white-space: nowrap; }
+.bar-svg { inline-size: 100%; block-size: 10px; display: block; }
+.bar-track { fill: var(--color-surface-sunken); }
+.bar-fill { fill: var(--color-accent); }
+.bar-fill.warn { fill: var(--color-warning); }
+.bar-fill.locked { fill: var(--color-approval); }
+[dir="rtl"] .bar-svg { transform: scaleX(-1); }
+.days-svg { inline-size: 100%; block-size: 120px; display: block; }
+.creator { display: grid; gap: 8px; padding: 16px; border-radius: var(--radius-lg); background: var(--color-surface); border: 1px solid var(--color-success); }
+.creator h2 { font-size: var(--text-headline); font-weight: 600; }
+.creator .btn { justify-self: start; }
+.grid-2 > .panel { align-content: start; }
+.member-add { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.member-add .field { flex: 1 1 180px; }
+.lang-btn { font-weight: 700; font-family: var(--font-arabic); }
+.lang-btn:lang(en) { font-family: var(--font-sans); font-size: var(--text-caption); }
 /* ── Responsive shell ───────────────────────────────────── */
 @media (min-width: 768px) and (max-width: 1279px) {
   .app { --sb: var(--layout-sidebar-rail); }
@@ -581,6 +621,9 @@ dialog.palette.glass { background: var(--color-surface-raised); }
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 8 4-8 4-8-4z"/><path d="m4 12 8 4 8-4M4 16l8 4 8-4"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/><path d="M10 6.5h3a2 2 0 0 1 2 2V15"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></symbol>
+  <symbol id="i-hook" viewBox="0 0 24 24"><path d="M9 7a3 3 0 1 1 3 3v3.5a3.5 3.5 0 1 1-3.5 3.5M15 15.5h4"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
 </svg>
 <a class="skip" href="#main">Skip to content</a>
@@ -594,7 +637,9 @@ dialog.palette.glass { background: var(--color-surface-raised); }
         <li><a href="#/agents" data-route="agents"><svg class="i" aria-hidden="true"><use href="#i-agent"/></svg><span class="nav-label">Agents</span></a></li>
         <li><a href="#/runs" data-route="runs"><svg class="i" aria-hidden="true"><use href="#i-run"/></svg><span class="nav-label">Runs</span></a></li>
         <li><a href="#/missions" data-route="missions"><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg><span class="nav-label">Missions</span></a></li>
+        <li><a href="#/workflows" data-route="workflows"><svg class="i" aria-hidden="true"><use href="#i-flow"/></svg><span class="nav-label">Workflows</span></a></li>
         <li><a href="#/approvals" data-route="approvals"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="nav-label">Approvals</span><span class="count num" id="approvalCount" hidden></span></a></li>
+        <li><a href="#/analytics" data-route="analytics"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span class="nav-label">Analytics</span></a></li>
         <li><a href="#/logs" data-route="logs"><svg class="i" aria-hidden="true"><use href="#i-logs"/></svg><span class="nav-label">Logs</span></a></li>
       </ul>
       <p class="nav-group">Build</p>
@@ -604,6 +649,7 @@ dialog.palette.glass { background: var(--color-surface-raised); }
       </ul>
       <p class="nav-group">System</p>
       <ul class="nav">
+        <li><a href="#/webhooks" data-route="webhooks"><svg class="i" aria-hidden="true"><use href="#i-hook"/></svg><span class="nav-label">Webhooks</span></a></li>
         <li><a href="#/settings" data-route="settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nav-label">Settings</span></a></li>
         <li><a href="../design/index.html"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nav-label">Design system</span></a></li>
       </ul>
@@ -626,6 +672,7 @@ dialog.palette.glass { background: var(--color-surface-raised); }
       </button>
       <span class="spacer"></span>
       <a class="badge llm-badge s-idle" id="llmBadge" href="#/settings" title="Local model status"><span class="dot" aria-hidden="true"></span><span class="llm-word" id="llmWord">Fixed rules</span></a>
+      <button class="btn btn-ghost btn-icon lang-btn" id="langBtn" type="button" lang="ar" aria-label="التبديل إلى العربية">ع</button>
       <button class="btn btn-ghost btn-icon" id="dirBtn" type="button" aria-label="Switch to right-to-left layout"><svg class="i" aria-hidden="true"><use href="#i-dir"/></svg></button>
       <button class="btn btn-ghost btn-icon" id="themeBtn" type="button" aria-label="Switch to light theme"><svg class="i" aria-hidden="true"><use href="#i-sun" id="themeIcon"/></svg></button>
     </header>
@@ -882,7 +929,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
   });
 })();
 </script></template>
-<script type="application/json" id="jarvis-data">{"built":"2026-11-05T00:02:47.291Z","scan":{"generated":"2026-11-05T00:02:47.294Z","summary":{"scanned":98,"critical":0,"high":0,"medium":25,"low":0,"suppressed":6}},"skills":[{"name":"algorithmic-art","folder":"algorithmic-art","description":"Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or particle systems. Create original algorithmic art rather than copying existing artists' work to avoid copyright violations.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":14,"low":0,"suppressed":3}},{"name":"apple-liquid-glass-hig","folder":"apple-liquid-glass-hig","description":"Use when adding or restyling glass chrome, popovers, cards, rings or charts on an OMEGA page (Ops Room, THE CHAIN, NABD). Turns Apple HIG glass and material rules into the OMEGA tokens, CSP limits and the three-size check.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"autonomous-24-selftest-gate","folder":"autonomous-24-selftest-gate","description":"Use when adding, changing or reading the Ops Room system self-test (shield button or ?selftest=1), now 24 checks. Fixed fixtures plus live data, read-only probes, honest failures, and the release gate before a PR.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"awesome-research","folder":"awesome-research","description":"Find trustworthy free open-source tools, libraries and open-weight AI models by starting from the curated \"awesome\" lists (github.com/sindresorhus/awesome, github.com/topics/awesome) instead of raw popularity. Use whenever the user asks for the best/strongest/free/open-source tool, library, model or skill for something, or asks to research tools before adding them to a project.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"build-mcpb","folder":"build-mcpb","description":"This skill should be used when the user wants to \"package an MCP server\", \"bundle an MCP\", \"make an MCPB\", \"ship a local MCP server\", \"distribute a local MCP\", discusses \".mcpb files\", mentions bundling a Node or Python runtime with their MCP server, or needs an MCP server that interacts with the local filesystem, desktop apps, or OS and must be installable without the user having Node/Python set up.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"cyber-space-osint-grid","folder":"cyber-space-osint-grid","description":"Use when adding or changing an OSIRIS cyber, space or air source in the Ops Room (SANS InfoCON, Shodan InternetDB, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, CSTI). Passive keyless sources only, a named tier for every reading, honest gaps.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"frontend-design","folder":"frontend-design","description":"Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":1,"low":0,"suppressed":0}},{"name":"hvplot","folder":"hvplot","description":"Best practices for doing quick exploratory data analysis with minimal code and a Pandas .plot like API using HoloViews hvPlot.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"liquid-neural-139-flow","folder":"liquid-neural-139-flow","description":"Use when changing the continuous-time (liquid) dynamics of the Ops Room neural flow 139 → 48 → 36 → 48 → 24 → 16 → 8, its τ table, shock events, Heun solver, settle animation or the oscilloscope's τ readout. The resting state must equal the trained feed-forward answer.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"local-glm-agent-windows-mcp","folder":"local-glm-agent-windows-mcp","description":"Use when changing the local model bridge (Ollama on 127.0.0.1, GLM models), the MCP bridge tool that calls it, the launchers OMEGA-PRIME.bat and start-omega.bat, or the Windows-MCP setup. Local, read-only, paper-only; no cloud model and no wider tool list.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"mcp-builder","folder":"mcp-builder","description":"Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate external APIs or services, whether in Python (FastMCP) or Node/TypeScript (MCP SDK).","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"neural-139-inputs-heads","folder":"neural-139-inputs-heads","description":"Use when changing which readings enter the 139 inputs of the Ops Room neural flow, the meaning or wording of its 8 decision heads (including the $20 base, protected wallet and SHA-256 receipt heads), the clicked-neuron oscilloscope or the deterministic causal \"why\" table.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"neural-flow-decision-viz","folder":"neural-flow-decision-viz","description":"Use when changing the Ops Room deep neural flow (139 → 48 → 36 → 48 → 24 → 16 → 8), its threads, pulses, oscilloscope inspector, chrono-scrubber, training worker or decision heads. Real inputs only, event-driven drawing, honest training numbers.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-apex-council","folder":"omega-apex-council","description":"Use when changing or using the OMEGA APEX council (omega-ops-room-v1/omega-apex.html, scripts/lib/apex-council.mjs), its fifteen field helpers, its paper-only PRIME plans, or the dark gold peak tone shared by every OMEGA page.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-deep-research-agent","folder":"omega-deep-research-agent","description":"Use when changing or running the ORACLE deep research agent (plan, gather, evaluate, write; scholar and passive OSINT modes) in omega-ops-room-v1/omega-oracle.html, scripts/lib/deep-research.mjs, the proxy /research routes, the local-model brief or the deep_research MCP tool. Keyless scholarly, news and CVE APIs only, every sentence numbered to its source.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-design","folder":"omega-design","description":"Use when building, redesigning or reviewing any OMEGA / NABD web surface (site-landing, Ops Room, THE CHAIN). Applies DESIGN.md, the Vercel Web Interface Guidelines and the three-size browser loop.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-extend","folder":"omega-extend","description":"How to add a metric, panel, data table, service or plugin to the OMEGA stack (giant-core) so it matches the existing code. Use before changing services/quant (stdlib risk engine), services/studio (Panel app + DuckDB vault), dashboard/index.html (Ops Room), docker-compose.yml or plugins/.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-finance-chain","folder":"omega-finance-chain","description":"Use when researching a stock, building a valuation model, reviewing an earnings call or updating a ticker's notes.md for OMEGA. Rules for the three THE CHAIN agents; research only, never trading.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-knowledge-domain","folder":"omega-knowledge-domain","description":"Use when changing or using the OMEGA knowledge domain (omega-ops-room-v1/omega-knowledge.html, scripts/lib/knowledge-domain.mjs) that joins ideas, open-source tools, ORACLE sources, PRIME agents, pages and every ADR in one graph, answers questions with a context pack and drafts paper-only PRIME plans the helpers review.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"osint-bgp-cables","folder":"osint-bgp-cables","description":"Use when adding or changing an OSIRIS layer for internet routing, outages, submarine cables, satellites, space weather or exploited vulnerabilities. Passive, keyless public sources only, through the proxy, direct and snapshot tiers.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"panel","folder":"panel","description":"Best practices for developing tools, dashboards and interactive data apps with HoloViz Panel. Create reactive, component-based UIs with widgets, layouts, templates, and real-time updates. Use when developing interactive data exploration tools, dashboards, data apps, or any interactive Python web application. Supports file uploads, streaming data, multi-page apps, and integration with HoloViews, hvPlot, Pandas, Polars, DuckDB and the rest of the HoloViz and PyData ecosystems.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"panel-material-ui","folder":"panel-material-ui","description":"Best practices for developing modern looking tools, dashboards and data apps using HoloViz Panel and Panel Material UI components.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"param","folder":"param","description":"Use when building Python classes with validated, typed parameters using the Param library. Triggers include creating configuration classes, building reusable components with state, implementing reactive dependencies between parameters, adding type-safe attributes with bounds/constraints, creating testable parameterized classes, or when users mention param.Parameterized, @param.depends, or param.watch.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"quant-microstructure-gex","folder":"quant-microstructure-gex","description":"Use when changing Brain 2 maths or the trading desk's readings - Kalman latent price, BOCPD regime change, Kyle's lambda, iceberg detection, book entropy, L2 VWAP fill, dealer gamma (GEX), DVOL, 25-delta risk reversal, funding and basis. Paper only, decision aids.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-architect","folder":"replica-architect","description":"Plans the stack, database schema and API for an app clone, from the recon map replica-recon wrote. Picks boring, managed tech, turns the inferred data model into real SQL with indexes and access rules, lists every route by flow, and orders the build as a thin vertical slice first. Use when the user says \"plan the clone\", \"what stack should I use\", \"design the database\", \"write the schema\", \"plan the API\", \"architecture for my version of X\", or after /replica-recon finishes.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-backend","folder":"replica-backend","description":"Builds the backend of an app clone: auth, database migrations and access rules, payments with Stripe, email, background jobs and third-party integrations through official APIs only, plus a security checklist. Use when the user says \"add login\", \"set up auth\", \"wire up the database\", \"add payments\", \"connect Stripe\", \"add Google Calendar\", \"send emails\", \"backend for my clone\", or when /replica-build is running on fake data.","source":"reviewed","review":"docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-build","folder":"replica-build","description":"Rebuilds an app screen by screen from the recon map: app shell first, then the core flow as a vertical slice, then every screen with all its states, ticking off the feature matrix as it goes. Writes every line fresh, never the original's code, assets or copy. Use when the user says \"build the clone\", \"build screen S07\", \"start building\", \"rebuild this screen\", \"implement the booking page\", or after /replica-design.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-design","folder":"replica-design","description":"Rebuilds an app's design system clean-room style - measured colour roles, type, spacing, components and states as tokens (light + dark), with open fonts/icons and a WCAG gate.","source":"reviewed","review":"docs/security/REPLICA-DESIGN-SKILL-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-diff","folder":"replica-diff","description":"Compares an app clone against the original: a feature parity score from the feature matrix (weighted by must, should, could) with the missing list in build order, plus a screenshot layout diff that ignores colour so a rebrand does not count against you. Two standard-library Python tools. Use when the user says \"how close is my clone\", \"compare it to the original\", \"what's missing\", \"parity check\", \"diff the screens\", \"is it ready\", or after /replica-test.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-entrepreneur","folder":"replica-entrepreneur","description":"Researches the app being cloned and reads what its real users say in public reviews (App Store, Google Play, G2, Capterra, Trustpilot, Reddit, Hacker News, its own feature-request board), then ranks what they hate, what is missing and what is unsolved, turns it into a fix plan for the clone and a positioning angle you can sell. Every quote is real, verbatim and linked. Use when the user says \"what do people hate about X\", \"read the reviews\", \"how do I make mine better\", \"find the gap\", \"what features are missing\", \"how do I position this\", \"make it sellable\", or after /replica-diff.","source":"reviewed","review":"docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-long-horizon","folder":"replica-long-horizon","description":"Run long, multi-step tasks without losing the thread - three plan files on disk, SHA-256 chained state capsules to resume after /clear, and an evidence gate that blocks \"done\" until tests pass.","source":"reviewed","review":"docs/security/LONG-HORIZON-SKILL-REVIEW-2026-11-05.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-test","folder":"replica-test","description":"Clicks through every flow of an app clone and tests it for bugs: a test plan generated from the recon flows with happy paths and edge cases, Playwright end-to-end tests where possible, a browser click-through where not, and bug reports in a fixed format with severity, steps and evidence. Use when the user says \"test my clone\", \"find bugs\", \"QA this\", \"click through everything\", \"write e2e tests\", \"does it work\", or after /replica-build or /replica-backend.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"safe-vault-cryptographic-ratchet","folder":"safe-vault-cryptographic-ratchet","description":"Use when touching the paper wallet, the locked base, profit sweeps, receipts, Merkle checkpoints, capsules or the key vault. Keeps the SHA-256 receipt chain verifiable across the Ops Room, NABD and the MCP bridge, and keeps everything paper only.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"stablecoin-cyber-vuln-intel","folder":"stablecoin-cyber-vuln-intel","description":"Use when changing the DefiLlama liquidity flow index (LFI), the CIRCL Vulnerability-Lookup feed with MISP taxonomy tags, the 8-part CSTI or the Open-Meteo Marine sea state at the five straits. Keyless sources, one parser per source, fixed rules marked [INFERENCE].","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"supreme-software-ui-architect","folder":"supreme-software-ui-architect","description":"Use before building or reviewing any OMEGA page, canvas or data feature. Engineering and visual craft rules - 4/8 grid, concentric radii, glass only where allowed, P3 colour, zero clipped text, zero-jank workers and canvases, honest data paths and the checks that prove them.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"synaptic-spiderweb-viz","folder":"synaptic-spiderweb-viz","description":"Use when changing the Brain 2 synaptic web canvas in the Ops Room - its rings of nodes, edges, pulses, glass causal card, gym panel or labels. Event-driven drawing, real readings only, accessible fallbacks.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"theme-factory","folder":"theme-factory","description":"Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"web-artifacts-builder","folder":"web-artifacts-builder","description":"Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":1}},{"name":"webapp-testing","folder":"webapp-testing","description":"Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":2}}],"preview":{"cssHash":"sha256-MVUImQAqpkowmB73J6eHPT86I6VcUof+Z0NhF9MtfOA=","jsHash":"sha256-hvFhRDVrPSmK95DAlmMzyvztE9l4P8QgOj9cJXGvJZM="},"templates":{"release-readiness":{"title":"Release readiness for this branch","goal":"Prove the branch is ready for Director 00's review: commits read, gates green, note saved.","steps":[{"phase":1,"kind":"tool","title":"Read the latest commits","tool":"git.log"},{"phase":1,"kind":"tool","title":"Read the recent decision records","tool":"files.read","input":{"path":"docs/adr/ADR-13*"}},{"phase":2,"kind":"gate","title":"Security gate (SkillSpector)","criteria":[{"check":"security","evidence":"jarvis/app/data/skills-scan.json"}]},{"phase":2,"kind":"gate","title":"Contrast gate (WCAG and APCA)","criteria":[{"check":"contrast","evidence":"jarvis/replica/design/contrast-report.txt"}]},{"phase":2,"kind":"gate","title":"Tests gate (server, app, live, skill)","criteria":[{"check":"tests","evidence":"jarvis/replica/evidence/tests-server.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-app.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-live.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-long-horizon.log"}]},{"phase":2,"kind":"gate","title":"Lint gate (ruff on the skill)","criteria":[{"check":"lint","evidence":"jarvis/replica/evidence/lint-long-horizon.log"}]},{"phase":3,"kind":"approval","title":"Publish the release notes on a public site","category":"publish","depends":[0,1]},{"phase":3,"kind":"approval","title":"Save the release-readiness note","category":"file_write","depends":[0,1,2,3,4,5]},{"phase":4,"kind":"tool","title":"List the saved notes","tool":"notes.read","depends":[7]},{"phase":4,"kind":"tool","title":"Count this workspace's runs","tool":"runs.read","depends":[2,3,4,5]}]},"design-audit":{"title":"Design system audit","goal":"Check the Jarvis tokens and their gates before any page changes.","steps":[{"phase":1,"kind":"tool","title":"Read the design tokens and reports","tool":"files.read","input":{"path":"jarvis/replica/design"}},{"phase":2,"kind":"gate","title":"Contrast gate (WCAG and APCA)","criteria":[{"check":"contrast","evidence":"jarvis/replica/design/contrast-report.txt"}]},{"phase":2,"kind":"gate","title":"Security gate (SkillSpector)","criteria":[{"check":"security","evidence":"jarvis/app/data/skills-scan.json"}]},{"phase":3,"kind":"approval","title":"Install the reviewed skill into .claude/skills","category":"install","depends":[2]},{"phase":3,"kind":"approval","title":"Save the design audit note","category":"file_write","depends":[0,1,2]},{"phase":4,"kind":"tool","title":"List the saved notes","tool":"notes.read","depends":[4]}]},"adr-digest":{"title":"Weekly decision digest","goal":"Summarise the latest decision records and the desk's runs. Paper only.","steps":[{"phase":1,"kind":"tool","title":"Read the recent decision records","tool":"files.read","input":{"path":"docs/adr/ADR-13*"}},{"phase":1,"kind":"tool","title":"Count this workspace's runs","tool":"runs.read"},{"phase":2,"kind":"gate","title":"Tests gate (server)","criteria":[{"check":"tests","evidence":"jarvis/replica/evidence/tests-server.log"}]},{"phase":3,"kind":"approval","title":"Email the digest to the desk","category":"outbound","depends":[0,1]},{"phase":3,"kind":"approval","title":"Save the digest note","category":"file_write","depends":[0,1,2]}]}},"evidence":[{"path":"jarvis/app/data/skills-scan.json","check":"security","ok":true,"detail":"critical 0, high 0, 98 files","sha256":"a83144e01938a8ff","savedAt":null},{"path":"jarvis/replica/design/contrast-report.txt","check":"contrast","ok":true,"detail":"118 checks, 0 failing","sha256":"1d9b4541e501207d","savedAt":null},{"path":"jarvis/replica/evidence/tests-server.log","check":"tests","ok":true,"detail":"232 passed, 0 failed","sha256":"225f5117312616fa","savedAt":null},{"path":"jarvis/replica/evidence/tests-app.log","check":"tests","ok":true,"detail":"71 passed, 0 failed","sha256":"9eecce60b836d571","savedAt":null},{"path":"jarvis/replica/evidence/tests-live.log","check":"tests","ok":true,"detail":"47 passed, 0 failed","sha256":"52ff9e201c7fbae2","savedAt":null},{"path":"jarvis/replica/evidence/tests-long-horizon.log","check":"tests","ok":true,"detail":"Ran 10 tests, OK","sha256":"a6f9a7fe0e9242c4","savedAt":null},{"path":"jarvis/replica/evidence/lint-long-horizon.log","check":"lint","ok":true,"detail":"clean","sha256":"82b3e6a6c090a576","savedAt":null}]}</script>
+<script type="application/json" id="jarvis-data">{"built":"2026-11-05T00:02:47.291Z","scan":{"generated":"2026-11-05T00:02:47.294Z","summary":{"scanned":98,"critical":0,"high":0,"medium":25,"low":0,"suppressed":6}},"skills":[{"name":"algorithmic-art","folder":"algorithmic-art","description":"Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or particle systems. Create original algorithmic art rather than copying existing artists' work to avoid copyright violations.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":14,"low":0,"suppressed":3}},{"name":"apple-liquid-glass-hig","folder":"apple-liquid-glass-hig","description":"Use when adding or restyling glass chrome, popovers, cards, rings or charts on an OMEGA page (Ops Room, THE CHAIN, NABD). Turns Apple HIG glass and material rules into the OMEGA tokens, CSP limits and the three-size check.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"autonomous-24-selftest-gate","folder":"autonomous-24-selftest-gate","description":"Use when adding, changing or reading the Ops Room system self-test (shield button or ?selftest=1), now 24 checks. Fixed fixtures plus live data, read-only probes, honest failures, and the release gate before a PR.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"awesome-research","folder":"awesome-research","description":"Find trustworthy free open-source tools, libraries and open-weight AI models by starting from the curated \"awesome\" lists (github.com/sindresorhus/awesome, github.com/topics/awesome) instead of raw popularity. Use whenever the user asks for the best/strongest/free/open-source tool, library, model or skill for something, or asks to research tools before adding them to a project.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"build-mcpb","folder":"build-mcpb","description":"This skill should be used when the user wants to \"package an MCP server\", \"bundle an MCP\", \"make an MCPB\", \"ship a local MCP server\", \"distribute a local MCP\", discusses \".mcpb files\", mentions bundling a Node or Python runtime with their MCP server, or needs an MCP server that interacts with the local filesystem, desktop apps, or OS and must be installable without the user having Node/Python set up.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"cyber-space-osint-grid","folder":"cyber-space-osint-grid","description":"Use when adding or changing an OSIRIS cyber, space or air source in the Ops Room (SANS InfoCON, Shodan InternetDB, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, CSTI). Passive keyless sources only, a named tier for every reading, honest gaps.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"frontend-design","folder":"frontend-design","description":"Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":1,"low":0,"suppressed":0}},{"name":"hvplot","folder":"hvplot","description":"Best practices for doing quick exploratory data analysis with minimal code and a Pandas .plot like API using HoloViews hvPlot.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"liquid-neural-139-flow","folder":"liquid-neural-139-flow","description":"Use when changing the continuous-time (liquid) dynamics of the Ops Room neural flow 139 → 48 → 36 → 48 → 24 → 16 → 8, its τ table, shock events, Heun solver, settle animation or the oscilloscope's τ readout. The resting state must equal the trained feed-forward answer.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"local-glm-agent-windows-mcp","folder":"local-glm-agent-windows-mcp","description":"Use when changing the local model bridge (Ollama on 127.0.0.1, GLM models), the MCP bridge tool that calls it, the launchers OMEGA-PRIME.bat and start-omega.bat, or the Windows-MCP setup. Local, read-only, paper-only; no cloud model and no wider tool list.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"mcp-builder","folder":"mcp-builder","description":"Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate external APIs or services, whether in Python (FastMCP) or Node/TypeScript (MCP SDK).","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"neural-139-inputs-heads","folder":"neural-139-inputs-heads","description":"Use when changing which readings enter the 139 inputs of the Ops Room neural flow, the meaning or wording of its 8 decision heads (including the $20 base, protected wallet and SHA-256 receipt heads), the clicked-neuron oscilloscope or the deterministic causal \"why\" table.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"neural-flow-decision-viz","folder":"neural-flow-decision-viz","description":"Use when changing the Ops Room deep neural flow (139 → 48 → 36 → 48 → 24 → 16 → 8), its threads, pulses, oscilloscope inspector, chrono-scrubber, training worker or decision heads. Real inputs only, event-driven drawing, honest training numbers.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-apex-council","folder":"omega-apex-council","description":"Use when changing or using the OMEGA APEX council (omega-ops-room-v1/omega-apex.html, scripts/lib/apex-council.mjs), its fifteen field helpers, its paper-only PRIME plans, or the dark gold peak tone shared by every OMEGA page.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-deep-research-agent","folder":"omega-deep-research-agent","description":"Use when changing or running the ORACLE deep research agent (plan, gather, evaluate, write; scholar and passive OSINT modes) in omega-ops-room-v1/omega-oracle.html, scripts/lib/deep-research.mjs, the proxy /research routes, the local-model brief or the deep_research MCP tool. Keyless scholarly, news and CVE APIs only, every sentence numbered to its source.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-design","folder":"omega-design","description":"Use when building, redesigning or reviewing any OMEGA / NABD web surface (site-landing, Ops Room, THE CHAIN). Applies DESIGN.md, the Vercel Web Interface Guidelines and the three-size browser loop.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-extend","folder":"omega-extend","description":"How to add a metric, panel, data table, service or plugin to the OMEGA stack (giant-core) so it matches the existing code. Use before changing services/quant (stdlib risk engine), services/studio (Panel app + DuckDB vault), dashboard/index.html (Ops Room), docker-compose.yml or plugins/.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-finance-chain","folder":"omega-finance-chain","description":"Use when researching a stock, building a valuation model, reviewing an earnings call or updating a ticker's notes.md for OMEGA. Rules for the three THE CHAIN agents; research only, never trading.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"omega-knowledge-domain","folder":"omega-knowledge-domain","description":"Use when changing or using the OMEGA knowledge domain (omega-ops-room-v1/omega-knowledge.html, scripts/lib/knowledge-domain.mjs) that joins ideas, open-source tools, ORACLE sources, PRIME agents, pages and every ADR in one graph, answers questions with a context pack and drafts paper-only PRIME plans the helpers review.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"osint-bgp-cables","folder":"osint-bgp-cables","description":"Use when adding or changing an OSIRIS layer for internet routing, outages, submarine cables, satellites, space weather or exploited vulnerabilities. Passive, keyless public sources only, through the proxy, direct and snapshot tiers.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"panel","folder":"panel","description":"Best practices for developing tools, dashboards and interactive data apps with HoloViz Panel. Create reactive, component-based UIs with widgets, layouts, templates, and real-time updates. Use when developing interactive data exploration tools, dashboards, data apps, or any interactive Python web application. Supports file uploads, streaming data, multi-page apps, and integration with HoloViews, hvPlot, Pandas, Polars, DuckDB and the rest of the HoloViz and PyData ecosystems.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"panel-material-ui","folder":"panel-material-ui","description":"Best practices for developing modern looking tools, dashboards and data apps using HoloViz Panel and Panel Material UI components.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"param","folder":"param","description":"Use when building Python classes with validated, typed parameters using the Param library. Triggers include creating configuration classes, building reusable components with state, implementing reactive dependencies between parameters, adding type-safe attributes with bounds/constraints, creating testable parameterized classes, or when users mention param.Parameterized, @param.depends, or param.watch.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"quant-microstructure-gex","folder":"quant-microstructure-gex","description":"Use when changing Brain 2 maths or the trading desk's readings - Kalman latent price, BOCPD regime change, Kyle's lambda, iceberg detection, book entropy, L2 VWAP fill, dealer gamma (GEX), DVOL, 25-delta risk reversal, funding and basis. Paper only, decision aids.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-architect","folder":"replica-architect","description":"Plans the stack, database schema and API for an app clone, from the recon map replica-recon wrote. Picks boring, managed tech, turns the inferred data model into real SQL with indexes and access rules, lists every route by flow, and orders the build as a thin vertical slice first. Use when the user says \"plan the clone\", \"what stack should I use\", \"design the database\", \"write the schema\", \"plan the API\", \"architecture for my version of X\", or after /replica-recon finishes.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-backend","folder":"replica-backend","description":"Builds the backend of an app clone: auth, database migrations and access rules, payments with Stripe, email, background jobs and third-party integrations through official APIs only, plus a security checklist. Use when the user says \"add login\", \"set up auth\", \"wire up the database\", \"add payments\", \"connect Stripe\", \"add Google Calendar\", \"send emails\", \"backend for my clone\", or when /replica-build is running on fake data.","source":"reviewed","review":"docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-build","folder":"replica-build","description":"Rebuilds an app screen by screen from the recon map: app shell first, then the core flow as a vertical slice, then every screen with all its states, ticking off the feature matrix as it goes. Writes every line fresh, never the original's code, assets or copy. Use when the user says \"build the clone\", \"build screen S07\", \"start building\", \"rebuild this screen\", \"implement the booking page\", or after /replica-design.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-design","folder":"replica-design","description":"Rebuilds an app's design system clean-room style - measured colour roles, type, spacing, components and states as tokens (light + dark), with open fonts/icons and a WCAG gate.","source":"reviewed","review":"docs/security/REPLICA-DESIGN-SKILL-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-diff","folder":"replica-diff","description":"Compares an app clone against the original: a feature parity score from the feature matrix (weighted by must, should, could) with the missing list in build order, plus a screenshot layout diff that ignores colour so a rebrand does not count against you. Two standard-library Python tools. Use when the user says \"how close is my clone\", \"compare it to the original\", \"what's missing\", \"parity check\", \"diff the screens\", \"is it ready\", or after /replica-test.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-entrepreneur","folder":"replica-entrepreneur","description":"Researches the app being cloned and reads what its real users say in public reviews (App Store, Google Play, G2, Capterra, Trustpilot, Reddit, Hacker News, its own feature-request board), then ranks what they hate, what is missing and what is unsolved, turns it into a fix plan for the clone and a positioning angle you can sell. Every quote is real, verbatim and linked. Use when the user says \"what do people hate about X\", \"read the reviews\", \"how do I make mine better\", \"find the gap\", \"what features are missing\", \"how do I position this\", \"make it sellable\", or after /replica-diff.","source":"reviewed","review":"docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-long-horizon","folder":"replica-long-horizon","description":"Run long, multi-step tasks without losing the thread - three plan files on disk, SHA-256 chained state capsules to resume after /clear, and an evidence gate that blocks \"done\" until tests pass.","source":"reviewed","review":"docs/security/LONG-HORIZON-SKILL-REVIEW-2026-11-05.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"replica-test","folder":"replica-test","description":"Clicks through every flow of an app clone and tests it for bugs: a test plan generated from the recon flows with happy paths and edge cases, Playwright end-to-end tests where possible, a browser click-through where not, and bug reports in a fixed format with severity, steps and evidence. Use when the user says \"test my clone\", \"find bugs\", \"QA this\", \"click through everything\", \"write e2e tests\", \"does it work\", or after /replica-build or /replica-backend.","source":"reviewed","review":"docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md","findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"safe-vault-cryptographic-ratchet","folder":"safe-vault-cryptographic-ratchet","description":"Use when touching the paper wallet, the locked base, profit sweeps, receipts, Merkle checkpoints, capsules or the key vault. Keeps the SHA-256 receipt chain verifiable across the Ops Room, NABD and the MCP bridge, and keeps everything paper only.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"stablecoin-cyber-vuln-intel","folder":"stablecoin-cyber-vuln-intel","description":"Use when changing the DefiLlama liquidity flow index (LFI), the CIRCL Vulnerability-Lookup feed with MISP taxonomy tags, the 8-part CSTI or the Open-Meteo Marine sea state at the five straits. Keyless sources, one parser per source, fixed rules marked [INFERENCE].","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"supreme-software-ui-architect","folder":"supreme-software-ui-architect","description":"Use before building or reviewing any OMEGA page, canvas or data feature. Engineering and visual craft rules - 4/8 grid, concentric radii, glass only where allowed, P3 colour, zero clipped text, zero-jank workers and canvases, honest data paths and the checks that prove them.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"synaptic-spiderweb-viz","folder":"synaptic-spiderweb-viz","description":"Use when changing the Brain 2 synaptic web canvas in the Ops Room - its rings of nodes, edges, pulses, glass causal card, gym panel or labels. Event-driven drawing, real readings only, accessible fallbacks.","source":"project","review":null,"findings":{"critical":0,"high":0,"medium":0,"low":0,"suppressed":0}},{"name":"theme-factory","folder":"theme-factory","description":"Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":0}},{"name":"web-artifacts-builder","folder":"web-artifacts-builder","description":"Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":1}},{"name":"webapp-testing","folder":"webapp-testing","description":"Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs.","source":"vendored","review":null,"findings":{"critical":0,"high":0,"medium":2,"low":0,"suppressed":2}}],"preview":{"cssHash":"sha256-MVUImQAqpkowmB73J6eHPT86I6VcUof+Z0NhF9MtfOA=","jsHash":"sha256-hvFhRDVrPSmK95DAlmMzyvztE9l4P8QgOj9cJXGvJZM="},"templates":{"release-readiness":{"title":"Release readiness for this branch","goal":"Prove the branch is ready for Director 00's review: commits read, gates green, note saved.","steps":[{"phase":1,"kind":"tool","title":"Read the latest commits","tool":"git.log"},{"phase":1,"kind":"tool","title":"Read the recent decision records","tool":"files.read","input":{"path":"docs/adr/ADR-13*"}},{"phase":2,"kind":"gate","title":"Security gate (SkillSpector)","criteria":[{"check":"security","evidence":"jarvis/app/data/skills-scan.json"}]},{"phase":2,"kind":"gate","title":"Contrast gate (WCAG and APCA)","criteria":[{"check":"contrast","evidence":"jarvis/replica/design/contrast-report.txt"}]},{"phase":2,"kind":"gate","title":"Tests gate (server, app, live, skill)","criteria":[{"check":"tests","evidence":"jarvis/replica/evidence/tests-server.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-app.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-live.log"},{"check":"tests","evidence":"jarvis/replica/evidence/tests-long-horizon.log"}]},{"phase":2,"kind":"gate","title":"Lint gate (ruff on the skill)","criteria":[{"check":"lint","evidence":"jarvis/replica/evidence/lint-long-horizon.log"}]},{"phase":3,"kind":"approval","title":"Publish the release notes on a public site","category":"publish","depends":[0,1]},{"phase":3,"kind":"approval","title":"Save the release-readiness note","category":"file_write","depends":[0,1,2,3,4,5]},{"phase":4,"kind":"tool","title":"List the saved notes","tool":"notes.read","depends":[7]},{"phase":4,"kind":"tool","title":"Count this workspace's runs","tool":"runs.read","depends":[2,3,4,5]}]},"design-audit":{"title":"Design system audit","goal":"Check the Jarvis tokens and their gates before any page changes.","steps":[{"phase":1,"kind":"tool","title":"Read the design tokens and reports","tool":"files.read","input":{"path":"jarvis/replica/design"}},{"phase":2,"kind":"gate","title":"Contrast gate (WCAG and APCA)","criteria":[{"check":"contrast","evidence":"jarvis/replica/design/contrast-report.txt"}]},{"phase":2,"kind":"gate","title":"Security gate (SkillSpector)","criteria":[{"check":"security","evidence":"jarvis/app/data/skills-scan.json"}]},{"phase":3,"kind":"approval","title":"Install the reviewed skill into .claude/skills","category":"install","depends":[2]},{"phase":3,"kind":"approval","title":"Save the design audit note","category":"file_write","depends":[0,1,2]},{"phase":4,"kind":"tool","title":"List the saved notes","tool":"notes.read","depends":[4]}]},"adr-digest":{"title":"Weekly decision digest","goal":"Summarise the latest decision records and the desk's runs. Paper only.","steps":[{"phase":1,"kind":"tool","title":"Read the recent decision records","tool":"files.read","input":{"path":"docs/adr/ADR-13*"}},{"phase":1,"kind":"tool","title":"Count this workspace's runs","tool":"runs.read"},{"phase":2,"kind":"gate","title":"Tests gate (server)","criteria":[{"check":"tests","evidence":"jarvis/replica/evidence/tests-server.log"}]},{"phase":3,"kind":"approval","title":"Email the digest to the desk","category":"outbound","depends":[0,1]},{"phase":3,"kind":"approval","title":"Save the digest note","category":"file_write","depends":[0,1,2]}]}},"i18n":{"patterns":[["^1 locked step waits for Director 00 outside Jarvis; every step that does not need it has carried on\\.$","خطوة مقفلة واحدة تنتظر المدير 00 خارج Jarvis؛ وكل خطوة لا تحتاجها أكملت."],["^Switched to (.+)\\.$","انتقلت إلى $1."],["^Local models on 127\\.0\\.0\\.1: (.+)$","النماذج المحلية على 127.0.0.1: $1"],["^Long-horizon mission: phases, gates, a capsule every (\\d+) phases?, locked steps wait while the rest carries on\\.$","مهمة طويلة: مراحل وبوابات وكبسولة كل $1 مراحل؛ الخطوات المقفلة تنتظر بينما يكمل الباقي."],["^workflow graph v(\\d+)$","رسم مسار العمل v$1"],["^(\\d[\\d,]*) passed, (\\d+) failed$","$1 ناجح، $2 فاشل"],["^Ran (\\d+) tests?, (OK|FAILED)$","شُغّل $1 اختبار، $2"],["^critical (\\d+), high (\\d+), (\\d+) files$","حرج $1، عالٍ $2، $3 ملفات"],["^critical (\\d+), high (\\d+)$","حرج $1، عالٍ $2"],["^(\\d+) checks, (\\d+) failing$","$1 فحص، $2 فاشل"],["^Locked: this (.+)\\. Jarvis has no approve button for it, and the database refuses to mark this step done \\(mission_steps_locked_never_done\\)\\. Steps that do not need it carry on\\.$","مقفل: هذا {{$1}}. ليس له زر موافقة في Jarvis، وقاعدة البيانات ترفض اعتبار هذه الخطوة منجزة (mission_steps_locked_never_done). الخطوات التي لا تحتاجها تكمل."],["^Rejected: (.*)$","رُفض: $1"],["^Approved and written to (.+)$","تمت الموافقة وكُتب في $1"],["^No evidence file at (.+)\\. Run the check and save its output there\\.$","لا يوجد ملف أدلة في $1. شغّل الفحص واحفظ مخرجاته هناك."],["^Needs (.+)$","تحتاج $1"],["^Mission: (.+) ·$","المهمة: {{$1}} ·"],["^Mission: (.+)$","المهمة: {{$1}}"],["^(.+) · long run$","{{$1}} · تشغيل طويل"],["^Remove ([\\w-]+)$","أزل $1"],["^· (file_write|money|publish|permissions|install|outbound)$","· {{$1}}"],["^Add (.+) to the mix$","أضف $1 إلى المزيج"],["^Remove (.+) from the mix$","أزل $1 من المزيج"],["^Move (.+) up$","حرّك $1 للأعلى"],["^Move (.+) down$","حرّك $1 للأسفل"],["^Move up (.+)$","حرّك {{$1}} للأعلى"],["^Move down (.+)$","حرّك {{$1}} للأسفل"],["^Show (.+)$","أظهر {{$1}}"],["^(.+) \\(hidden\\)$","{{$1}} (مخفي)"],["^Edit (.+)$","تعديل {{$1}}"],["^Run · (.+)$","تشغيل · {{$1}}"],["^Compare run (.+)$","قارن التشغيل $1"],["^Asked by (.+) ·$","طلبه {{$1}} ·"],["^(.+) ·$","{{$1}} ·"],["^Context health (\\d+) of 100, (.+)$","صحة السياق $1 من 100، {{$2}}"],["^Context health (\\d+) · (.+)$","صحة السياق $1 · {{$2}}"],["^/ 100 · (.+)$","/ 100 · {{$1}}"],["^Workflow graph: (\\d+) steps?$","رسم مسار العمل: $1 خطوات"],["^(\\d+) of (\\d+) steps done$","$1 من $2 خطوات منجزة"],["^Locked \\((\\d+)\\)$","المقفلة ($1)"],["^Waiting \\((\\d+)\\)$","بالانتظار ($1)"],["^Decided \\((\\d+)\\)$","المحسومة ($1)"],["^Phase (\\d+)$","المرحلة $1"],["^(\\d+) phases?$","$1 مراحل"],["^(\\d+) capsules?$","$1 كبسولات"],["^(\\d[\\d,]*) steps?$","$1 خطوات"],["^(\\d[\\d,]*) runs?$","$1 تشغيلات"],["^(\\d[\\d,]*) files?$","$1 ملفات"],["^(\\d[\\d,]*) notes?$","$1 ملاحظات"],["^(\\d+) waiting$","$1 بالانتظار"],["^(\\d+) failed$","$1 فشلت"],["^Needs (T[\\dT, ]+)$","تحتاج $1"],["^· needs (T[\\dT, ]+)$","· تحتاج $1"],["^ · needs (T[\\dT, ]+)$"," · تحتاج $1"],["^Chain intact · (\\d+)$","السلسلة سليمة · $1"],["^Chain broken$","السلسلة مكسورة"],["^(\\d+) steps? since the last capsule · ≈([\\d,]+) output tokens$","$1 خطوات منذ آخر كبسولة · ≈$2 توكن مخرجات"],["^(\\d+) actions? (is|are) waiting for you$","$1 إجراءات بانتظارك"],["^(\\d+) more locked$","$1 أخرى مقفلة"],["^(\\d+) medium/low$","$1 متوسط/منخفض"],["^Fact (\\d)$","رقم $1"],["^Fact (\\d) label$","وصف الرقم $1"],["^Feature (\\d)$","الميزة $1"],["^Feature (\\d) text$","نص الميزة $1"],["^Question (\\d)$","السؤال $1"],["^Answer (\\d)$","الجواب $1"],["^Column (\\d)$","العمود $1"],["^parallel · (\\d+) steps$","بالتوازي · $1 خطوات"],["^(\\d+) step$","خطوة واحدة"],["^(TDD|Lint|Contrast|Security) · not run$","{{$1}} · لم تُشغّل"],["^(TDD|Lint|Contrast|Security) · (pass|fail)$","{{$1}} · {{$2}}"],["^try (\\d+)$","المحاولة $1"],["^v(\\d+)$","v$1"],["^Saved · v(\\d+)$","حُفظ · v$1"],["^Real data from the repo, scanned (.+) at build time \\((\\d+) skills, (\\d+) critical, (\\d+) high\\)\\.$","بيانات حقيقية من المستودع، فُحصت $1 وقت البناء ($2 مهارة، $3 حرج، $4 عالٍ)."],["^(.+), (Read tool|Gate|Approval|Note \\(asks first\\)), locked: waits for approval$","{{$1}}، {{$2}}، مقفلة: تنتظر الموافقة"],["^(.+), (Read tool|Gate|Approval|Note \\(asks first\\))$","{{$1}}، {{$2}}"],["^(\\d+) locked steps? waits? for Director 00 outside Jarvis; every step that does not need (it|them) has carried on\\.$","$1 خطوات مقفلة تنتظر المدير 00 خارج Jarvis؛ وكل خطوة لا تحتاجها أكملت."],["^Role of (.+)$","دور $1"],["^Remove (.+@.+)$","إزالة $1"],["^Delete plan (.+)$","حذف الباقة $1"],["^Inspect capsule (\\d+)$","فحص الكبسولة $1"],["^Restore capsule (\\d+)$","استعادة الكبسولة $1"],["^#(\\d+) phase (\\d+) done$","#$1 انتهت المرحلة $2"],["^#(\\d+) waiting for approval \\((\\d+)\\)$","#$1 بانتظار الموافقة ($2)"],["^#(\\d+) finished$","#$1 انتهت"],["^#(\\d+) paused$","#$1 توقفت"],["^#(\\d+) restored from #(\\d+)$","#$1 استُعيدت من #$2"],["^phase (\\d+) done$","انتهت المرحلة $1"],["^waiting for approval \\((\\d+)\\)$","بانتظار الموافقة ($1)"],["^restored from #(\\d+)$","استُعيدت من #$1"],["^Capsule #(\\d+) · (.+)$","الكبسولة #$1 · $2"],["^Restore capsule #(\\d+)\\?$","استعادة الكبسولة #$1؟"],["^(\\d+) ok · (\\d+) failed$","$1 ناجحة · $2 فشلت"],["^([\\d.]+)% · (\\d+)/(\\d+)$","$1% · $2/$3"],["^([\\d,]+) · cost 0$","$1 · التكلفة 0"],["^locked · (.+)$","مقفل · {{$1}}"],["^Gate passed: (\\d+) checks? of (\\d+) passed on saved evidence\\.$","اجتازت البوابة: $1 من $2 فحوص على الأدلة المحفوظة."],["^Gate failed: (\\d+) checks? of (\\d+) passed on saved evidence\\.$","فشلت البوابة: $1 من $2 فحوص على الأدلة المحفوظة."],["^Next run$","التشغيل التالي"],["^(\\d+) files: (.+)$","$1 ملفات: $2"],["^(\\d+) commits, latest: (.+)$","$1 كومتات، آخرها: $2"],["^(\\d+) runs read$","قُرئت $1 تشغيلات"],["^Workflow: (.+)$","مسار العمل: {{$1}}"],["^Every (\\d+) minutes$","كل $1 دقيقة"],["^Planned by (.+)\\. Locks were decided by rule\\.$","خطّطها $1. والأقفال قرّرتها القواعد."],["^Run (.+)$","تشغيل $1"],["^New step (\\d+)$","خطوة جديدة $1"]],"strings":{"(no model)":"(بلا نموذج)","1 to 10. A capsule also saves when the mission waits, pauses, finishes or is restored.":"من 1 إلى 10. تُحفظ كبسولة أيضاً حين تنتظر المهمة أو تتوقف أو تنتهي أو تُستعاد.","A file, a folder, or a folder/prefix* under docs/ or jarvis/replica/.":"ملف أو مجلد أو مجلد/بادئة* داخل docs/ أو jarvis/replica/.","A mission is a long task in phases, with gates, capsules and approvals.":"المهمة عمل طويل بمراحل، فيه بوابات وكبسولات وموافقات.","A person chose to carry on without it. The request stays in the inbox.":"اختار إنسان المتابعة بدونها. يبقى الطلب في الوارد.","A pricing page with three plans and questions":"صفحة أسعار بثلاث باقات وأسئلة","A step it needs did not finish.":"خطوة تحتاجها لم تكتمل.","A workflow links read tools, gates and approvals; running it makes a mission.":"مسار العمل يربط أدوات القراءة والبوابات والموافقات؛ وتشغيله ينشئ مهمة.","ADR reader":"قارئ ADR","AGENTS.md §4: secrets never live in code, git or plain localStorage.":"AGENTS.md §4: الأسرار لا تُحفظ في الكود ولا في git ولا في localStorage كنص مكشوف.","AR · RTL":"AR · RTL","Accent":"المميز","Accent colour":"اللون المميز","Action":"إجراء","Activate…":"تفعيل…","Actor":"الفاعل","Actor, action or target":"الفاعل أو الإجراء أو الهدف","Add member":"أضف عضواً","Add people and give them a role. Nobody is emailed: invitations are outbound messages, which stay locked. Repository permissions are a separate, locked decision.":"أضف أشخاصاً وحدّد أدوارهم. لا يُرسل بريد لأحد: الدعوات رسائل خارجية تبقى مقفلة. وصلاحيات المستودع قرار منفصل مقفل.","Add step":"أضف خطوة","Add webhook":"أضف ويب هوك","Added. No invitation was sent: outbound messages are locked.":"أُضيف. لم تُرسل دعوة: الرسائل الخارجية مقفلة.","Address (outgoing only)":"العنوان (للصادر فقط)","Agent":"وكيل","Agent templates":"قوالب الوكلاء","Agents":"الوكلاء","Agents ask before they act outside their sandbox. Only a person decides.":"يستأذن الوكلاء قبل أي فعل خارج بيئتهم المعزولة. القرار لإنسان فقط.","Agents, runs and approvals at a glance.":"الوكلاء والتشغيلات والموافقات في لمحة.","All pairs pass WCAG 4.5 and APCA 60":"كل الأزواج تجتاز WCAG 4.5 و APCA 60","An agent has a role, a model and the tools it may use.":"للوكيل دور ونموذج والأدوات المسموح له بها.","Analytics":"التحليلات","Another agent already has this name.":"يوجد وكيل آخر بهذا الاسم.","Any kind":"أي نوع","Any source":"أي مصدر","Any status":"أي حالة","Approval":"موافقة","Approvals":"الموافقات","Approve":"موافقة","Approved":"موافَق عليه","Approved and rejected requests are listed here.":"الطلبات الموافَق عليها والمرفوضة تظهر هنا.","Approved and written.":"تمت الموافقة وكُتب.","Approved.":"تمت الموافقة.","Approved. The mission carries on.":"تمت الموافقة. المهمة تكمل.","Ask to switch on…":"اطلب التشغيل…","Asks for":"تطلب","Awaiting approval":"بانتظار الموافقة","Back":"رجوع","Billing off":"الفوترة متوقفة","Billing on":"الفوترة تعمل","Body text on page":"النص على الصفحة","Brand":"العلامة","Build":"البناء","Build the two Jarvis models once on this computer (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. Models ending in :cloud are refused.":"ابنِ نموذجي Jarvis مرة واحدة على هذا الحاسوب (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile، وكذلك jarvis-designer. النماذج المنتهية بـ :cloud مرفوضة.","Builds a searchable index of the docs folder.":"يبني فهرساً قابلاً للبحث لمجلد المستندات.","Built from the workflow graph":"بُنيت من رسم مسار العمل","Button":"الزر","Button text":"نص الزر","CI results":"نتائج CI","Call to action":"دعوة لإجراء","Cancel":"إلغاء","Cancel run":"إلغاء التشغيل","Cancelled":"أُلغي","Canonical state":"الحالة القياسية","Capsules":"الكبسولات","Capsules, newest first":"الكبسولات، الأحدث أولاً","Cards":"البطاقات","Cards colour":"لون البطاقات","Carry on":"أكمل","Carry on without it…":"أكمل بدونها…","Cell text":"نص الخلية","Change":"التغيير","Check":"الفحص","Check a SKILL.md":"افحص SKILL.md","Check contrast":"افحص التباين","Check the Jarvis tokens and their gates before any page changes.":"افحص رموز Jarvis وبواباتها قبل أي تغيير في الصفحات.","Check the address, or go back to the overview.":"تحقّق من العنوان، أو ارجع إلى النظرة العامة.","Clean":"نظيف","Clean template":"قالب نظيف","Clean-room clone":"استنساخ نظيف","Clean-room template extractor":"مستخلص القوالب النظيفة","Clear filters":"مسح عوامل التصفية","Close":"إغلاق","Collapse":"طيّ","Collects the week's runs and writes a plain summary for Director 00.":"يجمع تشغيلات الأسبوع ويكتب ملخصاً واضحاً للمدير 00.","Colours":"الألوان","Command":"الأمر","Command palette":"لوحة الأوامر","Commit summariser":"ملخّص الكومتات","Compare 2 runs":"قارن تشغيلين","Compare runs":"مقارنة التشغيلات","Config":"الإعداد","Context health":"صحة السياق","Contrast":"التباين","Contrast (live)":"التباين (مباشر)","Contrast gate (WCAG and APCA)":"بوابة التباين (WCAG و APCA)","Copy plan":"انسخ الخطة","Cost":"التكلفة","Cost to you: 0 tokens. Everything runs on this computer; nothing leaves 127.0.0.1.":"التكلفة عليك: 0 توكنز. كل شيء يعمل على هذا الحاسوب؛ ولا يغادر شيء 127.0.0.1.","Cost: 0 · estimated as characters ÷ 4 [INFERENCE]":"التكلفة: 0 · تقدير بعدد الأحرف ÷ 4 [استدلال]","Count this workspace's runs":"عُدّ تشغيلات مساحة العمل","Create agent":"إنشاء الوكيل","Create an agent and run it. Every action shows up here.":"أنشئ وكيلاً وشغّله. كل إجراء يظهر هنا.","Create mission":"إنشاء المهمة","Create workflow":"إنشاء مسار العمل","Creator mode":"وضع المؤسس","Creator mode off":"وضع المؤسس متوقف","Creator · zero-token · unlimited":"المؤسس · بلا توكنز · بلا حدود","Ctrl K":"Ctrl K","Custom":"مخصص","Dark":"داكن","Decision":"القرار","Decision record reader":"قارئ سجلات القرار","Delete":"حذف","Delete step":"احذف الخطوة","Delete this workflow?":"حذف مسار العمل هذا؟","Delete three old draft notes":"احذف ثلاث مسودات ملاحظات قديمة","Delete workflow…":"حذف مسار العمل…","Deleted.":"حُذف.","Describe a page":"صِف صفحة","Describe the page first.":"صِف الصفحة أولاً.","Design a page live. The preview runs in a sandbox with no network.":"صمّم صفحة مباشرة. المعاينة تعمل في بيئة معزولة بلا شبكة.","Design system":"نظام التصميم","Design system applied to the template":"نظام التصميم المطبّق على القالب","Design system audit":"تدقيق نظام التصميم","Design token auditor":"مدقق رموز التصميم","Design with local model":"صمّم بالنموذج المحلي","Designed by the local model; only the layout was kept.":"صمّمه النموذج المحلي؛ وبقي التخطيط فقط.","Designs":"التصاميم","Direction":"الاتجاه","Dismiss":"إغلاق","Docs indexer":"مفهرس المستندات","Does not match its content":"لا تطابق المحتوى","Done":"منجز","Download HTML":"تنزيل HTML","Download SKILL.md":"تنزيل SKILL.md","Draft":"مسودة","Draft plans":"الباقات المسودة","Draft price":"السعر المبدئي","Draft price (cents)":"السعر المبدئي (بالسنت)","Drafted by the fixed rules":"كتبتها القواعد الثابتة","Drafted by the local model":"كتبها النموذج المحلي","Drag a step, or select it and use the arrow keys (Shift for bigger moves). Links run from a step to the steps that need it.":"اسحب خطوة، أو اخترها واستخدم الأسهم (Shift لحركة أكبر). الروابط تمتد من الخطوة إلى الخطوات التي تحتاجها.","Draw how steps depend on each other. Running a workflow makes a mission: steps that need nothing run together, gates need evidence, and locked steps wait.":"ارسم اعتماد الخطوات على بعضها. تشغيل مسار العمل ينشئ مهمة: الخطوات المستقلة تعمل معاً، والبوابات تحتاج أدلة، والخطوات المقفلة تنتظر.","Dropped":"ما حُذف","Duration":"المدة","EN":"EN","EN LTR · AR RTL":"EN LTR · AR RTL","EN · LTR":"EN · LTR","Each agent has a role, a model and the tools it may use.":"لكل وكيل دور ونموذج والأدوات المسموح له بها.","Edit":"تعديل","Edit text (Arabic)":"تعديل النص (العربية)","Edit text (English)":"تعديل النص (الإنجليزية)","Email":"البريد الإلكتروني","Email the digest to the desk":"أرسل الملخص إلى المكتب بالبريد","Email the weekly desk summary":"أرسل ملخص المكتب الأسبوعي بالبريد","Engine":"المحرّك","Enter a whole number from 1 to 10.":"أدخل عدداً صحيحاً من 1 إلى 10.","Enter a whole number from 1 to 200.":"أدخل عدداً صحيحاً من 1 إلى 200.","Event log":"سجل الأحداث","Every 15 minutes":"كل 15 دقيقة","Every 6 hours":"كل 6 ساعات","Every action is written here and never edited.":"كل إجراء يُكتب هنا ولا يُعدّل أبداً.","Every day":"كل يوم","Every hour":"كل ساعة","Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done.":"كل قفل قرّرته قواعد Jarvis لا الخطة، وقاعدة البيانات ترفض اعتبار خطوة مقفلة منجزة.","Every run, newest first. Cost is 0: runs use local tools and fixed rules.":"كل التشغيلات، الأحدث أولاً. التكلفة صفر: التشغيلات تستخدم أدوات محلية وقواعد ثابتة.","Every week":"كل أسبوع","Execution":"طريقة التنفيذ","Expand":"توسيع","Expired":"منتهي","Facts":"الأرقام","Fail":"فشل","Failed":"فشل","Failed runs (24 h)":"التشغيلات الفاشلة (24 ساعة)","Features":"المزايا","Filter skills":"تصفية المهارات","Fixed rules":"قواعد ثابتة","Fixed rules (no model)":"قواعد ثابتة (بلا نموذج)","Footer":"التذييل","Gate":"بوابة","Gate checks passed":"فحوص البوابات الناجحة","Gate pass rate":"نسبة نجاح البوابات","Gate passed:":"اجتازت البوابة:","Gate results":"نتائج البوابات","Give an agent push access to giant-core":"امنح وكيلاً صلاحية الدفع إلى giant-core","Give the agent a name.":"أعطِ الوكيل اسماً.","Give this agent push access to giant-core":"امنح هذا الوكيل صلاحية الدفع إلى giant-core","Go to agents":"اذهب إلى الوكلاء","Goal":"الهدف","Graph":"الرسم","HTML":"HTML","Hash check":"فحص البصمة","Headline":"العنوان الرئيسي","Hero":"الواجهة الرئيسية","Hosted model (key in vault)":"نموذج مستضاف (المفتاح في الخزنة)","Hosted model (key in vault) — the key lives in the Ops Room vault, never in Jarvis.":"نموذج مستضاف (المفتاح في الخزنة) — المفتاح في خزنة غرفة العمليات، لا في Jarvis أبداً.","How agents, gates, missions and tokens are doing in this workspace.":"أداء الوكلاء والبوابات والمهام والتوكنز في مساحة العمل هذه.","Idle":"خامل","Inbox triage":"فرز الوارد","Incoming":"وارد","Incoming (a tool posts to Jarvis)":"وارد (أداة ترسل إلى Jarvis)","Incoming webhooks let local tools tell Jarvis something happened; outgoing ones send mission results to a tool on this computer.":"الويب هوك الوارد يتيح لأدواتك المحلية إبلاغ Jarvis بحدث، والصادر يرسل نتائج المهام إلى أداة على هذا الحاسوب.","Inspect":"فحص","Install":"التثبيت","Install a new skill into .claude/skills":"ثبّت مهارة جديدة في .claude/skills","Install into the repo…":"ثبّت في المستودع…","Install the reviewed skill into .claude/skills":"ثبّت المهارة المراجَعة في .claude/skills","Install — installs a skill into the repo":"التثبيت — يثبّت مهارة في المستودع","Installed skills":"المهارات المثبتة","Installing a skill is locked":"تثبيت المهارة مقفل","It could not start: a step it needs never finished.":"لم تبدأ: خطوة تحتاجها لم تكتمل أبداً.","It starts from the review-and-release graph; change it in the editor.":"يبدأ من رسم المراجعة والإصدار؛ غيّره في المحرّر.","Jump to a page or run an action…":"انتقل إلى صفحة أو نفّذ إجراءً…","Keep it":"أبقِه","Keep my site":"أبقِ موقعي","Keep the role under 2,000 characters.":"اجعل الدور أقل من 2,000 حرف.","Keep waiting":"استمر بالانتظار","Keeps only the layout (sections, card counts, table shapes). Text, images, colours, scripts and trackers are dropped and replaced with our own copy in English and Arabic. One request; robots.txt is respected.":"يحتفظ بالتخطيط فقط (الأقسام وعدد البطاقات وأشكال الجداول). تُحذف النصوص والصور والألوان والسكربتات وأدوات التتبع وتُستبدل بنصوصنا بالعربية والإنجليزية. طلب واحد ويُحترم robots.txt.","Kept":"ما بقي","Keys are never typed or stored in Jarvis. They live only in the Ops Room vault (AES-GCM-256, PBKDF2 600,000 rounds) or in the encrypted env files.":"المفاتيح لا تُكتب ولا تُحفظ في Jarvis. مكانها خزنة غرفة العمليات فقط (AES-GCM-256، PBKDF2 بـ 600,000 جولة) أو ملفات البيئة المشفّرة.","Kind":"النوع","Language":"اللغة","Laptop 1440":"حاسوب 1440","Last run":"آخر تشغيل","Left to right":"من اليسار لليمين","Light":"فاتح","Lines":"الخطوط","Lines colour":"لون الخطوط","Linked skills":"المهارات المرتبطة","Links (comma separated)":"الروابط (مفصولة بفواصل)","Links on page":"الروابط على الصفحة","Lint":"Lint","Lint gate (ruff on the skill)":"بوابة Lint (ruff على المهارة)","List the saved notes":"اعرض الملاحظات المحفوظة","Lists the notes this workspace has written and the docs they cite.":"يسرد الملاحظات التي كتبتها مساحة العمل والمستندات التي تستشهد بها.","Lists the notes this workspace wrote and the docs they cite.":"يسرد الملاحظات التي كتبتها مساحة العمل والمستندات التي تستشهد بها.","Live preview of the site":"معاينة حية للموقع","Live: real data from the local server (PostgreSQL). Runs use real tools with fixed rules; missions and Studio designs can be drafted by a local model on 127.0.0.1.":"مباشر: بيانات حقيقية من الخادم المحلي (PostgreSQL). التشغيلات تستخدم أدوات حقيقية بقواعد ثابتة؛ ويمكن لنموذج محلي على 127.0.0.1 كتابة المهام وتصاميم الاستوديو.","Live: real data from the local server (SQLite). Runs use real tools with fixed rules; missions and Studio designs can be drafted by a local model on 127.0.0.1.":"مباشر: بيانات حقيقية من الخادم المحلي (SQLite). التشغيلات تستخدم أدوات حقيقية بقواعد ثابتة؛ ويمكن لنموذج محلي على 127.0.0.1 كتابة المهام وتصاميم الاستوديو.","Loading":"جارٍ التحميل","Local model":"النموذج المحلي","Local model (loopback)":"نموذج محلي (loopback)","Local model status":"حالة النموذج المحلي","Local models":"النماذج المحلية","Local rules (no model)":"قواعد محلية (بلا نموذج)","Local rules (no model) — planning and summaries follow fixed rules.":"قواعد محلية (بلا نموذج) — التخطيط والملخصات تتبع قواعد ثابتة.","Locked":"مقفل","Locked steps":"الخطوات المقفلة","Locked · waits for approval":"مقفلة · تنتظر الموافقة","Locked: charging people waits for Director 00 outside Jarvis.":"مقفل: تحصيل المبالغ ينتظر المدير 00 خارج Jarvis.","Locked: sending outside Jarvis waits for Director 00.":"مقفل: الإرسال خارج Jarvis ينتظر المدير 00.","Locked: this changes repository permissions. No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1).":"مقفل: هذا يغيّر صلاحيات المستودع. لا يستطيع أي وكيل الموافقة عليه، وليس له زر موافقة في Jarvis. يحتاج موافقة منفصلة من المدير 00 خارج Jarvis (AGENTS.md §1).","Locked: this installs a skill into the repo. No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1).":"مقفل: هذا يثبّت مهارة في المستودع. لا يستطيع أي وكيل الموافقة عليه، وليس له زر موافقة في Jarvis. يحتاج موافقة منفصلة من المدير 00 خارج Jarvis (AGENTS.md §1).","Locked: this moves money. No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1).":"مقفل: هذا ينقل أموالاً. لا يستطيع أي وكيل الموافقة عليه، وليس له زر موافقة في Jarvis. يحتاج موافقة منفصلة من المدير 00 خارج Jarvis (AGENTS.md §1).","Locked: this publishes to an outside domain. No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1).":"مقفل: هذا ينشر على نطاق خارجي. لا يستطيع أي وكيل الموافقة عليه، وليس له زر موافقة في Jarvis. يحتاج موافقة منفصلة من المدير 00 خارج Jarvis (AGENTS.md §1).","Locked: this sends a message outside. No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1).":"مقفل: هذا يرسل رسالة للخارج. لا يستطيع أي وكيل الموافقة عليه، وليس له زر موافقة في Jarvis. يحتاج موافقة منفصلة من المدير 00 خارج Jarvis (AGENTS.md §1).","Logs":"السجلات","Long tasks in ordered phases. Gates need evidence, capsules keep a verified trail, and locked steps wait while the rest carries on.":"مهام طويلة بمراحل مرتبة. البوابات تحتاج أدلة، والكبسولات تحفظ أثراً موثقاً، والخطوات المقفلة تنتظر بينما يكمل الباقي.","Long-horizon":"طويل المدى","Long-horizon mission":"مهمة طويلة","Long-horizon mode only. 1 to 10.":"لنمط المهام الطويلة فقط. من 1 إلى 10.","Look":"المظهر","Main":"الرئيسية","Main button":"الزر الرئيسي","Max steps per run":"أقصى عدد خطوات للتشغيل","Member":"العضو","Members":"الأعضاء","Mission created. Press Run when ready.":"أُنشئت المهمة. اضغط «تشغيل» حين تكون جاهزاً.","Mission started (simulated tools).":"بدأت المهمة (أدوات محاكاة).","Mission started.":"بدأت المهمة.","Mission state":"حالة المهمة","Missions":"المهام الطويلة","Missions by status":"المهام حسب الحالة","Missions it already ran stay.":"المهام التي شغّلها تبقى.","Mix":"المزيج","Mix order":"ترتيب المزيج","Model":"النموذج","Model keys":"مفاتيح النماذج","Money":"المال","Money — moves money":"المال — ينقل أموالاً","Money, publish, permissions, install, outbound: locked":"المال والنشر والصلاحيات والتثبيت والإرسال الخارجي: مقفلة","Money, publishing, permissions, installs and outbound messages would show here.":"المال والنشر والصلاحيات والتثبيت والرسائل الخارجية تظهر هنا.","Move paper profit to a real account":"انقل الربح الورقي إلى حساب حقيقي","Muted text":"النص الخافت","Muted text colour":"لون النص الخافت","Muted text on cards":"النص الخافت على البطاقات","Muted text on page":"النص الخافت على الصفحة","Name":"الاسم","Name or words in the description":"الاسم أو كلمات من الوصف","Name, model or tool":"الاسم أو النموذج أو الأداة","Navigation":"التنقل","Needs (runs after)":"تحتاج (تعمل بعد)","Never":"أبداً","New agent":"وكيل جديد","New mission":"مهمة جديدة","New webhook":"ويب هوك جديد","New workflow":"مسار عمل جديد","Next run":"التشغيل التالي","Night (Jarvis)":"ليلي (Jarvis)","No agent can be given these. They are Director 00's decisions outside Jarvis (AGENTS.md §1).":"لا يُمنح أي وكيل هذه الصلاحيات. إنها قرارات المدير 00 خارج Jarvis (AGENTS.md §1).","No agent matches":"لا يوجد وكيل مطابق","No agents yet":"لا يوجد وكلاء بعد","No agents yet.":"لا وكلاء بعد.","No capsule yet. The first one is saved when phase 1 finishes.":"لا كبسولة بعد. تُحفظ الأولى حين تنتهي المرحلة 1.","No decisions yet":"لا قرارات بعد","No deliveries yet.":"لا تسليمات بعد.","No description.":"لا وصف.","No draft plans yet.":"لا باقات مسودة بعد.","No event matches":"لا حدث مطابق","No events yet":"لا أحداث بعد","No local model: plans and designs use the fixed rules":"لا نموذج محلي: الخطط والتصاميم تتبع القواعد الثابتة","No locked requests":"لا طلبات مقفلة","No match. Try a page, an agent or an action.":"لا نتيجة. جرّب صفحة أو وكيلاً أو إجراءً.","No missions yet":"لا مهام بعد","No missions yet.":"لا مهام بعد.","No note writing":"لا يكتب ملاحظات","No requests yet.":"لا طلبات بعد.","No role written yet.":"لم يُكتب دور بعد.","No runs yet":"لا تشغيلات بعد","No skill matches":"لا مهارة مطابقة","No tools. This agent can only think, not act.":"بلا أدوات. هذا الوكيل يفكّر فقط ولا ينفّذ.","No web reading":"لا يقرأ الويب","No webhooks yet":"لا ويب هوك بعد","No workflows yet":"لا مسارات عمل بعد","None":"لا شيء","Not found · Jarvis":"غير موجودة · Jarvis","Not scanned":"لم يُفحص","Note (asks first)":"ملاحظة (تستأذن أولاً)","Notes librarian":"أمين الملاحظات","Nothing has happened yet":"لم يحدث شيء بعد","Nothing is waiting":"لا شيء ينتظر","Nothing used yet.":"لم يُستخدم شيء بعد.","OKLCH tokens":"رموز OKLCH","Off":"متوقف","Ollama does not answer on 127.0.0.1:11434. Missions and the Studio use the fixed rules until it does.":"Ollama لا يستجيب على 127.0.0.1:11434. المهام والاستوديو يستخدمان القواعد الثابتة حتى يستجيب.","Ollama local · 0-token":"Ollama محلي · بلا توكنز","On":"يعمل","One request; robots.txt is respected; private addresses are refused.":"طلب واحد؛ يُحترم robots.txt؛ وتُرفض العناوين الخاصة.","Open an agent and press Run once.":"افتح وكيلاً واضغط «تشغيل مرة واحدة».","Open in Approvals":"افتح في الموافقات","Open navigation":"فتح القائمة","Or paste HTML":"أو الصق HTML","Outbound message":"رسالة خارجية","Outbound — sends a message outside":"الإرسال الخارجي — يرسل رسالة للخارج","Outgoing":"صادر","Outgoing (Jarvis posts to a tool)":"صادر (Jarvis يرسل إلى أداة)","Output":"المخرجات","Overview":"نظرة عامة","Page":"صفحة","Page address":"عنوان الصفحة","Page colour":"لون الصفحة","Paper":"ورقي","Paper desk reviewer":"مراجع المكتب الورقي","Pass":"نجح","Passes the browser checks":"يجتاز فحوص المتصفح","Paste a SKILL.md to check it":"الصق SKILL.md لفحصه","Paste an address or some HTML first.":"الصق عنواناً أو HTML أولاً.","Pasted HTML is extracted right here, with no network. Reading an address needs the local server: node jarvis/server/server.mjs, then open http://127.0.0.1:8798.":"يُستخلص الـ HTML الملصوق هنا مباشرة بلا شبكة. قراءة عنوان تحتاج الخادم المحلي: node jarvis/server/server.mjs ثم افتح http://127.0.0.1:8798.","Path to read":"المسار المطلوب قراءته","Pause":"إيقاف مؤقت","Pause the mission to restore a capsule.":"أوقف المهمة مؤقتاً لاستعادة كبسولة.","Paused":"متوقف مؤقتاً","Paused.":"أُوقف مؤقتاً.","Paused. A capsule was saved.":"أُوقفت مؤقتاً. حُفظت كبسولة.","Pay a supplier invoice":"ادفع فاتورة مورّد","Permissions":"الصلاحيات","Permissions — changes repository permissions":"الصلاحيات — يغيّر صلاحيات المستودع","Phases":"المراحل","Phases when it runs":"المراحل عند التشغيل","Phone 375":"هاتف 375","Pick to compare":"اختر للمقارنة","Plan":"الخطة","Plan files":"ملفات الخطة","Plan mission":"خطّط المهمة","Plan name":"اسم الباقة","Plan with the local model":"خطّط بالنموذج المحلي","Planned by the fixed rules. Locks were decided by rule.":"خطّطتها القواعد الثابتة. والأقفال قرّرتها القواعد.","Planner":"المخطِّط","Plans":"الخطط","Plans and token ledger":"الباقات وسجل التوكنز","Plans and tokens":"الباقات والتوكنز","Preset":"النمط الجاهز","Press Run once to try this agent.":"اضغط «تشغيل مرة واحدة» لتجربة هذا الوكيل.","Preview language":"لغة المعاينة","Preview width":"عرض المعاينة","Previous":"السابقة","Pro":"Pro","Project":"المشروع","Prove the branch is ready for Director 00's review: commits read, gates green, note saved.":"أثبت أن الفرع جاهز لمراجعة المدير 00: قراءة الكومتات، بوابات خضراء، وملاحظة محفوظة.","Public page to read":"الصفحة العامة المطلوب قراءتها","Publish":"النشر","Publish the Studio site to a public domain":"انشر موقع الاستوديو على نطاق عام","Publish the release notes":"انشر ملاحظات الإصدار","Publish the release notes on a public site":"انشر ملاحظات الإصدار على موقع عام","Publish the release notes site to a public domain":"انشر موقع ملاحظات الإصدار على نطاق عام","Publish — publishes to an outside domain":"النشر — ينشر على نطاق خارجي","Publishing is locked":"النشر مقفل","Publish…":"نشر…","Questions":"الأسئلة","Queued":"في الانتظار","Read the decision records":"اقرأ سجلات القرار","Read the design tokens and reports":"اقرأ رموز التصميم والتقارير","Read the latest commits":"اقرأ آخر الكومتات","Read the latest commits, run the tests and the security gate, then save a release note":"اقرأ آخر الكومتات، وشغّل الاختبارات وبوابة الأمان، ثم احفظ ملاحظة إصدار","Read the recent decision records":"اقرأ سجلات القرار الأخيرة","Read tool":"أداة قراءة","Readex Pro · Inter · Geist Mono":"Readex Pro · Inter · Geist Mono","Reading the structure…":"جارٍ قراءة البنية…","Reads commits and decision records, passes the security gate, then asks to save a note.":"يقرأ الكومتات وسجلات القرار، ويجتاز بوابة الأمان، ثم يستأذن لحفظ ملاحظة.","Reads decision records under docs/adr and summarises what changed.":"يقرأ سجلات القرار في docs/adr ويلخّص ما تغيّر.","Reads docs/adr and summarises what changed and why.":"يقرأ docs/adr ويلخّص ما تغيّر ولماذا.","Reads jarvis/replica/design and reports which tokens changed and whether the gates still pass.":"يقرأ jarvis/replica/design ويبلّغ عن الرموز التي تغيّرت وهل ما زالت البوابات ناجحة.","Reads jarvis/replica/design and reports which tokens changed.":"يقرأ jarvis/replica/design ويبلّغ عن الرموز التي تغيّرت.","Reads public pages":"يقرأ صفحات عامة","Reads public pages on a topic and writes a short, sourced summary. Never acts outside the project folder.":"يقرأ صفحات عامة عن موضوع ويكتب ملخصاً قصيراً موثّق المصادر. لا يعمل خارج مجلد المشروع أبداً.","Reads this workspace's runs and writes a short review note. Paper only: it never places, signs or sizes an order.":"يقرأ تشغيلات مساحة العمل ويكتب ملاحظة مراجعة قصيرة. ورقي فقط: لا يضع أمراً ولا يوقّعه ولا يحدّد حجمه أبداً.","Reads this workspace's runs and writes a short review of what failed.":"يقرأ تشغيلات مساحة العمل ويكتب مراجعة قصيرة لما فشل.","Ready when its phase starts.":"جاهزة حين تبدأ مرحلتها.","Reason":"السبب","Recent activity":"آخر النشاطات","Reject":"رفض","Rejected":"مرفوض","Rejected. The agent sees your reason.":"رُفض. سيرى الوكيل سببك.","Reject…":"رفض…","Release notes writer":"كاتب ملاحظات الإصدار","Release readiness for this branch":"جاهزية الإصدار لهذا الفرع","Release readiness mission":"مهمة جاهزية الإصدار","Remove":"إزالة","Remove schedule":"إزالة الجدولة","Research assistant":"مساعد البحث","Reset sample data…":"إعادة ضبط البيانات التجريبية…","Restore":"استعادة","Restore…":"استعادة…","Results":"النتائج","Resume":"استئناف","Review":"مراجعة","Review and release":"المراجعة والإصدار","Review and release v2":"المراجعة والإصدار v2","Review doc":"وثيقة المراجعة","Review:":"المراجعة:","Reviewed third-party":"طرف ثالث مراجَع","Right to left":"من اليمين لليسار","Role":"الدور","Role changed.":"تغيّر الدور.","Run":"التشغيل","Run A":"التشغيل أ","Run B":"التشغيل ب","Run cancelled.":"أُلغي التشغيل.","Run log":"سجل التشغيل","Run mission":"شغّل المهمة","Run once":"تشغيل مرة واحدة","Run reviewer":"مراجع التشغيلات","Run started (simulated).":"بدأ التشغيل (محاكاة).","Run started.":"بدأ التشغيل.","Run the unit tests":"شغّل اختبارات الوحدة","Run workflow":"شغّل مسار العمل","Running":"قيد التشغيل","Running as a mission. Locked steps will wait.":"يعمل كمهمة. الخطوات المقفلة ستنتظر.","Running…":"قيد التشغيل…","Runs":"التشغيلات","Runs in 14 days":"التشغيلات في 14 يوماً","Runs in the last 24 h":"التشغيلات في آخر 24 ساعة","Runs per agent":"التشغيلات لكل وكيل","Runs per day":"التشغيلات يومياً","SHA-256 matches its content":"بصمة SHA-256 تطابق المحتوى","SKILL.md":"SKILL.md","Sample data reset.":"أُعيد ضبط البيانات التجريبية.","Sample mission: tool steps are simulated; gates judge the repo's evidence files as of the build; capsules are real SHA-256 chains in this browser. Start jarvis/server for real runs.":"مهمة تجريبية: خطوات الأدوات محاكاة، والبوابات تحكم على ملفات الأدلة في المستودع كما كانت عند البناء، والكبسولات سلاسل SHA-256 حقيقية في هذا المتصفح. شغّل jarvis/server للتشغيل الحقيقي.","Sample mode has no model. Start jarvis/server and Ollama on this computer.":"الوضع التجريبي بلا نموذج. شغّل jarvis/server و Ollama على هذا الحاسوب.","Sample mode keeps the schedule; only the local server runs it.":"الوضع التجريبي يحفظ الجدولة؛ والخادم المحلي وحده ينفّذها.","Sample mode writes no file.":"الوضع التجريبي لا يكتب ملفات.","Sample mode: no model. Locks are decided by rule.":"الوضع التجريبي: بلا نموذج. الأقفال تقرّرها القواعد.","Sample request":"طلب تجريبي","Sample workspace: placeholder data. Start jarvis/server for live data and real runs.":"مساحة عمل تجريبية: بيانات للعرض فقط. شغّل jarvis/server للبيانات الحية والتشغيل الحقيقي.","Sand":"رملي","Save":"حفظ","Save a capsule every … phases":"احفظ كبسولة كل … مراحل","Save changes":"حفظ التغييرات","Save draft plan":"احفظ الباقة كمسودة","Save schedule":"حفظ الجدولة","Save the design audit note":"احفظ ملاحظة تدقيق التصميم","Save the digest note":"احفظ ملاحظة الملخص","Save the mission note":"احفظ ملاحظة المهمة","Save the release note":"احفظ ملاحظة الإصدار","Save the release-readiness note":"احفظ ملاحظة جاهزية الإصدار","Save the summary to notes/research-summary.md":"احفظ الملخص في notes/research-summary.md","Saved":"حُفظت","Saved step states":"حالات الخطوات المحفوظة","Say why, so the agent can do something else.":"اذكر السبب، ليفعل الوكيل شيئاً آخر.","Schedule":"الجدولة","Schedule removed.":"أُزيلت الجدولة.","Schedule runs":"جدولة التشغيل","Schedule saved.":"حُفظت الجدولة.","Search":"بحث","Search (Ctrl+K)":"بحث (Ctrl+K)","Search (⌘K)":"بحث (⌘K)","Search…":"بحث…","Second button":"الزر الثاني","Sections":"الأقسام","Sections, text and colours go back to the starting sample.":"تعود الأقسام والنصوص والألوان إلى العينة الأولى.","Security":"الأمان","Security gate":"بوابة الأمان","Security gate (SkillSpector)":"بوابة الأمان (SkillSpector)","Seeded so the locked card is visible. It can never be approved here.":"أُضيف ليظهر الكرت المقفل. لا يمكن الموافقة عليه هنا أبداً.","Select a step to edit it, or add one.":"اختر خطوة لتعديلها، أو أضف واحدة.","Send a reply email":"أرسل رد بريد إلكتروني","Send test event":"أرسل حدثاً تجريبياً","Settings":"الإعدادات","Show (untrusted model text)":"اعرض (نص نموذج غير موثوق)","Show secret":"اعرض السر","Shown in lists and run logs.":"يظهر في القوائم وسجلات التشغيل.","Sidebar":"الشريط الجانبي","Sign each delivery's exact body with HMAC-SHA256 using this secret, and send it as X-Jarvis-Signature: sha256=\u003chex>. Keep it out of git and chats.":"وقّع نص كل تسليم كما هو بـ HMAC-SHA256 بهذا السر، وأرسله في X-Jarvis-Signature: sha256=\u003chex>. أبقه بعيداً عن git والمحادثات.","Signed with HMAC-SHA256. Outgoing webhooks may only reach this computer; anything outside waits for Director 00.":"موقّعة بـ HMAC-SHA256. الويب هوك الصادر لا يصل إلا لهذا الحاسوب؛ وأي وجهة خارجية تنتظر المدير 00.","Simulated in sample mode: no tool ran. Start jarvis/server for real tools.":"محاكاة في الوضع التجريبي: لم تعمل أي أداة. شغّل jarvis/server للأدوات الحقيقية.","Simulated run: no model or tool was called. Start jarvis/server for real runs.":"تشغيل محاكى: لم يُستدعَ أي نموذج أو أداة. شغّل jarvis/server للتشغيل الحقيقي.","Single run":"تشغيل واحد","Single run: one pass through the tools.":"تشغيل واحد: مرور واحد على الأدوات.","Site":"الموقع","Skill Mixer":"خلاط المهارات","Skills this agent follows. They come from .claude/skills in this repo.":"المهارات التي يتبعها هذا الوكيل. تأتي من .claude/skills في هذا المستودع.","Skip to content":"انتقل إلى المحتوى","Skipped":"تم تخطيه","Skipped.":"تم التخطي.","Skipped. The request stays in the inbox.":"تم التخطي. يبقى الطلب في الوارد.","Small line above":"سطر صغير أعلاه","Something failed.":"حدث خطأ ما.","Sorts incoming notes into topics. Drafts replies but never sends them.":"يفرز الملاحظات الواردة إلى مواضيع. يكتب مسودات الردود ولا يرسلها أبداً.","Source":"المصدر","Start an agent from a template, then change anything before you save.":"ابدأ وكيلاً من قالب، ثم غيّر ما تشاء قبل الحفظ.","Start mission":"ابدأ المهمة","Start over":"ابدأ من جديد","Start over…":"البدء من جديد…","Start run":"ابدأ التشغيل","Start the site over?":"البدء بالموقع من جديد؟","Started":"البداية","State capsules":"كبسولات الحالة","Status":"الحالة","Step":"الخطوة","Steps":"الخطوات","Steps done":"الخطوات المنجزة","Steps side by side":"الخطوات جنباً إلى جنب","Studio":"الاستوديو","Succeeded":"نجح","Summarise the latest decision records and the desk's runs. Paper only.":"لخّص آخر سجلات القرار وتشغيلات المكتب. ورقي فقط.","Summarises the latest commits on this branch.":"يلخّص آخر الكومتات على هذا الفرع.","Sweep":"الفحص","Switch direction":"تبديل الاتجاه","Switch on":"تشغيل","Switch skills on to build a plan.":"فعّل مهارات لبناء خطة.","Switch theme":"تبديل المظهر","Switch to English":"التبديل إلى الإنجليزية","Switch to dark theme":"التبديل إلى المظهر الداكن","Switch to left-to-right layout":"التبديل إلى الاتجاه من اليسار لليمين","Switch to light theme":"التبديل إلى المظهر الفاتح","Switch to right-to-left layout":"التبديل إلى الاتجاه من اليمين لليسار","Switch workspace":"تبديل مساحة العمل","System":"النظام","TDD":"TDD","TDD gate":"بوابة TDD","Table":"الجدول","Tablet 768":"جهاز لوحي 768","Target":"الهدف","Tell the agent what to do instead.":"قل للوكيل ماذا يفعل بدلاً من ذلك.","Template":"القالب","Templates":"القوالب","Test error states (make every list fail to load)":"اختبر حالات الخطأ (اجعل كل قائمة تفشل في التحميل)","Testing":"الاختبار","Tests gate":"بوابة الاختبارات","Tests gate (server)":"بوابة الاختبارات (الخادم)","Tests gate (server, app, live, skill)":"بوابة الاختبارات (الخادم، التطبيق، الحي، المهارة)","Text":"النص","Text colour":"لون النص","Text on accent":"النص فوق المميز","Text on accent colour":"لون النص فوق المميز","Text on cards":"النص على البطاقات","Text section":"قسم نصي","The audit trail. Append-only: nothing here is edited or deleted.":"سجل التدقيق. إضافة فقط: لا شيء هنا يُعدّل أو يُحذف.","The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Jarvis decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00.":"النموذج المحلي على 127.0.0.1 يكتب الخطوات حين يعمل Ollama، وإلا فالقواعد الثابتة. وفي الحالتين Jarvis يقرّر الأقفال: المال والنشر والصلاحيات والتثبيت والرسائل الخارجية تنتظر المدير 00 دائماً.","The local server starts due runs every 30 seconds while it runs. A run is skipped while the agent is busy.":"الخادم المحلي يبدأ التشغيلات المستحقة كل 30 ثانية أثناء عمله. ويُتخطى التشغيل إن كان الوكيل مشغولاً.","The replica-long-horizon record of this mission:":"سجل replica-long-horizon لهذه المهمة:","The skills installed in this repo, with their SkillSpector status. Mix them into a plan for Claude Code.":"المهارات المثبتة في هذا المستودع مع حالة SkillSpector. امزجها في خطة لـ Claude Code.","Theme":"المظهر","These actions are Director 00's decisions outside Jarvis. They stay here so nothing happens quietly.":"هذه الإجراءات قرارات المدير 00 خارج Jarvis. تبقى هنا كي لا يحدث شيء بصمت.","Thinking":"التفكير","Thinking (untrusted model text)":"التفكير (نص نموذج غير موثوق)","This did not load.":"لم يكتمل التحميل.","This page does not exist":"هذه الصفحة غير موجودة","This run asked for approval:":"طلب هذا التشغيل موافقة:","This step is locked: it waits for Director 00 outside Jarvis, whatever kind it is drawn as.":"هذه الخطوة مقفلة: تنتظر المدير 00 خارج Jarvis، أياً كان نوعها في الرسم.","Title":"العنوان","Token ledger":"سجل التوكنز","Tokens":"التوكنز","Tokens a month":"التوكنز شهرياً","Tokens by engine":"التوكنز حسب المحرّك","Tokens used":"التوكنز المستخدمة","Tools":"الأدوات","Tools and permissions":"الأدوات والصلاحيات","Try again":"حاول مجدداً","Try another word or kind.":"جرّب كلمة أو نوعاً آخر.","Try another word or status.":"جرّب كلمة أو حالة أخرى.","Turn on billing…":"شغّل الفوترة…","Turns merged changes into release notes. Publishing them is Ahmad's call.":"يحوّل التغييرات المدمجة إلى ملاحظات إصدار. نشرها قرار أحمد.","Turns recent commits into release notes. Publishing them is Ahmad's call.":"يحوّل آخر الكومتات إلى ملاحظات إصدار. نشرها قرار أحمد.","Turns recent commits into release notes. Publishing them is Director 00's call.":"يحوّل آخر الكومتات إلى ملاحظات إصدار. نشرها قرار المدير 00.","Two runs side by side, step by step.":"تشغيلان جنباً إلى جنب، خطوة بخطوة.","Unsaved changes":"تغييرات غير محفوظة","Updated":"آخر تحديث","Use 60 characters or fewer.":"استخدم 60 حرفاً أو أقل.","Use template":"استخدم القالب","Use the Replica pipeline":"استخدم سلسلة Replica","Uses the template's title when empty":"يُستخدم عنوان القالب إن تُرك فارغاً","Vendored reference":"مرجع مضمَّن","Verify chain":"تحقّق من السلسلة","Version":"الإصدار","Waiting":"ينتظر","Waiting for Director 00":"ينتظر المدير 00","Waiting for Director 00 outside Jarvis.":"تنتظر المدير 00 خارج Jarvis.","Waiting for a person to approve.":"تنتظر موافقة إنسان.","Waiting for the first step…":"بانتظار الخطوة الأولى…","Waiting for you":"بانتظارك","Webhook secret":"سر الويب هوك","Webhook switched on.":"شُغّل الويب هوك.","Webhooks":"الويب هوك","Webhooks run on the local server, where their secrets are kept. Start it with: node jarvis/server/server.mjs":"الويب هوك يعمل على الخادم المحلي حيث تُحفظ أسراره. شغّله بالأمر: node jarvis/server/server.mjs","Weekly decision digest":"ملخص القرارات الأسبوعي","Weekly report":"التقرير الأسبوعي","When":"الوقت","When an agent wants to act outside its sandbox, it asks here.":"حين يريد وكيل أن يتصرف خارج بيئته المعزولة، يستأذن هنا.","Workflow":"مسار العمل","Workflow graph":"رسم مسار العمل","Workflow name":"اسم مسار العمل","Workflow saved.":"حُفظ مسار العمل.","Workflows":"مسارات العمل","Workspace":"مساحة العمل","Workspace renamed.":"أُعيدت تسمية مساحة العمل.","Workspace, members, keys and how Jarvis looks.":"مساحة العمل والأعضاء والمفاتيح ومظهر Jarvis.","Workspaces":"مساحات العمل","Write a file":"كتابة ملف","Write the goal first.":"اكتب الهدف أولاً.","Write topic index to notes/topics.md":"اكتب فهرس المواضيع في notes/topics.md","Writes notes (asks first)":"يكتب ملاحظات (يستأذن أولاً)","You build and run everything at no token cost: local rules and the local model on 127.0.0.1. Paid plans for other people are drafts; charging anyone stays locked for Director 00.":"تبني وتشغّل كل شيء بلا تكلفة توكنز: قواعد محلية ونموذج محلي على 127.0.0.1. الباقات المدفوعة لغيرك مسودات؛ وتحصيل أي مبلغ يبقى مقفلاً للمدير 00.","You pay nothing: every entry in the ledger is yours at cost 0. Plans for future subscribers are drafts; turning on billing or a plan is a money decision that waits for Director 00 (AGENTS.md §1), and the database keeps both off.":"لا تدفع شيئاً: كل قيد في السجل لك بتكلفة 0. باقات المشتركين المستقبليين مسودات؛ وتشغيل الفوترة أو أي باقة قرار مالي ينتظر المدير 00 (AGENTS.md §1)، وقاعدة البيانات تبقيهما متوقفين.","Zero-token · unlimited":"بلا توكنز · بلا حدود","Zero-token: fixed rules and local tools":"بلا توكنز: قواعد ثابتة وأدوات محلية","[INFERENCE]":"[استدلال]","[INFERENCE] fixed rule: 100 − 12 per step since the last capsule − 1 per 400 output tokens over 4,000 (tokens ≈ bytes ÷ 4).":"[استدلال] قاعدة ثابتة: 100 − 12 لكل خطوة منذ آخر كبسولة − 1 لكل 400 توكن مخرجات فوق 4,000 (التوكنز ≈ البايتات ÷ 4).","a pair fails or no summary line":"زوج يفشل أو لا يوجد سطر ملخص","accent #77bcff":"اللون المميز #77bcff","admin":"مشرف","agent created":"أُنشئ وكيل","agent updated":"عُدّل وكيل","all pairs pass":"كل الأزواج تنجح","approval":"موافقة","approval approved":"تمت الموافقة","approval rejected":"رُفض الطلب","approval requested":"طُلبت موافقة","approved":"موافَق عليه","asks first":"يستأذن أولاً","awaiting_approval":"بانتظار الموافقة","blocked":"ينتظر","changes repository permissions":"يغيّر صلاحيات المستودع","clean":"نظيف","deterministic-rules":"القواعد الثابتة","done":"منجز","draft":"مسودة","errors found or no summary line":"وُجدت أخطاء أو لا يوجد سطر ملخص","fail":"فشل","failed":"فشل","file written":"كُتب ملف","file_write":"كتابة ملف","gate":"بوابة","gate.py and capsule.py from .claude/skills/replica-long-horizon read the same files.":"يقرأ gate.py و capsule.py من .claude/skills/replica-long-horizon الملفات نفسها.","glass blur 16 · saturate 180":"زجاج blur 16 · saturate 180","good":"جيدة","install":"التثبيت","installs a skill into the repo":"يثبّت مهارة في المستودع","just now":"الآن","locked · pending":"مقفل · قيد الانتظار","member added":"أُضيف عضو","mission created":"أُنشئت مهمة","mission failed":"فشلت المهمة","mission paused":"توقفت المهمة","mission restored":"استُعيدت المهمة","mission started":"بدأت المهمة","mission succeeded":"نجحت المهمة","mission waiting":"المهمة بانتظار موافقة","money":"المال","moves money":"ينقل أموالاً","no runs":"لا تشغيلات","no test summary found":"لم يوجد ملخص اختبارات","not a SkillSpector --json report":"ليس تقرير SkillSpector بصيغة --json","null":"—","ollama-local-loopback":"Ollama محلي","only in A":"في أ فقط","only in B":"في ب فقط","operator":"مشغّل","outbound":"رسالة خارجية","owner":"المالك","owner (Director 00)":"المالك (المدير 00)","pass":"نجح","paused":"متوقف","pending":"قيد الانتظار","permissions":"الصلاحيات","publish":"النشر","publishes to an outside domain":"ينشر على نطاق خارجي","queued":"في الانتظار","rejected":"مرفوض","run cancelled":"أُلغي التشغيل","run failed":"فشل التشغيل","run started":"بدأ التشغيل","run succeeded":"نجح التشغيل","running":"قيد التشغيل","same":"مطابق","save a capsule now":"احفظ كبسولة الآن","save a capsule soon":"احفظ كبسولة قريباً","schedule set":"ضُبط جدول","scheduled":"مجدول","sends a message outside":"يرسل رسالة للخارج","sent":"أُرسل","skipped":"تم تخطيه","succeeded":"نجح","tool":"أداة","verified":"موثّق","viewer":"مشاهد","waiting":"ينتظر","webhook activated":"شُغّل ويب هوك","webhook created":"أُنشئ ويب هوك","webhook received":"وصل ويب هوك","workflow created":"أُنشئ مسار عمل","workflow saved":"حُفظ مسار العمل","workspace created":"أُنشئت مساحة العمل","workspace open":"فُتحت مساحة العمل","workspace renamed":"أُعيدت تسمية مساحة العمل","· Pending human approval":"· بانتظار موافقة بشرية","· Sending outside this computer is an outbound message (AGENTS.md §1). The database refuses to switch it on.":"· الإرسال خارج هذا الحاسوب رسالة خارجية (AGENTS.md §1). وقاعدة البيانات ترفض تشغيله.","· Waiting for Director 00":"· ينتظر المدير 00","— list this workspace's notes":"— يسرد ملاحظات مساحة العمل","— one pass through the tools":"— مرور واحد على الأدوات","— phases, evidence gates, capsules; locked steps wait":"— مراحل وبوابات أدلة وكبسولات؛ الخطوات المقفلة تنتظر","— read docs/ and jarvis/replica/":"— يقرأ docs/ و jarvis/replica/","— read one public page":"— يقرأ صفحة عامة واحدة","— read recent commits":"— يقرأ آخر الكومتات","— read this workspace's runs":"— يقرأ تشغيلات مساحة العمل","— save a note, asks you first":"— يحفظ ملاحظة بعد استئذانك","← Agents":"→ الوكلاء","← Missions":"→ المهام الطويلة","← Runs":"→ التشغيلات","← Workflows":"→ مسارات العمل"}},"evidence":[{"path":"jarvis/app/data/skills-scan.json","check":"security","ok":true,"detail":"critical 0, high 0, 98 files","sha256":"a83144e01938a8ff","savedAt":null},{"path":"jarvis/replica/design/contrast-report.txt","check":"contrast","ok":true,"detail":"118 checks, 0 failing","sha256":"1d9b4541e501207d","savedAt":null},{"path":"jarvis/replica/evidence/tests-server.log","check":"tests","ok":true,"detail":"317 passed, 0 failed","sha256":"82c750567f116df8","savedAt":null},{"path":"jarvis/replica/evidence/tests-app.log","check":"tests","ok":true,"detail":"93 passed, 0 failed","sha256":"eb96d761bd7988a7","savedAt":null},{"path":"jarvis/replica/evidence/tests-live.log","check":"tests","ok":true,"detail":"61 passed, 0 failed","sha256":"f1e26a5e35abe4a1","savedAt":null},{"path":"jarvis/replica/evidence/tests-long-horizon.log","check":"tests","ok":true,"detail":"Ran 10 tests, OK","sha256":"2b869a2e5bd4864e","savedAt":null},{"path":"jarvis/replica/evidence/lint-long-horizon.log","check":"lint","ok":true,"detail":"clean","sha256":"82b3e6a6c090a576","savedAt":null}]}</script>
 <script>
 // Jarvis app (ADR-133). One static page: hash router, an in-page data layer with the same
 // function names as the phase 2 API (jarvis/replica/architecture.md), and no network
@@ -933,8 +980,9 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage off: the page still works */ } },
   };
   const fmtN = new Intl.NumberFormat("en");
-  const rel = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const fmtDate = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
+  // Dates follow the interface language (Arabic with Latin digits, like every number in Jarvis).
+  let rel = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  let fmtDate = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
   function ago(ts) {
     const s = Math.round((ts - Date.now()) / 1000);
     const a = Math.abs(s);
@@ -1235,6 +1283,11 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     /* Missions in the sample store: the same engine rules as jarvis/server/lib/missions.mjs, on this
        browser's data. Tool steps are simulated; gate steps judge the evidence snapshot taken at build
        time (real files from the repo); capsules are real SHA-256 chains over this browser's state. */
+    const WFS = () => {
+      const w = W();
+      if (!w.workflows) { const g = LlmPlan.starterGraph(); w.workflows = [{ id: uid("wf"), name: "Review and release", version: 1, graph: g, createdAt: Date.now(), updatedAt: Date.now() }]; }
+      return w.workflows;
+    };
     const MS = () => {
       const w = W();
       if (!w.missions) {
@@ -1339,6 +1392,8 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
         const p = String(prompt || "").trim();
         if (!p) return bad("Write what you want first.");
         const base = { mode, engine: "deterministic-rules", zeroTokenCost: true, thinking: null, label: "fixed rules (no model)", warning: "Sample mode: no model. The local server talks to Ollama on 127.0.0.1." };
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        b.ledger.push({ actor: "creator", engine: "deterministic-rules", model: null, tokens: Math.ceil(p.length / 4), cost_micro_usd: 0, ref: "llm." + mode, at: Date.now() }); save();
         if (mode === "design") { const out = CleanRoom.cleanClone("<h1>" + p.replace(/[<>&]/g, " ") + "</h1><p>.</p>"); out.report.source = "fixed rules"; return ok({ ...base, blocks: out.blocks, report: out.report }); }
         if (mode === "plan") return ok({ ...base, steps: LlmPlan.fallbackPlan(p), planFrom: "fixed rules" });
         return ok({ ...base, text: "Sample mode has no model. Start jarvis/server and Ollama for answers." });
@@ -1350,6 +1405,113 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
         const m = newMission({ title: g.slice(0, 120), goal: g, steps }, "llm-plan", { title: g.slice(0, 120), capsuleEvery: capsuleEvery || 1 });
         m.planner = { engine: "deterministic-rules", model: null, thinking: null, planFrom: "fixed rules", warning: "Sample mode: no model. Locks are decided by rule.", label: "fixed rules (no model)", at: new Date().toISOString() };
         MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
+      // ADR-137 in sample mode: the same rules on this browser's data. Webhooks need the local server
+      // (their HMAC secrets never live in the browser), and schedules run only there.
+      listWorkflows() { return ok(WFS().map(w => ({ id: w.id, name: w.name, version: w.version, updatedAt: w.updatedAt, steps: w.graph.nodes.length, locked: w.graph.nodes.filter(LlmPlan.nodeLocked).length }))); },
+      getWorkflow(id) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let steps = []; try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(w.graph)); } catch (e) { /* draft */ }
+        return ok({ ...w, steps, runs: MS().filter(m => m.planner && m.planner.workflowId === id).map(m => ({ id: m.id, status: m.status, createdAt: m.createdAt })) });
+      },
+      createWorkflow({ name, graph }) {
+        const n = String(name || "").trim();
+        if (!n || n.length > 80) return bad("Use 1 to 80 characters for the name.");
+        let g; try { g = LlmPlan.checkGraph(graph || LlmPlan.starterGraph()); } catch (e) { return bad(e.message); }
+        const w = { id: uid("wf"), name: n, version: 1, graph: { nodes: g.nodes, edges: g.edges }, createdAt: Date.now(), updatedAt: Date.now() };
+        WFS().push(w); W().events.push(ev("member:owner", "workflow.created", w.id)); save(); return api.getWorkflow(w.id);
+      },
+      saveWorkflow(id, { name, graph }) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let g; try { g = LlmPlan.checkGraph(graph); } catch (e) { return bad(e.message); }
+        const n = String(name == null ? w.name : name).trim();
+        if (!n || n.length > 80) return bad("Use 1 to 80 characters for the name.");
+        Object.assign(w, { name: n, graph: { nodes: g.nodes, edges: g.edges }, version: w.version + 1, updatedAt: Date.now() });
+        W().events.push(ev("member:owner", "workflow.saved", id)); save(); return api.getWorkflow(id);
+      },
+      deleteWorkflow(id) { W().workflows = WFS().filter(x => x.id !== id); save(); return ok({ ok: true }); },
+      runWorkflow(id) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let steps; try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(w.graph)); } catch (e) { return bad(e.message); }
+        const m = newMission({ title: "Workflow: " + w.name, goal: "Workflow: " + w.name, steps }, "workflow", { title: "Workflow: " + w.name, capsuleEvery: 1 });
+        m.planner = { engine: "workflow", model: null, thinking: null, planFrom: "workflow graph v" + w.version, workflowId: id, label: "workflow graph (no model)", at: new Date().toISOString() };
+        MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save();
+        return startSample(m).then(() => ({ mission: m.id }));
+      },
+      addMember({ email, role }) {
+        const e = String(email || "").trim().toLowerCase();
+        if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,24}$/.test(e)) return bad("Give an email address.");
+        if (!["admin", "operator", "viewer"].includes(role)) return bad("Pick admin, operator or viewer. There is one owner.");
+        if (W().members.some(m => m.email === e)) return bad("That person is already a member.");
+        W().members.push({ id: uid("mb"), email: e, role }); W().events.push(ev("member:owner", "member.added", e)); save(); return ok(W().members);
+      },
+      setRole(id, role) {
+        const m = W().members.find(x => x.id === id);
+        if (!m) return bad("No member with that id.");
+        if (m.role === "owner") return bad("The owner's role does not change here.");
+        if (!["admin", "operator", "viewer"].includes(role)) return bad("Pick admin, operator or viewer.");
+        m.role = role; save(); return ok(W().members);
+      },
+      removeMember(id) {
+        const m = W().members.find(x => x.id === id);
+        if (!m) return bad("No member with that id.");
+        if (m.role === "owner") return bad("The owner cannot be removed.");
+        W().members = W().members.filter(x => x.id !== id); save(); return ok(W().members);
+      },
+      listSchedules() { return ok((W().schedules || []).map(x => ({ ...x, agentName: (W().agents.find(a => a.id === x.agentId) || {}).name || "Removed agent" }))); },
+      setSchedule(agentId, { everyMinutes, enabled }) {
+        const every = Number(everyMinutes);
+        if (!Number.isInteger(every) || every < 5 || every > 10080) return bad("Run every 5 minutes to 7 days (10,080 minutes).");
+        const list = W().schedules || (W().schedules = []);
+        const cur = list.find(x => x.agentId === agentId) || (list.push({ id: uid("sc"), agentId }), list[list.length - 1]);
+        Object.assign(cur, { everyMinutes: every, enabled: enabled !== false, nextAt: Date.now() + every * 60000, lastRunId: null, lastError: null });
+        save(); return api.listSchedules();
+      },
+      deleteSchedule(agentId) { W().schedules = (W().schedules || []).filter(x => x.agentId !== agentId); save(); return api.listSchedules(); },
+      listWebhooks() { return ok([]); },
+      createWebhook() { return bad("Webhooks run on the local server, where their HMAC secrets are kept. Start it with: node jarvis/server/server.mjs"); },
+      billing() {
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        const totals = {};
+        for (const l of b.ledger) { const t = totals[l.engine] || (totals[l.engine] = { engine: l.engine, entries: 0, tokens: 0, costMicroUsd: 0 }); t.entries++; t.tokens += l.tokens; }
+        return ok({ creatorZeroToken: true, billingEnabled: false, tiers: b.tiers, ledger: { totals: Object.values(totals), recent: b.ledger.slice(-20).reverse() }, moneyRequests: [] });
+      },
+      saveTier({ id, name, monthlyTokens, priceMinor, currency }) {
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        const n = String(name || "").trim(), mt = Number(monthlyTokens), pm = Number(priceMinor || 0), cur = String(currency || "USD").toUpperCase();
+        if (!n || n.length > 40) return bad("Use 1 to 40 characters for the plan name.");
+        if (!Number.isInteger(mt) || mt < 0) return bad("Monthly tokens is a whole number.");
+        if (!Number.isInteger(pm) || pm < 0) return bad("The draft price is a whole number of cents.");
+        if (!/^[A-Z]{3}$/.test(cur)) return bad("Currency is a three-letter code.");
+        if (b.tiers.some(t => t.name === n && t.id !== id)) return bad("Another plan has this name.");
+        const t = id ? b.tiers.find(x => x.id === id) : null;
+        if (t) Object.assign(t, { name: n, monthlyTokens: mt, priceMinor: pm, currency: cur }); else b.tiers.push({ id: uid("tier"), name: n, monthlyTokens: mt, priceMinor: pm, currency: cur, status: "draft" });
+        save(); return api.billing();
+      },
+      deleteTier(id) { const b = W().billing || { tiers: [] }; b.tiers = b.tiers.filter(t => t.id !== id); save(); return api.billing(); },
+      requestMoney(what) {
+        const ap = { id: uid("ap"), category: "money", agentId: null, action: what === "billing" ? "Turn on billing and token plans for subscribers" : "Activate the subscriber plan “" + what + "”", payload: "Charging people is Director 00's decision outside Jarvis, after a legal review.", status: "pending", createdAt: Date.now() };
+        W().approvals.push(ap); save(); return api.billing().then(b => ({ locked: true, approvalId: ap.id, billing: b }));
+      },
+      analytics() {
+        const w = W(), day = 86400000, now = Date.now();
+        const count = (list, key) => { const o = {}; list.forEach(x => { o[x[key]] = (o[x[key]] || 0) + 1; }); return Object.entries(o).map(([k, c]) => ({ key: k, count: c })); };
+        const gates = {};
+        for (const m of MS()) for (const st of m.steps) for (const g of st.gates || []) { const r = gates[g.check_name] || (gates[g.check_name] = { pass: 0, fail: 0 }); r[g.status]++; }
+        const b = W().billing || { ledger: [] };
+        const tok = {}; b.ledger.forEach(l => { tok[l.engine] = tok[l.engine] || { engine: l.engine, entries: 0, tokens: 0, costMicroUsd: 0 }; tok[l.engine].entries++; tok[l.engine].tokens += l.tokens; });
+        return ok({
+          runsByStatus: count(w.runs, "status"),
+          runsByDay: [...Array(14)].map((_, i) => { const d = new Date(now - (13 - i) * day).toISOString().slice(0, 10); return { day: d, runs: w.runs.filter(r => new Date(r.createdAt).toISOString().slice(0, 10) === d).length }; }),
+          agents: w.agents.map(a => ({ agent: a.name, runs: w.runs.filter(r => r.agentId === a.id).length, succeeded: w.runs.filter(r => r.agentId === a.id && r.status === "succeeded").length, failed: w.runs.filter(r => r.agentId === a.id && r.status === "failed").length })),
+          gateRates: ["tests", "lint", "contrast", "security"].map(c => { const r = gates[c] || { pass: 0, fail: 0 }; return { check: c, pass: r.pass, fail: r.fail, rate: r.pass + r.fail ? Math.round(r.pass / (r.pass + r.fail) * 1000) / 10 : null }; }),
+          missionsByStatus: count(MS(), "status"), capsules: MS().reduce((n, m) => n + m.capsules.length, 0),
+          approvals: count(w.approvals.map(p => ({ k: (LOCKED[p.category] ? "locked-" : "") + p.status })), "k"),
+          webhooks: [], tokens: Object.values(tok), creatorZeroToken: true, costMicroUsd: 0,
+        });
       },
       listMissions() { return ok(MS().slice().sort((a, b) => b.createdAt - a.createdAt).map(m => ({ id: m.id, title: m.title, template: m.template, status: m.status, createdAt: m.createdAt, steps: m.steps.length, done: m.steps.filter(s => s.status === "done").length, blocked: m.steps.filter(s => s.status === "blocked").length, failed: m.steps.filter(s => s.status === "failed").length, phases: new Set(m.steps.map(s => s.phase)).size, capsules: m.capsules.length, health: missionHealth(m) }))); },
       getMission(id) { const m = findMission(id); return m ? ok(missionOut(m)) : bad("No mission with that id in this workspace."); },
@@ -1425,11 +1587,24 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
       try { const v = (await req("GET", w("/version"))).v; if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; } catch (e) { /* keep the page; the next poll retries */ }
     };
     const startPolling = () => { if (!timer) timer = setInterval(() => { if (!document.hidden && subs.size) poll(); }, 1500); };
+    // Server push first (ADR-137): the server sends a "change" event when the workspace changes; the
+    // 1.5 s poll is only the fallback when the stream cannot stay open.
+    let es = null, live = "poll";
+    const onChange = v => { if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; };
+    function startStream() {
+      if (typeof EventSource !== "function") { startPolling(); return; }
+      if (es) es.close();
+      es = new EventSource(w("/stream"));
+      es.addEventListener("change", e => { try { live = "stream"; onChange(JSON.parse(e.data).v); } catch (x) { /* ignore a bad frame */ } });
+      es.addEventListener("error", () => { if (es && es.readyState === 2) { live = "poll"; startPolling(); } });
+    }
+    const startLive = () => { if (!es && !timer) startStream(); };
     poll();
     const api = {
       mode: "live",
       info,
-      subscribe(fn) { subs.add(fn); startPolling(); return () => subs.delete(fn); },
+      subscribe(fn) { subs.add(fn); startLive(); return () => subs.delete(fn); },
+      get liveUpdates() { return live; },
       setFail(on) { failMode = !!on; },
       get failMode() { return failMode; },
       get slug() { return slug; },
@@ -1437,7 +1612,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
       listWorkspaces: () => req("GET", "/api/workspaces"),
       // The change marker is read right away (not on the next poll), so a change that lands within the
       // first poll interval after a switch is still noticed.
-      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); await poll(); subs.forEach(fn => fn()); return ws; },
+      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); await poll(); if (es) startStream(); subs.forEach(fn => fn()); return ws; },
       workspace: () => req("GET", w("")),
       renameWorkspace: name => req("PATCH", w(""), { name }),
       members: () => req("GET", w("/members")),
@@ -1457,8 +1632,33 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
       cleanClone: body => req("POST", "/api/studio/clean-clone", body),
       listMissions: () => req("GET", w("/missions")),
       llmStatus: () => req("GET", "/api/llm/status"),
-      llmRun: body => req("POST", "/api/llm/run", body),
+      llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
       planMission: body => req("POST", w("/missions/plan"), body),
+      // ADR-137
+      listWorkflows: () => req("GET", w("/workflows")),
+      getWorkflow: id => req("GET", w("/workflows/" + encodeURIComponent(id))),
+      createWorkflow: body => req("POST", w("/workflows"), body),
+      saveWorkflow: (id, body) => req("PUT", w("/workflows/" + encodeURIComponent(id)), body),
+      deleteWorkflow: id => req("DELETE", w("/workflows/" + encodeURIComponent(id)), {}),
+      runWorkflow: id => req("POST", w("/workflows/" + encodeURIComponent(id) + "/run"), {}),
+      addMember: body => req("POST", w("/members"), body),
+      setRole: (id, role) => req("PATCH", w("/members/" + encodeURIComponent(id)), { role }),
+      removeMember: id => req("DELETE", w("/members/" + encodeURIComponent(id)), {}),
+      listSchedules: () => req("GET", w("/schedules")),
+      setSchedule: (agentId, body) => req("PUT", w("/agents/" + encodeURIComponent(agentId) + "/schedule"), body),
+      deleteSchedule: agentId => req("DELETE", w("/agents/" + encodeURIComponent(agentId) + "/schedule"), {}),
+      listWebhooks: () => req("GET", w("/webhooks")),
+      createWebhook: body => req("POST", w("/webhooks"), body),
+      activateWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/activate"), {}),
+      pauseWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/pause"), {}),
+      testWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/test"), {}),
+      deleteWebhook: id => req("DELETE", w("/webhooks/" + encodeURIComponent(id)), {}),
+      webhookSecret: id => req("GET", w("/webhooks/" + encodeURIComponent(id) + "/secret")),
+      billing: () => req("GET", w("/billing")),
+      saveTier: body => req("POST", w("/billing/tiers"), body),
+      deleteTier: id => req("DELETE", w("/billing/tiers/" + encodeURIComponent(id)), {}),
+      requestMoney: what => req("POST", w("/billing/request"), { what }),
+      analytics: () => req("GET", w("/analytics")),
       getMission: id => req("GET", w("/missions/" + encodeURIComponent(id))),
       createMission: input => req("POST", w("/missions"), input),
       runMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/run"), {}),
@@ -1509,6 +1709,80 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
   function setDir(d) { applyDir(d); store$.set("jarvis-dir", d); }
   applyDir(store$.get("jarvis-dir") || "ltr");
   dirBtn.addEventListener("click", () => setDir(root.dir === "rtl" ? "ltr" : "rtl"));
+
+  /* ── Arabic / English (ADR-137) ─────────────────────────────
+     One dictionary (jarvis/app/src/i18n-ar.json, inlined by the build): exact strings and a few
+     patterns for text with numbers. Every text node and the aria-label, placeholder and title
+     attributes are translated as the page draws them (a MutationObserver), so nothing needs to be
+     written twice. Left as written: anything under translate="no", code, pre, .mono and .num, form
+     values, and the sandboxed preview, which has its own language switch. */
+  const I18N = DATA.i18n || { strings: {}, patterns: [] };
+  const AR = new Map(Object.entries(I18N.strings || {}));
+  const AR_PATTERNS = (I18N.patterns || []).map(([re, out]) => [new RegExp(re), out]);
+  const ATTRS = ["aria-label", "placeholder", "title"];
+  const origText = new WeakMap(), origAttr = new WeakMap();
+  // ?lang=ar|en in the address wins (and is remembered); then the stored choice; English by default.
+  const qLang = new URLSearchParams(location.search).get("lang");
+  if (qLang === "ar" || qLang === "en") store$.set("jarvis-lang", qLang);
+  let uiLang = (qLang || store$.get("jarvis-lang")) === "ar" ? "ar" : "en";
+  // Text with a number inside: "3 steps", "Phase 2". Patterns may nest a dictionary word through {{$1}}.
+  function tr(text) {
+    if (uiLang !== "ar" || !text) return null;
+    const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text), core = m[2];
+    if (!core || !/[A-Za-z]/.test(core)) return null;
+    let out = AR.get(core);
+    if (out == null) for (const [re, rep] of AR_PATTERNS) { if (re.test(core)) { out = core.replace(re, rep).replace(/\{\{([^}]*)\}\}/g, (all, w) => AR.get(w) || w); break; } }
+    return out == null ? null : m[1] + out + m[3];
+  }
+  const skipEl = el => !!(el && el.closest && el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage"));
+  function trNode(n) {
+    if (n.nodeType === 3) {
+      if (skipEl(n.parentElement)) return;
+      const src = origText.has(n) && n.nodeValue === origText.get(n).out ? origText.get(n).src : n.nodeValue;
+      const out = uiLang === "ar" ? tr(src) : null;
+      if (out != null) { origText.set(n, { src, out }); if (n.nodeValue !== out) n.nodeValue = out; }
+      else if (origText.has(n) && n.nodeValue === origText.get(n).out) { n.nodeValue = src; origText.delete(n); }
+      return;
+    }
+    if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE|IFRAME)$/.test(n.tagName)) return;
+    if (!skipEl(n)) {
+      let saved = origAttr.get(n);
+      for (const a of ATTRS) {
+        if (!n.hasAttribute(a)) continue;
+        const cur = n.getAttribute(a), rec = saved && saved[a];
+        const src = rec && cur === rec.out ? rec.src : cur;
+        const out = uiLang === "ar" ? tr(src) : null;
+        if (out != null) { if (!saved) origAttr.set(n, saved = {}); saved[a] = { src, out }; if (cur !== out) n.setAttribute(a, out); }
+        else if (rec && cur === rec.out) { n.setAttribute(a, src); delete saved[a]; }
+      }
+    }
+    for (const c of n.childNodes) trNode(c);
+  }
+  const observer = new MutationObserver(list => {
+    observer.disconnect();
+    for (const m of list) {
+      if (m.type === "childList") m.addedNodes.forEach(trNode);
+      else if (m.type === "attributes") trNode(m.target);
+      else if (m.type === "characterData") trNode(m.target);
+    }
+    observe();
+  });
+  const observe = () => observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  const langBtn = $("#langBtn");
+  function applyLang(l) {
+    uiLang = l === "ar" ? "ar" : "en";
+    root.lang = uiLang;
+    if (uiLang === "ar") root.dir = "rtl"; else applyDir(store$.get("jarvis-dir") || "ltr");
+    const loc = uiLang === "ar" ? "ar-u-nu-latn" : "en";
+    rel = new Intl.RelativeTimeFormat(loc, { numeric: "auto" });
+    fmtDate = new Intl.DateTimeFormat(loc, { dateStyle: "medium", timeStyle: "short" });
+    langBtn.textContent = uiLang === "ar" ? "EN" : "ع";
+    langBtn.setAttribute("lang", uiLang === "ar" ? "en" : "ar");
+    langBtn.setAttribute("aria-label", uiLang === "ar" ? "Switch to English" : "التبديل إلى العربية");
+    observer.disconnect(); trNode(document.body); observe();
+  }
+  langBtn.addEventListener("click", () => { const l = uiLang === "ar" ? "en" : "ar"; store$.set("jarvis-lang", l); applyLang(l); route(); });
+  applyLang(uiLang);
 
   const app = $("#app"), collapse = $("#collapse"), menu = $("#menu"), scrim = $("#scrim");
   if (store$.get("jarvis-rail") === "1") { app.classList.add("rail"); collapse.setAttribute("aria-expanded", "false"); collapse.querySelector(".nav-label").textContent = "Expand"; }
@@ -1612,18 +1886,18 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
         h("a", { class: "stat", href: "#/approvals" }, h("span", { class: "label", text: "Waiting for you" }), h("span", { class: "value num s-pending", text: fmtN.format(s.waiting) }), h("span", { class: "subtle t-caption" }, fmtN.format(s.locked) + " more locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" }))),
         h("a", { class: "stat", href: "#/runs" }, h("span", { class: "label", text: "Failed runs (24 h)" }), h("span", { class: "value num" + (s.failed ? " s-failed" : ""), text: fmtN.format(s.failed) })))));
     loadInto(feed, () => store.listEvents(), evs => evs.length
-      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", { text: e.kind.replace(".", " ") + (e.target ? " · " + e.target : "") }), timeEl(e.at)))))
+      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", null, h("span", { text: e.kind.replace(".", " ") }), e.target ? h("span", { class: "mono t-caption subtle", translate: "no", text: " · " + e.target }) : null), timeEl(e.at)))))
       : emptyState("i-inbox", "Nothing has happened yet", "Create an agent and run it. Every action shows up here."));
     return wrap;
   };
 
   // Create or edit an agent: name, model, role, limits, tools (which set its permissions) and linked
   // skills. Locked permissions are shown and can never be switched on (AGENTS.md §1).
-  async function agentDialog(from, existingAgent) {
+  async function agentDialog(from, existingAgent, preset) {
     let others = [];
     try { others = await store.listAgents(); } catch (e) { toast("error", e.message); return; }
     const editing = !!existingAgent;
-    const a = existingAgent || { name: "", model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)", rolePrompt: "", maxSteps: 20, tools: ["notes.write"], skills: [] };
+    const a = existingAgent || (preset ? { ...preset } : null) || { name: "", model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)", rolePrompt: "", maxSteps: 20, tools: ["notes.write"], skills: [] };
     const f = {};
     const err = {};
     const field = (key, label, control, hint) => {
@@ -1700,7 +1974,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     st.addEventListener("change", load);
     load();
     return h("div", { class: "stack" },
-      pageHead("Agents", "Each agent has a role, a model and the tools it may use.", h("button", { class: "btn btn-primary", type: "button", onclick: e => agentDialog(e.currentTarget) }, icon("i-plus", "sm"), "New agent")),
+      pageHead("Agents", "Each agent has a role, a model and the tools it may use.", h("a", { class: "btn btn-secondary", href: "#/agents/templates", text: "Templates" }), h("button", { class: "btn btn-primary", type: "button", onclick: e => agentDialog(e.currentTarget) }, icon("i-plus", "sm"), "New agent")),
       sampleNote(),
       h("div", { class: "filters" }, h("div", { class: "field" }, h("label", { htmlFor: "f-q", text: "Search" }), q), h("div", { class: "field narrow" }, h("label", { htmlFor: "f-st", text: "Status" }), st)),
       box);
@@ -1743,6 +2017,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
           badge(perms.readWeb ? "approved" : "idle", perms.readWeb ? "Reads public pages" : "No web reading"),
           h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), "Money, publish, permissions, install, outbound: locked"))),
         h("div", null, h("dt", { class: "muted", text: "Linked skills" }), h("dd", null, (a.skills || []).length ? h("ul", { class: "row" }, a.skills.map(s => h("li", { class: "badge mono", translate: "no", text: s }))) : h("span", { class: "subtle", text: "None" }))))],
+      ["Schedule", () => schedulePanel(a)],
       ["Tools", () => a.tools.length ? h("ul", { class: "row" }, a.tools.map(t => h("li", { class: "badge mono", text: t }))) : h("p", { class: "muted t-sm", text: "No tools. This agent can only think, not act." })],
       ["Runs", () => a.runs.length ? h("div", { class: "table-scroll" }, h("table", null, h("thead", null, h("tr", null, ["Run", "Status", "Started", "Steps"].map(c => h("th", { scope: "col", text: c })))),
         h("tbody", null, a.runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: String(r.id).slice(0, 12) })), h("td", null, badge(r.status)), h("td", null, timeEl(r.createdAt)), h("td", { class: "num", text: String((r.steps || []).length) })))))) : emptyState("i-run", "No runs yet", "Press Run once to try this agent.")]];
@@ -1755,15 +2030,18 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/agents", text: "← Agents" })), sampleNote(), box);
   };
 
+  // The chosen tab survives a redraw of the same page (a live update must not jump back to the first tab).
+  const TAB_MEMO = {};
   function tabsWidget(key, tabs) {
     const list = h("div", { class: "tablist", role: "tablist", "aria-label": "Sections" });
     const panels = [];
+    const start = TAB_MEMO[key] != null && TAB_MEMO[key].route === location.hash && TAB_MEMO[key].i < tabs.length ? TAB_MEMO[key].i : 0;
     const btns = tabs.map(([label, make], i) => {
-      const b = h("button", { class: "tab", role: "tab", type: "button", id: "tab-" + key + i, "aria-controls": "panel-" + key + i, "aria-selected": String(i === 0), tabIndex: i === 0 ? 0 : -1, text: label });
-      const p = h("div", { class: "tabpanel", role: "tabpanel", id: "panel-" + key + i, "aria-labelledby": "tab-" + key + i, tabindex: "0", hidden: i !== 0 }, make());
+      const b = h("button", { class: "tab", role: "tab", type: "button", id: "tab-" + key + i, "aria-controls": "panel-" + key + i, "aria-selected": String(i === start), tabIndex: i === start ? 0 : -1, text: label });
+      const p = h("div", { class: "tabpanel", role: "tabpanel", id: "panel-" + key + i, "aria-labelledby": "tab-" + key + i, tabindex: "0", hidden: i !== start }, make());
       panels.push(p); list.appendChild(b); return b;
     });
-    const select = b => { btns.forEach((x, i) => { const on = x === b; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; panels[i].hidden = !on; }); b.focus(); };
+    const select = b => { btns.forEach((x, i) => { const on = x === b; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; panels[i].hidden = !on; if (on) TAB_MEMO[key] = { i, route: location.hash }; }); b.focus(); };
     btns.forEach((b, i) => {
       b.addEventListener("click", () => select(b));
       b.addEventListener("keydown", e => {
@@ -1779,13 +2057,20 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
 
   pages.runs = () => {
     const box = h("div");
+    const picked = [];
+    const cmp = h("button", { class: "btn btn-secondary", type: "button", disabled: true, text: "Compare 2 runs" });
+    cmp.addEventListener("click", () => { location.hash = "#/runs/compare/" + picked.join("/"); });
     loadInto(box, () => store.listRuns(), runs => runs.length
       ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Runs" }, h("table", null,
-        h("thead", null, h("tr", null, ["Run", "Agent", "Status", "Started", "Duration", "Steps"].map((c, i) => h("th", { scope: "col", class: i >= 4 ? "end" : null, text: c })))),
-        h("tbody", null, runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", { dir: "auto" }, h("span", { class: "trunc", text: r.agentName })), h("td", null, badge(r.status)),
-          h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", text: String(r.steps.length) }))))))
+        h("thead", null, h("tr", null, ["", "Run", "Agent", "Status", "Started", "Duration", "Cost", "Steps"].map((c, i) => h("th", { scope: "col", class: i >= 5 ? "end" : null, text: c, "aria-label": i === 0 ? "Pick to compare" : null })))),
+        h("tbody", null, runs.map(r => {
+          const cb = h("input", { type: "checkbox", name: "compare", value: r.id, "aria-label": "Compare run " + r.id });
+          cb.addEventListener("change", () => { const i = picked.indexOf(r.id); if (cb.checked && i < 0) picked.push(r.id); if (!cb.checked && i >= 0) picked.splice(i, 1); while (picked.length > 2) { const old = picked.shift(); const o = box.querySelector("input[value='" + CSS.escape(old) + "']"); if (o) o.checked = false; } cmp.disabled = picked.length !== 2; });
+          return h("tr", null, h("td", null, cb), h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", { dir: "auto" }, h("span", { class: "trunc", text: r.agentName })), h("td", null, badge(r.status), r.trigger === "schedule" ? h("span", { class: "badge", text: "scheduled" }) : null),
+            h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", title: "Zero-token: fixed rules and local tools", text: "0" }), h("td", { class: "end num", text: String(r.steps.length) }));
+        }))))
       : emptyState("i-run", "No runs yet", "Open an agent and press Run once.", h("a", { class: "btn btn-primary", href: "#/agents", text: "Go to agents" })));
-    return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first."), sampleNote(), box);
+    return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first. Cost is 0: runs use local tools and fixed rules.", cmp), sampleNote(), box);
   };
 
   // One line about what a real step produced (live mode), or its try count (sample mode).
@@ -1871,7 +2156,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
       if (!list.length) return emptyState("i-logs", evs.length ? "No event matches" : "No events yet", evs.length ? "Try another word or kind." : "Every action is written here and never edited.");
       return h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Event log" }, h("table", null,
         h("thead", null, h("tr", null, ["When", "Actor", "Action", "Target"].map(c => h("th", { scope: "col", text: c })))),
-        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { text: e.kind }), h("td", { class: "mono t-caption", text: e.target || "—" }))))));
+        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { class: "mono t-caption", translate: "no", text: e.kind }), h("td", { class: "mono t-caption", translate: "no", text: e.target || "—" }))))));
     });
     let t;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(load, 150); });
@@ -1929,14 +2214,11 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
           h("label", { class: "check", htmlFor: "f-fail" }, fail, h("span", { text: "Test error states (make every list fail to load)" })),
           h("div", null, reset)));
     };
-    const members = h("div");
     loadInto(box, () => store.workspace(), render);
-    loadInto(members, () => store.members(), list => h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Members" }, h("table", null,
-      h("thead", null, h("tr", null, ["Member", "Role"].map(c => h("th", { scope: "col", text: c })))),
-      h("tbody", null, list.map(m => h("tr", null, h("td", { text: m.email }), h("td", null, h("span", { class: "badge", text: m.role }))))))));
     return h("div", { class: "stack" }, pageHead("Settings", "Workspace, members, keys and how Jarvis looks."), box,
       h("section", { class: "block", "aria-labelledby": "h-members" }, h("h2", { id: "h-members", text: "Members" }),
-        h("p", { class: "muted t-sm", text: "Phase 1 has one local owner. Inviting people and changing roles come with the phase 2 service; changing repository permissions stays a locked approval." }), members));
+        h("p", { class: "muted t-sm", text: "Add people and give them a role. Nobody is emailed: invitations are outbound messages, which stay locked. Repository permissions are a separate, locked decision." }), membersPanel()),
+      h("section", { class: "block", "aria-labelledby": "h-plans" }, h("h2", { id: "h-plans", text: "Plans and tokens" }), plansPanel()));
   };
 
   /* ── Mission Control (ADR-135) ──────────────────────────────── */
@@ -2011,6 +2293,7 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     if (!pl) return null;
     const byModel = pl.engine === "ollama-local-loopback";
     return h("section", { class: "panel planner", "aria-labelledby": "h-planner" }, h("h2", { id: "h-planner", text: "Planner" }),
+      pl.engine === "workflow" ? h("p", { class: "t-sm" }, "Built from the workflow graph ", h("a", { href: "#/workflows/" + pl.workflowId, text: pl.planFrom || "" }), " (no model)") :
       h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
       h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
       pl.warning ? h("p", { class: "t-caption muted", dir: "auto", text: pl.warning }) : null,
@@ -2145,6 +2428,364 @@ footer { padding-block: 32px; color: var(--muted); font-size: 14px; }
     dlg.addEventListener("close", refresh);
     return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/missions", text: "← Missions" })), box);
   };
+
+  /* ── Workflows (S06, S07; ADR-137) ──────────────────────────── */
+  const KIND_LABEL = { tool: "Read tool", gate: "Gate", approval: "Approval", note: "Note (asks first)" };
+  const CHECK_LABEL = { tests: "TDD", lint: "Lint", contrast: "Contrast", security: "Security" };
+  const CATEGORY_LABEL = { file_write: "Write a file", money: "Money", publish: "Publish", permissions: "Permissions", install: "Install", outbound: "Outbound message" };
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const svg = (tag, attrs, ...kids) => { const n = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v != null) n.setAttribute(k, String(v)); kids.flat().forEach(k => k && n.append(k)); return n; };
+
+  function newWorkflowDialog(from) {
+    const name = h("input", { class: "input", id: "f-wfname", name: "workflow-name", autocomplete: "off", maxLength: 80, value: "New workflow" });
+    const go = h("button", { class: "btn btn-primary", type: "button", text: "Create workflow" });
+    go.addEventListener("click", () => {
+      go.disabled = true;
+      store.createWorkflow({ name: name.value, graph: LlmPlan.starterGraph() }).then(w => { closeDialog(); location.hash = "#/workflows/" + w.id; }, e => { toast("error", e.message); go.disabled = false; });
+    });
+    openDialog("New workflow", h("div", { class: "stack" }, h("div", { class: "field" }, h("label", { htmlFor: "f-wfname", text: "Name" }), name),
+      h("p", { class: "hint", text: "It starts from the review-and-release graph; change it in the editor." })),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), go], from);
+  }
+
+  pages.workflows = () => {
+    const box = h("div");
+    const render = list => list.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Workflows" }, h("table", null,
+      h("thead", null, h("tr", null, ["Workflow", "Steps", "Locked steps", "Version", "Updated"].map((c, i) => h("th", { scope: "col", class: i && i < 4 ? "end" : null, text: c })))),
+      h("tbody", null, list.map(w => h("tr", null,
+        h("td", null, h("a", { href: "#/workflows/" + w.id, dir: "auto", class: "trunc", text: w.name })),
+        h("td", { class: "end num", text: String(w.steps) }),
+        h("td", { class: "end" }, w.locked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), h("span", { class: "num", text: String(w.locked) })) : h("span", { class: "subtle", text: "0" })),
+        h("td", { class: "end num", text: "v" + w.version }),
+        h("td", null, timeEl(typeof w.updatedAt === "number" ? w.updatedAt : Date.parse(w.updatedAt))))))))
+      : emptyState("i-flow", "No workflows yet", "A workflow links read tools, gates and approvals; running it makes a mission.", h("button", { class: "btn btn-primary", type: "button", text: "New workflow", onclick: e => newWorkflowDialog(e.currentTarget) }));
+    loadInto(box, () => store.listWorkflows(), render);
+    return h("div", { class: "stack" },
+      pageHead("Workflows", "Draw how steps depend on each other. Running a workflow makes a mission: steps that need nothing run together, gates need evidence, and locked steps wait.",
+        h("button", { class: "btn btn-primary", type: "button", onclick: e => newWorkflowDialog(e.currentTarget) }, icon("i-plus", "sm"), "New workflow")),
+      sampleNote(), box);
+  };
+
+  pages.workflow = id => {
+    const box = h("div", { class: "stack" });
+    let wf = null, graph = null, selected = null, dirty = false;
+    const NW = 196, NH = 64;
+    const canvasWrap = h("div", { class: "wf-canvas" });
+    const inspector = h("div", { class: "stack" });
+    const phasesBox = h("div", { class: "stack" });
+    const errBox = h("p", { class: "err", role: "alert", hidden: true });
+    const nameIn = h("input", { class: "input", id: "f-wfn", name: "workflow-name", autocomplete: "off", maxLength: 80 });
+    const status = h("span", { class: "subtle t-caption", "aria-live": "polite" });
+    const markDirty = () => { dirty = true; status.textContent = "Unsaved changes"; drawPhases(); };
+    const rtl = () => root.dir === "rtl";
+    function extent() { const xs = graph.nodes.map(n => n.x), ys = graph.nodes.map(n => n.y); return { w: Math.max(640, Math.max(0, ...xs) + NW + 40), h: Math.max(260, Math.max(0, ...ys) + NH + 40) }; }
+    const dispX = (n, W) => (rtl() ? W - n.x - NW : n.x);
+
+    function draw() {
+      const { w: W, h: H } = extent();
+      const s = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "group", "aria-label": "Workflow graph: " + graph.nodes.length + " steps" });
+      s.append(svg("defs", null, svg("marker", { id: "wf-arrow", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, svg("path", { d: "M0 0 L10 5 L0 10 z", class: "wf-arrowhead" }))));
+      const byId = new Map(graph.nodes.map(n => [n.id, n]));
+      for (const e of graph.edges) {
+        const a = byId.get(e.from), b = byId.get(e.to); if (!a || !b) continue;
+        const ax = dispX(a, W) + (rtl() ? 0 : NW), ay = a.y + NH / 2, bx = dispX(b, W) + (rtl() ? NW : 0), by = b.y + NH / 2, dx = Math.max(40, Math.abs(bx - ax) / 2) * (rtl() ? -1 : 1);
+        s.append(svg("path", { d: `M${ax} ${ay} C${ax + dx} ${ay} ${bx - dx} ${by} ${bx} ${by}`, class: "wf-edge" + (LlmPlan.nodeLocked(b) ? " to-locked" : ""), "marker-end": "url(#wf-arrow)" }));
+      }
+      for (const n of graph.nodes) {
+        const locked = LlmPlan.nodeLocked(n);
+        const g = svg("g", { class: "wf-node k-" + n.kind + (locked ? " locked" : "") + (selected === n.id ? " sel" : ""), transform: `translate(${dispX(n, W)} ${n.y})`, tabindex: "0", role: "button", "aria-pressed": String(selected === n.id), "aria-label": n.title + ", " + KIND_LABEL[n.kind] + (locked ? ", locked: waits for approval" : "") });
+        const shown = (tr(n.title) || n.title).trim(); // translate before shortening, so the dictionary still matches
+        const t = svg("text", { x: rtl() ? NW - 12 : 12, y: 26, class: "wf-title", "text-anchor": "start", direction: rtl() ? "rtl" : "ltr" }); t.textContent = shown.length > 24 ? shown.slice(0, 23) + "…" : shown;
+        const sub = svg("text", { x: rtl() ? NW - 12 : 12, y: 48, class: "wf-sub", direction: rtl() ? "rtl" : "ltr" }); sub.textContent = locked ? "Locked · waits for approval" : n.kind === "tool" ? n.tool : n.kind === "gate" ? CHECK_LABEL[n.check] + " gate" : KIND_LABEL[n.kind];
+        g.append(svg("rect", { width: NW, height: NH, rx: 12, class: "wf-box" }), t, sub);
+        g.addEventListener("pointerdown", ev => startDrag(ev, n, g, W));
+        g.addEventListener("click", () => select(n.id));
+        g.addEventListener("keydown", ev => {
+          const step = ev.shiftKey ? 40 : 10;
+          const mv = { ArrowRight: [rtl() ? -step : step, 0], ArrowLeft: [rtl() ? step : -step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[ev.key];
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n.id); }
+          else if (mv) { ev.preventDefault(); n.x = Math.max(0, n.x + mv[0]); n.y = Math.max(0, n.y + mv[1]); markDirty(); draw(); focusNode(n.id); }
+        });
+        s.append(g);
+      }
+      // Fits the panel; below 640 px the graph keeps its size and the panel scrolls instead.
+      s.style.minWidth = Math.min(W, 640) + "px";
+      s.style.aspectRatio = W + " / " + H;
+      canvasWrap.replaceChildren(s);
+    }
+    const focusNode = nid => { const el = canvasWrap.querySelector(".wf-node[aria-label^='" + CSS.escape(graph.nodes.find(n => n.id === nid).title) + "']"); if (el) el.focus(); };
+    // Drag a node with the pointer; positions are stored in left-to-right coordinates.
+    function startDrag(ev, n, g, W) {
+      if (ev.button !== 0) return;
+      const s = canvasWrap.querySelector("svg"), m = s.getScreenCTM(); if (!m) return;
+      const sx = ev.clientX, sy = ev.clientY, ox = n.x, oy = n.y; let moved = false;
+      g.setPointerCapture(ev.pointerId);
+      const move = e => { const dx = (e.clientX - sx) / m.a, dy = (e.clientY - sy) / m.d; if (Math.abs(dx) + Math.abs(dy) > 3) moved = true; n.x = Math.max(0, Math.round(ox + (rtl() ? -dx : dx))); n.y = Math.max(0, Math.round(oy + dy)); g.setAttribute("transform", `translate(${dispX(n, W)} ${n.y})`); };
+      const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); if (moved) { markDirty(); draw(); } };
+      g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+    }
+    function select(nid) { selected = nid; draw(); drawInspector(); }
+    function drawInspector() {
+      const n = graph.nodes.find(x => x.id === selected);
+      if (!n) { inspector.replaceChildren(h("p", { class: "muted t-sm", text: "Select a step to edit it, or add one." })); return; }
+      const title = h("input", { class: "input", id: "f-node-title", name: "node-title", autocomplete: "off", maxLength: 80, value: n.title, dir: "auto" });
+      title.addEventListener("input", () => { n.title = title.value; markDirty(); draw(); });
+      const kind = h("select", { class: "select", id: "f-node-kind", name: "node-kind", autocomplete: "off" }, Object.entries(KIND_LABEL).map(([k, l]) => h("option", { value: k, text: l, selected: n.kind === k })));
+      kind.addEventListener("change", () => { n.kind = kind.value; delete n.tool; delete n.check; delete n.category; if (n.kind === "tool") n.tool = "files.read"; if (n.kind === "gate") n.check = "tests"; if (n.kind === "approval") n.category = "file_write"; markDirty(); draw(); drawInspector(); });
+      const extra = n.kind === "tool" ? ["tool", "Read tool", LlmPlan.WF_TOOLS.map(t => [t, t])] : n.kind === "gate" ? ["check", "Check", LlmPlan.WF_CHECKS.map(c => [c, CHECK_LABEL[c]])] : n.kind === "approval" ? ["category", "Asks for", LlmPlan.WF_CATEGORIES.map(c => [c, CATEGORY_LABEL[c]])] : null;
+      let extraField = null;
+      if (extra) {
+        const sel = h("select", { class: "select", id: "f-node-" + extra[0], name: "node-" + extra[0], autocomplete: "off" }, extra[2].map(([v, l]) => h("option", { value: v, text: l, selected: n[extra[0]] === v })));
+        sel.addEventListener("change", () => { n[extra[0]] = sel.value; markDirty(); draw(); });
+        extraField = h("div", { class: "field" }, h("label", { htmlFor: sel.id, text: extra[1] }), sel);
+      }
+      const needs = h("fieldset", null, h("legend", { class: "legend", text: "Needs (runs after)" }), graph.nodes.filter(o => o.id !== n.id).map(o => {
+        const cb = h("input", { type: "checkbox", name: "needs", value: o.id, checked: graph.edges.some(e => e.from === o.id && e.to === n.id) });
+        cb.addEventListener("change", () => { graph.edges = graph.edges.filter(e => !(e.from === o.id && e.to === n.id)); if (cb.checked) graph.edges.push({ from: o.id, to: n.id }); markDirty(); draw(); });
+        return h("label", { class: "check" }, cb, h("span", { dir: "auto", text: o.title }));
+      }));
+      const del = h("button", { class: "btn btn-danger btn-sm", type: "button", text: "Delete step" });
+      del.addEventListener("click", () => { graph.nodes = graph.nodes.filter(x => x.id !== n.id); graph.edges = graph.edges.filter(e => e.from !== n.id && e.to !== n.id); selected = null; markDirty(); draw(); drawInspector(); });
+      const locked = LlmPlan.nodeLocked(n);
+      inspector.replaceChildren(
+        h("div", { class: "field" }, h("label", { htmlFor: "f-node-title", text: "Title" }), title),
+        h("div", { class: "field" }, h("label", { htmlFor: "f-node-kind", text: "Kind" }), kind), extraField, needs,
+        locked ? h("p", { class: "sample-note lock-note" }, icon("i-lock", "sm"), "This step is locked: it waits for Director 00 outside Jarvis, whatever kind it is drawn as.") : null,
+        h("div", { class: "row" }, del));
+    }
+    function drawPhases() {
+      let steps;
+      try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(graph)); errBox.hidden = true; }
+      catch (e) { errBox.hidden = false; errBox.textContent = e.message; phasesBox.replaceChildren(); return false; }
+      const phases = [...new Set(steps.map(x => x.phase))];
+      phasesBox.replaceChildren(...phases.map(p => h("div", { class: "wf-phase" }, h("b", { text: "Phase " + p }),
+        h("ul", null, steps.filter(x => x.phase === p).map(x => h("li", null, h("span", { dir: "auto", text: x.title }), " ", x.locked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), "Locked") : h("span", { class: "badge" + (x.kind === "tool" ? " mono" : ""), text: x.kind === "gate" ? CHECK_LABEL[x.criteria[0].check] : x.kind === "tool" ? x.tool : "asks first" })))))));
+      return true;
+    }
+    const addBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-plus", "sm"), "Add step");
+    addBtn.addEventListener("click", () => {
+      let i = graph.nodes.length + 1; while (graph.nodes.some(n => n.id === "step-" + i)) i++;
+      const maxY = Math.max(0, ...graph.nodes.map(n => n.y));
+      graph.nodes.push({ id: "step-" + i, title: "New step " + i, kind: "tool", tool: "files.read", x: 40, y: graph.nodes.length ? maxY + 100 : 40 });
+      markDirty(); select("step-" + i);
+    });
+    const saveBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Save" });
+    const save = () => { if (!drawPhases()) return Promise.reject(new Error(errBox.textContent)); return store.saveWorkflow(wf.id, { name: nameIn.value, graph }).then(w => { wf = w; dirty = false; status.textContent = "Saved · v" + w.version; return w; }); };
+    saveBtn.addEventListener("click", () => save().then(() => toast("ok", "Workflow saved."), e => toast("error", e.message)));
+    const runBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-run", "sm"), "Run workflow");
+    runBtn.addEventListener("click", () => { runBtn.disabled = true; (dirty ? save() : Promise.resolve()).then(() => store.runWorkflow(wf.id)).then(r => { toast("info", "Running as a mission. Locked steps will wait."); location.hash = "#/missions/" + r.mission; }, e => toast("error", e.message)).finally(() => { runBtn.disabled = false; }); });
+    const delWf = h("button", { class: "btn btn-ghost", type: "button", text: "Delete workflow…" });
+    delWf.addEventListener("click", e => openDialog("Delete this workflow?", h("p", { class: "muted t-sm", text: "Missions it already ran stay." }),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Keep it", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Delete", onclick: () => store.deleteWorkflow(wf.id).then(() => { closeDialog(); location.hash = "#/workflows"; }, err => toast("error", err.message)) })], e.currentTarget));
+    nameIn.addEventListener("input", markDirty);
+    loadInto(box, () => store.getWorkflow(id), w => {
+      wf = w; graph = JSON.parse(JSON.stringify(w.graph)); nameIn.value = w.name; status.textContent = "v" + w.version;
+      draw(); drawInspector(); drawPhases();
+      return h("div", { class: "stack" },
+        h("div", { class: "page-head" }, h("div", { class: "field wf-name" }, h("label", { htmlFor: "f-wfn", text: "Workflow name" }), nameIn), h("div", { class: "row" }, status, delWf, addBtn, saveBtn, runBtn)),
+        sampleNote(), errBox,
+        h("div", { class: "wf-layout" },
+          h("section", { class: "panel wf-stage", "aria-labelledby": "h-graph" }, h("h2", { id: "h-graph", text: "Graph" }),
+            h("p", { class: "hint", text: "Drag a step, or select it and use the arrow keys (Shift for bigger moves). Links run from a step to the steps that need it." }), canvasWrap),
+          h("aside", { class: "stack" },
+            h("section", { class: "panel", "aria-labelledby": "h-insp" }, h("h2", { id: "h-insp", text: "Step" }), inspector),
+            h("section", { class: "panel", "aria-labelledby": "h-wfph" }, h("h2", { id: "h-wfph", text: "Phases when it runs" }), phasesBox),
+            w.runs && w.runs.length ? h("section", { class: "panel", "aria-labelledby": "h-wfruns" }, h("h2", { id: "h-wfruns", text: "Runs" }), h("ul", { class: "stack" }, w.runs.map(r => h("li", { class: "row" }, h("a", { href: "#/missions/" + r.id, class: "mono t-caption", text: String(r.id).slice(0, 12) }), badge(r.status), timeEl(typeof r.createdAt === "number" ? r.createdAt : Date.parse(r.createdAt)))))) : null)));
+    });
+    return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/workflows", text: "← Workflows" })), box);
+  };
+
+  /* ── Analytics (ADR-137): bars are SVG, every label and number is HTML text ── */
+  const barSvg = (value, max, cls) => {
+    const s = svg("svg", { class: "bar-svg", viewBox: "0 0 100 10", preserveAspectRatio: "none", "aria-hidden": "true" });
+    s.append(svg("rect", { x: 0, y: 0, width: 100, height: 10, rx: 2, class: "bar-track" }), svg("rect", { x: 0, y: 0, width: max ? Math.max(value ? 1.5 : 0, value / max * 100) : 0, height: 10, rx: 2, class: "bar-fill " + (cls || "") }));
+    return s;
+  };
+  const barRows = (rows, label) => {
+    const max = Math.max(1, ...rows.map(r => r.value));
+    return h("ul", { class: "bars", "aria-label": label }, rows.map(r => h("li", null, h("span", { class: "bar-label", dir: "auto", text: r.label }), barSvg(r.value, max, r.cls), h("span", { class: "num bar-value", text: r.text || fmtN.format(r.value) }))));
+  };
+  pages.analytics = () => {
+    const box = h("div", { class: "stack" });
+    loadInto(box, () => store.analytics(), a => {
+      const runs = a.runsByDay.reduce((n, d) => n + d.runs, 0);
+      const gp = a.gateRates.reduce((n, g) => n + g.pass, 0), gf = a.gateRates.reduce((n, g) => n + g.fail, 0);
+      const tokens = a.tokens.reduce((n, t) => n + t.tokens, 0);
+      const maxDay = Math.max(1, ...a.runsByDay.map(d => d.runs));
+      const daySvg = svg("svg", { class: "days-svg", viewBox: "0 0 140 40", preserveAspectRatio: "none", "aria-hidden": "true" },
+        a.runsByDay.map((d, i) => svg("rect", { x: i * 10 + 1, y: 40 - Math.max(d.runs ? 2 : 0, d.runs / maxDay * 38), width: 8, height: Math.max(d.runs ? 2 : 0, d.runs / maxDay * 38), rx: 1.5, class: "bar-fill" })));
+      return h("div", { class: "stack" },
+        h("section", { class: "creator", "aria-labelledby": "h-creator" },
+          h("div", { class: "row between" }, h("h2", { id: "h-creator", text: "Creator mode" }), badge("ok", "Zero-token · unlimited")),
+          h("p", { class: "t-sm", text: "You build and run everything at no token cost: local rules and the local model on 127.0.0.1. Paid plans for other people are drafts; charging anyone stays locked for Director 00." }),
+          h("a", { class: "btn btn-secondary btn-sm", href: "#/settings", text: "Plans and token ledger" })),
+        h("div", { class: "stats" },
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Runs in 14 days" }), h("span", { class: "value num", text: fmtN.format(runs) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Gate checks passed" }), h("span", { class: "value num", text: gp + gf ? Math.round(gp / (gp + gf) * 100) + "%" : "—" }), h("span", { class: "subtle t-caption num", text: gp + " / " + (gp + gf) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "State capsules" }), h("span", { class: "value num", text: fmtN.format(a.capsules) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Tokens used" }), h("span", { class: "value num", text: fmtN.format(tokens) }), h("span", { class: "subtle t-caption", text: "Cost: 0 · estimated as characters ÷ 4 [INFERENCE]" }))),
+        h("div", { class: "grid-2" },
+          h("section", { class: "panel", "aria-labelledby": "h-days" }, h("h2", { id: "h-days", text: "Runs per day" }), daySvg,
+            h("div", { class: "row between t-caption subtle" }, h("span", { class: "num", text: a.runsByDay[0].day }), h("span", { class: "num", text: a.runsByDay[13].day })),
+            h("p", { class: "vh", text: a.runsByDay.map(d => d.day + ": " + d.runs).join(", ") })),
+          h("section", { class: "panel", "aria-labelledby": "h-gates" }, h("h2", { id: "h-gates", text: "Gate pass rate" }),
+            barRows(a.gateRates.map(g => ({ label: CHECK_LABEL[g.check], value: g.rate || 0, text: g.rate == null ? "no runs" : g.rate + "% · " + g.pass + "/" + (g.pass + g.fail), cls: g.rate != null && g.rate < 100 ? "warn" : "" })), "Gate pass rate")),
+          h("section", { class: "panel", "aria-labelledby": "h-ag" }, h("h2", { id: "h-ag", text: "Agents" }),
+            a.agents.length ? barRows(a.agents.map(g => ({ label: g.agent, value: g.runs, text: g.succeeded + " ok · " + g.failed + " failed" })), "Runs per agent") : h("p", { class: "muted t-sm", text: "No agents yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-ms" }, h("h2", { id: "h-ms", text: "Missions" }),
+            a.missionsByStatus.length ? barRows(a.missionsByStatus.map(m => ({ label: m.key, value: m.count })), "Missions by status") : h("p", { class: "muted t-sm", text: "No missions yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-tok" }, h("h2", { id: "h-tok", text: "Tokens by engine" }),
+            a.tokens.length ? barRows(a.tokens.map(t => ({ label: t.engine, value: t.tokens, text: fmtN.format(t.tokens) + " · cost 0" })), "Tokens by engine") : h("p", { class: "muted t-sm", text: "Nothing used yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-apr" }, h("h2", { id: "h-apr", text: "Approvals" }),
+            a.approvals.length ? barRows(a.approvals.map(p => ({ label: p.key.replace("locked-", "locked · "), value: p.count, cls: p.key.startsWith("locked") ? "locked" : "" })), "Approvals") : h("p", { class: "muted t-sm", text: "No requests yet." }))));
+    });
+    return h("div", { class: "stack" }, pageHead("Analytics", "How agents, gates, missions and tokens are doing in this workspace."), sampleNote(), box);
+  };
+
+  /* ── Webhooks (ADR-137) ─────────────────────────────────────── */
+  function secretDialog(id, secret, from) {
+    const show = s => openDialog("Webhook secret", h("div", { class: "stack" },
+      h("p", { class: "t-sm", text: "Sign each delivery's exact body with HMAC-SHA256 using this secret, and send it as X-Jarvis-Signature: sha256=<hex>. Keep it out of git and chats." }),
+      h("pre", { class: "diff", translate: "no", text: s })), [h("button", { class: "btn btn-secondary", type: "button", text: "Close", onclick: closeDialog })], from);
+    if (secret) show(secret); else store.webhookSecret(id).then(r => show(r.secret), e => toast("error", e.message));
+  }
+  pages.webhooks = () => {
+    const box = h("div", { class: "stack" });
+    const render = list => list.length ? h("div", { class: "stack" }, list.map(wh => {
+      const act = (fn, msg) => e => { e.currentTarget.disabled = true; fn().then(r => { if (r && r.locked) toast("warn", "Locked: sending outside Jarvis waits for Director 00."); else toast("ok", msg); reload(); }, err => { toast("error", err.message); reload(); }); };
+      return h("article", { class: "approval" + (wh.external ? " locked" : ""), "aria-labelledby": "wh-" + wh.id },
+        h("div", { class: "row between" }, h("h3", { id: "wh-" + wh.id, dir: "auto", text: wh.name }), h("div", { class: "row" }, h("span", { class: "badge", text: wh.direction === "in" ? "Incoming" : "Outgoing" }), badge(wh.status === "active" ? "ok" : wh.status === "paused" ? "paused" : "idle", wh.status === "active" ? "On" : wh.status === "paused" ? "Paused" : "Draft"))),
+        h("p", { class: "mono t-caption", translate: "no", text: wh.direction === "in" ? "POST " + wh.endpoint : wh.url }),
+        wh.external ? h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Sending outside this computer is an outbound message (AGENTS.md §1). The database refuses to switch it on." })) : null,
+        wh.deliveries.length ? h("ul", { class: "feed" }, wh.deliveries.slice(0, 5).map(d => h("li", null, badge(d.status === "verified" || d.status === "sent" ? "ok" : "failed", d.status), h("span", { class: "t-caption", text: d.detail }), h("span", { class: "mono t-caption subtle", translate: "no", text: d.body_sha256 ? d.body_sha256.slice(0, 12) : "" }), timeEl(typeof d.at === "number" ? d.at : Date.parse(d.at))))) : h("p", { class: "muted t-sm", text: "No deliveries yet." }),
+        h("div", { class: "row" },
+          wh.status !== "active" ? h("button", { class: "btn btn-primary btn-sm", type: "button", text: wh.external ? "Ask to switch on…" : "Switch on", onclick: act(() => store.activateWebhook(wh.id), "Webhook switched on.") }) : h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Pause", onclick: act(() => store.pauseWebhook(wh.id), "Paused.") }),
+          wh.direction === "out" && wh.status === "active" ? h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Send test event", onclick: act(() => store.testWebhook(wh.id).then(r => { toast(r.status === "sent" ? "ok" : "error", "Test: " + r.status + " · " + r.detail); return null; }), "Sent.") }) : null,
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Show secret", onclick: e => secretDialog(wh.id, null, e.currentTarget) }),
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Delete", onclick: act(() => store.deleteWebhook(wh.id), "Deleted.") })));
+    })) : emptyState("i-hook", "No webhooks yet", store.mode === "live" ? "Incoming webhooks let local tools tell Jarvis something happened; outgoing ones send mission results to a tool on this computer." : "Webhooks run on the local server, where their secrets are kept. Start it with: node jarvis/server/server.mjs");
+    const reload = () => loadInto(box, () => store.listWebhooks(), render);
+    const name = h("input", { class: "input", id: "f-whname", name: "webhook-name", autocomplete: "off", maxLength: 80, placeholder: "CI results" });
+    const dir = h("select", { class: "select", id: "f-whdir", name: "webhook-direction", autocomplete: "off" }, h("option", { value: "in", text: "Incoming (a tool posts to Jarvis)" }), h("option", { value: "out", text: "Outgoing (Jarvis posts to a tool)" }));
+    const url = h("input", { class: "input mono", id: "f-whurl", name: "webhook-url", type: "url", autocomplete: "off", placeholder: "http://127.0.0.1:9000/hook", disabled: true });
+    dir.addEventListener("change", () => { url.disabled = dir.value !== "out"; });
+    const add = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Add webhook");
+    add.addEventListener("click", e => { const from = e.currentTarget; store.createWebhook({ name: name.value, direction: dir.value, url: url.value }).then(wh => { name.value = ""; reload(); secretDialog(wh.id, wh.secret, from); }, err => toast("error", err.message)); });
+    reload();
+    return h("div", { class: "stack" },
+      pageHead("Webhooks", "Signed with HMAC-SHA256. Outgoing webhooks may only reach this computer; anything outside waits for Director 00."), sampleNote(),
+      h("section", { class: "panel", "aria-labelledby": "h-whnew" }, h("h2", { id: "h-whnew", text: "New webhook" }),
+        h("div", { class: "grid-2" }, h("div", { class: "field" }, h("label", { htmlFor: "f-whname", text: "Name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-whdir", text: "Direction" }), dir)),
+        h("div", { class: "field" }, h("label", { htmlFor: "f-whurl", text: "Address (outgoing only)" }), url), h("div", { class: "row" }, add)),
+      box);
+  };
+
+  /* ── Run comparison (ADR-137) ───────────────────────────────── */
+  pages.compare = (a, b) => {
+    const box = h("div");
+    loadInto(box, () => Promise.all([store.getRun(a), store.getRun(b)]), ([x, y]) => {
+      const tools = [...new Set([...x.steps.map(s => s.tool), ...y.steps.map(s => s.tool)])];
+      const col = r => h("div", { class: "stat" }, h("span", { class: "label", dir: "auto", text: r.agentName }), h("span", { class: "row" }, badge(r.status), timeEl(r.createdAt)), h("span", { class: "num t-caption", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) + " · cost 0" }));
+      return h("div", { class: "stack" }, h("div", { class: "grid-2" }, col(x), col(y)),
+        h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Steps side by side" }, h("table", null,
+          h("thead", null, h("tr", null, ["Step", "Run A", "Run B", "Change"].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, tools.map(t => {
+            const sa = x.steps.find(s => s.tool === t), sb = y.steps.find(s => s.tool === t);
+            const d = sa && sb && sa.ms != null && sb.ms != null ? sb.ms - sa.ms : null;
+            return h("tr", null, h("td", { class: "mono", text: t }),
+              h("td", null, sa ? h("span", { class: "row" }, badge(sa.status), h("span", { class: "num t-caption", text: dur(sa.ms) })) : h("span", { class: "subtle", text: "—" })),
+              h("td", null, sb ? h("span", { class: "row" }, badge(sb.status), h("span", { class: "num t-caption", text: dur(sb.ms) })) : h("span", { class: "subtle", text: "—" })),
+              h("td", { class: "num", text: !sa ? "only in B" : !sb ? "only in A" : sa.status !== sb.status ? sa.status + " → " + sb.status : d == null ? "same" : (d > 0 ? "+" : "") + fmtN.format(d) + " ms" }));
+          })))));
+    });
+    return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/runs", text: "← Runs" })), pageHead("Compare runs", "Two runs side by side, step by step."), box);
+  };
+
+  /* ── Agent templates gallery (ADR-137) ──────────────────────── */
+  const AGENT_TEMPLATES = [
+    { name: "Release notes writer", rolePrompt: "Turns recent commits into release notes. Publishing them is Director 00's call.", tools: ["git.log", "notes.write"], skills: ["replica-build"], maxSteps: 10, mode: "single" },
+    { name: "Decision record reader", rolePrompt: "Reads docs/adr and summarises what changed and why.", tools: ["files.read", "notes.write"], skills: ["omega-knowledge-domain"], maxSteps: 12, mode: "single" },
+    { name: "Design token auditor", rolePrompt: "Reads jarvis/replica/design and reports which tokens changed and whether the gates still pass.", tools: ["files.read", "notes.write"], skills: ["replica-design"], maxSteps: 12, mode: "long_horizon" },
+    { name: "Run reviewer", rolePrompt: "Reads this workspace's runs and writes a short review of what failed.", tools: ["runs.read", "notes.write"], skills: [], maxSteps: 8, mode: "single" },
+    { name: "Notes librarian", rolePrompt: "Lists the notes this workspace wrote and the docs they cite.", tools: ["notes.read", "files.read"], skills: [], maxSteps: 8, mode: "single" },
+    { name: "Release readiness mission", rolePrompt: "Reads commits and decision records, passes the security gate, then asks to save a note.", tools: ["git.log", "files.read", "notes.write"], skills: ["replica-long-horizon"], maxSteps: 12, mode: "long_horizon" },
+  ];
+  pages.templates = () => h("div", { class: "stack" }, h("p", null, h("a", { href: "#/agents", text: "← Agents" })),
+    pageHead("Agent templates", "Start an agent from a template, then change anything before you save."),
+    h("ul", { class: "mlist", "aria-label": "Templates" }, AGENT_TEMPLATES.map(t => h("li", null, h("article", { class: "mcard" },
+      h("b", { dir: "auto", text: t.name }), h("p", { class: "t-sm muted", dir: "auto", text: t.rolePrompt }),
+      h("div", { class: "row" }, t.tools.map(x => h("span", { class: "badge mono", text: x })), t.mode === "long_horizon" ? h("span", { class: "badge", text: "Long-horizon" }) : null),
+      h("div", null, h("button", { class: "btn btn-primary btn-sm", type: "button", text: "Use template", onclick: e => agentDialog(e.currentTarget, null, { ...t, model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)" }) })))))));
+
+  /* ── Schedule panel on an agent (ADR-137) ───────────────────── */
+  function schedulePanel(a) {
+    const box = h("div", { class: "stack" });
+    const PRESETS_MIN = [[15, "Every 15 minutes"], [60, "Every hour"], [360, "Every 6 hours"], [1440, "Every day"], [10080, "Every week"]];
+    loadInto(box, () => store.listSchedules(), list => {
+      const cur = list.find(x => x.agentId === a.id);
+      const every = h("select", { class: "select", id: "f-every", name: "every", autocomplete: "off" }, PRESETS_MIN.map(([m, l]) => h("option", { value: String(m), text: l, selected: cur ? cur.everyMinutes === m : m === 60 })));
+      const on = h("input", { class: "switch", type: "checkbox", role: "switch", id: "f-schon", name: "schedule-on", checked: cur ? cur.enabled : true });
+      const saveB = h("button", { class: "btn btn-primary btn-sm", type: "button", text: cur ? "Save schedule" : "Schedule runs" });
+      saveB.addEventListener("click", () => store.setSchedule(a.id, { everyMinutes: Number(every.value), enabled: on.checked }).then(() => { toast("ok", "Schedule saved."); box.replaceWith(schedulePanel(a)); }, e => toast("error", e.message)));
+      const rm = cur ? h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Remove schedule", onclick: () => store.deleteSchedule(a.id).then(() => { toast("ok", "Schedule removed."); box.replaceWith(schedulePanel(a)); }, e => toast("error", e.message)) }) : null;
+      return h("div", { class: "stack" },
+        h("div", { class: "field" }, h("label", { htmlFor: "f-every", text: "Run" }), every),
+        h("label", { class: "check", htmlFor: "f-schon" }, on, h("span", { text: "On" })),
+        cur ? h("p", { class: "t-sm muted" }, "Next run ", timeEl(typeof cur.nextAt === "number" ? cur.nextAt : Date.parse(cur.nextAt)), cur.lastError ? " · last try: " + cur.lastError : "") : null,
+        h("p", { class: "hint", text: store.mode === "live" ? "The local server starts due runs every 30 seconds while it runs. A run is skipped while the agent is busy." : "Sample mode keeps the schedule; only the local server runs it." }),
+        h("div", { class: "row" }, saveB, rm));
+    });
+    return box;
+  }
+
+  /* ── Members and roles, plans and tokens (Settings, ADR-137) ─── */
+  function membersPanel() {
+    const box = h("div", { class: "stack" });
+    const render = list => {
+      const email = h("input", { class: "input", id: "f-memail", name: "member-email", type: "email", autocomplete: "off", placeholder: "name@example.com" });
+      const role = h("select", { class: "select", id: "f-mrole", name: "member-role", autocomplete: "off" }, ["viewer", "operator", "admin"].map(r => h("option", { value: r, text: r })));
+      const add = h("button", { class: "btn btn-primary btn-sm", type: "button", text: "Add member" });
+      add.addEventListener("click", () => store.addMember({ email: email.value, role: role.value }).then(l => { toast("ok", "Added. No invitation was sent: outbound messages are locked."); box.replaceChildren(render(l)); }, e => toast("error", e.message)));
+      return h("div", { class: "stack" },
+        h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Members" }, h("table", null,
+          h("thead", null, h("tr", null, ["Member", "Role", ""].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, list.map(m => {
+            if (m.role === "owner") return h("tr", null, h("td", { text: m.email }), h("td", null, h("span", { class: "badge", text: "owner" })), h("td"));
+            const sel = h("select", { class: "select", name: "role-" + m.id, autocomplete: "off", "aria-label": "Role of " + m.email }, ["viewer", "operator", "admin"].map(r => h("option", { value: r, text: r, selected: m.role === r })));
+            sel.addEventListener("change", () => store.setRole(m.id, sel.value).then(l => { toast("ok", "Role changed."); box.replaceChildren(render(l)); }, e => toast("error", e.message)));
+            return h("tr", null, h("td", { text: m.email }), h("td", null, sel), h("td", null, h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Remove", "aria-label": "Remove " + m.email, onclick: () => store.removeMember(m.id).then(l => box.replaceChildren(render(l)), e => toast("error", e.message)) })));
+          })))),
+        h("div", { class: "member-add" }, h("div", { class: "field" }, h("label", { htmlFor: "f-memail", text: "Email" }), email), h("div", { class: "field" }, h("label", { htmlFor: "f-mrole", text: "Role" }), role), add));
+    };
+    loadInto(box, () => store.members(), render);
+    return box;
+  }
+  function plansPanel() {
+    const box = h("div", { class: "stack" });
+    const render = b => {
+      const name = h("input", { class: "input", id: "f-tname", name: "tier-name", autocomplete: "off", maxLength: 40, placeholder: "Pro" });
+      const toks = h("input", { class: "input num", id: "f-ttok", name: "tier-tokens", inputmode: "numeric", autocomplete: "off", placeholder: "2000000" });
+      const price = h("input", { class: "input num", id: "f-tprice", name: "tier-price", inputmode: "numeric", autocomplete: "off", placeholder: "1900" });
+      const save = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Save draft plan" });
+      save.addEventListener("click", () => store.saveTier({ name: name.value, monthlyTokens: Number(toks.value), priceMinor: Number(price.value || 0), currency: "USD" }).then(nb => box.replaceChildren(render(nb)), e => toast("error", e.message)));
+      const money = what => e => store.requestMoney(what).then(() => { toast("warn", "Locked: charging people waits for Director 00 outside Jarvis."); location.hash = "#/approvals"; }, err => toast("error", err.message));
+      return h("div", { class: "stack" },
+        h("div", { class: "row" }, badge("ok", b.creatorZeroToken ? "Creator · zero-token · unlimited" : "Creator mode off"), badge("idle", b.billingEnabled ? "Billing on" : "Billing off")),
+        h("p", { class: "t-sm", text: "You pay nothing: every entry in the ledger is yours at cost 0. Plans for future subscribers are drafts; turning on billing or a plan is a money decision that waits for Director 00 (AGENTS.md §1), and the database keeps both off." }),
+        b.tiers.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Draft plans" }, h("table", null,
+          h("thead", null, h("tr", null, ["Plan", "Tokens a month", "Draft price", "Status", ""].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, b.tiers.map(t => h("tr", null, h("td", { text: t.name }), h("td", { class: "num", text: fmtN.format(t.monthlyTokens) }), h("td", { class: "num", text: (t.priceMinor / 100).toFixed(2) + " " + t.currency }), h("td", null, badge("idle", "Draft")),
+            h("td", null, h("div", { class: "row" }, h("button", { class: "btn btn-ghost btn-sm", type: "button", onclick: money(t.name) }, icon("i-lock", "sm"), "Activate…"), h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Delete", "aria-label": "Delete plan " + t.name, onclick: () => store.deleteTier(t.id).then(nb => box.replaceChildren(render(nb)), e => toast("error", e.message)) })))))))) : h("p", { class: "muted t-sm", text: "No draft plans yet." }),
+        h("div", { class: "member-add" }, h("div", { class: "field" }, h("label", { htmlFor: "f-tname", text: "Plan name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-ttok", text: "Tokens a month" }), toks), h("div", { class: "field" }, h("label", { htmlFor: "f-tprice", text: "Draft price (cents)" }), price), save),
+        h("div", { class: "row" }, h("button", { class: "btn btn-secondary", type: "button", onclick: money("billing") }, icon("i-lock", "sm"), "Turn on billing…")),
+        h("h3", { class: "t-sm", text: "Token ledger" }),
+        b.ledger.recent.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Token ledger" }, h("table", null,
+          h("thead", null, h("tr", null, ["When", "Engine", "Tokens", "Cost"].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, b.ledger.recent.map(l => h("tr", null, h("td", null, timeEl(typeof l.at === "number" ? l.at : Date.parse(l.at))), h("td", { class: "mono t-caption", text: l.engine + (l.model ? " · " + l.model : "") }), h("td", { class: "num", text: fmtN.format(l.tokens) }), h("td", { class: "num", text: "0" })))))) : h("p", { class: "muted t-sm", text: "Nothing used yet." }));
+    };
+    loadInto(box, () => store.billing(), render);
+    return box;
+  }
 
   /* ── Studio (S13): live builder in a sandboxed frame ─────────── */
   // The clean-room extractor: jarvis/server/lib/clean-clone.mjs, inlined by the build (pure functions,
@@ -2511,7 +3152,104 @@ function fallbackPlan(goal) {
   return steps;
 }
 
-    return { fallbackPlan, enforceApprovalGates };
+    // Workflow graphs (ADR-137), pure: used by jarvis/server/lib/platform.mjs and inlined into the page by
+// the build, so the editor checks a graph exactly as the server does. Needs llm-plan.mjs's
+// lockCategory, GATE_EVIDENCE and LOCKED_CATEGORIES (imported here, in scope when inlined).
+
+
+const WF_TOOLS = ["files.read", "git.log", "notes.read", "runs.read"];
+const WF_CHECKS = ["tests", "lint", "contrast", "security"];
+const WF_CATEGORIES = [...LOCKED_CATEGORIES, "file_write"];
+const MAX_NODES = 30;
+const bad = msg => { throw Object.assign(new Error(msg), { status: 400 }); };
+
+// A graph is {nodes: [{id, title, kind, tool|check|category, x, y}], edges: [{from, to}]}.
+// Kinds: tool (a read tool), gate (a check on saved evidence), approval (a person decides),
+// note (a note written after approval). Levels come from a topological sort (Kahn); a cycle is refused.
+function checkGraph(raw) {
+  const g = raw && typeof raw === "object" ? raw : {};
+  const nodes = Array.isArray(g.nodes) ? g.nodes : [], edges = Array.isArray(g.edges) ? g.edges : [];
+  if (!nodes.length) bad("Add at least one step.");
+  if (nodes.length > MAX_NODES) bad("A workflow has at most " + MAX_NODES + " steps.");
+  const ids = new Set();
+  const out = nodes.map((n, i) => {
+    const id = String(n && n.id || "");
+    if (!/^[a-z0-9-]{1,24}$/.test(id) || ids.has(id)) bad("Step " + (i + 1) + " needs a unique id (a-z, 0-9, -).");
+    ids.add(id);
+    const title = String(n.title || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!title) bad("Step " + (i + 1) + " needs a title.");
+    const kind = ["tool", "gate", "approval", "note"].includes(n.kind) ? n.kind : bad("Step “" + title + "” has an unknown kind.");
+    const node = { id, title, kind, x: clamp(n.x, 0, 2400), y: clamp(n.y, 0, 1600) };
+    if (kind === "tool") node.tool = WF_TOOLS.includes(n.tool) ? n.tool : bad("Pick a read tool for “" + title + "”.");
+    if (kind === "gate") node.check = WF_CHECKS.includes(n.check) ? n.check : bad("Pick a check for “" + title + "”.");
+    if (kind === "approval") node.category = WF_CATEGORIES.includes(n.category) ? n.category : bad("Pick what “" + title + "” asks for.");
+    return node;
+  });
+  const seen = new Set();
+  const cleanEdges = edges.map(e => {
+    const from = String(e && e.from), to = String(e && e.to);
+    if (!ids.has(from) || !ids.has(to)) bad("A link points to a step that does not exist.");
+    if (from === to) bad("A step cannot need itself.");
+    if (seen.has(from + ">" + to)) bad("The same link is there twice.");
+    seen.add(from + ">" + to);
+    return { from, to };
+  });
+  const levels = topoLevels(out.map(n => n.id), cleanEdges);
+  return { nodes: out, edges: cleanEdges, levels };
+}
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
+
+// Kahn's algorithm: each node's level is the longest chain of needs before it. Nodes left over sit on a cycle.
+function topoLevels(ids, edges) {
+  const indeg = new Map(ids.map(i => [i, 0])), next = new Map(ids.map(i => [i, []])), level = new Map(ids.map(i => [i, 0]));
+  for (const e of edges) { indeg.set(e.to, indeg.get(e.to) + 1); next.get(e.from).push(e.to); }
+  const queue = ids.filter(i => indeg.get(i) === 0);
+  let seen = 0;
+  while (queue.length) {
+    const n = queue.shift(); seen++;
+    for (const m of next.get(n)) { level.set(m, Math.max(level.get(m), level.get(n) + 1)); indeg.set(m, indeg.get(m) - 1); if (indeg.get(m) === 0) queue.push(m); }
+  }
+  if (seen < ids.length) bad("These steps need each other in a loop: " + ids.filter(i => indeg.get(i) > 0).join(", ") + ". Remove one link.");
+  return Object.fromEntries(level);
+}
+
+// The graph as mission steps: phase = level + 1 (at most 10), needs = incoming links. A step whose
+// title mentions money, publishing, permissions, installs or outbound messages is locked whatever
+// kind it was drawn as.
+function graphToSteps(graph) {
+  const order = [...graph.nodes].sort((a, b) => graph.levels[a.id] - graph.levels[b.id] || a.y - b.y || a.x - b.x);
+  const index = new Map(order.map((n, i) => [n.id, i]));
+  return order.map(n => {
+    const phase = Math.min(10, graph.levels[n.id] + 1);
+    const depends = graph.edges.filter(e => e.to === n.id).map(e => index.get(e.from)).filter(d => d < index.get(n.id));
+    const lock = lockCategory(n.title);
+    const base = { phase, title: n.title, depends, nodeId: n.id };
+    if (lock || (n.kind === "approval" && LOCKED_CATEGORIES.includes(n.category))) return { ...base, kind: "approval", category: lock || n.category, locked: true };
+    if (n.kind === "approval" || n.kind === "note") return { ...base, kind: "approval", category: "file_write", locked: false };
+    if (n.kind === "gate") return { ...base, kind: "gate", criteria: GATE_EVIDENCE[n.check] };
+    return { ...base, kind: "tool", tool: n.tool, input: n.tool === "files.read" ? { path: "docs/adr/ADR-13*" } : {} };
+  });
+}
+
+
+// Is this node locked? (the same rule graphToSteps applies)
+const nodeLocked = n => !!lockCategory(n.title || "") || (n.kind === "approval" && LOCKED_CATEGORIES.includes(n.category));
+
+function starterGraph() {
+  return {
+    nodes: [
+      { id: "commits", title: "Read the latest commits", kind: "tool", tool: "git.log", x: 40, y: 40 },
+      { id: "adrs", title: "Read the decision records", kind: "tool", tool: "files.read", x: 40, y: 140 },
+      { id: "tests", title: "Tests gate", kind: "gate", check: "tests", x: 300, y: 40 },
+      { id: "security", title: "Security gate", kind: "gate", check: "security", x: 300, y: 140 },
+      { id: "note", title: "Save the release note", kind: "note", x: 560, y: 40 },
+      { id: "publish", title: "Publish the release notes", kind: "approval", category: "publish", x: 560, y: 140 },
+    ],
+    edges: [{ from: "commits", to: "tests" }, { from: "adrs", to: "security" }, { from: "tests", to: "note" }, { from: "security", to: "note" }, { from: "security", to: "publish" }],
+  };
+}
+
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2814,7 +3552,7 @@ function fallbackPlan(goal) {
         sw.addEventListener("change", () => { if (sw.checked) { if (!mix.includes(s.name)) mix.push(s.name); } else mix = mix.filter(n => n !== s.name); saveMix(); renderList(); renderMix(); });
         return h("li", { class: "skill" + (on ? " on" : "") },
           h("div", { class: "skill-head" }, sw, h("b", { class: "mono", translate: "no", text: s.name })),
-          h("p", { text: s.description || "No description." }),
+          s.description ? h("p", { lang: "en", dir: "ltr", translate: "no", text: s.description }) : h("p", { text: "No description." }),
           h("div", { class: "row" }, h("span", { class: "badge", text: SOURCE_LABEL[s.source] || s.source }), findingsBadge(s.findings), s.review ? h("span", { class: "subtle t-caption mono", text: s.review }) : null));
       }));
     };
@@ -2884,25 +3622,29 @@ function fallbackPlan(goal) {
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
   let first = true;
   function route() {
+    for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
     const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/");
     let key = parts[0], arg = parts[1];
     let make;
-    if (key === "agents" && arg) { make = () => pages.agent(decodeURIComponent(arg)); key = "agent"; }
+    if (key === "agents" && arg === "templates") { make = pages.templates; key = "templates"; }
+    else if (key === "agents" && arg) { make = () => pages.agent(decodeURIComponent(arg)); key = "agent"; }
+    else if (key === "runs" && arg === "compare" && parts[3]) { make = () => pages.compare(decodeURIComponent(parts[2]), decodeURIComponent(parts[3])); key = "compare"; }
+    else if (key === "workflows" && arg) { make = () => pages.workflow(decodeURIComponent(arg)); key = "workflow"; }
     else if (key === "runs" && arg) { make = () => pages.run(decodeURIComponent(arg)); key = "run"; }
     else if (key === "missions" && arg) { make = () => pages.mission(decodeURIComponent(arg)); key = "mission"; }
-    else if (pages[key] && !["agent", "run", "mission"].includes(key)) make = pages[key];
+    else if (pages[key] && !["agent", "run", "mission", "workflow", "compare", "templates"].includes(key)) make = pages[key];
     const main = $("#main");
-    const navKey = { agent: "agents", run: "runs", mission: "missions" }[key] || key;
+    const navKey = { agent: "agents", run: "runs", mission: "missions", workflow: "workflows", compare: "runs", templates: "agents" }[key] || key;
     $$(".nav a[data-route]").forEach(a => (a.dataset.route === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     if (!make) {
       main.replaceChildren(emptyState("i-search", "This page does not exist", "Check the address, or go back to the overview.", h("a", { class: "btn btn-primary", href: "#/overview", text: "Overview" })));
       document.title = "Not found · Jarvis";
     } else {
       main.replaceChildren(make());
-      document.title = TITLES[key] + " · Jarvis";
+      document.title = (tr(TITLES[key]) || TITLES[key]).trim() + " · Jarvis";
     }
     if (!first) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
     first = false;
@@ -2961,7 +3703,7 @@ function fallbackPlan(goal) {
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],

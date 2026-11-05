@@ -194,9 +194,18 @@ The top bar shows "Ollama local · 0-token" when it answers, and the model can t
 
 Without Ollama, the same buttons use the fixed rules.
 
+## Workflows, analytics, webhooks, Arabic (ADR-137)
+
+- **Workflows.** `#/workflows` lists the graphs; the SVG editor draws and edits them (drag, or the arrow keys). Running one makes a mission, and locked steps wait.
+- **Analytics.** `#/analytics` shows the numbers and the creator card: zero-token, unlimited.
+- **Plans and tokens.** In Settings you can write draft plans for future subscribers. Turning on billing or a plan is a locked money request: the database keeps billing off and every plan a draft.
+- **Webhooks.** `#/webhooks`. An incoming hook takes `POST /api/hooks/<id>` with `X-Jarvis-Signature: sha256=<HMAC-SHA256 of the body>`. An outgoing hook reaches `http://127.0.0.1:<port>/` only; any other address is a locked request.
+- **Arabic.** Press «ع» in the top bar, or open the page with `?lang=ar`. Every new UI string needs a line in `jarvis/app/src/i18n-ar.json`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.
 - **The Studio** only downloads a file. The cloner reads one public page, obeys `robots.txt`, refuses private addresses, and keeps only its layout: no text, images, colours, scripts or brand.
 - **The Skill Mixer** only copies a plan.
+- **Billing** is never switched on, and no plan is ever charged, from Jarvis. **Webhooks** never send outside this computer from Jarvis.
 - **A local model** never decides a lock, never runs a tool of its own, and its HTML is never shown as-is.

@@ -27,7 +27,7 @@ Two phases, both built. Phase 1 is the static page (ADR-133). Phase 2 is the loc
 
 ## Schema
 
-Tables: 15 (`schema.sql`; ADR-135 adds `missions`, `mission_steps`, `capsules` and `gate_results`).
+Tables: 21 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` and `gate_results`. ADR-137 adds `schedules`, `webhooks`, `webhook_deliveries`, `billing_settings`, `subscriber_tiers` and `token_ledger`.
 
 **Access rules.** Phase 2 runs a data-layer check on every query in `jarvis/server`: the caller's member row and its role on the workspace. Row level security is noted in the SQL for when there is more than one user.
 
@@ -39,6 +39,13 @@ Tables: 15 (`schema.sql`; ADR-135 adds `missions`, `mission_steps`, `capsules` a
 - **`events` is append-only.** A trigger refuses `update` and `delete`.
 - **`mission_steps_locked_never_done`** (ADR-135). A mission step in a locked category can never be marked done. It waits as a «بانتظار الموافقة» card while steps that do not need it carry on.
 - **`mission_steps_gate_before_done`.** A gate step is done only when its gate passed.
+- **ADR-137:**
+  - `members_one_owner`;
+  - `webhooks_external_out_locked`: an outgoing hook can be active only towards `http://127.0.0.1:<port>/`;
+  - `billing_settings_billing_locked`;
+  - `subscriber_tiers_draft_only`;
+  - `token_ledger_creator_free`;
+  - `webhook_deliveries` and `token_ledger` are append-only.
 - **`capsules` is append-only.** Its trigger works like the one on `events`. Each row's `hash` is the SHA-256 of its canonical JSON, chained by `prev_hash`.
 
 ## API (phase 2)

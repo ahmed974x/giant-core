@@ -135,14 +135,14 @@ export function createStore(db) {
     },
     // Create the run and its planned steps in one transaction. The partial unique index
     // runs_one_active_per_agent refuses a second active run for the same agent.
-    async createRun(slug, agentId, input, plan) {
+    async createRun(slug, agentId, input, plan, trigger = "manual") {
       const wid = await wsId(slug);
       const a = await db.one("select id from agents where id = $1 and workspace_id = $2", [agentId, wid]);
       if (!a) bad("No agent with that id in this workspace.", 404);
       const id = randomUUID(), t = iso();
       try {
         await db.tx(async tx => {
-          await tx.run("insert into runs (id, workspace_id, agent_id, trigger, status, input, log, created_at, updated_at) values ($1, $2, $3, 'manual', 'queued', $4, '[]', $5, $5)", [id, wid, agentId, JSON.stringify(input || {}), t]);
+          await tx.run("insert into runs (id, workspace_id, agent_id, trigger, status, input, log, created_at, updated_at) values ($1, $2, $3, $6, 'queued', $4, '[]', $5, $5)", [id, wid, agentId, JSON.stringify(input || {}), t, trigger === "schedule" ? "schedule" : "manual"]);
           for (const [i, tool] of plan.entries()) await tx.run("insert into steps (id, run_id, idx, agent_id, tool, status, created_at, updated_at) values ($1, $2, $3, $4, $5, 'queued', $6, $6)", [randomUUID(), id, i, agentId, tool, t]);
           await tx.run("update agents set status = 'running', updated_at = $1 where id = $2", [t, agentId]);
         });
@@ -247,8 +247,10 @@ export function createStore(db) {
         (select updated_at from workspaces where id = $1) as w,
         (select max(updated_at) from missions where workspace_id = $1) as m,
         (select max(ms.updated_at) from mission_steps ms join missions m2 on m2.id = ms.mission_id where m2.workspace_id = $1) as ms,
-        (select count(*) from capsules c join missions m3 on m3.id = c.mission_id where m3.workspace_id = $1) as c`, [wid]);
-      return { v: [v.e, v.r, v.s, v.a, v.p, v.w, v.m, v.ms, v.c].map(x => x == null ? "-" : String(x)).join("|") };
+        (select count(*) from capsules c join missions m3 on m3.id = c.mission_id where m3.workspace_id = $1) as c,
+        (select max(id) from token_ledger where workspace_id = $1) as l,
+        (select count(*) from webhook_deliveries where workspace_id = $1) as d`, [wid]);
+      return { v: [v.e, v.r, v.s, v.a, v.p, v.w, v.m, v.ms, v.c, v.l, v.d].map(x => x == null ? "-" : String(x)).join("|") };
     },
   };
   return api;

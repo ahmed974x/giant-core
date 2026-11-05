@@ -47,8 +47,9 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage off: the page still works */ } },
   };
   const fmtN = new Intl.NumberFormat("en");
-  const rel = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const fmtDate = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
+  // Dates follow the interface language (Arabic with Latin digits, like every number in Jarvis).
+  let rel = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  let fmtDate = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
   function ago(ts) {
     const s = Math.round((ts - Date.now()) / 1000);
     const a = Math.abs(s);
@@ -349,6 +350,11 @@
     /* Missions in the sample store: the same engine rules as jarvis/server/lib/missions.mjs, on this
        browser's data. Tool steps are simulated; gate steps judge the evidence snapshot taken at build
        time (real files from the repo); capsules are real SHA-256 chains over this browser's state. */
+    const WFS = () => {
+      const w = W();
+      if (!w.workflows) { const g = LlmPlan.starterGraph(); w.workflows = [{ id: uid("wf"), name: "Review and release", version: 1, graph: g, createdAt: Date.now(), updatedAt: Date.now() }]; }
+      return w.workflows;
+    };
     const MS = () => {
       const w = W();
       if (!w.missions) {
@@ -453,6 +459,8 @@
         const p = String(prompt || "").trim();
         if (!p) return bad("Write what you want first.");
         const base = { mode, engine: "deterministic-rules", zeroTokenCost: true, thinking: null, label: "fixed rules (no model)", warning: "Sample mode: no model. The local server talks to Ollama on 127.0.0.1." };
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        b.ledger.push({ actor: "creator", engine: "deterministic-rules", model: null, tokens: Math.ceil(p.length / 4), cost_micro_usd: 0, ref: "llm." + mode, at: Date.now() }); save();
         if (mode === "design") { const out = CleanRoom.cleanClone("<h1>" + p.replace(/[<>&]/g, " ") + "</h1><p>.</p>"); out.report.source = "fixed rules"; return ok({ ...base, blocks: out.blocks, report: out.report }); }
         if (mode === "plan") return ok({ ...base, steps: LlmPlan.fallbackPlan(p), planFrom: "fixed rules" });
         return ok({ ...base, text: "Sample mode has no model. Start jarvis/server and Ollama for answers." });
@@ -464,6 +472,113 @@
         const m = newMission({ title: g.slice(0, 120), goal: g, steps }, "llm-plan", { title: g.slice(0, 120), capsuleEvery: capsuleEvery || 1 });
         m.planner = { engine: "deterministic-rules", model: null, thinking: null, planFrom: "fixed rules", warning: "Sample mode: no model. Locks are decided by rule.", label: "fixed rules (no model)", at: new Date().toISOString() };
         MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
+      // ADR-137 in sample mode: the same rules on this browser's data. Webhooks need the local server
+      // (their HMAC secrets never live in the browser), and schedules run only there.
+      listWorkflows() { return ok(WFS().map(w => ({ id: w.id, name: w.name, version: w.version, updatedAt: w.updatedAt, steps: w.graph.nodes.length, locked: w.graph.nodes.filter(LlmPlan.nodeLocked).length }))); },
+      getWorkflow(id) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let steps = []; try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(w.graph)); } catch (e) { /* draft */ }
+        return ok({ ...w, steps, runs: MS().filter(m => m.planner && m.planner.workflowId === id).map(m => ({ id: m.id, status: m.status, createdAt: m.createdAt })) });
+      },
+      createWorkflow({ name, graph }) {
+        const n = String(name || "").trim();
+        if (!n || n.length > 80) return bad("Use 1 to 80 characters for the name.");
+        let g; try { g = LlmPlan.checkGraph(graph || LlmPlan.starterGraph()); } catch (e) { return bad(e.message); }
+        const w = { id: uid("wf"), name: n, version: 1, graph: { nodes: g.nodes, edges: g.edges }, createdAt: Date.now(), updatedAt: Date.now() };
+        WFS().push(w); W().events.push(ev("member:owner", "workflow.created", w.id)); save(); return api.getWorkflow(w.id);
+      },
+      saveWorkflow(id, { name, graph }) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let g; try { g = LlmPlan.checkGraph(graph); } catch (e) { return bad(e.message); }
+        const n = String(name == null ? w.name : name).trim();
+        if (!n || n.length > 80) return bad("Use 1 to 80 characters for the name.");
+        Object.assign(w, { name: n, graph: { nodes: g.nodes, edges: g.edges }, version: w.version + 1, updatedAt: Date.now() });
+        W().events.push(ev("member:owner", "workflow.saved", id)); save(); return api.getWorkflow(id);
+      },
+      deleteWorkflow(id) { W().workflows = WFS().filter(x => x.id !== id); save(); return ok({ ok: true }); },
+      runWorkflow(id) {
+        const w = WFS().find(x => x.id === id);
+        if (!w) return bad("No workflow with that id in this workspace.");
+        let steps; try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(w.graph)); } catch (e) { return bad(e.message); }
+        const m = newMission({ title: "Workflow: " + w.name, goal: "Workflow: " + w.name, steps }, "workflow", { title: "Workflow: " + w.name, capsuleEvery: 1 });
+        m.planner = { engine: "workflow", model: null, thinking: null, planFrom: "workflow graph v" + w.version, workflowId: id, label: "workflow graph (no model)", at: new Date().toISOString() };
+        MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save();
+        return startSample(m).then(() => ({ mission: m.id }));
+      },
+      addMember({ email, role }) {
+        const e = String(email || "").trim().toLowerCase();
+        if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,24}$/.test(e)) return bad("Give an email address.");
+        if (!["admin", "operator", "viewer"].includes(role)) return bad("Pick admin, operator or viewer. There is one owner.");
+        if (W().members.some(m => m.email === e)) return bad("That person is already a member.");
+        W().members.push({ id: uid("mb"), email: e, role }); W().events.push(ev("member:owner", "member.added", e)); save(); return ok(W().members);
+      },
+      setRole(id, role) {
+        const m = W().members.find(x => x.id === id);
+        if (!m) return bad("No member with that id.");
+        if (m.role === "owner") return bad("The owner's role does not change here.");
+        if (!["admin", "operator", "viewer"].includes(role)) return bad("Pick admin, operator or viewer.");
+        m.role = role; save(); return ok(W().members);
+      },
+      removeMember(id) {
+        const m = W().members.find(x => x.id === id);
+        if (!m) return bad("No member with that id.");
+        if (m.role === "owner") return bad("The owner cannot be removed.");
+        W().members = W().members.filter(x => x.id !== id); save(); return ok(W().members);
+      },
+      listSchedules() { return ok((W().schedules || []).map(x => ({ ...x, agentName: (W().agents.find(a => a.id === x.agentId) || {}).name || "Removed agent" }))); },
+      setSchedule(agentId, { everyMinutes, enabled }) {
+        const every = Number(everyMinutes);
+        if (!Number.isInteger(every) || every < 5 || every > 10080) return bad("Run every 5 minutes to 7 days (10,080 minutes).");
+        const list = W().schedules || (W().schedules = []);
+        const cur = list.find(x => x.agentId === agentId) || (list.push({ id: uid("sc"), agentId }), list[list.length - 1]);
+        Object.assign(cur, { everyMinutes: every, enabled: enabled !== false, nextAt: Date.now() + every * 60000, lastRunId: null, lastError: null });
+        save(); return api.listSchedules();
+      },
+      deleteSchedule(agentId) { W().schedules = (W().schedules || []).filter(x => x.agentId !== agentId); save(); return api.listSchedules(); },
+      listWebhooks() { return ok([]); },
+      createWebhook() { return bad("Webhooks run on the local server, where their HMAC secrets are kept. Start it with: node jarvis/server/server.mjs"); },
+      billing() {
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        const totals = {};
+        for (const l of b.ledger) { const t = totals[l.engine] || (totals[l.engine] = { engine: l.engine, entries: 0, tokens: 0, costMicroUsd: 0 }); t.entries++; t.tokens += l.tokens; }
+        return ok({ creatorZeroToken: true, billingEnabled: false, tiers: b.tiers, ledger: { totals: Object.values(totals), recent: b.ledger.slice(-20).reverse() }, moneyRequests: [] });
+      },
+      saveTier({ id, name, monthlyTokens, priceMinor, currency }) {
+        const b = W().billing || (W().billing = { tiers: [], ledger: [] });
+        const n = String(name || "").trim(), mt = Number(monthlyTokens), pm = Number(priceMinor || 0), cur = String(currency || "USD").toUpperCase();
+        if (!n || n.length > 40) return bad("Use 1 to 40 characters for the plan name.");
+        if (!Number.isInteger(mt) || mt < 0) return bad("Monthly tokens is a whole number.");
+        if (!Number.isInteger(pm) || pm < 0) return bad("The draft price is a whole number of cents.");
+        if (!/^[A-Z]{3}$/.test(cur)) return bad("Currency is a three-letter code.");
+        if (b.tiers.some(t => t.name === n && t.id !== id)) return bad("Another plan has this name.");
+        const t = id ? b.tiers.find(x => x.id === id) : null;
+        if (t) Object.assign(t, { name: n, monthlyTokens: mt, priceMinor: pm, currency: cur }); else b.tiers.push({ id: uid("tier"), name: n, monthlyTokens: mt, priceMinor: pm, currency: cur, status: "draft" });
+        save(); return api.billing();
+      },
+      deleteTier(id) { const b = W().billing || { tiers: [] }; b.tiers = b.tiers.filter(t => t.id !== id); save(); return api.billing(); },
+      requestMoney(what) {
+        const ap = { id: uid("ap"), category: "money", agentId: null, action: what === "billing" ? "Turn on billing and token plans for subscribers" : "Activate the subscriber plan “" + what + "”", payload: "Charging people is Director 00's decision outside Jarvis, after a legal review.", status: "pending", createdAt: Date.now() };
+        W().approvals.push(ap); save(); return api.billing().then(b => ({ locked: true, approvalId: ap.id, billing: b }));
+      },
+      analytics() {
+        const w = W(), day = 86400000, now = Date.now();
+        const count = (list, key) => { const o = {}; list.forEach(x => { o[x[key]] = (o[x[key]] || 0) + 1; }); return Object.entries(o).map(([k, c]) => ({ key: k, count: c })); };
+        const gates = {};
+        for (const m of MS()) for (const st of m.steps) for (const g of st.gates || []) { const r = gates[g.check_name] || (gates[g.check_name] = { pass: 0, fail: 0 }); r[g.status]++; }
+        const b = W().billing || { ledger: [] };
+        const tok = {}; b.ledger.forEach(l => { tok[l.engine] = tok[l.engine] || { engine: l.engine, entries: 0, tokens: 0, costMicroUsd: 0 }; tok[l.engine].entries++; tok[l.engine].tokens += l.tokens; });
+        return ok({
+          runsByStatus: count(w.runs, "status"),
+          runsByDay: [...Array(14)].map((_, i) => { const d = new Date(now - (13 - i) * day).toISOString().slice(0, 10); return { day: d, runs: w.runs.filter(r => new Date(r.createdAt).toISOString().slice(0, 10) === d).length }; }),
+          agents: w.agents.map(a => ({ agent: a.name, runs: w.runs.filter(r => r.agentId === a.id).length, succeeded: w.runs.filter(r => r.agentId === a.id && r.status === "succeeded").length, failed: w.runs.filter(r => r.agentId === a.id && r.status === "failed").length })),
+          gateRates: ["tests", "lint", "contrast", "security"].map(c => { const r = gates[c] || { pass: 0, fail: 0 }; return { check: c, pass: r.pass, fail: r.fail, rate: r.pass + r.fail ? Math.round(r.pass / (r.pass + r.fail) * 1000) / 10 : null }; }),
+          missionsByStatus: count(MS(), "status"), capsules: MS().reduce((n, m) => n + m.capsules.length, 0),
+          approvals: count(w.approvals.map(p => ({ k: (LOCKED[p.category] ? "locked-" : "") + p.status })), "k"),
+          webhooks: [], tokens: Object.values(tok), creatorZeroToken: true, costMicroUsd: 0,
+        });
       },
       listMissions() { return ok(MS().slice().sort((a, b) => b.createdAt - a.createdAt).map(m => ({ id: m.id, title: m.title, template: m.template, status: m.status, createdAt: m.createdAt, steps: m.steps.length, done: m.steps.filter(s => s.status === "done").length, blocked: m.steps.filter(s => s.status === "blocked").length, failed: m.steps.filter(s => s.status === "failed").length, phases: new Set(m.steps.map(s => s.phase)).size, capsules: m.capsules.length, health: missionHealth(m) }))); },
       getMission(id) { const m = findMission(id); return m ? ok(missionOut(m)) : bad("No mission with that id in this workspace."); },
@@ -539,11 +654,24 @@
       try { const v = (await req("GET", w("/version"))).v; if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; } catch (e) { /* keep the page; the next poll retries */ }
     };
     const startPolling = () => { if (!timer) timer = setInterval(() => { if (!document.hidden && subs.size) poll(); }, 1500); };
+    // Server push first (ADR-137): the server sends a "change" event when the workspace changes; the
+    // 1.5 s poll is only the fallback when the stream cannot stay open.
+    let es = null, live = "poll";
+    const onChange = v => { if (version !== null && v !== version) subs.forEach(fn => fn()); version = v; };
+    function startStream() {
+      if (typeof EventSource !== "function") { startPolling(); return; }
+      if (es) es.close();
+      es = new EventSource(w("/stream"));
+      es.addEventListener("change", e => { try { live = "stream"; onChange(JSON.parse(e.data).v); } catch (x) { /* ignore a bad frame */ } });
+      es.addEventListener("error", () => { if (es && es.readyState === 2) { live = "poll"; startPolling(); } });
+    }
+    const startLive = () => { if (!es && !timer) startStream(); };
     poll();
     const api = {
       mode: "live",
       info,
-      subscribe(fn) { subs.add(fn); startPolling(); return () => subs.delete(fn); },
+      subscribe(fn) { subs.add(fn); startLive(); return () => subs.delete(fn); },
+      get liveUpdates() { return live; },
       setFail(on) { failMode = !!on; },
       get failMode() { return failMode; },
       get slug() { return slug; },
@@ -551,7 +679,7 @@
       listWorkspaces: () => req("GET", "/api/workspaces"),
       // The change marker is read right away (not on the next poll), so a change that lands within the
       // first poll interval after a switch is still noticed.
-      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); await poll(); subs.forEach(fn => fn()); return ws; },
+      async switchWorkspace(s) { const ws = await req("GET", "/api/w/" + encodeURIComponent(s)); slug = s; version = null; store$.set("jarvis-ws", s); await poll(); if (es) startStream(); subs.forEach(fn => fn()); return ws; },
       workspace: () => req("GET", w("")),
       renameWorkspace: name => req("PATCH", w(""), { name }),
       members: () => req("GET", w("/members")),
@@ -571,8 +699,33 @@
       cleanClone: body => req("POST", "/api/studio/clean-clone", body),
       listMissions: () => req("GET", w("/missions")),
       llmStatus: () => req("GET", "/api/llm/status"),
-      llmRun: body => req("POST", "/api/llm/run", body),
+      llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
       planMission: body => req("POST", w("/missions/plan"), body),
+      // ADR-137
+      listWorkflows: () => req("GET", w("/workflows")),
+      getWorkflow: id => req("GET", w("/workflows/" + encodeURIComponent(id))),
+      createWorkflow: body => req("POST", w("/workflows"), body),
+      saveWorkflow: (id, body) => req("PUT", w("/workflows/" + encodeURIComponent(id)), body),
+      deleteWorkflow: id => req("DELETE", w("/workflows/" + encodeURIComponent(id)), {}),
+      runWorkflow: id => req("POST", w("/workflows/" + encodeURIComponent(id) + "/run"), {}),
+      addMember: body => req("POST", w("/members"), body),
+      setRole: (id, role) => req("PATCH", w("/members/" + encodeURIComponent(id)), { role }),
+      removeMember: id => req("DELETE", w("/members/" + encodeURIComponent(id)), {}),
+      listSchedules: () => req("GET", w("/schedules")),
+      setSchedule: (agentId, body) => req("PUT", w("/agents/" + encodeURIComponent(agentId) + "/schedule"), body),
+      deleteSchedule: agentId => req("DELETE", w("/agents/" + encodeURIComponent(agentId) + "/schedule"), {}),
+      listWebhooks: () => req("GET", w("/webhooks")),
+      createWebhook: body => req("POST", w("/webhooks"), body),
+      activateWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/activate"), {}),
+      pauseWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/pause"), {}),
+      testWebhook: id => req("POST", w("/webhooks/" + encodeURIComponent(id) + "/test"), {}),
+      deleteWebhook: id => req("DELETE", w("/webhooks/" + encodeURIComponent(id)), {}),
+      webhookSecret: id => req("GET", w("/webhooks/" + encodeURIComponent(id) + "/secret")),
+      billing: () => req("GET", w("/billing")),
+      saveTier: body => req("POST", w("/billing/tiers"), body),
+      deleteTier: id => req("DELETE", w("/billing/tiers/" + encodeURIComponent(id)), {}),
+      requestMoney: what => req("POST", w("/billing/request"), { what }),
+      analytics: () => req("GET", w("/analytics")),
       getMission: id => req("GET", w("/missions/" + encodeURIComponent(id))),
       createMission: input => req("POST", w("/missions"), input),
       runMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/run"), {}),
@@ -623,6 +776,80 @@
   function setDir(d) { applyDir(d); store$.set("jarvis-dir", d); }
   applyDir(store$.get("jarvis-dir") || "ltr");
   dirBtn.addEventListener("click", () => setDir(root.dir === "rtl" ? "ltr" : "rtl"));
+
+  /* ── Arabic / English (ADR-137) ─────────────────────────────
+     One dictionary (jarvis/app/src/i18n-ar.json, inlined by the build): exact strings and a few
+     patterns for text with numbers. Every text node and the aria-label, placeholder and title
+     attributes are translated as the page draws them (a MutationObserver), so nothing needs to be
+     written twice. Left as written: anything under translate="no", code, pre, .mono and .num, form
+     values, and the sandboxed preview, which has its own language switch. */
+  const I18N = DATA.i18n || { strings: {}, patterns: [] };
+  const AR = new Map(Object.entries(I18N.strings || {}));
+  const AR_PATTERNS = (I18N.patterns || []).map(([re, out]) => [new RegExp(re), out]);
+  const ATTRS = ["aria-label", "placeholder", "title"];
+  const origText = new WeakMap(), origAttr = new WeakMap();
+  // ?lang=ar|en in the address wins (and is remembered); then the stored choice; English by default.
+  const qLang = new URLSearchParams(location.search).get("lang");
+  if (qLang === "ar" || qLang === "en") store$.set("jarvis-lang", qLang);
+  let uiLang = (qLang || store$.get("jarvis-lang")) === "ar" ? "ar" : "en";
+  // Text with a number inside: "3 steps", "Phase 2". Patterns may nest a dictionary word through {{$1}}.
+  function tr(text) {
+    if (uiLang !== "ar" || !text) return null;
+    const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text), core = m[2];
+    if (!core || !/[A-Za-z]/.test(core)) return null;
+    let out = AR.get(core);
+    if (out == null) for (const [re, rep] of AR_PATTERNS) { if (re.test(core)) { out = core.replace(re, rep).replace(/\{\{([^}]*)\}\}/g, (all, w) => AR.get(w) || w); break; } }
+    return out == null ? null : m[1] + out + m[3];
+  }
+  const skipEl = el => !!(el && el.closest && el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage"));
+  function trNode(n) {
+    if (n.nodeType === 3) {
+      if (skipEl(n.parentElement)) return;
+      const src = origText.has(n) && n.nodeValue === origText.get(n).out ? origText.get(n).src : n.nodeValue;
+      const out = uiLang === "ar" ? tr(src) : null;
+      if (out != null) { origText.set(n, { src, out }); if (n.nodeValue !== out) n.nodeValue = out; }
+      else if (origText.has(n) && n.nodeValue === origText.get(n).out) { n.nodeValue = src; origText.delete(n); }
+      return;
+    }
+    if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE|IFRAME)$/.test(n.tagName)) return;
+    if (!skipEl(n)) {
+      let saved = origAttr.get(n);
+      for (const a of ATTRS) {
+        if (!n.hasAttribute(a)) continue;
+        const cur = n.getAttribute(a), rec = saved && saved[a];
+        const src = rec && cur === rec.out ? rec.src : cur;
+        const out = uiLang === "ar" ? tr(src) : null;
+        if (out != null) { if (!saved) origAttr.set(n, saved = {}); saved[a] = { src, out }; if (cur !== out) n.setAttribute(a, out); }
+        else if (rec && cur === rec.out) { n.setAttribute(a, src); delete saved[a]; }
+      }
+    }
+    for (const c of n.childNodes) trNode(c);
+  }
+  const observer = new MutationObserver(list => {
+    observer.disconnect();
+    for (const m of list) {
+      if (m.type === "childList") m.addedNodes.forEach(trNode);
+      else if (m.type === "attributes") trNode(m.target);
+      else if (m.type === "characterData") trNode(m.target);
+    }
+    observe();
+  });
+  const observe = () => observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  const langBtn = $("#langBtn");
+  function applyLang(l) {
+    uiLang = l === "ar" ? "ar" : "en";
+    root.lang = uiLang;
+    if (uiLang === "ar") root.dir = "rtl"; else applyDir(store$.get("jarvis-dir") || "ltr");
+    const loc = uiLang === "ar" ? "ar-u-nu-latn" : "en";
+    rel = new Intl.RelativeTimeFormat(loc, { numeric: "auto" });
+    fmtDate = new Intl.DateTimeFormat(loc, { dateStyle: "medium", timeStyle: "short" });
+    langBtn.textContent = uiLang === "ar" ? "EN" : "ع";
+    langBtn.setAttribute("lang", uiLang === "ar" ? "en" : "ar");
+    langBtn.setAttribute("aria-label", uiLang === "ar" ? "Switch to English" : "التبديل إلى العربية");
+    observer.disconnect(); trNode(document.body); observe();
+  }
+  langBtn.addEventListener("click", () => { const l = uiLang === "ar" ? "en" : "ar"; store$.set("jarvis-lang", l); applyLang(l); route(); });
+  applyLang(uiLang);
 
   const app = $("#app"), collapse = $("#collapse"), menu = $("#menu"), scrim = $("#scrim");
   if (store$.get("jarvis-rail") === "1") { app.classList.add("rail"); collapse.setAttribute("aria-expanded", "false"); collapse.querySelector(".nav-label").textContent = "Expand"; }
@@ -726,18 +953,18 @@
         h("a", { class: "stat", href: "#/approvals" }, h("span", { class: "label", text: "Waiting for you" }), h("span", { class: "value num s-pending", text: fmtN.format(s.waiting) }), h("span", { class: "subtle t-caption" }, fmtN.format(s.locked) + " more locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" }))),
         h("a", { class: "stat", href: "#/runs" }, h("span", { class: "label", text: "Failed runs (24 h)" }), h("span", { class: "value num" + (s.failed ? " s-failed" : ""), text: fmtN.format(s.failed) })))));
     loadInto(feed, () => store.listEvents(), evs => evs.length
-      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", { text: e.kind.replace(".", " ") + (e.target ? " · " + e.target : "") }), timeEl(e.at)))))
+      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", null, h("span", { text: e.kind.replace(".", " ") }), e.target ? h("span", { class: "mono t-caption subtle", translate: "no", text: " · " + e.target }) : null), timeEl(e.at)))))
       : emptyState("i-inbox", "Nothing has happened yet", "Create an agent and run it. Every action shows up here."));
     return wrap;
   };
 
   // Create or edit an agent: name, model, role, limits, tools (which set its permissions) and linked
   // skills. Locked permissions are shown and can never be switched on (AGENTS.md §1).
-  async function agentDialog(from, existingAgent) {
+  async function agentDialog(from, existingAgent, preset) {
     let others = [];
     try { others = await store.listAgents(); } catch (e) { toast("error", e.message); return; }
     const editing = !!existingAgent;
-    const a = existingAgent || { name: "", model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)", rolePrompt: "", maxSteps: 20, tools: ["notes.write"], skills: [] };
+    const a = existingAgent || (preset ? { ...preset } : null) || { name: "", model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)", rolePrompt: "", maxSteps: 20, tools: ["notes.write"], skills: [] };
     const f = {};
     const err = {};
     const field = (key, label, control, hint) => {
@@ -814,7 +1041,7 @@
     st.addEventListener("change", load);
     load();
     return h("div", { class: "stack" },
-      pageHead("Agents", "Each agent has a role, a model and the tools it may use.", h("button", { class: "btn btn-primary", type: "button", onclick: e => agentDialog(e.currentTarget) }, icon("i-plus", "sm"), "New agent")),
+      pageHead("Agents", "Each agent has a role, a model and the tools it may use.", h("a", { class: "btn btn-secondary", href: "#/agents/templates", text: "Templates" }), h("button", { class: "btn btn-primary", type: "button", onclick: e => agentDialog(e.currentTarget) }, icon("i-plus", "sm"), "New agent")),
       sampleNote(),
       h("div", { class: "filters" }, h("div", { class: "field" }, h("label", { htmlFor: "f-q", text: "Search" }), q), h("div", { class: "field narrow" }, h("label", { htmlFor: "f-st", text: "Status" }), st)),
       box);
@@ -857,6 +1084,7 @@
           badge(perms.readWeb ? "approved" : "idle", perms.readWeb ? "Reads public pages" : "No web reading"),
           h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), "Money, publish, permissions, install, outbound: locked"))),
         h("div", null, h("dt", { class: "muted", text: "Linked skills" }), h("dd", null, (a.skills || []).length ? h("ul", { class: "row" }, a.skills.map(s => h("li", { class: "badge mono", translate: "no", text: s }))) : h("span", { class: "subtle", text: "None" }))))],
+      ["Schedule", () => schedulePanel(a)],
       ["Tools", () => a.tools.length ? h("ul", { class: "row" }, a.tools.map(t => h("li", { class: "badge mono", text: t }))) : h("p", { class: "muted t-sm", text: "No tools. This agent can only think, not act." })],
       ["Runs", () => a.runs.length ? h("div", { class: "table-scroll" }, h("table", null, h("thead", null, h("tr", null, ["Run", "Status", "Started", "Steps"].map(c => h("th", { scope: "col", text: c })))),
         h("tbody", null, a.runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: String(r.id).slice(0, 12) })), h("td", null, badge(r.status)), h("td", null, timeEl(r.createdAt)), h("td", { class: "num", text: String((r.steps || []).length) })))))) : emptyState("i-run", "No runs yet", "Press Run once to try this agent.")]];
@@ -869,15 +1097,18 @@
     return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/agents", text: "← Agents" })), sampleNote(), box);
   };
 
+  // The chosen tab survives a redraw of the same page (a live update must not jump back to the first tab).
+  const TAB_MEMO = {};
   function tabsWidget(key, tabs) {
     const list = h("div", { class: "tablist", role: "tablist", "aria-label": "Sections" });
     const panels = [];
+    const start = TAB_MEMO[key] != null && TAB_MEMO[key].route === location.hash && TAB_MEMO[key].i < tabs.length ? TAB_MEMO[key].i : 0;
     const btns = tabs.map(([label, make], i) => {
-      const b = h("button", { class: "tab", role: "tab", type: "button", id: "tab-" + key + i, "aria-controls": "panel-" + key + i, "aria-selected": String(i === 0), tabIndex: i === 0 ? 0 : -1, text: label });
-      const p = h("div", { class: "tabpanel", role: "tabpanel", id: "panel-" + key + i, "aria-labelledby": "tab-" + key + i, tabindex: "0", hidden: i !== 0 }, make());
+      const b = h("button", { class: "tab", role: "tab", type: "button", id: "tab-" + key + i, "aria-controls": "panel-" + key + i, "aria-selected": String(i === start), tabIndex: i === start ? 0 : -1, text: label });
+      const p = h("div", { class: "tabpanel", role: "tabpanel", id: "panel-" + key + i, "aria-labelledby": "tab-" + key + i, tabindex: "0", hidden: i !== start }, make());
       panels.push(p); list.appendChild(b); return b;
     });
-    const select = b => { btns.forEach((x, i) => { const on = x === b; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; panels[i].hidden = !on; }); b.focus(); };
+    const select = b => { btns.forEach((x, i) => { const on = x === b; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; panels[i].hidden = !on; if (on) TAB_MEMO[key] = { i, route: location.hash }; }); b.focus(); };
     btns.forEach((b, i) => {
       b.addEventListener("click", () => select(b));
       b.addEventListener("keydown", e => {
@@ -893,13 +1124,20 @@
 
   pages.runs = () => {
     const box = h("div");
+    const picked = [];
+    const cmp = h("button", { class: "btn btn-secondary", type: "button", disabled: true, text: "Compare 2 runs" });
+    cmp.addEventListener("click", () => { location.hash = "#/runs/compare/" + picked.join("/"); });
     loadInto(box, () => store.listRuns(), runs => runs.length
       ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Runs" }, h("table", null,
-        h("thead", null, h("tr", null, ["Run", "Agent", "Status", "Started", "Duration", "Steps"].map((c, i) => h("th", { scope: "col", class: i >= 4 ? "end" : null, text: c })))),
-        h("tbody", null, runs.map(r => h("tr", null, h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", { dir: "auto" }, h("span", { class: "trunc", text: r.agentName })), h("td", null, badge(r.status)),
-          h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", text: String(r.steps.length) }))))))
+        h("thead", null, h("tr", null, ["", "Run", "Agent", "Status", "Started", "Duration", "Cost", "Steps"].map((c, i) => h("th", { scope: "col", class: i >= 5 ? "end" : null, text: c, "aria-label": i === 0 ? "Pick to compare" : null })))),
+        h("tbody", null, runs.map(r => {
+          const cb = h("input", { type: "checkbox", name: "compare", value: r.id, "aria-label": "Compare run " + r.id });
+          cb.addEventListener("change", () => { const i = picked.indexOf(r.id); if (cb.checked && i < 0) picked.push(r.id); if (!cb.checked && i >= 0) picked.splice(i, 1); while (picked.length > 2) { const old = picked.shift(); const o = box.querySelector("input[value='" + CSS.escape(old) + "']"); if (o) o.checked = false; } cmp.disabled = picked.length !== 2; });
+          return h("tr", null, h("td", null, cb), h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", { dir: "auto" }, h("span", { class: "trunc", text: r.agentName })), h("td", null, badge(r.status), r.trigger === "schedule" ? h("span", { class: "badge", text: "scheduled" }) : null),
+            h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", title: "Zero-token: fixed rules and local tools", text: "0" }), h("td", { class: "end num", text: String(r.steps.length) }));
+        }))))
       : emptyState("i-run", "No runs yet", "Open an agent and press Run once.", h("a", { class: "btn btn-primary", href: "#/agents", text: "Go to agents" })));
-    return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first."), sampleNote(), box);
+    return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first. Cost is 0: runs use local tools and fixed rules.", cmp), sampleNote(), box);
   };
 
   // One line about what a real step produced (live mode), or its try count (sample mode).
@@ -985,7 +1223,7 @@
       if (!list.length) return emptyState("i-logs", evs.length ? "No event matches" : "No events yet", evs.length ? "Try another word or kind." : "Every action is written here and never edited.");
       return h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Event log" }, h("table", null,
         h("thead", null, h("tr", null, ["When", "Actor", "Action", "Target"].map(c => h("th", { scope: "col", text: c })))),
-        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { text: e.kind }), h("td", { class: "mono t-caption", text: e.target || "—" }))))));
+        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { class: "mono t-caption", translate: "no", text: e.kind }), h("td", { class: "mono t-caption", translate: "no", text: e.target || "—" }))))));
     });
     let t;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(load, 150); });
@@ -1043,14 +1281,11 @@
           h("label", { class: "check", htmlFor: "f-fail" }, fail, h("span", { text: "Test error states (make every list fail to load)" })),
           h("div", null, reset)));
     };
-    const members = h("div");
     loadInto(box, () => store.workspace(), render);
-    loadInto(members, () => store.members(), list => h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Members" }, h("table", null,
-      h("thead", null, h("tr", null, ["Member", "Role"].map(c => h("th", { scope: "col", text: c })))),
-      h("tbody", null, list.map(m => h("tr", null, h("td", { text: m.email }), h("td", null, h("span", { class: "badge", text: m.role }))))))));
     return h("div", { class: "stack" }, pageHead("Settings", "Workspace, members, keys and how Jarvis looks."), box,
       h("section", { class: "block", "aria-labelledby": "h-members" }, h("h2", { id: "h-members", text: "Members" }),
-        h("p", { class: "muted t-sm", text: "Phase 1 has one local owner. Inviting people and changing roles come with the phase 2 service; changing repository permissions stays a locked approval." }), members));
+        h("p", { class: "muted t-sm", text: "Add people and give them a role. Nobody is emailed: invitations are outbound messages, which stay locked. Repository permissions are a separate, locked decision." }), membersPanel()),
+      h("section", { class: "block", "aria-labelledby": "h-plans" }, h("h2", { id: "h-plans", text: "Plans and tokens" }), plansPanel()));
   };
 
   /* ── Mission Control (ADR-135) ──────────────────────────────── */
@@ -1125,6 +1360,7 @@
     if (!pl) return null;
     const byModel = pl.engine === "ollama-local-loopback";
     return h("section", { class: "panel planner", "aria-labelledby": "h-planner" }, h("h2", { id: "h-planner", text: "Planner" }),
+      pl.engine === "workflow" ? h("p", { class: "t-sm" }, "Built from the workflow graph ", h("a", { href: "#/workflows/" + pl.workflowId, text: pl.planFrom || "" }), " (no model)") :
       h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
       h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
       pl.warning ? h("p", { class: "t-caption muted", dir: "auto", text: pl.warning }) : null,
@@ -1260,6 +1496,364 @@
     return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/missions", text: "← Missions" })), box);
   };
 
+  /* ── Workflows (S06, S07; ADR-137) ──────────────────────────── */
+  const KIND_LABEL = { tool: "Read tool", gate: "Gate", approval: "Approval", note: "Note (asks first)" };
+  const CHECK_LABEL = { tests: "TDD", lint: "Lint", contrast: "Contrast", security: "Security" };
+  const CATEGORY_LABEL = { file_write: "Write a file", money: "Money", publish: "Publish", permissions: "Permissions", install: "Install", outbound: "Outbound message" };
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const svg = (tag, attrs, ...kids) => { const n = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) if (v != null) n.setAttribute(k, String(v)); kids.flat().forEach(k => k && n.append(k)); return n; };
+
+  function newWorkflowDialog(from) {
+    const name = h("input", { class: "input", id: "f-wfname", name: "workflow-name", autocomplete: "off", maxLength: 80, value: "New workflow" });
+    const go = h("button", { class: "btn btn-primary", type: "button", text: "Create workflow" });
+    go.addEventListener("click", () => {
+      go.disabled = true;
+      store.createWorkflow({ name: name.value, graph: LlmPlan.starterGraph() }).then(w => { closeDialog(); location.hash = "#/workflows/" + w.id; }, e => { toast("error", e.message); go.disabled = false; });
+    });
+    openDialog("New workflow", h("div", { class: "stack" }, h("div", { class: "field" }, h("label", { htmlFor: "f-wfname", text: "Name" }), name),
+      h("p", { class: "hint", text: "It starts from the review-and-release graph; change it in the editor." })),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), go], from);
+  }
+
+  pages.workflows = () => {
+    const box = h("div");
+    const render = list => list.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Workflows" }, h("table", null,
+      h("thead", null, h("tr", null, ["Workflow", "Steps", "Locked steps", "Version", "Updated"].map((c, i) => h("th", { scope: "col", class: i && i < 4 ? "end" : null, text: c })))),
+      h("tbody", null, list.map(w => h("tr", null,
+        h("td", null, h("a", { href: "#/workflows/" + w.id, dir: "auto", class: "trunc", text: w.name })),
+        h("td", { class: "end num", text: String(w.steps) }),
+        h("td", { class: "end" }, w.locked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), h("span", { class: "num", text: String(w.locked) })) : h("span", { class: "subtle", text: "0" })),
+        h("td", { class: "end num", text: "v" + w.version }),
+        h("td", null, timeEl(typeof w.updatedAt === "number" ? w.updatedAt : Date.parse(w.updatedAt))))))))
+      : emptyState("i-flow", "No workflows yet", "A workflow links read tools, gates and approvals; running it makes a mission.", h("button", { class: "btn btn-primary", type: "button", text: "New workflow", onclick: e => newWorkflowDialog(e.currentTarget) }));
+    loadInto(box, () => store.listWorkflows(), render);
+    return h("div", { class: "stack" },
+      pageHead("Workflows", "Draw how steps depend on each other. Running a workflow makes a mission: steps that need nothing run together, gates need evidence, and locked steps wait.",
+        h("button", { class: "btn btn-primary", type: "button", onclick: e => newWorkflowDialog(e.currentTarget) }, icon("i-plus", "sm"), "New workflow")),
+      sampleNote(), box);
+  };
+
+  pages.workflow = id => {
+    const box = h("div", { class: "stack" });
+    let wf = null, graph = null, selected = null, dirty = false;
+    const NW = 196, NH = 64;
+    const canvasWrap = h("div", { class: "wf-canvas" });
+    const inspector = h("div", { class: "stack" });
+    const phasesBox = h("div", { class: "stack" });
+    const errBox = h("p", { class: "err", role: "alert", hidden: true });
+    const nameIn = h("input", { class: "input", id: "f-wfn", name: "workflow-name", autocomplete: "off", maxLength: 80 });
+    const status = h("span", { class: "subtle t-caption", "aria-live": "polite" });
+    const markDirty = () => { dirty = true; status.textContent = "Unsaved changes"; drawPhases(); };
+    const rtl = () => root.dir === "rtl";
+    function extent() { const xs = graph.nodes.map(n => n.x), ys = graph.nodes.map(n => n.y); return { w: Math.max(640, Math.max(0, ...xs) + NW + 40), h: Math.max(260, Math.max(0, ...ys) + NH + 40) }; }
+    const dispX = (n, W) => (rtl() ? W - n.x - NW : n.x);
+
+    function draw() {
+      const { w: W, h: H } = extent();
+      const s = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "group", "aria-label": "Workflow graph: " + graph.nodes.length + " steps" });
+      s.append(svg("defs", null, svg("marker", { id: "wf-arrow", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, svg("path", { d: "M0 0 L10 5 L0 10 z", class: "wf-arrowhead" }))));
+      const byId = new Map(graph.nodes.map(n => [n.id, n]));
+      for (const e of graph.edges) {
+        const a = byId.get(e.from), b = byId.get(e.to); if (!a || !b) continue;
+        const ax = dispX(a, W) + (rtl() ? 0 : NW), ay = a.y + NH / 2, bx = dispX(b, W) + (rtl() ? NW : 0), by = b.y + NH / 2, dx = Math.max(40, Math.abs(bx - ax) / 2) * (rtl() ? -1 : 1);
+        s.append(svg("path", { d: `M${ax} ${ay} C${ax + dx} ${ay} ${bx - dx} ${by} ${bx} ${by}`, class: "wf-edge" + (LlmPlan.nodeLocked(b) ? " to-locked" : ""), "marker-end": "url(#wf-arrow)" }));
+      }
+      for (const n of graph.nodes) {
+        const locked = LlmPlan.nodeLocked(n);
+        const g = svg("g", { class: "wf-node k-" + n.kind + (locked ? " locked" : "") + (selected === n.id ? " sel" : ""), transform: `translate(${dispX(n, W)} ${n.y})`, tabindex: "0", role: "button", "aria-pressed": String(selected === n.id), "aria-label": n.title + ", " + KIND_LABEL[n.kind] + (locked ? ", locked: waits for approval" : "") });
+        const shown = (tr(n.title) || n.title).trim(); // translate before shortening, so the dictionary still matches
+        const t = svg("text", { x: rtl() ? NW - 12 : 12, y: 26, class: "wf-title", "text-anchor": "start", direction: rtl() ? "rtl" : "ltr" }); t.textContent = shown.length > 24 ? shown.slice(0, 23) + "…" : shown;
+        const sub = svg("text", { x: rtl() ? NW - 12 : 12, y: 48, class: "wf-sub", direction: rtl() ? "rtl" : "ltr" }); sub.textContent = locked ? "Locked · waits for approval" : n.kind === "tool" ? n.tool : n.kind === "gate" ? CHECK_LABEL[n.check] + " gate" : KIND_LABEL[n.kind];
+        g.append(svg("rect", { width: NW, height: NH, rx: 12, class: "wf-box" }), t, sub);
+        g.addEventListener("pointerdown", ev => startDrag(ev, n, g, W));
+        g.addEventListener("click", () => select(n.id));
+        g.addEventListener("keydown", ev => {
+          const step = ev.shiftKey ? 40 : 10;
+          const mv = { ArrowRight: [rtl() ? -step : step, 0], ArrowLeft: [rtl() ? step : -step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[ev.key];
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n.id); }
+          else if (mv) { ev.preventDefault(); n.x = Math.max(0, n.x + mv[0]); n.y = Math.max(0, n.y + mv[1]); markDirty(); draw(); focusNode(n.id); }
+        });
+        s.append(g);
+      }
+      // Fits the panel; below 640 px the graph keeps its size and the panel scrolls instead.
+      s.style.minWidth = Math.min(W, 640) + "px";
+      s.style.aspectRatio = W + " / " + H;
+      canvasWrap.replaceChildren(s);
+    }
+    const focusNode = nid => { const el = canvasWrap.querySelector(".wf-node[aria-label^='" + CSS.escape(graph.nodes.find(n => n.id === nid).title) + "']"); if (el) el.focus(); };
+    // Drag a node with the pointer; positions are stored in left-to-right coordinates.
+    function startDrag(ev, n, g, W) {
+      if (ev.button !== 0) return;
+      const s = canvasWrap.querySelector("svg"), m = s.getScreenCTM(); if (!m) return;
+      const sx = ev.clientX, sy = ev.clientY, ox = n.x, oy = n.y; let moved = false;
+      g.setPointerCapture(ev.pointerId);
+      const move = e => { const dx = (e.clientX - sx) / m.a, dy = (e.clientY - sy) / m.d; if (Math.abs(dx) + Math.abs(dy) > 3) moved = true; n.x = Math.max(0, Math.round(ox + (rtl() ? -dx : dx))); n.y = Math.max(0, Math.round(oy + dy)); g.setAttribute("transform", `translate(${dispX(n, W)} ${n.y})`); };
+      const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); if (moved) { markDirty(); draw(); } };
+      g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+    }
+    function select(nid) { selected = nid; draw(); drawInspector(); }
+    function drawInspector() {
+      const n = graph.nodes.find(x => x.id === selected);
+      if (!n) { inspector.replaceChildren(h("p", { class: "muted t-sm", text: "Select a step to edit it, or add one." })); return; }
+      const title = h("input", { class: "input", id: "f-node-title", name: "node-title", autocomplete: "off", maxLength: 80, value: n.title, dir: "auto" });
+      title.addEventListener("input", () => { n.title = title.value; markDirty(); draw(); });
+      const kind = h("select", { class: "select", id: "f-node-kind", name: "node-kind", autocomplete: "off" }, Object.entries(KIND_LABEL).map(([k, l]) => h("option", { value: k, text: l, selected: n.kind === k })));
+      kind.addEventListener("change", () => { n.kind = kind.value; delete n.tool; delete n.check; delete n.category; if (n.kind === "tool") n.tool = "files.read"; if (n.kind === "gate") n.check = "tests"; if (n.kind === "approval") n.category = "file_write"; markDirty(); draw(); drawInspector(); });
+      const extra = n.kind === "tool" ? ["tool", "Read tool", LlmPlan.WF_TOOLS.map(t => [t, t])] : n.kind === "gate" ? ["check", "Check", LlmPlan.WF_CHECKS.map(c => [c, CHECK_LABEL[c]])] : n.kind === "approval" ? ["category", "Asks for", LlmPlan.WF_CATEGORIES.map(c => [c, CATEGORY_LABEL[c]])] : null;
+      let extraField = null;
+      if (extra) {
+        const sel = h("select", { class: "select", id: "f-node-" + extra[0], name: "node-" + extra[0], autocomplete: "off" }, extra[2].map(([v, l]) => h("option", { value: v, text: l, selected: n[extra[0]] === v })));
+        sel.addEventListener("change", () => { n[extra[0]] = sel.value; markDirty(); draw(); });
+        extraField = h("div", { class: "field" }, h("label", { htmlFor: sel.id, text: extra[1] }), sel);
+      }
+      const needs = h("fieldset", null, h("legend", { class: "legend", text: "Needs (runs after)" }), graph.nodes.filter(o => o.id !== n.id).map(o => {
+        const cb = h("input", { type: "checkbox", name: "needs", value: o.id, checked: graph.edges.some(e => e.from === o.id && e.to === n.id) });
+        cb.addEventListener("change", () => { graph.edges = graph.edges.filter(e => !(e.from === o.id && e.to === n.id)); if (cb.checked) graph.edges.push({ from: o.id, to: n.id }); markDirty(); draw(); });
+        return h("label", { class: "check" }, cb, h("span", { dir: "auto", text: o.title }));
+      }));
+      const del = h("button", { class: "btn btn-danger btn-sm", type: "button", text: "Delete step" });
+      del.addEventListener("click", () => { graph.nodes = graph.nodes.filter(x => x.id !== n.id); graph.edges = graph.edges.filter(e => e.from !== n.id && e.to !== n.id); selected = null; markDirty(); draw(); drawInspector(); });
+      const locked = LlmPlan.nodeLocked(n);
+      inspector.replaceChildren(
+        h("div", { class: "field" }, h("label", { htmlFor: "f-node-title", text: "Title" }), title),
+        h("div", { class: "field" }, h("label", { htmlFor: "f-node-kind", text: "Kind" }), kind), extraField, needs,
+        locked ? h("p", { class: "sample-note lock-note" }, icon("i-lock", "sm"), "This step is locked: it waits for Director 00 outside Jarvis, whatever kind it is drawn as.") : null,
+        h("div", { class: "row" }, del));
+    }
+    function drawPhases() {
+      let steps;
+      try { steps = LlmPlan.graphToSteps(LlmPlan.checkGraph(graph)); errBox.hidden = true; }
+      catch (e) { errBox.hidden = false; errBox.textContent = e.message; phasesBox.replaceChildren(); return false; }
+      const phases = [...new Set(steps.map(x => x.phase))];
+      phasesBox.replaceChildren(...phases.map(p => h("div", { class: "wf-phase" }, h("b", { text: "Phase " + p }),
+        h("ul", null, steps.filter(x => x.phase === p).map(x => h("li", null, h("span", { dir: "auto", text: x.title }), " ", x.locked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), "Locked") : h("span", { class: "badge" + (x.kind === "tool" ? " mono" : ""), text: x.kind === "gate" ? CHECK_LABEL[x.criteria[0].check] : x.kind === "tool" ? x.tool : "asks first" })))))));
+      return true;
+    }
+    const addBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-plus", "sm"), "Add step");
+    addBtn.addEventListener("click", () => {
+      let i = graph.nodes.length + 1; while (graph.nodes.some(n => n.id === "step-" + i)) i++;
+      const maxY = Math.max(0, ...graph.nodes.map(n => n.y));
+      graph.nodes.push({ id: "step-" + i, title: "New step " + i, kind: "tool", tool: "files.read", x: 40, y: graph.nodes.length ? maxY + 100 : 40 });
+      markDirty(); select("step-" + i);
+    });
+    const saveBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Save" });
+    const save = () => { if (!drawPhases()) return Promise.reject(new Error(errBox.textContent)); return store.saveWorkflow(wf.id, { name: nameIn.value, graph }).then(w => { wf = w; dirty = false; status.textContent = "Saved · v" + w.version; return w; }); };
+    saveBtn.addEventListener("click", () => save().then(() => toast("ok", "Workflow saved."), e => toast("error", e.message)));
+    const runBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-run", "sm"), "Run workflow");
+    runBtn.addEventListener("click", () => { runBtn.disabled = true; (dirty ? save() : Promise.resolve()).then(() => store.runWorkflow(wf.id)).then(r => { toast("info", "Running as a mission. Locked steps will wait."); location.hash = "#/missions/" + r.mission; }, e => toast("error", e.message)).finally(() => { runBtn.disabled = false; }); });
+    const delWf = h("button", { class: "btn btn-ghost", type: "button", text: "Delete workflow…" });
+    delWf.addEventListener("click", e => openDialog("Delete this workflow?", h("p", { class: "muted t-sm", text: "Missions it already ran stay." }),
+      [h("button", { class: "btn btn-secondary", type: "button", text: "Keep it", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Delete", onclick: () => store.deleteWorkflow(wf.id).then(() => { closeDialog(); location.hash = "#/workflows"; }, err => toast("error", err.message)) })], e.currentTarget));
+    nameIn.addEventListener("input", markDirty);
+    loadInto(box, () => store.getWorkflow(id), w => {
+      wf = w; graph = JSON.parse(JSON.stringify(w.graph)); nameIn.value = w.name; status.textContent = "v" + w.version;
+      draw(); drawInspector(); drawPhases();
+      return h("div", { class: "stack" },
+        h("div", { class: "page-head" }, h("div", { class: "field wf-name" }, h("label", { htmlFor: "f-wfn", text: "Workflow name" }), nameIn), h("div", { class: "row" }, status, delWf, addBtn, saveBtn, runBtn)),
+        sampleNote(), errBox,
+        h("div", { class: "wf-layout" },
+          h("section", { class: "panel wf-stage", "aria-labelledby": "h-graph" }, h("h2", { id: "h-graph", text: "Graph" }),
+            h("p", { class: "hint", text: "Drag a step, or select it and use the arrow keys (Shift for bigger moves). Links run from a step to the steps that need it." }), canvasWrap),
+          h("aside", { class: "stack" },
+            h("section", { class: "panel", "aria-labelledby": "h-insp" }, h("h2", { id: "h-insp", text: "Step" }), inspector),
+            h("section", { class: "panel", "aria-labelledby": "h-wfph" }, h("h2", { id: "h-wfph", text: "Phases when it runs" }), phasesBox),
+            w.runs && w.runs.length ? h("section", { class: "panel", "aria-labelledby": "h-wfruns" }, h("h2", { id: "h-wfruns", text: "Runs" }), h("ul", { class: "stack" }, w.runs.map(r => h("li", { class: "row" }, h("a", { href: "#/missions/" + r.id, class: "mono t-caption", text: String(r.id).slice(0, 12) }), badge(r.status), timeEl(typeof r.createdAt === "number" ? r.createdAt : Date.parse(r.createdAt)))))) : null)));
+    });
+    return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/workflows", text: "← Workflows" })), box);
+  };
+
+  /* ── Analytics (ADR-137): bars are SVG, every label and number is HTML text ── */
+  const barSvg = (value, max, cls) => {
+    const s = svg("svg", { class: "bar-svg", viewBox: "0 0 100 10", preserveAspectRatio: "none", "aria-hidden": "true" });
+    s.append(svg("rect", { x: 0, y: 0, width: 100, height: 10, rx: 2, class: "bar-track" }), svg("rect", { x: 0, y: 0, width: max ? Math.max(value ? 1.5 : 0, value / max * 100) : 0, height: 10, rx: 2, class: "bar-fill " + (cls || "") }));
+    return s;
+  };
+  const barRows = (rows, label) => {
+    const max = Math.max(1, ...rows.map(r => r.value));
+    return h("ul", { class: "bars", "aria-label": label }, rows.map(r => h("li", null, h("span", { class: "bar-label", dir: "auto", text: r.label }), barSvg(r.value, max, r.cls), h("span", { class: "num bar-value", text: r.text || fmtN.format(r.value) }))));
+  };
+  pages.analytics = () => {
+    const box = h("div", { class: "stack" });
+    loadInto(box, () => store.analytics(), a => {
+      const runs = a.runsByDay.reduce((n, d) => n + d.runs, 0);
+      const gp = a.gateRates.reduce((n, g) => n + g.pass, 0), gf = a.gateRates.reduce((n, g) => n + g.fail, 0);
+      const tokens = a.tokens.reduce((n, t) => n + t.tokens, 0);
+      const maxDay = Math.max(1, ...a.runsByDay.map(d => d.runs));
+      const daySvg = svg("svg", { class: "days-svg", viewBox: "0 0 140 40", preserveAspectRatio: "none", "aria-hidden": "true" },
+        a.runsByDay.map((d, i) => svg("rect", { x: i * 10 + 1, y: 40 - Math.max(d.runs ? 2 : 0, d.runs / maxDay * 38), width: 8, height: Math.max(d.runs ? 2 : 0, d.runs / maxDay * 38), rx: 1.5, class: "bar-fill" })));
+      return h("div", { class: "stack" },
+        h("section", { class: "creator", "aria-labelledby": "h-creator" },
+          h("div", { class: "row between" }, h("h2", { id: "h-creator", text: "Creator mode" }), badge("ok", "Zero-token · unlimited")),
+          h("p", { class: "t-sm", text: "You build and run everything at no token cost: local rules and the local model on 127.0.0.1. Paid plans for other people are drafts; charging anyone stays locked for Director 00." }),
+          h("a", { class: "btn btn-secondary btn-sm", href: "#/settings", text: "Plans and token ledger" })),
+        h("div", { class: "stats" },
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Runs in 14 days" }), h("span", { class: "value num", text: fmtN.format(runs) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Gate checks passed" }), h("span", { class: "value num", text: gp + gf ? Math.round(gp / (gp + gf) * 100) + "%" : "—" }), h("span", { class: "subtle t-caption num", text: gp + " / " + (gp + gf) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "State capsules" }), h("span", { class: "value num", text: fmtN.format(a.capsules) })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Tokens used" }), h("span", { class: "value num", text: fmtN.format(tokens) }), h("span", { class: "subtle t-caption", text: "Cost: 0 · estimated as characters ÷ 4 [INFERENCE]" }))),
+        h("div", { class: "grid-2" },
+          h("section", { class: "panel", "aria-labelledby": "h-days" }, h("h2", { id: "h-days", text: "Runs per day" }), daySvg,
+            h("div", { class: "row between t-caption subtle" }, h("span", { class: "num", text: a.runsByDay[0].day }), h("span", { class: "num", text: a.runsByDay[13].day })),
+            h("p", { class: "vh", text: a.runsByDay.map(d => d.day + ": " + d.runs).join(", ") })),
+          h("section", { class: "panel", "aria-labelledby": "h-gates" }, h("h2", { id: "h-gates", text: "Gate pass rate" }),
+            barRows(a.gateRates.map(g => ({ label: CHECK_LABEL[g.check], value: g.rate || 0, text: g.rate == null ? "no runs" : g.rate + "% · " + g.pass + "/" + (g.pass + g.fail), cls: g.rate != null && g.rate < 100 ? "warn" : "" })), "Gate pass rate")),
+          h("section", { class: "panel", "aria-labelledby": "h-ag" }, h("h2", { id: "h-ag", text: "Agents" }),
+            a.agents.length ? barRows(a.agents.map(g => ({ label: g.agent, value: g.runs, text: g.succeeded + " ok · " + g.failed + " failed" })), "Runs per agent") : h("p", { class: "muted t-sm", text: "No agents yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-ms" }, h("h2", { id: "h-ms", text: "Missions" }),
+            a.missionsByStatus.length ? barRows(a.missionsByStatus.map(m => ({ label: m.key, value: m.count })), "Missions by status") : h("p", { class: "muted t-sm", text: "No missions yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-tok" }, h("h2", { id: "h-tok", text: "Tokens by engine" }),
+            a.tokens.length ? barRows(a.tokens.map(t => ({ label: t.engine, value: t.tokens, text: fmtN.format(t.tokens) + " · cost 0" })), "Tokens by engine") : h("p", { class: "muted t-sm", text: "Nothing used yet." })),
+          h("section", { class: "panel", "aria-labelledby": "h-apr" }, h("h2", { id: "h-apr", text: "Approvals" }),
+            a.approvals.length ? barRows(a.approvals.map(p => ({ label: p.key.replace("locked-", "locked · "), value: p.count, cls: p.key.startsWith("locked") ? "locked" : "" })), "Approvals") : h("p", { class: "muted t-sm", text: "No requests yet." }))));
+    });
+    return h("div", { class: "stack" }, pageHead("Analytics", "How agents, gates, missions and tokens are doing in this workspace."), sampleNote(), box);
+  };
+
+  /* ── Webhooks (ADR-137) ─────────────────────────────────────── */
+  function secretDialog(id, secret, from) {
+    const show = s => openDialog("Webhook secret", h("div", { class: "stack" },
+      h("p", { class: "t-sm", text: "Sign each delivery's exact body with HMAC-SHA256 using this secret, and send it as X-Jarvis-Signature: sha256=<hex>. Keep it out of git and chats." }),
+      h("pre", { class: "diff", translate: "no", text: s })), [h("button", { class: "btn btn-secondary", type: "button", text: "Close", onclick: closeDialog })], from);
+    if (secret) show(secret); else store.webhookSecret(id).then(r => show(r.secret), e => toast("error", e.message));
+  }
+  pages.webhooks = () => {
+    const box = h("div", { class: "stack" });
+    const render = list => list.length ? h("div", { class: "stack" }, list.map(wh => {
+      const act = (fn, msg) => e => { e.currentTarget.disabled = true; fn().then(r => { if (r && r.locked) toast("warn", "Locked: sending outside Jarvis waits for Director 00."); else toast("ok", msg); reload(); }, err => { toast("error", err.message); reload(); }); };
+      return h("article", { class: "approval" + (wh.external ? " locked" : ""), "aria-labelledby": "wh-" + wh.id },
+        h("div", { class: "row between" }, h("h3", { id: "wh-" + wh.id, dir: "auto", text: wh.name }), h("div", { class: "row" }, h("span", { class: "badge", text: wh.direction === "in" ? "Incoming" : "Outgoing" }), badge(wh.status === "active" ? "ok" : wh.status === "paused" ? "paused" : "idle", wh.status === "active" ? "On" : wh.status === "paused" ? "Paused" : "Draft"))),
+        h("p", { class: "mono t-caption", translate: "no", text: wh.direction === "in" ? "POST " + wh.endpoint : wh.url }),
+        wh.external ? h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Sending outside this computer is an outbound message (AGENTS.md §1). The database refuses to switch it on." })) : null,
+        wh.deliveries.length ? h("ul", { class: "feed" }, wh.deliveries.slice(0, 5).map(d => h("li", null, badge(d.status === "verified" || d.status === "sent" ? "ok" : "failed", d.status), h("span", { class: "t-caption", text: d.detail }), h("span", { class: "mono t-caption subtle", translate: "no", text: d.body_sha256 ? d.body_sha256.slice(0, 12) : "" }), timeEl(typeof d.at === "number" ? d.at : Date.parse(d.at))))) : h("p", { class: "muted t-sm", text: "No deliveries yet." }),
+        h("div", { class: "row" },
+          wh.status !== "active" ? h("button", { class: "btn btn-primary btn-sm", type: "button", text: wh.external ? "Ask to switch on…" : "Switch on", onclick: act(() => store.activateWebhook(wh.id), "Webhook switched on.") }) : h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Pause", onclick: act(() => store.pauseWebhook(wh.id), "Paused.") }),
+          wh.direction === "out" && wh.status === "active" ? h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Send test event", onclick: act(() => store.testWebhook(wh.id).then(r => { toast(r.status === "sent" ? "ok" : "error", "Test: " + r.status + " · " + r.detail); return null; }), "Sent.") }) : null,
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Show secret", onclick: e => secretDialog(wh.id, null, e.currentTarget) }),
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Delete", onclick: act(() => store.deleteWebhook(wh.id), "Deleted.") })));
+    })) : emptyState("i-hook", "No webhooks yet", store.mode === "live" ? "Incoming webhooks let local tools tell Jarvis something happened; outgoing ones send mission results to a tool on this computer." : "Webhooks run on the local server, where their secrets are kept. Start it with: node jarvis/server/server.mjs");
+    const reload = () => loadInto(box, () => store.listWebhooks(), render);
+    const name = h("input", { class: "input", id: "f-whname", name: "webhook-name", autocomplete: "off", maxLength: 80, placeholder: "CI results" });
+    const dir = h("select", { class: "select", id: "f-whdir", name: "webhook-direction", autocomplete: "off" }, h("option", { value: "in", text: "Incoming (a tool posts to Jarvis)" }), h("option", { value: "out", text: "Outgoing (Jarvis posts to a tool)" }));
+    const url = h("input", { class: "input mono", id: "f-whurl", name: "webhook-url", type: "url", autocomplete: "off", placeholder: "http://127.0.0.1:9000/hook", disabled: true });
+    dir.addEventListener("change", () => { url.disabled = dir.value !== "out"; });
+    const add = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Add webhook");
+    add.addEventListener("click", e => { const from = e.currentTarget; store.createWebhook({ name: name.value, direction: dir.value, url: url.value }).then(wh => { name.value = ""; reload(); secretDialog(wh.id, wh.secret, from); }, err => toast("error", err.message)); });
+    reload();
+    return h("div", { class: "stack" },
+      pageHead("Webhooks", "Signed with HMAC-SHA256. Outgoing webhooks may only reach this computer; anything outside waits for Director 00."), sampleNote(),
+      h("section", { class: "panel", "aria-labelledby": "h-whnew" }, h("h2", { id: "h-whnew", text: "New webhook" }),
+        h("div", { class: "grid-2" }, h("div", { class: "field" }, h("label", { htmlFor: "f-whname", text: "Name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-whdir", text: "Direction" }), dir)),
+        h("div", { class: "field" }, h("label", { htmlFor: "f-whurl", text: "Address (outgoing only)" }), url), h("div", { class: "row" }, add)),
+      box);
+  };
+
+  /* ── Run comparison (ADR-137) ───────────────────────────────── */
+  pages.compare = (a, b) => {
+    const box = h("div");
+    loadInto(box, () => Promise.all([store.getRun(a), store.getRun(b)]), ([x, y]) => {
+      const tools = [...new Set([...x.steps.map(s => s.tool), ...y.steps.map(s => s.tool)])];
+      const col = r => h("div", { class: "stat" }, h("span", { class: "label", dir: "auto", text: r.agentName }), h("span", { class: "row" }, badge(r.status), timeEl(r.createdAt)), h("span", { class: "num t-caption", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) + " · cost 0" }));
+      return h("div", { class: "stack" }, h("div", { class: "grid-2" }, col(x), col(y)),
+        h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Steps side by side" }, h("table", null,
+          h("thead", null, h("tr", null, ["Step", "Run A", "Run B", "Change"].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, tools.map(t => {
+            const sa = x.steps.find(s => s.tool === t), sb = y.steps.find(s => s.tool === t);
+            const d = sa && sb && sa.ms != null && sb.ms != null ? sb.ms - sa.ms : null;
+            return h("tr", null, h("td", { class: "mono", text: t }),
+              h("td", null, sa ? h("span", { class: "row" }, badge(sa.status), h("span", { class: "num t-caption", text: dur(sa.ms) })) : h("span", { class: "subtle", text: "—" })),
+              h("td", null, sb ? h("span", { class: "row" }, badge(sb.status), h("span", { class: "num t-caption", text: dur(sb.ms) })) : h("span", { class: "subtle", text: "—" })),
+              h("td", { class: "num", text: !sa ? "only in B" : !sb ? "only in A" : sa.status !== sb.status ? sa.status + " → " + sb.status : d == null ? "same" : (d > 0 ? "+" : "") + fmtN.format(d) + " ms" }));
+          })))));
+    });
+    return h("div", { class: "stack" }, h("p", null, h("a", { href: "#/runs", text: "← Runs" })), pageHead("Compare runs", "Two runs side by side, step by step."), box);
+  };
+
+  /* ── Agent templates gallery (ADR-137) ──────────────────────── */
+  const AGENT_TEMPLATES = [
+    { name: "Release notes writer", rolePrompt: "Turns recent commits into release notes. Publishing them is Director 00's call.", tools: ["git.log", "notes.write"], skills: ["replica-build"], maxSteps: 10, mode: "single" },
+    { name: "Decision record reader", rolePrompt: "Reads docs/adr and summarises what changed and why.", tools: ["files.read", "notes.write"], skills: ["omega-knowledge-domain"], maxSteps: 12, mode: "single" },
+    { name: "Design token auditor", rolePrompt: "Reads jarvis/replica/design and reports which tokens changed and whether the gates still pass.", tools: ["files.read", "notes.write"], skills: ["replica-design"], maxSteps: 12, mode: "long_horizon" },
+    { name: "Run reviewer", rolePrompt: "Reads this workspace's runs and writes a short review of what failed.", tools: ["runs.read", "notes.write"], skills: [], maxSteps: 8, mode: "single" },
+    { name: "Notes librarian", rolePrompt: "Lists the notes this workspace wrote and the docs they cite.", tools: ["notes.read", "files.read"], skills: [], maxSteps: 8, mode: "single" },
+    { name: "Release readiness mission", rolePrompt: "Reads commits and decision records, passes the security gate, then asks to save a note.", tools: ["git.log", "files.read", "notes.write"], skills: ["replica-long-horizon"], maxSteps: 12, mode: "long_horizon" },
+  ];
+  pages.templates = () => h("div", { class: "stack" }, h("p", null, h("a", { href: "#/agents", text: "← Agents" })),
+    pageHead("Agent templates", "Start an agent from a template, then change anything before you save."),
+    h("ul", { class: "mlist", "aria-label": "Templates" }, AGENT_TEMPLATES.map(t => h("li", null, h("article", { class: "mcard" },
+      h("b", { dir: "auto", text: t.name }), h("p", { class: "t-sm muted", dir: "auto", text: t.rolePrompt }),
+      h("div", { class: "row" }, t.tools.map(x => h("span", { class: "badge mono", text: x })), t.mode === "long_horizon" ? h("span", { class: "badge", text: "Long-horizon" }) : null),
+      h("div", null, h("button", { class: "btn btn-primary btn-sm", type: "button", text: "Use template", onclick: e => agentDialog(e.currentTarget, null, { ...t, model: store.mode === "live" ? "Local rules (no model)" : "Local model (loopback)" }) })))))));
+
+  /* ── Schedule panel on an agent (ADR-137) ───────────────────── */
+  function schedulePanel(a) {
+    const box = h("div", { class: "stack" });
+    const PRESETS_MIN = [[15, "Every 15 minutes"], [60, "Every hour"], [360, "Every 6 hours"], [1440, "Every day"], [10080, "Every week"]];
+    loadInto(box, () => store.listSchedules(), list => {
+      const cur = list.find(x => x.agentId === a.id);
+      const every = h("select", { class: "select", id: "f-every", name: "every", autocomplete: "off" }, PRESETS_MIN.map(([m, l]) => h("option", { value: String(m), text: l, selected: cur ? cur.everyMinutes === m : m === 60 })));
+      const on = h("input", { class: "switch", type: "checkbox", role: "switch", id: "f-schon", name: "schedule-on", checked: cur ? cur.enabled : true });
+      const saveB = h("button", { class: "btn btn-primary btn-sm", type: "button", text: cur ? "Save schedule" : "Schedule runs" });
+      saveB.addEventListener("click", () => store.setSchedule(a.id, { everyMinutes: Number(every.value), enabled: on.checked }).then(() => { toast("ok", "Schedule saved."); box.replaceWith(schedulePanel(a)); }, e => toast("error", e.message)));
+      const rm = cur ? h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Remove schedule", onclick: () => store.deleteSchedule(a.id).then(() => { toast("ok", "Schedule removed."); box.replaceWith(schedulePanel(a)); }, e => toast("error", e.message)) }) : null;
+      return h("div", { class: "stack" },
+        h("div", { class: "field" }, h("label", { htmlFor: "f-every", text: "Run" }), every),
+        h("label", { class: "check", htmlFor: "f-schon" }, on, h("span", { text: "On" })),
+        cur ? h("p", { class: "t-sm muted" }, "Next run ", timeEl(typeof cur.nextAt === "number" ? cur.nextAt : Date.parse(cur.nextAt)), cur.lastError ? " · last try: " + cur.lastError : "") : null,
+        h("p", { class: "hint", text: store.mode === "live" ? "The local server starts due runs every 30 seconds while it runs. A run is skipped while the agent is busy." : "Sample mode keeps the schedule; only the local server runs it." }),
+        h("div", { class: "row" }, saveB, rm));
+    });
+    return box;
+  }
+
+  /* ── Members and roles, plans and tokens (Settings, ADR-137) ─── */
+  function membersPanel() {
+    const box = h("div", { class: "stack" });
+    const render = list => {
+      const email = h("input", { class: "input", id: "f-memail", name: "member-email", type: "email", autocomplete: "off", placeholder: "name@example.com" });
+      const role = h("select", { class: "select", id: "f-mrole", name: "member-role", autocomplete: "off" }, ["viewer", "operator", "admin"].map(r => h("option", { value: r, text: r })));
+      const add = h("button", { class: "btn btn-primary btn-sm", type: "button", text: "Add member" });
+      add.addEventListener("click", () => store.addMember({ email: email.value, role: role.value }).then(l => { toast("ok", "Added. No invitation was sent: outbound messages are locked."); box.replaceChildren(render(l)); }, e => toast("error", e.message)));
+      return h("div", { class: "stack" },
+        h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Members" }, h("table", null,
+          h("thead", null, h("tr", null, ["Member", "Role", ""].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, list.map(m => {
+            if (m.role === "owner") return h("tr", null, h("td", { text: m.email }), h("td", null, h("span", { class: "badge", text: "owner" })), h("td"));
+            const sel = h("select", { class: "select", name: "role-" + m.id, autocomplete: "off", "aria-label": "Role of " + m.email }, ["viewer", "operator", "admin"].map(r => h("option", { value: r, text: r, selected: m.role === r })));
+            sel.addEventListener("change", () => store.setRole(m.id, sel.value).then(l => { toast("ok", "Role changed."); box.replaceChildren(render(l)); }, e => toast("error", e.message)));
+            return h("tr", null, h("td", { text: m.email }), h("td", null, sel), h("td", null, h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Remove", "aria-label": "Remove " + m.email, onclick: () => store.removeMember(m.id).then(l => box.replaceChildren(render(l)), e => toast("error", e.message)) })));
+          })))),
+        h("div", { class: "member-add" }, h("div", { class: "field" }, h("label", { htmlFor: "f-memail", text: "Email" }), email), h("div", { class: "field" }, h("label", { htmlFor: "f-mrole", text: "Role" }), role), add));
+    };
+    loadInto(box, () => store.members(), render);
+    return box;
+  }
+  function plansPanel() {
+    const box = h("div", { class: "stack" });
+    const render = b => {
+      const name = h("input", { class: "input", id: "f-tname", name: "tier-name", autocomplete: "off", maxLength: 40, placeholder: "Pro" });
+      const toks = h("input", { class: "input num", id: "f-ttok", name: "tier-tokens", inputmode: "numeric", autocomplete: "off", placeholder: "2000000" });
+      const price = h("input", { class: "input num", id: "f-tprice", name: "tier-price", inputmode: "numeric", autocomplete: "off", placeholder: "1900" });
+      const save = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Save draft plan" });
+      save.addEventListener("click", () => store.saveTier({ name: name.value, monthlyTokens: Number(toks.value), priceMinor: Number(price.value || 0), currency: "USD" }).then(nb => box.replaceChildren(render(nb)), e => toast("error", e.message)));
+      const money = what => e => store.requestMoney(what).then(() => { toast("warn", "Locked: charging people waits for Director 00 outside Jarvis."); location.hash = "#/approvals"; }, err => toast("error", err.message));
+      return h("div", { class: "stack" },
+        h("div", { class: "row" }, badge("ok", b.creatorZeroToken ? "Creator · zero-token · unlimited" : "Creator mode off"), badge("idle", b.billingEnabled ? "Billing on" : "Billing off")),
+        h("p", { class: "t-sm", text: "You pay nothing: every entry in the ledger is yours at cost 0. Plans for future subscribers are drafts; turning on billing or a plan is a money decision that waits for Director 00 (AGENTS.md §1), and the database keeps both off." }),
+        b.tiers.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Draft plans" }, h("table", null,
+          h("thead", null, h("tr", null, ["Plan", "Tokens a month", "Draft price", "Status", ""].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, b.tiers.map(t => h("tr", null, h("td", { text: t.name }), h("td", { class: "num", text: fmtN.format(t.monthlyTokens) }), h("td", { class: "num", text: (t.priceMinor / 100).toFixed(2) + " " + t.currency }), h("td", null, badge("idle", "Draft")),
+            h("td", null, h("div", { class: "row" }, h("button", { class: "btn btn-ghost btn-sm", type: "button", onclick: money(t.name) }, icon("i-lock", "sm"), "Activate…"), h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Delete", "aria-label": "Delete plan " + t.name, onclick: () => store.deleteTier(t.id).then(nb => box.replaceChildren(render(nb)), e => toast("error", e.message)) })))))))) : h("p", { class: "muted t-sm", text: "No draft plans yet." }),
+        h("div", { class: "member-add" }, h("div", { class: "field" }, h("label", { htmlFor: "f-tname", text: "Plan name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-ttok", text: "Tokens a month" }), toks), h("div", { class: "field" }, h("label", { htmlFor: "f-tprice", text: "Draft price (cents)" }), price), save),
+        h("div", { class: "row" }, h("button", { class: "btn btn-secondary", type: "button", onclick: money("billing") }, icon("i-lock", "sm"), "Turn on billing…")),
+        h("h3", { class: "t-sm", text: "Token ledger" }),
+        b.ledger.recent.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Token ledger" }, h("table", null,
+          h("thead", null, h("tr", null, ["When", "Engine", "Tokens", "Cost"].map(c => h("th", { scope: "col", text: c })))),
+          h("tbody", null, b.ledger.recent.map(l => h("tr", null, h("td", null, timeEl(typeof l.at === "number" ? l.at : Date.parse(l.at))), h("td", { class: "mono t-caption", text: l.engine + (l.model ? " · " + l.model : "") }), h("td", { class: "num", text: fmtN.format(l.tokens) }), h("td", { class: "num", text: "0" })))))) : h("p", { class: "muted t-sm", text: "Nothing used yet." }));
+    };
+    loadInto(box, () => store.billing(), render);
+    return box;
+  }
+
   /* ── Studio (S13): live builder in a sandboxed frame ─────────── */
   // The clean-room extractor: jarvis/server/lib/clean-clone.mjs, inlined by the build (pure functions,
   // no network), so pasted HTML is extracted in the page exactly as the server does it.
@@ -1271,7 +1865,8 @@
   // sample mode plans with them, and live mode gets the same locks from the server.
   const LlmPlan = (() => {
     /*@LLM_PLAN@*/
-    return { fallbackPlan, enforceApprovalGates };
+    /*@WORKFLOW_GRAPH@*/
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -1574,7 +2169,7 @@
         sw.addEventListener("change", () => { if (sw.checked) { if (!mix.includes(s.name)) mix.push(s.name); } else mix = mix.filter(n => n !== s.name); saveMix(); renderList(); renderMix(); });
         return h("li", { class: "skill" + (on ? " on" : "") },
           h("div", { class: "skill-head" }, sw, h("b", { class: "mono", translate: "no", text: s.name })),
-          h("p", { text: s.description || "No description." }),
+          s.description ? h("p", { lang: "en", dir: "ltr", translate: "no", text: s.description }) : h("p", { text: "No description." }),
           h("div", { class: "row" }, h("span", { class: "badge", text: SOURCE_LABEL[s.source] || s.source }), findingsBadge(s.findings), s.review ? h("span", { class: "subtle t-caption mono", text: s.review }) : null));
       }));
     };
@@ -1644,25 +2239,29 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
   let first = true;
   function route() {
+    for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
     const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/");
     let key = parts[0], arg = parts[1];
     let make;
-    if (key === "agents" && arg) { make = () => pages.agent(decodeURIComponent(arg)); key = "agent"; }
+    if (key === "agents" && arg === "templates") { make = pages.templates; key = "templates"; }
+    else if (key === "agents" && arg) { make = () => pages.agent(decodeURIComponent(arg)); key = "agent"; }
+    else if (key === "runs" && arg === "compare" && parts[3]) { make = () => pages.compare(decodeURIComponent(parts[2]), decodeURIComponent(parts[3])); key = "compare"; }
+    else if (key === "workflows" && arg) { make = () => pages.workflow(decodeURIComponent(arg)); key = "workflow"; }
     else if (key === "runs" && arg) { make = () => pages.run(decodeURIComponent(arg)); key = "run"; }
     else if (key === "missions" && arg) { make = () => pages.mission(decodeURIComponent(arg)); key = "mission"; }
-    else if (pages[key] && !["agent", "run", "mission"].includes(key)) make = pages[key];
+    else if (pages[key] && !["agent", "run", "mission", "workflow", "compare", "templates"].includes(key)) make = pages[key];
     const main = $("#main");
-    const navKey = { agent: "agents", run: "runs", mission: "missions" }[key] || key;
+    const navKey = { agent: "agents", run: "runs", mission: "missions", workflow: "workflows", compare: "runs", templates: "agents" }[key] || key;
     $$(".nav a[data-route]").forEach(a => (a.dataset.route === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     if (!make) {
       main.replaceChildren(emptyState("i-search", "This page does not exist", "Check the address, or go back to the overview.", h("a", { class: "btn btn-primary", href: "#/overview", text: "Overview" })));
       document.title = "Not found · Jarvis";
     } else {
       main.replaceChildren(make());
-      document.title = TITLES[key] + " · Jarvis";
+      document.title = (tr(TITLES[key]) || TITLES[key]).trim() + " · Jarvis";
     }
     if (!first) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
     first = false;
@@ -1721,7 +2320,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],

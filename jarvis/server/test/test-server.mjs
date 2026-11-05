@@ -4,6 +4,7 @@
 //   node --disable-warning=ExperimentalWarning jarvis/server/test/test-server.mjs
 //   JARVIS_TEST_PG_URL=postgres://jarvis:pw@127.0.0.1:5432/jarvis_test node … test-server.mjs
 import http from "node:http";
+import crypto from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -13,6 +14,7 @@ import { cleanClone, parse } from "../lib/clean-clone.mjs";
 import { checkUrl, robotsAllows, isBlockedAddress, safeLookup, FetchError } from "../lib/fetch-public.mjs";
 import { canonical, sealCapsule, verifyChain, judge } from "../lib/missions.mjs";
 import { pinLoopback, BridgeError } from "../lib/ollama-bridge.mjs";
+import { checkGraph, topoLevels, graphToSteps, signBody, verifySignature, checkHookUrl } from "../lib/platform.mjs";
 import { splitThinking, parsePlanJson, enforceApprovalGates, fallbackPlan } from "../lib/llm-plan.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -275,6 +277,101 @@ async function suite(mode, opts) {
   let e9 = null; try { await s.db.run("update mission_steps set status = 'done' where id = $1", [lockedSteps[0].id]); } catch (e) { e9 = e; }
   ok(pubDecide.status === 403 && e9 && /mission_steps_locked_never_done/.test(e9.message + (e9.constraint || "")), tag("the model's 'done' publish step can be done neither by API nor by SQL"), pubDecide.body);
 
+  // ADR-137: workflows, members, schedules, webhooks, creator mode, ledger, analytics, live stream
+  const expectSqlError = async (sql, params, name) => { let e = null; try { await s.db.run(sql, params); } catch (x) { e = x; } return !!e && new RegExp(name).test(e.message + " " + (e.constraint || "")); };
+  const wfs = (await j("/api/w/giant-core/workflows")).body;
+  ok(wfs.length === 1 && wfs[0].steps === 6 && wfs[0].locked === 1, tag("each workspace has a starter workflow with one locked step"), wfs);
+  const wf = (await j(`/api/w/giant-core/workflows/${wfs[0].id}`)).body;
+  ok(wf.steps.length === 6 && wf.steps.find(x => x.title.startsWith("Publish")).locked && wf.steps.find(x => x.title === "Tests gate").phase === 2, tag("the graph's levels become phases and the publish node is locked"), wf.steps);
+  const loop = JSON.parse(JSON.stringify(wf.graph)); loop.edges.push({ from: "note", to: "commits" });
+  const loopRes = await post(`/api/w/giant-core/workflows/${wf.id}`, { graph: loop }, "PUT");
+  ok(loopRes.status === 400 && /loop/.test(loopRes.body.error), tag("a workflow with a cycle is refused"), loopRes.body);
+  const badTool = JSON.parse(JSON.stringify(wf.graph)); badTool.nodes[0].tool = "shell.exec";
+  ok((await post(`/api/w/giant-core/workflows/${wf.id}`, { graph: badTool }, "PUT")).status === 400, tag("a workflow node with an unknown tool is refused"));
+  const sneaky = JSON.parse(JSON.stringify(wf.graph)); sneaky.nodes.push({ id: "mail", title: "Email the summary to the team", kind: "tool", tool: "notes.read", x: 800, y: 40 }); sneaky.edges.push({ from: "note", to: "mail" });
+  const saved = (await post(`/api/w/giant-core/workflows/${wf.id}`, { name: "Review and release v2", graph: sneaky }, "PUT")).body;
+  ok(saved.version === 2 && saved.steps.find(x => x.title.startsWith("Email")).locked && saved.steps.find(x => x.title.startsWith("Email")).category === "outbound", tag("a node drawn as a tool but about email is locked as outbound"), saved.steps);
+  const wrun = await post(`/api/w/giant-core/workflows/${wf.id}/run`, {});
+  const wm = await waitMission("giant-core", wrun.body.mission, ["awaiting_approval", "succeeded", "failed"]);
+  ok(wrun.status === 201 && wm.template === "workflow" && wm.planner.workflowId === wf.id && wm.steps.filter(x => x.locked).every(x => x.status === "blocked" || x.status === "queued") && wm.steps.some(x => x.locked && x.status === "blocked"), tag("running a workflow makes a mission whose locked nodes wait"), wm.steps && wm.steps.map(x => x.title + ":" + x.status));
+  ok((await j(`/api/w/giant-core/workflows/${wf.id}`)).body.runs[0].id === wrun.body.mission, tag("the workflow lists its runs"));
+  // Members and roles
+  const added = await post("/api/w/giant-core/members", { email: "Reviewer@Example.com", role: "viewer" });
+  ok(added.status === 201 && added.body.some(m => m.email === "reviewer@example.com" && m.role === "viewer"), tag("add a member locally (no invitation is sent)"), added.body);
+  ok((await post("/api/w/giant-core/members", { email: "reviewer@example.com", role: "admin" })).status === 409 && (await post("/api/w/giant-core/members", { email: "x@example.com", role: "owner" })).status === 400, tag("duplicate members and a second owner are refused"));
+  const rev = added.body.find(m => m.email === "reviewer@example.com"), own = added.body.find(m => m.role === "owner");
+  ok((await post(`/api/w/giant-core/members/${rev.id}`, { role: "operator" }, "PATCH")).body.find(m => m.id === rev.id).role === "operator", tag("change a member's role"));
+  ok((await post(`/api/w/giant-core/members/${own.id}`, { role: "viewer" }, "PATCH")).status === 409 && (await post(`/api/w/giant-core/members/${own.id}`, {}, "DELETE")).status === 409, tag("the owner cannot be demoted or removed"));
+  ok(await expectSqlError("insert into members (id, workspace_id, email, role, created_at, updated_at) values ($1, $2, 'b@example.com', 'owner', $3, $3)", [crypto.randomUUID(), await s.store.workspaceIdOf("giant-core"), new Date().toISOString()], "members_one_owner|UNIQUE|members.workspace_id"), tag("SQL: a workspace has one owner"));
+  ok((await post(`/api/w/giant-core/members/${rev.id}`, {}, "DELETE")).body.every(m => m.id !== rev.id), tag("remove a member"));
+  // Scheduled runs
+  const gAgents = (await j("/api/w/giant-core/agents")).body, notesAgent = gAgents.find(a => a.name === "Notes librarian");
+  ok((await post(`/api/w/giant-core/agents/${notesAgent.id}/schedule`, { everyMinutes: 3 }, "PUT")).status === 400, tag("a schedule faster than 5 minutes is refused"));
+  const sch = (await post(`/api/w/giant-core/agents/${notesAgent.id}/schedule`, { everyMinutes: 60 }, "PUT")).body;
+  ok(sch.length === 1 && sch[0].everyMinutes === 60 && sch[0].enabled, tag("schedule an agent every hour"), sch);
+  await s.db.run("update schedules set next_at = $1 where agent_id = $2", [new Date(Date.now() - 1000).toISOString(), notesAgent.id]);
+  const ticked = await s.platform.tick();
+  const schedRun = ticked.length === 1 ? await s.store.runRecord(ticked[0]) : null;
+  const sch2 = (await j("/api/w/giant-core/schedules")).body[0];
+  ok(schedRun && schedRun.trigger === "schedule" && sch2.lastRunId === ticked[0] && new Date(sch2.nextAt).getTime() > Date.now() + 50 * 60000, tag("a due schedule starts a real run and moves its next time"), { ticked, sch2 });
+  ok((await s.platform.tick()).length === 0, tag("a schedule that is not due does nothing"));
+  // Webhooks
+  const hin = (await post("/api/w/giant-core/webhooks", { name: "CI results", direction: "in" })).body;
+  ok(/^[0-9a-f]{64}$/.test(hin.secret) && hin.status === "draft" && hin.endpoint === "/api/hooks/" + hin.id, tag("create an incoming webhook with an HMAC secret"), hin);
+  const hookBody = JSON.stringify({ event: "ci.passed", run: 42 });
+  const hookPost = (sig, extra = {}) => raw(s.port, { method: "POST", path: hin.endpoint, headers: { host: "127.0.0.1:" + s.port, "content-type": "application/json", "x-jarvis-signature": sig, ...extra }, body: hookBody });
+  ok((await hookPost(signBody(hin.secret, hookBody))).status === 401, tag("a draft webhook refuses deliveries"));
+  await post(`/api/w/giant-core/webhooks/${hin.id}/activate`, {});
+  ok((await hookPost(signBody(hin.secret, hookBody))).status === 200, tag("a correctly signed delivery is accepted"));
+  ok((await hookPost(signBody("0".repeat(64), hookBody))).status === 401 && (await hookPost("")).status === 401, tag("a wrong or missing signature is refused"));
+  ok((await hookPost(signBody(hin.secret, hookBody), { origin: "https://evil.example" })).status === 403, tag("a browser (Origin header) cannot post to a webhook"));
+  const hlist = (await j("/api/w/giant-core/webhooks")).body.find(h => h.id === hin.id);
+  ok(hlist.deliveries.filter(d => d.status === "verified").length === 1 && hlist.deliveries.filter(d => d.status === "rejected").length === 3, tag("deliveries are recorded verified or rejected"), hlist.deliveries);
+  ok(await expectSqlError("delete from webhook_deliveries where webhook_id = $1", [hin.id], "append-only"), tag("SQL: webhook deliveries are append-only"));
+  const ext = (await post("/api/w/giant-core/webhooks", { name: "Slack", direction: "out", url: "https://hooks.example.com/x" })).body;
+  const extAct = (await post(`/api/w/giant-core/webhooks/${ext.id}/activate`, {})).body;
+  const extAp = (await j("/api/w/giant-core/approvals")).body.find(p => p.id === extAct.approvalId);
+  ok(extAct.locked && extAp.category === "outbound" && extAp.locked && extAct.webhook.status === "draft", tag("an outgoing webhook to an outside address becomes a locked approval"), extAct);
+  ok((await post(`/api/w/giant-core/approvals/${extAp.id}/decide`, { decision: "approved" })).status === 403, tag("that approval cannot be approved"));
+  ok(await expectSqlError("update webhooks set status = 'active' where id = $1", [ext.id], "webhooks_external_out_locked"), tag("SQL: an outside webhook can never be active"));
+  const trick = (await post("/api/w/giant-core/webhooks", { name: "Trick", direction: "out", url: "http://127.0.0.1.evil.com:80/x" })).body;
+  ok((await post(`/api/w/giant-core/webhooks/${trick.id}/activate`, {})).body.locked && await expectSqlError("update webhooks set status = 'active' where id = $1", [trick.id], "webhooks_external_out_locked"), tag("a look-alike loopback host is still outside"));
+  const got = [];
+  const receiver = http.createServer(async (req2, res2) => { let b = ""; for await (const c of req2) b += c; got.push({ b, sig: req2.headers["x-jarvis-signature"], ev: req2.headers["x-jarvis-event"] }); res2.end("ok"); });
+  await new Promise(r => receiver.listen(0, "127.0.0.1", r));
+  const local = (await post("/api/w/giant-core/webhooks", { name: "Local notifier", direction: "out", url: "http://127.0.0.1:" + receiver.address().port + "/hook" })).body;
+  ok((await post(`/api/w/giant-core/webhooks/${local.id}/activate`, {})).body.locked === false, tag("an outgoing webhook to 127.0.0.1 can be switched on"));
+  const sent = (await post(`/api/w/giant-core/webhooks/${local.id}/test`, {})).body;
+  ok(sent.status === "sent" && got.length === 1 && verifySignature(local.secret, Buffer.from(got[0].b), got[0].sig) && got[0].ev === "webhook.test", tag("the test event reaches the local receiver, signed"), { sent, got });
+  // a finished mission is sent to active local hooks
+  const fin = (await post("/api/w/giant-core/missions", { template: "design-audit" })).body;
+  await post(`/api/w/giant-core/missions/${fin.id}/run`, {});
+  await waitMission("giant-core", fin.id, ["awaiting_approval"]);
+  for (const st2 of fin.steps.filter(x => x.kind === "approval")) { const d2 = (await j(`/api/w/giant-core/missions/${fin.id}`)).body.steps[st2.idx]; if (d2.status === "blocked") await post(`/api/w/giant-core/missions/${fin.id}/steps/${st2.idx}/skip`, {}); }
+  await waitMission("giant-core", fin.id, ["succeeded", "failed"]);
+  for (let i = 0; i < 40 && !got.some(g => g.ev === "mission.finished"); i++) await sleep(50);
+  ok(got.some(g => g.ev === "mission.finished" && JSON.parse(g.b).data.id === fin.id), tag("a finished mission is sent to the active local webhook"), got.map(g => g.ev));
+  receiver.close();
+  // Creator mode, plans, ledger
+  const bill = (await j("/api/w/giant-core/billing")).body;
+  ok(bill.creatorZeroToken === true && bill.billingEnabled === false && bill.tiers.length === 0, tag("creator mode is on and billing is off"), bill);
+  const gwid = await s.store.workspaceIdOf("giant-core");
+  ok(await expectSqlError("update billing_settings set billing_enabled = $1 where workspace_id = $2", [mode === "postgres" ? true : 1, gwid], "billing_settings_billing_locked"), tag("SQL: billing can never be switched on here"));
+  const tiered = (await post("/api/w/giant-core/billing/tiers", { name: "Pro", monthlyTokens: 2000000, priceMinor: 1900, currency: "usd" })).body;
+  ok(tiered.tiers.length === 1 && tiered.tiers[0].status === "draft" && tiered.tiers[0].currency === "USD", tag("a subscriber plan is saved as a draft"), tiered.tiers);
+  ok(await expectSqlError("update subscriber_tiers set status = 'active' where workspace_id = $1", [gwid], "subscriber_tiers_draft_only"), tag("SQL: a plan stays a draft"));
+  const moneyReq = (await post("/api/w/giant-core/billing/request", { what: "billing" })).body;
+  ok(moneyReq.locked && (await post(`/api/w/giant-core/approvals/${moneyReq.approvalId}/decide`, { decision: "approved" })).status === 403, tag("turning billing on is a locked money request"));
+  await post("/api/llm/run", { mode: "chat", prompt: "Say hello", workspace: "giant-core" });
+  const bill2 = (await j("/api/w/giant-core/billing")).body;
+  ok(bill2.ledger.recent.length >= 1 && bill2.ledger.recent.every(r => r.actor === "creator" && r.cost_micro_usd === 0) && bill2.ledger.totals.some(t => t.tokens > 0), tag("local model use is in the ledger at zero cost"), bill2.ledger);
+  ok(await expectSqlError("insert into token_ledger (workspace_id, actor, engine, tokens, cost_micro_usd, at) values ($1, 'creator', 'x', 1, 5, $2)", [gwid, new Date().toISOString()], "token_ledger_creator_free") && await expectSqlError("delete from token_ledger where workspace_id = $1", [gwid], "append-only"), tag("SQL: the creator never pays and the ledger is append-only"));
+  // Analytics and the live stream
+  const an = (await j("/api/w/giant-core/analytics")).body;
+  ok(an.runsByDay.length === 14 && an.gateRates.length === 4 && an.gateRates.some(g => g.pass > 0) && an.capsules > 0 && an.costMicroUsd === 0 && an.agents.length >= 2, tag("analytics count runs, gates, capsules, agents and cost"), an);
+  const sse = await new Promise((resolve, reject) => { const r2 = http.get({ host: "127.0.0.1", port: s.port, path: "/api/w/giant-core/stream", headers: { host: "127.0.0.1:" + s.port } }, res2 => { res2.once("data", c => { resolve({ type: res2.headers["content-type"], data: String(c) }); r2.destroy(); }); }); r2.on("error", e => (e.code === "ECONNRESET" ? null : reject(e))); });
+  ok(/text\/event-stream/.test(sse.type) && /event: change/.test(sse.data), tag("the live stream sends change events"), sse);
+
   // Clean-room clone through the API
   const cc = await post("/api/studio/clean-clone", { url: "https://www.acmeflow.example/" });
   ok(cc.status === 200 && cc.body.report.sweep.leaks === 0 && !JSON.stringify(cc.body.blocks).includes("Acmeflow"), tag("clean-clone by URL keeps no source text"), cc.body.report);
@@ -334,6 +431,15 @@ ok(sp.thinking === "a\n\nb" && sp.content === "answer", "splitThinking separates
 ok(parsePlanJson("text {\"steps\":[{\"title\":\"x\"}]} more").length === 1 && parsePlanJson("no json") === null, "plan JSON is found inside prose or fences");
 const fb = fallbackPlan("Read the docs, then run the tests, then email the summary to the team");
 ok(fb.some(x => x.kind === "tool") && fb.some(x => x.kind === "gate" && x.criteria[0].check === "tests") && fb.some(x => x.locked && x.category === "outbound"), "the fixed-rule fallback plans reads, gates and locked steps", fb);
+// Workflow graphs and webhook signatures (ADR-137)
+let cyc = null; try { topoLevels(["a", "b", "c"], [{ from: "a", to: "b" }, { from: "b", to: "c" }, { from: "c", to: "b" }]); } catch (e) { cyc = e; }
+ok(cyc && /b, c/.test(cyc.message), "Kahn's sort names the nodes on a cycle", cyc && cyc.message);
+const lv = topoLevels(["a", "b", "c", "d"], [{ from: "a", to: "c" }, { from: "b", to: "c" }, { from: "c", to: "d" }, { from: "a", to: "d" }]);
+ok(lv.a === 0 && lv.b === 0 && lv.c === 1 && lv.d === 2, "levels follow the longest chain of needs", lv);
+const gs = graphToSteps(checkGraph({ nodes: [{ id: "a", title: "Read", kind: "tool", tool: "git.log" }, { id: "b", title: "Pay the invoice", kind: "note" }], edges: [{ from: "a", to: "b" }] }));
+ok(gs[1].kind === "approval" && gs[1].category === "money" && gs[1].locked && gs[1].depends[0] === 0, "a note node about paying is locked as money", gs);
+ok(verifySignature("k", Buffer.from("x"), signBody("k", Buffer.from("x"))) && !verifySignature("k", Buffer.from("y"), signBody("k", Buffer.from("x"))) && !verifySignature("k", Buffer.from("x"), "sha256=00"), "HMAC-SHA256 signatures verify in constant time");
+ok(checkHookUrl("http://127.0.0.1:9000/h").loopback && !checkHookUrl("http://127.0.0.1/h").loopback && !checkHookUrl("http://localhost:9000/h").loopback && !checkHookUrl("https://127.0.0.1:9000/h").loopback, "only http://127.0.0.1:<port>/ counts as local for a webhook");
 ok(enforceApprovalGates([{ title: "Say hello", locked: true }])[0].category === "outbound" && enforceApprovalGates([{ title: "x", gate: "approval" }])[0].locked, "a step the model locks stays locked");
 // No Ollama listening: every route answers from the fixed rules.
 {

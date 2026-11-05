@@ -230,3 +230,91 @@ create table if not exists gate_results (
   created_at text not null
 );
 create index if not exists gate_results_m on gate_results (mission_id, step_id);
+
+
+-- ADR-137; same tables and named constraints as schema.sql.
+create unique index if not exists members_one_owner on members (workspace_id) where role = 'owner';
+
+create table if not exists schedules (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  agent_id text not null references agents(id) on delete cascade,
+  every_minutes integer not null check (every_minutes between 5 and 10080),
+  enabled integer not null default 1 check (enabled in (0, 1)),
+  next_at text not null,
+  last_run_id text references runs(id) on delete set null,
+  last_error text,
+  created_at text not null,
+  updated_at text not null,
+  unique (agent_id)
+);
+
+create table if not exists webhooks (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 80),
+  direction text not null check (direction in ('in', 'out')),
+  url text,
+  events text not null default '["mission.finished"]' check (json_valid(events)),
+  status text not null default 'draft' check (status in ('draft', 'active', 'paused')),
+  approval_id text references approvals(id) on delete set null,
+  created_at text not null,
+  updated_at text not null,
+  constraint webhooks_out_has_url check (direction = 'in' or url is not null),
+  constraint webhooks_external_out_locked
+    check (direction = 'in' or status <> 'active' or (substr(url, 1, 17) = 'http://127.0.0.1:' and instr(substr(url, 18), '/') between 2 and 6 and substr(url, 18, instr(substr(url, 18), '/') - 1) not glob '*[^0-9]*'))
+);
+
+create table if not exists webhook_deliveries (
+  id text primary key,
+  webhook_id text not null references webhooks(id) on delete cascade,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  direction text not null check (direction in ('in', 'out')),
+  status text not null check (status in ('verified', 'rejected', 'sent', 'failed')),
+  detail text not null default '',
+  body_sha256 text check (body_sha256 is null or length(body_sha256) = 64),
+  at text not null
+);
+create trigger if not exists webhook_deliveries_no_update before update on webhook_deliveries
+  begin select raise(abort, 'jarvis.webhook_deliveries is append-only'); end;
+create trigger if not exists webhook_deliveries_no_delete before delete on webhook_deliveries
+  begin select raise(abort, 'jarvis.webhook_deliveries is append-only'); end;
+
+create table if not exists billing_settings (
+  workspace_id text primary key references workspaces(id) on delete cascade,
+  creator_zero_token integer not null default 1 check (creator_zero_token in (0, 1)),
+  billing_enabled integer not null default 0,
+  updated_at text not null,
+  constraint billing_settings_billing_locked check (billing_enabled = 0)
+);
+
+create table if not exists subscriber_tiers (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 40),
+  monthly_tokens integer not null check (monthly_tokens >= 0),
+  price_minor integer not null default 0 check (price_minor >= 0),
+  currency text not null default 'USD' check (length(currency) = 3 and currency not glob '*[^A-Z]*'),
+  status text not null default 'draft',
+  created_at text not null,
+  updated_at text not null,
+  constraint subscriber_tiers_draft_only check (status = 'draft'),
+  unique (workspace_id, name)
+);
+
+create table if not exists token_ledger (
+  id integer primary key autoincrement,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  actor text not null,
+  engine text not null,
+  model text,
+  tokens integer not null check (tokens >= 0),
+  cost_micro_usd integer not null default 0 check (cost_micro_usd >= 0),
+  ref text,
+  at text not null,
+  constraint token_ledger_creator_free check (actor <> 'creator' or cost_micro_usd = 0)
+);
+create trigger if not exists token_ledger_no_update before update on token_ledger
+  begin select raise(abort, 'jarvis.token_ledger is append-only'); end;
+create trigger if not exists token_ledger_no_delete before delete on token_ledger
+  begin select raise(abort, 'jarvis.token_ledger is append-only'); end;

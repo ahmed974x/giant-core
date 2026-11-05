@@ -37,13 +37,27 @@ PASS the mission says the local model planned it
 PASS the model's thinking is shown, folded, as text
 PASS the publish step the model left unlocked waits as a locked card
 PASS the Studio keeps only the layout of the model's page
+PASS live workflow editor draws the locked publish step
+PASS live workflow run says where it came from and waits on the locked publish step
+PASS live updates come over server-sent events
+PASS a new webhook shows its HMAC secret once
+PASS an incoming webhook switches on
+PASS an outgoing webhook to an outside address shows as locked
+PASS asking to switch it on leaves it a draft (locked request)
+PASS live: add a member
+PASS live analytics renders
+PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
 PASS live dates show as relative times
 PASS live runs renders
 PASS live missions renders
+PASS live workflows renders
+PASS live analytics renders
+PASS live webhooks renders
 PASS live settings renders
 PASS live skills renders
+PASS live agents/templates renders
 PASS no console or page errors
 
-47 passed, 0 failed
+61 passed, 0 failed

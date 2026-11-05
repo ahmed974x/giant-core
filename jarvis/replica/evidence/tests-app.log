@@ -66,8 +66,30 @@ PASS F12 the top bar says plans use the fixed rules
 PASS F12 a goal becomes a mission planned by the fixed rules
 PASS F12 the publish clause became a locked approval step and the tests a gate
 PASS F12 the Studio designs from a description with the fixed rules when there is no model
+PASS F13 the workflows list shows the starter workflow
+PASS F13 the SVG graph draws six steps, five links and one locked step
+PASS F13 arrow keys move a step and mark the graph unsaved
+PASS F13 a step about email is locked as soon as it is named
+PASS F13 a loop is refused with the steps named
+PASS F13 saving bumps the version
+PASS F13 running the workflow makes a mission: publish waits locked, the email step is an approval step
+PASS F14 analytics shows creator mode, four numbers and the bar charts
+PASS F14 two runs compare side by side
+PASS F14 the templates gallery lists six agents
+PASS F14 a template fills the agent editor
+PASS F14 the agent is created from the template
+PASS F14 an agent can be scheduled
+PASS F14 a member is added locally
+PASS F14 the member's role changes
+PASS F14 a draft plan is saved
+PASS F14 turning on billing becomes a locked money card
+PASS F14 sample mode says webhooks need the local server
+PASS F15 the language button switches the whole shell to Arabic, right to left
+PASS F15 no interface text is left in English on any screen
+PASS F15 Arabic uses Readex Pro
+PASS F15 switching back restores English
 PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-71 passed, 0 failed
+93 passed, 0 failed

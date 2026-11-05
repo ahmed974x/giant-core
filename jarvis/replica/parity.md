@@ -1,58 +1,53 @@
-# Parity: Jarvis (ADR-136)
+# Parity: Jarvis (ADR-137)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
 
 Jarvis is an original product, so "original" in `features.csv` means "in Jarvis's planned scope". This is
 the feature score only: there are no reference screenshots, so there is no layout diff (by design).
 
-**Every must-have is done: 34 of 34.** That is the 27 from ADR-134 plus seven added by ADR-135:
-- missions in phases;
-- evidence gates;
-- state capsules;
-- context health;
-- locked mission steps;
-- the agent's long-horizon mode;
-- the template extractor.
+**Every feature in scope is done: weighted 100.0, must-haves 34 of 34.** ADR-137 built the eleven rows that were open in ADR-136:
+- workflows S06 and S07;
+- server push (SSE);
+- members and roles;
+- cost per run;
+- the full Arabic interface;
+- run comparison;
+- the agent templates gallery;
+- scheduled runs;
+- webhooks;
+- analytics.
 
-The weighted score is below 100 because should- and could-haves outside this request are still open:
-- workflows (S06, S07);
-- the Arabic UI translation;
-- run comparison, templates, scheduled runs, webhooks and analytics;
-- partial rows: members and roles, server push, model cost.
+It also added one row: creator mode with draft plans and the token ledger.
 
-## Score: 90.4 / 100
+Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
-features 90.4  (54 counted, must-haves 34 of 34 done)
+Two rows stay out of the score on purpose, as before:
+- another product's marketplace;
+- agents that move real money (AGENTS.md §1).
+
+## Score: 100.0 / 100
+
+features 100.0  (55 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
-- workflows                      0.0  (2 features)
-- i18n                           0.0  (1 features)
-- integrations                   0.0  (1 features)
-- runs                          66.7  (6 features)
-- overview                      75.0  (2 features)
-- settings                      75.0  (2 features)
-- agents                        92.3  (5 features)
 - shell                        100.0  (7 features)
+- overview                     100.0  (2 features)
+- agents                       100.0  (5 features)
+- runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (5 features)
 - studio                       100.0  (9 features)
 - skills                       100.0  (3 features)
 - backend                      100.0  (1 features)
 - missions                     100.0  (6 features)
+- settings                     100.0  (3 features)
+- workflows                    100.0  (2 features)
 - logs                         100.0  (1 features)
+- i18n                         100.0  (1 features)
+- integrations                 100.0  (1 features)
 
 ## Missing, in build order
-- [should] workflows: Workflow canvas with inspector, no  (S07 F03; phase 2)
-- [should] workflows: Workflows list, no  (S06; phase 2)
-- [should] runs: Cost and duration per run, partial  (S08; duration per step is real; cost is 0 because no model is called yet)
-- [should] runs: Live log streaming in the run view, partial  (S08; the page polls a change marker every 1.5 s and redraws; no server push (SSE) yet)
-- [should] settings: Settings: workspace members and roles, partial  (S11; members listed per workspace; inviting and changing roles need a second user (not built))
-- [could] agents: Agent templates gallery, no
-- [could] i18n: Arabic translation, no  (after RTL layout)
-- [could] integrations: Webhooks out, no
-- [could] overview: Usage analytics charts, no
-- [could] runs: Run comparison side by side, no
-- [could] runs: Scheduled runs, no
+- nothing. Every counted feature is done.
 
 ## Left out on purpose (not scored)
 - Third-party marketplace and app network of any other product: their network is not something to rebuild
