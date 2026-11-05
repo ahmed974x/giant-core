@@ -32,6 +32,11 @@ PASS the mission keeps task_plan.md and progress.md on disk
 PASS approving the mission note writes it and the next step runs
 PASS live capsule hash checks out
 PASS live restore pauses the mission and keeps the chain intact
+PASS live top bar shows the local model
+PASS the mission says the local model planned it
+PASS the model's thinking is shown, folded, as text
+PASS the publish step the model left unlocked waits as a locked card
+PASS the Studio keeps only the layout of the model's page
 PASS live overview renders
 PASS live logs renders
 PASS live dates show as relative times
@@ -41,4 +46,4 @@ PASS live settings renders
 PASS live skills renders
 PASS no console or page errors
 
-42 passed, 0 failed
+47 passed, 0 failed

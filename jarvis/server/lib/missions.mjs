@@ -258,18 +258,18 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
   }
 
   const stepOut = s => ({ id: s.id, idx: s.idx, phase: s.phase, title: s.title, kind: s.kind, tool: s.tool, category: s.category, input: s.input || {}, dependsOn: s.depends_on || [], criteria: s.criteria || [], approvalId: s.approval_id, status: s.status, gateStatus: s.gate_status, output: s.output, ms: s.ms, locked: s.kind === "approval" && !!LOCKED[s.category], updatedAt: s.updated_at });
-  const missionOut = m => ({ id: m.id, title: m.title, goal: m.goal, template: m.template, agentId: m.agent_id, status: m.status, capsuleEvery: m.capsule_every, startedAt: m.started_at, finishedAt: m.finished_at, createdAt: m.created_at, updatedAt: m.updated_at });
+  const missionOut = m => ({ id: m.id, planner: m.planner || null, title: m.title, goal: m.goal, template: m.template, agentId: m.agent_id, status: m.status, capsuleEvery: m.capsule_every, startedAt: m.started_at, finishedAt: m.finished_at, createdAt: m.created_at, updatedAt: m.updated_at });
 
   // ---- create ----
-  async function insertMission(wid, tpl, { template, title, agentId, capsuleEvery }) {
+  async function insertMission(wid, tpl, { template, title, agentId, capsuleEvery, planner }) {
     const ce = Number(capsuleEvery ?? 1);
     if (!Number.isInteger(ce) || ce < 1 || ce > 10) bad("Save a capsule every 1 to 10 phases.");
     const t = String(title || tpl.title).trim();
     if (!t || t.length > 120) bad("Use 1 to 120 characters for the title.");
     const id = randomUUID(), now = iso();
     await db.tx(async tx => {
-      await tx.run("insert into missions (id, workspace_id, agent_id, title, goal, template, status, capsule_every, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $8)",
-        [id, wid, agentId || null, t, tpl.goal, template, ce, now]);
+      await tx.run("insert into missions (id, workspace_id, agent_id, title, goal, template, status, capsule_every, planner, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, $9)",
+        [id, wid, agentId || null, t, tpl.goal, template, ce, planner ? JSON.stringify(planner) : null, now]);
       for (const [idx, s] of tpl.steps.entries()) {
         await tx.run("insert into mission_steps (id, mission_id, idx, phase, title, kind, tool, category, input, depends_on, criteria, status, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'queued', $12, $12)",
           [randomUUID(), id, idx, s.phase, s.title, s.kind, s.tool || null, s.category || null, JSON.stringify(s.input || {}), JSON.stringify(s.depends || []), JSON.stringify(s.criteria || []), now]);
@@ -287,6 +287,30 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
     const m = await db.one("select * from missions where id = $1", [id]);
     m._slug = slug;
     planFiles(m, await stepsOf(id), slug);
+    return detail(slug, id);
+  }
+  // A plan from the local model (or the fixed-rule fallback), already passed through llm-plan.mjs's
+  // enforceApprovalGates. The steps are re-checked here: kinds, tools and categories come only from
+  // Jarvis's own lists, so nothing a model writes can create a step the engine would not create itself.
+  async function createFromPlan(slug, { goal, steps, planner, capsuleEvery }) {
+    const wid = await wsId(slug);
+    const g = String(goal || "").trim();
+    if (!g) bad("Write the goal first.");
+    if (!Array.isArray(steps) || !steps.length || steps.length > 20) bad("A plan has 1 to 20 steps.");
+    const safe = steps.map((s, i) => {
+      const kind = ["tool", "gate", "approval"].includes(s.kind) ? s.kind : "tool";
+      const step = { phase: Math.max(1, Math.min(10, Number(s.phase) || 1)), kind, title: String(s.title || "Step " + (i + 1)).slice(0, 140), depends: (s.depends || []).filter(d => Number.isInteger(d) && d < i) };
+      if (kind === "tool") { step.tool = MISSION_TOOLS.includes(s.tool) ? s.tool : "files.read"; step.input = step.tool === "files.read" ? { path: String((s.input && s.input.path) || "docs/adr/ADR-13*").slice(0, 300) } : {}; }
+      if (kind === "gate") step.criteria = (s.criteria || []).filter(c => CHECKS.includes(c.check)).slice(0, 6);
+      if (kind === "approval") step.category = [...Object.keys(LOCKED), "file_write"].includes(s.category) ? s.category : "outbound";
+      return step;
+    });
+    const tpl = { title: g.slice(0, 120), goal: g.slice(0, 2000), steps: safe };
+    const id = await insertMission(wid, tpl, { template: "llm-plan", title: tpl.title, capsuleEvery: capsuleEvery || 1, planner });
+    const m = await db.one("select * from missions where id = $1", [id]);
+    m._slug = slug;
+    planFiles(m, await stepsOf(id), slug);
+    progress(m, "Planned by " + (planner && planner.engine === "ollama-local-loopback" ? "the local model " + planner.model + " [INFERENCE - local LLM]" : "the fixed rules") + "; locks decided by rule.");
     return detail(slug, id);
   }
   async function fromAgent(slug, agent, input) {
@@ -387,6 +411,11 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
           planFiles(m, await stepsOf(id), slug);
           await saveCapsule(m, failed ? "finished with a failed step" : "finished");
           await store.logEvent(wid, "system", failed ? "mission.failed" : "mission.succeeded", id);
+        } else if (!blocked.length && !steps.some(s => s.status === "running")) {
+          // Nothing runs, nothing waits, yet steps are open: their needs can never finish. Skip them
+          // so the mission ends instead of hanging (a model's plan cannot deadlock the engine).
+          for (const s of steps.filter(x => x.status === "queued")) await setStep(s.id, { status: "skipped", output: { reason: "It could not start: a step it needs never finished." } });
+          continue;
         } else if (blocked.length) {
           await setMission(id, { status: "awaiting_approval" });
           m.status = "awaiting_approval";
@@ -539,5 +568,5 @@ export function createMissions({ store, runner, db, repoRoot, dataDir }) {
     return true;
   }
 
-  return { create, fromAgent, list, detail, run, pause, onDecision, skipStep, verify, capsule, restore, seedMissions, missionDir, TEMPLATES };
+  return { create, createFromPlan, fromAgent, list, detail, run, pause, onDecision, skipStep, verify, capsule, restore, seedMissions, missionDir, TEMPLATES };
 }

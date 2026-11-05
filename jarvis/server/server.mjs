@@ -19,13 +19,16 @@ import { openSqlite, openPostgres } from "./lib/db.mjs";
 import { createStore, seed, StoreError } from "./lib/store.mjs";
 import { createRunner } from "./lib/runner.mjs";
 import { createMissions } from "./lib/missions.mjs";
+import { createOllamaBridge, BridgeError } from "./lib/ollama-bridge.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
 import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, quiet = false } = {}) {
+  // Refuses at start any Ollama address that is not http://127.0.0.1:<port> (ADR-136).
+  const llm = createOllamaBridge({ ...(ollamaUrl ? { baseUrl: ollamaUrl } : {}), ...(ollamaFetch ? { fetchImpl: ollamaFetch } : {}) });
   const db = mode === "postgres" ? await openPostgres(databaseUrl || "") : await openSqlite(sqliteFile || join(dataDir, "jarvis.sqlite"));
   await seed(db);
   const store = createStore(db);
@@ -75,6 +78,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       let m;
       if (R("GET", /^\/api\/health$/)) return send(200, { ok: true, mode: db.kind, where: db.where, runs: "real (fixed-rule planner, no model)", version: 1 });
       if (R("GET", /^\/api\/workspaces$/)) return send(200, await store.listWorkspaces());
+      if (R("GET", /^\/api\/llm\/status$/)) return send(200, await llm.status());
+      if (R("POST", /^\/api\/llm\/run$/)) return send(200, { ok: true, ...(await llm.run({ mode: body.mode, prompt: body.prompt, lang: body.lang, model: body.model })) });
       if (R("POST", /^\/api\/studio\/clean-clone$/)) {
         let html = typeof body.html === "string" ? body.html : "", host = "", src = null;
         if (body.url) {
@@ -125,6 +130,11 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "GET" && rest === "/events") return send(200, await store.listEvents(slug));
         if (req.method === "GET" && rest === "/missions") return send(200, await missions.list(slug));
         if (req.method === "POST" && rest === "/missions") return send(201, await missions.create(slug, body));
+        if (req.method === "POST" && rest === "/missions/plan") {
+          const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model });
+          const planner = { engine: p.engine, model: p.model, thinking: p.thinking, planFrom: p.planFrom, warning: p.warning, label: p.label, at: new Date().toISOString() };
+          return send(201, await missions.createFromPlan(slug, { goal: body.goal, steps: p.steps, planner, capsuleEvery: body.capsuleEvery }));
+        }
         if ((k = /^\/missions\/([\w-]{1,64})(\/.*)?$/.exec(rest))) {
           const id = k[1], sub = k[2] || "";
           let n;
@@ -139,7 +149,9 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       }
       return fail(404, "No such route.");
     } catch (e) {
-      if (e instanceof StoreError) return fail(e.status, e.message);
+      if (e instanceof StoreError || e instanceof BridgeError) return fail(e.status, e.message);
+      // PostgreSQL refuses an id that is not a UUID (22P02); for the caller that is simply "not found".
+      if (e && e.code === "22P02") return fail(404, "Nothing with that id.");
       if (e && e.status) return fail(e.status, e.message);
       if (!quiet) console.error("jarvis-server:", e);
       return fail(500, "The server hit an error. The log on this computer has the details.");
@@ -149,7 +161,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, db, async close() { await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, db, async close() { await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

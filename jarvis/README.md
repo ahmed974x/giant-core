@@ -159,10 +159,44 @@ python3 -m unittest discover -s .claude/skills/replica-long-horizon/tests -v > j
 ruff check .claude/skills/replica-long-horizon > jarvis/replica/evidence/lint-long-horizon.log
 ```
 
+Write each log to a scratch file first, and copy it into `jarvis/replica/evidence/` once the run has finished. Redirecting straight into the folder truncates the very log a running test may read.
+
 Then rebuild the page, so sample mode's gates read the new snapshot.
+
+## Local model (ADR-136)
+
+Optional, and free: Ollama on this computer, reached on 127.0.0.1 only.
+
+```bash
+ollama pull deepseek-r1:8b
+```
+
+```bash
+ollama pull qwen2.5-coder:7b
+```
+
+```bash
+ollama create jarvis-planner -f jarvis/server/models/Jarvis-Planner.Modelfile
+```
+
+```bash
+ollama create jarvis-designer -f jarvis/server/models/Jarvis-Designer.Modelfile
+```
+
+```bash
+node --disable-warning=ExperimentalWarning jarvis/server/server.mjs
+```
+
+The top bar shows "Ollama local · 0-token" when it answers, and the model can then be used in three places:
+- **Missions** → "Plan with the local model". The model drafts the steps; Jarvis decides every lock.
+- **Studio** → "Design with local model". Only the layout of the model's page is kept.
+- **Settings** → "Local model": the status and the models in use.
+
+Without Ollama, the same buttons use the fixed rules.
 
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.
 - **The Studio** only downloads a file. The cloner reads one public page, obeys `robots.txt`, refuses private addresses, and keeps only its layout: no text, images, colours, scripts or brand.
 - **The Skill Mixer** only copies a plan.
+- **A local model** never decides a lock, never runs a tool of its own, and its HTML is never shown as-is.

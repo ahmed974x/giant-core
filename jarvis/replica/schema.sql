@@ -189,6 +189,7 @@ create table missions (
   status text not null default 'draft'
     check (status in ('draft', 'running', 'awaiting_approval', 'succeeded', 'failed', 'paused')),
   capsule_every int not null default 1 check (capsule_every between 1 and 10),
+  planner jsonb,                                    -- ADR-136: who planned it (engine, model, thinking); untrusted text
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now(),

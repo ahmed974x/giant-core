@@ -112,9 +112,11 @@ fill("/*@PREVIEW_JS@*/", previewJs);
 fill("/*@DATA@*/", JSON.stringify(data).replace(/</g, "\\u003c"));
 // The rule set goes into the app script between the scanner's own markers, which it blanks out
 // before scanning (the same way the Ops Room carries it), so the patterns do not flag themselves.
+const llmPlanSrc = readFileSync(join(here, "..", "server", "lib", "llm-plan.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
+if (/<\/script/i.test(llmPlanSrc)) fail('llm-plan.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

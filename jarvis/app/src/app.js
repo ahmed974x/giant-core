@@ -448,6 +448,23 @@
     // After a reload no timer survives: a running sample mission picks up where its steps stand.
     for (const w of Object.values(db.data)) for (const m of w.missions || []) { m.timer = null; for (const s of m.steps) if (s.status === "running") s.status = "queued"; if (m.status === "running") m.timer = setTimeout(() => advance(w, m, 0), 300); }
     Object.assign(api, {
+      llmStatus() { return ok({ online: false, engine: "deterministic-rules", models: [], creatorZeroTokenMode: true, sample: true }); },
+      llmRun({ mode, prompt }) {
+        const p = String(prompt || "").trim();
+        if (!p) return bad("Write what you want first.");
+        const base = { mode, engine: "deterministic-rules", zeroTokenCost: true, thinking: null, label: "fixed rules (no model)", warning: "Sample mode: no model. The local server talks to Ollama on 127.0.0.1." };
+        if (mode === "design") { const out = CleanRoom.cleanClone("<h1>" + p.replace(/[<>&]/g, " ") + "</h1><p>.</p>"); out.report.source = "fixed rules"; return ok({ ...base, blocks: out.blocks, report: out.report }); }
+        if (mode === "plan") return ok({ ...base, steps: LlmPlan.fallbackPlan(p), planFrom: "fixed rules" });
+        return ok({ ...base, text: "Sample mode has no model. Start jarvis/server and Ollama for answers." });
+      },
+      planMission({ goal, capsuleEvery }) {
+        const g = String(goal || "").trim();
+        if (!g) return bad("Write the goal first.");
+        const steps = LlmPlan.fallbackPlan(g).map(x => ({ ...x, depends: x.depends || [] }));
+        const m = newMission({ title: g.slice(0, 120), goal: g, steps }, "llm-plan", { title: g.slice(0, 120), capsuleEvery: capsuleEvery || 1 });
+        m.planner = { engine: "deterministic-rules", model: null, thinking: null, planFrom: "fixed rules", warning: "Sample mode: no model. Locks are decided by rule.", label: "fixed rules (no model)", at: new Date().toISOString() };
+        MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
       listMissions() { return ok(MS().slice().sort((a, b) => b.createdAt - a.createdAt).map(m => ({ id: m.id, title: m.title, template: m.template, status: m.status, createdAt: m.createdAt, steps: m.steps.length, done: m.steps.filter(s => s.status === "done").length, blocked: m.steps.filter(s => s.status === "blocked").length, failed: m.steps.filter(s => s.status === "failed").length, phases: new Set(m.steps.map(s => s.phase)).size, capsules: m.capsules.length, health: missionHealth(m) }))); },
       getMission(id) { const m = findMission(id); return m ? ok(missionOut(m)) : bad("No mission with that id in this workspace."); },
       createMission(input) {
@@ -553,6 +570,9 @@
       waitingCount: async () => (await req("GET", w("/stats"))).waiting,
       cleanClone: body => req("POST", "/api/studio/clean-clone", body),
       listMissions: () => req("GET", w("/missions")),
+      llmStatus: () => req("GET", "/api/llm/status"),
+      llmRun: body => req("POST", "/api/llm/run", body),
+      planMission: body => req("POST", w("/missions/plan"), body),
       getMission: id => req("GET", w("/missions/" + encodeURIComponent(id))),
       createMission: input => req("POST", w("/missions"), input),
       runMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/run"), {}),
@@ -653,7 +673,7 @@
   }
   // Says where the data comes from: the labelled sample store (file://) or the local server (live).
   const sampleNote = text => (store.mode === "live" && !text)
-    ? h("p", { class: "sample-note live-note", dir: "auto" }, icon("i-check", "sm"), "Live: real data from the local server (" + (store.info && store.info.mode === "postgres" ? "PostgreSQL" : "SQLite") + "). Runs use real tools; planning follows fixed rules, no model.")
+    ? h("p", { class: "sample-note live-note", dir: "auto" }, icon("i-check", "sm"), "Live: real data from the local server (" + (store.info && store.info.mode === "postgres" ? "PostgreSQL" : "SQLite") + "). Runs use real tools with fixed rules; missions and Studio designs can be drafted by a local model on 127.0.0.1.")
     : h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), text || "Sample workspace: placeholder data. Start jarvis/server for live data and real runs.");
   // Approval payloads are text in the sample store and objects from the server.
   const payloadText = p => typeof p.payload === "string" ? p.payload : p.payload && p.payload.path ? "+ " + p.payload.path + " (" + fmtN.format(p.payload.bytes || 0) + " bytes)\n\n" + (p.payload.preview || "") : (p.payload && p.payload.note) || "";
@@ -985,6 +1005,20 @@
     return g;
   }
 
+  function llmPanel() {
+    const box = h("div", { class: "stack" });
+    loadInto(box, () => store.llmStatus(), st => h("div", { class: "stack" },
+      h("div", { class: "row" }, badge(st.online ? "ok" : "idle", st.online ? "Ollama local · 0-token" : "Fixed rules (no model)"), h("code", { class: "t-caption", translate: "no", text: st.host || "http://127.0.0.1:11434" })),
+      st.online ? h("dl", { class: "kv" },
+        h("dt", { text: "Plans" }), h("dd", null, h("code", { translate: "no", text: st.planModel || "—" })),
+        h("dt", { text: "Designs" }), h("dd", null, h("code", { translate: "no", text: st.designModel || "—" })),
+        h("dt", { text: "Local models" }), h("dd", { class: "mono t-caption", translate: "no", text: st.models.join(", ") || "none" }))
+        : h("p", { class: "t-sm muted", text: st.sample ? "Sample mode has no model. Start jarvis/server and Ollama on this computer." : "Ollama does not answer on 127.0.0.1:11434. Missions and the Studio use the fixed rules until it does." }),
+      h("p", { class: "t-caption muted", text: "Build the two Jarvis models once on this computer (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. Models ending in :cloud are refused." })));
+    return h("section", { class: "panel", "aria-labelledby": "h-llm" }, h("h2", { id: "h-llm", text: "Local model" }), box,
+      h("p", { class: "subtle t-caption", text: "Cost to you: 0 tokens. Everything runs on this computer; nothing leaves 127.0.0.1." }));
+  }
+
   pages.settings = () => {
     const box = h("div", { class: "stack" });
     const render = ws => {
@@ -998,6 +1032,7 @@
         [h("button", { class: "btn btn-secondary", type: "button", text: "Keep data", onclick: closeDialog }), h("button", { class: "btn btn-danger", type: "button", text: "Reset", onclick: () => { Promise.resolve(store.reset()).then(() => { closeDialog(); toast("ok", "Sample data reset."); route(); }, err => { closeDialog(); toast("error", err.message); }); } })], e.currentTarget));
       return h("div", { class: "grid-2" },
         h("section", { class: "panel", "aria-labelledby": "h-ws" }, h("h2", { id: "h-ws", text: "Workspace" }), h("div", { class: "field" }, h("label", { htmlFor: "f-ws", text: "Name" }), name), h("div", null, save)),
+        llmPanel(),
         h("section", { class: "panel", "aria-labelledby": "h-keys" }, h("h2", { id: "h-keys", text: "Model keys" }),
           h("p", { class: "t-sm", text: "Keys are never typed or stored in Jarvis. They live only in the Ops Room vault (AES-GCM-256, PBKDF2 600,000 rounds) or in the encrypted env files." }),
           h("p", { class: "subtle t-caption", text: "AGENTS.md §4: secrets never live in code, git or plain localStorage." })),
@@ -1063,6 +1098,18 @@
         h("span", { class: "t-caption subtle" }, "Context health " + m.health.score + " · " + m.health.label + " ", h("span", { class: "tag-inf", text: "[INFERENCE]" }))));
     })) : emptyState("i-layers", "No missions yet", "A mission is a long task in phases, with gates, capsules and approvals.", h("button", { class: "btn btn-primary", type: "button", text: "New mission", onclick: e => missionDialog(e.currentTarget) }));
     loadInto(box, () => store.listMissions(), render);
+    const goal = h("textarea", { class: "textarea", id: "f-goal", name: "goal", autocomplete: "off", rows: 3, maxLength: 2000, dir: "auto", placeholder: "Read the latest commits, run the tests and the security gate, then save a release note", "aria-describedby": "h-goal" });
+    const planBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-run", "sm"), "Plan mission");
+    planBtn.addEventListener("click", () => {
+      if (!goal.value.trim()) { toast("warn", "Write the goal first."); goal.focus(); return; }
+      planBtn.disabled = true; planBtn.setAttribute("aria-busy", "true");
+      store.planMission({ goal: goal.value }).then(m => { toast("ok", m.planner && m.planner.engine === "ollama-local-loopback" ? "Planned by " + m.planner.model + ". Locks were decided by rule." : "Planned by the fixed rules. Locks were decided by rule."); location.hash = "#/missions/" + m.id; },
+        e => toast("error", e.message)).finally(() => { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); });
+    });
+    const planPanel = h("section", { class: "panel", "aria-labelledby": "h-plan" }, h("h2", { id: "h-plan", text: "Plan with the local model" }),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-goal", text: "Goal" }), goal,
+        h("span", { class: "hint", id: "h-goal", text: "The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Jarvis decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00." })),
+      h("div", { class: "row" }, planBtn));
     // Changes made from a dialog land after it closes, so the close event refreshes too.
     const refresh = () => { if (!box.isConnected) { off(); dlg.removeEventListener("close", refresh); return; } if (dlg.open) return; store.listMissions().then(l => box.replaceChildren(render(l)), () => {}); };
     const off = store.subscribe(refresh);
@@ -1070,8 +1117,19 @@
     return h("div", { class: "stack" },
       pageHead("Missions", "Long tasks in ordered phases. Gates need evidence, capsules keep a verified trail, and locked steps wait while the rest carries on.",
         h("button", { class: "btn btn-primary", type: "button", onclick: e => missionDialog(e.currentTarget) }, icon("i-plus", "sm"), "New mission")),
-      sampleNote(), box);
+      sampleNote(), planPanel, box);
   };
+
+  // Who planned a mission. The model's thinking is untrusted text: shown with textContent, folded.
+  function plannerBox(pl) {
+    if (!pl) return null;
+    const byModel = pl.engine === "ollama-local-loopback";
+    return h("section", { class: "panel planner", "aria-labelledby": "h-planner" }, h("h2", { id: "h-planner", text: "Planner" }),
+      h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
+      h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
+      pl.warning ? h("p", { class: "t-caption muted", dir: "auto", text: pl.warning }) : null,
+      pl.thinking ? h("details", { class: "think" }, h("summary", { text: "Thinking (untrusted model text)" }), h("pre", { class: "log", dir: "auto", text: pl.thinking })) : null);
+  }
 
   function gateChips(s) {
     const res = (s.output && s.output.results) || [];
@@ -1159,8 +1217,9 @@
       verifyBtn.addEventListener("click", () => store.verifyMission(m.id).then(v => toast(v.ok ? "ok" : "error", v.ok ? "Chain verified: " + plural(v.count, "capsule") + ", head " + v.head.slice(0, 12) + "…" : "Chain broken: " + v.problems.join("; ")), e => toast("error", e.message)));
       const caps = m.capsules.slice().reverse();
       return h("div", { class: "stack" },
-        pageHead(m.title, m.goal, badge(m.status), pauseBtn, runBtn),
+        pageHead(m.title, m.goal && m.goal.trim() !== m.title.trim() ? m.goal : null, badge(m.status), pauseBtn, runBtn),
         m.simulated ? sampleNote("Sample mission: tool steps are simulated; gates judge the repo's evidence files as of the build; capsules are real SHA-256 chains in this browser. Start jarvis/server for real runs.") : sampleNote(),
+        plannerBox(m.planner),
         lockedWaiting && m.status !== "succeeded" ? h("p", { class: "sample-note lock-note", role: "note" }, icon("i-lock", "sm"), plural(lockedWaiting, "locked step") + (lockedWaiting === 1 ? " waits" : " wait") + " for Director 00 outside Jarvis; every step that does not need " + (lockedWaiting === 1 ? "it" : "them") + " has carried on.") : null,
         h("div", { class: "mission" },
           h("div", { class: "stack" },
@@ -1207,6 +1266,12 @@
   const CleanRoom = (() => {
     /*@CLEAN_CLONE@*/
     return { cleanClone };
+  })();
+  // The fixed rules around the local model (jarvis/server/lib/llm-plan.mjs, inlined by the build):
+  // sample mode plans with them, and live mode gets the same locks from the server.
+  const LlmPlan = (() => {
+    /*@LLM_PLAN@*/
+    return { fallbackPlan, enforceApprovalGates };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -1386,7 +1451,29 @@
         toast("error", e.message);
       } finally { cloneBtn.disabled = false; cloneBtn.removeAttribute("aria-busy"); }
     });
+    // Design from a description: the local model drafts HTML on the server, and only its layout survives
+    // the same clean-room extractor; with no model the fixed rules give a starting page.
+    const designIn = h("input", { class: "input", id: "f-design", name: "design-prompt", autocomplete: "off", maxLength: 400, dir: "auto", placeholder: "A pricing page with three plans and questions" });
+    const designBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-run", "sm"), "Design with local model");
+    designBtn.addEventListener("click", async () => {
+      if (!designIn.value.trim()) { toast("warn", "Describe the page first."); designIn.focus(); return; }
+      designBtn.disabled = true; designBtn.setAttribute("aria-busy", "true");
+      try {
+        const out = await store.llmRun({ mode: "design", prompt: designIn.value, lang: site.lang });
+        site.blocks = out.blocks.map(b => ({ id: b.id, type: b.type, on: true, t: b.t, cols: b.cols || null, rows: b.rows || null }));
+        site.theme = { ...PRESETS.night }; delete site.theme.label; site.preset = "night"; presetSel.value = "night"; renderColors();
+        changed(); renderBlocks();
+        report.replaceChildren(h("dl", null,
+          h("dt", { text: "Engine" }), h("dd", null, out.engine === "ollama-local-loopback" ? h("code", { translate: "no", text: out.model }) : "fixed rules (no model)", " ", h("span", { class: "tag-inf", text: out.label })),
+          h("dt", { text: "Sections" }), h("dd", { text: out.report.sections.join(" · ") }),
+          h("dt", { text: "Sweep" }), h("dd", null, badge(out.report.sweep.leaks ? "failed" : "ok", out.report.sweep.leaks ? out.report.sweep.leaks + " possible leaks" : "0 leaks: only the layout was kept")),
+          out.thinking ? h("dt", { text: "Thinking" }) : null, out.thinking ? h("dd", null, h("details", { class: "think" }, h("summary", { text: "Show (untrusted model text)" }), h("pre", { class: "log", dir: "auto", text: out.thinking }))) : null));
+        toast("ok", out.engine === "ollama-local-loopback" ? "Designed by the local model; only the layout was kept." : (out.warning || "Designed by the fixed rules."));
+      } catch (e) { toast("error", e.message); }
+      finally { designBtn.disabled = false; designBtn.removeAttribute("aria-busy"); }
+    });
     const clonePanel = h("section", { class: "panel clone-bar", "aria-labelledby": "h-clone-t" }, h("h2", { id: "h-clone-t", text: "Clean-room template extractor" }),
+      h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-design", text: "Describe a page" }), designIn), designBtn),
       h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-clone-url", text: "Page address" }), cloneUrl), cloneBtn),
       h("details", null, h("summary", { text: "Or paste HTML" }), h("div", { class: "field" }, h("label", { htmlFor: "f-clone-html", text: "HTML" }), cloneHtml)),
       h("p", { class: "hint", id: "h-clone", text: live
@@ -1677,6 +1764,12 @@
 
   // Boot once we know whether the local server answers (live) or not (sample).
   liveCheck.then(() => {
+    store.llmStatus().then(st => {
+      const b = $("#llmBadge");
+      b.className = "badge llm-badge " + (st.online ? "s-ok" : "s-idle");
+      $("#llmWord").textContent = st.online ? "Ollama local · 0-token" : "Fixed rules";
+      b.title = st.online ? "Local models on 127.0.0.1: " + st.models.join(", ") : "No local model: plans and designs use the fixed rules";
+    }, () => {});
     store.subscribe(updateCount);
     buildWsMenu();
     updateCount();

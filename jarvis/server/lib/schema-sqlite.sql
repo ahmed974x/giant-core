@@ -169,6 +169,7 @@ create table if not exists missions (
   template text not null,
   status text not null default 'draft' check (status in ('draft', 'running', 'awaiting_approval', 'succeeded', 'failed', 'paused')),
   capsule_every integer not null default 1 check (capsule_every between 1 and 10),
+  planner text check (planner is null or json_valid(planner)),
   started_at text,
   finished_at text,
   created_at text not null,

@@ -231,6 +231,20 @@ ok(!/Brandco/.test(await frame().locator("body").textContent()) && (await frame(
 ok((await frame().evaluate(() => getComputedStyle(document.body).backgroundColor)) === "rgb(9, 11, 16)" && (await page.locator("#f-preset").inputValue()) === "night", "F11 the template wears the Jarvis night tokens");
 ok((await frame().evaluate(() => getComputedStyle(document.querySelector(".nav")).backdropFilter)).includes("blur(16px)"), "F11 the template's sticky bar is glass (blur 16, saturate 180)");
 
+// F12: planning without a model (sample mode) still locks by rule (ADR-136).
+await go("#/missions");
+ok((await page.locator("#llmWord").textContent()) === "Fixed rules", "F12 the top bar says plans use the fixed rules");
+await page.locator("#f-goal").fill("Read the docs, then run the tests, then publish the site");
+await page.getByRole("button", { name: "Plan mission" }).click();
+await page.waitForTimeout(400);
+ok(/#\/missions\/ms_/.test(page.url()) && await page.getByText("Drafted by the fixed rules").isVisible(), "F12 a goal becomes a mission planned by the fixed rules", page.url());
+ok((await page.locator(".mstep.k-approval").filter({ hasText: "publish the site" }).count()) === 1 && (await page.locator(".mstep.k-gate").count()) >= 1, "F12 the publish clause became a locked approval step and the tests a gate");
+await go("#/studio");
+await page.locator("#f-design").fill("A pricing page with three plans");
+await page.getByRole("button", { name: "Design with local model" }).click();
+await page.waitForTimeout(400);
+ok(/fixed rules/.test(await page.locator(".report").textContent()) && (await frame().locator("h1").count()) === 1, "F12 the Studio designs from a description with the fixed rules when there is no model");
+
 // Shell: RTL switch and theme switch.
 await page.getByRole("button", { name: "Switch to right-to-left layout" }).click();
 ok((await page.evaluate(() => document.documentElement.dir)) === "rtl", "Shell direction switches to RTL");

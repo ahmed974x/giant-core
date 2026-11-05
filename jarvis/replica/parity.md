@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-135)
+# Parity: Jarvis (ADR-136)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
 
@@ -20,9 +20,9 @@ The weighted score is below 100 because should- and could-haves outside this req
 - run comparison, templates, scheduled runs, webhooks and analytics;
 - partial rows: members and roles, server push, model cost.
 
-## Score: 90.3 / 100
+## Score: 90.4 / 100
 
-features 90.3  (53 counted, must-haves 34 of 34 done)
+features 90.4  (54 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - workflows                      0.0  (2 features)
@@ -38,7 +38,7 @@ features 90.3  (53 counted, must-haves 34 of 34 done)
 - studio                       100.0  (9 features)
 - skills                       100.0  (3 features)
 - backend                      100.0  (1 features)
-- missions                     100.0  (5 features)
+- missions                     100.0  (6 features)
 - logs                         100.0  (1 features)
 
 ## Missing, in build order

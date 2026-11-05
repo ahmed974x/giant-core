@@ -23,7 +23,21 @@ let passed = 0, failed = 0;
 const ok = (cond, name, extra) => { if (cond) { passed++; console.log("PASS " + name); } else { failed++; console.log("FAIL " + name + (extra ? "  (" + String(extra).slice(0, 300) + ")" : "")); } };
 
 const dataDir = mkdtempSync(join(tmpdir(), "jarvis-live-"));
-const srv = await startServer({ port: 0, dataDir, quiet: true, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
+// A fake Ollama on 127.0.0.1 (ADR-136): its plan tries to leave a publish step unlocked.
+
+const http = await import("node:http");
+const fake = http.createServer(async (req, res) => {
+  let body = ""; for await (const c of req) body += c;
+  res.setHeader("content-type", "application/json");
+  if (req.url === "/api/tags") return res.end(JSON.stringify({ models: [{ name: "jarvis-planner:latest" }, { name: "jarvis-designer:latest" }] }));
+  const sys = JSON.parse(body).messages[0].content;
+  const content = /plan long tasks/.test(sys)
+    ? "<think>Step one reads commits. I will leave publishing unlocked.</think>" + JSON.stringify({ steps: [{ title: "Read the latest commits", phase: 1 }, { title: "Run the unit tests", phase: 2, gate: "tdd" }, { title: "Publish the release notes", phase: 3, locked: false }] })
+    : "<nav><a>Acme</a><a>Docs</a></nav><section><h1>Acme sells widgets</h1><p>Buy now</p></section><section><h2>Plans</h2><div><div><h3>A</h3><p>x</p></div><div><h3>B</h3><p>y</p></div><div><h3>C</h3><p>z</p></div></div></section><footer>Acme</footer>";
+  res.end(JSON.stringify({ message: { role: "assistant", content } }));
+});
+await new Promise(r => fake.listen(0, "127.0.0.1", r));
+const srv = await startServer({ port: 0, dataDir, quiet: true, ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
 const BASE = `http://127.0.0.1:${srv.port}/`;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
@@ -151,6 +165,25 @@ await page.getByRole("dialog").getByRole("button", { name: "Restore" }).click();
 await page.waitForFunction(() => /Paused/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 ok((await page.locator("main .page-head .badge").first().textContent()).includes("Paused") && await page.getByText(/Chain intact/).isVisible(), "live restore pauses the mission and keeps the chain intact");
 
+// Local model (ADR-136): the top bar, a planned mission with its thinking, and a design from a prompt.
+await go("#/missions");
+ok((await page.locator("#llmWord").textContent()) === "Ollama local · 0-token", "live top bar shows the local model");
+await page.locator("#f-goal").fill("Release this branch");
+await page.getByRole("button", { name: "Plan mission" }).click();
+await page.waitForFunction(() => /#\/missions\/[0-9a-f-]{36}$/.test(location.hash), null, { timeout: 8000 }).catch(() => {});
+await page.waitForSelector(".planner", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".planner code").getByText("jarvis-planner:latest").isVisible() && await page.locator(".planner").getByText("[INFERENCE - local LLM]").isVisible(), "the mission says the local model planned it");
+await page.locator(".planner summary").click();
+ok(/leave publishing unlocked/.test(await page.locator(".planner pre").textContent()), "the model's thinking is shown, folded, as text");
+await page.getByRole("button", { name: "Run mission" }).click();
+await page.waitForFunction(() => /Awaiting approval/.test(document.querySelector("main .page-head .badge")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+ok((await page.locator(".mstep.is-locked").count()) === 1 && await page.locator(".mstep.is-locked").getByText("Publish the release notes").isVisible(), "the publish step the model left unlocked waits as a locked card");
+await go("#/studio");
+await page.locator("#f-design").fill("A product page");
+await page.getByRole("button", { name: "Design with local model" }).click();
+await page.waitForSelector(".report dl", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".report").getByText("jarvis-designer:latest").isVisible() && /0 leaks/.test(await page.locator(".report").textContent()) && !/Acme/.test(await page.frames().find(f => f !== page.mainFrame()).locator("body").textContent()), "the Studio keeps only the layout of the model's page");
+
 // Every screen renders in live mode (dates from the database included).
 for (const r of ["overview", "logs", "runs", "missions", "settings", "skills"]) {
   await go("#/" + r);
@@ -161,5 +194,6 @@ for (const r of ["overview", "logs", "runs", "missions", "settings", "skills"]) 
 ok(errors.length === 0, "no console or page errors", errors.join(" | "));
 await browser.close();
 await srv.close();
+fake.close();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
