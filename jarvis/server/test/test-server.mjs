@@ -18,6 +18,7 @@ import { checkGraph, topoLevels, graphToSteps, signBody, verifySignature, checkH
 import { bm25, tokenize } from "../lib/bm25.mjs";
 import { forgeSkill, readSkillMd, scanFiles } from "../lib/forge.mjs";
 import { selfCheckItem } from "../lib/memory.mjs";
+import { createOpenWebSearch, parseQuery, pinSearxng, requestJson, httpsLink, SOURCES, SEARCH_UA } from "../lib/open-web-search.mjs";
 import { RULES } from "../../../scripts/skillspector-audit.mjs";
 import { splitThinking, parsePlanJson, enforceApprovalGates, fallbackPlan } from "../lib/llm-plan.mjs";
 
@@ -75,11 +76,32 @@ function raw(port, { method = "GET", path = "/api/health", headers = {}, body } 
   });
 }
 
+// ADR-139: the cloud sandbox has no outbound network, so the official APIs are answered by fixtures
+// keyed on their fixed host. searchCalls records what Jarvis asked; searchDown simulates no internet.
+const searchCalls = [];
+let searchDown = false;
+const SEARCH_FIXTURES = {
+  "en.wikipedia.org": { query: { search: [{ title: "Breadth-first search", snippet: "<span class=\"searchmatch\">Breadth</span>-first search is a graph algorithm", wordcount: 3000, timestamp: "2026-10-01T00:00:00Z" }] } },
+  "ar.wikipedia.org": { query: { search: [{ title: "بحث بالعرض أولا", snippet: "خوارزمية <span>بحث</span> في الرسوم", wordcount: 900 }] } },
+  "api.openalex.org": { results: [{ id: "https://openalex.org/W1", display_name: "A study of graph search", publication_year: 2021, cited_by_count: 12, doi: "https://doi.org/10.1/abc" }] },
+  "hn.algolia.com": { hits: [{ title: "Show HN: graph search", url: "javascript:alert(1)", objectID: "424242", points: 10, num_comments: 2 }, { title: "<b>BFS</b> explained", url: "https://example.com/bfs", objectID: "1", points: 5 }] },
+  "api.github.com": { items: [{ full_name: "acme/graph-search", html_url: "https://github.com/acme/graph-search", description: "Fast graph search", stargazers_count: 120, language: "Go", license: { spdx_id: "MIT" } }] },
+  "registry.npmjs.org": { objects: [{ package: { name: "left-pad", version: "1.3.0", description: "String left pad", links: { npm: "https://www.npmjs.com/package/left-pad" } } }] },
+  "pypi.org": { info: { name: "requests", version: "2.32.3", summary: "Python HTTP for Humans.", package_url: "https://pypi.org/project/requests/", license: "Apache-2.0" } },
+  "api.osv.dev": { vulns: [{ id: "GHSA-p6mc-m468-83gw", summary: "Prototype pollution in lodash", aliases: ["CVE-2020-8203"], modified: "2024-01-01T00:00:00Z" }] },
+};
+const searchStub = async (url, o = {}) => {
+  const u = new URL(url); searchCalls.push({ host: u.hostname, url, method: o.method || "GET", body: o.body || null });
+  if (searchDown) throw Object.assign(new Error("Could not reach the API (ENOTFOUND)."), { status: 503 });
+  if (u.hostname === "pypi.org" && !u.pathname.startsWith("/pypi/requests/")) return null;
+  return SEARCH_FIXTURES[u.hostname] || null;
+};
+
 async function suite(mode, opts) {
   const dataDir = mkdtempSync(join(tmpdir(), "jarvis-test-"));
   const stubPage = async url => { if (String(url).includes("blocked")) throw new FetchError("blocked", "Private, loopback and reserved addresses are refused."); return { html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }; };
   const { ollamaCalls, ...startOpts } = opts;
-  const s = await startServer({ port: 0, dataDir, quiet: true, fetchPage: stubPage, ...startOpts });
+  const s = await startServer({ port: 0, dataDir, quiet: true, fetchPage: stubPage, searchRequest: searchStub, searxngUrl: "", ...startOpts });
   const base = `http://127.0.0.1:${s.port}`;
   const H = { "content-type": "application/json", "x-jarvis": "1" };
   const j = async (p, o = {}) => { const r = await fetch(base + p, o); let b = null; try { b = await r.json(); } catch (e) { /* html */ } return { status: r.status, body: b }; };
@@ -429,6 +451,40 @@ async function suite(mode, opts) {
   ok((await post("/api/studio/clean-clone", { url: "https://blocked.example/" })).status === 400, tag("clean-clone passes a refusal through"));
   ok((await post("/api/studio/clean-clone", {})).status === 400, tag("clean-clone needs a URL or HTML"));
 
+  // ADR-139: live open-web search through /api/search/live (official APIs answered by fixtures).
+  searchCalls.length = 0; searchDown = false;
+  const web = await post("/api/search/live", { workspace: "giant-core", mode: "web", q: "breadth first search" });
+  const hosts = [...new Set(searchCalls.map(c => c.host))].sort().join(",");
+  ok(web.status === 200 && hosts === "api.github.com,api.openalex.org,ar.wikipedia.org,en.wikipedia.org,hn.algolia.com", tag("web mode asks Wikipedia (ar, en), OpenAlex, HN and GitHub, and no SearXNG when none is set"), hosts);
+  ok(web.body.sources.find(x => x.source === "searxng").skipped && web.body.sources.filter(x => x.ok && !x.skipped).length === 5 && !web.body.offline, tag("each source reports its status"), web.body.sources);
+  ok(web.body.results.every(r => /^https:\/\//.test(r.url)) && web.body.results.some(r => r.url === "https://news.ycombinator.com/item?id=424242") && !JSON.stringify(web.body.results).includes("javascript:"), tag("a non-https link from an answer is replaced or dropped"));
+  ok(!JSON.stringify(web.body.results).includes("<span") && !JSON.stringify(web.body.results).includes("<b>") && web.body.results.some(r => r.title === "BFS explained"), tag("markup in answers is stripped to text"));
+  ok(web.body.results[0].source !== web.body.results[1].source, tag("results interleave the sources"));
+  ok(searchCalls.every(c => c.url.includes(encodeURIComponent("breadth first search")) || c.method === "POST"), tag("the query only travels as a URL parameter"));
+  const remembered = (await j("/api/w/giant-core/memory?kind=search")).body;
+  ok(web.body.memoryId && remembered.total === 1 && /breadth first search/.test(remembered.hits[0].title) && /github\.com\/acme\/graph-search/.test(remembered.hits[0].body), tag("results are summarised into memory for BM25"), remembered);
+  const found2 = (await j("/api/w/giant-core/memory?q=" + encodeURIComponent("graph search"))).body;
+  ok(found2.hits.some(h => h.kind === "search"), tag("the saved search is found by BM25 later"));
+  searchCalls.length = 0;
+  await post("/api/search/live", { workspace: "giant-core", mode: "web", q: "breadth first search" });
+  ok(searchCalls.length === 0, tag("a repeated search is answered from the cache (no new API calls)"));
+  const pk = await post("/api/search/live", { workspace: "giant-core", mode: "packages", q: "requests" });
+  ok(pk.body.results.some(r => r.source === "pypi" && r.title === "requests@2.32.3") && pk.body.results.some(r => r.source === "npm"), tag("packages mode reads npm and PyPI's JSON API"), pk.body.results);
+  const pk2 = await post("/api/search/live", { workspace: "giant-core", mode: "packages", q: "left pad strings" });
+  ok(pk2.body.sources.find(x => x.source === "pypi").skipped, tag("PyPI is skipped when the query is not a package name"));
+  searchCalls.length = 0;
+  const vul = await post("/api/search/live", { workspace: "giant-core", mode: "osv", q: "npm:lodash@4.17.15" });
+  ok(vul.status === 200 && searchCalls[0].method === "POST" && searchCalls[0].body.package.ecosystem === "npm" && searchCalls[0].body.package.name === "lodash" && searchCalls[0].body.version === "4.17.15", tag("OSV mode posts ecosystem, package and version"), searchCalls[0]);
+  ok(vul.body.results[0].url === "https://osv.dev/vulnerability/GHSA-p6mc-m468-83gw" && vul.body.results[0].meta.aliases[0] === "CVE-2020-8203", tag("OSV results link to osv.dev with their CVE aliases"));
+  ok((await post("/api/search/live", { workspace: "giant-core", mode: "osv", q: "lodash" })).status === 400, tag("OSV needs ecosystem:package"));
+  ok((await post("/api/search/live", { workspace: "giant-core", mode: "duckduckgo", q: "x y" })).status === 400, tag("unknown search modes are refused"));
+  ok((await post("/api/search/live", { mode: "web", q: "graph" })).status === 400, tag("a search needs its workspace"));
+  ok((await post("/api/search/live", { workspace: "giant-core", mode: "web", q: "x" })).status === 400, tag("a one-character search is refused"));
+  searchDown = true;
+  const off = await post("/api/search/live", { workspace: "giant-core", mode: "web", q: "bread coffee" });
+  ok(off.status === 200 && off.body.offline && off.body.fallback.from === "memory" && off.body.fallback.hits[0].title === "Lunch", tag("with no internet the search falls back to this workspace's memory and says so"), off.body.fallback);
+  searchDown = false;
+
   await s.close();
 }
 
@@ -497,6 +553,25 @@ ok(gs[1].kind === "approval" && gs[1].category === "money" && gs[1].locked && gs
 ok(verifySignature("k", Buffer.from("x"), signBody("k", Buffer.from("x"))) && !verifySignature("k", Buffer.from("y"), signBody("k", Buffer.from("x"))) && !verifySignature("k", Buffer.from("x"), "sha256=00"), "HMAC-SHA256 signatures verify in constant time");
 ok(checkHookUrl("http://127.0.0.1:9000/h").loopback && !checkHookUrl("http://127.0.0.1/h").loopback && !checkHookUrl("http://localhost:9000/h").loopback && !checkHookUrl("https://127.0.0.1:9000/h").loopback, "only http://127.0.0.1:<port>/ counts as local for a webhook");
 ok(enforceApprovalGates([{ title: "Say hello", locked: true }])[0].category === "outbound" && enforceApprovalGates([{ title: "x", gate: "approval" }])[0].locked, "a step the model locks stays locked");
+// ADR-139 pure: query parsing, the SearXNG pin, link filter, private addresses refused.
+ok(parseQuery("osv", "PyPI:jinja2@2.4.1").ecosystem === "PyPI" && parseQuery("osv", "go:golang.org/x/net").name === "golang.org/x/net" && parseQuery("osv", "npm:@babel/core@7.0.0").name === "@babel/core", "OSV queries parse ecosystem, name and version");
+{ let e1 = null; try { parseQuery("osv", "cobol:thing"); } catch (e) { e1 = e; } ok(e1 && e1.status === 400, "an unknown OSV ecosystem is refused"); }
+ok(pinSearxng("http://127.0.0.1:8888").loopback && pinSearxng("https://searx.example.org/").base === "https://searx.example.org" && pinSearxng("") === null, "SearXNG may be https on a public name or http on 127.0.0.1");
+for (const bad of ["http://searx.example.org", "http://localhost:8888", "https://10.0.0.5", "https://u:p@searx.example.org", "https://searx.example.org:8443", "https://router.lan"]) { let e2 = null; try { pinSearxng(bad); } catch (e) { e2 = e; } ok(e2 && e2.status === 400, "SearXNG address refused: " + bad); }
+ok(httpsLink("https://a.example/x") && !httpsLink("javascript:alert(1)") && !httpsLink("http://a.example/") && !httpsLink("https://u:p@a.example/"), "only plain https links are kept");
+ok(Object.keys(SOURCES).every(k => k === "searxng" || /^[a-z0-9.-]+\.[a-z]{2,}$/.test(SOURCES[k].host)) && !Object.values(SOURCES).some(x => /duckduckgo|google|bing/i.test(x.host)), "every source is a fixed official API host, and no search-engine page is used");
+ok(/^JarvisOpenSearch\/1\.0 \(\+https:\/\/github\.com\//.test(SEARCH_UA), "an honest user agent names the project");
+{
+  let e3 = null; try { await requestJson("https://10.1.2.3/x", { timeoutMs: 2000 }); } catch (e) { e3 = e; }
+  ok(e3 && e3.status === 400 && /private|reserved/i.test(e3.message), "a private address is refused inside the socket's lookup", e3 && e3.message);
+  let e4 = null; try { await requestJson("http://198.51.100.7/x", { timeoutMs: 2000 }); } catch (e) { e4 = e; }
+  ok(e4 && e4.status === 400, "plain http is refused except for a SearXNG on 127.0.0.1");
+  const sxCalls = [];
+  const sx = createOpenWebSearch({ searxngUrl: "http://127.0.0.1:8888", request: async (url, o) => { sxCalls.push({ url, o }); return url.startsWith("http://127.0.0.1:8888/search?format=json") ? { results: [{ title: "Graph", url: "https://g.example/", content: "x", engine: "wikipedia" }] } : null; } });
+  const sxr = await sx.search({ q: "graph", mode: "web" });
+  ok(sxr.results.some(r => r.source === "searxng") && sxCalls.find(c => c.url.startsWith("http://127.0.0.1:8888")).o.loopback === true, "a configured SearXNG is asked in JSON mode on its pinned address");
+}
+
 // No Ollama listening: every route answers from the fixed rules.
 {
   const closed = http.createServer(); await new Promise(r => closed.listen(0, "127.0.0.1", r)); const port = closed.address().port; await new Promise(r => closed.close(r));

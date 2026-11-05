@@ -58,5 +58,9 @@ Memory bank with BM25 search (Arabic and English),memory,should,yes,yes,"ADR-138
 Model examples from workspace memory,memory,should,yes,yes,"ADR-138: the best three episodes go to the local model as data, never instructions"
 Self-check sessions and JSONL export,memory,could,yes,yes,"ADR-138: computed answers stored as lessons, the local model graded; export per workspace"
 Live Skill Forge with hot-mount,skills,should,yes,yes,"ADR-138: SkillSpector rules on every file; forged_skills_scan_clean; install into .claude/skills stays a locked approval"
+Live open-web search across official APIs,search,should,yes,yes,"ADR-139: Wikipedia ar/en, OpenAlex, HN Algolia, GitHub, SearXNG JSON; fixed hosts, SSRF guarded, no scraping"
+Package and code search,search,should,yes,yes,"ADR-139: npm, PyPI JSON API by name, GitHub"
+Vulnerability lookup for a package,search,should,yes,yes,"ADR-139: OSV.dev query by ecosystem, package and version"
+Offline fallback and search memory,search,could,yes,yes,"ADR-139: no internet answers from BM25 memory and says so; results summarised into memory"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

@@ -475,6 +475,34 @@
   [
    "^score ([\\d.]+)$",
    "الدرجة $1"
+  ],
+  [
+   "^(\\d+) results from (\\d+) sources$",
+   "$1 نتيجة من $2 مصادر"
+  ],
+  [
+   "^(\\d+) results$",
+   "$1 نتيجة"
+  ],
+  [
+   "^(\\d+) ms$",
+   "$1 ms"
+  ],
+  [
+   "^Could not reach the API \\((.+)\\)\\.$",
+   "تعذّر الوصول إلى الواجهة ($1)."
+  ],
+  [
+   "^The API answered HTTP (\\d+)\\.$",
+   "أجابت الواجهة HTTP $1."
+  ],
+  [
+   "^No answer within (\\d+) s\\.$",
+   "لا إجابة خلال $1 ث."
+  ],
+  [
+   "^Write it as ecosystem:package (.+)$",
+   "اكتبه بصيغة ecosystem:package $1"
   ]
  ],
  "strings": {
@@ -1285,6 +1313,46 @@
   "SKILL.md needs front matter with name and description.": "ملف SKILL.md يحتاج مقدمة فيها الاسم والوصف.",
   "Checks that every colour in a stylesheet comes from the token file.": "يتحقق من أن كل لون في ملف الأنماط يأتي من ملف الرموز.",
   "Mount the SKILL.md below": "ركّب ملف SKILL.md أدناه",
-  "Write a skill from a sentence, or mount the SKILL.md below. Every file is scanned with SkillSpector's rules; a critical or high finding is refused. Mounted skills live in this workspace only. Nothing written here runs.": "اكتب مهارة من جملة، أو ركّب ملف SKILL.md أدناه. يُفحص كل ملف بقواعد SkillSpector، وأي نتيجة حرجة أو عالية تُرفض. المهارات المركّبة تعيش في مساحة العمل هذه فقط، ولا يُشغَّل شيء مما يُكتب هنا."
+  "Write a skill from a sentence, or mount the SKILL.md below. Every file is scanned with SkillSpector's rules; a critical or high finding is refused. Mounted skills live in this workspace only. Nothing written here runs.": "اكتب مهارة من جملة، أو ركّب ملف SKILL.md أدناه. يُفحص كل ملف بقواعد SkillSpector، وأي نتيجة حرجة أو عالية تُرفض. المهارات المركّبة تعيش في مساحة العمل هذه فقط، ولا يُشغَّل شيء مما يُكتب هنا.",
+  "Live search across official, keyless public APIs, through the local server. Results are untrusted text with links; a summary goes into memory.": "بحث حي عبر واجهات برمجية عامة رسمية بلا مفاتيح، من خلال الخادم المحلي. النتائج نص غير موثوق مع روابط، ويُحفظ ملخص منها في الذاكرة.",
+  "Open web": "الويب المفتوح",
+  "Packages and code": "الحزم والشيفرة",
+  "OSV vulnerabilities": "ثغرات OSV",
+  "Clone a live site": "استنساخ موقع حي",
+  "Search for": "ابحث عن",
+  "Wikipedia in Arabic and English, OpenAlex papers, Hacker News and GitHub, plus your SearXNG if you set one.": "ويكيبيديا بالعربية والإنجليزية، وأوراق OpenAlex، وHacker News وGitHub، إضافة إلى SearXNG الخاص بك إن ضبطته.",
+  "npm and GitHub search, and PyPI's page for a package name.": "بحث npm وGitHub، وصفحة PyPI لاسم حزمة.",
+  "Known vulnerabilities for one package, from OSV.dev. Write ecosystem:package or ecosystem:package@version.": "الثغرات المعروفة لحزمة واحدة من OSV.dev. اكتب ecosystem:package أو ecosystem:package@version.",
+  "Read one public page in the Studio's clean-room cloner: robots.txt obeyed, private addresses refused, only the layout kept.": "اقرأ صفحة عامة واحدة في مستنسخ الاستوديو النظيف: يُحترم robots.txt، وتُرفض العناوين الخاصة، ولا يُحفظ إلا التخطيط.",
+  "breadth first search": "البحث بالعرض أولاً",
+  "Open in the cloner": "افتح في المستنسخ",
+  "Sources": "المصادر",
+  "keyless JSON API": "واجهة JSON بلا مفتاح",
+  "one package by name": "حزمة واحدة بالاسم",
+  "vulnerabilities": "الثغرات",
+  "only if JARVIS_SEARXNG_URL is set": "فقط إذا ضُبط JARVIS_SEARXNG_URL",
+  "No search page is scraped and no anti-bot check is bypassed. With no internet, Jarvis answers from this workspace's memory and says so.": "لا تُكشط أي صفحة بحث ولا يُتجاوز أي فحص لمكافحة الروبوتات. بلا إنترنت يجيب Jarvis من ذاكرة مساحة العمل هذه ويقول ذلك.",
+  "Open-web search": "بحث الويب المفتوح",
+  "Search mode": "وضع البحث",
+  "Each source is an official public JSON API, asked once per search with an honest user agent; repeats come from a 10-minute cache. Links open the source's own page.": "كل مصدر واجهة JSON عامة رسمية، تُسأل مرة واحدة لكل بحث بوكيل مستخدم صريح، والتكرار يأتي من ذاكرة مؤقتة لعشر دقائق. الروابط تفتح صفحة المصدر نفسه.",
+  "Saved to memory as a search episode: titles and links only.": "حُفظ في الذاكرة كحلقة بحث: العناوين والروابط فقط.",
+  "From this workspace's memory": "من ذاكرة مساحة العمل هذه",
+  "Nothing found": "لم يُعثر على شيء",
+  "No source answered and memory has nothing that matches.": "لم يُجب أي مصدر، ولا شيء في الذاكرة يطابق.",
+  "Try other words, or another mode.": "جرّب كلمات أخرى أو وضعاً آخر.",
+  "No source answered.": "لم يُجب أي مصدر.",
+  "Answered": "أجاب",
+  "Cached": "من الذاكرة المؤقتة",
+  "Needs the local server": "يحتاج الخادم المحلي",
+  "No SearXNG address is set.": "لم يُضبط عنوان SearXNG.",
+  "Not a package name.": "ليس اسم حزمة.",
+  "Live search runs on the local server (node jarvis/server/server.mjs). This sample page has no network, so these come from this browser's memory.": "البحث الحي يعمل على الخادم المحلي (node jarvis/server/server.mjs). صفحة العيّنة هذه بلا شبكة، لذا تأتي هذه النتائج من ذاكرة هذا المتصفح.",
+  "No source answered, so these come from this workspace's memory.": "لم يُجب أي مصدر، لذا تأتي هذه من ذاكرة مساحة العمل هذه.",
+  "Write a full public address that starts with https://": "اكتب عنواناً عاماً كاملاً يبدأ بـ https://",
+  "Write at least two characters to search for.": "اكتب حرفين على الأقل للبحث.",
+  "Mode is web, packages or osv.": "الوضع هو web أو packages أو osv.",
+  "Name the workspace the search belongs to.": "سمِّ مساحة العمل التي يتبع لها البحث.",
+  "The API's free limit is used up for now; try again in a minute.": "استُنفد الحد المجاني للواجهة الآن؛ حاول بعد دقيقة.",
+  "Reading an address needs the local server. Start it with: node jarvis/server/server.mjs, then open http://127.0.0.1:8798. Or paste the HTML.": "قراءة عنوان تحتاج الخادم المحلي. شغّله بالأمر: node jarvis/server/server.mjs ثم افتح http://127.0.0.1:8798. أو الصق الـ HTML."
  }
 }

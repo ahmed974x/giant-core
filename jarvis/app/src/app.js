@@ -580,6 +580,19 @@
           webhooks: [], tokens: Object.values(tok), creatorZeroToken: true, costMicroUsd: 0,
         });
       },
+      // ADR-139 in sample mode: the page has no network (connect-src 'self', or file://), so a search
+      // answers from this browser's memory and says that live search runs on the local server.
+      liveSearch({ q, mode }) {
+        const qq = String(q || "").trim();
+        if (!["web", "packages", "osv"].includes(mode)) return bad("Mode is web, packages or osv.");
+        if (qq.length < 2) return bad("Write at least two characters to search for.");
+        const ids = { web: ["wikipedia-en", "wikipedia-ar", "openalex", "hn", "github", "searxng"], packages: ["npm", "pypi", "github"], osv: ["osv"] }[mode];
+        const pool = W().memory || [];
+        const hits = LlmPlan.bm25(pool.map(e => ({ id: e.id, text: e.title + "\n" + e.body })), qq, { limit: 8 }).map(hh => ({ ...pool.find(e => e.id === hh.id), score: hh.score, terms: hh.terms }));
+        return ok({ q: qq, mode, results: [], offline: true, at: new Date().toISOString(), sources: ids.map(id => ({ source: id, label: SEARCH_LABEL[id], ok: false, count: 0, ms: 0, error: "Needs the local server" })),
+          fallback: { from: "memory", note: "Live search runs on the local server (node jarvis/server/server.mjs). This sample page has no network, so these come from this browser's memory.", hits } });
+      },
+      searchStatus() { return ok({ sources: [], searxng: null }); },
       // ADR-138 in sample mode: the same BM25, forge scan and computed self-check, on this browser's data.
       searchMemory({ q, kind } = {}) {
         const pool = (W().memory || []).filter(e => !kind || e.kind === kind).slice().reverse();
@@ -744,6 +757,8 @@
       listMissions: () => req("GET", w("/missions")),
       llmStatus: () => req("GET", "/api/llm/status"),
       llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
+      liveSearch: body => req("POST", "/api/search/live", { ...body, workspace: slug }),
+      searchStatus: () => req("GET", "/api/search/status"),
       planMission: body => req("POST", w("/missions/plan"), body),
       // ADR-137
       listWorkflows: () => req("GET", w("/workflows")),
@@ -2079,6 +2094,7 @@
     const report = h("div", { class: "report", "aria-live": "polite" });
     const live = store.mode === "live";
     const cloneBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-copy", "sm"), "Clean-room clone");
+    if (PENDING_CLONE) { cloneUrl.value = PENDING_CLONE; PENDING_CLONE = null; setTimeout(() => { if (cloneBtn.isConnected) cloneBtn.click(); }, 0); }
     cloneBtn.addEventListener("click", async () => {
       const body = cloneHtml.value.trim() ? { html: cloneHtml.value } : { url: cloneUrl.value.trim() };
       if (!body.html && !body.url) { toast("warn", "Paste an address or some HTML first."); cloneUrl.focus(); return; }
@@ -2345,6 +2361,89 @@
       h("div", { class: "stack" }, h("h3", { text: "Mounted in this workspace" }), mounted)));
   }
 
+  /* ── Live open-web search (ADR-139): official keyless JSON APIs through the local server ── */
+  const SEARCH_LABEL = { "wikipedia-en": "Wikipedia (English)", "wikipedia-ar": "Wikipedia (العربية)", openalex: "OpenAlex", hn: "Hacker News (Algolia)", github: "GitHub", npm: "npm registry", pypi: "PyPI", osv: "OSV.dev", searxng: "SearXNG (JSON)" };
+  const safeUrl = u => { try { const x = new URL(String(u)); return x.protocol === "https:" && !x.username && !x.password ? x.href : null; } catch (e) { return null; } };
+  let PENDING_CLONE = null;
+  const SEARCH_MODES = [
+    ["web", "🌐", "Open web", "Wikipedia in Arabic and English, OpenAlex papers, Hacker News and GitHub, plus your SearXNG if you set one.", "breadth first search"],
+    ["packages", "📦", "Packages and code", "npm and GitHub search, and PyPI's page for a package name.", "lodash.debounce"],
+    ["osv", "🛡️", "OSV vulnerabilities", "Known vulnerabilities for one package, from OSV.dev. Write ecosystem:package or ecosystem:package@version.", "npm:lodash@4.17.15"],
+    ["clone", "🧬", "Clone a live site", "Read one public page in the Studio's clean-room cloner: robots.txt obeyed, private addresses refused, only the layout kept.", "https://example.com/"],
+  ];
+  pages.search = () => {
+    let mode = "web";
+    try { const m = store$.get("jarvis-search-mode"); if (SEARCH_MODES.some(x => x[0] === m)) mode = m; } catch (e) { mode = "web"; }
+    const q = h("input", { class: "input", id: "f-wq", type: "search", name: "web-q", autocomplete: "off", maxLength: 200, dir: "auto" });
+    const hint = h("p", { class: "subtle t-caption", id: "wq-hint" });
+    q.setAttribute("aria-describedby", "wq-hint");
+    const go = h("button", { class: "btn btn-primary", type: "submit" }, icon("i-search", "sm"), "Search");
+    const results = h("div", { class: "stack", "aria-live": "polite" });
+    const side = h("div", { class: "stack" });
+    const modeBtns = SEARCH_MODES.map(([id, emoji, label]) => {
+      const b = h("button", { type: "button", "aria-pressed": String(id === mode), dataset: { mode: id } }, h("span", { "aria-hidden": "true", text: emoji + " " }), h("span", { text: label }));
+      b.addEventListener("click", () => { mode = id; store$.set("jarvis-search-mode", id); setMode(); q.focus(); });
+      return b;
+    });
+    const setMode = () => {
+      const m = SEARCH_MODES.find(x => x[0] === mode);
+      modeBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+      hint.textContent = m[3];
+      q.placeholder = m[4];
+      q.type = mode === "clone" ? "url" : "search";
+      q.dir = mode === "web" ? "auto" : "ltr";
+      go.lastChild.textContent = mode === "clone" ? "Open in the cloner" : "Search";
+    };
+    const sourceRow = x => h("li", null,
+      badge(x.skipped ? "idle" : x.ok ? "ok" : "failed", x.skipped ? "Skipped" : x.ok ? (x.cached ? "Cached" : "Answered") : "Failed"),
+      h("span", { class: "t-sm", translate: "no", text: x.label || SEARCH_LABEL[x.source] }),
+      h("span", { class: "subtle t-caption", text: x.skipped ? x.note : x.ok ? x.count + " results" : x.error }),
+      h("span", { class: "num t-caption subtle", text: x.ms ? x.ms + " ms" : "" }));
+    const resultCard = r => {
+      const url = safeUrl(r.url);
+      const meta = r.meta || {};
+      const bits = [meta.stars != null ? "★ " + fmtN.format(meta.stars) : null, meta.language, meta.licence, meta.version ? "v" + meta.version : null, meta.year, meta.citations != null ? meta.citations + " cites" : null, meta.points != null ? meta.points + " pts" : null, (meta.aliases || []).join(" "), meta.engine].filter(Boolean);
+      return h("li", { class: "mem hit" },
+        h("div", { class: "row" }, h("span", { class: "badge", translate: "no", text: SEARCH_LABEL[r.source] || r.source }), bits.length ? h("span", { class: "mono t-caption subtle", translate: "no", text: bits.join(" · ") }) : null),
+        h("h3", { dir: "auto", translate: "no" }, url ? h("a", { href: url, target: "_blank", rel: "noopener noreferrer", text: r.title }) : r.title),
+        r.snippet ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", lang: r.lang || null, text: r.snippet }) : null,
+        url ? h("p", { class: "mono t-caption subtle url", translate: "no", text: url }) : null);
+    };
+    const run = async () => {
+      const text = q.value.trim();
+      if (mode === "clone") {
+        if (!safeUrl(text) && !/^http:\/\//.test(text)) { toast("warn", "Write a full public address that starts with https://"); q.focus(); return; }
+        PENDING_CLONE = text; location.hash = "#/studio"; return;
+      }
+      go.disabled = true; results.replaceChildren(skeleton(4));
+      try {
+        const r = await store.liveSearch({ q: text, mode });
+        side.replaceChildren(h("section", { class: "panel", "aria-labelledby": "h-src" }, h("h2", { id: "h-src", text: "Sources" }), h("ul", { class: "feed" }, r.sources.map(sourceRow)),
+          h("p", { class: "subtle t-caption", text: "Each source is an official public JSON API, asked once per search with an honest user agent; repeats come from a 10-minute cache. Links open the source's own page." })));
+        const body = [];
+        if (r.offline) body.push(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), r.fallback ? r.fallback.note : "No source answered."));
+        if (r.memoryId) body.push(h("p", { class: "sample-note live-note" }, icon("i-check", "sm"), "Saved to memory as a search episode: titles and links only."));
+        if (r.results.length) body.push(h("p", { class: "subtle t-caption", role: "status", text: r.results.length + " results from " + r.sources.filter(x => x.ok && !x.skipped && x.count).length + " sources" }), h("ul", { class: "memlist" }, r.results.map(resultCard)));
+        else if (r.fallback && r.fallback.hits.length) body.push(h("h2", { text: "From this workspace's memory" }), h("ul", { class: "memlist" }, r.fallback.hits.map(e => h("li", { class: "mem" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", text: "score " + e.score }) : null), h("h3", { dir: "auto", translate: "no", text: e.title }), h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: e.body.slice(0, 300) })))));
+        else body.push(emptyState("i-search", "Nothing found", r.offline ? "No source answered and memory has nothing that matches." : "Try other words, or another mode."));
+        results.replaceChildren(...body);
+      } catch (err) { results.replaceChildren(errorBox(err, run)); }
+      finally { go.disabled = false; }
+    };
+    const form = h("form", { class: "search-form", role: "search", "aria-label": "Open-web search" },
+      h("div", { class: "seg wrap", role: "group", "aria-label": "Search mode" }, modeBtns),
+      h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-wq", text: "Search for" }), q), go), hint);
+    form.addEventListener("submit", e => { e.preventDefault(); run(); });
+    setMode();
+    side.replaceChildren(h("section", { class: "panel", "aria-labelledby": "h-src" }, h("h2", { id: "h-src", text: "Sources" }),
+      h("ul", { class: "feed" }, Object.entries(SEARCH_LABEL).map(([id, label]) => h("li", null, h("span", { class: "t-sm", translate: "no", text: label }), h("span", { class: "subtle t-caption", text: { searxng: "only if JARVIS_SEARXNG_URL is set", pypi: "one package by name", osv: "vulnerabilities" }[id] || "keyless JSON API" })))),
+      h("p", { class: "subtle t-caption", text: "No search page is scraped and no anti-bot check is bypassed. With no internet, Jarvis answers from this workspace's memory and says so." })));
+    return h("div", { class: "stack" },
+      pageHead("Search", "Live search across official, keyless public APIs, through the local server. Results are untrusted text with links; a summary goes into memory."), sampleNote(),
+      form,
+      h("div", { class: "mixer" }, results, h("div", { class: "stack mix-side" }, side)));
+  };
+
   /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
   const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];
   const MEM_KIND_LABEL = { plan: "Plan", design: "Design", answer: "Answer", lesson: "Lesson", note: "Note", search: "Search", skill: "Skill" };
@@ -2414,7 +2513,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -2495,7 +2594,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],

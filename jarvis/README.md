@@ -210,6 +210,16 @@ Without Ollama, the same buttons use the fixed rules.
 - **Skill Forge.** In the Skill Mixer, write a skill from a sentence or mount the SKILL.md you pasted. Every file is scanned with SkillSpector's rules, and a critical or high finding is refused. A mounted skill shows in the Mixer and the agent editor at once. **Install into the repo…** is a locked approval.
 - **Skills.** `replica-cyber-recon` (keys, unsafe code, manifests, SHA-256 manifests) and `replica-hybrid-python` (layout fingerprints, scheduling, pattern memory, curriculum). Both are standard library only, with no network and no process.
 
+## Live open-web search (ADR-139)
+
+`#/search` searches the live internet through the local server, using official public JSON APIs with no key:
+- **🌐 Open web:** Wikipedia (Arabic and English), OpenAlex, Hacker News and GitHub.
+- **📦 Packages and code:** npm, GitHub, and PyPI for a package name.
+- **🛡️ OSV vulnerabilities:** for `ecosystem:package@version`.
+- **🧬 Clone a live site:** sends the address to the Studio's clean-room cloner.
+
+To add your own SearXNG, start the server with `JARVIS_SEARXNG_URL=http://127.0.0.1:8888` (or an https address); JSON format must be on in its settings. Results are links to read; a summary goes into memory. With no internet the page answers from memory and says so. No search page is scraped.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

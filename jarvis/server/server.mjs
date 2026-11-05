@@ -24,12 +24,15 @@ import { createPlatform } from "./lib/platform.mjs";
 import { createMemory } from "./lib/memory.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
 import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
+import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, searchRequest, searxngUrl, quiet = false } = {}) {
   // Refuses at start any Ollama address that is not http://127.0.0.1:<port> (ADR-136).
+  // Live open-web search (ADR-139): official keyless JSON APIs on fixed hosts; a bad SearXNG address is refused at start.
+  const search = createOpenWebSearch({ ...(searchRequest ? { request: searchRequest } : {}), ...(searxngUrl !== undefined ? { searxngUrl } : {}) });
   const llm = createOllamaBridge({ ...(ollamaUrl ? { baseUrl: ollamaUrl } : {}), ...(ollamaFetch ? { fetchImpl: ollamaFetch } : {}) });
   const db = mode === "postgres" ? await openPostgres(databaseUrl || "") : await openSqlite(sqliteFile || join(dataDir, "jarvis.sqlite"));
   await seed(db);
@@ -125,6 +128,26 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
             outcome: out.mode === "design" ? { contrast: true, cleanRoom: out.report.sweep.leaks === 0 } : { engine: out.engine === "ollama-local-loopback" }, source: out.engine }).catch(() => {});
         }
         return send(200, { ok: true, ...out });
+      }
+      if (R("GET", /^\/api\/search\/status$/)) return send(200, search.status());
+      if (R("POST", /^\/api\/search\/live$/)) {
+        const ws = typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace) ? body.workspace : null;
+        if (!ws) return fail(400, "Name the workspace the search belongs to.");
+        await store.workspaceIdOf(ws);
+        let out;
+        try { out = await search.search({ q: body.q, mode: body.mode, limit: body.limit }); }
+        catch (e) { return fail(e instanceof SearchError ? e.status : 500, e.message); }
+        // No internet (every source failed): fall back to this workspace's memory and say so.
+        if (out.offline) {
+          const local = await memory.search(ws, { q: out.q, limit: 8 });
+          out.fallback = { from: "memory", note: "No source answered, so these come from this workspace's memory.", hits: local.hits };
+        } else if (out.results.length) {
+          // Summarise into memory (titles and links only), so later plans can find it with BM25.
+          const saved = await memory.add(ws, { kind: "search", title: out.mode + ": " + out.q, body: out.results.slice(0, 8).map((r, i) => `${i + 1}. ${r.title} — ${r.url} (${r.source})`).join("\n"),
+            tags: ["search", out.mode], outcome: { sources: out.sources.filter(x => x.ok && !x.skipped).length, results: out.results.length }, source: "open-web" }).catch(() => null);
+          out.memoryId = saved ? saved.id : null;
+        }
+        return send(200, out);
       }
       if (R("POST", /^\/api\/studio\/clean-clone$/)) {
         let html = typeof body.html === "string" ? body.html : "", host = "", src = null;
@@ -274,7 +297,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

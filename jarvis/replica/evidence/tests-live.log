@@ -55,6 +55,11 @@ PASS live export downloads every episode of this workspace as JSONL
 PASS live forge mounts the skill in the database
 PASS live install request becomes a locked approval
 PASS nothing is written into .claude/skills
+PASS live web search shows results from five official APIs as safe links
+PASS live search lists each source's status
+PASS live search is summarised into memory
+PASS live search asks only the official API hosts
+PASS live OSV search lists the vulnerability with its CVE alias
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -67,7 +72,8 @@ PASS live webhooks renders
 PASS live settings renders
 PASS live skills renders
 PASS live memory renders
+PASS live search renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-71 passed, 0 failed
+77 passed, 0 failed

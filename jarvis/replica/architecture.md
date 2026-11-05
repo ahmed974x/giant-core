@@ -49,6 +49,8 @@ Tables: 23 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` 
 - **ADR-138:** `forged_skills_scan_clean`: a mounted skill's scan has no critical or high finding. `forged_skills_one_mounted_name`: one mounted skill per name in each workspace. Installing one into `.claude/skills` is an `install` approval, which `approvals_locked_never_approved` keeps locked.
 - **`capsules` is append-only.** Its trigger works like the one on `events`. Each row's `hash` is the SHA-256 of its canonical JSON, chained by `prev_hash`.
 
+ADR-139 adds `GET /api/search/status` and `POST /api/search/live {workspace, q, mode}`. The second asks official keyless JSON APIs on fixed hosts, saves a `search` episode to memory, and falls back to memory with `offline: true` when no source answers.
+
 ## API (phase 2)
 
 | method path | does | who | input | output | flow |

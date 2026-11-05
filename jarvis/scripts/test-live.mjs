@@ -37,7 +37,20 @@ const fake = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ message: { role: "assistant", content } }));
 });
 await new Promise(r => fake.listen(0, "127.0.0.1", r));
-const srv = await startServer({ port: 0, dataDir, quiet: true, ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
+// ADR-139: no outbound network in the sandbox, so the official APIs are answered by fixtures on their fixed hosts.
+const searchHosts = [];
+const SEARCH_FIX = {
+  "en.wikipedia.org": { query: { search: [{ title: "Breadth-first search", snippet: "<span>Breadth</span>-first search is a graph algorithm" }] } },
+  "ar.wikipedia.org": { query: { search: [{ title: "بحث بالعرض أولا", snippet: "خوارزمية بحث" }] } },
+  "api.openalex.org": { results: [{ id: "https://openalex.org/W1", display_name: "A study of graph search", publication_year: 2021, cited_by_count: 12 }] },
+  "hn.algolia.com": { hits: [{ title: "BFS explained", url: "https://example.com/bfs", objectID: "1", points: 5 }] },
+  "api.github.com": { items: [{ full_name: "acme/graph-search", html_url: "https://github.com/acme/graph-search", description: "Fast graph search", stargazers_count: 120, language: "Go" }] },
+  "registry.npmjs.org": { objects: [{ package: { name: "lodash", version: "4.17.21", description: "Lodash modular utilities." } }] },
+  "pypi.org": null,
+  "api.osv.dev": { vulns: [{ id: "GHSA-p6mc-m468-83gw", summary: "Prototype pollution in lodash", aliases: ["CVE-2020-8203"] }] },
+};
+const searchRequest = async url => { const host = new URL(url).hostname; searchHosts.push(host); return SEARCH_FIX[host] || null; };
+const srv = await startServer({ port: 0, dataDir, quiet: true, searchRequest, searxngUrl: "", ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
 const BASE = `http://127.0.0.1:${srv.port}/`;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
@@ -262,9 +275,25 @@ ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVis
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 ok(!existsSync(join(here, "..", "..", ".claude", "skills", "release-checklist")), "nothing is written into .claude/skills");
 
+// ADR-139 live: federated search through /api/search/live, results as links, saved to memory.
+await go("#/search");
+await page.locator("#f-wq").fill("breadth first search");
+await page.locator("#f-wq").press("Enter");
+await page.waitForSelector(".hit", { timeout: 8000 }).catch(() => {});
+ok((await page.locator(".hit").count()) === 5 && await page.locator(".hit a[href='https://github.com/acme/graph-search'][rel='noopener noreferrer'][target=_blank]").isVisible(), "live web search shows results from five official APIs as safe links");
+ok((await page.locator("#h-src ~ ul li").filter({ hasText: "Answered" }).count()) === 5 && await page.locator("#h-src ~ ul li").filter({ hasText: "No SearXNG address is set." }).isVisible(), "live search lists each source's status");
+ok(await page.getByText("Saved to memory as a search episode: titles and links only.").isVisible() && (await srv.db.all("select title from agent_memory_episodes where kind = 'search'")).some(r => r.title === "web: breadth first search"), "live search is summarised into memory");
+ok(!searchHosts.some(h => /duckduckgo|google|bing/.test(h)) && searchHosts.includes("ar.wikipedia.org"), "live search asks only the official API hosts", searchHosts.join(","));
+await page.getByRole("button", { name: /OSV vulnerabilities/ }).click();
+await page.locator("#f-wq").fill("npm:lodash@4.17.15");
+await page.locator("#f-wq").press("Enter");
+await page.waitForSelector(".hit a[href='https://osv.dev/vulnerability/GHSA-p6mc-m468-83gw']", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".hit", { hasText: "CVE-2020-8203" }).isVisible(), "live OSV search lists the vulnerability with its CVE alias");
+await page.getByRole("button", { name: /Open web/ }).click();
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "breadth first search", "npm:lodash@4.17.15", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
@@ -276,7 +305,7 @@ await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 const leftLive = {};
-for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "webhooks", "settings"]) {
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "webhooks", "settings"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) leftLive[r] = l;
 }
@@ -285,7 +314,7 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 
 // Every screen renders in live mode (dates from the database included).
-for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "agents/templates"]) {
+for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "search", "agents/templates"]) {
   await go("#/" + r);
   ok(!(await page.locator(".error-box").count()) && await page.locator("main h1").first().isVisible(), "live " + r + " renders");
   if (r === "logs") ok(/ago|just now/.test(await page.locator("main time").first().textContent({ timeout: 5000 })), "live dates show as relative times");

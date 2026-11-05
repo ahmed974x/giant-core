@@ -369,6 +369,25 @@ await page.waitForTimeout(300);
 ok(await page.locator("dialog[open] .skill-pick label[data-skill='token-checker']").isVisible(), "F16 the mounted skill can be linked in the agent editor");
 await page.keyboard.press("Escape");
 
+// F17: live open-web search (ADR-139). The sample page has no network, so it says so and answers
+// from this browser's memory; the clone mode hands the address to the Studio's cloner.
+await go("#/search");
+ok(await page.getByRole("button", { name: /Open web/ }).getAttribute("aria-pressed") === "true" && await page.getByText(/Wikipedia in Arabic and English/).isVisible(), "F17 search opens in open-web mode with its sources named");
+await page.locator("#f-wq").fill("radius padding");
+await page.locator("#f-wq").press("Enter");
+await page.waitForTimeout(400);
+ok(await page.getByText(/Live search runs on the local server/).isVisible() && await page.locator(".mem h3", { hasText: "Cards use radius 20" }).isVisible(), "F17 with no network the search says so and answers from memory");
+ok((await page.locator("#h-src ~ ul li").filter({ hasText: "Needs the local server" }).count()) === 6, "F17 every source states why it did not answer");
+await page.getByRole("button", { name: /OSV vulnerabilities/ }).click();
+ok(await page.locator("#f-wq").getAttribute("placeholder") === "npm:lodash@4.17.15", "F17 the OSV mode shows the ecosystem:package form");
+await page.getByRole("button", { name: /Clone a live site/ }).click();
+await page.locator("#f-wq").fill("https://www.example.com/");
+await page.getByRole("button", { name: "Open in the cloner" }).click();
+await page.waitForTimeout(400);
+ok(page.url().endsWith("#/studio") && (await page.locator("#f-clone-url").inputValue()) === "https://www.example.com/", "F17 the clone mode hands the address to the Studio's clean-room cloner");
+await go("#/search");
+await page.getByRole("button", { name: /Open web/ }).click();
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -381,13 +400,13 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 ok((await page.evaluate(() => document.documentElement.lang + "/" + document.documentElement.dir)) === "ar/rtl" && (await page.getByRole("link", { name: "نظرة عامة" }).isVisible()) && /نظرة عامة/.test(await page.title()), "F15 the language button switches the whole shell to Arabic, right to left");
 const left = {};
-for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "webhooks", "settings", "agents/ag_release"]) {
+for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "webhooks", "settings", "agents/ag_release"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) left[r] = l;
 }

@@ -97,6 +97,11 @@ PASS F16 the mounted skill joins the Skill Mixer list
 PASS F16 a skill with a high finding is refused and not mounted
 PASS F16 installing a forged skill into the repo is a locked approval
 PASS F16 the mounted skill can be linked in the agent editor
+PASS F17 search opens in open-web mode with its sources named
+PASS F17 with no network the search says so and answers from memory
+PASS F17 every source states why it did not answer
+PASS F17 the OSV mode shows the ecosystem:package form
+PASS F17 the clone mode hands the address to the Studio's clean-room cloner
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -105,4 +110,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-106 passed, 0 failed
+111 passed, 0 failed
