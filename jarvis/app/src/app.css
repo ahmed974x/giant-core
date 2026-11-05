@@ -468,3 +468,4 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 .ask .thinking { border-inline-start: 2px solid var(--color-border); padding-inline-start: 12px; }
 .ask .thinking summary { cursor: pointer; font-size: var(--text-caption); color: var(--color-text-muted); }
 .ask .stream-think { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-text-muted); }
+[hidden] { display: none !important; }

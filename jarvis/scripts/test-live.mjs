@@ -298,6 +298,7 @@ await page.locator("#f-ask").fill("Explain breadth-first search");
 await page.getByRole("button", { name: "Ask", exact: true }).click();
 await page.waitForFunction(() => /cost 0/.test(document.querySelector(".ask .subtle.t-caption:last-child")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
 ok((await page.locator(".stream-out").textContent()) === "Breadth-first search visits a graph level by level." && (await page.locator(".stream-think").textContent()) === "Recall the definition." && /UNTRUSTED_MODEL_OUTPUT/.test(await page.locator(".ask > p.subtle").last().textContent()), "live: a streamed answer shows its text, its reasoning apart and the untrusted label");
+ok(!(await page.getByRole("button", { name: "Stop", exact: true }).isVisible()), "live: the Stop button hides again once the answer is done");
 
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
