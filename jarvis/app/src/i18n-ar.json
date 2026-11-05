@@ -427,6 +427,54 @@
   [
    "^New step (\\d+)$",
    "خطوة جديدة $1"
+  ],
+  [
+   "^(\\d+) episodes$",
+   "$1 حلقة"
+  ],
+  [
+   "^(\\d+) of (\\d+) episodes match \\(BM25\\)$",
+   "$1 من $2 حلقة تطابق (BM25)"
+  ],
+  [
+   "^Self-check done: (\\d+) lessons stored\\.$",
+   "انتهى الفحص الذاتي: حُفظ $1 درساً."
+  ],
+  [
+   "^(\\d+) lessons stored$",
+   "حُفظ $1 درساً"
+  ],
+  [
+   "^(\\d+) / (\\d+) correct$",
+   "$1 / $2 صحيحة"
+  ],
+  [
+   "^Mounted (.+)\\. It is in the Skill Mixer and the agent editor now\\.$",
+   "رُكّبت $1. هي الآن في خلاط المهارات ومحرر الوكلاء."
+  ],
+  [
+   "^Refused: (\\d+) critical, (\\d+) high$",
+   "رُفضت: $1 حرجة، $2 عالية"
+  ],
+  [
+   "^(\\d+) findings · (\\d+) files$",
+   "$1 نتيجة · $2 ملفات"
+  ],
+  [
+   "^Delete (.+)$",
+   "حذف $1"
+  ],
+  [
+   "^Unmounted (.+)\\.$",
+   "أُزيل تركيب $1."
+  ],
+  [
+   "^Exported (\\d+) episodes as JSONL\\.$",
+   "صُدّرت $1 حلقة بصيغة JSONL."
+  ],
+  [
+   "^score ([\\d.]+)$",
+   "الدرجة $1"
   ]
  ],
  "strings": {
@@ -1179,6 +1227,64 @@
   "← Agents": "→ الوكلاء",
   "← Missions": "→ المهام الطويلة",
   "← Runs": "→ التشغيلات",
-  "← Workflows": "→ مسارات العمل"
+  "← Workflows": "→ مسارات العمل",
+  "Memory": "الذاكرة",
+  "skill forged": "صيغت مهارة",
+  "Forged in this workspace": "مصوغة في مساحة العمل هذه",
+  "Forged": "مصوغة",
+  "Skill Forge": "مصنع المهارات",
+  "What it does": "ماذا تفعل",
+  "Checklist (SKILL.md only)": "قائمة تحقق (SKILL.md فقط)",
+  "Python tool (standard library)": "أداة Python (المكتبة القياسية)",
+  "Forge and mount": "اصنع وركّب",
+  "Mounted in this workspace": "مركّبة في مساحة العمل هذه",
+  "No forged skill mounted yet.": "لم تُركّب أي مهارة مصوغة بعد.",
+  "Python tool": "أداة Python",
+  "Pasted": "ملصقة",
+  "Checklist": "قائمة تحقق",
+  "Unmount": "إزالة التركيب",
+  "Open approvals": "افتح الموافقات",
+  "Not mounted: SkillSpector found a critical or high problem.": "لم تُركّب: وجد SkillSpector مشكلة حرجة أو عالية.",
+  "This workspace's own good work, ranked with BM25. The best few episodes go to the local model as examples, marked as data. Retrieval, not training.": "أفضل أعمال مساحة العمل هذه، مرتبة بخوارزمية BM25. تذهب أفضل الحلقات القليلة إلى النموذج المحلي كأمثلة موسومة بأنها بيانات. استرجاع لا تدريب.",
+  "Search memory": "ابحث في الذاكرة",
+  "Words to look for, in Arabic or English": "كلمات للبحث، بالعربية أو الإنجليزية",
+  "Design": "تصميم",
+  "Answer": "إجابة",
+  "Lesson": "درس",
+  "Note": "ملاحظة",
+  "Skill": "مهارة",
+  "Nothing matches": "لا شيء يطابق",
+  "Memory is empty": "الذاكرة فارغة",
+  "Try other words, or another kind.": "جرّب كلمات أخرى أو نوعاً آخر.",
+  "Finished missions, model answers and self-check lessons are kept here. Add a note, or run a self-check.": "تُحفظ هنا المهام المكتملة وإجابات النموذج ودروس الفحص الذاتي. أضف ملاحظة أو شغّل فحصاً ذاتياً.",
+  "Add a note": "أضف ملاحظة",
+  "Tags": "الوسوم",
+  "Cards use radius 20 = 12 + 8": "البطاقات بنصف قطر 20 = 12 + 8",
+  "What worked, and why. Never a key or a password.": "ما الذي نجح ولماذا. لا مفاتيح ولا كلمات مرور أبداً.",
+  "design, radius": "تصميم، نصف القطر",
+  "Add to memory": "أضف إلى الذاكرة",
+  "Saved to memory.": "حُفظت في الذاكرة.",
+  "Deleted from memory.": "حُذفت من الذاكرة.",
+  "Self-check": "الفحص الذاتي",
+  "Jarvis asks questions whose answers it computes itself: contrast ratios, which actions are locked, and the spacing scale. With a local model it grades the model; either way each computed answer is stored as a lesson.": "يطرح Jarvis أسئلة يحسب إجاباتها بنفسه: نسب التباين، والأفعال المقفلة، وسلّم المسافات. مع نموذج محلي يصحّح إجابات النموذج، وفي الحالتين تُحفظ كل إجابة محسوبة درساً.",
+  "Run a self-check": "شغّل فحصاً ذاتياً",
+  "Export JSONL": "صدّر JSONL",
+  "Curriculum": "المنهج",
+  "For a larger set, the replica-hybrid-python skill writes 50,000+ layouts and 50,000+ Arabic and English questions with computed answers, as JSONL, on your computer:": "لمجموعة أكبر، تكتب مهارة replica-hybrid-python أكثر من 50,000 تخطيط وأكثر من 50,000 سؤال بالعربية والإنجليزية بإجابات محسوبة، بصيغة JSONL، على جهازك:",
+  "Standard library only, no network. Use it with your own fine-tuning tools if you choose; Jarvis does not train a model.": "المكتبة القياسية فقط، بلا شبكة. استخدمها مع أدوات الضبط الدقيق الخاصة بك إن شئت؛ Jarvis لا يدرّب نموذجاً.",
+  "Sample mode has no model: the computed answers were stored as lessons.": "وضع العيّنة بلا نموذج: حُفظت الإجابات المحسوبة دروساً.",
+  "Graded against answers Jarvis computed itself.": "صُحّحت مقابل إجابات حسبها Jarvis بنفسه.",
+  "No model running: the computed answers were stored as lessons for later.": "لا نموذج يعمل: حُفظت الإجابات المحسوبة دروساً لاحقاً.",
+  "Keys belong in the vault, never in memory.": "المفاتيح مكانها الخزنة، لا الذاكرة.",
+  "That text holds a key-shaped value. Keys belong in the vault, never in memory.": "هذا النص يحوي قيمة بشكل مفتاح. المفاتيح مكانها الخزنة، لا الذاكرة.",
+  "A memory needs a title and some text.": "الذاكرة تحتاج عنواناً وبعض النص.",
+  "A mounted skill already has this name in this workspace.": "توجد مهارة مركّبة بهذا الاسم في مساحة العمل هذه.",
+  "No mounted skill with that id.": "لا توجد مهارة مركّبة بهذا المعرّف.",
+  "Name it with 3 to 41 lower-case letters, digits or hyphens, starting with a letter.": "سمّها من 3 إلى 41 حرفاً صغيراً أو رقماً أو شرطة، تبدأ بحرف.",
+  "Describe what the skill does in a sentence (10+ characters).": "صف ما تفعله المهارة في جملة (10 أحرف أو أكثر).",
+  "SKILL.md needs front matter with name and description.": "ملف SKILL.md يحتاج مقدمة فيها الاسم والوصف.",
+  "Checks that every colour in a stylesheet comes from the token file.": "يتحقق من أن كل لون في ملف الأنماط يأتي من ملف الرموز.",
+  "Mount the SKILL.md below": "ركّب ملف SKILL.md أدناه",
+  "Write a skill from a sentence, or mount the SKILL.md below. Every file is scanned with SkillSpector's rules; a critical or high finding is refused. Mounted skills live in this workspace only. Nothing written here runs.": "اكتب مهارة من جملة، أو ركّب ملف SKILL.md أدناه. يُفحص كل ملف بقواعد SkillSpector، وأي نتيجة حرجة أو عالية تُرفض. المهارات المركّبة تعيش في مساحة العمل هذه فقط، ولا يُشغَّل شيء مما يُكتب هنا."
  }
 }

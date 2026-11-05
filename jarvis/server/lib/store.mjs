@@ -30,6 +30,15 @@ function approvalOut(p) {
   return { id: p.id, category: p.category, runId: p.run_id, action: p.action, payload: p.payload || {}, status: p.status, decidedBy: p.decided_by, reason: p.reason, decidedAt: p.decided_at, createdAt: p.created_at, locked: !!LOCKED[p.category] };
 }
 
+// Column names in setRun and setStep come from these lists only; values are always $n parameters.
+const RUN_COLUMNS = new Set(["status", "log", "input", "started_at", "finished_at", "cost_micro_usd"]);
+const RUN_STEP_COLUMNS = new Set(["status", "ms", "tries", "output"]);
+function onlyColumns(keys, allowed) {
+  for (const k of keys) if (!allowed.has(k)) throw new Error("Not an updatable column: " + k);
+  if (!keys.length) throw new Error("Nothing to update.");
+  return keys;
+}
+
 export function createStore(db) {
   const wsId = async slug => {
     const w = await db.one("select id from workspaces where slug = $1", [slug]);
@@ -156,15 +165,17 @@ export function createStore(db) {
     },
     async runRecord(id) { return db.one("select * from runs where id = $1", [id]); },
     async setRun(id, fields) {
-      const keys = Object.keys(fields);
+      const keys = onlyColumns(Object.keys(fields), RUN_COLUMNS);
       const sets = keys.map((k, i) => `${k} = $${i + 1}`);
       const vals = keys.map(k => (k === "log" || k === "input") ? JSON.stringify(fields[k]) : fields[k]);
+      // static-guard: reviewed - column names pass a fixed allowlist; every value is a $n parameter
       await db.run(`update runs set ${sets.join(", ")}, updated_at = $${keys.length + 1} where id = $${keys.length + 2}`, [...vals, iso(), id]);
     },
     async setStep(runId, idx, fields) {
-      const keys = Object.keys(fields);
+      const keys = onlyColumns(Object.keys(fields), RUN_STEP_COLUMNS);
       const sets = keys.map((k, i) => `${k} = $${i + 1}`);
       const vals = keys.map(k => k === "output" ? JSON.stringify(fields[k]) : fields[k]);
+      // static-guard: reviewed - column names pass a fixed allowlist; every value is a $n parameter
       await db.run(`update steps set ${sets.join(", ")}, updated_at = $${keys.length + 1} where run_id = $${keys.length + 2} and idx = $${keys.length + 3}`, [...vals, iso(), runId, idx]);
     },
     async setAgentStatus(id, status) { await db.run("update agents set status = $1, updated_at = $2 where id = $3", [status, iso(), id]); },

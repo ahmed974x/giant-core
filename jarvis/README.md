@@ -202,10 +202,18 @@ Without Ollama, the same buttons use the fixed rules.
 - **Webhooks.** `#/webhooks`. An incoming hook takes `POST /api/hooks/<id>` with `X-Jarvis-Signature: sha256=<HMAC-SHA256 of the body>`. An outgoing hook reaches `http://127.0.0.1:<port>/` only; any other address is a locked request.
 - **Arabic.** Press «ع» in the top bar, or open the page with `?lang=ar`. Every new UI string needs a line in `jarvis/app/src/i18n-ar.json`.
 
+## Memory bank and Skill Forge (ADR-138)
+
+- **Memory.** `#/memory` keeps this workspace's episodes: finished missions, local-model plans, designs and answers, self-check lessons and your own notes. Search ranks them with BM25, in Arabic and English. Before the local model drafts a plan or a design, the best three episodes go to it as examples, marked as data. This is retrieval, not training. A text with a key-shaped value is refused.
+- **Self-check.** Jarvis asks questions it can answer itself: contrast ratios, which actions are locked, the spacing scale. With Ollama running it grades the model; either way every computed answer is stored as a lesson. **Export JSONL** downloads the workspace's episodes, one chat pair per line.
+- **Curriculum.** `python3 .claude/skills/replica-hybrid-python/curriculum_50k.py count` shows the size: 258,048 layouts and 54,250 Q&A pairs. `export --kind qa --n 50000 --out <file> --root .` writes them as JSONL.
+- **Skill Forge.** In the Skill Mixer, write a skill from a sentence or mount the SKILL.md you pasted. Every file is scanned with SkillSpector's rules, and a critical or high finding is refused. A mounted skill shows in the Mixer and the agent editor at once. **Install into the repo…** is a locked approval.
+- **Skills.** `replica-cyber-recon` (keys, unsafe code, manifests, SHA-256 manifests) and `replica-hybrid-python` (layout fingerprints, scheduling, pattern memory, curriculum). Both are standard library only, with no network and no process.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.
 - **The Studio** only downloads a file. The cloner reads one public page, obeys `robots.txt`, refuses private addresses, and keeps only its layout: no text, images, colours, scripts or brand.
-- **The Skill Mixer** only copies a plan.
+- **The Skill Mixer** only copies a plan, and the Skill Forge only mounts a scanned skill in the workspace's registry; nothing is written into `.claude/skills` or run.
 - **Billing** is never switched on, and no plan is ever charged, from Jarvis. **Webhooks** never send outside this computer from Jarvis.
 - **A local model** never decides a lock, never runs a tool of its own, and its HTML is never shown as-is.

@@ -54,5 +54,9 @@ Agent templates gallery,agents,could,yes,yes,ADR-137: six templates fill the age
 Scheduled runs,runs,could,yes,yes,ADR-137: every 5 min to 7 days; the server starts due runs (trigger schedule)
 Webhooks out,integrations,could,yes,yes,"ADR-137: in and out, HMAC-SHA256; outgoing only to 127.0.0.1 (webhooks_external_out_locked), anything else a locked approval"
 Usage analytics charts,overview,could,yes,yes,"ADR-137: runs per day, gate pass rate, agents, missions, tokens, approvals (SVG bars, HTML labels)"
+Memory bank with BM25 search (Arabic and English),memory,should,yes,yes,"ADR-138: agent_memory_episodes; ranked with BM25, boosted when gates passed; keys refused"
+Model examples from workspace memory,memory,should,yes,yes,"ADR-138: the best three episodes go to the local model as data, never instructions"
+Self-check sessions and JSONL export,memory,could,yes,yes,"ADR-138: computed answers stored as lessons, the local model graded; export per workspace"
+Live Skill Forge with hot-mount,skills,should,yes,yes,"ADR-138: SkillSpector rules on every file; forged_skills_scan_clean; install into .claude/skills stays a locked approval"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

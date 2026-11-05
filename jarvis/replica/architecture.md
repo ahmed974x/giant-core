@@ -27,7 +27,7 @@ Two phases, both built. Phase 1 is the static page (ADR-133). Phase 2 is the loc
 
 ## Schema
 
-Tables: 21 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` and `gate_results`. ADR-137 adds `schedules`, `webhooks`, `webhook_deliveries`, `billing_settings`, `subscriber_tiers` and `token_ledger`.
+Tables: 23 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` and `gate_results`. ADR-137 adds `schedules`, `webhooks`, `webhook_deliveries`, `billing_settings`, `subscriber_tiers` and `token_ledger`. ADR-138 adds `agent_memory_episodes` and `forged_skills`.
 
 **Access rules.** Phase 2 runs a data-layer check on every query in `jarvis/server`: the caller's member row and its role on the workspace. Row level security is noted in the SQL for when there is more than one user.
 
@@ -46,6 +46,7 @@ Tables: 21 (`schema.sql`). ADR-135 adds `missions`, `mission_steps`, `capsules` 
   - `subscriber_tiers_draft_only`;
   - `token_ledger_creator_free`;
   - `webhook_deliveries` and `token_ledger` are append-only.
+- **ADR-138:** `forged_skills_scan_clean`: a mounted skill's scan has no critical or high finding. `forged_skills_one_mounted_name`: one mounted skill per name in each workspace. Installing one into `.claude/skills` is an `install` approval, which `approvals_locked_never_approved` keeps locked.
 - **`capsules` is append-only.** Its trigger works like the one on `events`. Each row's `hash` is the SHA-256 of its canonical JSON, chained by `prev_hash`.
 
 ## API (phase 2)

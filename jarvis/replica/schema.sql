@@ -353,3 +353,37 @@ begin
 end $$;
 create trigger token_ledger_no_update before update or delete on token_ledger
   for each row execute function token_ledger_append_only();
+
+
+-- ADR-138: the memory bank (BM25-ranked episodes the local model sees as examples) and the Skill
+-- Forge registry. A forged skill is mounted in the workspace only; writing it into .claude/skills is
+-- a locked install approval.
+create table agent_memory_episodes (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  kind text not null check (kind in ('plan', 'design', 'answer', 'lesson', 'note', 'search', 'skill')),
+  title text not null check (length(title) between 1 and 160),
+  body text not null check (length(body) between 1 and 8000),
+  tags jsonb not null default '[]',
+  outcome jsonb not null default '{}',
+  source text not null default 'person',
+  created_at timestamptz not null default now()
+);
+create index on agent_memory_episodes (workspace_id, created_at desc);
+
+create table forged_skills (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null check (name ~ '^[a-z][a-z0-9-]{2,40}$'),
+  description text not null,
+  kind text not null check (kind in ('checklist', 'python-tool', 'pasted')),
+  files jsonb not null,
+  scan jsonb not null,
+  status text not null default 'mounted' check (status in ('mounted', 'removed')),
+  approval_id uuid references approvals(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  -- A skill with a critical or high SkillSpector finding is never mounted.
+  constraint forged_skills_scan_clean check (status <> 'mounted' or ((scan->>'critical')::int = 0 and (scan->>'high')::int = 0))
+);
+create unique index forged_skills_one_mounted_name on forged_skills (workspace_id, name) where status = 'mounted';

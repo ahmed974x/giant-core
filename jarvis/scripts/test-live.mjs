@@ -226,21 +226,57 @@ ok(await page.getByRole("cell", { name: "ops@example.com", exact: true }).isVisi
 await go("#/analytics");
 ok(await page.getByText("Creator mode").isVisible() && (await page.locator(".bars").count()) >= 4, "live analytics renders");
 
+// ADR-138 live: the memory bank on the server (BM25, self-check graded against the fake model,
+// JSONL export) and the Skill Forge (mounted in the database, install locked).
+const kinds0 = (await srv.db.all("select kind from agent_memory_episodes")).map(r => r.kind);
+ok(kinds0.includes("design"), "live: the model's Studio design was kept as a memory episode", kinds0.join(","));
+await go("#/memory");
+await page.locator("#f-ntitle").fill("Acme widgets layout");
+await page.locator("#f-nbody").fill("A hero, then three cards for the widgets, then a plan table.");
+await page.getByRole("button", { name: "Add to memory" }).click();
+await page.waitForSelector(".mem", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".mem h3", { hasText: "Acme widgets layout" }).isVisible(), "live: a note is saved to the server's memory");
+await page.locator("#f-mq").fill("Acme widgets");
+await page.waitForTimeout(600);
+ok(/score/.test(await page.locator(".mem").first().textContent()) && await page.locator(".mem").first().locator("mark.term").first().isVisible(), "live BM25 search ranks episodes with their matched words");
+await page.locator("#f-mq").fill("");
+await page.getByRole("button", { name: "Run a self-check" }).click();
+await page.waitForSelector("text=/\\d+ \\/ 9 correct/", { timeout: 15000 }).catch(() => {});
+ok(await page.getByText(/\d+ \/ 9 correct/).isVisible() && await page.locator(".panel").filter({ hasText: "Self-check" }).getByText("Local model", { exact: true }).isVisible(), "live self-check grades the local model against computed answers");
+const memRows = await srv.db.all("select kind, source from agent_memory_episodes");
+ok(memRows.filter(r => r.source === "self-check").length === 9, "live self-check stores nine lessons in the database", JSON.stringify(memRows.slice(0, 3)));
+const dlLive = page.waitForEvent("download");
+await page.getByRole("button", { name: "Export JSONL" }).click();
+const liveMem = readFileSync(await (await dlLive).path(), "utf8").trim().split("\n");
+const wsMem = await srv.db.all("select e.id from agent_memory_episodes e join workspaces w on w.id = e.workspace_id where w.slug = $1", ["giant-core"]);
+ok(liveMem.length === wsMem.length && liveMem.every(l => JSON.parse(l).messages.length === 2), "live export downloads every episode of this workspace as JSONL", liveMem.length + " vs " + wsMem.length);
+await go("#/skills");
+await page.locator("#f-fname").fill("release-checklist");
+await page.locator("#f-fdesc").fill("Lists what to check before a release, and stops at anything locked.");
+await page.getByRole("button", { name: "Forge and mount" }).click();
+await page.waitForSelector(".feed li.forged", { timeout: 5000 }).catch(() => {});
+ok(await page.locator(".feed li.forged", { hasText: "release-checklist" }).isVisible() && (await srv.db.all("select name from forged_skills where status = 'mounted'")).some(r => r.name === "release-checklist"), "live forge mounts the skill in the database");
+await page.locator(".feed li.forged", { hasText: "release-checklist" }).getByRole("button", { name: "Install into the repo…" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVisible() && (await srv.db.all("select status, category from approvals where category = 'install'")).some(r => r.status === "locked-pending" || r.status === "pending"), "live install request becomes a locked approval", JSON.stringify(await srv.db.all("select status, category from approvals where category = 'install'")));
+await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
+ok(!existsSync(join(here, "..", "..", ".claude", "skills", "release-checklist")), "nothing is written into .claude/skills");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com"];
+const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
   while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && !skip(n.parentElement)) { const r = n.parentElement.getBoundingClientRect(); if (r.width || r.height) out.add(t); } }
-  for (const el of document.querySelectorAll("[aria-label], [placeholder], [title]")) if (!skip(el)) for (const a of ["aria-label", "placeholder", "title"]) { const v = el.getAttribute(a); if (v) out.add(v); }
+  for (const el of document.querySelectorAll("[aria-label], [placeholder], [title]")) if (el.tagName === "TEXTAREA" ? el.getAttribute("translate") !== "no" && !skip(el.parentElement) : !skip(el)) for (const a of ["aria-label", "placeholder", "title"]) { const v = el.getAttribute(a); if (v) out.add(v); }
   return [...out];
 }).then(l => l.filter(t => !TYPED.some(x => t.includes(x)) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 const leftLive = {};
-for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "webhooks", "settings"]) {
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "webhooks", "settings"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) leftLive[r] = l;
 }
@@ -249,7 +285,7 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 
 // Every screen renders in live mode (dates from the database included).
-for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "agents/templates"]) {
+for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "agents/templates"]) {
   await go("#/" + r);
   ok(!(await page.locator(".error-box").count()) && await page.locator("main h1").first().isVisible(), "live " + r + " renders");
   if (r === "logs") ok(/ago|just now/.test(await page.locator("main time").first().textContent({ timeout: 5000 })), "live dates show as relative times");

@@ -46,6 +46,15 @@ PASS an outgoing webhook to an outside address shows as locked
 PASS asking to switch it on leaves it a draft (locked request)
 PASS live: add a member
 PASS live analytics renders
+PASS live: the model's Studio design was kept as a memory episode
+PASS live: a note is saved to the server's memory
+PASS live BM25 search ranks episodes with their matched words
+PASS live self-check grades the local model against computed answers
+PASS live self-check stores nine lessons in the database
+PASS live export downloads every episode of this workspace as JSONL
+PASS live forge mounts the skill in the database
+PASS live install request becomes a locked approval
+PASS nothing is written into .claude/skills
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -57,7 +66,8 @@ PASS live analytics renders
 PASS live webhooks renders
 PASS live settings renders
 PASS live skills renders
+PASS live memory renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-61 passed, 0 failed
+71 passed, 0 failed

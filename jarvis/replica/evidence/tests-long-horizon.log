@@ -10,6 +10,6 @@ test_status_and_log (test_long_horizon.LongHorizon.test_status_and_log) ... ok
 test_watch_outside_root_is_refused (test_long_horizon.LongHorizon.test_watch_outside_root_is_refused) ... ok
 
 ----------------------------------------------------------------------
-Ran 10 tests in 0.073s
+Ran 10 tests in 0.097s
 
 OK

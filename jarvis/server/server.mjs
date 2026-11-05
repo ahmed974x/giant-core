@@ -21,6 +21,7 @@ import { createRunner } from "./lib/runner.mjs";
 import { createMissions } from "./lib/missions.mjs";
 import { createOllamaBridge, BridgeError } from "./lib/ollama-bridge.mjs";
 import { createPlatform } from "./lib/platform.mjs";
+import { createMemory } from "./lib/memory.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
 import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
 
@@ -34,10 +35,22 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await seed(db);
   const store = createStore(db);
   const runner = createRunner({ store, repoRoot, dataDir });
-  let platform = null;
-  const missions = createMissions({ store, runner, db, repoRoot, dataDir, onEvent: (slug, kind, data) => platform && platform.dispatch(slug, kind, data) });
+  let platform = null, memory = null;
+  const missions = createMissions({ store, runner, db, repoRoot, dataDir, onEvent: async (slug, kind, data) => {
+    if (platform) await platform.dispatch(slug, kind, data);
+    // A finished mission becomes a remembered plan; one that passed every gate ranks higher.
+    if (memory && kind === "mission.finished") {
+      const m = await missions.detail(slug, data.id).catch(() => null);
+      if (m) {
+        const gates = m.steps.filter(s => s.kind === "gate");
+        await memory.add(slug, { kind: "plan", title: m.title, body: m.goal + "\n\n" + m.steps.map(s => `${s.phase}. ${s.title} [${s.kind}${s.locked ? ", locked" : ""}] ${s.status}`).join("\n"),
+          tags: ["mission", m.template], outcome: { succeeded: m.status === "succeeded", gatesPassed: gates.length > 0 && gates.every(s => s.gateStatus === "pass") }, source: "mission" }).catch(() => {});
+      }
+    }
+  } });
   await missions.seedMissions();
   platform = createPlatform({ db, store, runner, missions, dataDir });
+  memory = createMemory({ db, store, llm });
   await platform.seed();
   // Scheduled runs (ADR-137): due schedules start every 30 s while the server runs.
   const ticker = setInterval(() => { platform.tick().catch(() => {}); }, 30000);
@@ -101,8 +114,16 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       if (R("GET", /^\/api\/workspaces$/)) return send(200, await store.listWorkspaces());
       if (R("GET", /^\/api\/llm\/status$/)) return send(200, await llm.status());
       if (R("POST", /^\/api\/llm\/run$/)) {
-        const out = await llm.run({ mode: body.mode, prompt: body.prompt, lang: body.lang, model: body.model });
-        if (typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace)) await usage(body.workspace, out.engine, out.model, String(body.prompt || "").length + JSON.stringify(out.text || out.steps || out.blocks || "").length + String(out.thinking || "").length, "llm." + out.mode);
+        const ws = typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace) ? body.workspace : null;
+        const examples = ws && body.mode !== "shell" ? await memory.examples(ws, String(body.prompt || "")) : [];
+        const out = await llm.run({ mode: body.mode, prompt: body.prompt, lang: body.lang, model: body.model, examples });
+        if (ws) {
+          await usage(ws, out.engine, out.model, String(body.prompt || "").length + JSON.stringify(out.text || out.steps || out.blocks || "").length + String(out.thinking || "").length, "llm." + out.mode);
+          // Remember what was made: a design that kept no source text and passes contrast ranks higher.
+          const summary = out.mode === "design" ? "Sections: " + out.report.sections.join(", ") : out.mode === "plan" ? out.steps.map(s => `${s.phase}. ${s.title} [${s.kind}${s.locked ? ", locked" : ""}]`).join("\n") : String(out.text || "");
+          await memory.add(ws, { kind: out.mode === "chat" ? "answer" : out.mode, title: String(body.prompt).slice(0, 160), body: summary.slice(0, 8000) || "(empty)", tags: ["llm", out.engine],
+            outcome: out.mode === "design" ? { contrast: true, cleanRoom: out.report.sweep.leaks === 0 } : { engine: out.engine === "ollama-local-loopback" }, source: out.engine }).catch(() => {});
+        }
         return send(200, { ok: true, ...out });
       }
       if (R("POST", /^\/api\/studio\/clean-clone$/)) {
@@ -187,6 +208,22 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "DELETE" && (k = /^\/billing\/tiers\/([\w-]{1,64})$/.exec(rest))) return send(200, await platform.deleteTier(slug, k[1]));
         if (req.method === "POST" && rest === "/billing/request") return send(200, await platform.requestMoney(slug, body.what === "billing" ? "billing" : String(body.what || "plan")));
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
+        // ADR-138: memory bank and Skill Forge.
+        if (req.method === "GET" && rest === "/memory") return send(200, await memory.search(slug, { q: url.searchParams.get("q") || "", kind: url.searchParams.get("kind") || "", limit: Math.min(50, Number(url.searchParams.get("limit")) || 20) }));
+        if (req.method === "POST" && rest === "/memory") return send(201, await memory.add(slug, { ...body, source: "person" }));
+        if (req.method === "POST" && rest === "/memory/self-check") return send(200, await memory.selfCheck(slug, { n: body.n }));
+        if (req.method === "GET" && rest === "/memory/export") {
+          const text = await memory.exportJsonl(slug);
+          res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Content-Disposition": `attachment; filename="jarvis-memory-${slug}.jsonl"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+          return res.end(text);
+        }
+        if (req.method === "DELETE" && (k = /^\/memory\/([\w-]{1,64})$/.exec(rest))) return send(200, await memory.remove(slug, k[1]));
+        if (req.method === "GET" && rest === "/forge") return send(200, await memory.forgeList(slug));
+        if (req.method === "POST" && rest === "/forge") return send(201, await memory.forge(slug, body));
+        if ((k = /^\/forge\/([\w-]{1,64})(\/install)?$/.exec(rest))) {
+          if (req.method === "POST" && k[2]) return send(200, await memory.requestInstall(slug, k[1]));
+          if (req.method === "DELETE" && !k[2]) return send(200, await memory.unmount(slug, k[1]));
+        }
         if (req.method === "GET" && rest === "/stream") {
           // Server-sent events: one "change" event whenever the workspace's change marker moves.
           if (streams.size >= 20) return fail(429, "Too many live streams are open.");
@@ -206,7 +243,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         }
         if (req.method === "POST" && rest === "/missions") return send(201, await missions.create(slug, body));
         if (req.method === "POST" && rest === "/missions/plan") {
-          const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model });
+          const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model, examples: await memory.examples(slug, String(body.goal || "")) });
           await usage(slug, p.engine, p.model, String(body.goal || "").length + JSON.stringify(p.steps).length + String(p.thinking || "").length, "missions.plan");
           const planner = { engine: p.engine, model: p.model, thinking: p.thinking, planFrom: p.planFrom, warning: p.warning, label: p.label, at: new Date().toISOString() };
           return send(201, await missions.createFromPlan(slug, { goal: body.goal, steps: p.steps, planner, capsuleEvery: body.capsuleEvery }));
@@ -237,7 +274,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

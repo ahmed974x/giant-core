@@ -127,6 +127,15 @@ export function agentTemplate(agent) {
   return { title: agent.name + " · long run", goal: agent.rolePrompt || "Run this agent's tools with gates and capsules.", steps };
 }
 
+// Column names in the update helpers come from these lists only; values are always $n parameters.
+const STEP_COLUMNS = new Set(["status", "gate_status", "output", "ms", "approval_id"]);
+const MISSION_COLUMNS = new Set(["status", "started_at", "finished_at"]);
+function onlyColumns(keys, allowed) {
+  for (const k of keys) if (!allowed.has(k)) throw new Error("Not an updatable column: " + k);
+  if (!keys.length) throw new Error("Nothing to update.");
+  return keys;
+}
+
 export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent = () => {} }) {
   const EVIDENCE_ROOTS = ["jarvis/app/data", "jarvis/replica"].map(p => resolve(repoRoot, p));
   const missionDir = (slug, id) => join(dataDir, "workspaces", slug, "missions", id);
@@ -141,12 +150,14 @@ export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent =
   }
   const stepsOf = id => db.all("select * from mission_steps where mission_id = $1 order by idx", [id]);
   async function setStep(id, fields) {
-    const keys = Object.keys(fields);
+    const keys = onlyColumns(Object.keys(fields), STEP_COLUMNS);
     const vals = keys.map(k => (k === "output" ? (fields[k] == null ? null : JSON.stringify(fields[k])) : fields[k]));
+    // static-guard: reviewed - column names pass a fixed allowlist above; every value is a $n parameter
     await db.run(`update mission_steps set ${keys.map((k, i) => `${k} = $${i + 1}`).join(", ")}, updated_at = $${keys.length + 1} where id = $${keys.length + 2}`, [...vals, iso(), id]);
   }
   async function setMission(id, fields) {
-    const keys = Object.keys(fields);
+    const keys = onlyColumns(Object.keys(fields), MISSION_COLUMNS);
+    // static-guard: reviewed - column names pass a fixed allowlist above; every value is a $n parameter
     await db.run(`update missions set ${keys.map((k, i) => `${k} = $${i + 1}`).join(", ")}, updated_at = $${keys.length + 1} where id = $${keys.length + 2}`, [...keys.map(k => fields[k]), iso(), id]);
   }
 

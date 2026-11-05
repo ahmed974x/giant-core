@@ -439,3 +439,16 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Memory bank and Skill Forge (ADR-138) */
+.s-locked { color: var(--color-approval); }
+.memlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.mem { display: grid; gap: 8px; padding: 16px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); min-width: 0; }
+.mem h3 { margin: 0; font-size: var(--text-base); overflow-wrap: anywhere; }
+.mem-body { margin: 0; color: var(--color-text-muted); white-space: pre-wrap; overflow-wrap: anywhere; max-inline-size: 75ch; }
+.mem time { margin-inline-start: auto; }
+.term { padding-inline: 6px; border-radius: 6px; background: var(--color-surface-sunken); color: var(--color-text); font-size: var(--text-caption); border: var(--hairline) solid var(--color-accent); }
+.feed li.forged { flex-wrap: wrap; justify-content: space-between; align-items: center; }
+.feed li.forged .stack { gap: 4px; min-width: 0; }
+.forge-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .forge-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }

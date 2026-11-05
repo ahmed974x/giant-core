@@ -84,6 +84,19 @@ PASS F14 the member's role changes
 PASS F14 a draft plan is saved
 PASS F14 turning on billing becomes a locked money card
 PASS F14 sample mode says webhooks need the local server
+PASS F16 memory starts empty with a plain empty state
+PASS F16 a note is saved to memory
+PASS F16 a key-shaped value is refused
+PASS F16 a self-check stores nine computed lessons
+PASS F16 BM25 search ranks the note first and shows the matched words
+PASS F16 the kind filter shows only lessons
+PASS F16 memory exports as JSONL with one episode per line
+PASS F16 an episode can be deleted
+PASS F16 a forged python-tool skill is scanned clean and mounted
+PASS F16 the mounted skill joins the Skill Mixer list
+PASS F16 a skill with a high finding is refused and not mounted
+PASS F16 installing a forged skill into the repo is a locked approval
+PASS F16 the mounted skill can be linked in the agent editor
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -92,4 +105,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-93 passed, 0 failed
+106 passed, 0 failed

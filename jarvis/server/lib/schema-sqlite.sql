@@ -318,3 +318,34 @@ create trigger if not exists token_ledger_no_update before update on token_ledge
   begin select raise(abort, 'jarvis.token_ledger is append-only'); end;
 create trigger if not exists token_ledger_no_delete before delete on token_ledger
   begin select raise(abort, 'jarvis.token_ledger is append-only'); end;
+
+
+-- ADR-138; same tables and named constraints as schema.sql.
+create table if not exists agent_memory_episodes (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  kind text not null check (kind in ('plan', 'design', 'answer', 'lesson', 'note', 'search', 'skill')),
+  title text not null check (length(title) between 1 and 160),
+  body text not null check (length(body) between 1 and 8000),
+  tags text not null default '[]' check (json_valid(tags)),
+  outcome text not null default '{}' check (json_valid(outcome)),
+  source text not null default 'person',
+  created_at text not null
+);
+create index if not exists memory_ws on agent_memory_episodes (workspace_id, created_at);
+
+create table if not exists forged_skills (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 3 and 41 and name not glob '*[^a-z0-9-]*' and substr(name, 1, 1) glob '[a-z]'),
+  description text not null,
+  kind text not null check (kind in ('checklist', 'python-tool', 'pasted')),
+  files text not null check (json_valid(files)),
+  scan text not null check (json_valid(scan)),
+  status text not null default 'mounted' check (status in ('mounted', 'removed')),
+  approval_id text references approvals(id) on delete set null,
+  created_at text not null,
+  updated_at text not null,
+  constraint forged_skills_scan_clean check (status <> 'mounted' or (json_extract(scan, '$.critical') = 0 and json_extract(scan, '$.high') = 0))
+);
+create unique index if not exists forged_skills_one_mounted_name on forged_skills (workspace_id, name) where status = 'mounted';

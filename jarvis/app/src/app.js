@@ -580,6 +580,50 @@
           webhooks: [], tokens: Object.values(tok), creatorZeroToken: true, costMicroUsd: 0,
         });
       },
+      // ADR-138 in sample mode: the same BM25, forge scan and computed self-check, on this browser's data.
+      searchMemory({ q, kind } = {}) {
+        const pool = (W().memory || []).filter(e => !kind || e.kind === kind).slice().reverse();
+        if (!String(q || "").trim()) return ok({ total: pool.length, hits: pool.slice(0, 20).map(e => ({ ...e, score: null, terms: [] })) });
+        const byId = new Map(pool.map(e => [e.id, e]));
+        const passed = o => Object.values(o || {}).filter(v => v === true).length;
+        return ok({ total: pool.length, hits: LlmPlan.bm25(pool.map(e => ({ id: e.id, text: e.title + "\n" + e.body + "\n" + (e.tags || []).join(" "), boost: 1 + 0.25 * passed(e.outcome) })), q, { limit: 20 }).map(hh => ({ ...byId.get(hh.id), score: hh.score, terms: hh.terms })) });
+      },
+      addMemory({ kind, title, body, tags }) {
+        const t = String(title || "").trim().slice(0, 160), b = String(body || "").trim().slice(0, 8000);
+        if (!t || !b) return bad("A memory needs a title and some text.");
+        if (LlmPlan.scanFiles({ "memory.txt": t + "\n" + b }, SPECTOR_RULES).critical) return bad("That text holds a key-shaped value. Keys belong in the vault, never in memory.");
+        const e = { id: uid("mem"), kind: kind || "note", title: t, body: b, tags: (tags || []).slice(0, 8), outcome: {}, source: "person", createdAt: Date.now() };
+        (W().memory || (W().memory = [])).push(e); save(); return ok(e);
+      },
+      removeMemory(id) { W().memory = (W().memory || []).filter(e => e.id !== id); save(); return ok({ ok: true }); },
+      selfCheck(n) {
+        const count = Math.max(3, Math.min(30, Number(n) || 9)), from = Math.floor(Date.now() / 60000) % 997;
+        const items = [...Array(count)].map((_, k) => ({ ...LlmPlan.selfCheckItem(from + k), reply: null, correct: null }));
+        const list = W().memory || (W().memory = []);
+        items.forEach(it => list.push({ id: uid("mem"), kind: "lesson", title: it.question, body: it.answer, tags: ["self-check", it.category], outcome: { computed: true }, source: "self-check", createdAt: Date.now() }));
+        save();
+        return ok({ engine: "deterministic-rules", asked: count, graded: 0, correct: 0, items, note: "Sample mode has no model: the computed answers were stored as lessons." });
+      },
+      exportMemory() { return ok((W().memory || []).map(e => JSON.stringify({ id: e.id, kind: e.kind, outcome: e.outcome || {}, messages: [{ role: "user", content: e.title }, { role: "assistant", content: e.body }] })).join("\n") + "\n"); },
+      listForged() { return ok((W().forged || []).filter(f => f.status === "mounted").slice().reverse()); },
+      forge(body) {
+        let skill;
+        try { skill = body.skillMd ? LlmPlan.readSkillMd(body.skillMd) : LlmPlan.forgeSkill(body); } catch (e) { return bad(e.message); }
+        const scan = LlmPlan.scanFiles(skill.files, SPECTOR_RULES);
+        const list = W().forged || (W().forged = []);
+        if (list.some(f => f.status === "mounted" && f.name === skill.name)) return bad("A mounted skill already has this name in this workspace.");
+        if (!scan.ok) return ok({ mounted: false, skill: { name: skill.name, files: skill.files }, scan });
+        const f = { id: uid("fs"), name: skill.name, description: skill.description, kind: skill.kind, files: skill.files, scan, status: "mounted", approvalId: null, createdAt: Date.now() };
+        list.push(f); W().events.push(ev("member:owner", "skill.forged", skill.name)); save();
+        return ok({ mounted: true, skill: f, scan });
+      },
+      unmountSkill(id) { const f = (W().forged || []).find(x => x.id === id); if (f) f.status = "removed"; save(); return ok({ ok: true }); },
+      installSkill(id) {
+        const f = (W().forged || []).find(x => x.id === id && x.status === "mounted");
+        if (!f) return bad("No mounted skill with that id.");
+        if (!f.approvalId) { const ap = { id: uid("ap"), category: "install", agentId: null, action: "Install the forged skill “" + f.name + "” into .claude/skills", payload: "Needs Director 00's approval and a written security review.", status: "pending", createdAt: Date.now() }; W().approvals.push(ap); f.approvalId = ap.id; save(); }
+        return ok({ locked: true, approvalId: f.approvalId });
+      },
       listMissions() { return ok(MS().slice().sort((a, b) => b.createdAt - a.createdAt).map(m => ({ id: m.id, title: m.title, template: m.template, status: m.status, createdAt: m.createdAt, steps: m.steps.length, done: m.steps.filter(s => s.status === "done").length, blocked: m.steps.filter(s => s.status === "blocked").length, failed: m.steps.filter(s => s.status === "failed").length, phases: new Set(m.steps.map(s => s.phase)).size, capsules: m.capsules.length, health: missionHealth(m) }))); },
       getMission(id) { const m = findMission(id); return m ? ok(missionOut(m)) : bad("No mission with that id in this workspace."); },
       createMission(input) {
@@ -726,6 +770,16 @@
       deleteTier: id => req("DELETE", w("/billing/tiers/" + encodeURIComponent(id)), {}),
       requestMoney: what => req("POST", w("/billing/request"), { what }),
       analytics: () => req("GET", w("/analytics")),
+      // ADR-138
+      searchMemory: ({ q, kind } = {}) => req("GET", w("/memory?q=" + encodeURIComponent(q || "") + "&kind=" + encodeURIComponent(kind || ""))),
+      addMemory: body => req("POST", w("/memory"), body),
+      removeMemory: id => req("DELETE", w("/memory/" + encodeURIComponent(id)), {}),
+      selfCheck: n => req("POST", w("/memory/self-check"), { n }),
+      exportMemory: async () => { const r = await fetch(w("/memory/export"), { cache: "no-store", credentials: "same-origin" }); if (!r.ok) throw new Error("The server answered " + r.status + "."); return r.text(); },
+      listForged: () => req("GET", w("/forge")),
+      forge: body => req("POST", w("/forge"), body),
+      unmountSkill: id => req("DELETE", w("/forge/" + encodeURIComponent(id)), {}),
+      installSkill: id => req("POST", w("/forge/" + encodeURIComponent(id) + "/install"), {}),
       getMission: id => req("GET", w("/missions/" + encodeURIComponent(id))),
       createMission: input => req("POST", w("/missions"), input),
       runMission: id => req("POST", w("/missions/" + encodeURIComponent(id) + "/run"), {}),
@@ -812,7 +866,8 @@
       return;
     }
     if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE|IFRAME)$/.test(n.tagName)) return;
-    if (!skipEl(n)) {
+    // A textarea's own text is data, but its placeholder and label are interface text.
+    if (!skipEl(n) || (n.tagName === "TEXTAREA" && n.getAttribute("translate") !== "no" && !skipEl(n.parentElement))) {
       let saved = origAttr.get(n);
       for (const a of ATTRS) {
         if (!n.hasAttribute(a)) continue;
@@ -883,7 +938,8 @@
 
   const dlg = $("#dlg");
   let opener = null;
-  dlg.addEventListener("close", () => { if (opener && opener.isConnected) opener.focus(); opener = null; });
+  // A closed dialog is emptied, so stale text (in the other language, or old dates) never lingers in the page.
+  dlg.addEventListener("close", () => { dlg.replaceChildren(); if (opener && opener.isConnected) opener.focus(); opener = null; });
   function openDialog(title, body, actions, from) {
     opener = from || document.activeElement;
     const head = h("h2", { id: "dlgTitle", text: title });
@@ -978,9 +1034,12 @@
     if (!models.includes(a.model)) models.push(a.model);
     const TOOL_NOTES = { "files.read": "read docs/ and jarvis/replica/", "notes.read": "list this workspace's notes", "notes.write": "save a note, asks you first", "runs.read": "read this workspace's runs", "git.log": "read recent commits", "web.read": "read one public page" };
     const toolBoxes = TOOL_LIST.map(t => h("label", { class: "check" }, h("input", { type: "checkbox", name: "tool", value: t, checked: a.tools.includes(t) }), h("span", { class: "mono t-sm", text: t }), h("span", { class: "subtle t-caption", text: "— " + TOOL_NOTES[t] })));
-    const skillNames = (DATA.skills || []).map(s => s.name).sort();
+    // Mounted forged skills (ADR-138) can be linked at once; they are marked "forged" in the picker.
+    let forged = [];
+    try { forged = (await store.listForged()).map(f => f.name); } catch (e) { forged = []; }
+    const skillNames = [...new Set([...(DATA.skills || []).map(s => s.name), ...forged])].sort();
     const skillFilter = h("input", { class: "input", type: "search", id: "f-skillq", name: "skill-q", autocomplete: "off", placeholder: "Filter skills", "aria-label": "Filter skills" });
-    const skillBox = h("div", { class: "skill-pick", role: "group", "aria-label": "Linked skills" }, skillNames.map(n => h("label", { class: "check", dataset: { skill: n } }, h("input", { type: "checkbox", name: "skill", value: n, checked: (a.skills || []).includes(n) }), h("span", { class: "mono t-sm", translate: "no", text: n }))));
+    const skillBox = h("div", { class: "skill-pick", role: "group", "aria-label": "Linked skills" }, skillNames.map(n => h("label", { class: "check", dataset: { skill: n } }, h("input", { type: "checkbox", name: "skill", value: n, checked: (a.skills || []).includes(n) }), h("span", { class: "mono t-sm", translate: "no", text: n }), forged.includes(n) ? h("span", { class: "badge", text: "Forged" }) : null)));
     skillFilter.addEventListener("input", () => { const q = skillFilter.value.trim().toLowerCase(); $$("label", skillBox).forEach(l => { l.hidden = !!q && !l.dataset.skill.includes(q); }); });
     const lockedRows = Object.entries(LOCKED).map(([k, why]) => h("label", { class: "check locked-perm" }, h("input", { type: "checkbox", disabled: true, name: "locked-" + k, "aria-describedby": "h-locked" }), icon("i-lock", "sm"), h("span", { text: k[0].toUpperCase() + k.slice(1) + " — " + why })));
     const body = h("div", { class: "stack" },
@@ -1866,7 +1925,8 @@
   const LlmPlan = (() => {
     /*@LLM_PLAN@*/
     /*@WORKFLOW_GRAPH@*/
-    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES };
+    /*@MEMORY_LIBS@*/
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2015,7 +2075,7 @@
     // Clean-room clone: the local server reads one public page (or pasted HTML), keeps only its layout,
     // and returns blocks filled with our own copy. Publishing stays locked.
     const cloneUrl = h("input", { class: "input mono", id: "f-clone-url", name: "clone-url", type: "url", autocomplete: "off", placeholder: "https://example.com/", "aria-describedby": "h-clone" });
-    const cloneHtml = h("textarea", { class: "textarea code", id: "f-clone-html", name: "clone-html", autocomplete: "off", spellcheck: false, rows: 5, placeholder: "<!doctype html>…" });
+    const cloneHtml = h("textarea", { class: "textarea code", translate: "no", id: "f-clone-html", name: "clone-html", autocomplete: "off", spellcheck: false, rows: 5, placeholder: "<!doctype html>…" });
     const report = h("div", { class: "report", "aria-live": "polite" });
     const live = store.mode === "live";
     const cloneBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-copy", "sm"), "Clean-room clone");
@@ -2096,7 +2156,7 @@
   };
 
   /* ── Skill Mixer (S14) ─────────────────────────────────────── */
-  const SOURCE_LABEL = { project: "Project", reviewed: "Reviewed third-party", vendored: "Vendored reference" };
+  const SOURCE_LABEL = { project: "Project", reviewed: "Reviewed third-party", vendored: "Vendored reference", forged: "Forged in this workspace" };
   function findingsBadge(f) {
     if (!f) return h("span", { class: "badge s-idle", text: "Not scanned" });
     if (f.critical || f.high) return h("span", { class: "badge s-failed" }, h("span", { class: "dot", "aria-hidden": "true" }), (f.critical ? f.critical + " critical " : "") + (f.high ? f.high + " high" : ""));
@@ -2197,7 +2257,7 @@
     const pipeline = h("button", { class: "btn btn-secondary", type: "button", text: "Use the Replica pipeline" });
     pipeline.addEventListener("click", () => { mix = Object.keys(PLAN_STEPS).filter(n => skills.some(s => s.name === n)); saveMix(); renderList(); renderMix(); toast("info", "Mix set to the installed Replica skills, in pipeline order."); });
 
-    const editor = h("textarea", { class: "textarea code", id: "f-skillmd", name: "skill-md", autocomplete: "off", spellcheck: false, placeholder: "---\nname: my-skill\ndescription: What it does and when to use it.\n---\n\n# my-skill\n\nSteps…" });
+    const editor = h("textarea", { class: "textarea code", translate: "no", id: "f-skillmd", name: "skill-md", autocomplete: "off", spellcheck: false, placeholder: "---\nname: my-skill\ndescription: What it does and when to use it.\n---\n\n# my-skill\n\nSteps…" });
     const results = h("ul", { class: "checks", "aria-live": "polite" });
     const runCheck = () => {
       const r = editor.value.trim() ? checkSkill(editor.value) : [];
@@ -2224,9 +2284,11 @@
     src.addEventListener("change", renderList);
     renderList(); renderMix(); runCheck();
     const scan = DATA.scan;
+    const forgePanel = skillForge(editor, e => { skills.length = 0; skills.push(...(DATA.skills || []), ...e.map(f => ({ name: f.name, description: f.description, source: "forged", findings: { critical: f.scan.critical, high: f.scan.high, medium: f.scan.medium, low: f.scan.low }, review: "" }))); renderList(); renderMix(); });
     return h("div", { class: "stack" },
       pageHead("Skill Mixer", "The skills installed in this repo, with their SkillSpector status. Mix them into a plan for Claude Code."),
       h("p", { class: "sample-note" }, icon("i-alert", "sm"), scan ? "Real data from the repo, scanned " + fmtDate.format(new Date(scan.generated)) + " at build time (" + skills.length + " skills, " + scan.summary.critical + " critical, " + scan.summary.high + " high)." : "No scan in this build."),
+      forgePanel,
       h("div", { class: "mixer" },
         h("div", { class: "stack" },
           h("div", { class: "filters" }, h("div", { class: "field" }, h("label", { htmlFor: "f-sq", text: "Search" }), q), h("div", { class: "field narrow" }, h("label", { htmlFor: "f-src", text: "Source" }), src)),
@@ -2238,8 +2300,121 @@
             h("div", { class: "field" }, h("label", { htmlFor: "f-skillmd", text: "SKILL.md" }), editor), h("div", null, verdict), results, h("div", { class: "row" }, dl, install)))));
   };
 
+  /* ── Skill Forge (ADR-138): write or paste a skill, scan it with SkillSpector's rules, mount it in
+     this workspace. Writing it into .claude/skills is an install: a locked approval. ── */
+  function skillForge(editor, onList) {
+    const name = h("input", { class: "input mono", id: "f-fname", name: "forge-name", autocomplete: "off", maxLength: 41, placeholder: "token-checker", translate: "no" });
+    const desc = h("textarea", { class: "textarea", id: "f-fdesc", name: "forge-description", autocomplete: "off", rows: 3, maxLength: 300, placeholder: "Checks that every colour in a stylesheet comes from the token file." });
+    const kind = h("select", { class: "select", id: "f-fkind", name: "forge-kind", autocomplete: "off" }, h("option", { value: "checklist", text: "Checklist (SKILL.md only)" }), h("option", { value: "python-tool", text: "Python tool (standard library)" }));
+    const result = h("div", { class: "stack", "aria-live": "polite" });
+    const mounted = h("div", { class: "stack" });
+    const showScan = (r, from) => {
+      const s = r.scan;
+      result.replaceChildren(h("div", { class: "row" }, r.mounted ? badge("ok", "Mounted in this workspace") : badge("failed", "Refused: " + s.critical + " critical, " + s.high + " high"),
+          h("span", { class: "subtle t-caption num", text: s.findings.length + " findings · " + Object.keys((r.skill && r.skill.files) || {}).length + " files" })),
+        s.findings.length ? h("ul", { class: "checks" }, s.findings.slice(0, 8).map(f => h("li", { class: f.sev === "critical" || f.sev === "high" ? "fail" : "warn" }, h("span", { class: "mark", "aria-hidden": "true", text: f.sev === "critical" || f.sev === "high" ? "✕" : "!" }),
+          h("span", null, h("span", { class: "mono t-caption", translate: "no", text: f.file + ":" + f.line + " " + f.rule + " " }), f.msg)))) : null);
+      if (r.mounted) toast("ok", "Mounted " + r.skill.name + ". It is in the Skill Mixer and the agent editor now.");
+      else toast("error", "Not mounted: SkillSpector found a critical or high problem.");
+      if (from && from.isConnected) from.focus();
+    };
+    const reload = () => store.listForged().then(list => {
+      onList(list);
+      mounted.replaceChildren(list.length ? h("ul", { class: "feed" }, list.map(f => h("li", { class: "forged" },
+        h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: f.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: f.description }),
+          h("span", { class: "row" }, findingsBadge({ critical: f.scan.critical, high: f.scan.high, medium: f.scan.medium, low: f.scan.low }), h("span", { class: "badge", text: f.kind === "python-tool" ? "Python tool" : f.kind === "pasted" ? "Pasted" : "Checklist" }),
+            f.approvalId ? h("span", { class: "badge s-locked" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" })) : null)),
+        h("div", { class: "row" },
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", onclick: e => { const from = e.currentTarget; store.installSkill(f.id).then(r => { openDialog("Installing a skill is locked", lockedCard({ id: r.approvalId, category: "install", action: "Install the forged skill “" + f.name + "” into .claude/skills", createdAt: Date.now() }), [h("a", { class: "btn btn-secondary", href: "#/approvals", text: "Open approvals", onclick: closeDialog }), h("button", { class: "btn btn-primary", type: "button", text: "Close", onclick: closeDialog })], from); updateCount(); reload(); }, err => toast("error", err.message)); } }, icon("i-lock", "sm"), "Install into the repo…"),
+          h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Unmount", onclick: () => store.unmountSkill(f.id).then(() => { toast("ok", "Unmounted " + f.name + "."); reload(); }, err => toast("error", err.message)) }))))) : h("p", { class: "muted t-sm", text: "No forged skill mounted yet." }));
+    }, err => mounted.replaceChildren(errorBox(err, reload)));
+    const forgeBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Forge and mount");
+    forgeBtn.addEventListener("click", e => { const from = e.currentTarget; store.forge({ name: name.value, description: desc.value, kind: kind.value }).then(r => { showScan(r, from); if (r.mounted) { name.value = ""; desc.value = ""; } reload(); }, err => toast("error", err.message)); });
+    const pasteBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Mount the SKILL.md below" });
+    pasteBtn.addEventListener("click", e => {
+      if (!editor.value.trim()) { toast("warn", "Write or paste a SKILL.md first."); editor.focus(); return; }
+      const from = e.currentTarget; store.forge({ skillMd: editor.value }).then(r => { showScan(r, from); reload(); }, err => toast("error", err.message));
+    });
+    reload();
+    return h("section", { class: "panel forge", "aria-labelledby": "h-forge" }, h("h2", { id: "h-forge", text: "Skill Forge" }),
+      h("div", { class: "forge-grid" }, h("div", { class: "stack" },
+      h("p", { class: "t-sm", text: "Write a skill from a sentence, or mount the SKILL.md below. Every file is scanned with SkillSpector's rules; a critical or high finding is refused. Mounted skills live in this workspace only. Nothing written here runs." }),
+      h("div", { class: "grid-2" }, h("div", { class: "field" }, h("label", { htmlFor: "f-fname", text: "Name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-fkind", text: "Kind" }), kind)),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-fdesc", text: "What it does" }), desc),
+      h("div", { class: "row" }, forgeBtn, pasteBtn), result),
+      h("div", { class: "stack" }, h("h3", { text: "Mounted in this workspace" }), mounted)));
+  }
+
+  /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
+  const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];
+  const MEM_KIND_LABEL = { plan: "Plan", design: "Design", answer: "Answer", lesson: "Lesson", note: "Note", search: "Search", skill: "Skill" };
+  pages.memory = () => {
+    const q = h("input", { class: "input", id: "f-mq", type: "search", name: "memory-q", autocomplete: "off", placeholder: "Words to look for, in Arabic or English" });
+    const kind = h("select", { class: "select", id: "f-mkind", name: "memory-kind", autocomplete: "off" }, h("option", { value: "", text: "Any kind" }), MEM_KINDS.map(k => h("option", { value: k, text: MEM_KIND_LABEL[k] })));
+    const box = h("div", { class: "stack" });
+    const outcomeBadges = o => Object.entries(o || {}).filter(([, v]) => v === true || v === false).map(([k, v]) => h("span", { class: "badge " + (v ? "s-ok" : "s-failed"), translate: "no", text: k }));
+    const render = r => h("div", { class: "stack" },
+      h("p", { class: "subtle t-caption", role: "status", text: q.value.trim() ? r.hits.length + " of " + r.total + " episodes match (BM25)" : r.total + " episodes" }),
+      r.hits.length ? h("ul", { class: "memlist" }, r.hits.map(e => h("li", { class: "mem" },
+        h("div", { class: "row between" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", text: "score " + e.score }) : null),
+          h("button", { class: "btn btn-ghost btn-icon btn-sm", type: "button", "aria-label": "Delete " + e.title, onclick: () => store.removeMemory(e.id).then(() => { toast("ok", "Deleted from memory."); reload(); }, err => toast("error", err.message)) }, icon("i-x", "sm"))),
+        h("h3", { dir: "auto", translate: "no", text: e.title }),
+        h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: e.body.length > 420 ? e.body.slice(0, 420) + "…" : e.body }),
+        h("div", { class: "row" }, (e.terms || []).map(t => h("mark", { class: "term", dir: "auto", text: t })), (e.tags || []).map(t => h("span", { class: "badge", dir: "auto", translate: "no", text: "#" + t })), outcomeBadges(e.outcome),
+          h("span", { class: "subtle t-caption", translate: "no", text: e.source || "" }), timeEl(typeof e.createdAt === "number" ? e.createdAt : Date.parse(e.createdAt)))))) :
+        emptyState("i-brain", q.value.trim() ? "Nothing matches" : "Memory is empty", q.value.trim() ? "Try other words, or another kind." : "Finished missions, model answers and self-check lessons are kept here. Add a note, or run a self-check."));
+    const reload = () => loadInto(box, () => store.searchMemory({ q: q.value, kind: kind.value }), render);
+    let qt;
+    q.addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(reload, 200); });
+    kind.addEventListener("change", reload);
+
+    const nTitle = h("input", { class: "input", id: "f-ntitle", name: "note-title", autocomplete: "off", maxLength: 160, placeholder: "Cards use radius 20 = 12 + 8" });
+    const nBody = h("textarea", { class: "textarea", id: "f-nbody", name: "note-body", autocomplete: "off", rows: 4, maxLength: 8000, placeholder: "What worked, and why. Never a key or a password." });
+    const nTags = h("input", { class: "input", id: "f-ntags", name: "note-tags", autocomplete: "off", placeholder: "design, radius" });
+    const addBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Add to memory");
+    addBtn.addEventListener("click", () => store.addMemory({ kind: "note", title: nTitle.value, body: nBody.value, tags: nTags.value.split(/[,،\s]+/).filter(Boolean) }).then(() => { nTitle.value = ""; nBody.value = ""; nTags.value = ""; toast("ok", "Saved to memory."); reload(); }, err => toast("error", err.message)));
+
+    const scBox = h("div", { class: "stack", "aria-live": "polite" });
+    const scBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Run a self-check" });
+    scBtn.addEventListener("click", () => {
+      scBtn.disabled = true; scBox.replaceChildren(skeleton(2));
+      store.selfCheck(9).then(r => {
+        scBox.replaceChildren(h("div", { class: "row" }, badge(r.engine === "ollama-local-loopback" ? "ok" : "idle", r.engine === "ollama-local-loopback" ? "Local model" : "Fixed rules"),
+            h("span", { class: "num t-sm", text: r.graded ? r.correct + " / " + r.graded + " correct" : r.asked + " lessons stored" })),
+          h("p", { class: "subtle t-caption", text: r.note }),
+          h("ul", { class: "checks" }, r.items.map(it => h("li", { class: it.correct === false ? "fail" : "pass" }, h("span", { class: "mark", "aria-hidden": "true", text: it.correct === false ? "✕" : "✓" }),
+            h("span", { translate: "no" }, h("span", { dir: "auto", text: it.question }), h("br"), h("span", { class: "subtle t-caption", dir: "auto", text: it.answer }))))));
+        toast("ok", "Self-check done: " + r.asked + " lessons stored."); reload();
+      }, err => { scBox.replaceChildren(errorBox(err, () => scBtn.click())); }).finally(() => { scBtn.disabled = false; });
+    });
+    const exBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-download", "sm"), "Export JSONL");
+    exBtn.addEventListener("click", () => store.exportMemory().then(text => {
+      const url = URL.createObjectURL(new Blob([text], { type: "application/x-ndjson" }));
+      const a = h("a", { href: url, download: "jarvis-memory-" + store.slug + ".jsonl", hidden: true }); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("ok", "Exported " + (text.trim() ? text.trim().split("\n").length : 0) + " episodes as JSONL.");
+    }, err => toast("error", err.message)));
+    reload();
+    return h("div", { class: "stack" },
+      pageHead("Memory", "This workspace's own good work, ranked with BM25. The best few episodes go to the local model as examples, marked as data. Retrieval, not training."), sampleNote(),
+      h("div", { class: "mixer" },
+        h("div", { class: "stack" },
+          h("div", { class: "filters" }, h("div", { class: "field" }, h("label", { htmlFor: "f-mq", text: "Search memory" }), q), h("div", { class: "field narrow" }, h("label", { htmlFor: "f-mkind", text: "Kind" }), kind)),
+          box),
+        h("div", { class: "stack mix-side" },
+          h("section", { class: "panel", "aria-labelledby": "h-note" }, h("h2", { id: "h-note", text: "Add a note" }),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-ntitle", text: "Title" }), nTitle), h("div", { class: "field" }, h("label", { htmlFor: "f-nbody", text: "Text" }), nBody),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-ntags", text: "Tags" }), nTags), h("div", { class: "row" }, addBtn)),
+          h("section", { class: "panel", "aria-labelledby": "h-sc" }, h("h2", { id: "h-sc", text: "Self-check" }),
+            h("p", { class: "t-sm", text: "Jarvis asks questions whose answers it computes itself: contrast ratios, which actions are locked, and the spacing scale. With a local model it grades the model; either way each computed answer is stored as a lesson." }),
+            h("div", { class: "row" }, scBtn, exBtn), scBox),
+          h("section", { class: "panel", "aria-labelledby": "h-cur" }, h("h2", { id: "h-cur", text: "Curriculum" }),
+            h("p", { class: "t-sm", text: "For a larger set, the replica-hybrid-python skill writes 50,000+ layouts and 50,000+ Arabic and English questions with computed answers, as JSONL, on your computer:" }),
+            h("pre", { class: "diff", translate: "no", text: "python3 .claude/skills/replica-hybrid-python/curriculum_50k.py count\npython3 .claude/skills/replica-hybrid-python/curriculum_50k.py export --kind qa --n 50000 --out jarvis/curriculum/qa.jsonl --root ." }),
+            h("p", { class: "subtle t-caption", text: "Standard library only, no network. Use it with your own fine-tuning tools if you choose; Jarvis does not train a model." })))));
+  };
+
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -2320,7 +2495,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", skills: "Skill Mixer", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],
