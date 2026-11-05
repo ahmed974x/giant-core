@@ -495,6 +495,15 @@ for (const u of ["http://127.0.0.1/", "http://10.0.0.5/", "http://192.168.1.1/",
 }
 ok(checkUrl("https://example.com/a?b=1#frag").toString() === "https://example.com/a?b=1", "checkUrl keeps a public URL and drops the fragment");
 ok(isBlockedAddress("::ffff:10.1.2.3") && isBlockedAddress("fd00::1") && !isBlockedAddress("93.184.216.34") && !isBlockedAddress("2606:4700::1111"), "address ranges");
+// Every IPv6 spelling that carries a private IPv4 address is refused (found while finishing ADR-139).
+for (const a of ["::ffff:7f00:1", "::ffff:a9fe:a9fe", "::7f00:1", "::ffff:0:a00:1", "::ffff:ac10:1", "2002:7f00:1::", "2001:0:4136:e378:8000:63bf:3fff:fdd2", "64:ff9b:1::a00:1", "fe80::1%eth0", "ff02::1", "::"]) ok(isBlockedAddress(a), "IPv6 form refused: " + a);
+ok(!isBlockedAddress("::ffff:8.8.8.8") && !isBlockedAddress("2001:4860:4860::8888"), "public IPv6 and mapped public IPv4 still pass");
+for (const u of ["https://[::ffff:127.0.0.1]/", "https://[::ffff:a9fe:a9fe]/latest/meta-data", "https://[::127.0.0.1]/", "https://[2002:7f00:1::]/", "https://0x7f.1/", "https://2130706433/", "https://169.254.169.254/", "https://[fd00::1]/"]) { let e5 = null; try { checkUrl(u); } catch (e) { e5 = e; } ok(e5 && e5.code === "blocked", "URL refused: " + u); }
+{
+  const fakeDns = addrs => (h, o, cb) => { const list = addrs.map(a => ({ address: a, family: a.includes(":") ? 6 : 4 })); const bad = list.find(a => isBlockedAddress(a.address)); if (bad) return cb(new FetchError("blocked", "refused")); cb(null, list[0].address, list[0].family); };
+  let e6 = null; fakeDns(["93.184.216.34", "::ffff:7f00:1"])("x.example", {}, e => { e6 = e; });
+  ok(e6 && e6.code === "blocked", "a DNS answer that mixes a public address with a mapped loopback is refused");
+}
 const lk = await new Promise(r => safeLookup("localhost", {}, (err) => r(err)));
 ok(lk instanceof FetchError && lk.code === "blocked", "safeLookup refuses a name that resolves to loopback");
 ok(robotsAllows("User-agent: *\nDisallow: /private", "/private/x") === false && robotsAllows("User-agent: *\nDisallow: /private", "/public") === true, "robots: * group");
@@ -570,6 +579,12 @@ ok(/^JarvisOpenSearch\/1\.0 \(\+https:\/\/github\.com\//.test(SEARCH_UA), "an ho
   const sx = createOpenWebSearch({ searxngUrl: "http://127.0.0.1:8888", request: async (url, o) => { sxCalls.push({ url, o }); return url.startsWith("http://127.0.0.1:8888/search?format=json") ? { results: [{ title: "Graph", url: "https://g.example/", content: "x", engine: "wikipedia" }] } : null; } });
   const sxr = await sx.search({ q: "graph", mode: "web" });
   ok(sxr.results.some(r => r.source === "searxng") && sxCalls.find(c => c.url.startsWith("http://127.0.0.1:8888")).o.loopback === true, "a configured SearXNG is asked in JSON mode on its pinned address");
+}
+
+{
+  const brittle = createOpenWebSearch({ searxngUrl: "", request: async url => (new URL(url).hostname === "api.github.com" ? { items: "not an array" } : new URL(url).hostname === "hn.algolia.com" ? { hits: [{ title: "Kept", url: "https://kept.example/" }] } : null) });
+  const br = await brittle.search({ q: "graph", mode: "web" });
+  ok(br.results.some(r => r.title === "Kept") && br.sources.find(x => x.source === "github").ok === false, "one source that answers nonsense does not sink the others", br.sources);
 }
 
 // No Ollama listening: every route answers from the fixed rules.

@@ -43,6 +43,13 @@ DuckDuckGo is cancelled entirely, and AGENTS.md §3 applies in full: no scraping
 2. **SSRF through DNS or IP literals.**
    - Every connection uses `safeLookup` from `fetch-public.mjs`, which refuses private, loopback, link-local, CGNAT, documentation and multicast answers inside the socket's own lookup. That closes the gap between check and connect (DNS rebinding).
    - Node does not call a custom lookup for an address written as an IP. The review found that `https://10.1.2.3/` reached the network, so such literals are now checked before connecting. A test proves it.
+2a. **IPv6 spellings of private IPv4 addresses (found while finishing ADR-139, fixed in `fetch-public.mjs`).**
+   - The shared `isBlockedAddress` matched only the dotted form `::ffff:10.1.2.3`. `new URL()` rewrites `[::ffff:127.0.0.1]` to `[::ffff:7f00:1]`, and a DNS AAAA answer can use any spelling. So these all passed, for the cloner (ADR-134) as well as for search:
+     - `::ffff:7f00:1` (127.0.0.1);
+     - `::ffff:a9fe:a9fe` (169.254.169.254, cloud metadata);
+     - `::7f00:1`, 6to4 `2002:7f00:1::` and Teredo.
+   - `v6Groups` now expands every IPv6 spelling to eight groups. The IPv4 inside the mapped and SIIT forms is checked against the IPv4 list. Compatible, NAT64, 6to4, Teredo, the 2001::/23 special block, documentation, unique-local, link-local, site-local, multicast and discard ranges are refused.
+   - Tests cover eleven refused IPv6 forms, eight refused URL spellings (including `0x7f.1`, `2130706433` and the metadata address), and a DNS answer that mixes a public address with a mapped loopback. Public IPv6, and mapped public IPv4, still pass.
 3. **A hostile SearXNG address.**
    - `JARVIS_SEARXNG_URL` is read once at start, by `pinSearxng`. It must be https on a public name and port 443, or exactly `http://127.0.0.1:<port>`.
    - Users, passwords, queries, `localhost`, `.lan` / `.local` / `.internal` names, other ports, and private IP literals are refused, and the server does not start.
@@ -55,6 +62,7 @@ DuckDuckGo is cancelled entirely, and AGENTS.md §3 applies in full: no scraping
 6. **Untrusted answers.**
    - Titles and snippets are stripped of markup, control characters and bidi overrides, then cut short.
    - A link is kept only if it is plain https without credentials. Otherwise Jarvis builds the source's own page (Wikipedia, OSV, HN), or drops the result. A test feeds `javascript:alert(1)`.
+   - Sources run under `Promise.allSettled`, so one source answering nonsense is reported as failed while the others still answer. A test covers this.
    - The page writes everything with `textContent`, and links open with `rel="noopener noreferrer"`.
 7. **Memory poisoning.**
    - The summary saved to memory holds titles, links and source names only, under kind `search`.

@@ -27,15 +27,46 @@ function v4Blocked(ip) {
     (a === 192 && b === 0 && p[2] === 2) || (a === 198 && (b === 18 || b === 19)) || (a === 198 && b === 51 && p[2] === 100) ||
     (a === 203 && b === 0 && p[2] === 113) || a >= 224;
 }
+// An IPv6 address as eight 16-bit groups, whatever its spelling (zero runs, a dotted IPv4 tail, a zone).
+export function v6Groups(ip) {
+  let x = String(ip).toLowerCase().replace(/%.*$/, "");
+  const tail = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(x);
+  if (tail) {
+    const o = tail.slice(1).map(Number);
+    x = x.slice(0, tail.index) + ((o[0] << 8) | o[1]).toString(16) + ":" + ((o[2] << 8) | o[3]).toString(16);
+  }
+  const [head, rest] = x.includes("::") ? x.split("::") : [x, null];
+  const h = head ? head.split(":") : [], r = rest ? rest.split(":") : [];
+  const groups = rest === null ? h : [...h, ...Array(8 - h.length - r.length).fill("0"), ...r];
+  return groups.map(g => parseInt(g || "0", 16));
+}
+const v4From = (hi, lo) => [hi >> 8, hi & 255, lo >> 8, lo & 255].join(".");
+
+// Private, loopback, link-local, metadata, CGNAT, documentation, multicast and reserved ranges, in every
+// IPv6 form that can carry an IPv4 address (mapped ::ffff:0:0/96, compatible ::/96, SIIT ::ffff:0:0:0/96,
+// NAT64 64:ff9b::/96 and 64:ff9b:1::/48, 6to4 2002::/16, Teredo 2001::/32), so neither a URL literal nor
+// a DNS answer can reach 127.0.0.1, 10/8, 172.16/12, 192.168/16 or 169.254.169.254 through another spelling.
 export function isBlockedAddress(ip) {
   if (net.isIPv4(ip)) return v4Blocked(ip);
-  if (net.isIPv6(ip)) {
-    const x = ip.toLowerCase();
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(x);
-    if (mapped) return v4Blocked(mapped[1]);
-    return x === "::" || x === "::1" || x.startsWith("fc") || x.startsWith("fd") || /^fe[89ab]/.test(x) || x.startsWith("ff") || x.startsWith("2001:db8") || x.startsWith("64:ff9b");
-  }
-  return true;
+  if (!net.isIPv6(ip)) return true;
+  const g = v6Groups(ip);
+  if (g.length !== 8 || g.some(n => !(n >= 0 && n <= 0xffff))) return true;
+  const zeros = n => g.slice(0, n).every(v => v === 0);
+  if (zeros(8)) return true;                                                        // ::
+  if (zeros(7) && g[7] === 1) return true;                                          // ::1
+  if (zeros(5) && g[5] === 0xffff) return v4Blocked(v4From(g[6], g[7]));            // ::ffff:a.b.c.d (mapped)
+  if (zeros(4) && g[4] === 0xffff && g[5] === 0) return v4Blocked(v4From(g[6], g[7])); // ::ffff:0:a.b.c.d (SIIT)
+  if (zeros(6)) return true;                                                        // ::a.b.c.d (compatible, deprecated)
+  if (g[0] === 0x64 && g[1] === 0xff9b) return true;                                // NAT64 64:ff9b::/96 and 64:ff9b:1::/48
+  if (g[0] === 0x2002) return true;                                                 // 6to4 carries an IPv4 address
+  if (g[0] === 0x2001 && g[1] === 0) return true;                                   // Teredo
+  if (g[0] === 0x2001 && g[1] === 0x0db8) return true;                              // documentation
+  if (g[0] === 0x2001 && g[1] < 0x200) return true;                                 // other IETF special-purpose (2001::/23)
+  if ((g[0] & 0xfe00) === 0xfc00) return true;                                      // unique local fc00::/7
+  if ((g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xffc0) === 0xfec0) return true;        // link-local, old site-local
+  if ((g[0] & 0xff00) === 0xff00) return true;                                      // multicast
+  if (g[0] === 0x100 && zeros(4)) return true;                                      // discard-only 100::/64
+  return false;
 }
 
 export function checkUrl(raw) {

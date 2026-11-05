@@ -162,7 +162,9 @@ export function createOpenWebSearch({ request = requestJson, searxngUrl = proces
       const parsed = parseQuery(mode, q);
       const n = Math.max(1, Math.min(10, Number(limit) || 5));
       const ids = MODES[mode];
-      const per = await Promise.all(ids.map(id => one(id, parsed, n)));
+      // allSettled: one source that throws in its parser can never sink the others.
+      const settled = await Promise.allSettled(ids.map(id => one(id, parsed, n)));
+      const per = settled.map((x, i) => x.status === "fulfilled" ? x.value : { source: ids[i], label: SOURCES[ids[i]].label, ok: false, count: 0, ms: 0, results: [], error: "The answer could not be read." });
       const asked = per.filter(p => !p.skipped);
       const answered = asked.filter(p => p.ok);
       // Interleave sources so the first screen shows each of them.
