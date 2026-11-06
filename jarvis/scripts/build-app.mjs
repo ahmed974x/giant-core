@@ -63,6 +63,9 @@ const REVIEWS = {
   "replica-long-horizon": "docs/security/LONG-HORIZON-SKILL-REVIEW-2026-11-05.md",
   "replica-cyber-recon": "docs/security/CYBER-RECON-SKILL-REVIEW-2026-11-05.md",
   "replica-hybrid-python": "docs/security/HYBRID-PYTHON-SKILL-REVIEW-2026-11-05.md",
+  "replica-impeccable": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md",
+  "replica-graphify": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md",
+  "replica-humanizer": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md",
 };
 const scanPath = join(dataDir, "skills-scan.json");
 if (!existsSync(scanPath)) fail("missing jarvis/app/data/skills-scan.json; run the skillspector --json command in the header first.");
@@ -91,6 +94,19 @@ for (const t of Object.values(TEMPLATES)) for (const st of t.steps) for (const c
   const j = judge(c.check, buf.toString("utf8"));
   evidence.push({ path: c.evidence, check: c.check, ok: j.ok, detail: j.detail, sha256: createHash("sha256").update(buf).digest("hex").slice(0, 16), savedAt: null });
 }
+function readGraph() {
+  const p = join(dataDir, "knowledge-graph.json");
+  if (!existsSync(p)) return null;
+  const g = JSON.parse(readFileSync(p, "utf8"));
+  const keep = n => ({ id: n.id, kind: n.kind, label: n.label, file: n.file, line: n.line || null, constraints: n.constraints || undefined, functions: n.functions ? n.functions.slice(0, 12) : undefined, nav: n.nav });
+  return { counts: g.counts, edges: g.edges, unlinked: g.unlinked, sha256: g.sha256, nodes: g.nodes.map(keep), built: new Date(statSync(p).mtimeMs).toISOString() };
+}
+function readQuality() {
+  const p = join(dataDir, "impeccable-report.json");
+  if (!existsSync(p)) return null;
+  const r = JSON.parse(readFileSync(p, "utf8"));
+  return { rules: r.rules, files: r.files, summary: r.summary, byRule: r.byRule, sha256: r.sha256, findings: r.findings.filter(f => f.severity !== "low").concat(r.findings.filter(f => f.severity === "low").slice(0, 30)), built: new Date(statSync(p).mtimeMs).toISOString() };
+}
 const data = {
   built: new Date(statSync(scanPath).mtimeMs).toISOString(),
   scan: { generated: scan.generated, summary: scan.summary },
@@ -99,6 +115,9 @@ const data = {
   templates: TEMPLATES,
   i18n: JSON.parse(readFileSync(join(here, "..", "app", "src", "i18n-ar.json"), "utf8")),
   evidence,
+  // ADR-143: build-time snapshots from replica-graphify and replica-impeccable (rerun the tools, then build).
+  graph: readGraph(),
+  quality: readQuality(),
 };
 
 // 4. Assemble.
@@ -118,12 +137,12 @@ fill("/*@DATA@*/", JSON.stringify(data).replace(/</g, "\\u003c"));
 const llmPlanSrc = readFileSync(join(here, "..", "server", "lib", "llm-plan.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(llmPlanSrc)) fail('llm-plan.mjs contains "</script"; it would end the element early.');
 const inlineLib = name => { const t = readFileSync(join(here, "..", "server", "lib", name), "utf8").replace(/^export \{[^}]*\} from .*$/gm, "").replace(/^export /gm, "").replace(/^import .*$/gm, ""); if (/<\/script/i.test(t)) fail(name + ' contains "</script".'); return t; };
-const bm25Src = inlineLib("bm25.mjs"), forgeSrc = inlineLib("forge.mjs"), selfCheckSrc = inlineLib("selfcheck.mjs"), skillAuditSrc = inlineLib("skill-audit.mjs");
+const bm25Src = inlineLib("bm25.mjs"), forgeSrc = inlineLib("forge.mjs"), selfCheckSrc = inlineLib("selfcheck.mjs"), skillAuditSrc = inlineLib("skill-audit.mjs"), catalogSrc = inlineLib("model-catalog.mjs");
 const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-graph.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

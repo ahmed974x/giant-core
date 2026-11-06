@@ -461,6 +461,19 @@ await page.waitForTimeout(400);
 ok(page.url().endsWith("#/skills") && await page.locator(".skill", { hasText: "Loaded in this workspace" }).first().isVisible(), "F20 the command opens the Skill Mixer on the loaded skill");
 await page.locator("#f-sq").fill("");
 
+// F21: governance (ADR-143): rules, the knowledge map, the 62-rule quality gate, the register, the catalog.
+await go("#/governance");
+ok((await page.locator(".gov-rules li").count()) === 4 && await page.getByText("Evidence before done").isVisible(), "F21 the four surgical rules are listed");
+ok((await page.locator(".gmap-node.k-screen").count()) >= 15 && (await page.locator(".gmap-node.k-table").count()) >= 20 && (await page.locator(".gmap-edge").count()) > 40, "F21 the knowledge map draws screens, tables and their links");
+await page.locator(".gmap-node.k-screen", { hasText: "memory" }).first().click();
+ok(await page.locator(".gmap-info h3", { hasText: "memory" }).isVisible() && await page.locator(".gmap-info li", { hasText: "/api/w/:slug/memory" }).first().isVisible() && (await page.locator(".gmap-edge.on").count()) >= 1, "F21 picking a screen lists its API routes and lights its links");
+ok(await page.locator(".stat", { hasText: "Rules" }).getByText("62").isVisible() && await page.locator(".stat", { hasText: "High" }).getByText("0", { exact: true }).isVisible(), "F21 the quality gate reports 62 rules and no high finding");
+const reg = page.locator("#h-greg ~ .table-scroll");
+ok(await reg.locator("tr", { hasText: "Career Ops" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "Claude-Mem" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "HyperFrames" }).getByText("Kept outside the repo").isVisible() && await reg.locator("tr", { hasText: "Superpowers" }).getByText("Adopted as a rule").isVisible(), "F21 the register shows what was adopted, excluded and kept out");
+await go("#/settings");
+await page.locator("details.catalog summary").click();
+ok((await page.locator("details.catalog tbody tr").count()) === 12 && await page.locator("details.catalog tr", { hasText: "codestral" }).getByText(/Non-Production/).isVisible(), "F21 the open-weight catalog lists 12 families with their licences");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -479,7 +492,7 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 ok((await page.evaluate(() => document.documentElement.lang + "/" + document.documentElement.dir)) === "ar/rtl" && (await page.getByRole("link", { name: "نظرة عامة" }).isVisible()) && /نظرة عامة/.test(await page.title()), "F15 the language button switches the whole shell to Arabic, right to left");
 const left = {};
-for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "webhooks", "settings", "agents/ag_release"]) {
+for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "webhooks", "settings", "agents/ag_release"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) left[r] = l;
 }

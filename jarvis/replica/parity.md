@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-142)
+# Parity: Jarvis (ADR-143)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
 
@@ -43,6 +43,10 @@ ADR-142 added two rows, both built and tested (`test-app.mjs` F20, `test-live.mj
 - live skill discovery and import from GitHub;
 - skill synthesis and evolution (FIX / DERIVED / CAPTURED).
 
+ADR-143 added two rows, both built and tested (`test-app.mjs` F21, `test-live.mjs`, server tests):
+- the Governance page with the knowledge map and the quality gate;
+- the open-weight model catalog.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -51,7 +55,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (69 counted, must-haves 34 of 34 done)
+features 100.0  (71 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (7 features)
@@ -71,8 +75,9 @@ features 100.0  (69 counted, must-haves 34 of 34 done)
 - integrations                 100.0  (1 features)
 - memory                       100.0  (3 features)
 - search                       100.0  (4 features)
-- models                       100.0  (2 features)
+- models                       100.0  (3 features)
 - access                       100.0  (2 features)
+- governance                   100.0  (1 features)
 
 ## Missing, in build order
 - nothing. Every counted feature is done.

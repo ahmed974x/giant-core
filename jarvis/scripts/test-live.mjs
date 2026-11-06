@@ -347,7 +347,7 @@ await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 const leftLive = {};
-for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "webhooks", "settings"]) {
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "webhooks", "settings"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) leftLive[r] = l;
 }
@@ -356,7 +356,7 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 
 // Every screen renders in live mode (dates from the database included).
-for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "search", "agents/templates"]) {
+for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "search", "loader", "governance", "agents/templates"]) {
   await go("#/" + r);
   ok(!(await page.locator(".error-box").count()) && await page.locator("main h1").first().isVisible(), "live " + r + " renders");
   if (r === "logs") ok(/ago|just now/.test(await page.locator("main time").first().textContent({ timeout: 5000 })), "live dates show as relative times");

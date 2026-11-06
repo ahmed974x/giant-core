@@ -1,0 +1,13 @@
+test_code_rules_and_python_ast (test_impeccable.Impeccable.test_code_rules_and_python_ast) ... ok
+test_design_rules_on_css_and_html (test_impeccable.Impeccable.test_design_rules_on_css_and_html) ... ok
+test_doc_rules (test_impeccable.Impeccable.test_doc_rules) ... ok
+test_focus_outline_is_fine_with_focus_visible (test_impeccable.Impeccable.test_focus_outline_is_fine_with_focus_visible) ... ok
+test_ignore_markers (test_impeccable.Impeccable.test_ignore_markers) ... ok
+test_paths_cannot_leave_root (test_impeccable.Impeccable.test_paths_cannot_leave_root) ... ok
+test_prose_rules (test_impeccable.Impeccable.test_prose_rules) ... ok
+test_there_are_62_rules_with_unique_ids (test_impeccable.Impeccable.test_there_are_62_rules_with_unique_ids) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.014s
+
+OK

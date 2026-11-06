@@ -1464,6 +1464,19 @@
       h("div", { class: "row" }, go, stopBtn, h("span", { class: "subtle t-caption", text: st.online ? "Streams from " + (st.chatModel || "the local model") + ". The answer is untrusted text and changes nothing." : "Needs a local model on 127.0.0.1." })),
       thinkBox, out, meta);
   }
+  // ADR-143: the full open-weight catalog (licence, job, notes), marked where a model is served here.
+  function catalogTable(st) {
+    const here = new Set((st.profiles || []).map(p => p.family));
+    return h("details", { class: "catalog" }, h("summary", { text: "Open-weight model catalog (" + LlmPlan.MODEL_PROFILES.length + " families)" }),
+      h("p", { class: "subtle t-caption", text: "Licences as the model cards state them; check the card of the exact file you pull. Every one runs on 127.0.0.1 only." }),
+      h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model catalog" }, h("table", null,
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Here" }))),
+        h("tbody", null, LlmPlan.MODEL_PROFILES.map(p => h("tr", null,
+          h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", text: p.maker + " · " + p.origin })),
+          h("td", { text: LlmPlan.ROLE_LABEL[p.role] || p.role }),
+          h("td", { class: "t-caption wrap", translate: "no", text: p.licence }),
+          h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
+  }
   function llmPanel() {
     const box = h("div", { class: "stack" });
     loadInto(box, () => store.llmStatus(), st => h("div", { class: "stack" },
@@ -1478,6 +1491,7 @@
       st.profiles && st.profiles.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model families found" }, h("table", null,
         h("thead", null, h("tr", null, h("th", { scope: "col", text: "Model" }), h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Used for" }))),
         h("tbody", null, st.profiles.map(p => h("tr", null, h("td", { class: "mono t-caption", translate: "no", text: p.model }), h("td", { translate: "no", text: p.maker + " " + p.family }), h("td", { class: "t-caption", translate: "no", text: p.licence }), h("td", { text: { plan: "Plans", design: "Designs and code", chat: "Answers" }[p.role] })))))) : null,
+      catalogTable(st),
       llmAsk(st),
       h("p", { class: "t-caption muted", text: "Ollama: build the two Jarvis models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused." })));
     return h("section", { class: "panel", "aria-labelledby": "h-llm" }, h("h2", { id: "h-llm", text: "Local model" }), box,
@@ -2136,7 +2150,7 @@
     /*@LLM_PLAN@*/
     /*@WORKFLOW_GRAPH@*/
     /*@MEMORY_LIBS@*/
-    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES };
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2735,6 +2749,93 @@
           h("section", { class: "panel", "aria-labelledby": "h-evo" }, h("h2", { id: "h-evo", text: "Evolution log" }), h("p", { class: "subtle t-caption", text: "FIX: a new version. DERIVED: a new skill grown from one. CAPTURED: from GitHub, a request or a mission. Append-only." }), evoBox))));
   };
 
+  /* ── Governance (ADR-143): the rules, the knowledge map, the quality gate and the register ───────── */
+  const GOV_RULES = [
+    ["Surgical changes", "Change only what the task needs, in as few lines as do the job."],
+    ["No extra layers", "No abstraction, option or framework the task does not need."],
+    ["Evidence before done", "Run the check and quote its output before calling anything done."],
+    ["Boundaries hold", "Locks, the CSP, 127.0.0.1 and the approval cards never move to make a task easier."],
+  ];
+  const GOV_REGISTER = [
+    ["Superpowers", "adopted", "Tests first and small task splits, as working rules. Nothing installed."],
+    ["gstack", "adopted", "Set up a stack only when a task needs it, as a working rule. Nothing installed."],
+    ["UI UX Pro Max", "adopted", "Local UI checklists, read as text rules beside DESIGN.md. Nothing installed."],
+    ["Karpathy surgical rules", "adopted", "Written into CLAUDE.md."],
+    ["GSD (Redux)", "excluded", "A second task system that conflicts with the Superpowers way of working."],
+    ["Claude-Mem", "excluded", "Replaced by the repository's own deterministic memory (BM25 episodes and capsules)."],
+    ["Career Ops", "excluded", "It scrapes outside sites, which AGENTS.md §3 forbids."],
+    ["HyperFrames", "isolated", "Kept outside the public repository."],
+  ];
+  const GOV_STATE = { adopted: ["ok", "Adopted as a rule"], excluded: ["failed", "Excluded"], isolated: ["locked", "Kept outside the repo"] };
+  function knowledgeMap(g) {
+    if (!g) return h("p", { class: "muted t-sm", text: "No map in this build. Run replica-graphify, then build the page." });
+    const byId = new Map(g.nodes.map(n => [n.id, n]));
+    const cols = [["screen", "Screens"], ["module", "Modules"], ["table", "Tables"], ["skill", "Skills"]];
+    const routeOf = new Map(), modFor = new Map();
+    for (const e of g.edges) {
+      if (e.kind === "requests") (routeOf.get(e.from) || routeOf.set(e.from, []).get(e.from)).push(e.to);
+      if (e.kind === "calls") modFor.set(e.from, e.to);
+    }
+    // screen -> module through the routes it requests; module -> table through SQL.
+    const links = [];
+    for (const [scr, rts] of routeOf) for (const m of new Set(rts.map(r => modFor.get(r)).filter(Boolean))) links.push([scr, m]);
+    for (const e of g.edges) if (e.kind === "sql") links.push([e.from, e.to]);
+    const nodesOf = k => g.nodes.filter(n => n.kind === k).sort((a, b) => a.label.localeCompare(b.label));
+    const ROW = 22, COLW = 250, TOP = 40;
+    const height = TOP + Math.max(...cols.map(([k]) => nodesOf(k).length)) * ROW + 16;
+    const pos = new Map();
+    cols.forEach(([k], ci) => nodesOf(k).forEach((n, i) => pos.set(n.id, { x: 16 + ci * COLW, y: TOP + i * ROW })));
+    const inspector = h("div", { class: "stack gmap-info", "aria-live": "polite" }, h("p", { class: "muted t-sm", text: "Pick a node to see what it reaches." }));
+    const edgeEls = links.map(([a, b]) => { const p = pos.get(a), q = pos.get(b); if (!p || !q) return null; const x1 = p.x + 200, x2 = q.x - 6, mx = (x1 + x2) / 2; return svg("path", { class: "gmap-edge", d: `M${x1},${p.y} C${mx},${p.y} ${mx},${q.y} ${x2},${q.y}`, "data-a": a, "data-b": b }); }).filter(Boolean);
+    const select = id => {
+      const n = byId.get(id); if (!n) return;
+      edgeEls.forEach(e => e.classList.toggle("on", e.dataset.a === id || e.dataset.b === id));
+      $$(".gmap-node", map).forEach(x => x.classList.toggle("sel", x.dataset.id === id));
+      const near = links.filter(([a, b]) => a === id || b === id).map(([a, b]) => byId.get(a === id ? b : a)).filter(Boolean);
+      const routes = n.kind === "screen" ? (routeOf.get(id) || []) : n.kind === "module" ? [...modFor].filter(([, m]) => m === id).map(([r]) => r) : [];
+      inspector.replaceChildren(h("h3", { translate: "no", text: n.label }), h("p", { class: "mono t-caption subtle", translate: "no", text: n.file + (n.line ? ":" + n.line : "") }),
+        near.length ? h("p", { class: "t-sm" }, h("b", { text: "Linked: " }), h("span", { translate: "no", text: near.map(x => x.label).join(", ") })) : null,
+        routes.length ? h("ul", { class: "feed" }, routes.map(r => h("li", { class: "mono t-caption", translate: "no", text: (byId.get(r) || { label: r }).label }))) : null,
+        n.constraints && n.constraints.length ? h("p", { class: "t-caption" }, h("b", { text: "Constraints: " }), h("span", { class: "mono", translate: "no", text: n.constraints.join(", ") })) : null,
+        n.kind === "skill" ? h("p", { class: "t-caption", translate: "no", text: g.nodes.filter(t => t.kind === "tool" && t.id.startsWith("tool:" + n.label + "/")).map(t => t.label + (t.functions && t.functions.length ? " (" + t.functions.join(", ") + ")" : "")).join(" · ") || "Text rules only (no tool)." }) : null);
+    };
+    const map = svg("svg", { class: "gmap", viewBox: `0 0 ${16 + cols.length * COLW} ${height}`, role: "img", "aria-label": "Map of screens, modules, tables and skills" },
+      cols.map(([k, title], ci) => svg("text", { class: "gmap-col", x: 16 + ci * COLW, y: 18 }, tr(title) || title)),
+      edgeEls,
+      [...pos].map(([id, p]) => { const n = byId.get(id); const gEl = svg("g", { class: "gmap-node k-" + n.kind, transform: `translate(${p.x},${p.y})`, tabindex: "0", role: "button", translate: "no", "aria-label": n.kind + " " + n.label, "data-id": id },
+        svg("circle", { r: 4, cx: 0, cy: 0 }), svg("text", { x: 10, y: 4 }, n.label.length > 28 ? n.label.slice(0, 27) + "…" : n.label));
+        gEl.addEventListener("click", () => select(id)); gEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(id); } }); return gEl; }));
+    return h("div", { class: "stack" },
+      h("p", { class: "subtle t-caption num", translate: "no", text: Object.entries(g.counts).map(([k, v]) => v + " " + k + "s").join(" · ") + " · " + g.edges.length + " edges · sha256 " + g.sha256.slice(0, 12) }),
+      h("div", { class: "gmap-wrap" }, h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Knowledge map" }, map), inspector),
+      g.unlinked.length ? h("p", { class: "t-caption" }, h("b", { text: "Not reached from the page: " }), h("span", { class: "mono", translate: "no", text: g.unlinked.map(id => (byId.get(id) || { label: id }).label).join(", ") })) : null);
+  }
+  pages.governance = () => {
+    const q = DATA.quality, g = DATA.graph;
+    const rules = h("ol", { class: "gov-rules" }, GOV_RULES.map(([t, d]) => h("li", null, h("b", { text: t }), h("span", { class: "t-sm", text: d }))));
+    const register = h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Skills and tools register" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", { scope: "col", text: "Name" }), h("th", { scope: "col", text: "Decision" }), h("th", { scope: "col", text: "Why" }))),
+      h("tbody", null, GOV_REGISTER.map(([n, st, why]) => h("tr", null, h("td", { translate: "no", text: n }), h("td", null, badge(GOV_STATE[st][0], GOV_STATE[st][1])), h("td", { class: "wrap t-sm", text: why }))))));
+    const quality = q ? h("div", { class: "stack" },
+      h("div", { class: "stats" },
+        h("div", { class: "stat" }, h("span", { class: "label", text: "Rules" }), h("span", { class: "value num", text: String(q.rules) })),
+        h("div", { class: "stat" }, h("span", { class: "label", text: "Files read" }), h("span", { class: "value num", text: String(q.files) })),
+        h("div", { class: "stat" }, h("span", { class: "label", text: "High" }), h("span", { class: "value num", text: String(q.summary.high) })),
+        h("div", { class: "stat" }, h("span", { class: "label", text: "Medium · low" }), h("span", { class: "value num", text: q.summary.medium + " · " + q.summary.low }))),
+      h("div", { class: "row" }, Object.entries(q.byRule).map(([rid, n]) => h("span", { class: "badge num", translate: "no", text: rid + " × " + n }))),
+      q.findings.length ? h("ul", { class: "feed" }, q.findings.slice(0, 12).map(f => h("li", null, badge(f.severity === "high" ? "failed" : f.severity === "medium" ? "warn" : "idle", f.severity), h("span", { class: "mono t-caption", translate: "no", text: f.rule + " " + f.file + ":" + f.line }), h("span", { class: "t-caption", translate: "no", text: f.message })))) : null,
+      h("p", { class: "subtle t-caption num", translate: "no", text: "sha256 " + q.sha256.slice(0, 12) + " · " + fmtDate.format(new Date(q.built)) })) : h("p", { class: "muted t-sm", text: "No quality report in this build. Run replica-impeccable, then build the page." });
+    return h("div", { class: "stack" },
+      pageHead("Governance", "How Jarvis is kept honest: the working rules, a map of what calls what, the quality gate, and which outside tools were taken in or kept out."),
+      h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), "Build-time snapshots from the repository's own tools, read from the code with fixed rules [INFERENCE]; the code is the truth."),
+      h("div", { class: "grid-2" },
+        h("section", { class: "panel", "aria-labelledby": "h-grules" }, h("h2", { id: "h-grules", text: "Working rules" }), rules, h("p", { class: "subtle t-caption", text: "From Karpathy's surgical rules, written into CLAUDE.md." })),
+        h("section", { class: "panel", "aria-labelledby": "h-greg" }, h("h2", { id: "h-greg", text: "Skills and tools register" }), register, h("p", { class: "subtle t-caption", text: "Adopting means taking text rules; nothing outside is installed or run (AGENTS.md §1)." }))),
+      h("section", { class: "panel", "aria-labelledby": "h-gmap" }, h("h2", { id: "h-gmap", text: "Knowledge map" }), h("p", { class: "t-sm", text: "Screens, server modules, database tables and skills, joined by what each one calls. From replica-graphify; no vector database." }), knowledgeMap(g)),
+      h("section", { class: "panel", "aria-labelledby": "h-gq" }, h("h2", { id: "h-gq", text: "Quality gate" }), h("p", { class: "t-sm", text: "62 rules from replica-impeccable against filler copy, off-system design, unfinished code and broken docs. Rule text is shown as the tool wrote it." }), quality,
+        h("pre", { class: "diff", translate: "no", text: "python3 .claude/skills/replica-impeccable/slop_guard.py jarvis docs/adr --root .\npython3 .claude/skills/replica-humanizer/humanize.py jarvis/README.md --root ." })));
+  };
+
   /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
   const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];
   const MEM_KIND_LABEL = { plan: "Plan", design: "Design", answer: "Answer", lesson: "Lesson", note: "Note", search: "Search", skill: "Skill" };
@@ -2804,7 +2905,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -2885,7 +2986,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],

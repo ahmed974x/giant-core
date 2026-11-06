@@ -18,14 +18,9 @@ export class CompatError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 
-// Open-weight families Jarvis knows how to use, with the licence their model cards state (read 2026-11-05;
-// check the card of the exact checkpoint you pull) and the job each is picked for.
-export const MODEL_PROFILES = [
-  { family: "deepseek-r1", match: /deepseek[-_.]?r1/i, maker: "DeepSeek", licence: "MIT", role: "plan", strengths: "step-by-step reasoning; plans and checks", note: "Distilled sizes (1.5B–70B) run on a laptop or one GPU; the full 671B model needs a server." },
-  { family: "deepseek-v3", match: /deepseek[-_.]?v3/i, maker: "DeepSeek", licence: "MIT (V3-0324 and later; earlier checkpoints: DeepSeek Model License)", role: "chat", strengths: "general answers and tool calling", note: "671B mixture-of-experts: needs a multi-GPU vLLM server, not a laptop." },
-  { family: "qwen2.5-coder", match: /qwen2\.?5[-_.]?coder/i, maker: "Qwen (Alibaba)", licence: "Apache 2.0 (0.5B, 1.5B, 7B, 14B, 32B; the 3B uses the Qwen Research License)", role: "design", strengths: "code and multi-file completion; follows Arabic and English prompts", note: "7B runs on a laptop; 32B wants about 24 GB of GPU memory at 4-bit." },
-];
-export const profileOf = name => MODEL_PROFILES.find(p => p.match.test(String(name || ""))) || null;
+// The open-weight families Jarvis knows (licence, job, notes) live in model-catalog.mjs (ADR-143).
+import { MODEL_PROFILES, profileOf, ROLE_LABEL } from "./model-catalog.mjs";
+export { MODEL_PROFILES, profileOf, ROLE_LABEL };
 
 // The preferred model for a job: the person's choice, else the family whose role matches, else the
 // Jarvis Modelfiles' names, else any local model.

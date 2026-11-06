@@ -763,7 +763,10 @@ ok(pinCompatUrl("http://127.0.0.1:8000") === "http://127.0.0.1:8000/v1" && pinCo
   sp.end();
   ok(parts.text === "Hello  world!" && parts.think === "step one and twomore", "the think splitter handles tags cut across pieces", parts);
 }
-ok(profileOf("deepseek-r1:14b").licence === "MIT" && profileOf("Qwen/Qwen2.5-Coder-32B-Instruct").role === "design" && profileOf("deepseek-ai/DeepSeek-V3-0324").role === "chat" && profileOf("llama3:8b") === null && MODEL_PROFILES.length === 3, "model profiles name each family, its licence and its job");
+ok(profileOf("deepseek-r1:14b").licence === "MIT" && profileOf("Qwen/Qwen2.5-Coder-32B-Instruct").role === "design" && profileOf("deepseek-ai/DeepSeek-V3-0324").role === "chat" && profileOf("llama3:8b") === null && MODEL_PROFILES.length === 12, "model profiles name each family, its licence and its job");
+ok(profileOf("qwq:32b").role === "math" && profileOf("Qwen/Qwen3-Coder-30B-A3B-Instruct").family === "qwen3-coder" && profileOf("glm4:32b").role === "tools" && profileOf("meta-llama/Llama-4-Scout-17B-16E-Instruct").family === "llama-4-scout" && profileOf("llama3.3:70b").family === "llama-3.3" && profileOf("gemma3:27b").origin === "US" && /Apache 2\.0/.test(profileOf("allenai/OLMo-2-0325-32B-Instruct").licence) && profileOf("phi4-reasoning:14b").licence === "MIT" && /Non-Production/.test(profileOf("codestral:22b").licence), "the ADR-143 catalog knows QwQ, Qwen3-Coder, GLM-4, Llama 4 Scout and 3.3, Gemma 3, OLMo 2, Phi-4-reasoning and Codestral");
+ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(p.origin)), "every catalog entry states its licence, job and origin");
+ok(pickModel(["codestral:22b", "deepseek-r1:14b"], "plan") === "deepseek-r1:14b" && pickModel(["gemma3:27b"], "chat") === "gemma3:27b", "picking still prefers the family for the job");
 ok(pickModel(["qwen2.5-coder:7b", "deepseek-r1:14b"], "plan") === "deepseek-r1:14b" && pickModel(["qwen2.5-coder:7b", "deepseek-r1:14b"], "design") === "qwen2.5-coder:7b" && pickModel(["jarvis-planner:latest", "deepseek-r1:14b"], "plan") === "jarvis-planner:latest", "each job picks its family, and the Jarvis Modelfiles first");
 {
   // A fake OpenAI-compatible server on 127.0.0.1 (as vLLM would serve DeepSeek-R1 and Qwen2.5-Coder).

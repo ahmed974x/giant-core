@@ -68,5 +68,7 @@ Founder-only sign-in gate,access,should,yes,yes,"ADR-141: scrypt + timingSafeEqu
 Locked public access and hosted endpoints,access,should,yes,yes,"ADR-141: access_settings_founder_private_locked, model_endpoints_external_locked; requests become locked cards"
 Live skill discovery and import from GitHub,skills,should,yes,yes,"ADR-142: keyless search API, one SKILL.md as text, SSRF shield, licence and source kept"
 Skill synthesis and evolution (FIX/DERIVED/CAPTURED),skills,should,yes,yes,"ADR-142: local model or template, eleven loader rules plus SkillSpector, runtime_skills_scan_clean, append-only log, mounted at once in Mixer, agent editor and Ctrl+K"
+Governance page with knowledge map and quality gate,governance,should,yes,yes,"ADR-143: SVG map from replica-graphify, 62-rule replica-impeccable report, register of adopted and excluded patterns"
+Open-weight model catalog,models,could,yes,yes,"ADR-143: 12 families with licence, job and origin; marks the ones served on 127.0.0.1"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

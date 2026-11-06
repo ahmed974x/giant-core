@@ -82,7 +82,9 @@ PASS live settings renders
 PASS live skills renders
 PASS live memory renders
 PASS live search renders
+PASS live loader renders
+PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-86 passed, 0 failed
+88 passed, 0 failed

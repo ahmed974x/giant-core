@@ -252,6 +252,26 @@ Settings → Access shows the mode `founder_private`. **Open to the public…** 
 
 Every skill is audited first. One that passes is mounted at once: it shows in the Skill Mixer, the agent editor and Ctrl+K. **Install into the repo…** is a locked card; nothing is written to `.claude/skills` and nothing runs.
 
+## Governance (ADR-143)
+
+`#/governance` shows four things:
+- the working rules, also in CLAUDE.md;
+- which outside patterns were adopted as text rules and which were excluded;
+- a map of screens, server modules, tables and skills (click a node to see its routes);
+- the 62-rule quality gate's report.
+
+Refresh the two snapshots after code changes, then build the page:
+
+```bash
+python3 .claude/skills/replica-graphify/graphify.py --root . --out jarvis/app/data/knowledge-graph.json
+```
+
+```bash
+python3 .claude/skills/replica-impeccable/slop_guard.py --json jarvis/app/src jarvis/server/lib jarvis/README.md docs/adr --root . > jarvis/app/data/impeccable-report.json
+```
+
+Settings → Local model → **Open-weight model catalog** lists 12 families (DeepSeek, Qwen, GLM, Llama, Gemma, OLMo, Phi, Codestral), each with its licence and job.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

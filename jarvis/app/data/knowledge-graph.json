@@ -1,0 +1,2989 @@
+{
+ "format": "jarvis-knowledge-graph-v1",
+ "counts": {
+  "screen": 22,
+  "route": 84,
+  "module": 10,
+  "table": 27,
+  "skill": 44,
+  "tool": 24
+ },
+ "edges_count": 224,
+ "unlinked": [
+  "route:GET /api/health",
+  "route:GET /api/search/status",
+  "route:GET /api/w/:slug/memory/export",
+  "route:GET /api/w/:slug/stream",
+  "route:PATCH /api/access",
+  "route:POST /api/founder/login",
+  "table:mixes",
+  "table:sites",
+  "table:skills"
+ ],
+ "nodes": [
+  {
+   "id": "module:access",
+   "kind": "module",
+   "label": "access.mjs",
+   "file": "jarvis/server/lib/access.mjs"
+  },
+  {
+   "id": "module:gate",
+   "kind": "module",
+   "label": "founder-gate.mjs",
+   "file": "jarvis/server/lib/founder-gate.mjs"
+  },
+  {
+   "id": "module:llm",
+   "kind": "module",
+   "label": "ollama-bridge.mjs",
+   "file": "jarvis/server/lib/ollama-bridge.mjs"
+  },
+  {
+   "id": "module:loader",
+   "kind": "module",
+   "label": "skill-loader.mjs",
+   "file": "jarvis/server/lib/skill-loader.mjs"
+  },
+  {
+   "id": "module:memory",
+   "kind": "module",
+   "label": "memory.mjs",
+   "file": "jarvis/server/lib/memory.mjs"
+  },
+  {
+   "id": "module:missions",
+   "kind": "module",
+   "label": "missions.mjs",
+   "file": "jarvis/server/lib/missions.mjs"
+  },
+  {
+   "id": "module:platform",
+   "kind": "module",
+   "label": "platform.mjs",
+   "file": "jarvis/server/lib/platform.mjs"
+  },
+  {
+   "id": "module:runner",
+   "kind": "module",
+   "label": "runner.mjs",
+   "file": "jarvis/server/lib/runner.mjs"
+  },
+  {
+   "id": "module:search",
+   "kind": "module",
+   "label": "open-web-search.mjs",
+   "file": "jarvis/server/lib/open-web-search.mjs"
+  },
+  {
+   "id": "module:store",
+   "kind": "module",
+   "label": "store.mjs",
+   "file": "jarvis/server/lib/store.mjs"
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/agents/:id/schedule",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/agents/:id/schedule",
+   "file": "jarvis/server/server.mjs",
+   "line": 282
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/billing/tiers/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/billing/tiers/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 295
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/forge/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/forge/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 331
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/members/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/members/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 277
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/memory/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/memory/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 326
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/model-endpoints/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/model-endpoints/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 315
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/skills/runtime/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/skills/runtime/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 307
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/webhooks/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/webhooks/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 287
+  },
+  {
+   "id": "route:DELETE /api/w/:slug/workflows/:id",
+   "kind": "route",
+   "label": "DELETE /api/w/:slug/workflows/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 271
+  },
+  {
+   "id": "route:GET /api/access",
+   "kind": "route",
+   "label": "GET /api/access",
+   "file": "jarvis/server/server.mjs",
+   "line": 148
+  },
+  {
+   "id": "route:GET /api/founder/status",
+   "kind": "route",
+   "label": "GET /api/founder/status",
+   "file": "jarvis/server/server.mjs",
+   "line": 141
+  },
+  {
+   "id": "route:GET /api/health",
+   "kind": "route",
+   "label": "GET /api/health",
+   "file": "jarvis/server/server.mjs",
+   "line": 157
+  },
+  {
+   "id": "route:GET /api/llm/status",
+   "kind": "route",
+   "label": "GET /api/llm/status",
+   "file": "jarvis/server/server.mjs",
+   "line": 159
+  },
+  {
+   "id": "route:GET /api/search/status",
+   "kind": "route",
+   "label": "GET /api/search/status",
+   "file": "jarvis/server/server.mjs",
+   "line": 196
+  },
+  {
+   "id": "route:GET /api/w/:slug/agents",
+   "kind": "route",
+   "label": "GET /api/w/:slug/agents",
+   "file": "jarvis/server/server.mjs",
+   "line": 235
+  },
+  {
+   "id": "route:GET /api/w/:slug/agents/:id",
+   "kind": "route",
+   "label": "GET /api/w/:slug/agents/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 238
+  },
+  {
+   "id": "route:GET /api/w/:slug/analytics",
+   "kind": "route",
+   "label": "GET /api/w/:slug/analytics",
+   "file": "jarvis/server/server.mjs",
+   "line": 297
+  },
+  {
+   "id": "route:GET /api/w/:slug/approvals",
+   "kind": "route",
+   "label": "GET /api/w/:slug/approvals",
+   "file": "jarvis/server/server.mjs",
+   "line": 252
+  },
+  {
+   "id": "route:GET /api/w/:slug/billing",
+   "kind": "route",
+   "label": "GET /api/w/:slug/billing",
+   "file": "jarvis/server/server.mjs",
+   "line": 293
+  },
+  {
+   "id": "route:GET /api/w/:slug/events",
+   "kind": "route",
+   "label": "GET /api/w/:slug/events",
+   "file": "jarvis/server/server.mjs",
+   "line": 263
+  },
+  {
+   "id": "route:GET /api/w/:slug/forge",
+   "kind": "route",
+   "label": "GET /api/w/:slug/forge",
+   "file": "jarvis/server/server.mjs",
+   "line": 327
+  },
+  {
+   "id": "route:GET /api/w/:slug/members",
+   "kind": "route",
+   "label": "GET /api/w/:slug/members",
+   "file": "jarvis/server/server.mjs",
+   "line": 232
+  },
+  {
+   "id": "route:GET /api/w/:slug/memory",
+   "kind": "route",
+   "label": "GET /api/w/:slug/memory",
+   "file": "jarvis/server/server.mjs",
+   "line": 318
+  },
+  {
+   "id": "route:GET /api/w/:slug/memory/export",
+   "kind": "route",
+   "label": "GET /api/w/:slug/memory/export",
+   "file": "jarvis/server/server.mjs",
+   "line": 321
+  },
+  {
+   "id": "route:GET /api/w/:slug/missions",
+   "kind": "route",
+   "label": "GET /api/w/:slug/missions",
+   "file": "jarvis/server/server.mjs",
+   "line": 264
+  },
+  {
+   "id": "route:GET /api/w/:slug/missions/:id",
+   "kind": "route",
+   "label": "GET /api/w/:slug/missions/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 360
+  },
+  {
+   "id": "route:GET /api/w/:slug/missions/:id/capsules/:id",
+   "kind": "route",
+   "label": "GET /api/w/:slug/missions/:id/capsules/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 364
+  },
+  {
+   "id": "route:GET /api/w/:slug/missions/:id/verify",
+   "kind": "route",
+   "label": "GET /api/w/:slug/missions/:id/verify",
+   "file": "jarvis/server/server.mjs",
+   "line": 363
+  },
+  {
+   "id": "route:GET /api/w/:slug/model-endpoints",
+   "kind": "route",
+   "label": "GET /api/w/:slug/model-endpoints",
+   "file": "jarvis/server/server.mjs",
+   "line": 310
+  },
+  {
+   "id": "route:GET /api/w/:slug/runs",
+   "kind": "route",
+   "label": "GET /api/w/:slug/runs",
+   "file": "jarvis/server/server.mjs",
+   "line": 249
+  },
+  {
+   "id": "route:GET /api/w/:slug/runs/:id",
+   "kind": "route",
+   "label": "GET /api/w/:slug/runs/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 250
+  },
+  {
+   "id": "route:GET /api/w/:slug/schedules",
+   "kind": "route",
+   "label": "GET /api/w/:slug/schedules",
+   "file": "jarvis/server/server.mjs",
+   "line": 279
+  },
+  {
+   "id": "route:GET /api/w/:slug/skills/evolution",
+   "kind": "route",
+   "label": "GET /api/w/:slug/skills/evolution",
+   "file": "jarvis/server/server.mjs",
+   "line": 300
+  },
+  {
+   "id": "route:GET /api/w/:slug/skills/runtime",
+   "kind": "route",
+   "label": "GET /api/w/:slug/skills/runtime",
+   "file": "jarvis/server/server.mjs",
+   "line": 299
+  },
+  {
+   "id": "route:GET /api/w/:slug/stats",
+   "kind": "route",
+   "label": "GET /api/w/:slug/stats",
+   "file": "jarvis/server/server.mjs",
+   "line": 233
+  },
+  {
+   "id": "route:GET /api/w/:slug/stream",
+   "kind": "route",
+   "label": "GET /api/w/:slug/stream",
+   "file": "jarvis/server/server.mjs",
+   "line": 333
+  },
+  {
+   "id": "route:GET /api/w/:slug/version",
+   "kind": "route",
+   "label": "GET /api/w/:slug/version",
+   "file": "jarvis/server/server.mjs",
+   "line": 234
+  },
+  {
+   "id": "route:GET /api/w/:slug/webhooks",
+   "kind": "route",
+   "label": "GET /api/w/:slug/webhooks",
+   "file": "jarvis/server/server.mjs",
+   "line": 284
+  },
+  {
+   "id": "route:GET /api/w/:slug/webhooks/:id/secret",
+   "kind": "route",
+   "label": "GET /api/w/:slug/webhooks/:id/secret",
+   "file": "jarvis/server/server.mjs",
+   "line": 291
+  },
+  {
+   "id": "route:GET /api/w/:slug/workflows",
+   "kind": "route",
+   "label": "GET /api/w/:slug/workflows",
+   "file": "jarvis/server/server.mjs",
+   "line": 266
+  },
+  {
+   "id": "route:GET /api/w/:slug/workflows/:id",
+   "kind": "route",
+   "label": "GET /api/w/:slug/workflows/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 269
+  },
+  {
+   "id": "route:GET /api/workspaces",
+   "kind": "route",
+   "label": "GET /api/workspaces",
+   "file": "jarvis/server/server.mjs",
+   "line": 158
+  },
+  {
+   "id": "route:PATCH /api/access",
+   "kind": "route",
+   "label": "PATCH /api/access",
+   "file": "jarvis/server/server.mjs",
+   "line": 149
+  },
+  {
+   "id": "route:PATCH /api/w/:slug/agents/:id",
+   "kind": "route",
+   "label": "PATCH /api/w/:slug/agents/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 239
+  },
+  {
+   "id": "route:PATCH /api/w/:slug/members/:id",
+   "kind": "route",
+   "label": "PATCH /api/w/:slug/members/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 276
+  },
+  {
+   "id": "route:POST /api/founder/login",
+   "kind": "route",
+   "label": "POST /api/founder/login",
+   "file": "jarvis/server/server.mjs",
+   "line": 142
+  },
+  {
+   "id": "route:POST /api/founder/logout",
+   "kind": "route",
+   "label": "POST /api/founder/logout",
+   "file": "jarvis/server/server.mjs",
+   "line": 147
+  },
+  {
+   "id": "route:POST /api/llm/run",
+   "kind": "route",
+   "label": "POST /api/llm/run",
+   "file": "jarvis/server/server.mjs",
+   "line": 160
+  },
+  {
+   "id": "route:POST /api/llm/stream",
+   "kind": "route",
+   "label": "POST /api/llm/stream",
+   "file": "jarvis/server/server.mjs",
+   "line": 174
+  },
+  {
+   "id": "route:POST /api/search/live",
+   "kind": "route",
+   "label": "POST /api/search/live",
+   "file": "jarvis/server/server.mjs",
+   "line": 197
+  },
+  {
+   "id": "route:POST /api/studio/clean-clone",
+   "kind": "route",
+   "label": "POST /api/studio/clean-clone",
+   "file": "jarvis/server/server.mjs",
+   "line": 216
+  },
+  {
+   "id": "route:POST /api/w/:slug/access/request-public",
+   "kind": "route",
+   "label": "POST /api/w/:slug/access/request-public",
+   "file": "jarvis/server/server.mjs",
+   "line": 312
+  },
+  {
+   "id": "route:POST /api/w/:slug/agents",
+   "kind": "route",
+   "label": "POST /api/w/:slug/agents",
+   "file": "jarvis/server/server.mjs",
+   "line": 236
+  },
+  {
+   "id": "route:POST /api/w/:slug/agents/:id/runs",
+   "kind": "route",
+   "label": "POST /api/w/:slug/agents/:id/runs",
+   "file": "jarvis/server/server.mjs",
+   "line": 241
+  },
+  {
+   "id": "route:POST /api/w/:slug/approvals/:id/decide",
+   "kind": "route",
+   "label": "POST /api/w/:slug/approvals/:id/decide",
+   "file": "jarvis/server/server.mjs",
+   "line": 253
+  },
+  {
+   "id": "route:POST /api/w/:slug/billing/request",
+   "kind": "route",
+   "label": "POST /api/w/:slug/billing/request",
+   "file": "jarvis/server/server.mjs",
+   "line": 296
+  },
+  {
+   "id": "route:POST /api/w/:slug/billing/tiers",
+   "kind": "route",
+   "label": "POST /api/w/:slug/billing/tiers",
+   "file": "jarvis/server/server.mjs",
+   "line": 294
+  },
+  {
+   "id": "route:POST /api/w/:slug/forge",
+   "kind": "route",
+   "label": "POST /api/w/:slug/forge",
+   "file": "jarvis/server/server.mjs",
+   "line": 328
+  },
+  {
+   "id": "route:POST /api/w/:slug/forge/:id/install",
+   "kind": "route",
+   "label": "POST /api/w/:slug/forge/:id/install",
+   "file": "jarvis/server/server.mjs",
+   "line": 330
+  },
+  {
+   "id": "route:POST /api/w/:slug/members",
+   "kind": "route",
+   "label": "POST /api/w/:slug/members",
+   "file": "jarvis/server/server.mjs",
+   "line": 274
+  },
+  {
+   "id": "route:POST /api/w/:slug/memory",
+   "kind": "route",
+   "label": "POST /api/w/:slug/memory",
+   "file": "jarvis/server/server.mjs",
+   "line": 319
+  },
+  {
+   "id": "route:POST /api/w/:slug/memory/self-check",
+   "kind": "route",
+   "label": "POST /api/w/:slug/memory/self-check",
+   "file": "jarvis/server/server.mjs",
+   "line": 320
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions",
+   "file": "jarvis/server/server.mjs",
+   "line": 350
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions/:id/capsules/:id/restore",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions/:id/capsules/:id/restore",
+   "file": "jarvis/server/server.mjs",
+   "line": 365
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions/:id/pause",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions/:id/pause",
+   "file": "jarvis/server/server.mjs",
+   "line": 362
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions/:id/run",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions/:id/run",
+   "file": "jarvis/server/server.mjs",
+   "line": 361
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions/:id/steps/:id/skip",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions/:id/steps/:id/skip",
+   "file": "jarvis/server/server.mjs",
+   "line": 366
+  },
+  {
+   "id": "route:POST /api/w/:slug/missions/plan",
+   "kind": "route",
+   "label": "POST /api/w/:slug/missions/plan",
+   "file": "jarvis/server/server.mjs",
+   "line": 351
+  },
+  {
+   "id": "route:POST /api/w/:slug/model-endpoints",
+   "kind": "route",
+   "label": "POST /api/w/:slug/model-endpoints",
+   "file": "jarvis/server/server.mjs",
+   "line": 311
+  },
+  {
+   "id": "route:POST /api/w/:slug/model-endpoints/:id/activate",
+   "kind": "route",
+   "label": "POST /api/w/:slug/model-endpoints/:id/activate",
+   "file": "jarvis/server/server.mjs",
+   "line": 314
+  },
+  {
+   "id": "route:POST /api/w/:slug/runs/:id/cancel",
+   "kind": "route",
+   "label": "POST /api/w/:slug/runs/:id/cancel",
+   "file": "jarvis/server/server.mjs",
+   "line": 251
+  },
+  {
+   "id": "route:POST /api/w/:slug/skills/discover-online",
+   "kind": "route",
+   "label": "POST /api/w/:slug/skills/discover-online",
+   "file": "jarvis/server/server.mjs",
+   "line": 301
+  },
+  {
+   "id": "route:POST /api/w/:slug/skills/evolve",
+   "kind": "route",
+   "label": "POST /api/w/:slug/skills/evolve",
+   "file": "jarvis/server/server.mjs",
+   "line": 304
+  },
+  {
+   "id": "route:POST /api/w/:slug/skills/import",
+   "kind": "route",
+   "label": "POST /api/w/:slug/skills/import",
+   "file": "jarvis/server/server.mjs",
+   "line": 302
+  },
+  {
+   "id": "route:POST /api/w/:slug/skills/runtime/:id/install",
+   "kind": "route",
+   "label": "POST /api/w/:slug/skills/runtime/:id/install",
+   "file": "jarvis/server/server.mjs",
+   "line": 306
+  },
+  {
+   "id": "route:POST /api/w/:slug/skills/synthesize-and-mount",
+   "kind": "route",
+   "label": "POST /api/w/:slug/skills/synthesize-and-mount",
+   "file": "jarvis/server/server.mjs",
+   "line": 303
+  },
+  {
+   "id": "route:POST /api/w/:slug/webhooks",
+   "kind": "route",
+   "label": "POST /api/w/:slug/webhooks",
+   "file": "jarvis/server/server.mjs",
+   "line": 285
+  },
+  {
+   "id": "route:POST /api/w/:slug/webhooks/:id/activate",
+   "kind": "route",
+   "label": "POST /api/w/:slug/webhooks/:id/activate",
+   "file": "jarvis/server/server.mjs",
+   "line": 288
+  },
+  {
+   "id": "route:POST /api/w/:slug/webhooks/:id/pause",
+   "kind": "route",
+   "label": "POST /api/w/:slug/webhooks/:id/pause",
+   "file": "jarvis/server/server.mjs",
+   "line": 289
+  },
+  {
+   "id": "route:POST /api/w/:slug/webhooks/:id/test",
+   "kind": "route",
+   "label": "POST /api/w/:slug/webhooks/:id/test",
+   "file": "jarvis/server/server.mjs",
+   "line": 290
+  },
+  {
+   "id": "route:POST /api/w/:slug/workflows",
+   "kind": "route",
+   "label": "POST /api/w/:slug/workflows",
+   "file": "jarvis/server/server.mjs",
+   "line": 267
+  },
+  {
+   "id": "route:POST /api/w/:slug/workflows/:id/run",
+   "kind": "route",
+   "label": "POST /api/w/:slug/workflows/:id/run",
+   "file": "jarvis/server/server.mjs",
+   "line": 272
+  },
+  {
+   "id": "route:PUT /api/w/:slug/agents/:id/schedule",
+   "kind": "route",
+   "label": "PUT /api/w/:slug/agents/:id/schedule",
+   "file": "jarvis/server/server.mjs",
+   "line": 281
+  },
+  {
+   "id": "route:PUT /api/w/:slug/workflows/:id",
+   "kind": "route",
+   "label": "PUT /api/w/:slug/workflows/:id",
+   "file": "jarvis/server/server.mjs",
+   "line": 270
+  },
+  {
+   "id": "screen:agent",
+   "kind": "screen",
+   "label": "agent",
+   "file": "jarvis/app/src/app.js",
+   "line": 1260,
+   "nav": false
+  },
+  {
+   "id": "screen:agents",
+   "kind": "screen",
+   "label": "agents",
+   "file": "jarvis/app/src/app.js",
+   "line": 1213,
+   "nav": true
+  },
+  {
+   "id": "screen:analytics",
+   "kind": "screen",
+   "label": "analytics",
+   "file": "jarvis/app/src/app.js",
+   "line": 1958,
+   "nav": true
+  },
+  {
+   "id": "screen:approvals",
+   "kind": "screen",
+   "label": "approvals",
+   "file": "jarvis/app/src/app.js",
+   "line": 1382,
+   "nav": true
+  },
+  {
+   "id": "screen:compare",
+   "kind": "screen",
+   "label": "compare",
+   "file": "jarvis/app/src/app.js",
+   "line": 2034,
+   "nav": false
+  },
+  {
+   "id": "screen:governance",
+   "kind": "screen",
+   "label": "governance",
+   "file": "jarvis/app/src/app.js",
+   "line": 2813,
+   "nav": true
+  },
+  {
+   "id": "screen:loader",
+   "kind": "screen",
+   "label": "loader",
+   "file": "jarvis/app/src/app.js",
+   "line": 2669,
+   "nav": true
+  },
+  {
+   "id": "screen:logs",
+   "kind": "screen",
+   "label": "logs",
+   "file": "jarvis/app/src/app.js",
+   "line": 1407,
+   "nav": true
+  },
+  {
+   "id": "screen:memory",
+   "kind": "screen",
+   "label": "memory",
+   "file": "jarvis/app/src/app.js",
+   "line": 2842,
+   "nav": true
+  },
+  {
+   "id": "screen:mission",
+   "kind": "screen",
+   "label": "mission",
+   "file": "jarvis/app/src/app.js",
+   "line": 1721,
+   "nav": false
+  },
+  {
+   "id": "screen:missions",
+   "kind": "screen",
+   "label": "missions",
+   "file": "jarvis/app/src/app.js",
+   "line": 1602,
+   "nav": true
+  },
+  {
+   "id": "screen:overview",
+   "kind": "screen",
+   "label": "overview",
+   "file": "jarvis/app/src/app.js",
+   "line": 1130,
+   "nav": true
+  },
+  {
+   "id": "screen:run",
+   "kind": "screen",
+   "label": "run",
+   "file": "jarvis/app/src/app.js",
+   "line": 1350,
+   "nav": false
+  },
+  {
+   "id": "screen:runs",
+   "kind": "screen",
+   "label": "runs",
+   "file": "jarvis/app/src/app.js",
+   "line": 1316,
+   "nav": true
+  },
+  {
+   "id": "screen:search",
+   "kind": "screen",
+   "label": "search",
+   "file": "jarvis/app/src/app.js",
+   "line": 2585,
+   "nav": true
+  },
+  {
+   "id": "screen:settings",
+   "kind": "screen",
+   "label": "settings",
+   "file": "jarvis/app/src/app.js",
+   "line": 1540,
+   "nav": true
+  },
+  {
+   "id": "screen:skills",
+   "kind": "screen",
+   "label": "skills",
+   "file": "jarvis/app/src/app.js",
+   "line": 2435,
+   "nav": true
+  },
+  {
+   "id": "screen:studio",
+   "kind": "screen",
+   "label": "studio",
+   "file": "jarvis/app/src/app.js",
+   "line": 2202,
+   "nav": true
+  },
+  {
+   "id": "screen:templates",
+   "kind": "screen",
+   "label": "templates",
+   "file": "jarvis/app/src/app.js",
+   "line": 2063,
+   "nav": false
+  },
+  {
+   "id": "screen:webhooks",
+   "kind": "screen",
+   "label": "webhooks",
+   "file": "jarvis/app/src/app.js",
+   "line": 2002,
+   "nav": true
+  },
+  {
+   "id": "screen:workflow",
+   "kind": "screen",
+   "label": "workflow",
+   "file": "jarvis/app/src/app.js",
+   "line": 1818,
+   "nav": false
+  },
+  {
+   "id": "screen:workflows",
+   "kind": "screen",
+   "label": "workflows",
+   "file": "jarvis/app/src/app.js",
+   "line": 1800,
+   "nav": true
+  },
+  {
+   "id": "skill:algorithmic-art",
+   "kind": "skill",
+   "label": "algorithmic-art",
+   "file": ".claude/skills/algorithmic-art/SKILL.md",
+   "description": "Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or"
+  },
+  {
+   "id": "skill:apple-liquid-glass-hig",
+   "kind": "skill",
+   "label": "apple-liquid-glass-hig",
+   "file": ".claude/skills/apple-liquid-glass-hig/SKILL.md",
+   "description": "Use when adding or restyling glass chrome, popovers, cards, rings or charts on an OMEGA page (Ops Room, THE CHAIN, NABD). Turns Apple HIG glass and material rules into the OMEGA tokens, CSP limits and"
+  },
+  {
+   "id": "skill:autonomous-24-selftest-gate",
+   "kind": "skill",
+   "label": "autonomous-24-selftest-gate",
+   "file": ".claude/skills/autonomous-24-selftest-gate/SKILL.md",
+   "description": "Use when adding, changing or reading the Ops Room system self-test (shield button or ?selftest=1), now 24 checks. Fixed fixtures plus live data, read-only probes, honest failures, and the release gate"
+  },
+  {
+   "id": "skill:awesome-research",
+   "kind": "skill",
+   "label": "awesome-research",
+   "file": ".claude/skills/awesome-research/SKILL.md",
+   "description": "Find trustworthy free open-source tools, libraries and open-weight AI models by starting from the curated \"awesome\" lists (github.com/sindresorhus/awesome, github.com/topics/awesome) instead of raw po"
+  },
+  {
+   "id": "skill:build-mcpb",
+   "kind": "skill",
+   "label": "build-mcpb",
+   "file": ".claude/skills/build-mcpb/SKILL.md",
+   "description": "This skill should be used when the user wants to \"package an MCP server\", \"bundle an MCP\", \"make an MCPB\", \"ship a local MCP server\", \"distribute a local MCP\", discusses \".mcpb files\", mentions bundli"
+  },
+  {
+   "id": "skill:cyber-space-osint-grid",
+   "kind": "skill",
+   "label": "cyber-space-osint-grid",
+   "file": ".claude/skills/cyber-space-osint-grid/SKILL.md",
+   "description": "Use when adding or changing an OSIRIS cyber, space or air source in the Ops Room (SANS InfoCON, Shodan InternetDB, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, CSTI). Passive"
+  },
+  {
+   "id": "skill:frontend-design",
+   "kind": "skill",
+   "label": "frontend-design",
+   "file": ".claude/skills/frontend-design/SKILL.md",
+   "description": "Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defau"
+  },
+  {
+   "id": "skill:hvplot",
+   "kind": "skill",
+   "label": "hvplot",
+   "file": ".claude/skills/hvplot/SKILL.md",
+   "description": "Best practices for doing quick exploratory data analysis with minimal code and a Pandas .plot like API using HoloViews hvPlot."
+  },
+  {
+   "id": "skill:liquid-neural-139-flow",
+   "kind": "skill",
+   "label": "liquid-neural-139-flow",
+   "file": ".claude/skills/liquid-neural-139-flow/SKILL.md",
+   "description": "Use when changing the continuous-time (liquid) dynamics of the Ops Room neural flow 139 → 48 → 36 → 48 → 24 → 16 → 8, its τ table, shock events, Heun solver, settle animation or the oscilloscope's τ r"
+  },
+  {
+   "id": "skill:local-glm-agent-windows-mcp",
+   "kind": "skill",
+   "label": "local-glm-agent-windows-mcp",
+   "file": ".claude/skills/local-glm-agent-windows-mcp/SKILL.md",
+   "description": "Use when changing the local model bridge (Ollama on 127.0.0.1, GLM models), the MCP bridge tool that calls it, the launchers OMEGA-PRIME.bat and start-omega.bat, or the Windows-MCP setup. Local, read-"
+  },
+  {
+   "id": "skill:mcp-builder",
+   "kind": "skill",
+   "label": "mcp-builder",
+   "file": ".claude/skills/mcp-builder/SKILL.md",
+   "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate externa"
+  },
+  {
+   "id": "skill:neural-139-inputs-heads",
+   "kind": "skill",
+   "label": "neural-139-inputs-heads",
+   "file": ".claude/skills/neural-139-inputs-heads/SKILL.md",
+   "description": "Use when changing which readings enter the 139 inputs of the Ops Room neural flow, the meaning or wording of its 8 decision heads (including the $20 base, protected wallet and SHA-256 receipt heads), "
+  },
+  {
+   "id": "skill:neural-flow-decision-viz",
+   "kind": "skill",
+   "label": "neural-flow-decision-viz",
+   "file": ".claude/skills/neural-flow-decision-viz/SKILL.md",
+   "description": "Use when changing the Ops Room deep neural flow (139 → 48 → 36 → 48 → 24 → 16 → 8), its threads, pulses, oscilloscope inspector, chrono-scrubber, training worker or decision heads. Real inputs only, e"
+  },
+  {
+   "id": "skill:omega-apex-council",
+   "kind": "skill",
+   "label": "omega-apex-council",
+   "file": ".claude/skills/omega-apex-council/SKILL.md",
+   "description": "Use when changing or using the OMEGA APEX council (omega-ops-room-v1/omega-apex.html, scripts/lib/apex-council.mjs), its fifteen field helpers, its paper-only PRIME plans, or the dark gold peak tone s"
+  },
+  {
+   "id": "skill:omega-deep-research-agent",
+   "kind": "skill",
+   "label": "omega-deep-research-agent",
+   "file": ".claude/skills/omega-deep-research-agent/SKILL.md",
+   "description": "Use when changing or running the ORACLE deep research agent (plan, gather, evaluate, write; scholar and passive OSINT modes) in omega-ops-room-v1/omega-oracle.html, scripts/lib/deep-research.mjs, the "
+  },
+  {
+   "id": "skill:omega-design",
+   "kind": "skill",
+   "label": "omega-design",
+   "file": ".claude/skills/omega-design/SKILL.md",
+   "description": "Use when building, redesigning or reviewing any OMEGA / NABD web surface (site-landing, Ops Room, THE CHAIN). Applies DESIGN.md, the Vercel Web Interface Guidelines and the three-size browser loop."
+  },
+  {
+   "id": "skill:omega-extend",
+   "kind": "skill",
+   "label": "omega-extend",
+   "file": ".claude/skills/omega-extend/SKILL.md",
+   "description": "How to add a metric, panel, data table, service or plugin to the OMEGA stack (giant-core) so it matches the existing code. Use before changing services/quant (stdlib risk engine), services/studio (Pan"
+  },
+  {
+   "id": "skill:omega-finance-chain",
+   "kind": "skill",
+   "label": "omega-finance-chain",
+   "file": ".claude/skills/omega-finance-chain/SKILL.md",
+   "description": "Use when researching a stock, building a valuation model, reviewing an earnings call or updating a ticker's notes.md for OMEGA. Rules for the three THE CHAIN agents; research only, never trading."
+  },
+  {
+   "id": "skill:omega-knowledge-domain",
+   "kind": "skill",
+   "label": "omega-knowledge-domain",
+   "file": ".claude/skills/omega-knowledge-domain/SKILL.md",
+   "description": "Use when changing or using the OMEGA knowledge domain (omega-ops-room-v1/omega-knowledge.html, scripts/lib/knowledge-domain.mjs) that joins ideas, open-source tools, ORACLE sources, PRIME agents, page"
+  },
+  {
+   "id": "skill:osint-bgp-cables",
+   "kind": "skill",
+   "label": "osint-bgp-cables",
+   "file": ".claude/skills/osint-bgp-cables/SKILL.md",
+   "description": "Use when adding or changing an OSIRIS layer for internet routing, outages, submarine cables, satellites, space weather or exploited vulnerabilities. Passive, keyless public sources only, through the p"
+  },
+  {
+   "id": "skill:panel",
+   "kind": "skill",
+   "label": "panel",
+   "file": ".claude/skills/panel/SKILL.md",
+   "description": "Best practices for developing tools, dashboards and interactive data apps with HoloViz Panel. Create reactive, component-based UIs with widgets, layouts, templates, and real-time updates. Use when dev"
+  },
+  {
+   "id": "skill:panel-material-ui",
+   "kind": "skill",
+   "label": "panel-material-ui",
+   "file": ".claude/skills/panel-material-ui/SKILL.md",
+   "description": "Best practices for developing modern looking tools, dashboards and data apps using HoloViz Panel and Panel Material UI components."
+  },
+  {
+   "id": "skill:param",
+   "kind": "skill",
+   "label": "param",
+   "file": ".claude/skills/param/SKILL.md",
+   "description": "Use when building Python classes with validated, typed parameters using the Param library. Triggers include creating configuration classes, building reusable components with state, implementing reacti"
+  },
+  {
+   "id": "skill:quant-microstructure-gex",
+   "kind": "skill",
+   "label": "quant-microstructure-gex",
+   "file": ".claude/skills/quant-microstructure-gex/SKILL.md",
+   "description": "Use when changing Brain 2 maths or the trading desk's readings - Kalman latent price, BOCPD regime change, Kyle's lambda, iceberg detection, book entropy, L2 VWAP fill, dealer gamma (GEX), DVOL, 25-de"
+  },
+  {
+   "id": "skill:replica-architect",
+   "kind": "skill",
+   "label": "replica-architect",
+   "file": ".claude/skills/replica-architect/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:replica-backend",
+   "kind": "skill",
+   "label": "replica-backend",
+   "file": ".claude/skills/replica-backend/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:replica-build",
+   "kind": "skill",
+   "label": "replica-build",
+   "file": ".claude/skills/replica-build/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:replica-cyber-recon",
+   "kind": "skill",
+   "label": "replica-cyber-recon",
+   "file": ".claude/skills/replica-cyber-recon/SKILL.md",
+   "description": "Defensive checks before anything joins Jarvis or the repo - leaked keys (patterns plus Shannon entropy), unsafe code in pages, templates and skills (XSS sinks, eval, processes, unparameterized SQL, we"
+  },
+  {
+   "id": "skill:replica-design",
+   "kind": "skill",
+   "label": "replica-design",
+   "file": ".claude/skills/replica-design/SKILL.md",
+   "description": "Rebuilds an app's design system clean-room style - measured colour roles, type, spacing, components and states as tokens (light + dark), with open fonts/icons and a WCAG gate."
+  },
+  {
+   "id": "skill:replica-diff",
+   "kind": "skill",
+   "label": "replica-diff",
+   "file": ".claude/skills/replica-diff/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:replica-entrepreneur",
+   "kind": "skill",
+   "label": "replica-entrepreneur",
+   "file": ".claude/skills/replica-entrepreneur/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:replica-graphify",
+   "kind": "skill",
+   "label": "replica-graphify",
+   "file": ".claude/skills/replica-graphify/SKILL.md",
+   "description": "A structural knowledge graph of Jarvis without a vector database - screens, API routes, server modules, SQL tables with their constraints, and skills with their Python tools, joined by what each one c"
+  },
+  {
+   "id": "skill:replica-humanizer",
+   "kind": "skill",
+   "label": "replica-humanizer",
+   "file": ".claude/skills/replica-humanizer/SKILL.md",
+   "description": "Plain-word suggestions for Arabic and English text - finds stiff, machine-sounding wording (in order to, utilize, leverage, it is important to note, في عالمنا اليوم, تجدر الإشارة إلى أن, قم بـ) and su"
+  },
+  {
+   "id": "skill:replica-hybrid-python",
+   "kind": "skill",
+   "label": "replica-hybrid-python",
+   "file": ".claude/skills/replica-hybrid-python/SKILL.md",
+   "description": "Algorithmic design engines for Jarvis in standard-library Python - Weisfeiler-Lehman layout fingerprints and clean golden-ratio templates (topology_synth), graphlib workflow scheduling with locked ste"
+  },
+  {
+   "id": "skill:replica-impeccable",
+   "kind": "skill",
+   "label": "replica-impeccable",
+   "file": ".claude/skills/replica-impeccable/SKILL.md",
+   "description": "A quality gate against low-effort output - 62 rules over prose (hype and filler words, placeholder text, exclamation marks), design (colour literals outside tokens, transition all, 100vh, text under 1"
+  },
+  {
+   "id": "skill:replica-long-horizon",
+   "kind": "skill",
+   "label": "replica-long-horizon",
+   "file": ".claude/skills/replica-long-horizon/SKILL.md",
+   "description": "Run long, multi-step tasks without losing the thread - three plan files on disk, SHA-256 chained state capsules to resume after /clear, and an evidence gate that blocks \"done\" until tests pass."
+  },
+  {
+   "id": "skill:replica-test",
+   "kind": "skill",
+   "label": "replica-test",
+   "file": ".claude/skills/replica-test/SKILL.md",
+   "description": ">-"
+  },
+  {
+   "id": "skill:safe-vault-cryptographic-ratchet",
+   "kind": "skill",
+   "label": "safe-vault-cryptographic-ratchet",
+   "file": ".claude/skills/safe-vault-cryptographic-ratchet/SKILL.md",
+   "description": "Use when touching the paper wallet, the locked base, profit sweeps, receipts, Merkle checkpoints, capsules or the key vault. Keeps the SHA-256 receipt chain verifiable across the Ops Room, NABD and th"
+  },
+  {
+   "id": "skill:stablecoin-cyber-vuln-intel",
+   "kind": "skill",
+   "label": "stablecoin-cyber-vuln-intel",
+   "file": ".claude/skills/stablecoin-cyber-vuln-intel/SKILL.md",
+   "description": "Use when changing the DefiLlama liquidity flow index (LFI), the CIRCL Vulnerability-Lookup feed with MISP taxonomy tags, the 8-part CSTI or the Open-Meteo Marine sea state at the five straits. Keyless"
+  },
+  {
+   "id": "skill:supreme-software-ui-architect",
+   "kind": "skill",
+   "label": "supreme-software-ui-architect",
+   "file": ".claude/skills/supreme-software-ui-architect/SKILL.md",
+   "description": "Use before building or reviewing any OMEGA page, canvas or data feature. Engineering and visual craft rules - 4/8 grid, concentric radii, glass only where allowed, P3 colour, zero clipped text, zero-j"
+  },
+  {
+   "id": "skill:synaptic-spiderweb-viz",
+   "kind": "skill",
+   "label": "synaptic-spiderweb-viz",
+   "file": ".claude/skills/synaptic-spiderweb-viz/SKILL.md",
+   "description": "Use when changing the Brain 2 synaptic web canvas in the Ops Room - its rings of nodes, edges, pulses, glass causal card, gym panel or labels. Event-driven drawing, real readings only, accessible fall"
+  },
+  {
+   "id": "skill:theme-factory",
+   "kind": "skill",
+   "label": "theme-factory",
+   "file": ".claude/skills/theme-factory/SKILL.md",
+   "description": "Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact t"
+  },
+  {
+   "id": "skill:web-artifacts-builder",
+   "kind": "skill",
+   "label": "web-artifacts-builder",
+   "file": ".claude/skills/web-artifacts-builder/SKILL.md",
+   "description": "Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state manag"
+  },
+  {
+   "id": "skill:webapp-testing",
+   "kind": "skill",
+   "label": "webapp-testing",
+   "file": ".claude/skills/webapp-testing/SKILL.md",
+   "description": "Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser l"
+  },
+  {
+   "id": "table:access_settings",
+   "kind": "table",
+   "label": "access_settings",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 355,
+   "constraints": [
+    "access_settings_founder_private_locked"
+   ]
+  },
+  {
+   "id": "table:agent_memory_episodes",
+   "kind": "table",
+   "label": "agent_memory_episodes",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 324,
+   "constraints": []
+  },
+  {
+   "id": "table:agents",
+   "kind": "table",
+   "label": "agents",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 27,
+   "constraints": []
+  },
+  {
+   "id": "table:approvals",
+   "kind": "table",
+   "label": "approvals",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 92,
+   "constraints": [
+    "approvals_locked_never_approved",
+    "approvals_decided_by_member",
+    "approvals_reject_has_reason"
+   ]
+  },
+  {
+   "id": "table:billing_settings",
+   "kind": "table",
+   "label": "billing_settings",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 283,
+   "constraints": [
+    "billing_settings_billing_locked"
+   ]
+  },
+  {
+   "id": "table:capsules",
+   "kind": "table",
+   "label": "capsules",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 206,
+   "constraints": []
+  },
+  {
+   "id": "table:events",
+   "kind": "table",
+   "label": "events",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 116,
+   "constraints": []
+  },
+  {
+   "id": "table:forged_skills",
+   "kind": "table",
+   "label": "forged_skills",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 337,
+   "constraints": [
+    "forged_skills_scan_clean"
+   ]
+  },
+  {
+   "id": "table:gate_results",
+   "kind": "table",
+   "label": "gate_results",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 222,
+   "constraints": []
+  },
+  {
+   "id": "table:members",
+   "kind": "table",
+   "label": "members",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 16,
+   "constraints": []
+  },
+  {
+   "id": "table:mission_steps",
+   "kind": "table",
+   "label": "mission_steps",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 180,
+   "constraints": [
+    "mission_steps_gate_before_done",
+    "mission_steps_locked_never_done"
+   ]
+  },
+  {
+   "id": "table:missions",
+   "kind": "table",
+   "label": "missions",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 163,
+   "constraints": []
+  },
+  {
+   "id": "table:mixes",
+   "kind": "table",
+   "label": "mixes",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 152,
+   "constraints": []
+  },
+  {
+   "id": "table:model_endpoints",
+   "kind": "table",
+   "label": "model_endpoints",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 362,
+   "constraints": [
+    "model_endpoints_external_locked"
+   ]
+  },
+  {
+   "id": "table:runs",
+   "kind": "table",
+   "label": "runs",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 54,
+   "constraints": [
+    "runs_has_target",
+    "runs_times"
+   ]
+  },
+  {
+   "id": "table:runtime_skills",
+   "kind": "table",
+   "label": "runtime_skills",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 377,
+   "constraints": [
+    "runtime_skills_scan_clean"
+   ]
+  },
+  {
+   "id": "table:schedules",
+   "kind": "table",
+   "label": "schedules",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 238,
+   "constraints": []
+  },
+  {
+   "id": "table:sites",
+   "kind": "table",
+   "label": "sites",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 132,
+   "constraints": []
+  },
+  {
+   "id": "table:skill_evolution_log",
+   "kind": "table",
+   "label": "skill_evolution_log",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 397,
+   "constraints": []
+  },
+  {
+   "id": "table:skills",
+   "kind": "table",
+   "label": "skills",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 143,
+   "constraints": []
+  },
+  {
+   "id": "table:steps",
+   "kind": "table",
+   "label": "steps",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 76,
+   "constraints": []
+  },
+  {
+   "id": "table:subscriber_tiers",
+   "kind": "table",
+   "label": "subscriber_tiers",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 291,
+   "constraints": [
+    "subscriber_tiers_draft_only"
+   ]
+  },
+  {
+   "id": "table:token_ledger",
+   "kind": "table",
+   "label": "token_ledger",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 305,
+   "constraints": [
+    "token_ledger_creator_free"
+   ]
+  },
+  {
+   "id": "table:webhook_deliveries",
+   "kind": "table",
+   "label": "webhook_deliveries",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 268,
+   "constraints": []
+  },
+  {
+   "id": "table:webhooks",
+   "kind": "table",
+   "label": "webhooks",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 252,
+   "constraints": [
+    "webhooks_out_has_url",
+    "webhooks_external_out_locked"
+   ]
+  },
+  {
+   "id": "table:workflows",
+   "kind": "table",
+   "label": "workflows",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 43,
+   "constraints": []
+  },
+  {
+   "id": "table:workspaces",
+   "kind": "table",
+   "label": "workspaces",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 8,
+   "constraints": []
+  },
+  {
+   "id": "tool:replica-cyber-recon/manifest_parse.py",
+   "kind": "tool",
+   "label": "manifest_parse.py",
+   "file": ".claude/skills/replica-cyber-recon/manifest_parse.py",
+   "functions": [
+    "guess_kind",
+    "parse_openapi",
+    "parse_llms",
+    "parse_security",
+    "parse_robots",
+    "to_markdown",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-cyber-recon/rcommon.py",
+   "kind": "tool",
+   "label": "rcommon.py",
+   "file": ".claude/skills/replica-cyber-recon/rcommon.py",
+   "functions": [
+    "inside",
+    "walk",
+    "read_text",
+    "shannon",
+    "sha256_file",
+    "rel",
+    "emit"
+   ]
+  },
+  {
+   "id": "tool:replica-cyber-recon/sbom_integrity.py",
+   "kind": "tool",
+   "label": "sbom_integrity.py",
+   "file": ".claude/skills/replica-cyber-recon/sbom_integrity.py",
+   "functions": [
+    "listing",
+    "digest",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-cyber-recon/secret_audit.py",
+   "kind": "tool",
+   "label": "secret_audit.py",
+   "file": ".claude/skills/replica-cyber-recon/secret_audit.py",
+   "functions": [
+    "redact",
+    "scan_text",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-cyber-recon/static_guard.py",
+   "kind": "tool",
+   "label": "static_guard.py",
+   "file": ".claude/skills/replica-cyber-recon/static_guard.py",
+   "functions": [
+    "finding",
+    "scan_web",
+    "scan_python",
+    "scan_any",
+    "blank_rule_blocks",
+    "scan_file",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-design/build_tokens.py",
+   "kind": "tool",
+   "label": "build_tokens.py",
+   "file": ".claude/skills/replica-design/build_tokens.py",
+   "functions": [
+    "oklch",
+    "px",
+    "color_block",
+    "static_vars",
+    "build_css",
+    "build_tailwind",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-design/contrast.py",
+   "kind": "tool",
+   "label": "contrast.py",
+   "file": ".claude/skills/replica-design/contrast.py",
+   "functions": [
+    "parse_rgba",
+    "parse_hex",
+    "over",
+    "luminance",
+    "ratio",
+    "apca",
+    "flatten",
+    "themes",
+    "default_pairs",
+    "check",
+    "failed",
+    "render",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-design/sample.py",
+   "kind": "tool",
+   "label": "sample.py",
+   "file": ".claude/skills/replica-design/sample.py",
+   "functions": [
+    "read_png",
+    "hexc",
+    "hint",
+    "top_colours",
+    "at",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-diff/imgdiff.py",
+   "kind": "tool",
+   "label": "imgdiff.py",
+   "file": ".claude/skills/replica-diff/imgdiff.py",
+   "functions": [
+    "read_png",
+    "write_png",
+    "resize",
+    "to_width",
+    "gray",
+    "edges",
+    "compare",
+    "verdict",
+    "render_text",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-diff/parity.py",
+   "kind": "tool",
+   "label": "parity.py",
+   "file": ".claude/skills/replica-diff/parity.py",
+   "functions": [
+    "load",
+    "score",
+    "visual_scores",
+    "combine",
+    "render",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-entrepreneur/reviews.py",
+   "kind": "tool",
+   "label": "reviews.py",
+   "file": ".claude/skills/replica-entrepreneur/reviews.py",
+   "functions": [
+    "load_themes",
+    "parse_date",
+    "parse_rating",
+    "load_reviews",
+    "weight",
+    "snippet",
+    "analyse",
+    "render",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-graphify/graphify.py",
+   "kind": "tool",
+   "label": "graphify.py",
+   "file": ".claude/skills/replica-graphify/graphify.py",
+   "functions": [
+    "inside",
+    "read",
+    "line_of",
+    "norm_path",
+    "screens",
+    "store_methods",
+    "routes",
+    "route_module",
+    "module_files",
+    "tables",
+    "tables_in",
+    "skills",
+    "build",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-humanizer/humanize.py",
+   "kind": "tool",
+   "label": "humanize.py",
+   "file": ".claude/skills/replica-humanizer/humanize.py",
+   "functions": [
+    "inside",
+    "keep_case",
+    "suggestions",
+    "rewrite",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/curriculum_50k.py",
+   "kind": "tool",
+   "label": "curriculum_50k.py",
+   "file": ".claude/skills/replica-hybrid-python/curriculum_50k.py",
+   "functions": [
+    "lum",
+    "wcag",
+    "apca",
+    "decode",
+    "layout",
+    "q_contrast",
+    "q_scale",
+    "q_space",
+    "q_dag",
+    "q_lock",
+    "q_entropy",
+    "q_logical",
+    "q_archetype",
+    "qa",
+    "permute",
+    "item",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/dag_scheduler.py",
+   "kind": "tool",
+   "label": "dag_scheduler.py",
+   "file": ".claude/skills/replica-hybrid-python/dag_scheduler.py",
+   "functions": [
+    "load",
+    "schedule",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/hcommon.py",
+   "kind": "tool",
+   "label": "hcommon.py",
+   "file": ".claude/skills/replica-hybrid-python/hcommon.py",
+   "functions": [
+    "inside",
+    "read",
+    "write",
+    "canonical",
+    "sha",
+    "snap",
+    "locked"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/pattern_memory.py",
+   "kind": "tool",
+   "label": "pattern_memory.py",
+   "file": ".claude/skills/replica-hybrid-python/pattern_memory.py",
+   "functions": [
+    "load",
+    "seq",
+    "learn",
+    "prob",
+    "suggest",
+    "score",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/static_intel.py",
+   "kind": "tool",
+   "label": "static_intel.py",
+   "file": ".claude/skills/replica-hybrid-python/static_intel.py",
+   "functions": [
+    "entropy",
+    "manifests",
+    "literals",
+    "audit",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-hybrid-python/topology_synth.py",
+   "kind": "tool",
+   "label": "topology_synth.py",
+   "file": ".claude/skills/replica-hybrid-python/topology_synth.py",
+   "functions": [
+    "parse",
+    "wl_histogram",
+    "cosine",
+    "repeats",
+    "summary",
+    "archetype",
+    "fingerprint",
+    "scale",
+    "synth",
+    "public",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-impeccable/slop_guard.py",
+   "kind": "tool",
+   "label": "slop_guard.py",
+   "file": ".claude/skills/replica-impeccable/slop_guard.py",
+   "functions": [
+    "inside",
+    "walk",
+    "finding",
+    "regex_rules",
+    "prose_extra",
+    "design_extra",
+    "strings_of",
+    "py_checks",
+    "doc_checks",
+    "scan_file",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-long-horizon/capsule.py",
+   "kind": "tool",
+   "label": "capsule.py",
+   "file": ".claude/skills/replica-long-horizon/capsule.py",
+   "functions": [
+    "cap_dir",
+    "load_all",
+    "seal",
+    "save",
+    "verify",
+    "restore",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-long-horizon/gate.py",
+   "kind": "tool",
+   "label": "gate.py",
+   "file": ".claude/skills/replica-long-horizon/gate.py",
+   "functions": [
+    "judge",
+    "newest_watched",
+    "evaluate",
+    "evidence_hashes",
+    "tick",
+    "cmd_check",
+    "cmd_finish",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-long-horizon/lhcommon.py",
+   "kind": "tool",
+   "label": "lhcommon.py",
+   "file": ".claude/skills/replica-long-horizon/lhcommon.py",
+   "functions": [
+    "now",
+    "read",
+    "write",
+    "sha256_bytes",
+    "sha256_file",
+    "canonical",
+    "need_workdir",
+    "parse_plan",
+    "parse_evidence",
+    "inside",
+    "git_position",
+    "log_progress"
+   ]
+  },
+  {
+   "id": "tool:replica-long-horizon/plan.py",
+   "kind": "tool",
+   "label": "plan.py",
+   "file": ".claude/skills/replica-long-horizon/plan.py",
+   "functions": [
+    "cmd_init",
+    "cmd_log",
+    "status",
+    "cmd_status",
+    "main"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": "module:access",
+   "to": "table:access_settings",
+   "kind": "sql"
+  },
+  {
+   "from": "module:access",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:access",
+   "to": "table:model_endpoints",
+   "kind": "sql"
+  },
+  {
+   "from": "module:loader",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:loader",
+   "to": "table:forged_skills",
+   "kind": "sql"
+  },
+  {
+   "from": "module:loader",
+   "to": "table:runtime_skills",
+   "kind": "sql"
+  },
+  {
+   "from": "module:loader",
+   "to": "table:skill_evolution_log",
+   "kind": "sql"
+  },
+  {
+   "from": "module:memory",
+   "to": "table:agent_memory_episodes",
+   "kind": "sql"
+  },
+  {
+   "from": "module:memory",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:memory",
+   "to": "table:forged_skills",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:agents",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:capsules",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:gate_results",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:mission_steps",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:missions",
+   "kind": "sql"
+  },
+  {
+   "from": "module:missions",
+   "to": "table:workspaces",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:agents",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:billing_settings",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:capsules",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:gate_results",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:members",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:missions",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:runs",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:schedules",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:subscriber_tiers",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:token_ledger",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:webhook_deliveries",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:webhooks",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:workflows",
+   "kind": "sql"
+  },
+  {
+   "from": "module:platform",
+   "to": "table:workspaces",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:agents",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:approvals",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:capsules",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:events",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:members",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:mission_steps",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:missions",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:runs",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:steps",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:token_ledger",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:webhook_deliveries",
+   "kind": "sql"
+  },
+  {
+   "from": "module:store",
+   "to": "table:workspaces",
+   "kind": "sql"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/agents/:id/schedule",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/billing/tiers/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/forge/:id",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/members/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/memory/:id",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/model-endpoints/:id",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/skills/runtime/:id",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/webhooks/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:DELETE /api/w/:slug/workflows/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/access",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/llm/status",
+   "to": "module:llm",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/agents",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/agents/:id",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/analytics",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/approvals",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/billing",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/events",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/forge",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/members",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/memory",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/missions",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/missions/:id",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/missions/:id/capsules/:id",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/missions/:id/verify",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/model-endpoints",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/runs",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/runs/:id",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/schedules",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/skills/evolution",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/skills/runtime",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/stats",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/version",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/webhooks",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/webhooks/:id/secret",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/workflows",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/w/:slug/workflows/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:GET /api/workspaces",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:PATCH /api/w/:slug/agents/:id",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:PATCH /api/w/:slug/members/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/access/request-public",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/agents",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/billing/request",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/billing/tiers",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/forge",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/forge/:id/install",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/members",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/memory",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/memory/self-check",
+   "to": "module:memory",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/missions",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/missions/:id/capsules/:id/restore",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/missions/:id/pause",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/missions/:id/run",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/missions/:id/steps/:id/skip",
+   "to": "module:missions",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/model-endpoints",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/model-endpoints/:id/activate",
+   "to": "module:access",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/runs/:id/cancel",
+   "to": "module:store",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/skills/discover-online",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/skills/evolve",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/skills/import",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/skills/runtime/:id/install",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/skills/synthesize-and-mount",
+   "to": "module:loader",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/webhooks",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/webhooks/:id/activate",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/webhooks/:id/pause",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/webhooks/:id/test",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/workflows",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:POST /api/w/:slug/workflows/:id/run",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:PUT /api/w/:slug/agents/:id/schedule",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "route:PUT /api/w/:slug/workflows/:id",
+   "to": "module:platform",
+   "kind": "calls"
+  },
+  {
+   "from": "screen:agent",
+   "to": "route:GET /api/w/:slug/agents/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:agents",
+   "to": "route:GET /api/w/:slug/agents",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:agents",
+   "to": "route:POST /api/w/:slug/agents/:id/runs",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:analytics",
+   "to": "route:GET /api/w/:slug/analytics",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:analytics",
+   "to": "route:GET /api/w/:slug/webhooks/:id/secret",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:approvals",
+   "to": "route:GET /api/w/:slug/approvals",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:approvals",
+   "to": "route:POST /api/w/:slug/approvals/:id/decide",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:compare",
+   "to": "route:GET /api/w/:slug/runs/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:DELETE /api/w/:slug/skills/runtime/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:GET /api/w/:slug/missions",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:GET /api/w/:slug/skills/evolution",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:GET /api/w/:slug/skills/runtime",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:POST /api/w/:slug/skills/discover-online",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:POST /api/w/:slug/skills/evolve",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:POST /api/w/:slug/skills/import",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:POST /api/w/:slug/skills/runtime/:id/install",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:loader",
+   "to": "route:POST /api/w/:slug/skills/synthesize-and-mount",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:DELETE /api/w/:slug/model-endpoints/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:GET /api/access",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:GET /api/founder/status",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:GET /api/llm/status",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:GET /api/w/:slug/events",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:GET /api/w/:slug/model-endpoints",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:POST /api/founder/logout",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:POST /api/w/:slug/access/request-public",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:logs",
+   "to": "route:POST /api/w/:slug/model-endpoints",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:DELETE /api/w/:slug/memory/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/llm/status",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/w/:slug/agents",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/w/:slug/forge",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/w/:slug/memory",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/w/:slug/skills/runtime",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/w/:slug/stats",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:GET /api/workspaces",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:POST /api/w/:slug/memory",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:memory",
+   "to": "route:POST /api/w/:slug/memory/self-check",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:mission",
+   "to": "route:GET /api/w/:slug/missions/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:mission",
+   "to": "route:GET /api/w/:slug/missions/:id/verify",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:mission",
+   "to": "route:POST /api/w/:slug/missions/:id/pause",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:mission",
+   "to": "route:POST /api/w/:slug/missions/:id/run",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:mission",
+   "to": "route:POST /api/w/:slug/workflows",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:missions",
+   "to": "route:GET /api/w/:slug/missions",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:missions",
+   "to": "route:POST /api/w/:slug/approvals/:id/decide",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:missions",
+   "to": "route:POST /api/w/:slug/missions/plan",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:GET /api/w/:slug/agents",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:GET /api/w/:slug/events",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:GET /api/w/:slug/forge",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:GET /api/w/:slug/skills/runtime",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:GET /api/w/:slug/stats",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:PATCH /api/w/:slug/agents/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:overview",
+   "to": "route:POST /api/w/:slug/agents",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:run",
+   "to": "route:GET /api/w/:slug/runs/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:run",
+   "to": "route:POST /api/w/:slug/approvals/:id/decide",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:run",
+   "to": "route:POST /api/w/:slug/runs/:id/cancel",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:runs",
+   "to": "route:GET /api/w/:slug/runs",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:search",
+   "to": "route:POST /api/llm/stream",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:search",
+   "to": "route:POST /api/search/live",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:settings",
+   "to": "route:POST /api/w/:slug/missions",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:skills",
+   "to": "route:DELETE /api/w/:slug/forge/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:skills",
+   "to": "route:GET /api/w/:slug/forge",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:skills",
+   "to": "route:GET /api/w/:slug/skills/runtime",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:skills",
+   "to": "route:POST /api/w/:slug/forge",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:skills",
+   "to": "route:POST /api/w/:slug/forge/:id/install",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:studio",
+   "to": "route:POST /api/llm/run",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:studio",
+   "to": "route:POST /api/studio/clean-clone",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:DELETE /api/w/:slug/agents/:id/schedule",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:DELETE /api/w/:slug/billing/tiers/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:DELETE /api/w/:slug/members/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:GET /api/w/:slug/billing",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:GET /api/w/:slug/members",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:GET /api/w/:slug/schedules",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:PATCH /api/w/:slug/members/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:POST /api/w/:slug/billing/request",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:POST /api/w/:slug/billing/tiers",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:POST /api/w/:slug/members",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:templates",
+   "to": "route:PUT /api/w/:slug/agents/:id/schedule",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:DELETE /api/w/:slug/webhooks/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:GET /api/w/:slug/webhooks",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:POST /api/w/:slug/webhooks",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:POST /api/w/:slug/webhooks/:id/activate",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:POST /api/w/:slug/webhooks/:id/pause",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:webhooks",
+   "to": "route:POST /api/w/:slug/webhooks/:id/test",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:workflow",
+   "to": "route:DELETE /api/w/:slug/workflows/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:workflow",
+   "to": "route:GET /api/w/:slug/workflows/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:workflow",
+   "to": "route:POST /api/w/:slug/workflows/:id/run",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:workflow",
+   "to": "route:PUT /api/w/:slug/workflows/:id",
+   "kind": "requests"
+  },
+  {
+   "from": "screen:workflows",
+   "to": "route:GET /api/w/:slug/workflows",
+   "kind": "requests"
+  },
+  {
+   "from": "skill:replica-cyber-recon",
+   "to": "tool:replica-cyber-recon/manifest_parse.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-cyber-recon",
+   "to": "tool:replica-cyber-recon/rcommon.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-cyber-recon",
+   "to": "tool:replica-cyber-recon/sbom_integrity.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-cyber-recon",
+   "to": "tool:replica-cyber-recon/secret_audit.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-cyber-recon",
+   "to": "tool:replica-cyber-recon/static_guard.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-design",
+   "to": "tool:replica-design/build_tokens.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-design",
+   "to": "tool:replica-design/contrast.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-design",
+   "to": "tool:replica-design/sample.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-diff",
+   "to": "tool:replica-diff/imgdiff.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-diff",
+   "to": "tool:replica-diff/parity.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-entrepreneur",
+   "to": "tool:replica-entrepreneur/reviews.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-graphify",
+   "to": "tool:replica-graphify/graphify.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-humanizer",
+   "to": "tool:replica-humanizer/humanize.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/curriculum_50k.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/dag_scheduler.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/hcommon.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/pattern_memory.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/static_intel.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-hybrid-python",
+   "to": "tool:replica-hybrid-python/topology_synth.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-impeccable",
+   "to": "tool:replica-impeccable/slop_guard.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-long-horizon",
+   "to": "tool:replica-long-horizon/capsule.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-long-horizon",
+   "to": "tool:replica-long-horizon/gate.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-long-horizon",
+   "to": "tool:replica-long-horizon/lhcommon.py",
+   "kind": "has"
+  },
+  {
+   "from": "skill:replica-long-horizon",
+   "to": "tool:replica-long-horizon/plan.py",
+   "kind": "has"
+  }
+ ],
+ "files": {
+  "jarvis/app/src/app.js": "241fb5dbeed1c7b2b1cfc6fd9b3b3ae25b524417af3cd8a72081b853c8523789",
+  "jarvis/app/src/shell.tmpl": "460b51dd9c28ee17bca339f4d5b3905e35df8db70f62f8dae20cac3d4a478197",
+  "jarvis/server/server.mjs": "e897b8835b65197fa702de65164d997a63bf76131708d7f1ca1571a91ffd36b3",
+  "jarvis/server/lib/schema-sqlite.sql": "1a18a2ca524fcf1d9059c9f3b1eb5449f590b4057a854032653cfcc7362f9506",
+  "jarvis/server/lib/founder-gate.mjs": "f7cd245d7dfd653dc9c96e96aa82eee556f427a08f433b75ee24340a86de4c33",
+  "jarvis/server/lib/open-web-search.mjs": "b26b16ddba68ea3ec4becca7903bcaf33849a82c88c0c2f90ea62a7f7c65f8e9",
+  "jarvis/server/lib/ollama-bridge.mjs": "fb51f4000d2304dcc9eb3622353734fd85b0312b3f9d20cae56ee32b6e9b543c",
+  "jarvis/server/lib/store.mjs": "2b0210dd22497aa5e62a4389219f7da8a35a2d996936940c9c3614afcd0f88fa",
+  "jarvis/server/lib/runner.mjs": "d2d68412e42fcaf1be41f8858e2e4fa9469ecf95952f58735ac224dd56aefd91",
+  "jarvis/server/lib/missions.mjs": "fe2a3093acd25c53c4655edc4632c01023914bfd16ce1736fcc32f9bb9d09d0b",
+  "jarvis/server/lib/platform.mjs": "6e34c7ce4dd095325151d633854e1a906c849d84fa34b8432e2a28333cb34c85",
+  "jarvis/server/lib/memory.mjs": "08b3b61b7e53f666e271277a690f5e8db0bc96c6c983292a2f7dfd3934408af0",
+  "jarvis/server/lib/access.mjs": "cc34ba92cf9addd8d981458a2bf426315ece4adc8317671db09c86b2f8f439c7",
+  "jarvis/server/lib/skill-loader.mjs": "8b3fd164908867dc8ed6e4e77d04e67d95c7d4e2ca131deb7e2bb9d324c2ab79",
+  ".claude/skills/algorithmic-art/SKILL.md": "3bc4092c09804853186524c826bc0621b940bb6122c05b84496dff95388e6eef",
+  ".claude/skills/apple-liquid-glass-hig/SKILL.md": "fd6241624a42e81be2faeb137e87dbb10cececaa6c4f8539560db412e2f2d81e",
+  ".claude/skills/autonomous-24-selftest-gate/SKILL.md": "2e752a342cd67003af2d23b4e0933f299341c3a793012d851b67d6286de0f35c",
+  ".claude/skills/awesome-research/SKILL.md": "68061567e4b3da54feb843419b491e428cd9b9b1aade571a13c824f8c9f614a7",
+  ".claude/skills/build-mcpb/SKILL.md": "6bb90afd0415754e13f353ee5982d13857c14826edbcbdf5f1481fa5563cd56b",
+  ".claude/skills/cyber-space-osint-grid/SKILL.md": "0d608599276ee8f30332f4d437d28c462d19da938e501d4c9efe1dfba1efb860",
+  ".claude/skills/frontend-design/SKILL.md": "d91970639e9f5c37682ac7ab60094d35f1c7c1f38d731bd56396563aee10c1d3",
+  ".claude/skills/hvplot/SKILL.md": "ba57241bd3689a48d3a83bdbcd6f22d4cc264ecf46eb8012c8f2f4d70e05ae2f",
+  ".claude/skills/liquid-neural-139-flow/SKILL.md": "10aaf4f218f5c771c8c7c53b3972f870bd67e8ae8c7574dd63f92d259d78671f",
+  ".claude/skills/local-glm-agent-windows-mcp/SKILL.md": "9ec10447374d7a0239d1d3895641d217d291b4bc3efe660806943f294206b706",
+  ".claude/skills/mcp-builder/SKILL.md": "0f4592dcb53cf2b5d6b7febee6b4152018b565551a1c29e3c612f57b218ab295",
+  ".claude/skills/neural-139-inputs-heads/SKILL.md": "9a46ec386cabf6fc3b3adc3bc0c84c0c50ce2903084a8848a0c20c74ad49535d",
+  ".claude/skills/neural-flow-decision-viz/SKILL.md": "07763e5f79b3d752018ae9408e06ed12a703588590118062d80f12196015b182",
+  ".claude/skills/omega-apex-council/SKILL.md": "fbc38255053c36aa70350f02eff9dfb85f760a89a32dd44834e282b184616b6c",
+  ".claude/skills/omega-deep-research-agent/SKILL.md": "e68d5057bf8a7d4a7615ab8a11469aa866c7bd91fd8761bedab5fc2120774308",
+  ".claude/skills/omega-design/SKILL.md": "ddb9325b40d92486492044841bd30e161d4d4536172d3432ad1e5e1a82c986a1",
+  ".claude/skills/omega-extend/SKILL.md": "6025820f7440344d617b50e43a7bb64e2ea6f08672804d5328ca4b7924453a97",
+  ".claude/skills/omega-finance-chain/SKILL.md": "fc530f32383d2abe39ec6cc743e952a809dcdc9da63ee361ac54f8599b05cb34",
+  ".claude/skills/omega-knowledge-domain/SKILL.md": "4245bc57d32d13605029ab48e29238622b3bfcad56fa0c149208b1b9ea7e4c41",
+  ".claude/skills/osint-bgp-cables/SKILL.md": "630d5f45c8fab7cfe7aabd8bcfe57855d1c367968560b458a10f1a19b369b165",
+  ".claude/skills/panel/SKILL.md": "b2d9c9636db9a5d5594e20e4997d5ed755e0537abb36140049ff205704476f83",
+  ".claude/skills/panel-material-ui/SKILL.md": "c8b625cc34a185bd262570292fdbc7ff1bfe99da0d53ee0a078b08464eb4ec28",
+  ".claude/skills/param/SKILL.md": "2f8f2208fb616ad41d268be0c5213cb7af88a6dfab7dfe1cba84f8b85fae686d",
+  ".claude/skills/quant-microstructure-gex/SKILL.md": "52ca41f9e39ce6b1f73162c628052ff3d860c05cc85f5cfca3d9595123c65885",
+  ".claude/skills/replica-architect/SKILL.md": "58c7c7a60e6d2d053d50f3c15d15e0972505988d7178a5e42f6fde4f0e396be2",
+  ".claude/skills/replica-backend/SKILL.md": "6cd20c2626c0f760a12c283ca6cd6e9e83a5170b87fd9223e77c2b3246da42d3",
+  ".claude/skills/replica-build/SKILL.md": "f62425258b93404ad561a5b999d3cd079e2a09765809403779caae047ac64cbd",
+  ".claude/skills/replica-cyber-recon/SKILL.md": "88139330ad51482eb3f4e8e9df0c4878d51e7b44143966812a170b257e0f8bf0",
+  ".claude/skills/replica-cyber-recon/manifest_parse.py": "032b701507f4f3ea169112b0ce135c966e85584bf9b1bda6121d1da85241dbba",
+  ".claude/skills/replica-cyber-recon/rcommon.py": "7f34b9d04ff0fa326a097c5bc9e68929d6b7b700ee694500a8efae4164b574f9",
+  ".claude/skills/replica-cyber-recon/sbom_integrity.py": "dd89c27f21c4797c634a9e45f7232f4541c53a444442b46c1426edfc2c452f11",
+  ".claude/skills/replica-cyber-recon/secret_audit.py": "e403da894a229973f8cc63c0997a289ce2b675e7f17b721697c65b4345f6ff94",
+  ".claude/skills/replica-cyber-recon/static_guard.py": "c9495c0f9c8638fdfe77b275532f1d2ac2b73652ffac1a7f068fb31a18ed8898",
+  ".claude/skills/replica-design/SKILL.md": "689fe7858d7f22a7c1e16ee1e29851caf24e0c9efed849fea5ea6b6019e13a0c",
+  ".claude/skills/replica-design/build_tokens.py": "9a8eca49f1380edf9402d92323d7b7626a751d2cf3cb3b555022dbc8f11fcfbf",
+  ".claude/skills/replica-design/contrast.py": "bceca18abdc26be7aed6d763dd069037fac7056cae2b109213fd0a5f18cd194f",
+  ".claude/skills/replica-design/sample.py": "2f4bc40dbee5c734b95f2741e2eed0cb12a274ffb9fcb6381946e4960dffb8ad",
+  ".claude/skills/replica-diff/SKILL.md": "75457bc367a675166d4505965d96eb6e939136b6c120dcbc3346af93a0357fe0",
+  ".claude/skills/replica-diff/imgdiff.py": "ee939cddf30c8fb95eb32461131c7cb4eeb58806e3f86a44d1a872ad84eb6a26",
+  ".claude/skills/replica-diff/parity.py": "208a2bd1d4168da24ddc1c29d5d011a8a22a90587cb0d430bd442165fe3c9c28",
+  ".claude/skills/replica-entrepreneur/SKILL.md": "9349a4a25f792df34e9acadd9d07bce783add5bd32206a8d14140a92f2ee084c",
+  ".claude/skills/replica-entrepreneur/reviews.py": "4e48d770727d6229ebdc398824bb947b919b5e267c5fcc23a11ab1be63995beb",
+  ".claude/skills/replica-graphify/SKILL.md": "cdea1bc2f9c7dc7f1dcba7e32c5a6009ba343b1795ff84e4c643e924c5929334",
+  ".claude/skills/replica-graphify/graphify.py": "1ccc7e2baafccde4c175d5d21290ac13ddc73f507e55826d1848c6befb5017ab",
+  ".claude/skills/replica-humanizer/SKILL.md": "7535e911e9b6bab10e77ea9d556e52dac13982b285f427fe2c68447fd53c2173",
+  ".claude/skills/replica-humanizer/humanize.py": "f2ae9a6e2a4fffb09ab378621a9ff6fc034645780eaf76185dc7275ed3b47021",
+  ".claude/skills/replica-hybrid-python/SKILL.md": "f8df2de28dd0e671a8198a809da6bdcdcfbe09c4b3ee68b95f667acb9addbd9c",
+  ".claude/skills/replica-hybrid-python/curriculum_50k.py": "ecb499305d5cd24747c380a5c9c7c3e8f5886bf6836c72f6933e70990066ffde",
+  ".claude/skills/replica-hybrid-python/dag_scheduler.py": "c2ac159d6061f4d185d399bb172631f341d5f2e4ce8b176157bc534ad8edd83c",
+  ".claude/skills/replica-hybrid-python/hcommon.py": "835e58d43b9b3cbde66d05c86aeb7819f431e17815f9b9ba7f2aad258af8355c",
+  ".claude/skills/replica-hybrid-python/pattern_memory.py": "d3ace6df02906affd606f6907641570f56f9dae57e6b69340c1739a8931aa1fa",
+  ".claude/skills/replica-hybrid-python/static_intel.py": "37b3d58e52e792cbc9d9ec0117c743a17caf0837b1299516d52d125f84aac794",
+  ".claude/skills/replica-hybrid-python/topology_synth.py": "6dbbbe7468df4234816740754436b6cd6ad56f868dd23796d976ff64faa2ca7f",
+  ".claude/skills/replica-impeccable/SKILL.md": "acdaedf5863d6159d441e5f53d54a33ca7c56c82c57b13f4455f166910f3b47b",
+  ".claude/skills/replica-impeccable/slop_guard.py": "acbeee13b48b79a0f6ecdc8377f9a54fee9bcff7f2b266bd8068bc130488bd53",
+  ".claude/skills/replica-long-horizon/SKILL.md": "2f73eb49ad0353b9e2679a99bbb05f87f24e9ea28280e6cf44d5737b03f8daec",
+  ".claude/skills/replica-long-horizon/capsule.py": "fb0e4f3a723d34a8086eb0d083a95416b1561b73971249ffc54ebb9766766e99",
+  ".claude/skills/replica-long-horizon/gate.py": "05c71d4a2c558d8d62be2941be22af5309e2a10065358d179e9fc24c9bd5112f",
+  ".claude/skills/replica-long-horizon/lhcommon.py": "8f6731bc7a6bfa4c56df428a21efb81538945caca605e5fb2aea8d67602ed56a",
+  ".claude/skills/replica-long-horizon/plan.py": "1ba4b3746d9eae8b16b0e3798c77a4961955bb54ad3c417cb9204d4305600763",
+  ".claude/skills/replica-test/SKILL.md": "75b0c5e38ead5ab46ede3b403e3b83f3bfe507178058ad03782faab4849dda14",
+  ".claude/skills/safe-vault-cryptographic-ratchet/SKILL.md": "24082673970a0d1cdd06e46acdb4c9a4e21e5289eb6044831dd6f4d2061879d2",
+  ".claude/skills/stablecoin-cyber-vuln-intel/SKILL.md": "fa2d61a2fa9717406df428c9f20a8203666f5353325a306da75f4d1cd3fd1270",
+  ".claude/skills/supreme-software-ui-architect/SKILL.md": "e5ed73bebb9cfeb14151e637b5dd24eec2c0b9351aad375e767959d465076c02",
+  ".claude/skills/synaptic-spiderweb-viz/SKILL.md": "927640c7855fad9e774dbe29f3720f7bbeae4aa34d09f79282b92ea1f3b66cbc",
+  ".claude/skills/theme-factory/SKILL.md": "c35893e221e28895c52143cc11bf30e41a44817796b39d4b15727dadc9796552",
+  ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
+  ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
+ },
+ "sha256": "9a10922c36b5bd46654b4b16f1f31c57b6a2da26e3f768577e85dd2053941077"
+}

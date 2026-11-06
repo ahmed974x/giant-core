@@ -67,7 +67,7 @@ export function createOllamaBridge({ baseUrl = process.env.JARVIS_OLLAMA_URL || 
   };
 
   const host = compat ? compat.base : base;
-  const profiles = models => models.map(n => { const p = profileOf(n); return p ? { model: n, family: p.family, maker: p.maker, licence: p.licence, role: p.role, strengths: p.strengths } : null; }).filter(Boolean);
+  const profiles = models => models.map(n => { const p = profileOf(n); return p ? { model: n, family: p.family, maker: p.maker, origin: p.origin, licence: p.licence, role: p.role, strengths: p.strengths } : null; }).filter(Boolean);
   async function status() {
     try {
       let models;
