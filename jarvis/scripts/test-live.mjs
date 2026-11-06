@@ -326,6 +326,7 @@ await go("#/loader");
 await page.locator("#f-dq").fill("database schema"); await page.locator("#f-dq").press("Enter");
 await page.waitForSelector(".hit", { timeout: 8000 }).catch(() => {});
 ok(await page.locator(".hit a[href='https://github.com/acme/skills']").isVisible() && await page.locator(".hit").getByText(/MIT/).isVisible(), "live: GitHub discovery lists the repository with its licence");
+ok(!/\bnull\b/.test(await page.locator("#h-disc ~ .stack").first().innerText()), "live: discovery results print no stray null");
 await page.getByRole("button", { name: "Import SKILL.md" }).click();
 await page.waitForTimeout(500);
 ok(await page.locator("#h-mnt ~ div li.forged").filter({ hasText: "schema-reviewer" }).getByText("GitHub (text only)").isVisible() && (await srv.db.all("select origin, licence from runtime_skills where status = 'mounted'")).some(r => r.origin === "github" && r.licence === "MIT"), "live: an imported SKILL.md is mounted in the database with its origin and licence");

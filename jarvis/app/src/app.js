@@ -2668,7 +2668,8 @@
     const dform = h("form", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-dq", text: "Find skills on GitHub" }), dq), dgo);
     dform.addEventListener("submit", e => {
       e.preventDefault(); results.replaceChildren(skeleton(3));
-      store.discoverSkills(dq.value).then(r => results.replaceChildren(
+      // replaceChildren() would print a null argument as the text "null", so absent parts are filtered out.
+      store.discoverSkills(dq.value).then(r => results.replaceChildren(...[
         r.offline ? h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), r.note) : null,
         r.results.length ? h("ul", { class: "memlist" }, r.results.map(x => {
           const path = h("input", { class: "input mono", name: "skill-path", autocomplete: "off", value: "SKILL.md", "aria-label": "Path of SKILL.md in " + x.repo, translate: "no" });
@@ -2679,7 +2680,7 @@
             h("h3", { translate: "no" }, h("a", { href: x.url, target: "_blank", rel: "noopener noreferrer", text: x.repo })),
             x.description ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: x.description }) : null,
             h("div", { class: "row" }, path, imp));
-        })) : h("p", { class: "muted t-sm", text: r.offline ? "" : "No repository matches." })), err => results.replaceChildren(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), err.message)));
+        })) : (r.offline ? null : h("p", { class: "muted t-sm", text: "No repository matches." }))].filter(Boolean)), err => results.replaceChildren(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), err.message)));
     });
     // Synthesize
     const ask = h("textarea", { class: "textarea", id: "f-syn", name: "synthesize", rows: 3, autocomplete: "off", maxLength: 400, dir: "auto", placeholder: "A tool that compares how fast two sorting algorithms run on the same list" });

@@ -65,6 +65,7 @@ PASS live: the Stop button hides again once the answer is done
 PASS live: a hosted endpoint is stored as a draft behind a locked card
 PASS live: asking to go public leaves the database founder_private
 PASS live: GitHub discovery lists the repository with its licence
+PASS live: discovery results print no stray null
 PASS live: an imported SKILL.md is mounted in the database with its origin and licence
 PASS live: the import is in the evolution log
 PASS live: nothing is written into .claude/skills
@@ -84,4 +85,4 @@ PASS live search renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-85 passed, 0 failed
+86 passed, 0 failed
