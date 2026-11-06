@@ -723,6 +723,26 @@
   [
    "^(\\d+) points from (.+) to (.+); (\\d+) anomalies\\.$",
    "$1 نقطة من $2 إلى $3؛ $4 شذوذ."
+  ],
+  [
+   "^1 value removed$",
+   "أُزيلت قيمة واحدة"
+  ],
+  [
+   "^(\\d+) values removed$",
+   "أُزيلت $1 قيم"
+  ],
+  [
+   "^1 value removed: (.+)$",
+   "أُزيلت قيمة واحدة: $1"
+  ],
+  [
+   "^(\\d+) values removed: (.+)$",
+   "أُزيلت $1 قيم: $2"
+  ],
+  [
+   "^Tests: (.+)$",
+   "الاختبارات: $1"
   ]
  ],
  "strings": {
@@ -1848,6 +1868,38 @@
   "export sql": "تصدير SQL",
   "export spec": "تصدير الاختبار",
   "gate passed": "اجتياز بوابة",
-  "gate failed": "فشل بوابة"
+  "gate failed": "فشل بوابة",
+  "Diagnostics": "التشخيص",
+  "Whether each layer of Jarvis is ready, checked now from the database, the evidence files and the running services.": "هل كل طبقة في Jarvis جاهزة، مفحوصة الآن من قاعدة البيانات وملفات الأدلة والخدمات العاملة.",
+  "Ready": "جاهزة",
+  "Needs attention": "تحتاج انتباهاً",
+  "OK": "سليم",
+  "Server": "الخادم",
+  "Development and proof": "التطوير والبرهان",
+  "Open search and SSRF shield": "البحث المفتوح ودرع SSRF",
+  "Local model bridge": "جسر النموذج المحلي",
+  "Memory episodes (BM25)": "حلقات الذاكرة (BM25)",
+  "State capsules (SHA-256 chained)": "كبسولات الحالة (سلسلة SHA-256)",
+  "Capsules and memory history are append-only": "الكبسولات وتاريخ الذاكرة إضافة فقط",
+  "Server tests": "اختبارات الخادم",
+  "Flow tests": "اختبارات التدفقات",
+  "Formal proof of a plan with locks": "برهان صوري لخطة فيها أقفال",
+  "Official keyless APIs": "واجهات رسمية بلا مفاتيح",
+  "Private addresses refused": "العناوين الخاصة مرفوضة",
+  "SkillSpector on the skills": "SkillSpector على المهارات",
+  "Merkle audit log verifies": "سجل ميركل سليم",
+  "Lock constraints in the database": "قيود الأقفال في قاعدة البيانات",
+  "Model engine on 127.0.0.1": "محرك النموذج على 127.0.0.1",
+  "No cloud model": "لا نموذج سحابي",
+  "Server bound to 127.0.0.1": "الخادم مربوط على 127.0.0.1",
+  "needs the local server": "يحتاج الخادم المحلي",
+  "Diagnostic bundle": "حزمة التشخيص",
+  "Download diagnostic bundle": "نزّل حزمة التشخيص",
+  "One JSON file with these checks, the Merkle root and the latest events. Before it is saved, values under secret-like names, known key formats and long high-entropy strings are replaced with [REDACTED]. SHA-256 digests are kept: they are hashes, not secrets.": "ملف JSON واحد فيه هذه الفحوص وجذر ميركل وآخر الأحداث. قبل الحفظ تُستبدل بـ [REDACTED] القيم تحت أسماء تشبه الأسرار، وصيغ المفاتيح المعروفة، والنصوص الطويلة عالية العشوائية. بصمات SHA-256 تبقى: هي بصمات لا أسرار.",
+  "Scrubbed before saving": "نُظّفت قبل الحفظ",
+  "Saved on this computer. Nothing was sent anywhere; sharing the file is your decision.": "حُفظت على هذا الجهاز. لم يُرسل شيء؛ ومشاركة الملف قرارك.",
+  "Still locked": "ما زال مقفلاً",
+  "money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403": "المال والنشر والصلاحيات والتثبيت في .claude/skills والرسائل الخارجية تنتظر المدير 00؛ قاعدة البيانات ترفضها والواجهة تجيب 403",
+  "· money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403": "· المال والنشر والصلاحيات والتثبيت في .claude/skills والرسائل الخارجية تنتظر المدير 00؛ قاعدة البيانات ترفضها والواجهة تجيب 403"
  }
 }

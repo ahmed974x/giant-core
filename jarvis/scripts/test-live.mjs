@@ -402,9 +402,20 @@ ok(await page.locator("section[aria-labelledby=h-merkle]").getByText("Inclusion 
 let liveAuditErr = null; try { await srv.db.run("delete from audit_leaves"); } catch (e) { liveAuditErr = e; }
 ok(liveAuditErr && /append-only/.test(liveAuditErr.message), "live: the database refuses to delete audit leaves");
 
+// ADR-148 live: all five layers ready on the real server; a planted token never reaches the bundle.
+const plantedLive = "ghp_" + "Z9y8X7w6V5u4T3s2R1q0P9o8N7m6L5k4J3i2";
+await srv.store.logEvent(await srv.store.workspaceIdOf("giant-core"), "member:owner", "agent.updated", "pasted " + plantedLive);
+await go("#/diagnostics");
+await page.waitForSelector(".layers .layer");
+ok((await page.locator(".layer").filter({ hasText: "Ready" }).count()) === 5, "live: the five layers are ready on the real server");
+const [lb] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download diagnostic bundle" }).click()]);
+const lbPath = join(dataDir, "diag.json"); await lb.saveAs(lbPath);
+const lbText = readFileSync(lbPath, "utf8");
+ok(!lbText.includes(plantedLive) && JSON.parse(lbText).scrubbed.rules.includes("github token"), "live: a token planted in the log is removed from the bundle");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["[REDACTED]", "Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
@@ -416,7 +427,7 @@ await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 const leftLive = {};
-for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "webhooks", "settings"]) {
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "webhooks", "settings"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) leftLive[r] = l;
 }

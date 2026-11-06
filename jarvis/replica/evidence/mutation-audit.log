@@ -1,7 +1,7 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-06T13:56:13Z",
- "javascriptRanAt": "2026-11-06T13:55:46.266Z",
+ "ranAt": "2026-11-06T14:20:27Z",
+ "javascriptRanAt": "2026-11-06T14:20:01.283Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
@@ -185,5 +185,5 @@
    "equivalents": []
   }
  ],
- "sha256": "6bbf3aed0affb5913d97a55c5719b08c418c99af709a687a704b37b93067e87c"
+ "sha256": "f32a3ed56fdd14aaaa6e33701d1b3389f09e288e40430dabf103a097d7d4bd3f"
 }

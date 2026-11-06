@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-147)
+# Parity: Jarvis (ADR-148)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -66,6 +66,10 @@ ADR-147 added three rows, all built and tested (`test-app.mjs` F29, `test-live.m
 - the Merkle audit tree with inclusion proofs;
 - the time-series maths skill.
 
+ADR-148 added two rows, both built and tested (`test-app.mjs` F30, `test-live.mjs`, server tests):
+- the readiness of the five layers;
+- the scrubbed diagnostic bundle.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -74,7 +78,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (82 counted, must-haves 34 of 34 done)
+features 100.0  (84 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (7 features)
@@ -99,6 +103,7 @@ features 100.0  (82 counted, must-haves 34 of 34 done)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)
 - security                     100.0  (1 features)
+- diagnostics                  100.0  (2 features)
 
 ## Missing, in build order
 - nothing. Every counted feature is done.

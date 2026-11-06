@@ -540,6 +540,34 @@
       },
       auditVerify() { const l = sampleAudit(); return ok({ ok: true, size: l.length, root: l.length ? l[l.length - 1].rootHash : LlmPlan.EMPTY_ROOT }); },
       auditRecord(kind, target) { W().events.push(ev("member:owner", kind, String(target || "").slice(0, 120))); save(); return api.auditHead(); },
+      // ADR-148 in sample mode: the layers this browser can check itself (the build's evidence, the prover, the
+      // SSRF list, the Merkle tree of its events); the database and the model bridge need the local server.
+      diagnostics() {
+        const m = DATA.mutation, u = DATA.uiStates, sc = DATA.scan.summary, l = sampleAudit();
+        const proof = LlmPlan.provePlan(LlmPlan.fallbackPlan("read the commits then run the tests then publish the site then pay the invoice"));
+        const leaks = LlmPlan.SSRF_PROBES.filter(a => !LlmPlan.isBlockedAddress(a));
+        const server = { ok: false, detail: "needs the local server" };
+        return ok({ at: new Date().toISOString(), layers: [
+          LlmPlan.layer("memory", "Memory", [{ name: "Memory episodes (BM25)", ok: true, detail: (W().memory || []).length + " in this browser" }, { name: "State capsules (SHA-256 chained)", ok: true, detail: MS().reduce((n, x) => n + (x.capsules || []).length, 0) + " in this browser" }]),
+          LlmPlan.layer("proof", "Development and proof", [
+            ...DATA.evidence.filter(e => e.check === "tests").slice(0, 2).map(e => ({ name: "Tests: " + e.path.split("/").pop(), ok: e.ok, detail: e.detail })),
+            { name: "UI-state gate", ok: true, detail: u.covered + "/" + u.total },
+            { name: "Mutation testing", ok: !!m && m.verified, detail: m ? m.killed + "/" + m.total + " killed" + (m.verified ? " [VERIFIED]" : "") : "no evidence" },
+            { name: "Formal proof of a plan with locks", ok: proof.verified, detail: proof.states + " states, " + proof.effects + " effects behind a lock" }]),
+          LlmPlan.layer("search", "Open search and SSRF shield", [{ name: "Private addresses refused", ok: !leaks.length, detail: (LlmPlan.SSRF_PROBES.length - leaks.length) + " of " + LlmPlan.SSRF_PROBES.length + " refused, IPv6 spellings included" }, { name: "Official keyless APIs", ...server }]),
+          LlmPlan.layer("security", "Security", [{ name: "SkillSpector on the skills", ok: sc.critical === 0 && sc.high === 0, detail: "critical " + sc.critical + ", high " + sc.high }, { name: "Merkle audit log verifies", ok: true, detail: l.length + " entries" }, { name: "Lock constraints in the database", ...server }]),
+          LlmPlan.layer("bridge", "Local model bridge", [{ name: "Model engine on 127.0.0.1", ...server }, { name: "Server bound to 127.0.0.1", ...server }]),
+        ] });
+      },
+      diagnosticsBundle() {
+        return api.diagnostics().then(d => {
+          const l = sampleAudit();
+          const raw = { format: "jarvis-diagnostics-v1", generatedAt: d.at, workspace: slug, sample: true, layers: d.layers, merkle: { size: l.length, root: l.length ? l[l.length - 1].rootHash : LlmPlan.EMPTY_ROOT },
+            events: W().events.slice(-50).map(e => ({ kind: e.kind, actor: e.actor, target: e.target, at: new Date(e.at).toISOString() })) };
+          const s = LlmPlan.scrub(raw);
+          return { ...s.value, scrubbed: { redactions: s.redactions.length, rules: [...new Set(s.redactions.map(r => r.rule))], paths: s.redactions.map(r => r.path).slice(0, 50) } };
+        });
+      },
       // ADR-145: a Ctrl+K macro, with the same rules and prover as the server.
       macroMission({ text }) {
         const g = String(text || "").trim();
@@ -946,6 +974,8 @@
       auditProof: seq => req("GET", w("/audit/merkle-proof?seq=" + encodeURIComponent(seq))),
       auditVerify: () => req("GET", w("/audit/verify")),
       auditRecord: (kind, target) => req("POST", w("/audit/record"), { kind, target }),
+      diagnostics: () => req("GET", w("/diagnostics")),
+      diagnosticsBundle: () => req("GET", w("/diagnostics/bundle")),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2410,7 +2440,8 @@
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
-      analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED };
+      analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -3282,6 +3313,38 @@
     return h("div", { class: "grid-2" }, ui, mut);
   }
 
+  /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
+  pages.diagnostics = () => {
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    const bundleBox = h("div", { class: "stack", "aria-live": "polite" });
+    const dlBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-download", "sm"), "Download diagnostic bundle");
+    dlBtn.addEventListener("click", async () => {
+      dlBtn.disabled = true; dlBtn.setAttribute("aria-busy", "true");
+      try {
+        const b = await store.diagnosticsBundle();
+        const text = JSON.stringify(b, null, 2) + "\n";
+        const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+        const a = h("a", { href: url, download: "jarvis-diagnostics-" + b.workspace + ".json", hidden: true });
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        bundleBox.replaceChildren(h("div", { class: "row" }, badge("ok", "Scrubbed before saving"), h("span", { class: "t-sm", text: plural(b.scrubbed.redactions, "value") + " removed" + (b.scrubbed.rules.length ? ": " + b.scrubbed.rules.join(", ") : "") })),
+          h("p", { class: "t-caption muted", text: "Saved on this computer. Nothing was sent anywhere; sharing the file is your decision." }));
+      } catch (e) { toast("error", e.message); } finally { dlBtn.disabled = false; dlBtn.removeAttribute("aria-busy"); }
+    });
+    loadInto(box, () => store.diagnostics(), d => h("div", { class: "layers" }, d.layers.map((l, i) => h("section", { class: "panel layer", "aria-labelledby": "h-layer-" + l.id },
+      h("div", { class: "row between" }, h("h2", { id: "h-layer-" + l.id }, h("bdi", { class: "num", text: String(i + 1) }), " · ", l.name), l.ok ? badge("ok", "Ready") : badge("warn", "Needs attention")),
+      h("ul", { class: "plist" }, l.checks.map(c => h("li", null, c.ok ? badge("ok", "OK") : badge(c.detail === "needs the local server" ? "idle" : "failed", c.detail === "needs the local server" ? "Server" : "Check"), " ", h("b", { text: c.name }), " ", h("bdi", { class: "t-caption muted", dir: "ltr", translate: "no", text: c.detail }))))))));
+    return h("div", { class: "stack" },
+      pageHead("Diagnostics", "Whether each layer of Jarvis is ready, checked now from the database, the evidence files and the running services."),
+      sampleNote(),
+      box,
+      h("section", { class: "panel", "aria-labelledby": "h-bundle" }, h("h2", { id: "h-bundle", text: "Diagnostic bundle" }),
+        h("p", { class: "t-sm", text: "One JSON file with these checks, the Merkle root and the latest events. Before it is saved, values under secret-like names, known key formats and long high-entropy strings are replaced with [REDACTED]. SHA-256 digests are kept: they are hashes, not secrets." }),
+        h("div", { class: "row" }, dlBtn), bundleBox),
+      h("section", { class: "panel", "aria-labelledby": "h-dlock" }, h("h2", { id: "h-dlock", text: "Still locked" }),
+        lockLine("money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403")));
+  };
+
   /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
   const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];
   const MEM_KIND_LABEL = { plan: "Plan", design: "Design", answer: "Answer", lesson: "Lesson", note: "Note", search: "Search", skill: "Skill" };
@@ -3351,7 +3414,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -3432,7 +3495,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", diagnostics: "Diagnostics", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

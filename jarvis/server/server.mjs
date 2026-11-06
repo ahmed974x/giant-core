@@ -33,6 +33,7 @@ import { runCouncil } from "./lib/council.mjs";
 import { provePlan } from "./lib/prover.mjs";
 import { createAuditLog } from "./lib/audit-log.mjs";
 import { createTelemetry } from "./lib/telemetry.mjs";
+import { createReadiness } from "./lib/readiness.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
@@ -74,6 +75,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   const audit = createAuditLog({ db, store });
   store.onEvent = audit.append;
   const telemetry = createTelemetry({ db, store });
+  // ADR-148: the five layers' readiness and the scrubbed diagnostics bundle (read-only).
+  const readiness = createReadiness({ db, store, llm, search, audit, repoRoot, address: () => (server.address() || {}).address });
   const latency = new Map();
   const flushLatency = () => { for (const [slug, points] of latency) { latency.delete(slug); telemetry.record(slug, { points: points.slice(-1000) }).catch(() => {}); } };
   const latencyTimer = setInterval(flushLatency, 2000);
@@ -336,6 +339,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "GET" && rest === "/audit/leaves") return send(200, await audit.leaves(slug, url.searchParams.get("limit")));
         if (req.method === "GET" && rest === "/audit/merkle-proof") return send(200, await audit.proof(slug, url.searchParams.get("seq")));
         if (req.method === "GET" && rest === "/audit/verify") return send(200, await audit.verify(slug));
+        if (req.method === "GET" && rest === "/diagnostics") return send(200, { layers: await readiness.layers(slug), at: new Date().toISOString() });
+        if (req.method === "GET" && rest === "/diagnostics/bundle") return send(200, await readiness.bundle(slug));
         if (req.method === "POST" && rest === "/audit/record") return send(201, await audit.record(slug, String(body.kind || ""), body.target));
         // ADR-144: the Studio time machine.
         if (req.method === "GET" && rest === "/studio/snapshots") return send(200, await studio.list(slug));

@@ -6,7 +6,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startServer } from "../server.mjs";
@@ -32,6 +32,7 @@ import { planMachine, prove, provePlan } from "../lib/prover.mjs";
 import { exportSql, exportTokens, exportComponent, exportSpec, slugOf } from "../lib/exporter.mjs";
 import { leafHash, merkleRoot, inclusionPath, verifyInclusion, frontierPush, frontierRoot, EMPTY_ROOT, auditEntry } from "../lib/merkle-audit.mjs";
 import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../lib/timeseries.mjs";
+import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
 // a payment and a skill install as unlocked and "done", and wraps it all in <think> and a code fence.
@@ -685,6 +686,23 @@ async function suite(mode, opts) {
   ok((await post("/api/w/giant-core/telemetry/record", { metric: "Bad Name", value: 1 })).status === 400 && (await post("/api/w/giant-core/telemetry/record", { metric: "ok.metric", value: "NaN" })).status === 400 && (await post("/api/w/giant-core/telemetry/record", { points: Array(1001).fill({ metric: "a", value: 1 }) })).status === 400, tag("bad names, values and batches are refused"));
   }
 
+  {
+  // ADR-148: the five layers and a bundle with nothing secret-shaped in it.
+  const dg = await j("/api/w/giant-core/diagnostics");
+  ok(dg.status === 200 && dg.body.layers.map(l => l.id).join() === "memory,proof,search,security,bridge", tag("diagnostics report the five layers in order"), dg.body && dg.body.layers.map(l => l.id));
+  const bad = dg.body.layers.flatMap(l => l.checks.filter(c => !c.ok).map(c => l.id + ": " + c.name + " (" + c.detail + ")"));
+  ok(bad.length === 0, tag("every layer is ready: evidence, mutation run, SSRF list, SkillSpector, Merkle log, 10 lock constraints, 127.0.0.1"), bad);
+  const planted = "ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8";
+  const wsId = await s.store.workspaceIdOf("giant-core");
+  await s.store.logEvent(wsId, "member:owner", "agent.updated", "token " + planted);
+  await s.store.logEvent(wsId, "member:owner", "agent.updated", "see https://bob:hunter2pass@example.com/x");
+  const bun = await j("/api/w/giant-core/diagnostics/bundle");
+  const btext = JSON.stringify(bun.body);
+  ok(bun.status === 200 && !btext.includes(planted) && !btext.includes("hunter2pass") && bun.body.scrubbed.redactions >= 2 && bun.body.scrubbed.rules.includes("github token"), tag("the bundle has no planted token or password, and says what it removed"), bun.body && bun.body.scrubbed);
+  ok(/^[0-9a-f]{64}$/.test(bun.body.merkle.root) && btext.includes(bun.body.merkle.root) && bun.body.layers.length === 5, tag("the bundle keeps the Merkle root and the layers"));
+  ok(!btext.includes(homedir()) && !/JARVIS_FOUNDER_KEY|PATH=/.test(btext), tag("the bundle holds no environment or home path"));
+  }
+
   await s.close();
 }
 
@@ -891,6 +909,18 @@ ok(isBlockedAddress("100::1") && isBlockedAddress("100::0:0:0:5") && !isBlockedA
   const d = lttb(series, 50);
   ok(d.length === 50 && d[0] === series[0] && d[49] === series[499] && d.includes(series[250]) && lttb(series.slice(0, 20), 50).length === 20, "LTTB keeps the ends, the size and the spike");
   ok(analyse(series).anomalies.map(a => a.t).join() === "250", "the online z-score finds the spike and nothing else");
+}
+
+// ADR-148 pure: the scrubber.
+{
+  const key = "sk-" + "proj_abcdefghijklmnopqrstuvwxyz0123456789";
+  const r = scrub({ apiKey: "anything", nested: { password: "x", note: "use " + key + " now" }, list: ["Bearer " + "abcdefghijklmnop1234", "AKIA" + "ABCDEFGHIJKLMNOP", "-----BEGIN " + "PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----"],
+    jwt: "eyJ" + "hbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U", rand: "x Zq9fW2kL8pR4tY7uI1oP3aS5dF6gH0jK9lZ2xC4vB8nM", sha: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", uuid: "8645f655-6467-49b0-99a0-d6b0be3f1c84", words: "the quick brown fox jumps over the lazy dog again and again", n: 5, ok: true, none: null });
+  const v = r.value;
+  ok(v.apiKey === "[REDACTED]" && v.nested.password === "[REDACTED]" && v.nested.note === "use [REDACTED] now" && v.list.every(x => x.includes("[REDACTED]")) && v.jwt === "[REDACTED]" && v.rand === "x [REDACTED]", "the scrubber removes secret fields, known key formats and high-entropy strings", v);
+  ok(v.sha.length === 64 && !v.sha.includes("REDACTED") && v.uuid.length === 36 && v.words.startsWith("the quick") && v.n === 5 && v.ok === true && v.none === null, "hex digests, ids, plain words, numbers and booleans are kept");
+  ok(r.redactions.length === 8 && r.redactions.some(x => x.path === "nested.password" && x.rule === "secret field name"), "each removal is reported with its path and rule", r.redactions);
+  ok(entropy("aaaa") === 0 && Math.abs(entropy("ab") - 1) < 1e-9 && LOCK_CONSTRAINTS.length === 10, "entropy is in bits per character; ten lock constraints are listed");
 }
 
 // ADR-141: founder gate (node:crypto: scrypt, timingSafeEqual, HMAC-SHA256 session cookie).

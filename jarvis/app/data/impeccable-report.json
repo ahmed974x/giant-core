@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 108,
+ "files": 111,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 127
+  "low": 128
  },
  "byRule": {
   "D05": 27,
-  "M05": 100
+  "M05": 101
  },
- "sha256": "4b52a0fe969590ada8d42e66e4b0e75119454374d1d3a5a87f64b0e9dd0489ce",
+ "sha256": "03feb9bc8e142962310681dd072dccea7d86a90082b2c2700d679f9a6fd95abe",
  "findings": [
   {
    "rule": "D05",
@@ -901,6 +901,13 @@
    "line": 12,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-147-time-series-engine-and-merkle-audit.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 13,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-148-diagnostics-readiness-and-scrubbed-bundle.md"
   }
  ]
 }

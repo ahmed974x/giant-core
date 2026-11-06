@@ -533,3 +533,6 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .snaps li.row { flex-wrap: wrap; }
 .snaps li.row > span { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 .min0 { min-width: 0; }
+/* ADR-148: the five layers. */
+.layers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.layer h2 { margin: 0; }

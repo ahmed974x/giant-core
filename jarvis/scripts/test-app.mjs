@@ -616,6 +616,16 @@ await mk.getByRole("button", { name: "Verify the whole log" }).click();
 await page.waitForTimeout(300);
 ok(await page.getByText(/The log verifies: \d+ entries/).first().isVisible(), "F29 the whole log verifies");
 
+// F30: diagnostics (ADR-148): five layers, and a bundle scrubbed before it is saved.
+await go("#/diagnostics");
+await page.waitForSelector(".layers .layer");
+ok((await page.locator(".layers .layer").count()) === 5 && await page.locator("#h-layer-proof").locator("..").locator("..").getByText(/\[VERIFIED\]/).isVisible() && await page.locator("#h-layer-search").locator("..").locator("..").getByText(/11 of 11 refused/).isVisible(), "F30 five layers: the mutation run is verified and the SSRF list is refused in this browser");
+ok((await page.getByText("needs the local server").count()) >= 3 && await page.locator(".lock-line").isVisible(), "F30 sample mode says which checks need the server, and the locks stay");
+const [dgl] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download diagnostic bundle" }).click()]);
+const dgPath = join(dlDir, dgl.suggestedFilename()); await dgl.saveAs(dgPath);
+const dgb = JSON.parse(readFileSync(dgPath, "utf8"));
+ok(dgb.format === "jarvis-diagnostics-v1" && dgb.layers.length === 5 && typeof dgb.scrubbed.redactions === "number" && /^[0-9a-f]{64}$/.test(dgb.merkle.root) && await page.getByText("Scrubbed before saving").isVisible(), "F30 the bundle is saved scrubbed, with the layers and the Merkle root");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -634,7 +644,7 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 ok((await page.evaluate(() => document.documentElement.lang + "/" + document.documentElement.dir)) === "ar/rtl" && (await page.getByRole("link", { name: "نظرة عامة" }).isVisible()) && /نظرة عامة/.test(await page.title()), "F15 the language button switches the whole shell to Arabic, right to left");
 const left = {};
-for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "webhooks", "settings", "agents/ag_release"]) {
+for (const r of ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "webhooks", "settings", "agents/ag_release"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) left[r] = l;
 }

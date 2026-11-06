@@ -84,6 +84,8 @@ PASS live: request latency is measured telemetry
 PASS live: Logs has no sideways page scroll on a phone, long ids scroll inside the table
 PASS live: audit leaves are rows in the database and their proofs check in the browser
 PASS live: the database refuses to delete audit leaves
+PASS live: the five layers are ready on the real server
+PASS live: a token planted in the log is removed from the bundle
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -102,4 +104,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-103 passed, 0 failed
+105 passed, 0 failed

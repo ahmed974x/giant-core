@@ -158,6 +158,9 @@ PASS F29 drawing 60 points still shows every anomaly
 PASS F29 a Studio export is a leaf of the audit tree
 PASS F29 the browser checks the inclusion proof itself
 PASS F29 the whole log verifies
+PASS F30 five layers: the mutation run is verified and the SSRF list is refused in this browser
+PASS F30 sample mode says which checks need the server, and the locks stay
+PASS F30 the bundle is saved scrubbed, with the layers and the Merkle root
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -166,4 +169,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-167 passed, 0 failed
+170 passed, 0 failed

@@ -81,5 +81,7 @@ Measured mutation testing of the security core,quality,should,yes,yes,"ADR-146: 
 Telemetry chart with LTTB and anomaly marks,analytics,should,yes,yes,"ADR-147: Welford, EWMA, online z-score, VPIN-style imbalance [INFERENCE]; request latency measured; SVG with HTML labels"
 Merkle audit tree with inclusion proofs,security,should,yes,yes,"ADR-147: RFC 6962 hashing, CT test vectors, append-only audit_leaves, proofs checked in the browser"
 Time-series maths skill,quality,could,yes,yes,"ADR-147: replica-timeseries-math ts_math.py, standard library only"
+Readiness of the five layers,diagnostics,should,yes,yes,"ADR-148: memory, proof, open search and SSRF, security (Merkle log, 10 lock constraints), local bridge on 127.0.0.1; read-only"
+Scrubbed diagnostic bundle,diagnostics,should,yes,yes,"ADR-148: secret field names, key formats, Shannon entropy; hex digests kept; removals reported; saved locally, nothing sent"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews
