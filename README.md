@@ -96,3 +96,10 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24
 
 - `evidence-gates-*`: the UI-state gate (27/27) and the measured mutation results (493/493 killed, [VERIFIED] while each file's hash matches);
 - `field-busy-*`: the Missions goal field in its busy state.
+
+## ADR-147 (2026-11-06)
+
+Dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `telemetry-lttb-*`: Analytics → Telemetry in sample mode: 5,000 made-up build times (labelled «مثال تعليمي — أرقام افتراضية») cut to 120 points by LTTB, four anomalies marked, Welford, EWMA and VPIN [INFERENCE];
+- `merkle-proof-*`: Logs → Merkle audit tree on the real server, with an inclusion proof checked in the browser.
