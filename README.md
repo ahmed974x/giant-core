@@ -89,3 +89,10 @@ Real server, giant-core workspace, dark and light, at 1440, 768 and 375, in **En
 - `macro-composer-*`: Ctrl+K → Compose a macro, with «Formal Proof: Verified» and the publish and pay steps stopping at «قيد الموافقة»;
 - `macro-mission-*`: the mission the server made after proving the macro again;
 - `studio-export-*`: the five exports, with the SQL tables that start locked.
+
+## ADR-146 (2026-11-06)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `evidence-gates-*`: the UI-state gate (27/27) and the measured mutation results (493/493 killed, [VERIFIED] while each file's hash matches);
+- `field-busy-*`: the Missions goal field in its busy state.
