@@ -110,3 +110,10 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24
 
 - `diagnostics-layers-*`: the five layers, each checked now and marked ready;
 - `diagnostics-bundle-*`: the bundle saved on this computer after the scrubber, with the count of removed values.
+
+## ADR-149 (2026-11-06)
+
+Sample mode, dark and light, in **English and Arabic** (20 shots):
+
+- `studio-gz-template-*` (1440, 768, 375): Studio → Exports → «Compressed template», the `.json.gz` export and the import field (1 MB packed, 2 MB unpacked cap);
+- `studio-sync-window1-*` and `studio-sync-window2-*` (720): two windows of the same page; the site name typed in the first appears in the second (`BroadcastChannel`).
