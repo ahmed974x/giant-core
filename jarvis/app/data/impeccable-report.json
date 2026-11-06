@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 103,
+ "files": 108,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 126
+  "low": 127
  },
  "byRule": {
   "D05": 27,
-  "M05": 99
+  "M05": 100
  },
- "sha256": "da893546ef119684c86151665a00d05a0b5bca348404091247b468fa61388010",
+ "sha256": "4b52a0fe969590ada8d42e66e4b0e75119454374d1d3a5a87f64b0e9dd0489ce",
  "findings": [
   {
    "rule": "D05",
@@ -894,6 +894,13 @@
    "line": 23,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-146-ui-state-gate-and-measured-mutation-testing.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-147-time-series-engine-and-merkle-audit.md"
   }
  ]
 }

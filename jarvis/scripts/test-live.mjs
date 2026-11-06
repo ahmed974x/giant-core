@@ -386,6 +386,22 @@ const [sqlDl] = await Promise.all([page.waitForEvent("download"), page.locator("
 const sqlPath = join(dataDir, "export.sql"); await sqlDl.saveAs(sqlPath);
 ok(/publish_requests_locked/.test(readFileSync(sqlPath, "utf8")), "live: the Studio exports a schema with locked tables");
 
+// ADR-147 live: request times are real telemetry; the server's Merkle proofs check in the browser.
+await go("#/analytics");
+await page.waitForSelector("section[aria-labelledby=h-tele] .ts-svg, section[aria-labelledby=h-tele] .empty", { timeout: 8000 }).catch(() => {});
+ok(await page.locator("#f-metric option", { hasText: "api.latency_ms" }).count() === 1 && await page.locator("section[aria-labelledby=h-tele]").getByText("Measured on this computer: request times and anything posted to /telemetry/record.").isVisible(), "live: request latency is measured telemetry");
+await go("#/logs");
+await page.waitForSelector("section[aria-labelledby=h-merkle] li button", { timeout: 8000 }).catch(() => {});
+await page.setViewportSize({ width: 375, height: 812 });
+await page.waitForTimeout(200);
+ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), "live: Logs has no sideways page scroll on a phone, long ids scroll inside the table");
+await page.locator("section[aria-labelledby=h-merkle] li button").first().click();
+await page.waitForTimeout(500);
+await page.setViewportSize({ width: 1440, height: 900 });
+ok(await page.locator("section[aria-labelledby=h-merkle]").getByText("Inclusion proof verified in this browser").isVisible() && Number((await srv.db.one("select count(*) as c from audit_leaves")).c) > 3, "live: audit leaves are rows in the database and their proofs check in the browser");
+let liveAuditErr = null; try { await srv.db.run("delete from audit_leaves"); } catch (e) { liveAuditErr = e; }
+ok(liveAuditErr && /append-only/.test(liveAuditErr.message), "live: the database refuses to delete audit leaves");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
 const TYPED = ["Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];

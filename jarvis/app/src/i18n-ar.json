@@ -699,6 +699,30 @@
   [
    "^(\\d+)/(\\d+) killed · ([\\d.]+)%$",
    "$1/$2 مقتولة · $3%"
+  ],
+  [
+   "^(\\d+) points$",
+   "$1 نقطة"
+  ],
+  [
+   "^entry (\\d+) of (\\d+) · (\\d+) hashes$",
+   "القيد $1 من $2 · $3 بصمات"
+  ],
+  [
+   "^Prove entry (\\d+)$",
+   "برهن القيد $1"
+  ],
+  [
+   "^The log verifies: (\\d+) entries, every leaf and tree head recomputed\\.$",
+   "السجل سليم: $1 قيد، أُعيد حساب كل ورقة ورأس شجرة."
+  ],
+  [
+   "^The log is broken at entry (\\d+): (.+)$",
+   "السجل مكسور عند القيد $1: $2"
+  ],
+  [
+   "^(\\d+) points from (.+) to (.+); (\\d+) anomalies\\.$",
+   "$1 نقطة من $2 إلى $3؛ $4 شذوذ."
   ]
  ],
  "strings": {
@@ -1791,6 +1815,39 @@
   "Killed": "المقتولة",
   "Equivalent": "المكافئة",
   "Matches the code": "يطابق الكود",
-  "Code changed": "تغيّر الكود"
+  "Code changed": "تغيّر الكود",
+  "Telemetry": "القياسات",
+  "Metric": "المقياس",
+  "Draw": "الرسم",
+  "Points drawn": "النقاط المرسومة",
+  "LTTB keeps peaks and troughs": "LTTB يحفظ القمم والقيعان",
+  "Mean · SD": "المتوسط · الانحراف",
+  "Welford, one pass": "Welford، تمرير واحد",
+  "alpha 0.1": "ألفا 0.1",
+  "Flow imbalance (VPIN)": "عدم توازن التدفق (VPIN)",
+  "Anomalies": "الشذوذ",
+  "|z| > 3 against the values before": "|z| > 3 مقارنة بالقيم السابقة",
+  "No points for this metric yet.": "لا نقاط لهذا المقياس بعد.",
+  "No telemetry yet": "لا قياسات بعد",
+  "Each request to this workspace is timed on this computer; points appear after a few clicks.": "كل طلب لمساحة العمل هذه يُقاس زمنه على هذا الجهاز؛ تظهر النقاط بعد بضع نقرات.",
+  "Measured on this computer: request times and anything posted to /telemetry/record.": "مقيسة على هذا الجهاز: أزمنة الطلبات وكل ما يُرسل إلى /telemetry/record.",
+  "· Teaching example: made-up numbers": "",
+  "Merkle audit tree": "شجرة ميركل للتدقيق",
+  "Verify the whole log": "تحقّق من السجل كاملاً",
+  "Prove": "برهن",
+  "Sensitive events are leaves of a SHA-256 Merkle tree (RFC 6962). A proof shows an entry is in the log; any edit or removal changes the root.": "الأحداث الحساسة أوراق في شجرة ميركل بـ SHA-256 ‏(RFC 6962). البرهان يثبت أن القيد في السجل؛ وأي تعديل أو حذف يغيّر الجذر.",
+  "Inclusion proof verified in this browser": "برهان الاحتواء تحقّق في هذا المتصفح",
+  "The proof does not check": "البرهان لا يتحقق",
+  "No audited entries yet. Approvals, agent changes, gate results and exports are added here.": "لا قيود مدققة بعد. تُضاف هنا الموافقات وتغييرات الوكلاء ونتائج البوابات والتصدير.",
+  "entries": "قيد",
+  "Audited entries, newest first": "القيود المدققة، الأحدث أولاً",
+  "EWMA": "المتوسط الأسّي (EWMA)",
+  "export html": "تصدير HTML",
+  "export mjs": "تصدير مكوّن الويب",
+  "export tokens": "تصدير الرموز",
+  "export sql": "تصدير SQL",
+  "export spec": "تصدير الاختبار",
+  "gate passed": "اجتياز بوابة",
+  "gate failed": "فشل بوابة"
  }
 }

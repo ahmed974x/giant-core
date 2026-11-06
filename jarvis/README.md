@@ -299,6 +299,11 @@ The same prover runs without a browser:
 python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 ```
 
+## Telemetry and the Merkle audit tree (ADR-147)
+
+- **Analytics → Telemetry.** The server times every workspace request on this computer (`api.latency_ms`). You can also post points to `POST /api/w/<slug>/telemetry/record` as `{ "points": [{ "metric": "build.ms", "value": 812 }] }`. The chart is cut to 60, 120 or 240 points by LTTB, which keeps peaks and troughs. Every anomaly (|z| > 3 against the values before it) is marked. Beside it: mean and SD (Welford), EWMA and a VPIN-style flow imbalance [INFERENCE].
+- **Logs → Merkle audit tree.** Approvals and locked-step requests, agent changes, gate results, skills, endpoints, Studio snapshots and exports are leaves of a SHA-256 Merkle tree (RFC 6962). **Prove** fetches an entry's audit path, and your browser checks it. **Verify the whole log** recomputes every leaf and tree head. No row can be edited or deleted.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

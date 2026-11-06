@@ -78,5 +78,8 @@ Studio 5-in-1 export,studio,should,yes,yes,"ADR-145: HTML with CSP, Web Componen
 Formal verification and mutation audit skill,quality,could,yes,yes,"ADR-145: replica-formal-verify state_prover.py and mutation_audit.py, standard library only"
 UI-state gate for buttons and fields,quality,should,yes,yes,"ADR-146: ui-states.json spec, state_prover.py --spec exits 1 on a gap, the build stops, F28 checks the states render"
 Measured mutation testing of the security core,quality,should,yes,yes,"ADR-146: SSRF check, lock rules, prover, gate.py, state_prover.py; 493/493 killed, equivalents with reasons; tied to file hashes"
+Telemetry chart with LTTB and anomaly marks,analytics,should,yes,yes,"ADR-147: Welford, EWMA, online z-score, VPIN-style imbalance [INFERENCE]; request latency measured; SVG with HTML labels"
+Merkle audit tree with inclusion proofs,security,should,yes,yes,"ADR-147: RFC 6962 hashing, CT test vectors, append-only audit_leaves, proofs checked in the browser"
+Time-series maths skill,quality,could,yes,yes,"ADR-147: replica-timeseries-math ts_math.py, standard library only"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

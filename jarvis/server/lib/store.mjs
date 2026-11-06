@@ -45,7 +45,11 @@ export function createStore(db) {
     if (!w) bad("No workspace called “" + slug + "”.", 404);
     return w.id;
   };
-  const event = (wid, actor, kind, target, data) => db.run("insert into events (workspace_id, actor, kind, target, data, at) values ($1, $2, $3, $4, $5, $6)", [wid, actor, kind, target || null, JSON.stringify(data || {}), iso()]);
+  // ADR-147: after each event, the server's audit log (api.onEvent) adds sensitive kinds to the Merkle tree.
+  const event = async (wid, actor, kind, target, data) => {
+    await db.run("insert into events (workspace_id, actor, kind, target, data, at) values ($1, $2, $3, $4, $5, $6)", [wid, actor, kind, target || null, JSON.stringify(data || {}), iso()]);
+    if (api.onEvent) await api.onEvent(wid, actor, kind, target);
+  };
   const owner = async wid => (await db.one("select id from members where workspace_id = $1 and role = 'owner' order by created_at limit 1", [wid])).id;
 
   const api = {

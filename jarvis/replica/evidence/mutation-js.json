@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-06T13:33:33.532Z",
+ "ranAt": "2026-11-06T13:55:46.266Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",

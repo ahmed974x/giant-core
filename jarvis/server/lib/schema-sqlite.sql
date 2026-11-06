@@ -423,3 +423,42 @@ create table if not exists studio_snapshots (
 );
 create trigger if not exists studio_snapshots_no_update before update on studio_snapshots
   begin select raise(abort, 'jarvis.studio_snapshots is append-only'); end;
+
+-- ADR-147: the Merkle audit log (RFC 6962). Each sensitive event is a leaf; root_hash is the tree head after it.
+-- No row can be changed or removed, so a proof given today still holds tomorrow.
+create table if not exists audit_leaves (
+  workspace_id text not null references workspaces(id),
+  seq integer not null check (seq >= 0),
+  kind text not null check (length(kind) between 1 and 80),
+  actor text not null,
+  target text,
+  logged text not null,
+  leaf_hash text not null check (length(leaf_hash) = 64),
+  root_hash text not null check (length(root_hash) = 64),
+  primary key (workspace_id, seq)
+);
+create trigger if not exists audit_leaves_no_update before update on audit_leaves
+  begin select raise(abort, 'jarvis.audit_leaves is append-only'); end;
+create trigger if not exists audit_leaves_no_delete before delete on audit_leaves
+  begin select raise(abort, 'jarvis.audit_leaves is append-only'); end;
+
+-- ADR-147: telemetry. Raw points, and the running Welford state per metric (O(1) per new point).
+create table if not exists telemetry_points (
+  id integer primary key autoincrement,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  metric text not null check (length(metric) between 1 and 64),
+  t real not null,
+  value real not null
+);
+create index if not exists telemetry_points_ws on telemetry_points (workspace_id, metric, t);
+create table if not exists telemetry_state (
+  workspace_id text not null references workspaces(id) on delete cascade,
+  metric text not null check (length(metric) between 1 and 64),
+  n integer not null check (n >= 0),
+  mean real not null,
+  m2 real not null check (m2 >= 0),
+  ewma real,
+  anomalies integer not null default 0 check (anomalies >= 0),
+  last_t real,
+  primary key (workspace_id, metric)
+);

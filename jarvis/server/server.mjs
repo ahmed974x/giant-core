@@ -31,6 +31,8 @@ import { createSkillLoader } from "./lib/skill-loader.mjs";
 import { createStudio } from "./lib/studio.mjs";
 import { runCouncil } from "./lib/council.mjs";
 import { provePlan } from "./lib/prover.mjs";
+import { createAuditLog } from "./lib/audit-log.mjs";
+import { createTelemetry } from "./lib/telemetry.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
@@ -68,6 +70,13 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   memory = createMemory({ db, store, llm });
   const access = createAccess({ db, store });
   const studio = createStudio({ db, store });
+  // ADR-147: sensitive events become leaves of the workspace's Merkle tree; telemetry is measured in process.
+  const audit = createAuditLog({ db, store });
+  store.onEvent = audit.append;
+  const telemetry = createTelemetry({ db, store });
+  const latency = new Map();
+  const flushLatency = () => { for (const [slug, points] of latency) { latency.delete(slug); telemetry.record(slug, { points: points.slice(-1000) }).catch(() => {}); } };
+  const latencyTimer = setInterval(flushLatency, 2000);
   // ADR-142: GitHub reads go through the open-web search's request function (fixed host, SSRF shield).
   const loader = createSkillLoader({ db, store, llm, ...(skillRequest ? { request: skillRequest } : {}) });
   await access.ensure();
@@ -96,6 +105,9 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       if (!okHosts.includes(String(req.headers.host || ""))) return fail(421, "Wrong Host header. Open http://127.0.0.1:" + actualPort + ".");
       const url = new URL(req.url, `http://${req.headers.host}`);
       const path = url.pathname;
+      // ADR-147: how long each workspace request takes, as real telemetry (api.latency_ms); not the stream.
+      const timed = /^\/api\/w\/([a-z0-9-]{1,40})\/(?!stream|telemetry|events\/stream)/.exec(path);
+      if (timed) { const t0 = performance.now(); res.on("finish", () => { const list = latency.get(timed[1]) || []; list.push({ metric: "api.latency_ms", value: Math.round((performance.now() - t0) * 100) / 100, t: Date.now() }); latency.set(timed[1], list); }); }
 
       // ADR-141: founder gate. The sign-in page and its two routes are open; webhooks carry their own
       // HMAC signature; everything else needs the founder's session when the gate is on.
@@ -316,6 +328,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "DELETE" && (k = /^\/billing\/tiers\/([\w-]{1,64})$/.exec(rest))) return send(200, await platform.deleteTier(slug, k[1]));
         if (req.method === "POST" && rest === "/billing/request") return send(200, await platform.requestMoney(slug, body.what === "billing" ? "billing" : String(body.what || "plan")));
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
+        // ADR-147: telemetry (Welford, EWMA, VPIN, LTTB) and the Merkle audit log (RFC 6962).
+        if (req.method === "POST" && rest === "/telemetry/record") return send(201, await telemetry.record(slug, body));
+        if (req.method === "GET" && rest === "/telemetry/metrics") { flushLatency(); return send(200, await telemetry.metrics(slug)); }
+        if (req.method === "GET" && rest === "/telemetry/series") return send(200, await telemetry.series(slug, url.searchParams.get("metric"), url.searchParams.get("threshold")));
+        if (req.method === "GET" && rest === "/audit/head") return send(200, await audit.head(slug));
+        if (req.method === "GET" && rest === "/audit/leaves") return send(200, await audit.leaves(slug, url.searchParams.get("limit")));
+        if (req.method === "GET" && rest === "/audit/merkle-proof") return send(200, await audit.proof(slug, url.searchParams.get("seq")));
+        if (req.method === "GET" && rest === "/audit/verify") return send(200, await audit.verify(slug));
+        if (req.method === "POST" && rest === "/audit/record") return send(201, await audit.record(slug, String(body.kind || ""), body.target));
         // ADR-144: the Studio time machine.
         if (req.method === "GET" && rest === "/studio/snapshots") return send(200, await studio.list(slug));
         if (req.method === "POST" && rest === "/studio/snapshots") return send(201, await studio.save(slug, body));
@@ -422,7 +443,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, studio, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, studio, audit, telemetry, db, async close() { clearInterval(ticker); clearInterval(latencyTimer); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -30,6 +30,8 @@ import { canonical as snapCanonical, sha256Hex, snapshotHash, lineDiff, blockDif
 import { fitts, hick, symmetry, heatGrid, TOUCH_MIN } from "../lib/ux-physics.mjs";
 import { planMachine, prove, provePlan } from "../lib/prover.mjs";
 import { exportSql, exportTokens, exportComponent, exportSpec, slugOf } from "../lib/exporter.mjs";
+import { leafHash, merkleRoot, inclusionPath, verifyInclusion, frontierPush, frontierRoot, EMPTY_ROOT, auditEntry } from "../lib/merkle-audit.mjs";
+import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../lib/timeseries.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
 // a payment and a skill install as unlocked and "done", and wraps it all in <think> and a code fence.
@@ -656,6 +658,33 @@ async function suite(mode, opts) {
   }
   }
 
+  {
+  // ADR-147: sensitive events are leaves of an RFC 6962 tree; telemetry is analysed in the process.
+  const head = (await j("/api/w/giant-core/audit/head")).body;
+  ok(head.size > 3 && /^[0-9a-f]{64}$/.test(head.root), tag("approvals, agents, gates and snapshots made audit leaves"), head);
+  const leaves = (await j("/api/w/giant-core/audit/leaves?limit=200")).body;
+  ok(leaves.every(l => /^(approval\.|agent\.|skill\.|endpoint\.|access\.|studio\.|export\.|gate\.|workspace\.|mission\.)/.test(l.kind)) && leaves.some(l => l.kind.startsWith("approval.")) && leaves.some(l => l.kind.startsWith("gate.")), tag("only sensitive kinds are audited, approvals and gates among them"), leaves.map(l => l.kind).slice(0, 12));
+  const pr = (await j("/api/w/giant-core/audit/merkle-proof?seq=1")).body;
+  ok(pr.verified === true && pr.size === head.size && verifyInclusion(leafHash(pr.entry), 1, pr.size, pr.path, pr.root) && pr.root === head.root, tag("an inclusion proof checks with the client's own hashing"), pr);
+  ok(!verifyInclusion(leafHash(pr.entry.replace(pr.kind, "approval.approved-by-nobody")), 1, pr.size, pr.path, pr.root), tag("an edited entry fails its proof"));
+  ok((await j("/api/w/giant-core/audit/merkle-proof?seq=99999")).status === 404 && (await j("/api/w/giant-core/audit/verify")).body.ok === true, tag("an unknown entry is 404 and the whole log verifies"));
+  const rec = await post("/api/w/giant-core/audit/record", { kind: "export.sql", target: "site.sql" });
+  ok(rec.status === 201 && rec.body.size === head.size + 1 && (await post("/api/w/giant-core/audit/record", { kind: "approval.approved" })).status === 400, tag("a Studio export is audited; other kinds cannot be written this way"));
+  let upErr = null, delErr = null;
+  try { await s.db.run("update audit_leaves set kind = 'x'"); } catch (e) { upErr = e; }
+  try { await s.db.run("delete from audit_leaves"); } catch (e) { delErr = e; }
+  ok(upErr && delErr && /append-only/.test(upErr.message + delErr.message), tag("audit leaves cannot be changed or removed in the database"), (upErr && upErr.message) + " / " + (delErr && delErr.message));
+  const pts = Array.from({ length: 600 }, (_, i) => ({ metric: "build.ms", value: 100 + (i % 7), t: 1700000000000 + i * 1000 }));
+  pts[400].value = 900;
+  const tr = await post("/api/w/giant-core/telemetry/record", { points: pts });
+  ok(tr.status === 201 && tr.body.recorded === 600 && tr.body.anomalies.length === 1 && tr.body.anomalies[0].t === pts[400].t, tag("600 points recorded and the one spike flagged online"), tr.body && tr.body.anomalies);
+  const se = (await j("/api/w/giant-core/telemetry/series?metric=build.ms&threshold=60")).body;
+  ok(se.raw === 600 && se.points.length === 60 && se.points.some(p => p.v === 900) && se.anomalies.length === 1 && typeof se.stats.vpin === "number", tag("the series is cut to 60 points by LTTB and keeps the spike"), se.stats);
+  const mets = (await j("/api/w/giant-core/telemetry/metrics")).body;
+  ok(mets.find(x => x.metric === "build.ms").n === 600 && mets.some(x => x.metric === "api.latency_ms" && x.n > 5), tag("metrics keep the running state, and request latency is measured"), mets.map(x => x.metric + ":" + x.n));
+  ok((await post("/api/w/giant-core/telemetry/record", { metric: "Bad Name", value: 1 })).status === 400 && (await post("/api/w/giant-core/telemetry/record", { metric: "ok.metric", value: "NaN" })).status === 400 && (await post("/api/w/giant-core/telemetry/record", { points: Array(1001).fill({ metric: "a", value: 1 }) })).status === 400, tag("bad names, values and batches are refused"));
+  }
+
   await s.close();
 }
 
@@ -836,6 +865,32 @@ ok(isBlockedAddress("100::1") && isBlockedAddress("100::0:0:0:5") && !isBlockedA
   ok(/customElements\.define\("jarvis-x-script-b"/.test(comp) && !/<\/script/i.test(comp.split("const DATA")[1]) && /:host \{ --bg/.test(comp) && !/innerHTML|eval\(/.test(comp) && /export default JarvisSite;/.test(comp) && !/^default /m.test(comp.replace(/^export /gm, "")), "the component is a custom element with textContent only and escaped data");
   const spec = exportSpec(site);
   ok(/width: 390, height: 844/.test(spec) && /width: 2560, height: 1080/.test(spec) && /pricing-for-teams\.html/.test(spec), "the spec checks the three sizes");
+}
+
+// ADR-147 pure: RFC 6962 against Certificate Transparency's test vectors, and the time-series maths.
+{
+  const raw = ["", "\x00", "\x10", "\x20\x21", "\x30\x31", "\x40\x41\x42\x43", "\x50\x51\x52\x53\x54\x55\x56\x57", "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"].map(x => Uint8Array.from([...x].map(c => c.charCodeAt(0))));
+  const roots = ["6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d", "fac54203e7cc696cf0dfcb42c92a1d9dbaf70ad9e621f4bd8d98662f00e3c125", "aeb6bcfe274b70a14fb067a5e5578264db0fa9b51af5e0ba159158f329e06e77", "d37ee418976dd95753c1c73862b9398fa2a2cf9b4ff0fdfe8b30cd95209614b7", "4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4", "76e67dadbcdf1e10e1b74ddc608abd2f98dfb16fbce75277b5232a127f2087ef", "ddb89be403809e325750d3d263cd78929c2942b7942a34b77e122c9594a74c8c", "5dc9da79a70659a9ad559cb701ded9a2ab9d823aad2f4960cfe370eff4604328"];
+  const lh = raw.map(leafHash);
+  let peaks = [], allOk = true;
+  for (let n = 1; n <= 8; n++) {
+    peaks = frontierPush(peaks, lh[n - 1]);
+    allOk = allOk && merkleRoot(lh.slice(0, n)) === roots[n - 1] && frontierRoot(peaks) === roots[n - 1];
+    for (let m = 0; m < n; m++) allOk = allOk && verifyInclusion(lh[m], m, n, inclusionPath(m, lh.slice(0, n)), roots[n - 1]);
+  }
+  ok(allOk && EMPTY_ROOT === crypto.createHash("sha256").update("").digest("hex"), "RFC 6962: the tree heads for 1 to 8 leaves match Certificate Transparency's vectors, and every proof checks");
+  const path5 = inclusionPath(5, lh);
+  ok(!verifyInclusion(lh[5], 4, 8, path5, roots[7]) && !verifyInclusion(lh[5], 5, 8, path5.slice(1), roots[7]) && !verifyInclusion(lh[5], 5, 7, path5, roots[6]) && !verifyInclusion(lh[4], 5, 8, path5, roots[7]) && !verifyInclusion(lh[5], 8, 8, path5, roots[7]), "a wrong index, size, path or leaf fails the proof");
+  ok(auditEntry({ seq: 2, kind: "gate.passed", actor: "system", target: 7, at: "x", extra: 1 }) === '{"seq":2,"kind":"gate.passed","actor":"system","target":"7","at":"x"}', "an audit entry is canonical text");
+  const xs = Array.from({ length: 500 }, (_, i) => Math.sin(i / 7) * 10 + (i % 13));
+  let st = welford(); for (const x of xs) st = welfordPush(st, x);
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length, sd = Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / (xs.length - 1));
+  ok(Math.abs(st.mean - mean) < 1e-9 && Math.abs(stdev(st) - sd) < 1e-9 && ewmaPush(ewmaPush(ewmaPush(null, 10, 0.5), 20, 0.5), 20, 0.5) === 17.5, "Welford and EWMA match the direct formulas");
+  ok(vpin(Array.from({ length: 101 }, (_, i) => i), 50).vpin === 1 && vpin(Array.from({ length: 101 }, (_, i) => i % 2), 50).vpin === 0 && vpin([1, 2]).vpin === null, "VPIN is 1 for a one-way flow and 0 for a balanced one");
+  const series = xs.map((v, t) => ({ t, v })); series[250].v = 99;
+  const d = lttb(series, 50);
+  ok(d.length === 50 && d[0] === series[0] && d[49] === series[499] && d.includes(series[250]) && lttb(series.slice(0, 20), 50).length === 20, "LTTB keeps the ends, the size and the spike");
+  ok(analyse(series).anomalies.map(a => a.t).join() === "250", "the online z-score finds the spike and nothing else");
 }
 
 // ADR-141: founder gate (node:crypto: scrypt, timingSafeEqual, HMAC-SHA256 session cookie).

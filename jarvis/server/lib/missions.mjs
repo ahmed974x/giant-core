@@ -184,7 +184,9 @@ export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent =
       await db.run("insert into gate_results (id, mission_id, step_id, check_name, status, detail, evidence, created_at) values ($1, $2, $3, $4, $5, $6, $7, $8)",
         [randomUUID(), m.id, step.id, c.check, r.ok ? "pass" : "fail", r.detail, c.evidence + (r.sha256 ? " sha256:" + r.sha256 : ""), iso()]);
     }
-    return { pass: results.length > 0 && results.every(r => r.ok), results };
+    const pass = results.length > 0 && results.every(r => r.ok);
+    await store.logEvent(m.workspace_id, "system", pass ? "gate.passed" : "gate.failed", step.title, { mission: m.id });  // ADR-147: audited
+    return { pass, results };
   }
 
   // ---- capsules ----

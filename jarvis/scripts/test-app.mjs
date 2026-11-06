@@ -273,7 +273,7 @@ ok(/#\/missions\/ms_/.test(page.url()) && (await page.locator(".mstep.is-locked"
 
 // F14: analytics, run comparison, agent templates, schedules, members, plans (ADR-137).
 await go("#/analytics");
-ok(await page.getByText("Creator mode").isVisible() && (await page.locator(".stats .stat").count()) === 4 && (await page.locator(".bars").count()) >= 4, "F14 analytics shows creator mode, four numbers and the bar charts");
+ok(await page.getByText("Creator mode").isVisible() && (await page.locator(".stats .stat").count()) - (await page.locator("section[aria-labelledby=h-tele] .stat").count()) === 4 && (await page.locator(".bars").count()) >= 4, "F14 analytics shows creator mode, four numbers and the bar charts");
 await go("#/runs");
 const picks = page.locator("input[name=compare]");
 await picks.nth(0).check(); await picks.nth(1).check();
@@ -593,6 +593,28 @@ await go("#/governance");
 const gui = page.locator("section[aria-labelledby=h-gui]"), gmut = page.locator("section[aria-labelledby=h-gmut]");
 ok(await gui.getByText("Gate passed").isVisible() && /(\d+)\/\1 · 100%/.test(await gui.innerText()), "F28 the UI-state gate shows every required state present");
 ok(await gmut.getByText("[VERIFIED]").isVisible() && (await gmut.locator("tbody tr").count()) === 5 && (await gmut.getByText("Matches the code").count()) === 5, "F28 the mutation result is measured and matches the code");
+
+// F29: telemetry (LTTB, Welford, VPIN) and the Merkle audit tree checked in the browser (ADR-147).
+await go("#/analytics");
+await page.waitForSelector(".ts-svg");
+const tele = page.locator("section[aria-labelledby=h-tele]");
+ok((await tele.locator(".ts-dot").count()) === 4 && /120 \/ 5,000/.test(await tele.innerText()) && await tele.getByText("مثال تعليمي — أرقام افتراضية").isVisible(), "F29 the teaching series is cut to 120 points and keeps its 4 spikes, labelled made-up");
+await page.locator("#f-lttb").selectOption("60");
+await page.waitForTimeout(300);
+ok(/60 \/ 5,000/.test(await tele.innerText()) && (await tele.locator(".ts-dot").count()) === 4, "F29 drawing 60 points still shows every anomaly");
+await go("#/studio");
+const [dlx] = await Promise.all([page.waitForEvent("download"), page.locator("button[data-export='.sql']").click()]);
+await dlx.path();
+await go("#/logs");
+await page.waitForSelector("section[aria-labelledby=h-merkle] li button");
+const mk = page.locator("section[aria-labelledby=h-merkle]");
+ok(await mk.locator("li", { hasText: "export.sql" }).first().isVisible(), "F29 a Studio export is a leaf of the audit tree");
+await mk.locator("li button").first().click();
+await page.waitForTimeout(300);
+ok(await mk.getByText("Inclusion proof verified in this browser").isVisible() && /root  [0-9a-f]{64}/.test(await mk.locator("pre").innerText()), "F29 the browser checks the inclusion proof itself");
+await mk.getByRole("button", { name: "Verify the whole log" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByText(/The log verifies: \d+ entries/).first().isVisible(), "F29 the whole log verifies");
 
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written

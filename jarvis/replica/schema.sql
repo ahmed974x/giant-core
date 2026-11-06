@@ -469,3 +469,44 @@ begin
 end $$;
 create trigger studio_snapshots_no_update before update on studio_snapshots
   for each row execute function studio_snapshots_append_only();
+
+-- ADR-147: the Merkle audit log (RFC 6962). Each sensitive event is a leaf; root_hash is the tree head after it.
+-- No row can be changed or removed, so a proof given today still holds tomorrow.
+create table audit_leaves (
+  workspace_id uuid not null references workspaces(id),
+  seq integer not null check (seq >= 0),
+  kind text not null check (length(kind) between 1 and 80),
+  actor text not null,
+  target text,
+  logged text not null,
+  leaf_hash text not null check (length(leaf_hash) = 64),
+  root_hash text not null check (length(root_hash) = 64),
+  primary key (workspace_id, seq)
+);
+create function audit_leaves_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.audit_leaves is append-only';
+end $$;
+create trigger audit_leaves_no_update before update or delete on audit_leaves
+  for each row execute function audit_leaves_append_only();
+
+-- ADR-147: telemetry. Raw points, and the running Welford state per metric (O(1) per new point).
+create table telemetry_points (
+  id bigint generated always as identity primary key,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  metric text not null check (length(metric) between 1 and 64),
+  t double precision not null,
+  value double precision not null
+);
+create index telemetry_points_ws on telemetry_points (workspace_id, metric, t);
+create table telemetry_state (
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  metric text not null check (length(metric) between 1 and 64),
+  n integer not null check (n >= 0),
+  mean double precision not null,
+  m2 double precision not null check (m2 >= 0),
+  ewma double precision,
+  anomalies integer not null default 0 check (anomalies >= 0),
+  last_t double precision,
+  primary key (workspace_id, metric)
+);

@@ -157,6 +157,25 @@
   /* Sample store: opened from disk (file://). Labelled sample data, simulated runs, three workspaces. */
   function sampleStore() {
     const uid = p => p + "_" + Math.random().toString(36).slice(2, 9);
+    // A teaching series for sample mode: 5,000 made-up build times with four planted spikes (seeded, so the
+    // same every time).
+    const sampleSeries = () => {
+      let x = 147;
+      const rnd = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+      const pts = Array.from({ length: 5000 }, (_, i) => ({ t: 1793000000000 + i * 60000, v: Math.round((120 + 14 * Math.sin(i / 160) + (rnd() * 2 - 1) * 8) * 10) / 10 }));
+      [[900, 260], [2100, 34], [3300, 290], [4400, 250]].forEach(([i, v]) => { pts[i].v = v; });
+      return pts;
+    };
+    const sampleAudit = () => {
+      const evs = W().events.filter(e => LlmPlan.AUDITED.test(e.kind)).slice().sort((a, b) => a.at - b.at);
+      let peaks = [];
+      return evs.map((e, seq) => {
+        const at = new Date(e.at).toISOString(), entry = LlmPlan.auditEntry({ seq, kind: e.kind, actor: e.actor, target: e.target, at });
+        const leafHash = LlmPlan.leafHash(entry);
+        peaks = LlmPlan.frontierPush(peaks, leafHash);
+        return { seq, kind: e.kind, actor: e.actor, target: e.target == null ? null : String(e.target), at, entry, leafHash, rootHash: LlmPlan.frontierRoot(peaks) };
+      });
+    };
     const snapSummary = r => ({ id: r.id, seq: r.seq, label: r.label, hash: r.hash, prevHash: r.prevHash, parentId: r.parentId, blocks: (r.site.blocks || []).length, name: r.site.name, createdAt: r.createdAt });
     let db, failMode = false;
     const subs = new Set();
@@ -504,6 +523,23 @@
           return out;
         }, e => bad(e.message));
       },
+      // ADR-147 in sample mode: a teaching series (made-up numbers, seeded) and a Merkle tree built from this
+      // browser's sensitive events with the same RFC 6962 code as the server.
+      telemetryMetrics() { const a = LlmPlan.analyse(sampleSeries()); return ok([{ metric: "sample.build_ms", n: a.n, mean: a.mean, sd: a.sd, ewma: a.ewma, anomalies: a.anomalies.length, lastT: null }]); },
+      telemetrySeries(metric, threshold) {
+        const pts = sampleSeries(), a = LlmPlan.analyse(pts), th = Math.max(3, Math.min(1000, Number(threshold) || 120));
+        return ok({ metric, raw: pts.length, threshold: th, points: LlmPlan.lttb(pts, th), stats: { n: a.n, mean: a.mean, sd: a.sd, ewma: a.ewma, vpin: a.vpin, buckets: a.buckets }, anomalies: a.anomalies });
+      },
+      auditHead() { const l = sampleAudit(); return ok(l.length ? { size: l.length, root: l[l.length - 1].rootHash, at: l[l.length - 1].at } : { size: 0, root: LlmPlan.EMPTY_ROOT, at: null }); },
+      auditLeaves(limit) { return ok(sampleAudit().reverse().slice(0, Number(limit) || 20)); },
+      auditProof(seq) {
+        const l = sampleAudit(), m = Number(seq);
+        if (!l[m]) return bad("No audit entry with that number.");
+        const hashes = l.map(x => x.leafHash), path = LlmPlan.inclusionPath(m, hashes), root = l[l.length - 1].rootHash;
+        return ok({ ...l[m], size: l.length, root, path, verified: LlmPlan.verifyInclusion(hashes[m], m, l.length, path, root) });
+      },
+      auditVerify() { const l = sampleAudit(); return ok({ ok: true, size: l.length, root: l.length ? l[l.length - 1].rootHash : LlmPlan.EMPTY_ROOT }); },
+      auditRecord(kind, target) { W().events.push(ev("member:owner", kind, String(target || "").slice(0, 120))); save(); return api.auditHead(); },
       // ADR-145: a Ctrl+K macro, with the same rules and prover as the server.
       macroMission({ text }) {
         const g = String(text || "").trim();
@@ -903,6 +939,13 @@
       llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
       council: body => req("POST", "/api/llm/council", { ...body, workspace: slug }),
       macroMission: body => req("POST", w("/missions/macro"), body),
+      telemetryMetrics: () => req("GET", w("/telemetry/metrics")),
+      telemetrySeries: (metric, threshold) => req("GET", w("/telemetry/series?metric=" + encodeURIComponent(metric) + "&threshold=" + encodeURIComponent(threshold))),
+      auditHead: () => req("GET", w("/audit/head")),
+      auditLeaves: limit => req("GET", w("/audit/leaves?limit=" + encodeURIComponent(limit || 20))),
+      auditProof: seq => req("GET", w("/audit/merkle-proof?seq=" + encodeURIComponent(seq))),
+      auditVerify: () => req("GET", w("/audit/verify")),
+      auditRecord: (kind, target) => req("POST", w("/audit/record"), { kind, target }),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -1476,7 +1519,8 @@
   };
 
   pages.logs = () => {
-    const box = h("div");
+    // min-width 0: the event table scrolls inside its box instead of widening the page on a phone (ADR-147).
+    const box = h("div", { class: "min0" });
     const q = h("input", { class: "input", id: "f-lq", type: "search", name: "q", autocomplete: "off", placeholder: "Actor, action or target" });
     const kind = h("select", { class: "select", id: "f-lk", name: "kind", autocomplete: "off" }, h("option", { value: "", text: "Any kind" }), ["run", "approval", "agent", "workspace"].map(k => h("option", { value: k, text: k })));
     const load = () => loadInto(box, () => store.listEvents(), evs => {
@@ -1491,9 +1535,35 @@
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(load, 150); });
     kind.addEventListener("change", load);
     load();
-    return h("div", { class: "stack" }, pageHead("Logs", "The audit trail. Append-only: nothing here is edited or deleted."), sampleNote(),
+    return h("div", { class: "stack" }, pageHead("Logs", "The audit trail. Append-only: nothing here is edited or deleted."), sampleNote(), merklePanel(),
       h("div", { class: "filters" }, h("div", { class: "field" }, h("label", { htmlFor: "f-lq", text: "Search" }), q), h("div", { class: "field narrow" }, h("label", { htmlFor: "f-lk", text: "Kind" }), kind)), box);
   };
+
+  // ADR-147: the Merkle audit tree. The browser recomputes the leaf from the entry's fields and checks the
+  // inclusion proof itself (RFC 9162 section 2.1.3.2), so it does not have to trust the server's answer.
+  function merklePanel() {
+    const headBox = h("div", { class: "row" }), list = h("ol", { class: "snaps", "aria-label": "Audited entries, newest first" }), proofBox = h("div", { class: "stack", "aria-live": "polite" });
+    const verifyBtn = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Verify the whole log" });
+    const short = x => x.slice(0, 12) + "…";
+    const showHead = hd => headBox.replaceChildren(h("span", { class: "badge" }, h("span", { class: "num", text: String(hd.size) }), " entries"), h("code", { class: "t-caption", translate: "no", text: "root " + short(hd.root) }));
+    const prove = seq => store.auditProof(seq).then(p => {
+      const leafOk = LlmPlan.leafHash(p.entry) === p.leafHash, pathOk = LlmPlan.verifyInclusion(p.leafHash, p.seq, p.size, p.path, p.root);
+      proofBox.replaceChildren(
+        h("div", { class: "row" }, leafOk && pathOk ? badge("ok", "Inclusion proof verified in this browser") : badge("failed", "The proof does not check"), h("span", { class: "t-caption muted", text: "entry " + p.seq + " of " + p.size + " · " + p.path.length + " hashes" })),
+        h("pre", { class: "diff", translate: "no", text: p.entry + "\nleaf  " + p.leafHash + "\n" + p.path.map((x, i) => "path" + i + " " + x).join("\n") + "\nroot  " + p.root }));
+    }, e => toast("error", e.message));
+    const load = () => Promise.all([store.auditHead(), store.auditLeaves(10)]).then(([hd, leaves]) => {
+      showHead(hd);
+      list.replaceChildren(...leaves.map(l => h("li", { class: "row between" }, h("span", null, h("span", { class: "num", text: "#" + l.seq }), " ", h("code", { translate: "no", text: l.kind }), " ", h("span", { class: "t-caption subtle", translate: "no", text: l.target || "" })),
+        h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Prove", "aria-label": "Prove entry " + l.seq, onclick: () => prove(l.seq) }))));
+      if (!leaves.length) list.replaceChildren(h("li", { class: "muted t-sm", text: "No audited entries yet. Approvals, agent changes, gate results and exports are added here." }));
+    }, () => {});
+    verifyBtn.addEventListener("click", () => store.auditVerify().then(v => toast(v.ok ? "ok" : "error", v.ok ? "The log verifies: " + v.size + " entries, every leaf and tree head recomputed." : "The log is broken at entry " + v.brokenAt + ": " + v.reason), e => toast("error", e.message)));
+    load();
+    return h("section", { class: "panel", "aria-labelledby": "h-merkle" }, h("h2", { id: "h-merkle", text: "Merkle audit tree" }),
+      h("p", { class: "t-sm", text: "Sensitive events are leaves of a SHA-256 Merkle tree (RFC 6962). A proof shows an entry is in the log; any edit or removal changes the root." }),
+      h("div", { class: "row between" }, headBox, verifyBtn), list, proofBox);
+  }
 
   function seg(label, options, current, onPick) {
     const g = h("div", { class: "seg", role: "group", "aria-label": label });
@@ -2133,8 +2203,50 @@
           h("section", { class: "panel", "aria-labelledby": "h-apr" }, h("h2", { id: "h-apr", text: "Approvals" }),
             a.approvals.length ? barRows(a.approvals.map(p => ({ label: p.key.replace("locked-", "locked · "), value: p.count, cls: p.key.startsWith("locked") ? "locked" : "" })), "Approvals") : h("p", { class: "muted t-sm", text: "No requests yet." }))));
     });
-    return h("div", { class: "stack" }, pageHead("Analytics", "How agents, gates, missions and tokens are doing in this workspace."), sampleNote(), box);
+    return h("div", { class: "stack" }, pageHead("Analytics", "How agents, gates, missions and tokens are doing in this workspace."), sampleNote(), telemetryPanel(), box);
   };
+  // ADR-147: a telemetry series, analysed in one pass (Welford, EWMA, online z-score, VPIN) and drawn after
+  // LTTB downsampling, with every anomaly marked at its own place. Labels are HTML beside the chart.
+  function telemetryPanel() {
+    const metricSel = h("select", { class: "select", id: "f-metric", name: "metric", autocomplete: "off" });
+    const thSel = h("select", { class: "select", id: "f-lttb", name: "lttb", autocomplete: "off" }, [60, 120, 240].map(n => h("option", { value: n, text: n + " points", selected: n === 120 })));
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    const live = store.mode === "live";
+    const draw = r => {
+      if (!r.points.length) return h("p", { class: "muted t-sm", text: "No points for this metric yet." });
+      const W = 720, H = 200, P = 8, ts = r.points.map(p => p.t), all = r.points.map(p => p.v).concat(r.anomalies.map(a => a.v));
+      const t0 = Math.min(...ts), t1 = Math.max(...ts), v0 = Math.min(...all), v1 = Math.max(...all);
+      const X = t => P + (t1 > t0 ? (t - t0) / (t1 - t0) : 0.5) * (W - 2 * P), Y = v => H - P - (v1 > v0 ? (v - v0) / (v1 - v0) : 0.5) * (H - 2 * P);
+      const d = r.points.map((p, i) => (i ? "L" : "M") + X(p.t).toFixed(1) + " " + Y(p.v).toFixed(1)).join(" ");
+      const chart = svg("svg", { class: "ts-svg", viewBox: "0 0 " + W + " " + H, "aria-hidden": "true" },
+        svg("path", { class: "ts-line", d }), ...r.anomalies.map(a => svg("circle", { class: "ts-dot", cx: X(a.t).toFixed(1), cy: Y(a.v).toFixed(1), r: 5 })));
+      const st = r.stats, fmtV = v => v == null ? "—" : fmtN.format(v);
+      return h("div", { class: "stack" },
+        h("div", { class: "stats" },
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Points drawn" }), h("span", { class: "value num", text: r.points.length + " / " + fmtN.format(r.raw) }), h("span", { class: "subtle t-caption", text: "LTTB keeps peaks and troughs" })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Mean · SD" }), h("span", { class: "value num", text: fmtV(st.mean) + " · " + fmtV(st.sd) }), h("span", { class: "subtle t-caption", text: "Welford, one pass" })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "EWMA" }), h("span", { class: "value num", text: fmtV(st.ewma) }), h("span", { class: "subtle t-caption", text: "alpha 0.1" })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Flow imbalance (VPIN)" }), h("span", { class: "value num", text: st.vpin == null ? "—" : st.vpin.toFixed(3) }), h("span", { class: "tag-inf", text: "[INFERENCE]" })),
+          h("div", { class: "stat" }, h("span", { class: "label", text: "Anomalies" }), h("span", { class: "value num", text: String(r.anomalies.length) }), h("span", { class: "subtle t-caption", text: "|z| > 3 against the values before" }))),
+        h("div", { class: "ts-wrap" }, chart),
+        h("div", { class: "row between t-caption subtle" }, h("span", { class: "num", text: fmtDate.format(new Date(t0)) }), h("span", { class: "num", text: fmtN.format(v0) + " – " + fmtN.format(v1) }), h("span", { class: "num", text: fmtDate.format(new Date(t1)) })),
+        r.anomalies.length ? h("ul", { class: "row diff-blocks", "aria-label": "Anomalies" }, r.anomalies.slice(-8).map(a => h("li", { class: "badge s-failed num", text: fmtN.format(a.v) + " · z " + a.z }))) : null,
+        h("p", { class: "vh", text: r.points.length + " points from " + fmtN.format(v0) + " to " + fmtN.format(v1) + "; " + r.anomalies.length + " anomalies." }));
+    };
+    const loadSeries = () => loadInto(box, () => store.telemetrySeries(metricSel.value, thSel.value), draw);
+    metricSel.addEventListener("change", loadSeries); thSel.addEventListener("change", loadSeries);
+    store.telemetryMetrics().then(list => {
+      if (!list.length) { box.replaceChildren(emptyState("i-chart", "No telemetry yet", "Each request to this workspace is timed on this computer; points appear after a few clicks.")); return; }
+      metricSel.replaceChildren(...list.map(m => h("option", { value: m.metric, translate: "no", text: m.metric + " · " + fmtN.format(m.n) })));
+      const pick = list.find(m => m.metric === "api.latency_ms") || list[0];
+      metricSel.value = pick.metric;
+      loadSeries();
+    }, e => box.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message)));
+    return h("section", { class: "panel", "aria-labelledby": "h-tele" }, h("h2", { id: "h-tele", text: "Telemetry" }),
+      live ? h("p", { class: "t-caption muted", text: "Measured on this computer: request times and anything posted to /telemetry/record." }) : h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "مثال تعليمي — أرقام افتراضية" }), " · Teaching example: made-up numbers"),
+      h("div", { class: "snap-pick" }, h("div", { class: "field" }, h("label", { htmlFor: "f-metric", text: "Metric" }), metricSel), h("div", { class: "field" }, h("label", { htmlFor: "f-lttb", text: "Draw" }), thSel)),
+      box);
+  }
 
   /* ── Webhooks (ADR-137) ─────────────────────────────────────── */
   function secretDialog(id, secret, from) {
@@ -2297,7 +2409,8 @@
     /*@COUNCIL_LIBS@*/
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
-      planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf };
+      planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
+      analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2453,7 +2566,7 @@
       ["Three-size test", ".spec.mjs", "text/javascript", () => LlmPlan.exportSpec(site)],
     ];
     const exportBtns = EXPORTS.map(([label, ext, type, make]) => h("button", { class: "btn btn-secondary btn-sm", type: "button", dataset: { export: ext },
-      onclick: () => { saveText(LlmPlan.slugOf(site.name) + ext, make(), type); toast("ok", "Saved " + LlmPlan.slugOf(site.name) + ext + ". Nothing was published."); } }, icon("i-download", "sm"), label));
+      onclick: () => { saveText(LlmPlan.slugOf(site.name) + ext, make(), type); toast("ok", "Saved " + LlmPlan.slugOf(site.name) + ext + ". Nothing was published."); store.auditRecord("export." + ext.split(".")[1], LlmPlan.slugOf(site.name) + ext).catch(() => {}); } }, icon("i-download", "sm"), label));
     const renderExportInfo = () => {
       const sq = LlmPlan.exportSql(site), tk = tokensOf().$extensions["jarvis.contrast"].checks;
       exportInfo.replaceChildren(
