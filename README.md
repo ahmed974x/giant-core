@@ -73,3 +73,11 @@ Governance page and the model catalog, dark and light, at 1440, 768 and 375, in 
 - `governance-rules-*`: the surgical rules, the quality gate (62 rules) and the register of adopted and excluded tools;
 - `governance-map-*`: the SVG knowledge map from `replica-graphify` with a screen selected and its links lit;
 - `model-catalog-*`: Settings → the 12 open-weight families with maker, origin, licence and job.
+
+## ADR-144 (2026-11-06)
+
+Real server with a **fake local model on 127.0.0.1** (the sandbox has no Ollama; its answers are fixed test text), dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `council-debate-*`: architect, red team and UX critic, synthesizer; the publish and pay steps the model left unlocked leave the council locked «بانتظار الموافقة»;
+- `studio-time-machine-*`: two SHA-256 chained snapshots compared side by side;
+- `studio-heatmap-*`: the attention grid over the preview with small targets outlined, and Fitts, Hick and mirror symmetry.
