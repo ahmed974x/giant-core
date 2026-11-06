@@ -308,6 +308,11 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 
 `#/diagnostics` checks the five layers now: memory, development and proof, open search with the SSRF shield, security (SkillSpector, the Merkle log, the 10 lock constraints in this database) and the local model bridge. **Download diagnostic bundle** saves one JSON file on this computer. Before it is saved, secret-like field names, known key formats and long high-entropy strings are replaced with `[REDACTED]`, and the file says how many values were removed and by which rule.
 
+## Windows that follow each other and compressed templates (ADR-149)
+
+- Open Jarvis in two windows: switching the language or the theme, or editing the Studio site in one, shows in the other at once. Nothing leaves the browser.
+- **Studio → Output → Template (.json.gz)** saves the site compressed; **Import a template (.json.gz)** reads one back. Files over 1 MB, or over 2 MB unpacked, are refused.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

@@ -78,7 +78,9 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   // ADR-148: the five layers' readiness and the scrubbed diagnostics bundle (read-only).
   const readiness = createReadiness({ db, store, llm, search, audit, repoRoot, address: () => (server.address() || {}).address });
   const latency = new Map();
-  const flushLatency = () => { for (const [slug, points] of latency) { latency.delete(slug); telemetry.record(slug, { points: points.slice(-1000) }).catch(() => {}); } };
+  // Flushes run one after another, so awaiting one also waits for a timer flush that is still writing.
+  let flushing = Promise.resolve();
+  const flushLatency = () => (flushing = flushing.then(() => Promise.all([...latency].map(([slug, points]) => { latency.delete(slug); return telemetry.record(slug, { points: points.slice(-1000) }).catch(() => {}); }))));
   const latencyTimer = setInterval(flushLatency, 2000);
   // ADR-142: GitHub reads go through the open-web search's request function (fixed host, SSRF shield).
   const loader = createSkillLoader({ db, store, llm, ...(skillRequest ? { request: skillRequest } : {}) });
@@ -333,7 +335,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
         // ADR-147: telemetry (Welford, EWMA, VPIN, LTTB) and the Merkle audit log (RFC 6962).
         if (req.method === "POST" && rest === "/telemetry/record") return send(201, await telemetry.record(slug, body));
-        if (req.method === "GET" && rest === "/telemetry/metrics") { flushLatency(); return send(200, await telemetry.metrics(slug)); }
+        if (req.method === "GET" && rest === "/telemetry/metrics") { await flushLatency(); return send(200, await telemetry.metrics(slug)); }
         if (req.method === "GET" && rest === "/telemetry/series") return send(200, await telemetry.series(slug, url.searchParams.get("metric"), url.searchParams.get("threshold")));
         if (req.method === "GET" && rest === "/audit/head") return send(200, await audit.head(slug));
         if (req.method === "GET" && rest === "/audit/leaves") return send(200, await audit.leaves(slug, url.searchParams.get("limit")));

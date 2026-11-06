@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-06T14:20:27Z",
- "javascriptRanAt": "2026-11-06T14:20:01.283Z",
+ "ranAt": "2026-11-06T23:28:04Z",
+ "javascriptRanAt": "2026-11-06T23:27:36.052Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 493,
- "killed": 493,
- "equivalent": 15,
+ "total": 592,
+ "killed": 592,
+ "equivalent": 17,
  "score": 100.0,
  "targets": [
   {
@@ -183,7 +183,39 @@
    "score": 100.0,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-quantum-math/quantum_math.py",
+   "sha256": "448589c4333b331fe321ac26fc8ea5d6b1f7ecace65df7315dc56c1c2cb7e1ee",
+   "functions": [
+    "gf_mul",
+    "gf_inv",
+    "_eval",
+    "split_secret_gf256",
+    "reconstruct_secret_gf256",
+    "compute_vpin_toxicity"
+   ],
+   "mutants": 101,
+   "killed": 99,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "gf_mul",
+     "line": 145,
+     "kind": "constant 8 -> 9",
+     "why": "b is below 256, so after eight right shifts it is 0 and a ninth pass adds nothing"
+    },
+    {
+     "fn": "reconstruct_secret_gf256",
+     "line": 198,
+     "kind": "constant True -> False",
+     "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"
+    }
+   ]
   }
  ],
- "sha256": "f32a3ed56fdd14aaaa6e33701d1b3389f09e288e40430dabf103a097d7d4bd3f"
+ "sha256": "e21b6b391c5a5921bbc2e21290bb6e408259b3999e33c302a2430b16c8cc8739"
 }

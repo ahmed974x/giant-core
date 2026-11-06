@@ -743,6 +743,14 @@
   [
    "^Tests: (.+)$",
    "الاختبارات: $1"
+  ],
+  [
+   "^Saved the template compressed: (\\d+) KB to (\\d+) KB\\.$",
+   "حُفظ القالب مضغوطاً: من $1 ك.ب إلى $2 ك.ب."
+  ],
+  [
+   "^Imported “(.+)”: (\\d+) sections?\\.$",
+   "استُورد «$1»: $2 أقسام."
   ]
  ],
  "strings": {
@@ -1900,6 +1908,17 @@
   "Saved on this computer. Nothing was sent anywhere; sharing the file is your decision.": "حُفظت على هذا الجهاز. لم يُرسل شيء؛ ومشاركة الملف قرارك.",
   "Still locked": "ما زال مقفلاً",
   "money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403": "المال والنشر والصلاحيات والتثبيت في .claude/skills والرسائل الخارجية تنتظر المدير 00؛ قاعدة البيانات ترفضها والواجهة تجيب 403",
-  "· money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403": "· المال والنشر والصلاحيات والتثبيت في .claude/skills والرسائل الخارجية تنتظر المدير 00؛ قاعدة البيانات ترفضها والواجهة تجيب 403"
+  "· money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403": "· المال والنشر والصلاحيات والتثبيت في .claude/skills والرسائل الخارجية تنتظر المدير 00؛ قاعدة البيانات ترفضها والواجهة تجيب 403",
+  "Template (.json.gz)": "قالب (.json.gz)",
+  "Compressed template": "قالب مضغوط",
+  "Import a template (.json.gz)": "استورد قالباً (.json.gz)",
+  "Compressed and read in this browser; nothing is uploaded.": "يُضغط ويُقرأ في هذا المتصفح؛ لا يُرفع شيء.",
+  "This browser cannot compress files.": "هذا المتصفح لا يستطيع ضغط الملفات.",
+  "This browser cannot read compressed files.": "هذا المتصفح لا يستطيع قراءة الملفات المضغوطة.",
+  "The file is larger than 1 MB.": "الملف أكبر من 1 ميغابايت.",
+  "The template is larger than 2 MB unpacked.": "القالب أكبر من 2 ميغابايت بعد فك الضغط.",
+  "This is not a Jarvis Studio template.": "هذا ليس قالباً من استوديو Jarvis.",
+  "The file is not valid JSON inside the gzip.": "محتوى ملف gzip ليس JSON صالحاً.",
+  "Imported template": "قالب مستورد"
  }
 }

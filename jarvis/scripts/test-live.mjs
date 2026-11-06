@@ -413,9 +413,24 @@ const lbPath = join(dataDir, "diag.json"); await lb.saveAs(lbPath);
 const lbText = readFileSync(lbPath, "utf8");
 ok(!lbText.includes(plantedLive) && JSON.parse(lbText).scrubbed.rules.includes("github token"), "live: a token planted in the log is removed from the bundle");
 
+// ADR-149 live: two windows on the real server follow each other's language and Studio site.
+{
+  const other = await ctx.newPage();
+  await other.goto(BASE + "#/studio"); await other.waitForTimeout(500);
+  await page.bringToFront();
+  await go("#/studio");
+  await page.locator("#f-site").fill("Live two windows");
+  await page.waitForTimeout(700);
+  ok((await other.locator("#f-site").inputValue()) === "Live two windows", "live: the Studio site follows in a second window");
+  await page.locator("#langBtn").click(); await page.waitForTimeout(400);
+  ok((await other.evaluate(() => document.documentElement.lang)) === "ar", "live: the language follows in a second window");
+  await page.locator("#langBtn").click(); await page.waitForTimeout(300);
+  await other.close();
+}
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["[REDACTED]", "Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["Live two windows", "[REDACTED]", "Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;

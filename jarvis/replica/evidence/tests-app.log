@@ -161,6 +161,12 @@ PASS F29 the whole log verifies
 PASS F30 five layers: the mutation run is verified and the SSRF list is refused in this browser
 PASS F30 sample mode says which checks need the server, and the locks stay
 PASS F30 the bundle is saved scrubbed, with the layers and the Merkle root
+PASS F31 switching to Arabic in one window switches the other
+PASS F31 the theme follows too, and English came back
+PASS F31 the Studio site follows in the other window
+PASS F31 the template is real gzip with the site inside
+PASS F31 importing the .json.gz brings the template back
+PASS F31 a gzip bomb is refused and the site is untouched
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -169,4 +175,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-170 passed, 0 failed
+176 passed, 0 failed

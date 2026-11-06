@@ -592,7 +592,7 @@ ok(rest !== hovered && busy[0] === "dashed" && busy[1] === "progress", "F28 a fi
 await go("#/governance");
 const gui = page.locator("section[aria-labelledby=h-gui]"), gmut = page.locator("section[aria-labelledby=h-gmut]");
 ok(await gui.getByText("Gate passed").isVisible() && /(\d+)\/\1 · 100%/.test(await gui.innerText()), "F28 the UI-state gate shows every required state present");
-ok(await gmut.getByText("[VERIFIED]").isVisible() && (await gmut.locator("tbody tr").count()) === 5 && (await gmut.getByText("Matches the code").count()) === 5, "F28 the mutation result is measured and matches the code");
+ok(await gmut.getByText("[VERIFIED]").isVisible() && (await gmut.locator("tbody tr").count()) >= 5 && (await gmut.getByText("Matches the code").count()) === (await gmut.locator("tbody tr").count()), "F28 the mutation result is measured and matches the code");
 
 // F29: telemetry (LTTB, Welford, VPIN) and the Merkle audit tree checked in the browser (ADR-147).
 await go("#/analytics");
@@ -626,6 +626,41 @@ const dgPath = join(dlDir, dgl.suggestedFilename()); await dgl.saveAs(dgPath);
 const dgb = JSON.parse(readFileSync(dgPath, "utf8"));
 ok(dgb.format === "jarvis-diagnostics-v1" && dgb.layers.length === 5 && typeof dgb.scrubbed.redactions === "number" && /^[0-9a-f]{64}$/.test(dgb.merkle.root) && await page.getByText("Scrubbed before saving").isVisible(), "F30 the bundle is saved scrubbed, with the layers and the Merkle root");
 
+// F31: a second window follows (BroadcastChannel), and templates go out and in as gzip (ADR-149).
+{
+  const other = await ctx.newPage();
+  await other.goto(URL_ + "#/studio"); await other.waitForTimeout(400);
+  await page.bringToFront();
+  await go("#/overview");
+  await page.locator("#langBtn").click(); await page.waitForTimeout(400);
+  ok((await other.evaluate(() => document.documentElement.lang)) === "ar", "F31 switching to Arabic in one window switches the other");
+  await page.locator("#langBtn").click(); await page.waitForTimeout(400);
+  const themeBefore = await other.evaluate(() => document.documentElement.dataset.theme || "dark");
+  await page.locator("#themeBtn").click(); await page.waitForTimeout(300);
+  ok((await other.evaluate(() => document.documentElement.dataset.theme || "dark")) !== themeBefore && (await other.evaluate(() => document.documentElement.lang)) === "en", "F31 the theme follows too, and English came back");
+  await page.locator("#themeBtn").click(); await page.waitForTimeout(200);
+  await go("#/studio");
+  await page.locator("#f-site").fill("Synced across windows");
+  await page.waitForTimeout(700);
+  ok((await other.locator("#f-site").inputValue()) === "Synced across windows", "F31 the Studio site follows in the other window");
+  await other.close();
+  const [gz] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Template (.json.gz)", exact: true }).click()]);
+  const gzPath = join(dlDir, gz.suggestedFilename()); await gz.saveAs(gzPath);
+  const gzBytes = readFileSync(gzPath);
+  const { gunzipSync, gzipSync } = await import("node:zlib");
+  const tpl = JSON.parse(gunzipSync(gzBytes).toString("utf8"));
+  ok(gzBytes[0] === 0x1f && gzBytes[1] === 0x8b && tpl.format === "jarvis-studio-template-v1" && tpl.site.name === "Synced across windows", "F31 the template is real gzip with the site inside");
+  await page.locator("#f-site").fill("Changed after export");
+  await page.locator("#f-gz").setInputFiles(gzPath);
+  await page.waitForTimeout(600);
+  ok((await page.locator("#f-site").inputValue()) === "Synced across windows", "F31 importing the .json.gz brings the template back");
+  const bomb = join(dlDir, "bomb.json.gz");
+  (await import("node:fs")).writeFileSync(bomb, gzipSync(Buffer.alloc(3 * 1024 * 1024, 32)));
+  await page.locator("#f-gz").setInputFiles(bomb);
+  await page.waitForTimeout(600);
+  ok(await page.getByText("The template is larger than 2 MB unpacked.").first().isVisible() && (await page.locator("#f-site").inputValue()) === "Synced across windows", "F31 a gzip bomb is refused and the site is untouched");
+}
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -638,7 +673,7 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["Read the latest commits then run the tests then publish the site then pay the hosting invoice", "run the tests", "publish the site", "Starting point", "New name", "Renamed product", "Read the latest commits, publish the site, then pay the hosting invoice", "Read the latest commits, publish the site,", "pay the hosting invoice", "Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["Synced across windows", "Read the latest commits then run the tests then publish the site then pay the hosting invoice", "run the tests", "publish the site", "Starting point", "New name", "Renamed product", "Read the latest commits, publish the site, then pay the hosting invoice", "Read the latest commits, publish the site,", "pay the hosting invoice", "Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);

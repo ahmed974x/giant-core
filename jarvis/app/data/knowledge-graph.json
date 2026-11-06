@@ -5,10 +5,10 @@
   "route": 102,
   "module": 14,
   "table": 31,
-  "skill": 47,
-  "tool": 30
+  "skill": 48,
+  "tool": 31
  },
- "edges_count": 268,
+ "edges_count": 269,
  "unlinked": [
   "route:GET /api/health",
   "route:GET /api/search/status",
@@ -824,7 +824,7 @@
    "kind": "screen",
    "label": "agent",
    "file": "jarvis/app/src/app.js",
-   "line": 1403,
+   "line": 1420,
    "nav": false
   },
   {
@@ -832,7 +832,7 @@
    "kind": "screen",
    "label": "agents",
    "file": "jarvis/app/src/app.js",
-   "line": 1356,
+   "line": 1373,
    "nav": true
   },
   {
@@ -840,7 +840,7 @@
    "kind": "screen",
    "label": "analytics",
    "file": "jarvis/app/src/app.js",
-   "line": 2202,
+   "line": 2219,
    "nav": true
   },
   {
@@ -848,7 +848,7 @@
    "kind": "screen",
    "label": "approvals",
    "file": "jarvis/app/src/app.js",
-   "line": 1525,
+   "line": 1542,
    "nav": true
   },
   {
@@ -856,7 +856,7 @@
    "kind": "screen",
    "label": "compare",
    "file": "jarvis/app/src/app.js",
-   "line": 2320,
+   "line": 2337,
    "nav": false
   },
   {
@@ -864,7 +864,7 @@
    "kind": "screen",
    "label": "diagnostics",
    "file": "jarvis/app/src/app.js",
-   "line": 3317,
+   "line": 3382,
    "nav": true
   },
   {
@@ -872,7 +872,7 @@
    "kind": "screen",
    "label": "governance",
    "file": "jarvis/app/src/app.js",
-   "line": 3271,
+   "line": 3336,
    "nav": true
   },
   {
@@ -880,7 +880,7 @@
    "kind": "screen",
    "label": "loader",
    "file": "jarvis/app/src/app.js",
-   "line": 3126,
+   "line": 3191,
    "nav": true
   },
   {
@@ -888,7 +888,7 @@
    "kind": "screen",
    "label": "logs",
    "file": "jarvis/app/src/app.js",
-   "line": 1550,
+   "line": 1567,
    "nav": true
   },
   {
@@ -896,7 +896,7 @@
    "kind": "screen",
    "label": "memory",
    "file": "jarvis/app/src/app.js",
-   "line": 3351,
+   "line": 3416,
    "nav": true
   },
   {
@@ -904,7 +904,7 @@
    "kind": "screen",
    "label": "mission",
    "file": "jarvis/app/src/app.js",
-   "line": 1964,
+   "line": 1981,
    "nav": false
   },
   {
@@ -912,7 +912,7 @@
    "kind": "screen",
    "label": "missions",
    "file": "jarvis/app/src/app.js",
-   "line": 1805,
+   "line": 1822,
    "nav": true
   },
   {
@@ -920,7 +920,7 @@
    "kind": "screen",
    "label": "overview",
    "file": "jarvis/app/src/app.js",
-   "line": 1273,
+   "line": 1290,
    "nav": true
   },
   {
@@ -928,7 +928,7 @@
    "kind": "screen",
    "label": "run",
    "file": "jarvis/app/src/app.js",
-   "line": 1493,
+   "line": 1510,
    "nav": false
   },
   {
@@ -936,7 +936,7 @@
    "kind": "screen",
    "label": "runs",
    "file": "jarvis/app/src/app.js",
-   "line": 1459,
+   "line": 1476,
    "nav": true
   },
   {
@@ -944,7 +944,7 @@
    "kind": "screen",
    "label": "search",
    "file": "jarvis/app/src/app.js",
-   "line": 3042,
+   "line": 3107,
    "nav": true
   },
   {
@@ -952,7 +952,7 @@
    "kind": "screen",
    "label": "settings",
    "file": "jarvis/app/src/app.js",
-   "line": 1710,
+   "line": 1727,
    "nav": true
   },
   {
@@ -960,7 +960,7 @@
    "kind": "screen",
    "label": "skills",
    "file": "jarvis/app/src/app.js",
-   "line": 2892,
+   "line": 2957,
    "nav": true
   },
   {
@@ -968,7 +968,7 @@
    "kind": "screen",
    "label": "studio",
    "file": "jarvis/app/src/app.js",
-   "line": 2493,
+   "line": 2510,
    "nav": true
   },
   {
@@ -976,7 +976,7 @@
    "kind": "screen",
    "label": "templates",
    "file": "jarvis/app/src/app.js",
-   "line": 2349,
+   "line": 2366,
    "nav": false
   },
   {
@@ -984,7 +984,7 @@
    "kind": "screen",
    "label": "webhooks",
    "file": "jarvis/app/src/app.js",
-   "line": 2288,
+   "line": 2305,
    "nav": true
   },
   {
@@ -992,7 +992,7 @@
    "kind": "screen",
    "label": "workflow",
    "file": "jarvis/app/src/app.js",
-   "line": 2061,
+   "line": 2078,
    "nav": false
   },
   {
@@ -1000,7 +1000,7 @@
    "kind": "screen",
    "label": "workflows",
    "file": "jarvis/app/src/app.js",
-   "line": 2043,
+   "line": 2060,
    "nav": true
   },
   {
@@ -1261,6 +1261,13 @@
    "label": "replica-long-horizon",
    "file": ".claude/skills/replica-long-horizon/SKILL.md",
    "description": "Run long, multi-step tasks without losing the thread - three plan files on disk, SHA-256 chained state capsules to resume after /clear, and an evidence gate that blocks \"done\" until tests pass."
+  },
+  {
+   "id": "skill:replica-quantum-math",
+   "kind": "skill",
+   "label": "replica-quantum-math",
+   "file": ".claude/skills/replica-quantum-math/SKILL.md",
+   "description": "Four exact engines in standard-library Python - a VPIN-style context-toxicity score for an agent's event stream (with a rollback hint), a Poisson-relaxation fluid layout for 375, 768 and 1440 px in RT"
   },
   {
    "id": "skill:replica-test",
@@ -2014,6 +2021,23 @@
     "cmd_log",
     "status",
     "cmd_status",
+    "main"
+   ]
+  },
+  {
+   "id": "tool:replica-quantum-math/quantum_math.py",
+   "kind": "tool",
+   "label": "quantum_math.py",
+   "file": ".claude/skills/replica-quantum-math/quantum_math.py",
+   "functions": [
+    "compute_vpin_toxicity",
+    "solve_fluid_layout",
+    "step_locked",
+    "simulate_mission_monte_carlo",
+    "gf_mul",
+    "gf_inv",
+    "split_secret_gf256",
+    "reconstruct_secret_gf256",
     "main"
    ]
   },
@@ -3402,6 +3426,11 @@
    "kind": "has"
   },
   {
+   "from": "skill:replica-quantum-math",
+   "to": "tool:replica-quantum-math/quantum_math.py",
+   "kind": "has"
+  },
+  {
    "from": "skill:replica-timeseries-math",
    "to": "tool:replica-timeseries-math/ts_math.py",
    "kind": "has"
@@ -3423,7 +3452,7 @@
   }
  ],
  "files": {
-  "jarvis/app/src/app.js": "80d43eda9399eaf44f070f0389e2161ecc65936e3ba54acce243115c094efc9a",
+  "jarvis/app/src/app.js": "0c790c56e173349863b4308e1facb71c49c4d6e1bc87f4abac49003677ce650e",
   "jarvis/app/src/shell.tmpl": "e9e5445d4e83db90c792a14947546eed5ee4febb8ff9925d79e9f7a2cb916d07",
   "jarvis/server/server.mjs": "b4b12fd2a3610faadb48098c86bd374f72eafc2047ac1d77c4c20c294c158940",
   "jarvis/server/lib/schema-sqlite.sql": "ab84ecd75a9550a3b4de93d4920248f6d09094fbece35e895a603353e2a41251",
@@ -3504,6 +3533,8 @@
   ".claude/skills/replica-long-horizon/gate.py": "05c71d4a2c558d8d62be2941be22af5309e2a10065358d179e9fc24c9bd5112f",
   ".claude/skills/replica-long-horizon/lhcommon.py": "8f6731bc7a6bfa4c56df428a21efb81538945caca605e5fb2aea8d67602ed56a",
   ".claude/skills/replica-long-horizon/plan.py": "1ba4b3746d9eae8b16b0e3798c77a4961955bb54ad3c417cb9204d4305600763",
+  ".claude/skills/replica-quantum-math/SKILL.md": "49ee3100738eb16ddb6e7342f2736d17606ebedc553367ec4f4ff3b24ef8d100",
+  ".claude/skills/replica-quantum-math/quantum_math.py": "448589c4333b331fe321ac26fc8ea5d6b1f7ecace65df7315dc56c1c2cb7e1ee",
   ".claude/skills/replica-test/SKILL.md": "75b0c5e38ead5ab46ede3b403e3b83f3bfe507178058ad03782faab4849dda14",
   ".claude/skills/replica-timeseries-math/SKILL.md": "66eb3fa31a149320f9be67bd1a6dab2b7f12adb0bc87eeb075a385d8f2fc417d",
   ".claude/skills/replica-timeseries-math/ts_math.py": "963c2c10f5aabd04a1854b30cbc5d5c92e92f6a58b59ea7b598d497b94788ab6",
@@ -3519,5 +3550,5 @@
   ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
   ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
  },
- "sha256": "bf6c7d5a3879052d743762fbc9cc6ffebbb0d8adba716dce5ac50917dd2691c7"
+ "sha256": "83bf4e489dee9528b46f71070f2561caa61e27d7652e9939732158d641e66b86"
 }

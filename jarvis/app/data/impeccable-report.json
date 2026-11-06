@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 111,
+ "files": 112,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 128
+  "low": 130
  },
  "byRule": {
   "D05": 27,
-  "M05": 101
+  "M05": 103
  },
- "sha256": "03feb9bc8e142962310681dd072dccea7d86a90082b2c2700d679f9a6fd95abe",
+ "sha256": "b96be108a8d8e66dd701511e530c1ada1e73cb3a9416070310fe9841a52a253b",
  "findings": [
   {
    "rule": "D05",
@@ -908,6 +908,20 @@
    "line": 13,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-148-diagnostics-readiness-and-scrubbed-bundle.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-149-quantum-math-window-sync-gzip-templates.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 23,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-149-quantum-math-window-sync-gzip-templates.md"
   }
  ]
 }

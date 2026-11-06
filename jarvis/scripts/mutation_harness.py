@@ -123,12 +123,87 @@ def oracle_prover(ns, work):
     return out
 
 
+def oracle_quantum(ns, work):
+    mul, inv, split, join, vpin = ns["gf_mul"], ns["gf_inv"], ns["split_secret_gf256"], ns["reconstruct_secret_gf256"], ns["compute_vpin_toxicity"]
+    out = [("fips-197 products", mul(0x57, 0x83) == 0xC1 and mul(0x57, 0x13) == 0xFE and mul(0, 9) == 0 and mul(1, 0xAB) == 0xAB and mul(0x80, 2) == 0x1B)]
+    out.append(("inverses", all(mul(a, inv(a)) == 1 for a in range(1, 256))))
+    try:
+        inv(0)
+        out.append(("zero has no inverse", False))
+    except ValueError:
+        out.append(("zero has no inverse", True))
+    seq = iter([7, 200, 13, 99, 0, 254, 31, 64, 128, 1, 255] * 40)
+    secret = bytes(range(32))
+    shares = split(secret, 3, 5, rand_byte=lambda: next(seq))
+    out.append(("share shape", len(shares) == 5 and all(len(bytes.fromhex(s["y"])) == 32 and s["k"] == 3 for s in shares) and [s["x"] for s in shares] == [1, 2, 3, 4, 5]))
+    out.append(("any 3 rebuild", all(join([shares[i] for i in p]) == secret for p in ([0, 1, 2], [0, 2, 4], [2, 3, 4], [4, 1, 0]))))
+    out.append(("2 do not", join(shares[:2]) != secret))
+    again = iter([7, 200, 13, 99, 0, 254, 31, 64, 128, 1, 255] * 40)
+    out.append(("a fixed generator is used as given", [x["y"] for x in split(secret, 3, 5, rand_byte=lambda: next(again))] == [x["y"] for x in shares]))
+    dflt = split(b"ab")
+    out.append(("defaults k=3, n=5", len(dflt) == 5 and dflt[0]["k"] == 3 and dflt[0]["n"] == 5))
+    big = bytes(range(256)) * 8
+    out.append(("secure default rebuilds 2,048 bytes", join(split(big, 3, 4)[1:]) == big))
+    out.append(("one share is itself", join([shares[2]]) == bytes.fromhex(shares[2]["y"])))
+    for xbad in (0, 256):
+        try:
+            join([dict(shares[0], x=xbad, sha256=None), shares[1]])
+            out.append(("refuses x out of 1..255", False))
+        except ValueError:
+            out.append(("refuses x out of 1..255", True))
+    out.append(("2-of-2", join(split(b"\x00\xff\x10", 2, 2, rand_byte=lambda: 5)) == b"\x00\xff\x10"))
+    for bad in ([shares[0], shares[0]], [dict(shares[0], y="ff" + shares[0]["y"][2:]), shares[1], shares[2]]):
+        try:
+            join(bad)
+            out.append(("refuses bad shares", False))
+        except ValueError:
+            out.append(("refuses bad shares", True))
+    for k, n in ((1, 3), (4, 3), (2, 256)):
+        try:
+            split(b"x", k, n)
+            out.append(("refuses k, n", False))
+        except ValueError:
+            out.append(("refuses k, n", True))
+    good = vpin([{"tokens": 100, "productive": True}] * 10)
+    out.append(("vpin healthy", good["vpin"] == 0.0 and good["ofi"] == 1.0 and good["status"] == "healthy" and not good["recommend_capsule_rollback"] and good["buckets"] == 5))
+    bad = vpin([{"tokens": 200, "productive": False, "repeated_ngrams": 6}] * 4)
+    out.append(("vpin toxic", bad["vpin"] == 1.0 and bad["ofi"] == -1.0 and bad["status"] == "toxic" and bad["recommend_capsule_rollback"]))
+    half = vpin([{"tokens": 100, "productive": True}, {"tokens": 100, "productive": False, "repeated_ngrams": 4}])
+    out.append(("vpin half", half["vpin"] == 0.5 and half["buckets"] == 1 and half["status"] == "elevated"))
+    mid = vpin([{"tokens": 100, "productive": False}, {"tokens": 100, "productive": True}])
+    out.append(("vpin 0.375", mid["vpin"] == 0.375 and mid["status"] == "healthy" and mid["ofi"] == 0.25))
+    edge = vpin([{"tokens": 100, "productive": False, "repeated_ngrams": 1}, {"tokens": 100, "productive": True}], 200, 10, 0.415)
+    out.append(("vpin limit edge", edge["vpin"] == 0.415 and edge["recommend_capsule_rollback"] and edge["status"] == "toxic"))
+    tail = vpin([{"tokens": 50, "productive": False}] * 3 + [{"tokens": 50, "productive": True}] * 2, 100, 1)
+    out.append(("vpin window and remainder", tail["buckets"] == 3 and tail["vpin"] == 0.0))
+    out.append(("vpin empty", vpin([])["vpin"] == 0.0 and vpin([])["buckets"] == 0))
+    out.append(("vpin defaults", vpin([{"productive": False}] * 2 + [{}] * 2, 2)["vpin"] == 0.375 and vpin([{"tokens": 0, "productive": False}], 1)["buckets"] == 1))
+    out.append(("vpin one token", vpin([{"tokens": 1, "productive": False}], 1)["vpin"] == 0.75))
+    out.append(("vpin splits across buckets", vpin([{"tokens": 300, "productive": True}])["buckets"] == 2))
+    out.append(("vpin boundary inside an event", vpin([{"tokens": 100, "productive": True}, {"tokens": 150, "productive": True}])["buckets"] == 2))
+    out.append(("vpin one token per event by default", vpin([{"productive": False}, {}, {}, {}], 4)["buckets"] == 1))
+    out.append(("vpin boundary at 200", vpin([{"tokens": 200, "productive": True}, {"tokens": 200, "productive": False, "repeated_ngrams": 4}])["vpin"] == 0.5))
+    out.append(("vpin window of 10", vpin([{"tokens": 200, "productive": False, "repeated_ngrams": 4}] * 2 + [{"tokens": 200, "productive": True}] * 10)["vpin"] == 0.0))
+    third = vpin([{"tokens": 1, "productive": False, "repeated_ngrams": 4}, {"tokens": 2, "productive": True}], 3)
+    out.append(("vpin rounds to 4", third["vpin"] == 0.3333 and third["ofi"] == 0.3333))
+    try:
+        vpin([], 0)
+        out.append(("vpin refuses size 0", False))
+    except ValueError:
+        out.append(("vpin refuses size 0", True))
+    return out
+
+
 TARGETS = [
     {"file": ".claude/skills/replica-long-horizon/gate.py", "functions": ["judge"], "oracle": oracle_gate, "with": [".claude/skills/replica-long-horizon/lhcommon.py"]},
     {"file": ".claude/skills/replica-formal-verify/state_prover.py", "functions": ["plan_machine", "_search", "_path", "prove", "ui_completeness"], "oracle": oracle_prover, "with": []},
+    {"file": ".claude/skills/replica-quantum-math/quantum_math.py", "functions": ["gf_mul", "gf_inv", "_eval", "split_secret_gf256", "reconstruct_secret_gf256", "compute_vpin_toxicity"], "oracle": oracle_quantum, "with": []},
 ]
 # Mutants that cannot change any answer, each reviewed by hand; listed in the evidence, left out of the score.
-EQUIVALENT = []
+EQUIVALENT = [
+    {"file": "quantum_math.py", "function": "gf_mul", "kind": "constant 8 -> 9", "why": "b is below 256, so after eight right shifts it is 0 and a ninth pass adds nothing"},
+    {"file": "quantum_math.py", "function": "reconstruct_secret_gf256", "kind": "constant True -> False", "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"},
+]
 
 
 class Timeout(Exception):

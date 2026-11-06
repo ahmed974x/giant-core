@@ -1096,7 +1096,7 @@
     themeIcon.setAttribute("href", t === "light" ? "#i-moon" : "#i-sun");
   }
   const theme = () => (root.getAttribute("data-theme") === "light" ? "light" : "dark");
-  function setTheme(t) { applyTheme(t); store$.set("jarvis-theme", t); }
+  function setTheme(t) { applyTheme(t); store$.set("jarvis-theme", t); syncSend({ type: "theme", theme: t }); }
   applyTheme(store$.get("jarvis-theme") || store$.get("omega-theme") || "dark");
   themeBtn.addEventListener("click", () => setTheme(theme() === "light" ? "dark" : "light"));
   function applyDir(d) {
@@ -1179,8 +1179,25 @@
     langBtn.setAttribute("aria-label", uiLang === "ar" ? "Switch to English" : "التبديل إلى العربية");
     observer.disconnect(); trNode(document.body); observe();
   }
-  langBtn.addEventListener("click", () => { const l = uiLang === "ar" ? "en" : "ar"; store$.set("jarvis-lang", l); applyLang(l); route(); });
+  langBtn.addEventListener("click", () => { const l = uiLang === "ar" ? "en" : "ar"; store$.set("jarvis-lang", l); applyLang(l); route(); syncSend({ type: "lang", lang: l }); });
   applyLang(uiLang);
+
+  // ADR-149: every open window of Jarvis on this computer follows the others' language, theme and Studio site
+  // (BroadcastChannel, same origin only; nothing leaves the browser). A message received is applied, never sent on.
+  const syncCh = typeof BroadcastChannel === "function" ? new BroadcastChannel("jarvis_workspace_sync") : null;
+  function syncSend(msg) { if (syncCh) { try { syncCh.postMessage(msg); } catch (e) { /* closed */ } } }
+  let syncTimer = null;
+  if (syncCh) syncCh.onmessage = e => {
+    const m = e.data && typeof e.data === "object" ? e.data : {};
+    if (m.type === "lang" && (m.lang === "ar" || m.lang === "en") && m.lang !== uiLang) { store$.set("jarvis-lang", m.lang); applyLang(m.lang); route(); }
+    else if (m.type === "theme" && (m.theme === "light" || m.theme === "dark") && m.theme !== theme()) { applyTheme(m.theme); store$.set("jarvis-theme", m.theme); }
+    else if (m.type === "studio" && typeof m.site === "string" && m.site.length < 600000) {
+      store$.set("jarvis-studio-v1", m.site);
+      clearTimeout(syncTimer);
+      // Redraw the Studio here unless someone is typing in this window.
+      syncTimer = setTimeout(() => { const typing = document.hasFocus() && document.activeElement && document.activeElement.matches("input, textarea, select, [contenteditable]"); if (location.hash.startsWith("#/studio") && !typing) route(); }, 250);
+    }
+  };
 
   const app = $("#app"), collapse = $("#collapse"), menu = $("#menu"), scrim = $("#scrim");
   if (store$.get("jarvis-rail") === "1") { app.classList.add("rail"); collapse.setAttribute("aria-expanded", "false"); collapse.querySelector(".nav-label").textContent = "Expand"; }
@@ -2493,7 +2510,7 @@
 
   pages.studio = () => {
     let site = loadSite();
-    const save = () => store$.set("jarvis-studio-v1", JSON.stringify(site));
+    const save = () => { const text = JSON.stringify(site); store$.set("jarvis-studio-v1", text); syncSend({ type: "studio", site: text }); };
     const frame = h("iframe", { title: "Live preview of the site", sandbox: "allow-scripts", referrerpolicy: "no-referrer", loading: "eager" });
     const stage = h("div", { class: "stage" }, frame);
     const badges = h("div", { class: "cbadges", "aria-live": "polite" });
@@ -2571,7 +2588,7 @@
     }
 
     const saveText = (name, text, type) => {
-      const url = URL.createObjectURL(new Blob([text], { type }));
+      const url = URL.createObjectURL(text instanceof Blob ? text : new Blob([text], { type }));
       const a = h("a", { href: url, download: name, hidden: true });
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -2598,6 +2615,52 @@
     ];
     const exportBtns = EXPORTS.map(([label, ext, type, make]) => h("button", { class: "btn btn-secondary btn-sm", type: "button", dataset: { export: ext },
       onclick: () => { saveText(LlmPlan.slugOf(site.name) + ext, make(), type); toast("ok", "Saved " + LlmPlan.slugOf(site.name) + ext + ". Nothing was published."); store.auditRecord("export." + ext.split(".")[1], LlmPlan.slugOf(site.name) + ext).catch(() => {}); } }, icon("i-download", "sm"), label));
+    // ADR-149: a template as gzip, compressed and read back in this browser (CompressionStream), no library.
+    // Import is capped at 1 MB compressed and 2 MB unpacked, and every field is checked before use.
+    const gzOut = h("button", { class: "btn btn-secondary btn-sm", type: "button" }, icon("i-download", "sm"), "Template (.json.gz)");
+    gzOut.addEventListener("click", async () => {
+      if (typeof CompressionStream !== "function") { toast("error", "This browser cannot compress files."); return; }
+      const json = JSON.stringify({ format: "jarvis-studio-template-v1", savedAt: new Date().toISOString(), site: LlmPlan.snapshotOf(site) });
+      const gz = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
+      saveText(LlmPlan.slugOf(site.name) + ".json.gz", gz, "application/gzip");
+      toast("ok", "Saved the template compressed: " + Math.ceil(json.length / 1024) + " KB to " + Math.ceil(gz.size / 1024) + " KB.");
+    });
+    const gzIn = h("input", { class: "input", type: "file", id: "f-gz", name: "template-gz", accept: ".gz,application/gzip", "aria-describedby": "h-gz" });
+    const cleanText = v => (typeof v === "string" ? v.slice(0, 400) : "");
+    const cleanSite = t => {
+      if (!t || t.format !== "jarvis-studio-template-v1" || !t.site || !Array.isArray(t.site.blocks)) throw new Error("This is not a Jarvis Studio template.");
+      const theme = {};
+      for (const [k, v] of Object.entries(t.site.theme || {})) if (PRESETS.night[k] !== undefined && /^#[0-9a-fA-F]{6}$/.test(v)) theme[k] = v;
+      const blocks = t.site.blocks.filter(b => b && BLOCK_NAMES[b.type]).slice(0, 20).map((b, i) => ({ id: /^[\w-]{1,40}$/.test(b.id) ? b.id : "b-" + i, type: b.type, on: b.on !== false,
+        t: Object.fromEntries(["en", "ar"].map(l => [l, Object.fromEntries(Object.entries((b.t && b.t[l]) || {}).filter(([k]) => /^[a-z0-9]{1,12}$/.test(k)).map(([k, v]) => [k, cleanText(v)]))])) }));
+      return { v: 1, name: cleanText(t.site.name).slice(0, 80) || "Imported template", lang: t.site.lang === "ar" ? "ar" : "en", width: [375, 768, 1440].includes(t.site.width) ? t.site.width : 1440,
+        preset: "custom", theme: { ...PRESETS.night, ...theme }, blocks };
+    };
+    gzIn.addEventListener("change", async () => {
+      const f = gzIn.files && gzIn.files[0];
+      gzIn.value = "";
+      if (!f) return;
+      try {
+        if (typeof DecompressionStream !== "function") throw new Error("This browser cannot read compressed files.");
+        if (f.size > 1024 * 1024) throw new Error("The file is larger than 1 MB.");
+        const reader = f.stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+        const parts = [];
+        let size = 0;
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > 2 * 1024 * 1024) { await reader.cancel(); throw new Error("The template is larger than 2 MB unpacked."); }
+          parts.push(value);
+        }
+        const text = new TextDecoder().decode(await new Blob(parts).arrayBuffer());
+        site = cleanSite(JSON.parse(text));
+        delete site.theme.label;
+        save(); toast("ok", "Imported “" + site.name + "”: " + plural(site.blocks.length, "section") + ".");
+        route();
+      } catch (e) { toast("error", e instanceof SyntaxError ? "The file is not valid JSON inside the gzip." : e.message); }
+    });
+
     const renderExportInfo = () => {
       const sq = LlmPlan.exportSql(site), tk = tokensOf().$extensions["jarvis.contrast"].checks;
       exportInfo.replaceChildren(
@@ -2830,6 +2893,8 @@
           h("section", { class: "panel", "aria-labelledby": "h-blocks" }, h("h2", { id: "h-blocks", text: "Sections" }), blockList),
           h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn),
             h("h3", { class: "t-sm", text: "Export 5 files" }), h("div", { class: "row" }, exportBtns), exportInfo,
+            h("h3", { class: "t-sm", text: "Compressed template" }), h("div", { class: "row" }, gzOut),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-gz", text: "Import a template (.json.gz)" }), gzIn, h("span", { class: "hint", id: "h-gz", text: "Compressed and read in this browser; nothing is uploaded." })),
             h("p", { class: "hint", text: "Payments, publishing and permissions tables start at pending_approval, and a check refuses approval without a person and a time." })),
           timePanel),
         h("div", { class: "preview-col" },
