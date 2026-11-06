@@ -65,3 +65,11 @@ Real server, giant-core workspace, dark and light, at 1440, 768 and 375, in **En
 - `analytics-*`: creator mode, the numbers and the bar charts;
 - `webhooks-*`: an incoming hook, and an outside outgoing hook locked as «بانتظار الموافقة»;
 - `plans-tokens-*`: draft subscriber plans, the locked billing switch and the token ledger.
+
+## ADR-143 (2026-11-06)
+
+Governance page and the model catalog, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `governance-rules-*`: the surgical rules, the quality gate (62 rules) and the register of adopted and excluded tools;
+- `governance-map-*`: the SVG knowledge map from `replica-graphify` with a screen selected and its links lit;
+- `model-catalog-*`: Settings → the 12 open-weight families with maker, origin, licence and job.
