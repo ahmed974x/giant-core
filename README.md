@@ -103,3 +103,10 @@ Dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
 
 - `telemetry-lttb-*`: Analytics → Telemetry in sample mode: 5,000 made-up build times (labelled «مثال تعليمي — أرقام افتراضية») cut to 120 points by LTTB, four anomalies marked, Welford, EWMA and VPIN [INFERENCE];
 - `merkle-proof-*`: Logs → Merkle audit tree on the real server, with an inclusion proof checked in the browser.
+
+## ADR-148 (2026-11-06)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `diagnostics-layers-*`: the five layers, each checked now and marked ready;
+- `diagnostics-bundle-*`: the bundle saved on this computer after the scrubber, with the count of removed values.
