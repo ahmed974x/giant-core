@@ -409,3 +409,43 @@ create table model_endpoints (
   constraint model_endpoints_external_locked check (status = 'draft')
 );
 create index on model_endpoints (workspace_id, created_at);
+
+-- ADR-142: the live skill loader. A mounted skill is a row here (text only); nothing is written to disk and
+-- nothing runs. A skill with a critical or high audit finding is never mounted.
+create table runtime_skills (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null check (name ~ '^[a-z][a-z0-9-]{2,40}$'),
+  description text not null,
+  origin text not null check (origin in ('github', 'synthesized', 'derived', 'captured')),
+  source_url text check (source_url is null or source_url like 'https://github.com/%'),
+  licence text,
+  version integer not null default 1 check (version >= 1),
+  parent_id uuid,
+  files jsonb not null,
+  scan jsonb not null,
+  status text not null default 'mounted' check (status in ('mounted', 'removed')),
+  approval_id uuid references approvals(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint runtime_skills_scan_clean check (status <> 'mounted' or ((scan->>'critical')::int = 0 and (scan->>'high')::int = 0))
+);
+create unique index runtime_skills_one_mounted_name on runtime_skills (workspace_id, name) where status = 'mounted';
+
+create table skill_evolution_log (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  skill_id uuid,
+  evolution_type text not null check (evolution_type in ('FIX', 'DERIVED', 'CAPTURED')),
+  parent_id uuid,
+  note text not null default '',
+  scan jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index on skill_evolution_log (workspace_id, created_at);
+create function skill_evolution_log_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.skill_evolution_log is append-only';
+end $$;
+create trigger skill_evolution_log_no_update before update on skill_evolution_log
+  for each row execute function skill_evolution_log_append_only();

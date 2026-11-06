@@ -371,6 +371,19 @@
         capsules: [], progress: [t + " Plan created from template " + template + "."], timer: null };
     }
     const findMission = id => MS().find(x => x.id === id);
+    // ADR-142: audit, then mount (or refuse), on this browser's data.
+    function sampleMount(skill, origin, parentId, type, note) {
+      const scan = LlmPlan.auditSkill(skill.files, SPECTOR_RULES, LlmPlan.scanFiles);
+      if (!scan.ok) return { mounted: false, skill: { name: skill.name, description: skill.description, files: skill.files }, scan };
+      const list = W().runtime || (W().runtime = []);
+      const taken = n => list.some(r => r.status === "mounted" && r.name === n) || (W().forged || []).some(f => f.status === "mounted" && f.name === n);
+      let name = skill.name; for (let i = 2; taken(name) && i < 50; i++) name = skill.name.slice(0, 37) + "-v" + i;
+      const r = { id: uid("rs"), name, description: skill.description, origin, sourceUrl: null, licence: null, version: 1, parentId, files: skill.files, scan, status: "mounted", approvalId: null, createdAt: Date.now(), updatedAt: Date.now() };
+      list.push(r);
+      (W().evolution || (W().evolution = [])).push({ id: uid("evo"), skillId: r.id, skillName: name, type, parentId, note, scan, createdAt: Date.now() });
+      W().events.push(ev("member:owner", "skill.mounted", name)); save();
+      return { mounted: true, skill: r, scan };
+    }
     const stepState = m => ({ mission: { status: m.status, title: m.title }, steps: m.steps.map(s => ({ idx: s.idx, status: s.status, gate: s.gateStatus, approval: s.approvalId || null, output: s.output == null ? null : s.output })) });
     function capsule(m, label) {
       const prev = m.capsules[m.capsules.length - 1];
@@ -615,6 +628,53 @@
       },
       removeEndpoint(id) { W().endpoints = (W().endpoints || []).filter(e => e.id !== id); save(); return ok({ ok: true }); },
       signOut() { return ok({ ok: true }); },
+      // ADR-142 in sample mode: synthesis and evolution run on this browser's data with the same audit;
+      // GitHub discovery and import need the local server (the page itself has no network).
+      listRuntime() { return ok((W().runtime || []).filter(r => r.status === "mounted").slice().sort((a, b) => b.updatedAt - a.updatedAt)); },
+      evolutionLog() { return ok((W().evolution || []).slice().reverse()); },
+      discoverSkills() { return bad("Searching GitHub needs the local server (node jarvis/server/server.mjs). Synthesize the skill here instead."); },
+      importSkill() { return bad("Importing from GitHub needs the local server (node jarvis/server/server.mjs)."); },
+      synthesizeSkill({ request, kind }) {
+        const want = String(request || "").trim();
+        if (want.length < 10) return bad("Describe the skill or tool in a sentence (10+ characters).");
+        let skill; try { skill = LlmPlan.forgeSkill({ name: LlmPlan.slugName(want), description: want, kind: kind === "python-tool" ? "python-tool" : "checklist" }); } catch (e) { return bad(e.message); }
+        return ok({ ...sampleMount(skill, "synthesized", null, "CAPTURED", "Synthesized by the fixed template from: " + want.slice(0, 200)), engine: "fixed rules", warning: null });
+      },
+      evolveSkill(body) {
+        const list = W().runtime || [];
+        if (body.type === "FIX") {
+          const cur = list.find(r => r.id === body.skillId && r.status === "mounted");
+          if (!cur) return bad("No mounted skill with that id.");
+          let parsed; try { parsed = LlmPlan.readSkillMd(String(body.skillMd || "")); } catch (e) { return bad(e.message); }
+          const files = { ...cur.files, "SKILL.md": String(body.skillMd).replace(/^name:\s*.+$/m, "name: " + cur.name) };
+          const scan = LlmPlan.auditSkill(files, SPECTOR_RULES, LlmPlan.scanFiles);
+          if (!scan.ok) return ok({ mounted: false, skill: { name: cur.name, files }, scan });
+          Object.assign(cur, { description: parsed.description, files, scan, version: cur.version + 1, updatedAt: Date.now() });
+          (W().evolution || (W().evolution = [])).push({ id: uid("evo"), skillId: cur.id, skillName: cur.name, type: "FIX", parentId: cur.id, note: String(body.note || "Fixed by the founder"), scan, createdAt: Date.now() });
+          save(); return ok({ mounted: true, skill: cur, scan });
+        }
+        if (body.type === "DERIVED") {
+          const cur = list.find(r => r.id === body.skillId && r.status === "mounted");
+          if (!cur) return bad("No mounted skill with that id.");
+          const steps = [...String(cur.files["SKILL.md"]).split("\n").filter(l => /^\d+\.\s/.test(l)).map(l => l.replace(/^\d+\.\s*/, "")), ...(body.steps || [])].slice(0, 10);
+          let skill; try { skill = LlmPlan.forgeSkill({ name: cur.name.slice(0, 36) + "-plus", description: cur.description + " (derived)", steps }); } catch (e) { return bad(e.message); }
+          return ok(sampleMount(skill, "derived", cur.id, "DERIVED", "Derived from " + cur.name));
+        }
+        if (body.type === "CAPTURED") {
+          const m = MS().find(x => x.id === body.missionId);
+          if (!m) return bad("Pick the finished mission to capture.");
+          let skill; try { skill = LlmPlan.forgeSkill({ name: LlmPlan.slugName(m.title, "captured-mission"), description: "Repeat the mission “" + m.title.slice(0, 120) + "” the way it worked.", steps: LlmPlan.stepsFromMission(m) }); } catch (e) { return bad(e.message); }
+          return ok(sampleMount(skill, "captured", null, "CAPTURED", "Captured from mission " + m.title.slice(0, 120)));
+        }
+        return bad("Evolution type is FIX, DERIVED or CAPTURED.");
+      },
+      unmountRuntime(id) { const r = (W().runtime || []).find(x => x.id === id); if (r) r.status = "removed"; save(); return ok({ ok: true }); },
+      installRuntime(id) {
+        const r = (W().runtime || []).find(x => x.id === id && x.status === "mounted");
+        if (!r) return bad("No mounted skill with that id.");
+        if (!r.approvalId) { const ap = { id: uid("ap"), category: "install", agentId: null, action: "Install the skill “" + r.name + "” into .claude/skills", payload: "Needs Director 00's approval and a written security review.", status: "pending", createdAt: Date.now() }; W().approvals.push(ap); r.approvalId = ap.id; save(); }
+        return ok({ locked: true, approvalId: r.approvalId });
+      },
       // ADR-138 in sample mode: the same BM25, forge scan and computed self-check, on this browser's data.
       searchMemory({ q, kind } = {}) {
         const pool = (W().memory || []).filter(e => !kind || e.kind === kind).slice().reverse();
@@ -808,6 +868,15 @@
       requestEndpoint: body => req("POST", w("/model-endpoints"), body),
       removeEndpoint: id => req("DELETE", w("/model-endpoints/" + encodeURIComponent(id)), {}),
       signOut: async () => { await req("POST", "/api/founder/logout", {}); location.replace("/login"); return { ok: true }; },
+      // ADR-142: the live skill loader.
+      listRuntime: () => req("GET", w("/skills/runtime")),
+      evolutionLog: () => req("GET", w("/skills/evolution")),
+      discoverSkills: q => req("POST", w("/skills/discover-online"), { q }),
+      importSkill: body => req("POST", w("/skills/import"), body),
+      synthesizeSkill: body => req("POST", w("/skills/synthesize-and-mount"), body),
+      evolveSkill: body => req("POST", w("/skills/evolve"), body),
+      unmountRuntime: id => req("DELETE", w("/skills/runtime/" + encodeURIComponent(id)), {}),
+      installRuntime: id => req("POST", w("/skills/runtime/" + encodeURIComponent(id) + "/install"), {}),
       planMission: body => req("POST", w("/missions/plan"), body),
       // ADR-137
       listWorkflows: () => req("GET", w("/workflows")),
@@ -1100,7 +1169,7 @@
     const toolBoxes = TOOL_LIST.map(t => h("label", { class: "check" }, h("input", { type: "checkbox", name: "tool", value: t, checked: a.tools.includes(t) }), h("span", { class: "mono t-sm", text: t }), h("span", { class: "subtle t-caption", text: "— " + TOOL_NOTES[t] })));
     // Mounted forged skills (ADR-138) can be linked at once; they are marked "forged" in the picker.
     let forged = [];
-    try { forged = (await store.listForged()).map(f => f.name); } catch (e) { forged = []; }
+    try { forged = (await store.listForged()).map(f => f.name).concat((await store.listRuntime()).map(r => r.name)); } catch (e) { forged = []; }
     const skillNames = [...new Set([...(DATA.skills || []).map(s => s.name), ...forged])].sort();
     const skillFilter = h("input", { class: "input", type: "search", id: "f-skillq", name: "skill-q", autocomplete: "off", placeholder: "Filter skills", "aria-label": "Filter skills" });
     const skillBox = h("div", { class: "skill-pick", role: "group", "aria-label": "Linked skills" }, skillNames.map(n => h("label", { class: "check", dataset: { skill: n } }, h("input", { type: "checkbox", name: "skill", value: n, checked: (a.skills || []).includes(n) }), h("span", { class: "mono t-sm", translate: "no", text: n }), forged.includes(n) ? h("span", { class: "badge", text: "Forged" }) : null)));
@@ -2067,7 +2136,7 @@
     /*@LLM_PLAN@*/
     /*@WORKFLOW_GRAPH@*/
     /*@MEMORY_LIBS@*/
-    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem };
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2298,7 +2367,7 @@
   };
 
   /* ── Skill Mixer (S14) ─────────────────────────────────────── */
-  const SOURCE_LABEL = { project: "Project", reviewed: "Reviewed third-party", vendored: "Vendored reference", forged: "Forged in this workspace" };
+  const SOURCE_LABEL = { project: "Project", reviewed: "Reviewed third-party", vendored: "Vendored reference", forged: "Forged in this workspace", loaded: "Loaded in this workspace" };
   function findingsBadge(f) {
     if (!f) return h("span", { class: "badge s-idle", text: "Not scanned" });
     if (f.critical || f.high) return h("span", { class: "badge s-failed" }, h("span", { class: "dot", "aria-hidden": "true" }), (f.critical ? f.critical + " critical " : "") + (f.high ? f.high + " high" : ""));
@@ -2426,7 +2495,9 @@
     src.addEventListener("change", renderList);
     renderList(); renderMix(); runCheck();
     const scan = DATA.scan;
-    const forgePanel = skillForge(editor, e => { skills.length = 0; skills.push(...(DATA.skills || []), ...e.map(f => ({ name: f.name, description: f.description, source: "forged", findings: { critical: f.scan.critical, high: f.scan.high, medium: f.scan.medium, low: f.scan.low }, review: "" }))); renderList(); renderMix(); });
+    const asRow = source => f => ({ name: f.name, description: f.description, source, findings: { critical: f.scan.critical, high: f.scan.high, medium: f.scan.medium, low: f.scan.low }, review: "" });
+    const forgePanel = skillForge(editor, e => store.listRuntime().catch(() => []).then(rt => { skills.length = 0; skills.push(...(DATA.skills || []), ...e.map(asRow("forged")), ...rt.map(asRow("loaded"))); renderList(); renderMix(); }));
+    if (PENDING_SKILL_Q) { q.value = PENDING_SKILL_Q; PENDING_SKILL_Q = null; }
     return h("div", { class: "stack" },
       pageHead("Skill Mixer", "The skills installed in this repo, with their SkillSpector status. Mix them into a plan for Claude Code."),
       h("p", { class: "sample-note" }, icon("i-alert", "sm"), scan ? "Real data from the repo, scanned " + fmtDate.format(new Date(scan.generated)) + " at build time (" + skills.length + " skills, " + scan.summary.critical + " critical, " + scan.summary.high + " high)." : "No scan in this build."),
@@ -2570,6 +2641,99 @@
       h("div", { class: "mixer" }, results, h("div", { class: "stack mix-side" }, side)));
   };
 
+  /* ── Skill Loader (ADR-142): discover on GitHub, import SKILL.md text, synthesize, evolve; mounted at once ── */
+  let PENDING_SKILL_Q = null;
+  const ORIGIN_LABEL = { github: "GitHub (text only)", synthesized: "Synthesized", derived: "Derived", captured: "Captured" };
+  const EVO_LABEL = { FIX: "FIX", DERIVED: "DERIVED", CAPTURED: "CAPTURED" };
+  function scanResult(r) {
+    const s = r.scan;
+    return h("div", { class: "stack" }, h("div", { class: "row" }, r.mounted ? badge("ok", "Mounted in this workspace") : badge("failed", "Refused: " + s.critical + " critical, " + s.high + " high"),
+        h("span", { class: "subtle t-caption num", text: s.findings.length + " findings · " + Object.keys((r.skill && r.skill.files) || {}).length + " files" })),
+      s.findings.length ? h("ul", { class: "checks" }, s.findings.slice(0, 8).map(f => h("li", { class: f.sev === "critical" || f.sev === "high" ? "fail" : "warn" }, h("span", { class: "mark", "aria-hidden": "true", text: f.sev === "critical" || f.sev === "high" ? "✕" : "!" }),
+        h("span", null, h("span", { class: "mono t-caption", translate: "no", text: f.file + ":" + f.line + " " + f.rule + " " }), f.msg)))) : null);
+  }
+  pages.loader = () => {
+    const results = h("div", { class: "stack", "aria-live": "polite" });
+    const mounted = h("div", { class: "stack" });
+    const evoBox = h("div", { class: "stack" });
+    const outBox = h("div", { class: "stack", "aria-live": "polite" });
+    const afterMount = (r, from) => {
+      outBox.replaceChildren(scanResult(r));
+      toast(r.mounted ? "ok" : "error", r.mounted ? "Mounted " + r.skill.name + ". It is in the Skill Mixer, the agent editor and Ctrl+K now." : "Not mounted: the audit found a critical or high problem.");
+      reloadAll(); if (from && from.isConnected) from.focus();
+    };
+    // Discover
+    const dq = h("input", { class: "input", id: "f-dq", type: "search", name: "discover-q", autocomplete: "off", maxLength: 120, placeholder: "database schema review" });
+    const dgo = h("button", { class: "btn btn-secondary", type: "submit" }, icon("i-search", "sm"), "Search GitHub");
+    const dform = h("form", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-dq", text: "Find skills on GitHub" }), dq), dgo);
+    dform.addEventListener("submit", e => {
+      e.preventDefault(); results.replaceChildren(skeleton(3));
+      store.discoverSkills(dq.value).then(r => results.replaceChildren(
+        r.offline ? h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), r.note) : null,
+        r.results.length ? h("ul", { class: "memlist" }, r.results.map(x => {
+          const path = h("input", { class: "input mono", name: "skill-path", autocomplete: "off", value: "SKILL.md", "aria-label": "Path of SKILL.md in " + x.repo, translate: "no" });
+          const imp = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Import SKILL.md" });
+          imp.addEventListener("click", e2 => { const from = e2.currentTarget; imp.disabled = true; store.importSkill({ repo: x.repo, path: path.value }).then(r2 => afterMount(r2, from), err => toast("error", err.message)).finally(() => { imp.disabled = false; }); });
+          return h("li", { class: "mem hit" },
+            h("div", { class: "row" }, h("span", { class: "badge", translate: "no", text: "GitHub" }), h("span", { class: "mono t-caption subtle", translate: "no", text: "★ " + fmtN.format(x.stars) + (x.licence ? " · " + x.licence : " · no licence stated") })),
+            h("h3", { translate: "no" }, h("a", { href: x.url, target: "_blank", rel: "noopener noreferrer", text: x.repo })),
+            x.description ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: x.description }) : null,
+            h("div", { class: "row" }, path, imp));
+        })) : h("p", { class: "muted t-sm", text: r.offline ? "" : "No repository matches." })), err => results.replaceChildren(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), err.message)));
+    });
+    // Synthesize
+    const ask = h("textarea", { class: "textarea", id: "f-syn", name: "synthesize", rows: 3, autocomplete: "off", maxLength: 400, dir: "auto", placeholder: "A tool that compares how fast two sorting algorithms run on the same list" });
+    const kind = h("select", { class: "select", id: "f-synkind", name: "synthesize-kind", autocomplete: "off" }, h("option", { value: "checklist", text: "Checklist (SKILL.md only)" }), h("option", { value: "python-tool", text: "Python tool (standard library)" }));
+    const sgo = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Synthesize and mount");
+    sgo.addEventListener("click", e => { const from = e.currentTarget; sgo.disabled = true; store.synthesizeSkill({ request: ask.value, kind: kind.value }).then(r => { if (r.warning) toast("warn", r.warning); afterMount(r, from); if (r.mounted) ask.value = ""; }, err => toast("error", err.message)).finally(() => { sgo.disabled = false; }); });
+    // Capture from a mission
+    const msel = h("select", { class: "select", id: "f-capm", name: "capture-mission", autocomplete: "off" });
+    const cgo = h("button", { class: "btn btn-secondary", type: "button", text: "Capture as a skill" });
+    cgo.addEventListener("click", e => { const from = e.currentTarget; if (!msel.value) { toast("warn", "Pick the finished mission to capture."); return; } store.evolveSkill({ type: "CAPTURED", missionId: msel.value }).then(r => afterMount(r, from), err => toast("error", err.message)); });
+    store.listMissions().then(list => { const done = list.filter(m => m.status === "succeeded" || m.status === "awaiting_approval"); msel.replaceChildren(...(done.length ? done.map(m => h("option", { value: m.id, dir: "auto", text: m.title })) : [h("option", { value: "", text: "No finished mission yet" })])); }, () => {});
+    // Mounted list and evolution log
+    const fixDialog = (r, from) => {
+      const ta = h("textarea", { class: "textarea code", id: "f-fixmd", name: "fix-skill-md", rows: 12, autocomplete: "off", spellcheck: false, translate: "no", value: r.files["SKILL.md"] });
+      openDialog("Fix " + r.name, h("div", { class: "stack" }, h("p", { class: "t-sm", text: "Edit the SKILL.md. The new version is audited again; if it fails, the current version stays." }), h("div", { class: "field" }, h("label", { htmlFor: "f-fixmd", text: "SKILL.md" }), ta)),
+        [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), h("button", { class: "btn btn-primary", type: "button", text: "Save new version", onclick: () => { const text = ta.value; closeDialog(); store.evolveSkill({ type: "FIX", skillId: r.id, skillMd: text }).then(x => afterMount(x, from), err => toast("error", err.message)); } })], from);
+    };
+    const deriveDialog = (r, from) => {
+      const ta = h("textarea", { class: "textarea", id: "f-derive", name: "derive-steps", rows: 4, autocomplete: "off", dir: "auto", placeholder: "One new step per line" });
+      openDialog("Derive from " + r.name, h("div", { class: "stack" }, h("p", { class: "t-sm", text: "A new skill keeps this one's steps and adds yours. The original stays as it is." }), h("div", { class: "field" }, h("label", { htmlFor: "f-derive", text: "New steps" }), ta)),
+        [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), h("button", { class: "btn btn-primary", type: "button", text: "Derive and mount", onclick: () => { const steps = ta.value.split("\n").map(x => x.trim()).filter(Boolean); closeDialog(); store.evolveSkill({ type: "DERIVED", skillId: r.id, steps }).then(x => afterMount(x, from), err => toast("error", err.message)); } })], from);
+    };
+    const renderMounted = list => list.length ? h("ul", { class: "feed" }, list.map(r => h("li", { class: "forged" },
+      h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: r.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: r.description }),
+        h("span", { class: "row" }, findingsBadge({ critical: r.scan.critical, high: r.scan.high, medium: r.scan.medium, low: r.scan.low }), h("span", { class: "badge", text: ORIGIN_LABEL[r.origin] || r.origin }), h("span", { class: "badge num", text: "v" + r.version }),
+          r.licence ? h("span", { class: "badge", translate: "no", text: r.licence }) : null,
+          r.sourceUrl ? h("a", { class: "t-caption", href: r.sourceUrl, target: "_blank", rel: "noopener noreferrer", text: "Source" }) : null,
+          r.approvalId ? h("span", { class: "badge s-locked" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" })) : null)),
+      h("div", { class: "row" },
+        h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Fix…", onclick: e => fixDialog(r, e.currentTarget) }),
+        h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Derive…", onclick: e => deriveDialog(r, e.currentTarget) }),
+        h("button", { class: "btn btn-ghost btn-sm", type: "button", onclick: e => { const from = e.currentTarget; store.installRuntime(r.id).then(() => showLocked(from, "install", "Install the skill “" + r.name + "” into .claude/skills"), err => toast("error", err.message)); } }, icon("i-lock", "sm"), "Install into the repo…"),
+        h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Unmount", onclick: () => store.unmountRuntime(r.id).then(() => { toast("ok", "Unmounted " + r.name + "."); reloadAll(); }, err => toast("error", err.message)) }))))) : h("p", { class: "muted t-sm", text: "No skill loaded yet. Search GitHub, synthesize one, or capture a finished mission." });
+    const renderEvo = list => list.length ? h("ul", { class: "feed" }, list.slice(0, 20).map(e => h("li", null, h("span", { class: "badge", translate: "no", text: EVO_LABEL[e.type] || e.type }), h("span", { class: "mono t-caption", translate: "no", text: e.skillName || "—" }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: e.note }), timeEl(typeof e.createdAt === "number" ? e.createdAt : Date.parse(e.createdAt))))) : h("p", { class: "muted t-sm", text: "No change logged yet." });
+    const reloadAll = () => { loadInto(mounted, () => store.listRuntime(), renderMounted); loadInto(evoBox, () => store.evolutionLog(), renderEvo); };
+    reloadAll();
+    const off = store.subscribe(() => { if (!mounted.isConnected) { off(); return; } if (!dlg.open) { store.listRuntime().then(l => mounted.replaceChildren(renderMounted(l)), () => {}); store.evolutionLog().then(l => evoBox.replaceChildren(renderEvo(l)), () => {}); } });
+    return h("div", { class: "stack" },
+      pageHead("Skill Loader", "Find, write and grow skills from inside Jarvis. Each one is audited, then mounted in this workspace at once. Writing one into the repository stays a locked approval."), sampleNote(),
+      h("div", { class: "mixer" },
+        h("div", { class: "stack" },
+          h("section", { class: "panel", "aria-labelledby": "h-disc" }, h("h2", { id: "h-disc", text: "Discover on GitHub" }),
+            h("p", { class: "t-sm", text: "GitHub's official search API, keyless. Importing reads one SKILL.md as text; scripts and other files are never fetched." }), dform, results),
+          h("section", { class: "panel", "aria-labelledby": "h-mnt" }, h("h2", { id: "h-mnt", text: "Loaded in this workspace" }), mounted)),
+        h("div", { class: "stack mix-side" },
+          h("section", { class: "panel", "aria-labelledby": "h-syn" }, h("h2", { id: "h-syn", text: "Synthesize" }),
+            h("p", { class: "t-sm", text: "The local model writes the SKILL.md when one runs on 127.0.0.1; otherwise the fixed template does." }),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-syn", text: "What the skill or tool should do" }), ask), h("div", { class: "field" }, h("label", { htmlFor: "f-synkind", text: "Kind" }), kind), h("div", { class: "row" }, sgo), outBox),
+          h("section", { class: "panel", "aria-labelledby": "h-cap" }, h("h2", { id: "h-cap", text: "Capture a mission" }),
+            h("p", { class: "t-sm", text: "Turn a mission that worked into a skill. Its locked steps become stops, never actions." }),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-capm", text: "Finished mission" }), msel), h("div", { class: "row" }, cgo)),
+          h("section", { class: "panel", "aria-labelledby": "h-evo" }, h("h2", { id: "h-evo", text: "Evolution log" }), h("p", { class: "subtle t-caption", text: "FIX: a new version. DERIVED: a new skill grown from one. CAPTURED: from GitHub, a request or a mission. Append-only." }), evoBox))));
+  };
+
   /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
   const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];
   const MEM_KIND_LABEL = { plan: "Plan", design: "Design", answer: "Answer", lesson: "Lesson", note: "Note", search: "Search", skill: "Skill" };
@@ -2639,7 +2803,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -2720,7 +2884,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],
@@ -2729,7 +2893,7 @@
   ];
   function renderPal() {
     const words = palIn.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    shown = cmds.filter(c => words.every(w => c[0].toLowerCase().split(/\s+/).some(n => n.startsWith(w))));
+    shown = cmds.filter(c => words.every(w => c[0].toLowerCase().split(/[\s-]+/).some(n => n.startsWith(w))));
     active = Math.min(active, Math.max(0, shown.length - 1));
     palList.replaceChildren(...shown.map((c, i) => {
       const li = h("li", { id: "cmd-" + i, role: "option", "aria-selected": String(i === active) }, h("span", { dir: "auto", text: c[0] }), h("span", { class: "kind", text: c[1] }));
@@ -2745,6 +2909,8 @@
     palOpener = from || document.activeElement;
     cmds = baseCmds();
     store.listAgents().then(list => { cmds = cmds.concat(list.map(a => [a.name, "Agent", () => { location.hash = "#/agents/" + a.id; }])); if (pal.open) renderPal(); }, () => {});
+    // ADR-142: every mounted skill is a command at once (no restart).
+    Promise.all([store.listForged().catch(() => []), store.listRuntime().catch(() => [])]).then(([f, r]) => { cmds = cmds.concat([...f, ...r].map(x => [x.name, "Skill", () => { PENDING_SKILL_Q = x.name; if (location.hash === "#/skills") route(); else location.hash = "#/skills"; }])); if (pal.open) renderPal(); });
     palIn.value = ""; active = 0; renderPal(); pal.showModal(); palIn.focus();
   }
   pal.addEventListener("close", () => { if (palOpener && palOpener.isConnected) palOpener.focus(); });

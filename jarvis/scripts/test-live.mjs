@@ -51,7 +51,16 @@ const SEARCH_FIX = {
   "api.osv.dev": { vulns: [{ id: "GHSA-p6mc-m468-83gw", summary: "Prototype pollution in lodash", aliases: ["CVE-2020-8203"] }] },
 };
 const searchRequest = async url => { const host = new URL(url).hostname; searchHosts.push(host); return SEARCH_FIX[host] || null; };
-const srv = await startServer({ port: 0, dataDir, quiet: true, searchRequest, searxngUrl: "", ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
+// ADR-142: GitHub's API for the skill loader, answered by a fixture on its fixed host.
+const SKILL_MD = "---\nname: schema-reviewer\ndescription: Reviews a database schema for missing keys and indexes.\n---\n\n# schema-reviewer\n\n1. Read the schema file.\n2. List tables without a primary key.\n3. Stop before changing anything.\n";
+const skillRequest = async url => {
+  const u = new URL(url);
+  if (u.pathname === "/search/repositories") return { items: [{ full_name: "acme/skills", html_url: "https://github.com/acme/skills", description: "Agent skills for databases", stargazers_count: 42, license: { spdx_id: "MIT" }, default_branch: "main" }] };
+  if (u.pathname === "/repos/acme/skills") return { private: false, license: { spdx_id: "MIT" } };
+  if (u.pathname === "/repos/acme/skills/contents/SKILL.md") return { type: "file", encoding: "base64", size: SKILL_MD.length, content: Buffer.from(SKILL_MD).toString("base64"), html_url: "https://github.com/acme/skills/blob/main/SKILL.md", sha: "abc123" };
+  return null;
+};
+const srv = await startServer({ port: 0, dataDir, quiet: true, skillRequest, searchRequest, searxngUrl: "", ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
 const BASE = `http://127.0.0.1:${srv.port}/`;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
@@ -312,9 +321,20 @@ await page.waitForTimeout(400);
 ok(await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 
+// ADR-142 live: discover on GitHub, import one SKILL.md as text, mounted in the database at once.
+await go("#/loader");
+await page.locator("#f-dq").fill("database schema"); await page.locator("#f-dq").press("Enter");
+await page.waitForSelector(".hit", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".hit a[href='https://github.com/acme/skills']").isVisible() && await page.locator(".hit").getByText(/MIT/).isVisible(), "live: GitHub discovery lists the repository with its licence");
+await page.getByRole("button", { name: "Import SKILL.md" }).click();
+await page.waitForTimeout(500);
+ok(await page.locator("#h-mnt ~ div li.forged").filter({ hasText: "schema-reviewer" }).getByText("GitHub (text only)").isVisible() && (await srv.db.all("select origin, licence from runtime_skills where status = 'mounted'")).some(r => r.origin === "github" && r.licence === "MIT"), "live: an imported SKILL.md is mounted in the database with its origin and licence");
+ok((await srv.db.all("select evolution_type from skill_evolution_log")).length >= 1, "live: the import is in the evolution log");
+ok(!existsSync(join(here, "..", "..", ".claude", "skills", "schema-reviewer")), "live: nothing is written into .claude/skills");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
@@ -326,7 +346,7 @@ await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 const leftLive = {};
-for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "webhooks", "settings"]) {
+for (const r of ["overview", "agents", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "webhooks", "settings"]) {
   await go("#/" + r);
   const l = await englishLeft(); if (l.length) leftLive[r] = l;
 }

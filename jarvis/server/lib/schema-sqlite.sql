@@ -371,3 +371,39 @@ create table if not exists model_endpoints (
   constraint model_endpoints_external_locked check (status = 'draft')
 );
 create index if not exists model_endpoints_ws on model_endpoints (workspace_id, created_at);
+
+-- ADR-142: the live skill loader. A mounted skill is a row here (text only); nothing is written to disk and
+-- nothing runs. A skill with a critical or high audit finding is never mounted.
+create table if not exists runtime_skills (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 3 and 41 and name not glob '*[^a-z0-9-]*' and substr(name, 1, 1) glob '[a-z]'),
+  description text not null,
+  origin text not null check (origin in ('github', 'synthesized', 'derived', 'captured')),
+  source_url text check (source_url is null or source_url like 'https://github.com/%'),
+  licence text,
+  version integer not null default 1 check (version >= 1),
+  parent_id text,
+  files text not null,
+  scan text not null,
+  status text not null default 'mounted' check (status in ('mounted', 'removed')),
+  approval_id text references approvals(id) on delete set null,
+  created_at text not null,
+  updated_at text not null,
+  constraint runtime_skills_scan_clean check (status <> 'mounted' or (json_extract(scan, '$.critical') = 0 and json_extract(scan, '$.high') = 0))
+);
+create unique index if not exists runtime_skills_one_mounted_name on runtime_skills (workspace_id, name) where status = 'mounted';
+
+create table if not exists skill_evolution_log (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  skill_id text,
+  evolution_type text not null check (evolution_type in ('FIX', 'DERIVED', 'CAPTURED')),
+  parent_id text,
+  note text not null default '',
+  scan text not null,
+  created_at text not null
+);
+create index if not exists skill_evolution_log_ws on skill_evolution_log (workspace_id, created_at);
+create trigger if not exists skill_evolution_log_no_update before update on skill_evolution_log
+  begin select raise(abort, 'jarvis.skill_evolution_log is append-only'); end;

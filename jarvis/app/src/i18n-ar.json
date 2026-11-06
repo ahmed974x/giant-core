@@ -523,6 +523,26 @@
   [
    "^Open Jarvis to the public \\(founder_private → public_subscribers\\)$",
    "فتح Jarvis للجمهور (founder_private ← public_subscribers)"
+  ],
+  [
+   "^Mounted (.+)\\. It is in the Skill Mixer, the agent editor and Ctrl\\+K now\\.$",
+   "رُكّبت $1. هي الآن في خلاط المهارات ومحرر الوكلاء وCtrl+K."
+  ],
+  [
+   "^Fix (.+)$",
+   "إصلاح $1"
+  ],
+  [
+   "^Derive from (.+)$",
+   "اشتقاق من $1"
+  ],
+  [
+   "^Path of SKILL\\.md in (.+)$",
+   "مسار SKILL.md في $1"
+  ],
+  [
+   "^Install the skill “(.+)” into \\.claude/skills$",
+   "تثبيت المهارة «$1» في .claude/skills"
   ]
  ],
  "strings": {
@@ -1426,6 +1446,51 @@
   "Leave out the query and fragment.": "احذف الاستعلام والجزء بعد #.",
   "· Opening Jarvis to the public is a publish action (AGENTS.md §1). The database keeps it founder only.": "· فتح Jarvis للجمهور عملية نشر (AGENTS.md §1). قاعدة البيانات تبقيه للمؤسس فقط.",
   "· Draft. Workspace text would leave this computer.": "· مسودة. نصوص مساحة العمل ستغادر هذا الجهاز.",
-  "endpoint requested": "طُلبت نقطة مستضافة"
+  "endpoint requested": "طُلبت نقطة مستضافة",
+  "Skill Loader": "محمّل المهارات",
+  "skill mounted": "رُكّبت مهارة",
+  "skill fixed": "أُصلحت مهارة",
+  "skill unmounted": "أُزيل تركيب مهارة",
+  "Not mounted: the audit found a critical or high problem.": "لم تُركّب: وجد الفحص مشكلة حرجة أو عالية.",
+  "Loaded in this workspace": "محمّلة في مساحة العمل هذه",
+  "Find, write and grow skills from inside Jarvis. Each one is audited, then mounted in this workspace at once. Writing one into the repository stays a locked approval.": "ابحث عن المهارات واكتبها وطوّرها من داخل Jarvis. تُفحص كل مهارة ثم تُركّب في مساحة العمل هذه فوراً. كتابتها في المستودع تبقى موافقة مقفلة.",
+  "Discover on GitHub": "اكتشف على GitHub",
+  "GitHub's official search API, keyless. Importing reads one SKILL.md as text; scripts and other files are never fetched.": "واجهة بحث GitHub الرسمية بلا مفتاح. الاستيراد يقرأ ملف SKILL.md واحداً كنص؛ لا تُجلب السكربتات ولا أي ملفات أخرى أبداً.",
+  "Find skills on GitHub": "ابحث عن مهارات على GitHub",
+  "Search GitHub": "ابحث في GitHub",
+  "Import SKILL.md": "استورد SKILL.md",
+  "Captured": "ملتقطة",
+  "Fix…": "أصلح…",
+  "Derive…": "اشتق…",
+  "Derived": "مشتقة",
+  "Synthesized": "مولّدة",
+  "GitHub (text only)": "GitHub (نص فقط)",
+  "Synthesize": "ولّد",
+  "The local model writes the SKILL.md when one runs on 127.0.0.1; otherwise the fixed template does.": "يكتب النموذج المحلي ملف SKILL.md إذا كان يعمل على 127.0.0.1؛ وإلا يكتبه القالب الثابت.",
+  "What the skill or tool should do": "ما الذي يجب أن تفعله المهارة أو الأداة",
+  "Synthesize and mount": "ولّد وركّب",
+  "A tool that compares how fast two sorting algorithms run on the same list": "أداة تقارن سرعة خوارزميتي ترتيب على القائمة نفسها",
+  "Capture a mission": "التقط مهمة",
+  "Turn a mission that worked into a skill. Its locked steps become stops, never actions.": "حوّل مهمة نجحت إلى مهارة. خطواتها المقفلة تصبح نقاط توقف، لا أفعالاً أبداً.",
+  "Finished mission": "مهمة منتهية",
+  "Capture as a skill": "التقطها كمهارة",
+  "No finished mission yet": "لا توجد مهمة منتهية بعد",
+  "Evolution log": "سجل التطور",
+  "FIX: a new version. DERIVED: a new skill grown from one. CAPTURED: from GitHub, a request or a mission. Append-only.": "FIX: نسخة جديدة. DERIVED: مهارة جديدة نمت من أخرى. CAPTURED: من GitHub أو طلب أو مهمة. إضافة فقط.",
+  "database schema review": "مراجعة مخطط قاعدة بيانات",
+  "No skill loaded yet. Search GitHub, synthesize one, or capture a finished mission.": "لم تُحمّل أي مهارة بعد. ابحث في GitHub أو ولّد واحدة أو التقط مهمة منتهية.",
+  "No change logged yet.": "لم يُسجل أي تغيير بعد.",
+  "No repository matches.": "لا يوجد مستودع مطابق.",
+  "Edit the SKILL.md. The new version is audited again; if it fails, the current version stays.": "عدّل ملف SKILL.md. تُفحص النسخة الجديدة مرة أخرى؛ وإن فشلت تبقى النسخة الحالية.",
+  "Save new version": "احفظ نسخة جديدة",
+  "A new skill keeps this one's steps and adds yours. The original stays as it is.": "تحتفظ المهارة الجديدة بخطوات هذه وتضيف خطواتك. تبقى الأصلية كما هي.",
+  "New steps": "خطوات جديدة",
+  "One new step per line": "خطوة جديدة في كل سطر",
+  "Derive and mount": "اشتق وركّب",
+  "Searching GitHub needs the local server (node jarvis/server/server.mjs). Synthesize the skill here instead.": "البحث في GitHub يحتاج الخادم المحلي (node jarvis/server/server.mjs). ولّد المهارة هنا بدلاً من ذلك.",
+  "Importing from GitHub needs the local server (node jarvis/server/server.mjs).": "الاستيراد من GitHub يحتاج الخادم المحلي (node jarvis/server/server.mjs).",
+  "Pick the finished mission to capture.": "اختر المهمة المنتهية لالتقاطها.",
+  "Only a file named SKILL.md is imported; scripts and other files never are.": "يُستورد فقط ملف اسمه SKILL.md؛ لا تُستورد السكربتات ولا الملفات الأخرى أبداً.",
+  "Write the repository as owner/name.": "اكتب المستودع بصيغة owner/name."
  }
 }

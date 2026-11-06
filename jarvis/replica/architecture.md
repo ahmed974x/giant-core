@@ -55,6 +55,8 @@ ADR-140 adds `POST /api/llm/stream`: Server-Sent Events with `token`, `thinking`
 
 ADR-141 adds `access_settings` (`access_settings_founder_private_locked`) and `model_endpoints` (`model_endpoints_external_locked`). Routes: `/login`, `/api/founder/{status,login,logout}`, `GET/PATCH /api/access` (any mode but founder_private: 403 + locked card), and `/api/w/:slug/access/request-public` (202 + locked card). Also `/api/w/:slug/model-endpoints` (POST 202 draft + locked card, `/:id/activate` 403). With `JARVIS_FOUNDER_KEY` every other route needs the founder session.
 
+ADR-142 adds `runtime_skills` (`runtime_skills_scan_clean`) and append-only `skill_evolution_log`. Routes under `/api/w/:slug/skills/`: `runtime` (GET), `evolution` (GET), `discover-online`, `import`, `synthesize-and-mount`, `evolve`, `runtime/:id/install` (locked) and `DELETE runtime/:id`.
+
 ## API (phase 2)
 
 | method path | does | who | input | output | flow |

@@ -66,5 +66,7 @@ OpenAI-compatible local model engine,models,should,yes,yes,"ADR-140: vLLM, llama
 Streamed model answers,models,should,yes,yes,"ADR-140: POST /api/llm/stream (SSE), reasoning kept apart, untrusted label, stops when the tab closes"
 Founder-only sign-in gate,access,should,yes,yes,"ADR-141: scrypt + timingSafeEqual, HMAC-SHA256 HttpOnly SameSite=Strict cookie, lockout, /login; public host only with the key"
 Locked public access and hosted endpoints,access,should,yes,yes,"ADR-141: access_settings_founder_private_locked, model_endpoints_external_locked; requests become locked cards"
+Live skill discovery and import from GitHub,skills,should,yes,yes,"ADR-142: keyless search API, one SKILL.md as text, SSRF shield, licence and source kept"
+Skill synthesis and evolution (FIX/DERIVED/CAPTURED),skills,should,yes,yes,"ADR-142: local model or template, eleven loader rules plus SkillSpector, runtime_skills_scan_clean, append-only log, mounted at once in Mixer, agent editor and Ctrl+K"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

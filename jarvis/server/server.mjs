@@ -27,12 +27,13 @@ import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
 import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
 import { createFounderGate, loginPage, GateError } from "./lib/founder-gate.mjs";
 import { createAccess } from "./lib/access.mjs";
+import { createSkillLoader } from "./lib/skill-loader.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, founderKey, publicHost, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, founderKey, publicHost, quiet = false } = {}) {
   // ADR-141: the founder gate is on when JARVIS_FOUNDER_KEY is set; a bad key or public host stops the start.
   const gate = createFounderGate({ ...(founderKey !== undefined ? { key: founderKey } : {}), ...(publicHost !== undefined ? { publicHost } : {}) });
   const login = loginPage(t => createHash("sha256").update(t).digest("base64"));
@@ -62,6 +63,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   platform = createPlatform({ db, store, runner, missions, dataDir });
   memory = createMemory({ db, store, llm });
   const access = createAccess({ db, store });
+  // ADR-142: GitHub reads go through the open-web search's request function (fixed host, SSRF shield).
+  const loader = createSkillLoader({ db, store, llm, ...(skillRequest ? { request: skillRequest } : {}) });
   await access.ensure();
   await platform.seed();
   // Scheduled runs (ADR-137): due schedules start every 30 s while the server runs.
@@ -292,6 +295,17 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "DELETE" && (k = /^\/billing\/tiers\/([\w-]{1,64})$/.exec(rest))) return send(200, await platform.deleteTier(slug, k[1]));
         if (req.method === "POST" && rest === "/billing/request") return send(200, await platform.requestMoney(slug, body.what === "billing" ? "billing" : String(body.what || "plan")));
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
+        // ADR-142: the live skill loader.
+        if (req.method === "GET" && rest === "/skills/runtime") return send(200, await loader.list(slug));
+        if (req.method === "GET" && rest === "/skills/evolution") return send(200, await loader.evolutionLog(slug));
+        if (req.method === "POST" && rest === "/skills/discover-online") return send(200, await loader.discover(slug, body));
+        if (req.method === "POST" && rest === "/skills/import") return send(201, await loader.importFromGithub(slug, body));
+        if (req.method === "POST" && rest === "/skills/synthesize-and-mount") return send(201, await loader.synthesize(slug, body));
+        if (req.method === "POST" && rest === "/skills/evolve") return send(201, await loader.evolve(slug, body, missions));
+        if ((k = /^\/skills\/runtime\/([\w-]{1,64})(\/install)?$/.exec(rest))) {
+          if (req.method === "POST" && k[2]) return send(200, await loader.requestInstall(slug, k[1]));
+          if (req.method === "DELETE" && !k[2]) return send(200, await loader.unmount(slug, k[1]));
+        }
         // ADR-141: hosted model endpoints are recorded as drafts with a locked outbound approval.
         if (req.method === "GET" && rest === "/model-endpoints") return send(200, await access.listEndpoints(slug));
         if (req.method === "POST" && rest === "/model-endpoints") return send(202, await access.requestEndpoint(slug, body));
@@ -367,7 +381,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

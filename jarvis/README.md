@@ -242,6 +242,16 @@ Set `JARVIS_FOUNDER_KEY` and every page and API call needs that key (sign in at 
 
 Settings → Access shows the mode `founder_private`. **Open to the public…** makes a locked card; the database will not change the mode. Settings → Hosted model endpoints records a hosted address, such as a DeepSeek API, as a draft behind a locked card. Nothing is sent.
 
+## Skill Loader (ADR-142)
+
+`#/loader` grows Jarvis's skills from inside the page:
+- **Discover on GitHub:** search public repositories, then import one `SKILL.md` as text.
+- **Synthesize:** describe a skill or tool; the local model (or the fixed template) writes it.
+- **Capture a mission:** turn one that worked into a skill.
+- **Fix… and Derive…:** make new versions, or new skills, from loaded ones.
+
+Every skill is audited first. One that passes is mounted at once: it shows in the Skill Mixer, the agent editor and Ctrl+K. **Install into the repo…** is a locked card; nothing is written to `.claude/skills` and nothing runs.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

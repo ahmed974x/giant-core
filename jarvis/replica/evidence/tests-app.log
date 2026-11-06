@@ -109,6 +109,16 @@ PASS F19 a private address is refused as a hosted endpoint
 PASS F19 a hosted endpoint becomes a locked outbound card
 PASS F19 the endpoint stays a draft with a violet lock line
 PASS F19 both requests wait in the locked approvals
+PASS F20 sample mode says GitHub discovery needs the local server
+PASS F20 a synthesized skill is audited and mounted at once
+PASS F20 a skill with a dangerous step is refused with its rule
+PASS F20 FIX makes version 2
+PASS F20 DERIVED mounts a new skill grown from the first
+PASS F20 CAPTURED writes a skill from a finished mission
+PASS F20 the evolution log lists every change
+PASS F20 installing a loaded skill is a locked approval
+PASS F20 a loaded skill is a Ctrl+K command at once
+PASS F20 the command opens the Skill Mixer on the loaded skill
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -117,4 +127,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-118 passed, 0 failed
+128 passed, 0 failed
