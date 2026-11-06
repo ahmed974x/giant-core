@@ -14,6 +14,8 @@ import { cleanClone, parse } from "../lib/clean-clone.mjs";
 import { checkUrl, robotsAllows, isBlockedAddress, safeLookup, FetchError } from "../lib/fetch-public.mjs";
 import { canonical, sealCapsule, verifyChain, judge } from "../lib/missions.mjs";
 import { pinLoopback, BridgeError, isLocalModelEngine } from "../lib/ollama-bridge.mjs";
+import { createFounderGate, checkPublicHost, parseCookies } from "../lib/founder-gate.mjs";
+import { checkEndpointUrl } from "../lib/access.mjs";
 import { pinCompatUrl, thinkSplitter, profileOf, pickModel, MODEL_PROFILES, createOpenAICompatClient } from "../lib/openai-compat.mjs";
 import { checkGraph, topoLevels, graphToSteps, signBody, verifySignature, checkHookUrl } from "../lib/platform.mjs";
 import { bm25, tokenize } from "../lib/bm25.mjs";
@@ -452,6 +454,31 @@ async function suite(mode, opts) {
   ok((await post("/api/studio/clean-clone", { url: "https://blocked.example/" })).status === 400, tag("clean-clone passes a refusal through"));
   ok((await post("/api/studio/clean-clone", {})).status === 400, tag("clean-clone needs a URL or HTML"));
 
+  // ADR-141: the access mode stays founder_private; a hosted endpoint is a draft with a locked approval.
+  const acc = await j("/api/access");
+  ok(acc.status === 200 && acc.body.mode === "founder_private" && acc.body.publicLocked === true && acc.body.gate === false, tag("the access mode is founder_private"), acc.body);
+  const goPublic = await post("/api/access", { mode: "public_subscribers", workspace: "giant-core" }, "PATCH");
+  ok(goPublic.status === 403 && goPublic.body.locked && goPublic.body.approvalId, tag("asking to open Jarvis to the public answers 403 with a locked approval"), goPublic.body);
+  const pubAp = (await j("/api/w/giant-core/approvals")).body.find(p => p.id === goPublic.body.approvalId);
+  ok(pubAp && pubAp.category === "publish" && pubAp.locked && pubAp.status === "pending", tag("the public-access request is a locked publish card"), pubAp);
+  ok((await post(`/api/w/giant-core/approvals/${goPublic.body.approvalId}/approve`, {})).status >= 400, tag("the public-access card cannot be approved inside Jarvis"));
+  const askPublic = await post("/api/w/giant-core/access/request-public", {});
+  ok(askPublic.status === 202 && askPublic.body.locked && askPublic.body.mode === "founder_private", tag("the page's request to go public is recorded as a locked card (202)"), askPublic.body);
+  ok((await j("/api/access")).body.mode === "founder_private", tag("the access mode is unchanged after the request"));
+  ok(await expectSqlError("update access_settings set mode = 'public_subscribers' where id = 'global'", [], "access_settings_founder_private_locked"), tag("SQL: the access mode can never leave founder_private"));
+  const epBad = await post("/api/w/giant-core/model-endpoints", { name: "Local", url: "https://127.0.0.1:8000/v1" });
+  ok(epBad.status === 400, tag("a private address is not a hosted endpoint"), epBad.body);
+  ok((await post("/api/w/giant-core/model-endpoints", { name: "X", url: "http://api.example.com/v1" })).status === 400 && (await post("/api/w/giant-core/model-endpoints", { name: "X", url: "https://user:secret@api.example.com/v1" })).status === 400, tag("a hosted endpoint must be https without credentials"));
+  const ep = await post("/api/w/giant-core/model-endpoints", { name: "DeepSeek API", url: "https://api.deepseek.com/v1" });
+  ok(ep.status === 202 && ep.body.locked && ep.body.endpoint.status === "draft" && ep.body.endpoint.host === "api.deepseek.com", tag("a hosted endpoint is recorded as a draft"), ep.body);
+  const epAp = (await j("/api/w/giant-core/approvals")).body.find(p => p.id === ep.body.approvalId);
+  ok(epAp && epAp.category === "outbound" && epAp.locked && /api\.deepseek\.com/.test(epAp.action), tag("the hosted endpoint waits as a locked outbound card"), epAp);
+  const act = await post(`/api/w/giant-core/model-endpoints/${ep.body.endpoint.id}/activate`, {});
+  ok(act.status === 403 && act.body.locked && act.body.approvalId === ep.body.approvalId, tag("activating a hosted endpoint answers 403"), act.body);
+  ok(await expectSqlError("update model_endpoints set status = 'active' where id = $1", [ep.body.endpoint.id], "model_endpoints_external_locked"), tag("SQL: a hosted endpoint can never leave draft"));
+  ok((await j("/api/llm/status")).body.host.startsWith("http://127.0.0.1:"), tag("the model bridge still talks to 127.0.0.1 only"));
+  ok((await post(`/api/w/giant-core/model-endpoints/${ep.body.endpoint.id}`, {}, "DELETE")).body.ok && (await j("/api/w/giant-core/model-endpoints")).body.length === 0, tag("a draft endpoint can be removed"));
+
   // ADR-139: live open-web search through /api/search/live (official APIs answered by fixtures).
   searchCalls.length = 0; searchDown = false;
   const web = await post("/api/search/live", { workspace: "giant-core", mode: "web", q: "breadth first search" });
@@ -587,6 +614,57 @@ ok(/^JarvisOpenSearch\/1\.0 \(\+https:\/\/github\.com\//.test(SEARCH_UA), "an ho
   const br = await brittle.search({ q: "graph", mode: "web" });
   ok(br.results.some(r => r.title === "Kept") && br.sources.find(x => x.source === "github").ok === false, "one source that answers nonsense does not sink the others", br.sources);
 }
+
+// ADR-141: founder gate (node:crypto: scrypt, timingSafeEqual, HMAC-SHA256 session cookie).
+for (const bad of ["http://jarvis.example.com", "jarvis.example.com:8443", "localhost", "router.lan", "10.0.0.5", "jarvis.example.com/x"]) { let e8 = null; try { checkPublicHost(bad); } catch (e) { e8 = e; } ok(e8 && e8.status === 400, "public host refused: " + bad); }
+{ let e9 = null; try { createFounderGate({ key: "", publicHost: "jarvis.example.com" }); } catch (e) { e9 = e; } ok(e9 && /needs JARVIS_FOUNDER_KEY/.test(e9.message), "a public host without a founder key is refused at start"); }
+{ let e10 = null; try { createFounderGate({ key: "short" }); } catch (e) { e10 = e; } ok(e10 && e10.status === 400, "a founder key shorter than 12 characters is refused"); }
+ok(checkEndpointUrl("https://api.deepseek.com/v1/").url === "https://api.deepseek.com/v1", "a hosted endpoint URL is normalised");
+{
+  const KEY = "test-founder-key-" + "x".repeat(8);
+  const gs = await startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), "jarvis-gate-")), quiet: true, founderKey: KEY, publicHost: "jarvis.example.com" });
+  const G = "http://127.0.0.1:" + gs.port, GH = { "content-type": "application/json", "x-jarvis": "1" };
+  const page = await fetch(G + "/", { redirect: "manual" });
+  ok(page.status === 302 && page.headers.get("location") === "/login", "with a founder key the page redirects to sign-in");
+  const api0 = await fetch(G + "/api/workspaces");
+  ok(api0.status === 401, "with a founder key the API answers 401 without a session");
+  ok((await fetch(G + "/api/w/giant-core/agents")).status === 401 && (await fetch(G + "/api/llm/status")).status === 401 && (await fetch(G + "/api/search/live", { method: "POST", headers: GH, body: "{}" })).status === 401, "every API route is behind the gate");
+  const lp = await fetch(G + "/login");
+  const lcsp = lp.headers.get("content-security-policy");
+  ok(lp.status === 200 && /default-src 'none'/.test(lcsp) && /script-src 'sha256-/.test(lcsp) && !/unsafe/.test(lcsp) && /مفتاح المؤسس/.test(await lp.text()), "the sign-in page is open, bilingual, with a hash-pinned CSP");
+  const st = await (await fetch(G + "/api/founder/status")).json();
+  ok(st.gate === true && st.signedIn === false && st.publicHost === "jarvis.example.com", "founder status says the gate is on", st);
+  const wrong = await fetch(G + "/api/founder/login", { method: "POST", headers: GH, body: JSON.stringify({ key: "not-the-key-at-all" }) });
+  ok(wrong.status === 401 && !wrong.headers.get("set-cookie"), "a wrong key is refused and sets no cookie");
+  const right = await fetch(G + "/api/founder/login", { method: "POST", headers: GH, body: JSON.stringify({ key: KEY }) });
+  const set = right.headers.get("set-cookie") || "";
+  ok(right.status === 200 && /^jarvis_founder=\d+\.[\w-]{16}\.[\w-]{43}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=43200$/.test(set), "the founder key opens a session in an HttpOnly, SameSite=Strict cookie", set);
+  const ck = set.split(";")[0];
+  ok((await fetch(G + "/api/workspaces", { headers: { cookie: ck } })).status === 200 && (await fetch(G + "/", { headers: { cookie: ck }, redirect: "manual" })).status === 200, "the session opens the page and the API");
+  const forged = ck.replace(/.$/, c => (c === "A" ? "B" : "A"));
+  ok((await fetch(G + "/api/workspaces", { headers: { cookie: forged } })).status === 401, "a cookie with a changed signature is refused");
+  const expired = "jarvis_founder=1000000000000." + ck.split(".")[1] + "." + ck.split(".")[2];
+  ok((await fetch(G + "/api/workspaces", { headers: { cookie: expired } })).status === 401, "a cookie whose time was edited is refused");
+  // fetch() drops a custom Host header, so these two use http.request, as a reverse proxy would.
+  const rawGet = (host, extra = {}) => new Promise((resolve, reject) => { const r = http.request({ host: "127.0.0.1", port: gs.port, path: "/api/workspaces", headers: { host, ...extra } }, res => { res.resume(); resolve(res.statusCode); }); r.on("error", reject); r.end(); });
+  ok(await rawGet("jarvis.example.com", { cookie: ck }) === 200, "behind the gate the public host is answered (through the reverse proxy)");
+  ok(await rawGet("jarvis.example.com") === 401, "the public host without a session gets 401");
+  ok(await rawGet("evil.example.com", { cookie: ck }) === 421, "any other host is still refused");
+  const xo = await fetch(G + "/api/w/giant-core/agents", { method: "POST", headers: { ...GH, cookie: ck, origin: "https://evil.example.com" }, body: "{}" });
+  ok(xo.status === 403, "a cross-origin write is refused even with a session");
+  const httpsCookie = await new Promise((resolve, reject) => { const body = JSON.stringify({ key: KEY }); const r = http.request({ host: "127.0.0.1", port: gs.port, path: "/api/founder/login", method: "POST", headers: { ...GH, host: "jarvis.example.com", "x-forwarded-proto": "https", origin: "https://jarvis.example.com", "content-length": Buffer.byteLength(body) } }, res => { res.resume(); resolve(String(res.headers["set-cookie"] || "")); }); r.on("error", reject); r.end(body); });
+  ok(/; Secure$/.test(httpsCookie), "over HTTPS through the proxy the cookie is Secure", httpsCookie);
+  const out = await fetch(G + "/api/founder/logout", { method: "POST", headers: { ...GH, cookie: ck }, body: "{}" });
+  ok(/Max-Age=0/.test(out.headers.get("set-cookie") || ""), "sign-out clears the cookie");
+  let codes = [];
+  for (let i = 0; i < 6; i++) codes.push((await fetch(G + "/api/founder/login", { method: "POST", headers: GH, body: JSON.stringify({ key: "wrong-key-" + i + "-xxxxxxxx" }) })).status);
+  ok(codes.slice(0, 4).every(c => c === 401) && codes[codes.length - 1] === 429, "after five wrong keys the address waits (429)", codes);
+  ok((await fetch(G + "/api/founder/login", { method: "POST", headers: GH, body: JSON.stringify({ key: KEY }) })).status === 429, "even the right key waits during the lockout");
+  const hookStatus = (await fetch(G + "/api/hooks/nope", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).status;
+  ok(hookStatus !== 401, "signed webhooks are not behind the session gate (they carry their own HMAC)", hookStatus);
+  await gs.close();
+}
+ok(parseCookies("a=1; jarvis_founder=x.y.z; b=2").jarvis_founder === "x.y.z", "cookie parsing");
 
 // ADR-140: OpenAI-compatible local engine (vLLM, llama.cpp, Ollama /v1) for DeepSeek and Qwen open weights.
 for (const bad of ["http://localhost:8000/v1", "https://127.0.0.1:8000/v1", "http://127.0.0.1/v1", "http://127.0.0.1:8000/v2", "https://api.deepseek.com/v1", "http://10.0.0.5:8000/v1", "http://[::1]:8000/v1", "http://u:p@127.0.0.1:8000/v1", "http://127.0.0.1:8000/v1?x=1"]) {

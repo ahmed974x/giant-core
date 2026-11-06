@@ -594,6 +594,27 @@
       },
       searchStatus() { return ok({ sources: [], searxng: null }); },
       llmStream() { return bad("Streaming answers come from a local model through the local server. Start jarvis/server and Ollama, vLLM or llama.cpp on this computer."); },
+      // ADR-141 in sample mode: the same locks, on this browser's data. There is no gate without a server.
+      accessStatus() { return ok({ mode: "founder_private", publicLocked: true, gate: false, signedIn: true, publicHost: null, sample: true }); },
+      requestPublic() {
+        const ap = { id: uid("ap"), category: "publish", agentId: null, action: "Open Jarvis to the public (founder_private → public_subscribers)", payload: "Anyone could then reach Jarvis. This is a publish action for Director 00 outside Jarvis.", status: "pending", createdAt: Date.now() };
+        W().approvals.push(ap); save(); return ok({ locked: true, approvalId: ap.id });
+      },
+      listEndpoints() { return ok((W().endpoints || []).slice().reverse()); },
+      requestEndpoint({ name, url }) {
+        const n = String(name || "").trim().slice(0, 60);
+        if (!n) return bad("Name the endpoint, e.g. DeepSeek API.");
+        let u; try { u = new URL(String(url || "").trim()); } catch (e) { return bad("Write the endpoint as a full https:// address."); }
+        if (u.protocol !== "https:" || u.username || u.password) return bad("A hosted endpoint must use https:// without a user name or password.");
+        if (!u.hostname.includes(".") || /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)|localhost/.test(u.hostname)) return bad("Private and local addresses are not hosted endpoints; local models use the OpenAI-compatible engine on 127.0.0.1.");
+        const ap = { id: uid("ap"), category: "outbound", agentId: null, action: "Send workspace text to the hosted model endpoint " + u.hostname, payload: "Prompts, memory examples and plans would leave this computer.", status: "pending", createdAt: Date.now() };
+        W().approvals.push(ap);
+        const e = { id: uid("ep"), name: n, url: u.origin + u.pathname.replace(/\/+$/, ""), host: u.hostname, status: "draft", approvalId: ap.id, approvalStatus: "pending", createdAt: Date.now() };
+        (W().endpoints || (W().endpoints = [])).push(e); save();
+        return ok({ locked: true, approvalId: ap.id, endpoint: e });
+      },
+      removeEndpoint(id) { W().endpoints = (W().endpoints || []).filter(e => e.id !== id); save(); return ok({ ok: true }); },
+      signOut() { return ok({ ok: true }); },
       // ADR-138 in sample mode: the same BM25, forge scan and computed self-check, on this browser's data.
       searchMemory({ q, kind } = {}) {
         const pool = (W().memory || []).filter(e => !kind || e.kind === kind).slice().reverse();
@@ -780,6 +801,13 @@
         return done || { engine: "deterministic-rules", warning: "The stream ended early." };
       },
       searchStatus: () => req("GET", "/api/search/status"),
+      // ADR-141: asking is recorded (202) as a locked card; changing the mode directly answers 403.
+      accessStatus: async () => ({ ...(await req("GET", "/api/access")), ...(await req("GET", "/api/founder/status")) }),
+      requestPublic: () => req("POST", w("/access/request-public"), {}),
+      listEndpoints: () => req("GET", w("/model-endpoints")),
+      requestEndpoint: body => req("POST", w("/model-endpoints"), body),
+      removeEndpoint: id => req("DELETE", w("/model-endpoints/" + encodeURIComponent(id)), {}),
+      signOut: async () => { await req("POST", "/api/founder/logout", {}); location.replace("/login"); return { ok: true }; },
       planMission: body => req("POST", w("/missions/plan"), body),
       // ADR-137
       listWorkflows: () => req("GET", w("/workflows")),
@@ -1387,6 +1415,46 @@
       h("p", { class: "subtle t-caption", text: "Cost to you: 0 tokens. Everything runs on this computer; nothing leaves 127.0.0.1." }));
   }
 
+  /* ── Access (ADR-141): founder-only, and opening to the public is a locked card ─────────── */
+  const lockLine = note => h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + note }));
+  function showLocked(from, category, action) {
+    openDialog("This waits for Director 00", lockedCard({ id: "lk-" + Date.now(), category, action, createdAt: Date.now() }),
+      [h("a", { class: "btn btn-secondary", href: "#/approvals", text: "Open approvals", onclick: closeDialog }), h("button", { class: "btn btn-primary", type: "button", text: "Close", onclick: closeDialog })], from);
+    updateCount();
+  }
+  function accessPanel() {
+    const box = h("div", { class: "stack" });
+    loadInto(box, () => store.accessStatus(), st => {
+      const ask = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-lock", "sm"), "Open to the public…");
+      ask.addEventListener("click", e => { const from = e.currentTarget; store.requestPublic().then(() => showLocked(from, "publish", "Open Jarvis to the public (founder_private → public_subscribers)"), err => toast("error", err.message)); });
+      const signOut = st.gate ? h("button", { class: "btn btn-ghost", type: "button", text: "Sign out" }) : null;
+      if (signOut) signOut.addEventListener("click", () => store.signOut().catch(err => toast("error", err.message)));
+      return h("div", { class: "stack" },
+        h("div", { class: "row" }, badge("locked", "Founder only"), h("code", { class: "t-caption", translate: "no", text: st.mode })),
+        h("dl", { class: "kv" },
+          h("dt", { text: "Sign-in" }), h("dd", { text: st.sample ? "No server: this page runs on this computer only." : st.gate ? "On: every page and API call needs the founder key." : "Off: answers on 127.0.0.1 only. Set JARVIS_FOUNDER_KEY to require the key." }),
+          h("dt", { text: "Public address" }), h("dd", null, st.publicHost ? h("code", { translate: "no", text: "https://" + st.publicHost }) : h("span", { class: "muted", text: "None (127.0.0.1 only)" }))),
+        lockLine("Opening Jarvis to the public is a publish action (AGENTS.md §1). The database keeps it founder only."),
+        h("div", { class: "row" }, ask, signOut));
+    });
+    return h("section", { class: "panel", "aria-labelledby": "h-access" }, h("h2", { id: "h-access", text: "Access" }), box);
+  }
+  function endpointsPanel() {
+    const list = h("div", { class: "stack" });
+    const name = h("input", { class: "input", id: "f-epname", name: "endpoint-name", autocomplete: "off", maxLength: 60, placeholder: "DeepSeek API" });
+    const url = h("input", { class: "input mono", id: "f-epurl", name: "endpoint-url", type: "url", autocomplete: "off", placeholder: "https://api.example.com/v1", translate: "no" });
+    const reload = () => loadInto(list, () => store.listEndpoints(), eps => eps.length ? h("ul", { class: "feed" }, eps.map(e => h("li", { class: "forged" },
+      h("div", { class: "stack" }, h("b", { dir: "auto", text: e.name }), h("code", { class: "t-caption", translate: "no", text: e.url }), lockLine("Draft. Workspace text would leave this computer.")),
+      h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Remove", onclick: () => store.removeEndpoint(e.id).then(reload, err => toast("error", err.message)) })))) : h("p", { class: "muted t-sm", text: "No hosted endpoint requested. Local models on 127.0.0.1 need none." }));
+    const add = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-lock", "sm"), "Ask to add…");
+    add.addEventListener("click", e => { const from = e.currentTarget; store.requestEndpoint({ name: name.value, url: url.value }).then(r => { name.value = ""; url.value = ""; reload(); showLocked(from, "outbound", "Send workspace text to the hosted model endpoint " + r.endpoint.host); }, err => toast("error", err.message)); });
+    reload();
+    return h("section", { class: "panel", "aria-labelledby": "h-ep" }, h("h2", { id: "h-ep", text: "Hosted model endpoints" }),
+      h("p", { class: "t-sm", text: "Jarvis talks to models on 127.0.0.1 only. A hosted endpoint would send prompts, memory examples and plans outside this computer and needs a key, so asking for one makes a locked card for Director 00. Nothing is sent." }),
+      h("div", { class: "grid-2" }, h("div", { class: "field" }, h("label", { htmlFor: "f-epname", text: "Name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-epurl", text: "Address" }), url)),
+      h("div", { class: "row" }, add), list);
+  }
+
   pages.settings = () => {
     const box = h("div", { class: "stack" });
     const render = ws => {
@@ -1401,6 +1469,8 @@
       return h("div", { class: "grid-2" },
         h("section", { class: "panel", "aria-labelledby": "h-ws" }, h("h2", { id: "h-ws", text: "Workspace" }), h("div", { class: "field" }, h("label", { htmlFor: "f-ws", text: "Name" }), name), h("div", null, save)),
         llmPanel(),
+        accessPanel(),
+        endpointsPanel(),
         h("section", { class: "panel", "aria-labelledby": "h-keys" }, h("h2", { id: "h-keys", text: "Model keys" }),
           h("p", { class: "t-sm", text: "Keys are never typed or stored in Jarvis. They live only in the Ops Room vault (AES-GCM-256, PBKDF2 600,000 rounds) or in the encrypted env files." }),
           h("p", { class: "subtle t-caption", text: "AGENTS.md §4: secrets never live in code, git or plain localStorage." })),

@@ -1,0 +1,25 @@
+# Jarvis behind Caddy (ADR-141). Caddy and Jarvis run on the SAME machine; Jarvis still binds 127.0.0.1.
+# Caddy gets and renews the HTTPS certificate for the name below (Let's Encrypt), and forwards to Jarvis.
+#
+# 1. Point the DNS name at this machine and open ports 80 and 443 to Caddy only (never 8798).
+# 2. Start Jarvis with the founder gate and this name:
+#      JARVIS_FOUNDER_KEY='<a long secret only you know>' JARVIS_PUBLIC_HOST=jarvis.example.com \
+#        node --disable-warning=ExperimentalWarning jarvis/server/server.mjs
+#    Jarvis refuses to start with JARVIS_PUBLIC_HOST but no founder key.
+# 3. Replace jarvis.example.com below with your name, then: caddy run --config jarvis/deploy/Caddyfile
+#
+# Making the address public is still Director 00's decision: this file only describes how, it deploys nothing.
+
+jarvis.example.com {
+	encode zstd gzip
+
+	# Caddy passes the original Host and sets X-Forwarded-Proto/For itself; it does not trust client copies.
+	reverse_proxy 127.0.0.1:8798
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

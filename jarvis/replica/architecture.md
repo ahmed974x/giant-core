@@ -53,6 +53,8 @@ ADR-139 adds `GET /api/search/status` and `POST /api/search/live {workspace, q, 
 
 ADR-140 adds `POST /api/llm/stream`: Server-Sent Events with `token`, `thinking`, `done` and `error` from the local model, whether Ollama native or an OpenAI-compatible server on 127.0.0.1.
 
+ADR-141 adds `access_settings` (`access_settings_founder_private_locked`) and `model_endpoints` (`model_endpoints_external_locked`). Routes: `/login`, `/api/founder/{status,login,logout}`, `GET/PATCH /api/access` (any mode but founder_private: 403 + locked card), and `/api/w/:slug/access/request-public` (202 + locked card). Also `/api/w/:slug/model-endpoints` (POST 202 draft + locked card, `/:id/activate` 403). With `JARVIS_FOUNDER_KEY` every other route needs the founder session.
+
 ## API (phase 2)
 
 | method path | does | who | input | output | flow |

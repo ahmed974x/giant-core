@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-140)
+# Parity: Jarvis (ADR-141)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
 
@@ -35,6 +35,10 @@ ADR-140 added two rows, both built and tested (`test-app.mjs` F18, `test-live.mj
 - the OpenAI-compatible local engine;
 - streamed model answers.
 
+ADR-141 added two rows, both built and tested (`test-app.mjs` F19, `test-live.mjs`, server tests):
+- the founder-only sign-in gate;
+- locked public access and hosted endpoints.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -43,7 +47,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (65 counted, must-haves 34 of 34 done)
+features 100.0  (67 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (7 features)
@@ -64,6 +68,7 @@ features 100.0  (65 counted, must-haves 34 of 34 done)
 - memory                       100.0  (3 features)
 - search                       100.0  (4 features)
 - models                       100.0  (2 features)
+- access                       100.0  (2 features)
 
 ## Missing, in build order
 - nothing. Every counted feature is done.

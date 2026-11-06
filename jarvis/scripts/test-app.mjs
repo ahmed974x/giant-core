@@ -396,6 +396,27 @@ await page.waitForTimeout(300);
 ok(/Streaming answers come from a local model through the local server/.test(await page.locator(".ask > p.subtle").last().textContent()) && !(await page.locator(".stream-out").textContent()), "F18 sample mode says streaming needs a local model and shows no invented answer");
 await page.locator("#f-ask").fill("");
 
+// F19: founder-only access and hosted endpoints (ADR-141): both are locked cards, nothing is sent.
+await go("#/settings");
+ok(await page.locator("#h-access ~ div").getByText("Founder only", { exact: true }).isVisible() && await page.locator("#h-access ~ div").getByText("founder_private").isVisible(), "F19 the access mode is shown as founder only");
+await page.getByRole("button", { name: "Open to the public…" }).click();
+await page.waitForTimeout(300);
+ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVisible() && await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible(), "F19 opening to the public becomes a locked publish card");
+await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
+await page.locator("#f-epname").fill("Local trick"); await page.locator("#f-epurl").fill("https://127.0.0.1:8000/v1");
+await page.getByRole("button", { name: "Ask to add…" }).click();
+await page.waitForTimeout(300);
+ok(await page.getByText("Private and local addresses are not hosted endpoints", { exact: false }).first().isVisible(), "F19 a private address is refused as a hosted endpoint");
+await page.locator("#f-epname").fill("DeepSeek API"); await page.locator("#f-epurl").fill("https://api.deepseek.com/v1");
+await page.getByRole("button", { name: "Ask to add…" }).click();
+await page.waitForTimeout(300);
+ok(await page.locator("dialog[open]").getByText(/hosted model endpoint api\.deepseek\.com/).isVisible(), "F19 a hosted endpoint becomes a locked outbound card");
+await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
+ok(await page.locator("#h-ep ~ div li").filter({ hasText: "https://api.deepseek.com/v1" }).getByText("بانتظار الموافقة").isVisible(), "F19 the endpoint stays a draft with a violet lock line");
+await go("#/approvals");
+await page.getByRole("tab", { name: /Locked/ }).click();
+ok(await page.locator("[role=tabpanel]:not([hidden])").getByText(/Open Jarvis to the public/).isVisible() && await page.locator("[role=tabpanel]:not([hidden])").getByText(/api\.deepseek\.com/).first().isVisible(), "F19 both requests wait in the locked approvals");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -408,7 +429,7 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["Explain breadth-first search", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);

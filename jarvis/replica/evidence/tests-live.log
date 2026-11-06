@@ -62,6 +62,8 @@ PASS live search asks only the official API hosts
 PASS live OSV search lists the vulnerability with its CVE alias
 PASS live: a streamed answer shows its text, its reasoning apart and the untrusted label
 PASS live: the Stop button hides again once the answer is done
+PASS live: a hosted endpoint is stored as a draft behind a locked card
+PASS live: asking to go public leaves the database founder_private
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -78,4 +80,4 @@ PASS live search renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-79 passed, 0 failed
+81 passed, 0 failed

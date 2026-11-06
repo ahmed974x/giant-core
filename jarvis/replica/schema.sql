@@ -387,3 +387,25 @@ create table forged_skills (
   constraint forged_skills_scan_clean check (status <> 'mounted' or ((scan->>'critical')::int = 0 and (scan->>'high')::int = 0))
 );
 create unique index forged_skills_one_mounted_name on forged_skills (workspace_id, name) where status = 'mounted';
+
+-- ADR-141: the access mode is founder-only, and hosted model endpoints are drafts. Both are locks:
+-- opening Jarvis to the public is a publish action and a hosted endpoint is an outbound one (AGENTS.md §1).
+create table access_settings (
+  id text primary key check (id = 'global'),
+  mode text not null default 'founder_private',
+  updated_at timestamptz not null default now(),
+  constraint access_settings_founder_private_locked check (mode = 'founder_private')
+);
+
+create table model_endpoints (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 60),
+  url text not null check (url like 'https://%'),
+  host text not null,
+  status text not null default 'draft',
+  approval_id uuid references approvals(id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint model_endpoints_external_locked check (status = 'draft')
+);
+create index on model_endpoints (workspace_id, created_at);

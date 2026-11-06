@@ -236,6 +236,12 @@ JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1 node jarvis/server/server.mjs
 - Settings → Local model shows each family's licence and has **Ask the local model**, which streams the answer token by token, with the reasoning folded apart.
 - Only `http://127.0.0.1` is accepted, so no hosted API and no key.
 
+## Founder only (ADR-141)
+
+Set `JARVIS_FOUNDER_KEY` and every page and API call needs that key (sign in at `/login`). To reach Jarvis over HTTPS on your own server, put Caddy in front: see `jarvis/deploy/README.md`.
+
+Settings → Access shows the mode `founder_private`. **Open to the public…** makes a locked card; the database will not change the mode. Settings → Hosted model endpoints records a hosted address, such as a DeepSeek API, as a draft behind a locked card. Nothing is sent.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

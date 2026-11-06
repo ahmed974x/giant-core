@@ -300,6 +300,18 @@ await page.waitForFunction(() => /cost 0/.test(document.querySelector(".ask .sub
 ok((await page.locator(".stream-out").textContent()) === "Breadth-first search visits a graph level by level." && (await page.locator(".stream-think").textContent()) === "Recall the definition." && /UNTRUSTED_MODEL_OUTPUT/.test(await page.locator(".ask > p.subtle").last().textContent()), "live: a streamed answer shows its text, its reasoning apart and the untrusted label");
 ok(!(await page.getByRole("button", { name: "Stop", exact: true }).isVisible()), "live: the Stop button hides again once the answer is done");
 
+// ADR-141 live: founder-only access; a hosted endpoint is a draft with a locked card in the database.
+await go("#/settings");
+await page.locator("#f-epname").fill("DeepSeek API"); await page.locator("#f-epurl").fill("https://api.deepseek.com/v1");
+await page.getByRole("button", { name: "Ask to add…" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVisible() && (await srv.db.all("select status, host from model_endpoints")).some(r => r.status === "draft" && r.host === "api.deepseek.com"), "live: a hosted endpoint is stored as a draft behind a locked card");
+await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
+await page.getByRole("button", { name: "Open to the public…" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
+await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
 const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];

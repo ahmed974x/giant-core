@@ -349,3 +349,25 @@ create table if not exists forged_skills (
   constraint forged_skills_scan_clean check (status <> 'mounted' or (json_extract(scan, '$.critical') = 0 and json_extract(scan, '$.high') = 0))
 );
 create unique index if not exists forged_skills_one_mounted_name on forged_skills (workspace_id, name) where status = 'mounted';
+
+-- ADR-141: the access mode is founder-only, and hosted model endpoints are drafts. Both are locks:
+-- opening Jarvis to the public is a publish action and a hosted endpoint is an outbound one (AGENTS.md §1).
+create table if not exists access_settings (
+  id text primary key check (id = 'global'),
+  mode text not null default 'founder_private',
+  updated_at text not null,
+  constraint access_settings_founder_private_locked check (mode = 'founder_private')
+);
+
+create table if not exists model_endpoints (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  name text not null check (length(name) between 1 and 60),
+  url text not null check (url like 'https://%'),
+  host text not null,
+  status text not null default 'draft',
+  approval_id text references approvals(id) on delete set null,
+  created_at text not null,
+  constraint model_endpoints_external_locked check (status = 'draft')
+);
+create index if not exists model_endpoints_ws on model_endpoints (workspace_id, created_at);

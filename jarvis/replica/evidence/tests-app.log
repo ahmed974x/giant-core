@@ -103,6 +103,12 @@ PASS F17 every source states why it did not answer
 PASS F17 the OSV mode shows the ecosystem:package form
 PASS F17 the clone mode hands the address to the Studio's clean-room cloner
 PASS F18 sample mode says streaming needs a local model and shows no invented answer
+PASS F19 the access mode is shown as founder only
+PASS F19 opening to the public becomes a locked publish card
+PASS F19 a private address is refused as a hosted endpoint
+PASS F19 a hosted endpoint becomes a locked outbound card
+PASS F19 the endpoint stays a draft with a violet lock line
+PASS F19 both requests wait in the locked approvals
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -111,4 +117,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-112 passed, 0 failed
+118 passed, 0 failed

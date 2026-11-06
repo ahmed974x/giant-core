@@ -25,11 +25,17 @@ import { createMemory } from "./lib/memory.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
 import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
 import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
+import { createFounderGate, loginPage, GateError } from "./lib/founder-gate.mjs";
+import { createAccess } from "./lib/access.mjs";
+import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, founderKey, publicHost, quiet = false } = {}) {
+  // ADR-141: the founder gate is on when JARVIS_FOUNDER_KEY is set; a bad key or public host stops the start.
+  const gate = createFounderGate({ ...(founderKey !== undefined ? { key: founderKey } : {}), ...(publicHost !== undefined ? { publicHost } : {}) });
+  const login = loginPage(t => createHash("sha256").update(t).digest("base64"));
   // Refuses at start any Ollama address that is not http://127.0.0.1:<port> (ADR-136).
   // Live open-web search (ADR-139): official keyless JSON APIs on fixed hosts; a bad SearXNG address is refused at start.
   const search = createOpenWebSearch({ ...(searchRequest ? { request: searchRequest } : {}), ...(searxngUrl !== undefined ? { searxngUrl } : {}) });
@@ -55,6 +61,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await missions.seedMissions();
   platform = createPlatform({ db, store, runner, missions, dataDir });
   memory = createMemory({ db, store, llm });
+  const access = createAccess({ db, store });
+  await access.ensure();
   await platform.seed();
   // Scheduled runs (ADR-137): due schedules start every 30 s while the server runs.
   const ticker = setInterval(() => { platform.tick().catch(() => {}); }, 30000);
@@ -76,10 +84,22 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
     const fail = (status, message) => send(status, { error: message });
     try {
       const actualPort = server.address().port;
-      const okHosts = [`127.0.0.1:${actualPort}`, `localhost:${actualPort}`];
+      const okHosts = gate.hosts(actualPort);
       if (!okHosts.includes(String(req.headers.host || ""))) return fail(421, "Wrong Host header. Open http://127.0.0.1:" + actualPort + ".");
       const url = new URL(req.url, `http://${req.headers.host}`);
       const path = url.pathname;
+
+      // ADR-141: founder gate. The sign-in page and its two routes are open; webhooks carry their own
+      // HMAC signature; everything else needs the founder's session when the gate is on.
+      if (req.method === "GET" && path === "/login") {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": login.csp, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY" });
+        return res.end(login.html);
+      }
+      const gateOpen = path === "/api/founder/login" || path === "/api/founder/status" || path === "/api/founder/logout" || /^\/api\/hooks\//.test(path);
+      if (!gateOpen && !gate.allowed(req)) {
+        if (req.method === "GET" && pages[path]) { res.writeHead(302, { Location: "/login", "Cache-Control": "no-store" }); return res.end(); }
+        return fail(401, "Founder sign-in needed.");
+      }
 
       if (req.method === "GET" && pages[path]) {
         if (!existsSync(pages[path])) return fail(404, "Build the page first: node jarvis/scripts/build-app.mjs");
@@ -102,7 +122,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       if (req.method !== "GET") {
         if (req.headers["x-jarvis"] !== "1") return fail(403, "Missing the X-Jarvis header.");
         const origin = req.headers.origin;
-        if (origin && !okHosts.map(h => "http://" + h).includes(origin)) return fail(403, "Cross-origin writes are refused.");
+        if (origin && !gate.origins(actualPort).includes(origin)) return fail(403, "Cross-origin writes are refused.");
         if (!/^application\/json\b/.test(String(req.headers["content-type"] || ""))) return fail(415, "Send JSON.");
         const limit = path === "/api/studio/clean-clone" ? 2.5 * 1024 * 1024 : 64 * 1024;
         const chunks = [];
@@ -114,6 +134,23 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
 
       const R = (method, re) => req.method === method && re.exec(path);
       let m;
+      // ADR-141: founder session and the locked access mode.
+      if (R("GET", /^\/api\/founder\/status$/)) return send(200, { gate: gate.enabled, signedIn: gate.allowed(req), publicHost: gate.publicHost });
+      if (R("POST", /^\/api\/founder\/login$/)) {
+        const r = gate.login(req, body.key);
+        if (r.cookie) res.setHeader("Set-Cookie", r.cookie);
+        return send(200, { ok: true, gate: gate.enabled });
+      }
+      if (R("POST", /^\/api\/founder\/logout$/)) { res.setHeader("Set-Cookie", gate.logout(req)); return send(200, { ok: true }); }
+      if (R("GET", /^\/api\/access$/)) return send(200, { ...(await access.status()), gate: gate.enabled, publicHost: gate.publicHost });
+      if (R("PATCH", /^\/api\/access$/)) {
+        if (body.mode === "founder_private") return send(200, await access.status());
+        const ws = typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace) ? body.workspace : null;
+        if (!ws) return fail(400, "Name the workspace the request belongs to.");
+        // Changing the mode itself is refused (403); the request is recorded as a locked card.
+        const r = await access.requestPublic(ws);
+        return send(403, { error: "Opening Jarvis to the public is locked. A «قيد الموافقة» card waits for Director 00.", ...r });
+      }
       if (R("GET", /^\/api\/health$/)) return send(200, { ok: true, mode: db.kind, where: db.where, runs: "real (fixed-rule planner, no model)", version: 1 });
       if (R("GET", /^\/api\/workspaces$/)) return send(200, await store.listWorkspaces());
       if (R("GET", /^\/api\/llm\/status$/)) return send(200, await llm.status());
@@ -255,6 +292,14 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "DELETE" && (k = /^\/billing\/tiers\/([\w-]{1,64})$/.exec(rest))) return send(200, await platform.deleteTier(slug, k[1]));
         if (req.method === "POST" && rest === "/billing/request") return send(200, await platform.requestMoney(slug, body.what === "billing" ? "billing" : String(body.what || "plan")));
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
+        // ADR-141: hosted model endpoints are recorded as drafts with a locked outbound approval.
+        if (req.method === "GET" && rest === "/model-endpoints") return send(200, await access.listEndpoints(slug));
+        if (req.method === "POST" && rest === "/model-endpoints") return send(202, await access.requestEndpoint(slug, body));
+        if (req.method === "POST" && rest === "/access/request-public") return send(202, await access.requestPublic(slug));
+        if ((k = /^\/model-endpoints\/([\w-]{1,64})(\/activate)?$/.exec(rest))) {
+          if (req.method === "POST" && k[2]) await access.activateEndpoint(slug, k[1]);
+          if (req.method === "DELETE" && !k[2]) return send(200, await access.removeEndpoint(slug, k[1]));
+        }
         // ADR-138: memory bank and Skill Forge.
         if (req.method === "GET" && rest === "/memory") return send(200, await memory.search(slug, { q: url.searchParams.get("q") || "", kind: url.searchParams.get("kind") || "", limit: Math.min(50, Number(url.searchParams.get("limit")) || 20) }));
         if (req.method === "POST" && rest === "/memory") return send(201, await memory.add(slug, { ...body, source: "person" }));
@@ -309,7 +354,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
       }
       return fail(404, "No such route.");
     } catch (e) {
-      if (e instanceof StoreError || e instanceof BridgeError) return fail(e.status, e.message);
+      if (e && e.locked && e.approvalId) return send(e.status || 403, { error: e.message, locked: true, approvalId: e.approvalId });
+      if (e instanceof StoreError || e instanceof BridgeError || e instanceof GateError) return fail(e.status, e.message);
       // PostgreSQL refuses an id that is not a UUID (22P02); for the caller that is simply "not found".
       if (e && e.code === "22P02") return fail(404, "Nothing with that id.");
       if (e && e.status) return fail(e.status, e.message);
@@ -321,7 +367,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
