@@ -258,6 +258,7 @@ ok((await page.locator(".wf-node").first().getAttribute("transform")) !== before
 await page.getByRole("button", { name: "Add step" }).click();
 await page.locator("#f-node-title").fill("Email the team the summary");
 ok((await page.locator(".wf-node").count()) === 7 && (await page.locator(".wf-node.locked").count()) === 2, "F13 a step about email is locked as soon as it is named");
+ok(!/\bnull\b/.test(await page.locator("section[aria-labelledby=h-insp]").innerText()), "F13 the step inspector prints no stray null");
 await page.locator("fieldset").filter({ hasText: "Needs" }).getByText("Save the release note").click();
 await page.locator(".wf-node").filter({ hasText: "Read the latest commits" }).click();
 await page.locator("fieldset").filter({ hasText: "Needs" }).getByText("Save the release note").click();
@@ -351,6 +352,7 @@ await page.locator("#f-fkind").selectOption("python-tool");
 await page.getByRole("button", { name: "Forge and mount" }).click();
 await page.waitForTimeout(400);
 ok(await page.getByText("Mounted in this workspace", { exact: true }).first().isVisible() && await page.locator(".feed li.forged", { hasText: "token-checker" }).isVisible(), "F16 a forged python-tool skill is scanned clean and mounted");
+ok(!/\bnull\b/.test(await page.locator("#h-forge").locator("..").innerText()), "F16 a clean forge result prints no stray null");
 await page.locator("#f-sq").fill("token-checker");
 await page.waitForTimeout(200);
 ok(await page.locator(".skill", { hasText: "Forged in this workspace" }).isVisible(), "F16 the mounted skill joins the Skill Mixer list");
@@ -467,6 +469,7 @@ ok((await page.locator(".gov-rules li").count()) === 4 && await page.getByText("
 ok((await page.locator(".gmap-node.k-screen").count()) >= 15 && (await page.locator(".gmap-node.k-table").count()) >= 20 && (await page.locator(".gmap-edge").count()) > 40, "F21 the knowledge map draws screens, tables and their links");
 await page.locator(".gmap-node.k-screen", { hasText: "memory" }).first().click();
 ok(await page.locator(".gmap-info h3", { hasText: "memory" }).isVisible() && await page.locator(".gmap-info li", { hasText: "/api/w/:slug/memory" }).first().isVisible() && (await page.locator(".gmap-edge.on").count()) >= 1, "F21 picking a screen lists its API routes and lights its links");
+ok(!/\bnull\b/.test(await page.locator(".gmap-info").innerText()), "F21 the inspector prints no stray null");
 ok(await page.locator(".stat", { hasText: "Rules" }).getByText("62").isVisible() && await page.locator(".stat", { hasText: "High" }).getByText("0", { exact: true }).isVisible(), "F21 the quality gate reports 62 rules and no high finding");
 const reg = page.locator("#h-greg ~ .table-scroll");
 ok(await reg.locator("tr", { hasText: "Career Ops" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "Claude-Mem" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "HyperFrames" }).getByText("Kept outside the repo").isVisible() && await reg.locator("tr", { hasText: "Superpowers" }).getByText("Adopted as a rule").isVisible(), "F21 the register shows what was adopted, excluded and kept out");

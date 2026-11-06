@@ -475,8 +475,8 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 .gov-rules li { display: grid; gap: 2px; }
 td.wrap { white-space: normal; min-width: 16ch; }
 .gmap-wrap { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1100px) { .gmap-wrap { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
-.gmap { display: block; min-inline-size: 1016px; inline-size: 100%; height: auto; direction: ltr; }
+@media (min-width: 1700px) { .gmap-wrap { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+.gmap { display: block; min-inline-size: 944px; inline-size: 100%; height: auto; direction: ltr; }
 .gmap-col { fill: var(--color-text-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .gmap-edge { fill: none; stroke: var(--color-border); stroke-width: 1; opacity: 0.55; transition: opacity 160ms var(--ease, ease); }
 .gmap-edge.on { stroke: var(--color-accent); stroke-width: 1.6; opacity: 1; }

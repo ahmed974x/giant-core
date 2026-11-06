@@ -1897,11 +1897,12 @@
       const del = h("button", { class: "btn btn-danger btn-sm", type: "button", text: "Delete step" });
       del.addEventListener("click", () => { graph.nodes = graph.nodes.filter(x => x.id !== n.id); graph.edges = graph.edges.filter(e => e.from !== n.id && e.to !== n.id); selected = null; markDirty(); draw(); drawInspector(); });
       const locked = LlmPlan.nodeLocked(n);
-      inspector.replaceChildren(
+      // replaceChildren() prints a null argument as "null"; absent parts (extraField, the lock note) are filtered out.
+      inspector.replaceChildren(...[
         h("div", { class: "field" }, h("label", { htmlFor: "f-node-title", text: "Title" }), title),
         h("div", { class: "field" }, h("label", { htmlFor: "f-node-kind", text: "Kind" }), kind), extraField, needs,
         locked ? h("p", { class: "sample-note lock-note" }, icon("i-lock", "sm"), "This step is locked: it waits for Director 00 outside Jarvis, whatever kind it is drawn as.") : null,
-        h("div", { class: "row" }, del));
+        h("div", { class: "row" }, del)].filter(Boolean));
     }
     function drawPhases() {
       let steps;
@@ -2537,10 +2538,10 @@
     const mounted = h("div", { class: "stack" });
     const showScan = (r, from) => {
       const s = r.scan;
-      result.replaceChildren(h("div", { class: "row" }, r.mounted ? badge("ok", "Mounted in this workspace") : badge("failed", "Refused: " + s.critical + " critical, " + s.high + " high"),
+      result.replaceChildren(...[h("div", { class: "row" }, r.mounted ? badge("ok", "Mounted in this workspace") : badge("failed", "Refused: " + s.critical + " critical, " + s.high + " high"),
           h("span", { class: "subtle t-caption num", text: s.findings.length + " findings · " + Object.keys((r.skill && r.skill.files) || {}).length + " files" })),
         s.findings.length ? h("ul", { class: "checks" }, s.findings.slice(0, 8).map(f => h("li", { class: f.sev === "critical" || f.sev === "high" ? "fail" : "warn" }, h("span", { class: "mark", "aria-hidden": "true", text: f.sev === "critical" || f.sev === "high" ? "✕" : "!" }),
-          h("span", null, h("span", { class: "mono t-caption", translate: "no", text: f.file + ":" + f.line + " " + f.rule + " " }), f.msg)))) : null);
+          h("span", null, h("span", { class: "mono t-caption", translate: "no", text: f.file + ":" + f.line + " " + f.rule + " " }), f.msg)))) : null].filter(Boolean));
       if (r.mounted) toast("ok", "Mounted " + r.skill.name + ". It is in the Skill Mixer and the agent editor now.");
       else toast("error", "Not mounted: SkillSpector found a critical or high problem.");
       if (from && from.isConnected) from.focus();
@@ -2781,7 +2782,7 @@
     for (const [scr, rts] of routeOf) for (const m of new Set(rts.map(r => modFor.get(r)).filter(Boolean))) links.push([scr, m]);
     for (const e of g.edges) if (e.kind === "sql") links.push([e.from, e.to]);
     const nodesOf = k => g.nodes.filter(n => n.kind === k).sort((a, b) => a.label.localeCompare(b.label));
-    const ROW = 22, COLW = 250, TOP = 40;
+    const ROW = 22, COLW = 232, TOP = 40;
     const height = TOP + Math.max(...cols.map(([k]) => nodesOf(k).length)) * ROW + 16;
     const pos = new Map();
     cols.forEach(([k], ci) => nodesOf(k).forEach((n, i) => pos.set(n.id, { x: 16 + ci * COLW, y: TOP + i * ROW })));
@@ -2793,11 +2794,12 @@
       $$(".gmap-node", map).forEach(x => x.classList.toggle("sel", x.dataset.id === id));
       const near = links.filter(([a, b]) => a === id || b === id).map(([a, b]) => byId.get(a === id ? b : a)).filter(Boolean);
       const routes = n.kind === "screen" ? (routeOf.get(id) || []) : n.kind === "module" ? [...modFor].filter(([, m]) => m === id).map(([r]) => r) : [];
-      inspector.replaceChildren(h("h3", { translate: "no", text: n.label }), h("p", { class: "mono t-caption subtle", translate: "no", text: n.file + (n.line ? ":" + n.line : "") }),
+      // replaceChildren() prints a null argument as "null", so the absent parts are filtered out.
+      inspector.replaceChildren(...[h("h3", { translate: "no", text: n.label }), h("p", { class: "mono t-caption subtle", translate: "no", text: n.file + (n.line ? ":" + n.line : "") }),
         near.length ? h("p", { class: "t-sm" }, h("b", { text: "Linked: " }), h("span", { translate: "no", text: near.map(x => x.label).join(", ") })) : null,
         routes.length ? h("ul", { class: "feed" }, routes.map(r => h("li", { class: "mono t-caption", translate: "no", text: (byId.get(r) || { label: r }).label }))) : null,
         n.constraints && n.constraints.length ? h("p", { class: "t-caption" }, h("b", { text: "Constraints: " }), h("span", { class: "mono", translate: "no", text: n.constraints.join(", ") })) : null,
-        n.kind === "skill" ? h("p", { class: "t-caption", translate: "no", text: g.nodes.filter(t => t.kind === "tool" && t.id.startsWith("tool:" + n.label + "/")).map(t => t.label + (t.functions && t.functions.length ? " (" + t.functions.join(", ") + ")" : "")).join(" · ") || "Text rules only (no tool)." }) : null);
+        n.kind === "skill" ? h("p", { class: "t-caption", translate: "no", text: g.nodes.filter(t => t.kind === "tool" && t.id.startsWith("tool:" + n.label + "/")).map(t => t.label + (t.functions && t.functions.length ? " (" + t.functions.join(", ") + ")" : "")).join(" · ") || "Text rules only (no tool)." }) : null].filter(Boolean));
     };
     const map = svg("svg", { class: "gmap", viewBox: `0 0 ${16 + cols.length * COLW} ${height}`, role: "img", "aria-label": "Map of screens, modules, tables and skills" },
       cols.map(([k, title], ci) => svg("text", { class: "gmap-col", x: 16 + ci * COLW, y: 18 }, tr(title) || title)),

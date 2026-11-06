@@ -70,6 +70,7 @@ PASS F13 the workflows list shows the starter workflow
 PASS F13 the SVG graph draws six steps, five links and one locked step
 PASS F13 arrow keys move a step and mark the graph unsaved
 PASS F13 a step about email is locked as soon as it is named
+PASS F13 the step inspector prints no stray null
 PASS F13 a loop is refused with the steps named
 PASS F13 saving bumps the version
 PASS F13 running the workflow makes a mission: publish waits locked, the email step is an approval step
@@ -93,6 +94,7 @@ PASS F16 the kind filter shows only lessons
 PASS F16 memory exports as JSONL with one episode per line
 PASS F16 an episode can be deleted
 PASS F16 a forged python-tool skill is scanned clean and mounted
+PASS F16 a clean forge result prints no stray null
 PASS F16 the mounted skill joins the Skill Mixer list
 PASS F16 a skill with a high finding is refused and not mounted
 PASS F16 installing a forged skill into the repo is a locked approval
@@ -122,6 +124,7 @@ PASS F20 the command opens the Skill Mixer on the loaded skill
 PASS F21 the four surgical rules are listed
 PASS F21 the knowledge map draws screens, tables and their links
 PASS F21 picking a screen lists its API routes and lights its links
+PASS F21 the inspector prints no stray null
 PASS F21 the quality gate reports 62 rules and no high finding
 PASS F21 the register shows what was adopted, excluded and kept out
 PASS F21 the open-weight catalog lists 12 families with their licences
@@ -133,4 +136,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-134 passed, 0 failed
+137 passed, 0 failed
