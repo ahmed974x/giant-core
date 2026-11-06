@@ -81,3 +81,11 @@ Real server with a **fake local model on 127.0.0.1** (the sandbox has no Ollama;
 - `council-debate-*`: architect, red team and UX critic, synthesizer; the publish and pay steps the model left unlocked leave the council locked «بانتظار الموافقة»;
 - `studio-time-machine-*`: two SHA-256 chained snapshots compared side by side;
 - `studio-heatmap-*`: the attention grid over the preview with small targets outlined, and Fitts, Hick and mirror symmetry.
+
+## ADR-145 (2026-11-06)
+
+Real server, giant-core workspace, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `macro-composer-*`: Ctrl+K → Compose a macro, with «Formal Proof: Verified» and the publish and pay steps stopping at «قيد الموافقة»;
+- `macro-mission-*`: the mission the server made after proving the macro again;
+- `studio-export-*`: the five exports, with the SQL tables that start locked.
