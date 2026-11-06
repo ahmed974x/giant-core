@@ -25,6 +25,9 @@ import { selfCheckItem } from "../lib/memory.mjs";
 import { createOpenWebSearch, parseQuery, pinSearxng, requestJson, httpsLink, SOURCES, SEARCH_UA } from "../lib/open-web-search.mjs";
 import { RULES } from "../../../scripts/skillspector-audit.mjs";
 import { splitThinking, parsePlanJson, enforceApprovalGates, fallbackPlan } from "../lib/llm-plan.mjs";
+import { runCouncil, critiquePlan, critiqueDesign, repairPlan, privateTargets } from "../lib/council.mjs";
+import { canonical as snapCanonical, sha256Hex, snapshotHash, lineDiff, blockDiff } from "../lib/snapshot.mjs";
+import { fitts, hick, symmetry, heatGrid, TOUCH_MIN } from "../lib/ux-physics.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
 // a payment and a skill install as unlocked and "done", and wraps it all in <think> and a code fence.
@@ -579,6 +582,59 @@ async function suite(mode, opts) {
   ok(off.status === 200 && off.body.offline && off.body.fallback.from === "memory" && off.body.fallback.hits[0].title === "Lunch", tag("with no internet the search falls back to this workspace's memory and says so"), off.body.fallback);
   searchDown = false;
 
+  {
+  // ADR-144: the council. The fake model proposes publishing, a payment and an install unlocked and
+  // "done", critiques leniently and rewrites the plan the same way; the rules still lock every one.
+  const LOCKED_CATS = ["money", "publish", "permissions", "install", "outbound"];
+  const c1 = await post("/api/llm/council", { workspace: "giant-core", mode: "plan", prompt: "Release the site: read the commits, publish to production, pay the hosting bill, install the new skill", createMission: true });
+  ok(c1.status === 200 && c1.body.trace.map(t => t.role).join() === "architect,critic,synthesizer", tag("the council answers with architect, critic and synthesizer in order"), c1.body && c1.body.trace);
+  ok(c1.body.modelRan && c1.body.trace[0].proposal.some(p => /Publish/.test(p.title) && p.locked === false), tag("the trace keeps what the architect proposed (publish unlocked)"));
+  ok(c1.body.trace[1].findings.filter(f => f.rule === "LOCK").length >= 3, tag("the red team names each step proposed unlocked"), c1.body.trace[1].findings);
+  ok(c1.body.trace[1].opinion && /UNTRUSTED_MODEL_OUTPUT/.test(c1.body.trace[1].opinion.label), tag("the model's own critique is labelled untrusted"));
+  ok(/rewrote/.test(c1.body.trace[2].changes.join(" ")) && /rules \+ /.test(c1.body.trace[2].engine), tag("the synthesizer's rewrite is applied and then locked again"), c1.body.trace[2]);
+  const sensitive = c1.body.final.steps.filter(x => x.category && LOCKED_CATS.includes(x.category));
+  ok(sensitive.length >= 3 && sensitive.every(x => x.kind === "approval" && x.locked === true && x.gate === "approval" && x.status === "pending_approval"), tag("every money, publish and install step leaves the council as a locked approval"), sensitive);
+  ok(c1.body.locksHold === true && !c1.body.final.steps.some(x => x.status === "done"), tag("locks hold and nothing comes out marked done"));
+  const pub = c1.body.final.steps.findIndex(x => x.category === "publish");
+  ok(c1.body.final.steps.slice(0, pub).some(x => x.kind === "gate"), tag("a test gate stands before publishing"));
+  const cm = c1.body.mission;
+  ok(cm && cm.planner.engine === "council" && cm.steps.filter(x => x.kind === "approval" && x.locked).length >= 3, tag("a council mission keeps its locked steps"), cm && cm.planner);
+  await post(`/api/w/giant-core/missions/${cm.id}/run`, {});
+  await sleep(300);
+  const cmd = (await j(`/api/w/giant-core/missions/${cm.id}`)).body;
+  ok(cmd.steps.filter(x => x.locked).every(x => x.status !== "done"), tag("running the council's mission never marks a locked step done"), cmd.steps.map(x => [x.title, x.status]));
+  let lockErr = null;
+  const lockedStep = cmd.steps.find(x => x.locked);
+  try { await s.db.run("update mission_steps set status = 'done' where id = $1", [lockedStep.id]); } catch (e) { lockErr = e; }
+  ok(lockErr && /mission_steps_locked_never_done|constraint|check/i.test(String(lockErr.message)), tag("the database refuses to mark a council step done"), lockErr && lockErr.message);
+  const cd = await post("/api/llm/council", { mode: "design", prompt: "A pricing page with three plans" });
+  ok(cd.status === 200 && cd.body.final.blocks.length > 0 && cd.body.trace[1].engine === "rules", tag("the council reviews a design with the UX rules"));
+  ok((await post("/api/llm/council", { mode: "trade", prompt: "x" })).status === 400 && (await post("/api/llm/council", { mode: "plan", prompt: "" })).status === 400, tag("the council refuses an unknown mode or an empty prompt"));
+
+  // ADR-144: the Studio time machine (SHA-256 chain, append-only, fork, diff).
+  const siteA = { name: "Pricing", lang: "en", width: 1280, theme: { accent: "blue" }, blocks: [{ id: "b1", type: "hero", t: { en: { title: "Plans" } } }, { id: "b2", type: "faq", t: { en: { title: "FAQ" } } }] };
+  const siteB = { ...siteA, blocks: [siteA.blocks[1], { ...siteA.blocks[0], t: { en: { title: "Plans for teams" } } }, { id: "b3", type: "cta", t: { en: { title: "Start" } } }] };
+  const s1 = await post("/api/w/giant-core/studio/snapshots", { site: siteA, label: "First" });
+  const s1b = await post("/api/w/giant-core/studio/snapshots", { site: siteA, label: "Again" });
+  const s2 = await post("/api/w/giant-core/studio/snapshots", { site: siteB, label: "Second" });
+  ok(s1.status === 201 && s1.body.seq === 1 && s1.body.prevHash === "0".repeat(64) && /^[0-9a-f]{64}$/.test(s1.body.hash), tag("the first snapshot chains to 64 zeros"), s1.body);
+  ok(s1b.body.unchanged === true && s1b.body.id === s1.body.id, tag("saving the same site twice adds nothing"));
+  ok(s2.body.seq === 2 && s2.body.prevHash === s1.body.hash && s2.body.hash === snapshotHash(siteB, s1.body.hash), tag("the second snapshot chains to the first, hash recomputable"));
+  const dif = await j(`/api/w/giant-core/studio/diff?a=${s1.body.id}&b=${s2.body.id}`);
+  ok(dif.status === 200 && dif.body.added > 0 && dif.body.removed > 0 && dif.body.blocks.some(b => b.id === "b3" && b.change === "added") && dif.body.blocks.some(b => b.id === "b1" && b.change === "changed"), tag("the diff names added and changed blocks and counts lines"), dif.body.blocks);
+  const fk = await post(`/api/w/giant-core/studio/snapshots/${s1.body.id}/fork`, {});
+  ok(fk.status === 201 && fk.body.seq === 3 && fk.body.parentId === s1.body.id && fk.body.site.blocks.length === 2, tag("a fork is a new snapshot whose parent is the old one"), fk.body);
+  ok((await j("/api/w/giant-core/studio/snapshots")).body.map(x => x.seq).join() === "3,2,1" && (await j("/api/w/jarvis-studio/studio/snapshots")).body.length === 0, tag("snapshots are listed newest first and stay in their workspace"));
+  ok((await j("/api/w/giant-core/studio/verify")).body.ok === true, tag("the chain verifies"));
+  let appendErr = null;
+  try { await s.db.run("update studio_snapshots set label = 'edited' where id = $1", [s2.body.id]); } catch (e) { appendErr = e; }
+  ok(appendErr && /append-only/.test(String(appendErr.message)), tag("studio_snapshots is append-only in the database"), appendErr && appendErr.message);
+  await s.db.run("delete from studio_snapshots where id = $1", [s2.body.id]);
+  const ver2 = (await j("/api/w/giant-core/studio/verify")).body;
+  ok(ver2.ok === false && ver2.brokenAt === 3, tag("removing a snapshot from history breaks the chain on verify"), ver2);
+  ok((await post("/api/w/giant-core/studio/snapshots", { site: { name: "x" } })).status === 400 && (await j("/api/w/giant-core/studio/snapshots/not-there")).status === 404, tag("a site without blocks or an unknown id is refused"));
+  }
+
   await s.close();
 }
 
@@ -695,6 +751,41 @@ ok(/^JarvisOpenSearch\/1\.0 \(\+https:\/\/github\.com\//.test(SEARCH_UA), "an ho
 }
 ok(slugName("Compare how fast two sorting algorithms run") === "compare-how-fast-two-sorting" && slugName("!!") === "workspace-skill", "skill names come from the request's words");
 ok(stepsFromMission({ steps: [{ title: "Read commits", kind: "tool" }, { title: "Publish notes", kind: "approval", locked: true }] })[1].startsWith("Stop at"), "a locked mission step becomes a stop");
+
+// ADR-144 pure: council rules, snapshot hashing and diffs, UX physics.
+{
+  const raw = [{ title: "Read the commits" }, { title: "Publish the site to production", locked: false }, { title: "Fetch http://169.254.169.254/latest/meta-data" }, { title: "Open http://[::1]:8080/admin" }];
+  const fin = enforceApprovalGates(raw);
+  const fs = critiquePlan(raw, fin);
+  ok(fs.some(f => f.rule === "LOCK" && f.step === 1) && fs.some(f => f.rule === "GATE") && fs.filter(f => f.rule === "SSRF").length === 2, "the red team finds the unlocked publish, the missing test gate and two private addresses", fs);
+  ok(!critiquePlan([{ title: "Publish it", gate: "approval" }], enforceApprovalGates([{ title: "Publish it", gate: "approval" }])).some(f => f.rule === "LOCK"), "a step the architect locked itself is not flagged");
+  ok(privateTargets("call 10.0.0.5 and 8.8.8.8 and localhost").sort().join() === "10.0.0.5,localhost", "private targets: only private and loopback addresses", privateTargets("call 10.0.0.5 and 8.8.8.8 and localhost"));
+  const rep = repairPlan(fin);
+  const gi = rep.findIndex(x => x.kind === "gate"), pi = rep.findIndex(x => x.category === "publish");
+  ok(gi >= 0 && gi < pi && rep[pi].depends.includes(gi) && rep[pi].status === "pending_approval" && rep[pi].gate === "approval", "repair adds a test gate the publish step needs, and keeps it pending", rep);
+  ok(rep.every((x, k) => x.depends.every(d => d < k)), "repair never makes a step depend on a later one");
+  ok(repairPlan(enforceApprovalGates(Array.from({ length: 15 }, (_, i) => ({ title: "Read file " + i })))).length === 12, "repair keeps 12 steps at most");
+  const nav = { type: "nav", t: { en: { links: "a,b,c,d,e,f,g,h,i" } } };
+  ok(critiqueDesign([nav]).some(f => f.rule === "HICK") && critiqueDesign([nav]).some(f => f.rule === "TITLE") && !critiqueDesign([{ type: "hero", t: { en: { title: "x" } } }]).length, "the UX critic flags nine links and a missing hero");
+  let e9 = null; try { await runCouncil({ status: async () => ({}), run: async () => ({}) }, { mode: "plan", prompt: "x".repeat(4001) }); } catch (e) { e9 = e; }
+  ok(e9 && e9.status === 400, "the council refuses a prompt over 4,000 characters");
+  const noModel = await runCouncil({ status: async () => ({}), run: async ({ mode, prompt }) => ({ engine: "deterministic-rules", steps: fallbackPlan(prompt) }) }, { mode: "plan", prompt: "publish the site then pay the invoice" });
+  ok(!noModel.modelRan && noModel.locksHold && noModel.final.steps.filter(x => x.locked).every(x => x.status === "pending_approval"), "with no model the council still locks by rule");
+  for (const t of ["", "abc", "ا", "x".repeat(1000)]) ok(sha256Hex(t) === crypto.createHash("sha256").update(t).digest("hex"), "the page's SHA-256 matches node:crypto for " + t.length + " chars");
+  ok(snapCanonical({ b: 1, a: [2, { d: 1, c: undefined }] }) === '{"a":[2,{"d":1}],"b":1}', "canonical JSON sorts keys and drops undefined");
+  ok(snapshotHash({ blocks: [{ id: "x" }], name: "A", extra: "ignored" }) === snapshotHash({ name: "A", blocks: [{ id: "x" }] }), "a snapshot keeps only layout, copy, theme, language and width");
+  const ld = lineDiff(["a", "b", "c"], ["a", "c", "d"]);
+  ok(ld.map(l => l.op).join() === "same,del,same,add", "the line diff is a longest common subsequence", ld);
+  ok(blockDiff({ blocks: [{ id: "1", type: "hero" }, { id: "2", type: "faq" }] }, { blocks: [{ id: "2", type: "faq" }, { id: "1", type: "hero" }] }).every(b => b.change === "moved"), "swapped blocks are moved, not changed");
+  const boxes = [{ id: "big", kind: "action", group: "nav", x: 100, y: 700, w: 120, h: 48 }, { id: "tiny", kind: "action", group: "nav", x: 10, y: 10, w: 20, h: 20 }, { id: "h", kind: "heading", level: 1, x: 0, y: 100, w: 390, h: 40 }];
+  const f = fitts(boxes, 390, 844);
+  ok(f.small === 1 && f.score === 50 && f.targets.find(t => t.id === "tiny").id_bits > f.targets.find(t => t.id === "big").id_bits && TOUCH_MIN === 44, "Fitts: a 20 px target far from the thumb fails and costs more bits", f);
+  const hk = hick(Array.from({ length: 9 }, (_, i) => ({ kind: "action", group: "menu", x: i, y: 0, w: 50, h: 50 })));
+  ok(hk.over === 1 && Math.abs(hk.worstRt - (0.2 + 0.15 * Math.log2(10))) < 0.001, "Hick: nine choices are over seven, RT = a + b·log2(n+1)", hk);
+  ok(symmetry([{ id: "a", x: 10, w: 100 }], [{ id: "a", x: 280, w: 100 }], 390).score === 100 && symmetry([{ id: "a", x: 10, w: 100 }], [{ id: "a", x: 10, w: 100 }], 390).score < 100, "RTL mirror symmetry is 100 for a true mirror and less otherwise");
+  const hg = heatGrid(boxes, 390, 844);
+  ok(hg.grid.length === 16 && hg.grid[0].length === 24 && Math.max(...hg.grid.flat()) === 1, "the heat grid is 24 × 16, normalised to 1");
+}
 
 // ADR-141: founder gate (node:crypto: scrypt, timingSafeEqual, HMAC-SHA256 session cookie).
 for (const bad of ["http://jarvis.example.com", "jarvis.example.com:8443", "localhost", "router.lan", "10.0.0.5", "jarvis.example.com/x"]) { let e8 = null; try { checkPublicHost(bad); } catch (e) { e8 = e; } ok(e8 && e8.status === 400, "public host refused: " + bad); }

@@ -477,6 +477,71 @@ await go("#/settings");
 await page.locator("details.catalog summary").click();
 ok((await page.locator("details.catalog tbody tr").count()) === 12 && await page.locator("details.catalog tr", { hasText: "codestral" }).getByText(/Non-Production/).isVisible(), "F21 the open-weight catalog lists 12 families with their licences");
 
+// F22: the Studio time machine (ADR-144): SHA-256 chained snapshots, side-by-side diff, fork.
+await go("#/studio");
+const nameBefore = await page.locator("#f-site").inputValue(), dirBefore = await frame().locator("html").getAttribute("dir");
+await page.locator("#f-snap-label").fill("Starting point");
+await page.getByRole("button", { name: "Save snapshot" }).click();
+await page.waitForTimeout(250);
+await page.locator("#f-site").fill("Renamed product");
+await page.locator("#f-snap-label").fill("New name");
+await page.getByRole("button", { name: "Save snapshot" }).click();
+await page.waitForTimeout(250);
+const tm = page.locator("section[aria-labelledby=h-time]");
+ok((await tm.locator(".snaps li").count()) === 2 && await tm.getByText("Chain verified · 2 snapshots").isVisible() && /[0-9a-f]{10}…/.test(await tm.locator(".snaps").innerText()), "F22 two snapshots are saved and the SHA-256 chain verifies");
+await page.getByRole("button", { name: "Save snapshot" }).click();
+await page.waitForTimeout(250);
+ok((await tm.locator(".snaps li").count()) === 2, "F22 saving the same site again adds nothing");
+await page.getByRole("button", { name: "Compare" }).click();
+await page.waitForTimeout(250);
+ok(await tm.locator(".sbs td.d-del", { hasText: '"name": ' + JSON.stringify(nameBefore) }).isVisible() && await tm.locator(".sbs td.d-add", { hasText: '"name": "Renamed product"' }).isVisible() && await tm.getByText("+1 −1").isVisible(), "F22 the diff shows the old and new line side by side");
+await page.getByRole("button", { name: "Fork snapshot" }).click();
+await page.waitForTimeout(500);
+ok((await page.locator("#f-site").inputValue()) === nameBefore && (await tm.locator(".snaps li").count()) === 3 && await tm.locator(".snaps li").first().getByText(/fork of #1/).isVisible(), "F22 forking #1 brings it back as snapshot #3 and the Studio shows it");
+
+// F23: the UX heatmap (ADR-144): the sandboxed preview measures itself; Fitts, Hick and mirror symmetry.
+await page.getByRole("button", { name: "UX heatmap" }).click();
+await page.waitForSelector(".ux-report:not([hidden]) dl");
+const ux = await page.locator(".ux-report").innerText();
+ok(/\d+ \/ 100/.test(ux) && /under 44 × 44 px/.test(ux) && /\[INFERENCE\]/.test(ux) && /symmetry between English and Arabic over \d+ pairs/.test(ux), "F23 the report gives Fitts, Hick with [INFERENCE] and mirror symmetry", ux.slice(0, 200));
+ok((await page.locator(".heat rect.hc").count()) > 20 && (await page.getByRole("button", { name: "UX heatmap" }).getAttribute("aria-pressed")) === "true", "F23 the heat grid is drawn over the preview");
+ok((await frame().locator("html").getAttribute("dir")) === dirBefore, "F23 the preview is back in its own language after the mirror measure", dirBefore);
+await page.getByRole("button", { name: "UX heatmap" }).click();
+ok(await page.locator(".heat").isHidden() && await page.locator(".ux-report").isHidden(), "F23 the heatmap switches off");
+
+// F25: seeded chaos cases (replica-ux-physics chaos_fuzzer.py, seed 144) in the Studio's fields.
+const fuzz = JSON.parse(readFileSync(join(here, "..", "replica", "evidence", "fuzz-cases.json"), "utf8"));
+const oneEach = [...new Map(fuzz.cases.map(c => [c.kind, c])).values()];
+await page.getByRole("button", { name: "Start over…" }).click();
+await page.locator("dialog[open]").getByRole("button", { name: "Start over" }).click();
+await page.waitForTimeout(400);
+await page.locator(".blk", { hasText: "Hero" }).locator("summary").click();
+const fuzzBad = [];
+for (const c of oneEach) {
+  await page.locator("#f-b-hero-title").fill(c.text.slice(0, 160));
+  await page.locator("#f-b-hero-body").fill(c.text.slice(0, 400));
+  await page.waitForTimeout(120);
+  const pageWide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  const pvWide = await frame().locator("html").evaluate(el => el.scrollWidth > el.clientWidth + 1);
+  const injected = await frame().locator("img, b, iframe").count() + (await frame().locator("script").count() - 2);
+  if (pageWide || pvWide || injected) fuzzBad.push(c.id + " " + c.kind + (pageWide ? " page-scroll" : "") + (pvWide ? " preview-scroll" : "") + (injected ? " injected" : ""));
+}
+ok(oneEach.length === 11 && fuzzBad.length === 0, "F25 every chaos kind (long Arabic with tashkeel, bidi controls, markup …) wraps and stays text", fuzzBad.join(", "));
+await page.locator("#f-b-hero-title").fill("Say what your product does in one line");
+await page.locator("#f-b-hero-body").fill("Replace this text with the problem you solve and who it is for. Keep it short and plain.");
+
+// F24: the council (ADR-144): architect, red team and UX critic, synthesizer; locks always hold.
+await go("#/missions");
+await page.locator("#f-goal").fill("Read the latest commits, publish the site, then pay the hosting invoice");
+await page.getByRole("button", { name: "Ask the council" }).click();
+await page.waitForSelector(".council");
+ok((await page.locator(".council-card").count()) === 3 && await page.getByText("1 · Architect").isVisible() && await page.getByText("2 · Red team and UX critic").isVisible() && await page.getByText("3 · Synthesizer").isVisible(), "F24 the debate shows the three roles in order");
+ok(await page.locator(".council-card.crit").getByText("medium · GATE").isVisible() && await page.locator(".council-card.synth").getByText("Added a test gate before publishing.").isVisible(), "F24 the critic finds the missing test gate and the synthesizer adds it");
+ok((await page.locator(".council .plist.final li.locked").count()) === 2 && (await page.locator(".council .plist.final li.locked").filter({ hasText: "بانتظار الموافقة" }).count()) === 2 && await page.getByText("Locks hold: every sensitive step waits for Director 00").isVisible(), "F24 publishing and paying leave the council locked, «بانتظار الموافقة»");
+await page.getByRole("button", { name: "Make it a mission" }).click();
+await page.waitForTimeout(500);
+ok(/#\/missions\/ms_/.test(page.url()) && await page.getByText(/Agreed by the council/).isVisible() && (await page.locator(".mstep.k-approval").count()) === 2, "F24 the council's plan becomes a mission with its two locked steps");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -489,7 +554,7 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["Starting point", "New name", "Renamed product", "Read the latest commits, publish the site, then pay the hosting invoice", "Read the latest commits, publish the site,", "pay the hosting invoice", "Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);

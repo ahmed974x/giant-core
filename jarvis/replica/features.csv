@@ -70,5 +70,8 @@ Live skill discovery and import from GitHub,skills,should,yes,yes,"ADR-142: keyl
 Skill synthesis and evolution (FIX/DERIVED/CAPTURED),skills,should,yes,yes,"ADR-142: local model or template, eleven loader rules plus SkillSpector, runtime_skills_scan_clean, append-only log, mounted at once in Mixer, agent editor and Ctrl+K"
 Governance page with knowledge map and quality gate,governance,should,yes,yes,"ADR-143: SVG map from replica-graphify, 62-rule replica-impeccable report, register of adopted and excluded patterns"
 Open-weight model catalog,models,could,yes,yes,"ADR-143: 12 families with licence, job and origin; marks the ones served on 127.0.0.1"
+Council of agents for plans and designs,missions,should,yes,yes,"ADR-144: architect, red team and UX critic, synthesizer; rules last, locked steps pending approval; trace shown; mission built on the server"
+Studio time machine with side-by-side diff and fork,studio,should,yes,yes,"ADR-144: studio_snapshots append-only, SHA-256 chained, verify, line and block diff, fork"
+UX heatmap with Fitts and Hick,studio,could,yes,yes,"ADR-144: preview measures its boxes; heat grid, 44 px targets, Hick RT, RTL/LTR symmetry [INFERENCE]"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

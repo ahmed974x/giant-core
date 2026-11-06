@@ -449,3 +449,23 @@ begin
 end $$;
 create trigger skill_evolution_log_no_update before update on skill_evolution_log
   for each row execute function skill_evolution_log_append_only();
+
+-- ADR-144: the Studio time machine. Each saved state is a row whose hash chains to the previous one.
+create table studio_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  seq integer not null check (seq >= 1),
+  label text not null check (length(label) between 1 and 80),
+  site jsonb not null,
+  hash text not null check (length(hash) = 64),
+  prev_hash text not null check (length(prev_hash) = 64),
+  parent_id uuid,
+  created_at timestamptz not null default now(),
+  unique (workspace_id, seq)
+);
+create function studio_snapshots_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.studio_snapshots is append-only';
+end $$;
+create trigger studio_snapshots_no_update before update on studio_snapshots
+  for each row execute function studio_snapshots_append_only();

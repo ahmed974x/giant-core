@@ -333,9 +333,43 @@ ok(await page.locator("#h-mnt ~ div li.forged").filter({ hasText: "schema-review
 ok((await srv.db.all("select evolution_type from skill_evolution_log")).length >= 1, "live: the import is in the evolution log");
 ok(!existsSync(join(here, "..", "..", ".claude", "skills", "schema-reviewer")), "live: nothing is written into .claude/skills");
 
+// ADR-144 live: the council on the fake model (it leaves publishing unlocked), the time machine in the
+// database (append-only, chained) and the UX heatmap from the sandboxed preview's own boxes.
+await go("#/missions");
+await page.locator("#f-goal").fill("Release this branch");
+await page.getByRole("button", { name: "Ask the council" }).click();
+await page.waitForSelector(".council", { timeout: 10000 }).catch(() => {});
+ok(await page.locator(".council-card.arch code").getByText("jarvis-planner:latest").isVisible() && await page.locator(".council-card.arch").getByText("proposed unlocked").first().isVisible(), "live: the architect is the local planner, and its unlocked publish step is shown as proposed");
+ok(await page.locator(".council-card.crit").getByText(/high · LOCK/).first().isVisible() && await page.getByText("Locks hold: every sensitive step waits for Director 00").isVisible(), "live: the red team flags the unlocked step and the locks hold");
+await page.getByRole("button", { name: "Make it a mission" }).click();
+await page.waitForFunction(() => /#\/missions\/[0-9a-f-]{36}$/.test(location.hash), null, { timeout: 10000 }).catch(() => {});
+await page.waitForSelector(".planner", { timeout: 8000 }).catch(() => {});
+ok(await page.locator(".planner").getByText(/Agreed by the council/).isVisible(), "live: the mission says the council planned it");
+const councilMission = (await srv.db.all("select id from missions where planner like '%council%'"))[0];
+const cSteps = councilMission ? await srv.db.all("select category, status from mission_steps where mission_id = $1 and kind = 'approval' and category in ('money', 'publish', 'permissions', 'install', 'outbound')", [councilMission.id]) : [];
+ok(cSteps.length >= 1 && cSteps.every(x => x.status !== "done"), "live: the council's sensitive steps are approvals in the database and not done", JSON.stringify(cSteps));
+await go("#/studio");
+await page.locator("#f-snap-label").fill("Live one");
+await page.getByRole("button", { name: "Save snapshot" }).click();
+await page.waitForTimeout(400);
+await page.locator("#f-site").fill("Live renamed");
+await page.getByRole("button", { name: "Save snapshot" }).click();
+await page.waitForTimeout(400);
+const snapRows = await srv.db.all("select seq, hash, prev_hash from studio_snapshots order by seq");
+ok(snapRows.length === 2 && snapRows[1].prev_hash === snapRows[0].hash && await page.getByText("Chain verified · 2 snapshots").isVisible(), "live: snapshots are rows in the database, chained by SHA-256");
+let snapErr = null; try { await srv.db.run("update studio_snapshots set label = 'x'"); } catch (e) { snapErr = e; }
+ok(snapErr && /append-only/.test(snapErr.message), "live: the database refuses to edit a snapshot");
+await page.getByRole("button", { name: "Compare" }).click();
+await page.waitForTimeout(400);
+ok(await page.locator(".sbs td.d-add", { hasText: "Live renamed" }).isVisible(), "live: the server's diff is shown side by side");
+await page.getByRole("button", { name: "UX heatmap" }).click();
+await page.waitForSelector(".ux-report:not([hidden]) dl", { timeout: 5000 }).catch(() => {});
+ok((await page.locator(".heat rect.hc").count()) > 10 && /symmetry between English and Arabic/.test(await page.locator(".ux-report").innerText()), "live: the UX heatmap is drawn from the preview's own boxes");
+await page.getByRole("button", { name: "UX heatmap" }).click();
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;

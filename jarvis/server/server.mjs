@@ -28,6 +28,8 @@ import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
 import { createFounderGate, loginPage, GateError } from "./lib/founder-gate.mjs";
 import { createAccess } from "./lib/access.mjs";
 import { createSkillLoader } from "./lib/skill-loader.mjs";
+import { createStudio } from "./lib/studio.mjs";
+import { runCouncil } from "./lib/council.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -63,6 +65,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   platform = createPlatform({ db, store, runner, missions, dataDir });
   memory = createMemory({ db, store, llm });
   const access = createAccess({ db, store });
+  const studio = createStudio({ db, store });
   // ADR-142: GitHub reads go through the open-web search's request function (fixed host, SSRF shield).
   const loader = createSkillLoader({ db, store, llm, ...(skillRequest ? { request: skillRequest } : {}) });
   await access.ensure();
@@ -127,7 +130,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         const origin = req.headers.origin;
         if (origin && !gate.origins(actualPort).includes(origin)) return fail(403, "Cross-origin writes are refused.");
         if (!/^application\/json\b/.test(String(req.headers["content-type"] || ""))) return fail(415, "Send JSON.");
-        const limit = path === "/api/studio/clean-clone" ? 2.5 * 1024 * 1024 : 64 * 1024;
+        const limit = path === "/api/studio/clean-clone" ? 2.5 * 1024 * 1024 : /\/studio\/snapshots$/.test(path) ? 512 * 1024 : 64 * 1024;
         const chunks = [];
         let size = 0;
         for await (const c of req) { size += c.length; if (size > limit) return fail(413, "The request is too large."); chunks.push(c); }
@@ -192,6 +195,22 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           await memory.add(ws, { kind: "answer", title: prompt.slice(0, 160), body: out.content.slice(0, 8000), tags: ["llm", "stream", out.engine], outcome: { engine: true }, source: out.engine }).catch(() => {});
         }
         return res.end();
+      }
+      // ADR-144: the council (architect, red team and UX critic, synthesizer); the rules have the last word.
+      if (R("POST", /^\/api\/llm\/council$/)) {
+        const ws = typeof body.workspace === "string" && /^[a-z0-9-]{1,40}$/.test(body.workspace) ? body.workspace : null;
+        let out;
+        try { out = await runCouncil(llm, { mode: body.mode, prompt: body.prompt, lang: body.lang }); }
+        catch (e) { return fail(e.status || 500, e.message); }
+        if (ws) {
+          await store.workspaceIdOf(ws);
+          await usage(ws, out.trace[0].engine, out.trace[0].model, String(body.prompt || "").length * 3, "llm.council");
+          if (body.createMission && out.mode === "plan") {
+            const planner = { engine: "council", model: out.trace[0].model, label: out.trace[0].label, planFrom: "council", at: new Date().toISOString() };
+            out.mission = await missions.createFromPlan(ws, { goal: out.prompt, steps: out.final.steps, planner });
+          }
+        }
+        return send(200, out);
       }
       if (R("GET", /^\/api\/search\/status$/)) return send(200, search.status());
       if (R("POST", /^\/api\/search\/live$/)) {
@@ -295,6 +314,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "DELETE" && (k = /^\/billing\/tiers\/([\w-]{1,64})$/.exec(rest))) return send(200, await platform.deleteTier(slug, k[1]));
         if (req.method === "POST" && rest === "/billing/request") return send(200, await platform.requestMoney(slug, body.what === "billing" ? "billing" : String(body.what || "plan")));
         if (req.method === "GET" && rest === "/analytics") return send(200, await platform.analytics(slug));
+        // ADR-144: the Studio time machine.
+        if (req.method === "GET" && rest === "/studio/snapshots") return send(200, await studio.list(slug));
+        if (req.method === "POST" && rest === "/studio/snapshots") return send(201, await studio.save(slug, body));
+        if (req.method === "GET" && rest === "/studio/verify") return send(200, await studio.verify(slug));
+        if (req.method === "GET" && rest === "/studio/diff") return send(200, await studio.diff(slug, String(url.searchParams.get("a") || ""), String(url.searchParams.get("b") || "")));
+        if ((k = /^\/studio\/snapshots\/([\w-]{1,64})(\/fork)?$/.exec(rest))) {
+          if (req.method === "GET" && !k[2]) return send(200, await studio.get(slug, k[1]));
+          if (req.method === "POST" && k[2]) return send(201, await studio.fork(slug, k[1]));
+        }
         // ADR-142: the live skill loader.
         if (req.method === "GET" && rest === "/skills/runtime") return send(200, await loader.list(slug));
         if (req.method === "GET" && rest === "/skills/evolution") return send(200, await loader.evolutionLog(slug));
@@ -381,7 +409,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, studio, db, async close() { clearInterval(ticker); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -157,6 +157,7 @@
   /* Sample store: opened from disk (file://). Labelled sample data, simulated runs, three workspaces. */
   function sampleStore() {
     const uid = p => p + "_" + Math.random().toString(36).slice(2, 9);
+    const snapSummary = r => ({ id: r.id, seq: r.seq, label: r.label, hash: r.hash, prevHash: r.prevHash, parentId: r.parentId, blocks: (r.site.blocks || []).length, name: r.site.name, createdAt: r.createdAt });
     let db, failMode = false;
     const subs = new Set();
     const MIN = 60000;
@@ -485,6 +486,56 @@
         const m = newMission({ title: g.slice(0, 120), goal: g, steps }, "llm-plan", { title: g.slice(0, 120), capsuleEvery: capsuleEvery || 1 });
         m.planner = { engine: "deterministic-rules", model: null, thinking: null, planFrom: "fixed rules", warning: "Sample mode: no model. Locks are decided by rule.", label: "fixed rules (no model)", at: new Date().toISOString() };
         MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
+      // ADR-144 in sample mode: the council runs the same rules with no model (the architect is the fixed
+      // planner), and the time machine keeps its SHA-256 chain in this browser.
+      council({ mode, prompt, createMission }) {
+        const fixed = { status: async () => ({}), run: async ({ mode: m, prompt: q }) => {
+          if (m === "design") { const out = CleanRoom.cleanClone("<h1>" + String(q).replace(/[<>&]/g, " ") + "</h1><p>.</p>"); out.report.source = "fixed rules"; return { engine: "deterministic-rules", label: "fixed rules (no model)", blocks: out.blocks, report: out.report }; }
+          return { engine: "deterministic-rules", label: "fixed rules (no model)", steps: LlmPlan.fallbackPlan(q) };
+        } };
+        return LlmPlan.runCouncil(fixed, { mode, prompt }).then(out => {
+          if (createMission && out.mode === "plan") {
+            const m = newMission({ title: out.prompt.slice(0, 120), goal: out.prompt, steps: out.final.steps.map(x => ({ ...x, depends: x.depends || [] })) }, "llm-plan", { title: out.prompt.slice(0, 120), capsuleEvery: 1 });
+            m.planner = { engine: "council", model: null, thinking: null, planFrom: "council", warning: "Sample mode: no model. Locks are decided by rule.", label: "fixed rules (no model)", at: new Date().toISOString() };
+            MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save();
+            out.mission = missionOut(m);
+          }
+          return out;
+        }, e => bad(e.message));
+      },
+      studioSnapshots() { return ok((W().snapshots || []).slice().reverse().map(snapSummary)); },
+      studioGet(id) { const r = (W().snapshots || []).find(x => x.id === id); return r ? ok({ ...snapSummary(r), site: r.site }) : bad("No snapshot with that id."); },
+      studioSave({ site, label, parentId }) {
+        if (!site || !Array.isArray(site.blocks)) return bad("Send the Studio site with its blocks.");
+        const list = W().snapshots || (W().snapshots = []);
+        const snap = LlmPlan.snapshotOf(site), last = list[list.length - 1];
+        if (last && !parentId && LlmPlan.canonical(LlmPlan.snapshotOf(last.site)) === LlmPlan.canonical(snap)) return ok({ ...snapSummary(last), unchanged: true });
+        const prev = last ? last.hash : "0".repeat(64);
+        const r = { id: uid("snap"), seq: last ? last.seq + 1 : 1, label: String(label || "Saved").replace(/\s+/g, " ").trim().slice(0, 80) || "Saved", site: snap, hash: LlmPlan.snapshotHash(snap, prev), prevHash: prev, parentId: parentId || null, createdAt: new Date().toISOString() };
+        list.push(r); W().events.push(ev("member:owner", "studio.snapshot", "#" + r.seq)); save();
+        return ok(snapSummary(r));
+      },
+      studioFork(id) {
+        const r = (W().snapshots || []).find(x => x.id === id);
+        if (!r) return bad("No snapshot with that id.");
+        return api.studioSave({ site: r.site, label: "Fork of #" + r.seq, parentId: r.id }).then(x => ({ ...x, site: r.site }));
+      },
+      studioDiff(a, b) {
+        const A = (W().snapshots || []).find(x => x.id === a), B = (W().snapshots || []).find(x => x.id === b);
+        if (!A || !B) return bad("No snapshot with that id.");
+        const lines = LlmPlan.lineDiff(LlmPlan.prettyLines(A.site), LlmPlan.prettyLines(B.site));
+        return ok({ a: snapSummary(A), b: snapSummary(B), blocks: LlmPlan.blockDiff(A.site, B.site), lines, added: lines.filter(l => l.op === "add").length, removed: lines.filter(l => l.op === "del").length });
+      },
+      studioVerify() {
+        const rows = W().snapshots || [];
+        let prev = "0".repeat(64);
+        for (const r of rows) {
+          if (r.prevHash !== prev) return ok({ ok: false, count: rows.length, brokenAt: r.seq, reason: "prev_hash does not match the snapshot before" });
+          if (r.hash !== LlmPlan.snapshotHash(r.site, r.prevHash)) return ok({ ok: false, count: rows.length, brokenAt: r.seq, reason: "hash does not match the site" });
+          prev = r.hash;
+        }
+        return ok({ ok: true, count: rows.length, head: prev });
       },
       // ADR-137 in sample mode: the same rules on this browser's data. Webhooks need the local server
       // (their HMAC secrets never live in the browser), and schedules run only there.
@@ -839,6 +890,13 @@
       listMissions: () => req("GET", w("/missions")),
       llmStatus: () => req("GET", "/api/llm/status"),
       llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
+      council: body => req("POST", "/api/llm/council", { ...body, workspace: slug }),
+      studioSnapshots: () => req("GET", w("/studio/snapshots")),
+      studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
+      studioSave: body => req("POST", w("/studio/snapshots"), body),
+      studioFork: id => req("POST", w("/studio/snapshots/" + encodeURIComponent(id) + "/fork"), {}),
+      studioDiff: (a, b) => req("GET", w("/studio/diff?a=" + encodeURIComponent(a) + "&b=" + encodeURIComponent(b))),
+      studioVerify: () => req("GET", w("/studio/verify")),
       liveSearch: body => req("POST", "/api/search/live", { ...body, workspace: slug }),
       // ADR-140: a chat answer token by token. Server-Sent Events over a same-origin POST, read with fetch.
       async llmStream(body, on) {
@@ -1624,10 +1682,25 @@
       store.planMission({ goal: goal.value }).then(m => { toast("ok", m.planner && m.planner.engine === "ollama-local-loopback" ? "Planned by " + m.planner.model + ". Locks were decided by rule." : "Planned by the fixed rules. Locks were decided by rule."); location.hash = "#/missions/" + m.id; },
         e => toast("error", e.message)).finally(() => { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); });
     });
+    // ADR-144: the council debates the goal first (architect, red team and UX critic, synthesizer). The trace
+    // shows each role; the rules have the last word, so a locked step stays locked whatever the roles say.
+    const councilBox = h("div", { class: "stack", "aria-live": "polite" });
+    const councilBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-brain", "sm"), "Ask the council");
+    const askCouncil = createMission => {
+      if (!goal.value.trim()) { toast("warn", "Write the goal first."); goal.focus(); return Promise.resolve(); }
+      councilBtn.disabled = true; councilBtn.setAttribute("aria-busy", "true");
+      if (!createMission) councilBox.replaceChildren(h("p", { class: "muted", text: "The council is debating…" }));
+      return store.council({ mode: "plan", prompt: goal.value, createMission }).then(out => {
+        if (createMission && out.mission) { toast("ok", "Mission made from the council's plan. Locked steps wait for Director 00."); location.hash = "#/missions/" + out.mission.id; return; }
+        councilBox.replaceChildren(councilTrace(out, () => askCouncil(true)));
+      }, e => { councilBox.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message)); toast("error", e.message); })
+        .finally(() => { councilBtn.disabled = false; councilBtn.removeAttribute("aria-busy"); });
+    };
+    councilBtn.addEventListener("click", () => askCouncil(false));
     const planPanel = h("section", { class: "panel", "aria-labelledby": "h-plan" }, h("h2", { id: "h-plan", text: "Plan with the local model" }),
       h("div", { class: "field" }, h("label", { htmlFor: "f-goal", text: "Goal" }), goal,
         h("span", { class: "hint", id: "h-goal", text: "The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Jarvis decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00." })),
-      h("div", { class: "row" }, planBtn));
+      h("div", { class: "row" }, planBtn, councilBtn), councilBox);
     // Changes made from a dialog land after it closes, so the close event refreshes too.
     const refresh = () => { if (!box.isConnected) { off(); dlg.removeEventListener("close", refresh); return; } if (dlg.open) return; store.listMissions().then(l => box.replaceChildren(render(l)), () => {}); };
     const off = store.subscribe(refresh);
@@ -1638,12 +1711,36 @@
       sampleNote(), planPanel, box);
   };
 
+  // The council's debate (ADR-144): three role cards, then whether the locks held. Model text is untrusted.
+  function councilTrace(out, onCreate) {
+    const [arch, critic, synth] = out.trace;
+    const SEV = { high: "failed", medium: "warn", low: "idle" };
+    const engineLine = t => h("p", { class: "t-caption muted" }, t.model ? h("code", { translate: "no", text: t.model }) : "fixed rules (no model)", t.model ? " " : "", t.model ? h("span", { class: "tag-inf", text: "[INFERENCE - local LLM]" }) : null);
+    const card = (cls, title, ...kids) => h("article", { class: "council-card " + cls }, h("h3", { text: title }), ...kids);
+    const finalSteps = out.final.steps.map(x => h("li", { class: x.locked ? "locked" : "" }, h("span", { dir: "auto", text: x.title }), x.locked ? lockLine("locked by rule: " + x.category) : h("span", { class: "t-caption subtle", text: x.kind === "gate" ? "gate" : x.kind === "approval" ? "approval" : "read tool" })));
+    return h("section", { class: "panel council", "aria-labelledby": "h-council" }, h("h2", { id: "h-council", text: "Council debate" }),
+      h("div", { class: "council-grid" },
+        card("arch", "1 · Architect", engineLine(arch),
+          h("ol", { class: "plist" }, arch.proposal.map(p => h("li", null, h("span", { dir: "auto", text: p.title }), " ", p.locked || p.gate === "approval" ? badge("pending", "proposed locked") : h("span", { class: "t-caption subtle", text: "proposed unlocked" }))))),
+        card("crit", "2 · Red team and UX critic", h("p", { class: "t-caption muted", text: "Fixed rules: locks (AGENTS.md §1), private addresses, a test gate before publishing, plan size." }),
+          critic.findings.length ? h("ul", { class: "plist" }, critic.findings.map(f => h("li", null, badge(SEV[f.severity], f.severity + " · " + f.rule), " ", h("span", { dir: "auto", text: f.text })))) : h("p", { class: "t-sm", text: "No findings." }),
+          critic.opinion ? h("details", { class: "think" }, h("summary", { text: "The model's own critique (untrusted, changes nothing)" }), h("p", { class: "t-sm", dir: "auto", text: critic.opinion.text }), h("span", { class: "tag-inf", text: critic.opinion.label })) : null),
+        card("synth", "3 · Synthesizer", h("p", { class: "t-caption muted", text: synth.engine === "rules" ? "Fixed repairs (no model)" : "Rewrite by " + synth.engine.replace(/^rules \+ /, "") + ", locked again by rule" }),
+          synth.changes.length ? h("ul", { class: "plist" }, synth.changes.map(c => h("li", { dir: "auto", text: c }))) : null,
+          h("ol", { class: "plist final" }, finalSteps))),
+      h("div", { class: "row between" },
+        out.locksHold ? badge("ok", "Locks hold: every sensitive step waits for Director 00") : badge("failed", "A sensitive step is not locked; nothing was made"),
+        out.locksHold ? h("button", { class: "btn btn-primary", type: "button", onclick: onCreate }, icon("i-layers", "sm"), "Make it a mission") : null),
+      h("p", { class: "hint", text: "Making it a mission runs the council again and builds the mission from that answer, so the steps never come from this page." }));
+  }
+
   // Who planned a mission. The model's thinking is untrusted text: shown with textContent, folded.
   function plannerBox(pl) {
     if (!pl) return null;
     const byModel = pl.engine === "ollama-local-loopback";
     return h("section", { class: "panel planner", "aria-labelledby": "h-planner" }, h("h2", { id: "h-planner", text: "Planner" }),
       pl.engine === "workflow" ? h("p", { class: "t-sm" }, "Built from the workflow graph ", h("a", { href: "#/workflows/" + pl.workflowId, text: pl.planFrom || "" }), " (no model)") :
+      pl.engine === "council" ? h("p", { class: "t-sm" }, "Agreed by the council: architect, red team and UX critic, synthesizer", pl.model ? h("span", null, " (", h("code", { translate: "no", text: pl.model }), ") ", h("span", { class: "tag-inf", text: "[INFERENCE - local LLM]" })) : " (fixed rules, no model)") :
       h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
       h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
       pl.warning ? h("p", { class: "t-caption muted", dir: "auto", text: pl.warning }) : null,
@@ -2151,7 +2248,9 @@
     /*@LLM_PLAN@*/
     /*@WORKFLOW_GRAPH@*/
     /*@MEMORY_LIBS@*/
-    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL };
+    /*@COUNCIL_LIBS@*/
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
+      runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2218,6 +2317,7 @@
       frame.style.width = site.width + "px";
       frame.style.height = Math.ceil(H / s) + "px";
       frame.style.transform = "translateX(" + Math.max(0, (w - site.width * s) / 2) + "px) scale(" + s + ")";
+      heat.style.width = frame.style.width; heat.style.height = frame.style.height; heat.style.transform = frame.style.transform;
       widthNote.textContent = site.width + " px" + (s < 1 ? " · shown at " + Math.round(s * 100) + "%" : "");
     };
     const widthNote = h("span", { class: "subtle t-caption num" });
@@ -2239,12 +2339,12 @@
       liveBadge.replaceChildren(h("span", { class: "dot", "aria-hidden": "true" }), fails ? fails + " colour pair" + (fails > 1 ? "s" : "") + " below WCAG 4.5 / APCA 60" : "All pairs pass WCAG 4.5 and APCA 60");
     };
     const liveBadge = h("span", { class: "badge" });
-    const changed = () => { save(); push(); checkContrast(); };
+    const changed = () => { save(); push(); checkContrast(); reHeat(); };
 
     const nameIn = h("input", { class: "input", id: "f-site", name: "site-name", autocomplete: "off", value: site.name, maxLength: 80 });
     nameIn.addEventListener("input", () => { site.name = nameIn.value; changed(); });
     const langSeg = seg("Preview language", [["en", "EN · LTR"], ["ar", "AR · RTL", { lang: "ar" }]], site.lang, v => { site.lang = v; changed(); renderBlocks(); });
-    const widthSeg = seg("Preview width", [[375, "Phone 375"], [768, "Tablet 768"], [1440, "Laptop 1440"]], site.width, v => { site.width = v; save(); fit(); });
+    const widthSeg = seg("Preview width", [[375, "Phone 375"], [768, "Tablet 768"], [1440, "Laptop 1440"]], site.width, v => { site.width = v; save(); fit(); reHeat(); });
     const presetSel = h("select", { class: "select", id: "f-preset", name: "preset", autocomplete: "off" }, Object.entries(PRESETS).map(([k, p]) => h("option", { value: k, text: p.label, selected: site.preset === k })), h("option", { value: "custom", text: "Custom", selected: site.preset === "custom" }));
     const colorBox = h("div", { class: "stack" });
     const COLORS = [["bg", "Page"], ["surface", "Cards"], ["text", "Text"], ["muted", "Muted text"], ["accent", "Accent"], ["onAccent", "Text on accent"], ["border", "Lines"]];
@@ -2363,6 +2463,144 @@
       h("ul", { class: "row ds-line", "aria-label": "Design system applied to the template" }, ["OKLCH tokens", "accent #77bcff", "glass blur 16 · saturate 180", "Readex Pro · Inter · Geist Mono", "EN LTR · AR RTL"].map(t => h("li", { class: "badge", translate: "no", text: t }))),
       report);
 
+    // ADR-144: UX heatmap. The sandboxed preview measures its own boxes (sizes and positions only) in this
+    // language and in the mirrored one; ux-physics.mjs scores Fitts, Hick and symmetry and draws the weights.
+    // An SVG element has no hidden property, so the attribute is set (and [hidden] hides it in the CSS).
+    const heat = svg("svg", { class: "heat", "aria-hidden": "true", focusable: "false", hidden: "" });
+    stage.append(heat);
+    const uxBox = h("div", { class: "ux-report", "aria-live": "polite" });
+    uxBox.hidden = true;
+    let measureReq = 0, heatOn = false, heatTimer = null;
+    const pending = new Map();
+    const onBoxes = e => {
+      if (!stage.isConnected) { window.removeEventListener("message", onBoxes); return; }
+      if (e.source !== frame.contentWindow || !e.data || e.data.type !== "jarvis-boxes") return;
+      const done = pending.get(e.data.req);
+      if (done) { pending.delete(e.data.req); done(e.data); }
+    };
+    window.addEventListener("message", onBoxes);
+    const ask = () => new Promise((res, rej) => {
+      const id = ++measureReq;
+      pending.set(id, res);
+      frame.contentWindow.postMessage({ type: "jarvis-measure", req: id }, "*");
+      setTimeout(() => { if (pending.delete(id)) rej(new Error("The preview did not answer the measure request.")); }, 2000);
+    });
+    const sendSite = x => frame.contentWindow.postMessage(JSON.parse(JSON.stringify({ name: x.name, lang: x.lang, theme: x.theme, blocks: x.blocks })), "*");
+    async function runHeat() {
+      if (!ready || !heatOn) return;
+      const here = await ask();
+      sendSite({ ...site, lang: site.lang === "ar" ? "en" : "ar" });
+      const other = await ask();
+      push();
+      const ltr = here.dir === "rtl" ? other : here, rtl = here.dir === "rtl" ? here : other;
+      const rep = LlmPlan.uxReport(here.boxes, here.vw, here.vh, null);
+      rep.symmetry = LlmPlan.uxReport(ltr.boxes, ltr.vw, ltr.vh, rtl.boxes).symmetry;
+      const g = rep.heat, cw = here.vw / g.cols, ch = here.vh / g.rows;
+      heat.setAttribute("viewBox", "0 0 " + here.vw + " " + here.vh);
+      const cells = [];
+      g.grid.forEach((row, r) => row.forEach((v, c) => { if (v > 0.04) cells.push(svg("rect", { class: "hc", x: (c * cw).toFixed(1), y: (r * ch).toFixed(1), width: cw.toFixed(1), height: ch.toFixed(1), "fill-opacity": (v * 0.55).toFixed(2) })); }));
+      const small = rep.fitts.targets.filter(t => t.small).map(t => here.boxes.find(b => b.id === t.id)).filter(Boolean);
+      heat.replaceChildren(...cells, ...small.map(b => svg("rect", { class: "hsmall", x: b.x.toFixed(1), y: b.y.toFixed(1), width: b.w.toFixed(1), height: b.h.toFixed(1), rx: 4 })));
+      heat.removeAttribute("hidden");
+      const worst = rep.hick.groups[0];
+      uxBox.replaceChildren(h("dl", null,
+        h("dt", { text: "Fitts" }), h("dd", null, h("span", { class: "num", text: rep.fitts.score + " / 100" }), " · " + rep.fitts.small + " of " + rep.fitts.targets.length + " targets under 44 × 44 px · mean " + rep.fitts.meanId + " bits"),
+        h("dt", { text: "Hick" }), h("dd", null, worst ? h("span", { class: "num", text: worst.rt.toFixed(3) + " s" }) : "No group of choices", worst ? " for the largest group (" + worst.n + " choices)" + (rep.hick.over ? " · " + rep.hick.over + " over 7" : "") + " " : " ", h("span", { class: "tag-inf", text: "[INFERENCE]" })),
+        h("dt", { text: "Mirror" }), h("dd", null, h("span", { class: "num", text: rep.symmetry.score + "%" }), " symmetry between English and Arabic over " + rep.symmetry.pairs + " pairs"),
+        h("dt", { text: "Heat" }), h("dd", null, "Actions 1.0, headings 0.8 to 0.5, images 0.6, text 0.25; lifted near the thumb on a phone ", h("span", { class: "tag-inf", text: "[INFERENCE]" }))));
+      uxBox.hidden = false;
+    }
+    const heatBtn = h("button", { class: "btn btn-secondary btn-sm", type: "button", "aria-pressed": "false" }, icon("i-chart", "sm"), "UX heatmap");
+    heatBtn.addEventListener("click", () => {
+      heatOn = !heatOn;
+      heatBtn.setAttribute("aria-pressed", String(heatOn));
+      if (!heatOn) { heat.setAttribute("hidden", ""); uxBox.hidden = true; return; }
+      runHeat().catch(e => toast("error", e.message));
+    });
+    const reHeat = () => { if (!heatOn) return; clearTimeout(heatTimer); heatTimer = setTimeout(() => runHeat().catch(() => {}), 400); };
+
+    // ADR-144: the time machine. Each saved state is chained by SHA-256 to the one before; a diff shows two
+    // states side by side, and a fork brings an old state back as a new snapshot at the end of the chain.
+    const snapLabel = h("input", { class: "input", id: "f-snap-label", name: "snapshot-label", autocomplete: "off", maxLength: 80, dir: "auto", placeholder: "Before the new hero" });
+    const saveSnap = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-check", "sm"), "Save snapshot");
+    const snapList = h("ol", { class: "snaps", "aria-label": "Snapshots, newest first" });
+    const fromSel = h("select", { class: "select", id: "f-snap-a", name: "snapshot-from", autocomplete: "off" });
+    const toSel = h("select", { class: "select", id: "f-snap-b", name: "snapshot-to", autocomplete: "off" });
+    const cmpBtn = h("button", { class: "btn btn-secondary", type: "button", text: "Compare" });
+    const forkBtn = h("button", { class: "btn btn-ghost", type: "button", text: "Fork snapshot" });
+    const chainBadge = h("span", { class: "badge s-idle", text: "No snapshots yet" });
+    const diffBox = h("div", { class: "stack", "aria-live": "polite" });
+    const short = x => x.slice(0, 10) + "…";
+    async function loadSnaps() {
+      const [list, ver] = await Promise.all([store.studioSnapshots(), store.studioVerify()]);
+      snapList.replaceChildren(...list.slice(0, 12).map(x => h("li", null,
+        h("span", { class: "num", text: "#" + x.seq }), " ", h("b", { dir: "auto", translate: "no", text: x.label }),
+        h("span", { class: "t-caption subtle" }, " · ", h("code", { translate: "no", text: short(x.hash) }), " · " + plural(x.blocks, "section") + (x.parentId ? " · fork of #" + ((list.find(y => y.id === x.parentId) || {}).seq || "?") : "")))));
+      const opts = () => list.map(x => h("option", { value: x.id, translate: "no", text: "#" + x.seq + " " + x.label }));
+      fromSel.replaceChildren(...opts()); toSel.replaceChildren(...opts());
+      if (list[1]) fromSel.value = list[1].id;
+      if (list[0]) toSel.value = list[0].id;
+      cmpBtn.disabled = list.length < 2; forkBtn.disabled = !list.length;
+      chainBadge.className = "badge " + (!ver.count ? "s-idle" : ver.ok ? "s-ok" : "s-failed");
+      chainBadge.replaceChildren(h("span", { class: "dot", "aria-hidden": "true" }), !ver.count ? "No snapshots yet" : ver.ok ? "Chain verified · " + plural(ver.count, "snapshot") : "Chain broken at #" + ver.brokenAt + ": " + ver.reason);
+    }
+    saveSnap.addEventListener("click", async () => {
+      saveSnap.disabled = true;
+      try {
+        const r = await store.studioSave({ site, label: snapLabel.value.trim() || "Saved" });
+        toast("ok", r.unchanged ? "Nothing changed since snapshot #" + r.seq + "." : "Saved snapshot #" + r.seq + " · " + short(r.hash));
+        snapLabel.value = "";
+        await loadSnaps();
+      } catch (e) { toast("error", e.message); } finally { saveSnap.disabled = false; }
+    });
+    function sideBySide(lines) {
+      const rows = [];
+      for (let i = 0; i < lines.length;) {
+        if (lines[i].op === "same") { rows.push([lines[i], lines[i]]); i++; continue; }
+        const dels = [], adds = [];
+        while (i < lines.length && lines[i].op !== "same") (lines[i].op === "del" ? dels : adds).push(lines[i++]);
+        for (let k = 0; k < Math.max(dels.length, adds.length); k++) rows.push([dels[k] || null, adds[k] || null]);
+      }
+      const near = rows.map((r, i) => rows.slice(Math.max(0, i - 2), i + 3).some(([a, b]) => !(a && b && a.op === "same")));
+      const out = [];
+      let gap = 0;
+      rows.forEach((r, i) => {
+        if (!near[i]) { gap++; return; }
+        if (gap) { out.push(h("tr", { class: "d-gap" }, h("td", { colspan: 4, text: "⋯ " + plural(gap, "unchanged line") }))); gap = 0; }
+        const cell = (x, side) => x ? [h("td", { class: "num subtle", text: String(side === "a" ? x.a : x.b) }), h("td", { class: "d-" + x.op, translate: "no", text: x.text })] : [h("td"), h("td", { class: "d-none" })];
+        out.push(h("tr", null, ...cell(r[0], "a"), ...cell(r[1], "b")));
+      });
+      if (gap) out.push(h("tr", { class: "d-gap" }, h("td", { colspan: 4, text: "⋯ " + plural(gap, "unchanged line") })));
+      return out.slice(0, 300);
+    }
+    cmpBtn.addEventListener("click", async () => {
+      try {
+        const d = await store.studioDiff(fromSel.value, toSel.value);
+        const CH = { added: "ok", removed: "failed", changed: "warn", moved: "idle" };
+        diffBox.replaceChildren(
+          h("p", { class: "t-sm" }, "From #" + d.a.seq + " to #" + d.b.seq + ": ", h("span", { class: "num", text: "+" + d.added + " −" + d.removed }), " lines"),
+          d.blocks.length ? h("ul", { class: "row diff-blocks", "aria-label": "Sections that changed" }, d.blocks.map(b => h("li", null, badge(CH[b.change], b.change + " · " + (BLOCK_NAMES[b.type] || b.type) + (b.at ? " " + b.at[0] + " → " + b.at[1] : ""))))) : h("p", { class: "muted t-sm", text: "The sections are the same." }),
+          h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Side-by-side diff" },
+            h("table", { class: "sbs" }, h("thead", null, h("tr", null, h("th", { colspan: 2, translate: "no", text: "#" + d.a.seq + " " + d.a.label }), h("th", { colspan: 2, translate: "no", text: "#" + d.b.seq + " " + d.b.label }))), h("tbody", null, sideBySide(d.lines)))));
+      } catch (e) { toast("error", e.message); }
+    });
+    forkBtn.addEventListener("click", async () => {
+      try {
+        const f = await store.studioFork(fromSel.value);
+        site = { ...site, ...f.site, v: 1, theme: { ...(f.site.theme || site.theme) }, preset: "custom" };
+        save(); toast("ok", "Forked into snapshot #" + f.seq + ". The Studio now shows it.");
+        route();
+      } catch (e) { toast("error", e.message); }
+    });
+    const timePanel = h("section", { class: "panel", "aria-labelledby": "h-time" }, h("h2", { id: "h-time", text: "Time machine" }),
+      h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-snap-label", text: "Snapshot name" }), snapLabel), saveSnap),
+      h("div", { class: "row" }, chainBadge), snapList,
+      h("div", { class: "snap-pick" }, h("div", { class: "field" }, h("label", { htmlFor: "f-snap-a", text: "From" }), fromSel), h("div", { class: "field" }, h("label", { htmlFor: "f-snap-b", text: "To" }), toSel)),
+      h("div", { class: "row" }, cmpBtn, forkBtn),
+      h("p", { class: "hint", text: "Each snapshot's SHA-256 covers the site and the hash before it, so an edit to history shows. A fork adds a new snapshot; nothing old is changed." }),
+      diffBox);
+    loadSnaps().catch(e => toast("error", e.message));
+
     renderColors(); renderBlocks(); checkContrast();
     requestAnimationFrame(fit);
     return h("div", { class: "stack" },
@@ -2375,10 +2613,11 @@
           h("section", { class: "panel", "aria-labelledby": "h-colors" }, h("h2", { id: "h-colors", text: "Colours" }), h("div", { class: "field" }, h("label", { htmlFor: "f-preset", text: "Preset" }), presetSel), colorBox,
             h("div", { class: "field" }, h("span", { class: "legend", text: "Contrast (live)" }), badges)),
           h("section", { class: "panel", "aria-labelledby": "h-blocks" }, h("h2", { id: "h-blocks", text: "Sections" }), blockList),
-          h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn))),
+          h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn)),
+          timePanel),
         h("div", { class: "preview-col" },
-          h("div", { class: "preview-bar" }, widthSeg, h("div", { class: "row" }, liveBadge, widthNote)),
-          stage)));
+          h("div", { class: "preview-bar" }, widthSeg, h("div", { class: "row" }, heatBtn, liveBadge, widthNote)),
+          stage, uxBox)));
   };
 
   /* ── Skill Mixer (S14) ─────────────────────────────────────── */

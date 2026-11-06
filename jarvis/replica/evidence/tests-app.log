@@ -128,6 +128,19 @@ PASS F21 the inspector prints no stray null
 PASS F21 the quality gate reports 62 rules and no high finding
 PASS F21 the register shows what was adopted, excluded and kept out
 PASS F21 the open-weight catalog lists 12 families with their licences
+PASS F22 two snapshots are saved and the SHA-256 chain verifies
+PASS F22 saving the same site again adds nothing
+PASS F22 the diff shows the old and new line side by side
+PASS F22 forking #1 brings it back as snapshot #3 and the Studio shows it
+PASS F23 the report gives Fitts, Hick with [INFERENCE] and mirror symmetry
+PASS F23 the heat grid is drawn over the preview
+PASS F23 the preview is back in its own language after the mirror measure
+PASS F23 the heatmap switches off
+PASS F25 every chaos kind (long Arabic with tashkeel, bidi controls, markup …) wraps and stays text
+PASS F24 the debate shows the three roles in order
+PASS F24 the critic finds the missing test gate and the synthesizer adds it
+PASS F24 publishing and paying leave the council locked, «بانتظار الموافقة»
+PASS F24 the council's plan becomes a mission with its two locked steps
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -136,4 +149,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-137 passed, 0 failed
+150 passed, 0 failed

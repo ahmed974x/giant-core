@@ -1,21 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 124,
+ "files": 99,
  "summary": {
   "high": 0,
-  "medium": 2,
-  "low": 127
+  "medium": 0,
+  "low": 125
  },
  "byRule": {
-  "D05": 26,
-  "M05": 97,
-  "M08": 2,
-  "P17": 2,
-  "P21": 1,
-  "P22": 1
+  "D05": 27,
+  "M05": 98
  },
- "sha256": "ef816698fead434b01888ddaa407a0f59b1aaafde8fcd275e1970aeddf4c5cbf",
+ "sha256": "9a8df04665844fcf75d5f743dcfde899be8153f9afc7c2fb9bc4790b87d6c439",
  "findings": [
   {
    "rule": "D05",
@@ -195,6 +191,13 @@
   {
    "rule": "D05",
    "severity": "low",
+   "line": 504,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
    "line": 29,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/preview.css"
@@ -210,6 +213,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 207,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 277,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -872,53 +882,11 @@
    "file": "docs/adr/ADR-143-governance-impeccable-graphify-humanizer-model-catalog.md"
   },
   {
-   "rule": "P21",
-   "severity": "low",
-   "line": 40,
-   "message": "Repeated word.",
-   "file": ".claude/skills/replica-impeccable/tests/test_impeccable.py"
-  },
-  {
-   "rule": "P22",
-   "severity": "low",
-   "line": 22,
-   "message": "Arabic filler phrase.",
-   "file": ".claude/skills/replica-humanizer/tests/test_humanizer.py"
-  },
-  {
    "rule": "M05",
    "severity": "low",
-   "line": 24,
+   "line": 13,
    "message": "Paragraph longer than 150 words.",
-   "file": ".claude/skills/replica-cyber-recon/SKILL.md"
-  },
-  {
-   "rule": "M08",
-   "severity": "low",
-   "line": 36,
-   "message": "Code fence without a language.",
-   "file": ".claude/skills/replica-long-horizon/SKILL.md"
-  },
-  {
-   "rule": "M08",
-   "severity": "low",
-   "line": 77,
-   "message": "Code fence without a language.",
-   "file": ".claude/skills/replica-long-horizon/SKILL.md"
-  },
-  {
-   "rule": "P17",
-   "severity": "medium",
-   "line": 74,
-   "message": "Exclamation mark in copy (DESIGN.md §6).",
-   "file": ".claude/skills/replica-long-horizon/gate.py"
-  },
-  {
-   "rule": "P17",
-   "severity": "medium",
-   "line": 167,
-   "message": "Exclamation mark in copy (DESIGN.md §6).",
-   "file": ".claude/skills/replica-long-horizon/tests/test_long_horizon.py"
+   "file": "docs/adr/ADR-144-jarvis-council-time-machine-ux-physics.md"
   }
  ]
 }

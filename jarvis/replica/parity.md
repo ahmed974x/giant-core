@@ -1,6 +1,6 @@
-# Parity: Jarvis (ADR-143)
+# Parity: Jarvis (ADR-144)
 
-Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-05.
+Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
 Jarvis is an original product, so "original" in `features.csv` means "in Jarvis's planned scope". This is
 the feature score only: there are no reference screenshots, so there is no layout diff (by design).
@@ -47,6 +47,11 @@ ADR-143 added two rows, both built and tested (`test-app.mjs` F21, `test-live.mj
 - the Governance page with the knowledge map and the quality gate;
 - the open-weight model catalog.
 
+ADR-144 added three rows, all built and tested (`test-app.mjs` F22–F25, `test-live.mjs`, server tests):
+- the council of agents for plans and designs;
+- the Studio time machine with the side-by-side diff and fork;
+- the UX heatmap with Fitts and Hick.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -55,7 +60,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (71 counted, must-haves 34 of 34 done)
+features 100.0  (74 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (7 features)
@@ -64,10 +69,10 @@ features 100.0  (71 counted, must-haves 34 of 34 done)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (5 features)
-- studio                       100.0  (9 features)
+- studio                       100.0  (11 features)
 - skills                       100.0  (6 features)
 - backend                      100.0  (1 features)
-- missions                     100.0  (6 features)
+- missions                     100.0  (7 features)
 - settings                     100.0  (3 features)
 - workflows                    100.0  (2 features)
 - logs                         100.0  (1 features)

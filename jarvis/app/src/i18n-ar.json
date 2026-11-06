@@ -551,6 +551,118 @@
   [
    "^(screen|module|table|skill|tool) (.+)$",
    "$1 $2"
+  ],
+  [
+   "^Chain verified · 1 snapshot$",
+   "السلسلة موثّقة · لقطة واحدة"
+  ],
+  [
+   "^Chain verified · (\\d+) snapshots$",
+   "السلسلة موثّقة · $1 لقطات"
+  ],
+  [
+   "^Chain broken at #(\\d+): (.+)$",
+   "السلسلة مكسورة عند #$1: {{$2}}"
+  ],
+  [
+   "^· (\\d+) sections?$",
+   "· $1 أقسام"
+  ],
+  [
+   "^· (\\d+) sections? · fork of #(\\d+)$",
+   "· $1 أقسام · متفرّعة من #$2"
+  ],
+  [
+   "^Nothing changed since snapshot #(\\d+)\\.$",
+   "لم يتغيّر شيء منذ اللقطة #$1."
+  ],
+  [
+   "^Saved snapshot #(\\d+) · ([0-9a-f]{10}…)$",
+   "حُفظت اللقطة #$1 · $2"
+  ],
+  [
+   "^Forked into snapshot #(\\d+)\\. The Studio now shows it\\.$",
+   "تفرّعت إلى اللقطة #$1. يعرضها الاستوديو الآن."
+  ],
+  [
+   "^From #(\\d+) to #(\\d+):$",
+   "من #$1 إلى #$2:"
+  ],
+  [
+   "^added · (.+)$",
+   "أُضيف · {{$1}}"
+  ],
+  [
+   "^removed · (.+)$",
+   "حُذف · {{$1}}"
+  ],
+  [
+   "^changed · (.+)$",
+   "تغيّر · {{$1}}"
+  ],
+  [
+   "^moved · (.+?) (\\d+) → (\\d+)$",
+   "انتقل · {{$1}} $2 → $3"
+  ],
+  [
+   "^⋯ 1 unchanged line$",
+   "⋯ سطر واحد بلا تغيير"
+  ],
+  [
+   "^⋯ (\\d+) unchanged lines$",
+   "⋯ $1 سطراً بلا تغيير"
+  ],
+  [
+   "^· (\\d+) of (\\d+) targets under 44 × 44 px · mean ([\\d.]+) bits$",
+   "· $1 من $2 أهداف أصغر من 44 × 44 بكسل · المتوسط $3 بت"
+  ],
+  [
+   "^for the largest group \\((\\d+) choices\\)$",
+   "لأكبر مجموعة ($1 خيارات)"
+  ],
+  [
+   "^for the largest group \\((\\d+) choices\\) · (\\d+) over 7$",
+   "لأكبر مجموعة ($1 خيارات) · $2 فوق 7"
+  ],
+  [
+   "^symmetry between English and Arabic over (\\d+) pairs$",
+   "تناظر بين الإنجليزية والعربية على $1 زوجاً"
+  ],
+  [
+   "^(high|medium|low) · (LOCK|SSRF|GATE|SIZE|HICK|TITLE|LENGTH)$",
+   "{{$1}} · $2"
+  ],
+  [
+   "^“(.+)” was proposed unlocked; it is locked by rule: (\\w+) \\(AGENTS\\.md §1\\)\\.$",
+   "«$1» اقتُرحت غير مقفلة؛ إنها مقفلة بالقاعدة: {{$2}} (AGENTS.md §1)."
+  ],
+  [
+   "^“(.+)” points at a private or loopback address \\((.+)\\)\\.$",
+   "«$1» تشير إلى عنوان خاص أو محلي ($2)."
+  ],
+  [
+   "^The model rewrote the plan \\((\\d+) steps\\); the rules locked it again\\.$",
+   "أعاد النموذج كتابة الخطة ($1 خطوات)؛ وأقفلتها القواعد مرة أخرى."
+  ],
+  [
+   "^1 step waits for Director 00 \\(pending approval\\)\\.$",
+   "خطوة واحدة تنتظر المدير 00 (بانتظار الموافقة)."
+  ],
+  [
+   "^(\\d+) steps wait for Director 00 \\(pending approval\\)\\.$",
+   "$1 خطوات تنتظر المدير 00 (بانتظار الموافقة)."
+  ],
+  [
+   "^locked by rule: (\\w+)$",
+   "مقفلة بالقاعدة: {{$1}}"
+  ],
+  [
+   "^· locked by rule: (\\w+)$",
+   "· مقفلة بالقاعدة: {{$1}}"
+  ],
+  [
+   "^Rewrite by (.+), locked again by rule$",
+   "إعادة كتابة من $1، ثم أُقفلت بالقاعدة مرة أخرى"
   ]
  ],
  "strings": {
@@ -1560,6 +1672,59 @@
   "high": "عالية",
   "Not reached from the page:": "لا تصل إليه الصفحة:",
   "Linked:": "مرتبطة:",
-  "Constraints:": "القيود:"
+  "Constraints:": "القيود:",
+  "UX heatmap": "خريطة حرارة تجربة الاستخدام",
+  "Time machine": "آلة الزمن",
+  "Snapshot name": "اسم اللقطة",
+  "Before the new hero": "قبل الواجهة الجديدة",
+  "Save snapshot": "احفظ لقطة",
+  "No snapshots yet": "لا توجد لقطات بعد",
+  "Snapshots, newest first": "اللقطات، الأحدث أولاً",
+  "From": "من",
+  "To": "إلى",
+  "Compare": "قارن",
+  "Fork snapshot": "تفرّع من اللقطة",
+  "Each snapshot's SHA-256 covers the site and the hash before it, so an edit to history shows. A fork adds a new snapshot; nothing old is changed.": "بصمة SHA-256 لكل لقطة تغطي الموقع وبصمة اللقطة التي قبلها، فيظهر أي تعديل على التاريخ. التفرّع يضيف لقطة جديدة ولا يغيّر شيئاً قديماً.",
+  "prev_hash does not match the snapshot before": "بصمة السابقة لا تطابق اللقطة التي قبلها",
+  "hash does not match the site": "البصمة لا تطابق الموقع",
+  "The sections are the same.": "الأقسام نفسها.",
+  "Sections that changed": "الأقسام التي تغيّرت",
+  "Side-by-side diff": "مقارنة جنباً إلى جنب",
+  "lines": "سطر",
+  "Forked into snapshot #3. The Studio now shows it.": "تفرّعت إلى اللقطة #3. يعرضها الاستوديو الآن.",
+  "The preview did not answer the measure request.": "لم تُجب المعاينة على طلب القياس.",
+  "Fitts": "فيتس",
+  "Hick": "هيك",
+  "Mirror": "المرآة",
+  "Heat": "الحرارة",
+  "No group of choices": "لا توجد مجموعة خيارات",
+  "Actions 1.0, headings 0.8 to 0.5, images 0.6, text 0.25; lifted near the thumb on a phone": "الأزرار والروابط 1.0، والعناوين من 0.8 إلى 0.5، والصور 0.6، والنص 0.25؛ وترتفع قرب الإبهام على الهاتف",
+  "Ask the council": "اسأل المجلس",
+  "The council is debating…": "المجلس يتناقش…",
+  "Council debate": "نقاش المجلس",
+  "1 · Architect": "1 · المعماري",
+  "2 · Red team and UX critic": "2 · الفريق الأحمر وناقد تجربة الاستخدام",
+  "3 · Synthesizer": "3 · المُركِّب",
+  "fixed rules (no model)": "القواعد الثابتة (بلا نموذج)",
+  "proposed locked": "اقتُرحت مقفلة",
+  "proposed unlocked": "اقتُرحت غير مقفلة",
+  "Fixed rules: locks (AGENTS.md §1), private addresses, a test gate before publishing, plan size.": "قواعد ثابتة: الأقفال (AGENTS.md §1)، والعناوين الخاصة، وبوابة اختبار قبل النشر، وحجم الخطة.",
+  "No findings.": "لا ملاحظات.",
+  "The model's own critique (untrusted, changes nothing)": "نقد النموذج نفسه (غير موثوق، لا يغيّر شيئاً)",
+  "Fixed repairs (no model)": "إصلاحات ثابتة (بلا نموذج)",
+  "Added a test gate before publishing.": "أُضيفت بوابة اختبار قبل النشر.",
+  "Run the tests before publishing": "شغّل الاختبارات قبل النشر",
+  "Publishing comes with no test gate before it.": "النشر يأتي بلا بوابة اختبار قبله.",
+  "More than 12 steps; the plan was cut to 12.": "أكثر من 12 خطوة؛ اختُصرت الخطة إلى 12.",
+  "read tool": "أداة قراءة",
+  "Locks hold: every sensitive step waits for Director 00": "الأقفال ثابتة: كل خطوة حساسة تنتظر المدير 00",
+  "A sensitive step is not locked; nothing was made": "خطوة حساسة غير مقفلة؛ لم يُصنع شيء",
+  "Make it a mission": "اجعلها مهمة",
+  "Making it a mission runs the council again and builds the mission from that answer, so the steps never come from this page.": "تحويلها إلى مهمة يشغّل المجلس مرة أخرى ويبني المهمة من جوابه، فلا تأتي الخطوات أبداً من هذه الصفحة.",
+  "Mission made from the council's plan. Locked steps wait for Director 00.": "صُنعت المهمة من خطة المجلس. الخطوات المقفلة تنتظر المدير 00.",
+  "Agreed by the council: architect, red team and UX critic, synthesizer": "اتفق عليها المجلس: المعماري، والفريق الأحمر وناقد تجربة الاستخدام، والمُركِّب",
+  " (fixed rules, no model)": " (قواعد ثابتة، بلا نموذج)",
+  "(fixed rules, no model)": "(قواعد ثابتة، بلا نموذج)",
+  "studio snapshot": "لقطة الاستوديو"
  }
 }

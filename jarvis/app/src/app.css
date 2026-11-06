@@ -99,10 +99,10 @@ svg.i.sm { width: 16px; height: 16px; }
 .clone-bar { display: grid; gap: 12px; }
 .ds-line { list-style: none; margin: 0; padding: 0; gap: 6px; }
 .clone-row { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
-.report { display: grid; gap: 6px; font-size: var(--text-sm); }
-.report dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; }
-.report dt { color: var(--color-text-muted); }
-.report dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.report, .ux-report { display: grid; gap: 6px; font-size: var(--text-sm); }
+.report dl, .ux-report dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; }
+.report dt, .ux-report dt { color: var(--color-text-muted); }
+.report dd, .ux-report dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .report .badge { white-space: normal; height: auto; min-height: 24px; padding-block: 2px; }
 .ws-name { font-weight: 600; font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; }
 
@@ -381,7 +381,7 @@ dialog.palette.glass { background: var(--color-surface-raised); }
 .wf-node.k-gate .wf-box { stroke: var(--color-info); }
 .wf-node.locked .wf-box { stroke: var(--color-approval); stroke-dasharray: 5 4; }
 .wf-node.sel .wf-box, .wf-node:focus-visible .wf-box { stroke: var(--color-accent); stroke-width: 2.5; }
-.wf-title { fill: var(--color-text); font: 600 14px/1 var(--font-sans, inherit); }
+.wf-title { fill: var(--color-text); font: 600 14px/1 var(--font-sans); }
 .wf-sub { fill: var(--color-text-muted); font: 500 12px/1 var(--font-mono); }
 .wf-node.locked .wf-sub { fill: var(--color-approval); }
 :lang(ar) .wf-sub, :lang(ar) .wf-title { font-family: var(--font-arabic); letter-spacing: 0; }
@@ -491,3 +491,30 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .gmap-info { min-width: 0; }
 .catalog summary { cursor: pointer; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .gmap-edge { transition: none; } }
+
+/* ADR-144: UX heatmap over the preview, the Studio time machine and the council trace. */
+.heat { position: absolute; inset-block-start: 0; left: 0; transform-origin: 0 0; pointer-events: none; }
+.heat .hc { fill: var(--color-warning); }
+.heat .hsmall { fill: none; stroke: var(--color-danger); stroke-width: 3; }
+.ux-report { padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); }
+.snaps { margin: 0; padding-inline-start: 0; list-style: none; display: grid; gap: 4px; font-size: var(--text-sm); }
+.snaps li { overflow-wrap: anywhere; }
+.snap-pick { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+.sbs { font-family: var(--font-mono); font-size: var(--text-caption); line-height: 20px; direction: ltr; }
+.sbs th { text-align: start; padding: 6px 8px; font-family: var(--font-sans); }
+.sbs td { padding: 0 8px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; min-inline-size: 4ch; }
+.sbs td.num { inline-size: 1%; white-space: nowrap; }
+.sbs .d-del { background: color-mix(in oklch, var(--color-danger) 14%, transparent); box-shadow: inset 3px 0 0 var(--color-danger); }
+.sbs .d-add { background: color-mix(in oklch, var(--color-success) 14%, transparent); box-shadow: inset 3px 0 0 var(--color-success); }
+.sbs .d-none { background: var(--color-surface-sunken); }
+.sbs .d-gap td { color: var(--color-text-muted); padding-block: 4px; font-family: var(--font-sans); }
+.council-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
+.council-card { display: grid; gap: 8px; padding: 12px; border-radius: var(--radius-md); background: var(--color-surface-sunken); min-width: 0; }
+.council-card h3 { margin: 0; font-size: var(--text-sm); }
+.plist { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; font-size: var(--text-sm); }
+.plist li { overflow-wrap: anywhere; }
+.plist .badge { white-space: normal; height: auto; }
+.plist.final li { display: grid; gap: 2px; }
+.plist.final .lock-line { margin: 0; }
+.btn[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
+.diff-blocks { list-style: none; margin: 0; padding: 0; }

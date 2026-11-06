@@ -184,7 +184,8 @@ export function createOllamaBridge({ baseUrl = process.env.JARVIS_OLLAMA_URL || 
     if (mode === "plan") {
       const raw = g ? parsePlanJson(g.content) : null;
       const steps = raw && raw.length ? enforceApprovalGates(raw) : fallbackPlan(p);
-      return { ...base, steps, planFrom: raw && raw.length ? "model" : "fixed rules", warning: g && !(raw && raw.length) ? "The model's answer had no usable steps; used the fixed rules." : warning };
+      // rawSteps: what the model proposed before the locks were applied, for the council's debate trace (ADR-144).
+      return { ...base, steps, rawSteps: raw && raw.length ? raw : null, planFrom: raw && raw.length ? "model" : "fixed rules", warning: g && !(raw && raw.length) ? "The model's answer had no usable steps; used the fixed rules." : warning };
     }
     if (mode === "design") {
       // The model's HTML is never shown: only its layout shape survives the clean-room extractor.

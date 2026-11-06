@@ -407,3 +407,19 @@ create table if not exists skill_evolution_log (
 create index if not exists skill_evolution_log_ws on skill_evolution_log (workspace_id, created_at);
 create trigger if not exists skill_evolution_log_no_update before update on skill_evolution_log
   begin select raise(abort, 'jarvis.skill_evolution_log is append-only'); end;
+
+-- ADR-144: the Studio time machine. Each saved state is a row whose hash chains to the previous one.
+create table if not exists studio_snapshots (
+  id text primary key,
+  workspace_id text not null references workspaces(id) on delete cascade,
+  seq integer not null check (seq >= 1),
+  label text not null check (length(label) between 1 and 80),
+  site text not null,
+  hash text not null check (length(hash) = 64),
+  prev_hash text not null check (length(prev_hash) = 64),
+  parent_id text,
+  created_at text not null,
+  unique (workspace_id, seq)
+);
+create trigger if not exists studio_snapshots_no_update before update on studio_snapshots
+  begin select raise(abort, 'jarvis.studio_snapshots is append-only'); end;

@@ -138,11 +138,20 @@ const llmPlanSrc = readFileSync(join(here, "..", "server", "lib", "llm-plan.mjs"
 if (/<\/script/i.test(llmPlanSrc)) fail('llm-plan.mjs contains "</script"; it would end the element early.');
 const inlineLib = name => { const t = readFileSync(join(here, "..", "server", "lib", name), "utf8").replace(/^export \{[^}]*\} from .*$/gm, "").replace(/^export /gm, "").replace(/^import .*$/gm, ""); if (/<\/script/i.test(t)) fail(name + ' contains "</script".'); return t; };
 const bm25Src = inlineLib("bm25.mjs"), forgeSrc = inlineLib("forge.mjs"), selfCheckSrc = inlineLib("selfcheck.mjs"), skillAuditSrc = inlineLib("skill-audit.mjs"), catalogSrc = inlineLib("model-catalog.mjs");
+// ADR-144: the council, the Studio time machine and UX physics run in the page too (sample mode and the
+// heatmap). The council's address check is fetch-public.mjs's own pure part (v4Blocked to isBlockedAddress),
+// cut from the file so the page and the server refuse the same ranges; node:net is replaced by two tests.
+const fpSrc = readFileSync(join(here, "..", "server", "lib", "fetch-public.mjs"), "utf8");
+const fpA = fpSrc.indexOf("function v4Blocked("), fpB = fpSrc.indexOf("export function checkUrl(");
+if (fpA < 0 || fpB < fpA) fail("fetch-public.mjs: could not find isBlockedAddress for the page.");
+const councilSrc = "const net = { isIPv4: s => /^(\\d{1,3})(\\.\\d{1,3}){3}$/.test(s) && s.split(\".\").every(n => Number(n) <= 255), isIPv6: s => /^[0-9a-f:.]+(%.+)?$/i.test(s) && s.includes(\":\") };\n" +
+  "const isLocalModelEngine = e => e === \"ollama-local-loopback\" || e === \"openai-compat-loopback\";\n" +
+  fpSrc.slice(fpA, fpB).replace(/^export /gm, "") + inlineLib("council.mjs") + "\n" + inlineLib("snapshot.mjs") + "\n" + inlineLib("ux-physics.mjs");
 const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-graph.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

@@ -157,8 +157,31 @@
 
   const data = document.getElementById("site");
   try { render(JSON.parse(data ? data.textContent : "null")); } catch (e) { /* bad JSON: leave the page empty */ }
+  // ADR-144: the Studio asks for the boxes of what the preview shows (actions, headings, text, images) to
+  // compute Fitts, Hick, mirror symmetry and the heatmap. Only sizes and positions in the viewport go
+  // back (what is on screen now); no text.
+  function measure() {
+    const out = [];
+    const holders = Array.from(document.querySelectorAll("ul, .actions, header, section, footer"));
+    const add = (n, kind, i, extra) => {
+      const r = n.getBoundingClientRect();
+      if (r.width && r.height) out.push(Object.assign({ id: kind.charAt(0) + i, kind, x: r.left, y: r.top, w: r.width, h: r.height }, extra));
+    };
+    document.querySelectorAll("a, button, summary").forEach((n, i) => {
+      const g = n.closest("ul, .actions, header, section, footer");
+      add(n, "action", i, { group: g ? "g" + holders.indexOf(g) + " " + (g.className || g.tagName.toLowerCase()) : null });
+    });
+    document.querySelectorAll("h1, h2, h3").forEach((n, i) => add(n, "heading", i, { level: Number(n.tagName.charAt(1)) }));
+    document.querySelectorAll("p, td, th, dd").forEach((n, i) => add(n, "text", i));
+    document.querySelectorAll("img").forEach((n, i) => add(n, "image", i));
+    return out.slice(0, 400);
+  }
   window.addEventListener("message", e => {
     if (e.source !== window.parent || window.parent === window) return;
+    if (e.data && e.data.type === "jarvis-measure") {
+      window.parent.postMessage({ type: "jarvis-boxes", req: Number(e.data.req) || 0, vw: window.innerWidth, vh: window.innerHeight, dir: document.documentElement.dir, boxes: measure() }, "*");
+      return;
+    }
     render(e.data);
   });
 })();

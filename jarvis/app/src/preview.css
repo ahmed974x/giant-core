@@ -7,7 +7,7 @@
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.6 "Inter Variable", "Readex Pro Variable", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 :lang(ar) body, body:lang(ar) { font-family: "Readex Pro Variable", "Inter Variable", Tahoma, system-ui, sans-serif; line-height: 1.75; letter-spacing: 0; }
-h1, h2, h3, p { margin: 0; }
+h1, h2, h3, p { margin: 0; overflow-wrap: anywhere; }
 h1, h2, h3 { text-wrap: balance; line-height: 1.2; }
 :lang(ar) h1, :lang(ar) h2, :lang(ar) h3 { line-height: 1.45; }
 p { text-wrap: pretty; }

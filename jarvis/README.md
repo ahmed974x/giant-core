@@ -272,6 +272,22 @@ python3 .claude/skills/replica-impeccable/slop_guard.py --json jarvis/app/src ja
 
 Settings → Local model → **Open-weight model catalog** lists 12 families (DeepSeek, Qwen, GLM, Llama, Gemma, OLMo, Phi, Codestral), each with its licence and job.
 
+## Council, time machine and UX heatmap (ADR-144)
+
+- **Missions → Ask the council.** Three roles debate the goal: the architect proposes (the planner model, or the fixed rules), the red team and UX critic check it with fixed rules (locks, private addresses, a test gate before publishing, plan size), and the synthesizer repairs it (the designer model may rewrite it). Each card is shown. Whatever they say, money, publishing, permissions, installs and outbound messages leave as locked steps «بانتظار الموافقة». **Make it a mission** runs the council again on the server and builds the mission from that answer.
+- **Studio → Time machine.** **Save snapshot** adds a row whose SHA-256 covers the site and the hash before it. **Compare** shows two snapshots side by side and lists the sections added, removed, changed or moved. **Fork snapshot** brings an old one back as a new snapshot. Rows cannot be edited, and a removed row shows as a broken chain.
+- **Studio → UX heatmap.** The preview measures its own boxes in both languages. The page draws an attention grid with small targets outlined, and lists Fitts, Hick and mirror symmetry [INFERENCE].
+
+The same formulas run without a browser:
+
+```bash
+python3 .claude/skills/replica-ux-physics/ux_physics.py jarvis/app/index.html
+```
+
+```bash
+python3 .claude/skills/replica-ux-physics/chaos_fuzzer.py --seed 144 --count 60 --out jarvis/replica/evidence/fuzz-cases.json --root .
+```
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

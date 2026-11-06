@@ -69,6 +69,14 @@ PASS live: discovery results print no stray null
 PASS live: an imported SKILL.md is mounted in the database with its origin and licence
 PASS live: the import is in the evolution log
 PASS live: nothing is written into .claude/skills
+PASS live: the architect is the local planner, and its unlocked publish step is shown as proposed
+PASS live: the red team flags the unlocked step and the locks hold
+PASS live: the mission says the council planned it
+PASS live: the council's sensitive steps are approvals in the database and not done
+PASS live: snapshots are rows in the database, chained by SHA-256
+PASS live: the database refuses to edit a snapshot
+PASS live: the server's diff is shown side by side
+PASS live: the UX heatmap is drawn from the preview's own boxes
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -87,4 +95,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-88 passed, 0 failed
+96 passed, 0 failed
