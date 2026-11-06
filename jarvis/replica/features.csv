@@ -73,5 +73,8 @@ Open-weight model catalog,models,could,yes,yes,"ADR-143: 12 families with licenc
 Council of agents for plans and designs,missions,should,yes,yes,"ADR-144: architect, red team and UX critic, synthesizer; rules last, locked steps pending approval; trace shown; mission built on the server"
 Studio time machine with side-by-side diff and fork,studio,should,yes,yes,"ADR-144: studio_snapshots append-only, SHA-256 chained, verify, line and block diff, fork"
 UX heatmap with Fitts and Hick,studio,could,yes,yes,"ADR-144: preview measures its boxes; heat grid, 44 px targets, Hick RT, RTL/LTR symmetry [INFERENCE]"
+Ctrl+K macro composer with a formal proof,missions,should,yes,yes,"ADR-145: fixed rules, breadth-first proof (deadlocks, reachability, no sensitive effect without a lock) in the page and again on the server; locked steps stop at the violet card"
+Studio 5-in-1 export,studio,should,yes,yes,"ADR-145: HTML with CSP, Web Component with Shadow DOM, W3C tokens with contrast, SQL with locked payment, publish and permission tables, three-size Playwright test"
+Formal verification and mutation audit skill,quality,could,yes,yes,"ADR-145: replica-formal-verify state_prover.py and mutation_audit.py, standard library only"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

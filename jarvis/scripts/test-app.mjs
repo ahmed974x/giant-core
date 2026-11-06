@@ -542,6 +542,43 @@ await page.getByRole("button", { name: "Make it a mission" }).click();
 await page.waitForTimeout(500);
 ok(/#\/missions\/ms_/.test(page.url()) && await page.getByText(/Agreed by the council/).isVisible() && (await page.locator(".mstep.k-approval").count()) === 2, "F24 the council's plan becomes a mission with its two locked steps");
 
+// F26: the Ctrl+K macro composer (ADR-145): steps from the fixed rules, a breadth-first proof, locked stops.
+await go("#/overview");
+await page.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
+await page.locator("#palInput").fill("compose macro");
+await page.locator("#palList li").filter({ hasText: "Compose a macro" }).first().click();
+await page.locator("#f-macro").fill("Read the latest commits then run the tests then publish the site then pay the hosting invoice");
+await page.waitForTimeout(400);
+const mp = page.locator("dialog[open] .macro-proof");
+ok(await mp.getByText("Formal Proof: Verified").isVisible() && /0 deadlocks · 2\/2 effects behind a lock/.test(await mp.innerText()), "F26 the macro is proved: no deadlock, both effects behind a lock", (await mp.innerText()).slice(0, 200));
+ok(!/\bnull\b/.test(await mp.innerText()), "F26 the proof box prints no stray null");
+ok((await mp.locator("li.locked").count()) === 2 && (await mp.locator("li.locked").filter({ hasText: "قيد الموافقة" }).count()) === 2, "F26 publishing and paying stop at «قيد الموافقة»");
+await page.getByRole("button", { name: "Run macro" }).click();
+await page.waitForTimeout(500);
+ok(/#\/missions\/ms_/.test(page.url()) && await page.locator(".planner").getByText("Formal Proof: Verified").isVisible() && (await page.locator(".mstep.k-approval").count()) === 2, "F26 the macro becomes a mission that keeps its proof and two locked steps");
+
+// F27: the Studio's 5-in-1 export (ADR-145): HTML, Web Component, W3C tokens, SQL with locks, three-size test.
+await go("#/studio");
+const dlDir = mkdtempSync(join(tmpdir(), "jarvis-export-"));
+const got = {};
+for (const ext of [".html", ".mjs", ".tokens.json", ".sql", ".spec.mjs"]) {
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("button[data-export='" + ext + "']").click()]);
+  const to = join(dlDir, dl.suggestedFilename()); await dl.saveAs(to);
+  got[ext] = { name: dl.suggestedFilename(), path: to, text: readFileSync(to, "utf8") };
+}
+ok(Object.values(got).every(g => g.name.startsWith("my-product")) && /Content-Security-Policy/.test(got[".html"].text), "F27 five files are saved, the page with its strict CSP");
+const tok = JSON.parse(got[".tokens.json"].text);
+ok(tok.color.accent.$type === "color" && tok.$extensions["jarvis.contrast"].checks.length === 6 && tok.$extensions["jarvis.contrast"].checks.every(c => c.pass), "F27 the tokens are W3C format and record six passing contrast pairs");
+ok(/constraint publish_requests_locked check/.test(got[".sql"].text) && /pending_approval/.test(got[".sql"].text) && /\[INFERENCE\]/.test(got[".sql"].text), "F27 the SQL starts publishing at pending_approval with a lock");
+ok(/width: 390, height: 844/.test(got[".spec.mjs"].text) && /width: 2560, height: 1080/.test(got[".spec.mjs"].text), "F27 the test covers mobile, laptop and ultra-wide");
+const wc = await ctx.newPage();
+await wc.setContent("<!doctype html><html><body><jarvis-my-product></jarvis-my-product><jarvis-my-product lang=\"ar\"></jarvis-my-product></body></html>");
+await wc.addScriptTag({ path: got[".mjs"].path, type: "module" });
+await wc.waitForTimeout(300);
+const wcInfo = await wc.evaluate(() => [...document.querySelectorAll("jarvis-my-product")].map(e => ({ shadow: !!e.shadowRoot, h1: e.shadowRoot && e.shadowRoot.querySelector("h1") ? e.shadowRoot.querySelector("h1").textContent : "", dir: e.dir, light: e.childElementCount })));
+ok(wcInfo.length === 2 && wcInfo.every(x => x.shadow && x.light === 0 && x.h1) && wcInfo[0].dir === "ltr" && wcInfo[1].dir === "rtl" && /[\u0600-\u06FF]/.test(wcInfo[1].h1), "F27 the Web Component renders in Shadow DOM, English left to right and Arabic right to left", JSON.stringify(wcInfo));
+await wc.close();
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
@@ -554,7 +591,7 @@ const englishLeft = () => page.evaluate(() => {
   return [...out];
 }).then(l => l.filter(t => ![...TYPED].some(x => t === x || (t.endsWith("…") && x.startsWith(t.slice(0, -1)))) && !/[\u0600-\u06FF]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))));
 // Text this test typed itself is data, kept as written.
-const TYPED = new Set(["Starting point", "New name", "Renamed product", "Read the latest commits, publish the site, then pay the hosting invoice", "Read the latest commits, publish the site,", "pay the hosting invoice", "Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
+const TYPED = new Set(["Read the latest commits then run the tests then publish the site then pay the hosting invoice", "run the tests", "publish the site", "Starting point", "New name", "Renamed product", "Read the latest commits, publish the site, then pay the hosting invoice", "Read the latest commits, publish the site,", "pay the hosting invoice", "Explain breadth-first search", "Local trick", "radius padding", "https://www.example.com/", "Release notes writer v2", "Flow test agent", "Read the docs, then run the tests, then publish the site", "Email the team the summary"]);
 await go("#/overview");
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);

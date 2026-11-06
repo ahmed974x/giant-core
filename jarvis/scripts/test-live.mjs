@@ -367,9 +367,28 @@ await page.waitForSelector(".ux-report:not([hidden]) dl", { timeout: 5000 }).cat
 ok((await page.locator(".heat rect.hc").count()) > 10 && /symmetry between English and Arabic/.test(await page.locator(".ux-report").innerText()), "live: the UX heatmap is drawn from the preview's own boxes");
 await page.getByRole("button", { name: "UX heatmap" }).click();
 
+// ADR-145 live: a Ctrl+K macro is proved in the page and again on the server, then runs as a mission.
+await go("#/overview");
+await page.keyboard.press("Control+k");
+await page.locator("#palInput").fill("compose macro");
+await page.locator("#palList li").filter({ hasText: "Compose a macro" }).first().click();
+await page.locator("#f-macro").fill("Read the docs then publish the release");
+await page.waitForTimeout(400);
+ok(await page.locator("dialog[open]").getByText("Formal Proof: Verified").isVisible(), "live: the macro composer shows the proof");
+await page.getByRole("button", { name: "Run macro" }).click();
+await page.waitForFunction(() => /#\/missions\/[0-9a-f-]{36}$/.test(location.hash), null, { timeout: 8000 }).catch(() => {});
+await page.waitForSelector(".planner", { timeout: 8000 }).catch(() => {});
+const macroRow = (await srv.db.all("select planner from missions where planner like '%macro%'"))[0];
+const macroPlanner = macroRow ? (typeof macroRow.planner === "string" ? JSON.parse(macroRow.planner) : macroRow.planner) : null;
+ok(macroPlanner && macroPlanner.proof.verified === true && await page.locator(".planner").getByText("Formal Proof: Verified").isVisible(), "live: the server proved the macro again and stored the proof with the mission");
+await go("#/studio");
+const [sqlDl] = await Promise.all([page.waitForEvent("download"), page.locator("button[data-export='.sql']").click()]);
+const sqlPath = join(dataDir, "export.sql"); await sqlDl.saveAs(sqlPath);
+ok(/publish_requests_locked/.test(readFileSync(sqlPath, "utf8")), "live: the Studio exports a schema with locked tables");
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
-const TYPED = ["Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
+const TYPED = ["Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;

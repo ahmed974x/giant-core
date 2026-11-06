@@ -28,6 +28,8 @@ import { splitThinking, parsePlanJson, enforceApprovalGates, fallbackPlan } from
 import { runCouncil, critiquePlan, critiqueDesign, repairPlan, privateTargets } from "../lib/council.mjs";
 import { canonical as snapCanonical, sha256Hex, snapshotHash, lineDiff, blockDiff } from "../lib/snapshot.mjs";
 import { fitts, hick, symmetry, heatGrid, TOUCH_MIN } from "../lib/ux-physics.mjs";
+import { planMachine, prove, provePlan } from "../lib/prover.mjs";
+import { exportSql, exportTokens, exportComponent, exportSpec, slugOf } from "../lib/exporter.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
 // a payment and a skill install as unlocked and "done", and wraps it all in <think> and a code fence.
@@ -635,6 +637,25 @@ async function suite(mode, opts) {
   ok((await post("/api/w/giant-core/studio/snapshots", { site: { name: "x" } })).status === 400 && (await j("/api/w/giant-core/studio/snapshots/not-there")).status === 404, tag("a site without blocks or an unknown id is refused"));
   }
 
+  {
+  // ADR-145: a Ctrl+K macro is proved before it becomes a mission; the exported SQL locks money and publishing.
+  const mac = await post("/api/w/giant-core/missions/macro", { text: "read the latest commits then run the tests then publish the site then pay the hosting invoice" });
+  ok(mac.status === 201 && mac.body.planner.engine === "macro" && mac.body.planner.proof.verified === true && mac.body.planner.proof.effects === 2, tag("a macro is proved and becomes a mission"), mac.body && mac.body.planner);
+  ok(mac.body.steps.filter(x => x.kind === "approval" && ["publish", "money"].includes(x.category)).length === 2 && mac.body.steps.filter(x => x.kind === "approval").every(x => x.status !== "done"), tag("the macro's publish and pay steps are locked approvals"));
+  ok((await post("/api/w/giant-core/missions/macro", { text: "" })).status === 400 && (await post("/api/w/giant-core/missions/macro", { text: "x".repeat(2001) })).status === 400, tag("an empty or oversized macro is refused"));
+  if (mode === "postgres") {
+    const site = { name: "Team pricing", blocks: [{ id: "h", type: "hero", t: { en: { title: "Plans for teams", primary: "Subscribe" } } }, { id: "f", type: "faq", t: { en: { title: "Questions", q1: "Can I pay monthly?" } } }, { id: "t", type: "table", t: { en: { title: "Compare", c1: "Plan", c2: "Price" } } }] };
+    const ex = exportSql(site);
+    const stmts = ex.sql.replace(/create table (\w+)/g, "create table xt_$1").split(/;\s*\n\n/).map(x => x.trim()).filter(x => /create table/.test(x));
+    let sqlErr = null; try { for (const st of stmts) await s.db.run(st); } catch (e) { sqlErr = e; }
+    ok(!sqlErr && ex.locked.join() === "payments,publish_requests,permission_grants", tag("the exported schema runs on PostgreSQL 16 with three locked tables"), (sqlErr && sqlErr.message) + " " + ex.locked);
+    let payErr = null; try { await s.db.run("insert into xt_payments (amount_minor, currency, status) values (100, 'USD', 'approved')"); } catch (e) { payErr = e; }
+    await s.db.run("insert into xt_payments (amount_minor, currency) values (100, 'USD')");
+    ok(payErr && /payments_locked/.test(payErr.message) && (await s.db.one("select status from xt_payments")).status === "pending_approval", tag("an exported payment starts pending and cannot be approved without a person"), payErr && payErr.message);
+    for (const t of ["permission_grants", "publish_requests", "payments", "leads", "table_compare", "faq_items", "site_sections"]) await s.db.run("drop table if exists xt_" + t);
+  }
+  }
+
   await s.close();
 }
 
@@ -785,6 +806,32 @@ ok(stepsFromMission({ steps: [{ title: "Read commits", kind: "tool" }, { title: 
   ok(symmetry([{ id: "a", x: 10, w: 100 }], [{ id: "a", x: 280, w: 100 }], 390).score === 100 && symmetry([{ id: "a", x: 10, w: 100 }], [{ id: "a", x: 10, w: 100 }], 390).score < 100, "RTL mirror symmetry is 100 for a true mirror and less otherwise");
   const hg = heatGrid(boxes, 390, 844);
   ok(hg.grid.length === 16 && hg.grid[0].length === 24 && Math.max(...hg.grid.flat()) === 1, "the heat grid is 24 × 16, normalised to 1");
+}
+
+// ADR-145 pure: the prover and the 5-in-1 exporter.
+{
+  const steps = fallbackPlan("read the commits then run the tests then publish the site then pay the invoice");
+  const pr = provePlan(steps);
+  ok(pr.verified && pr.effects === 2 && pr.lockedStates === 2 && !pr.deadlocks.length && pr.reachesDone, "the prover verifies a fixed-rule plan with two locked effects", pr);
+  const open = steps.map(x => x.category === "publish" ? { ...x, locked: false } : x);
+  const bad = provePlan(open);
+  ok(!bad.verified && bad.violations[0].effect === "publish" && bad.violations[0].path.length >= 1, "an unlocked publish step is a violation with a path", bad.violations);
+  const m = planMachine(steps); m.states.push({ id: "limbo" }); m.transitions.push({ from: "s0", to: "limbo", event: "odd" });
+  ok(prove(m).deadlocks.join() === "limbo", "a state with no way out is a deadlock");
+  const m2 = planMachine(steps); m2.transitions.push({ from: "start", to: m2.states.find(x => x.effect === "money").id, event: "shortcut" });
+  ok(prove(m2).violations.some(v => v.effect === "money" && v.path[0] === "start -shortcut-> " + m2.states.find(x => x.effect === "money").id), "a shortcut to a payment is found");
+  ok(provePlan(enforceApprovalGates(JSON.parse(INJECTED_PLAN.split("```json\n")[1].split("\n```")[0]).steps)).verified, "the hostile model's plan is safe once the rules have locked it");
+  const site = { name: "Pricing for Teams!", lang: "en", theme: { bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" }, blocks: [{ id: "h", type: "hero", on: true, t: { en: { title: "Plans", primary: "Subscribe" }, ar: { title: "الخطط" } } }, { id: "x", type: "faq", on: false, t: { en: { q1: "Hidden?" } } }] };
+  ok(slugOf(site.name) === "pricing-for-teams" && slugOf("!!") === "site", "export names are slugs");
+  const tk = exportTokens(site, () => ({ ratio: 7, apca: -80 }));
+  ok(tk.color.bg.$type === "color" && tk.color.accent.$value === "#77bcff" && tk.$extensions["jarvis.contrast"].checks.length === 6 && tk.$extensions["jarvis.contrast"].checks.every(c => c.pass), "tokens follow the W3C format with six contrast checks");
+  const sq = exportSql(site);
+  ok(sq.locked.includes("payments") && sq.locked.includes("publish_requests") && !sq.tables.includes("faq_items") && /payments_locked check \(status <> 'approved' or \(approved_by is not null and approved_at is not null\)\)/.test(sq.sql), "the schema infers a locked payments table and skips hidden sections");
+  ok(!exportSql({ name: "Blog", blocks: [{ id: "t", type: "text", t: { en: { title: "Notes" } } }] }).locked.includes("payments"), "no payments table when nothing is for sale");
+  const comp = exportComponent({ ...site, name: "x</script><b>" }, ":root { --bg: #000 } body { margin: 0 }");
+  ok(/customElements\.define\("jarvis-x-script-b"/.test(comp) && !/<\/script/i.test(comp.split("const DATA")[1]) && /:host \{ --bg/.test(comp) && !/innerHTML|eval\(/.test(comp) && /export default JarvisSite;/.test(comp) && !/^default /m.test(comp.replace(/^export /gm, "")), "the component is a custom element with textContent only and escaped data");
+  const spec = exportSpec(site);
+  ok(/width: 390, height: 844/.test(spec) && /width: 2560, height: 1080/.test(spec) && /pricing-for-teams\.html/.test(spec), "the spec checks the three sizes");
 }
 
 // ADR-141: founder gate (node:crypto: scrypt, timingSafeEqual, HMAC-SHA256 session cookie).

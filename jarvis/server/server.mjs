@@ -30,6 +30,8 @@ import { createAccess } from "./lib/access.mjs";
 import { createSkillLoader } from "./lib/skill-loader.mjs";
 import { createStudio } from "./lib/studio.mjs";
 import { runCouncil } from "./lib/council.mjs";
+import { provePlan } from "./lib/prover.mjs";
+import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -381,6 +383,17 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           await usage(slug, p.engine, p.model, String(body.goal || "").length + JSON.stringify(p.steps).length + String(p.thinking || "").length, "missions.plan");
           const planner = { engine: p.engine, model: p.model, thinking: p.thinking, planFrom: p.planFrom, warning: p.warning, label: p.label, at: new Date().toISOString() };
           return send(201, await missions.createFromPlan(slug, { goal: body.goal, steps: p.steps, planner, capsuleEvery: body.capsuleEvery }));
+        }
+        // ADR-145: a Ctrl+K macro. The fixed rules turn the text into steps (no model), the prover checks the
+        // state machine, and only a verified macro becomes a mission; sensitive steps wait as locked approvals.
+        if (req.method === "POST" && rest === "/missions/macro") {
+          const text = String(body.text || "").trim();
+          if (!text || text.length > 2000) return fail(400, "Write the macro's steps, at most 2,000 characters.");
+          const steps = fallbackPlan(text);
+          const proof = provePlan(steps);
+          if (!proof.verified) return fail(422, "The macro did not pass the formal proof (" + (proof.violations.length ? proof.violations.length + " unsafe path" : proof.deadlocks.length + " deadlock") + "); nothing was made.");
+          const planner = { engine: "macro", model: null, planFrom: "Ctrl+K macro", label: "fixed rules (no model)", proof: { verified: true, states: proof.states, transitions: proof.transitions, effects: proof.effects, lockedStates: proof.lockedStates }, at: new Date().toISOString() };
+          return send(201, await missions.createFromPlan(slug, { goal: text, steps, planner }));
         }
         if ((k = /^\/missions\/([\w-]{1,64})(\/.*)?$/.exec(rest))) {
           const id = k[1], sub = k[2] || "";

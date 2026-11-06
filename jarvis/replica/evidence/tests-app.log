@@ -141,6 +141,15 @@ PASS F24 the debate shows the three roles in order
 PASS F24 the critic finds the missing test gate and the synthesizer adds it
 PASS F24 publishing and paying leave the council locked, «بانتظار الموافقة»
 PASS F24 the council's plan becomes a mission with its two locked steps
+PASS F26 the macro is proved: no deadlock, both effects behind a lock
+PASS F26 the proof box prints no stray null
+PASS F26 publishing and paying stop at «قيد الموافقة»
+PASS F26 the macro becomes a mission that keeps its proof and two locked steps
+PASS F27 five files are saved, the page with its strict CSP
+PASS F27 the tokens are W3C format and record six passing contrast pairs
+PASS F27 the SQL starts publishing at pending_approval with a lock
+PASS F27 the test covers mobile, laptop and ultra-wide
+PASS F27 the Web Component renders in Shadow DOM, English left to right and Arabic right to left
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -149,4 +158,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-150 passed, 0 failed
+159 passed, 0 failed

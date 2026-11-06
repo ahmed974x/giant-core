@@ -504,6 +504,17 @@
           return out;
         }, e => bad(e.message));
       },
+      // ADR-145: a Ctrl+K macro, with the same rules and prover as the server.
+      macroMission({ text }) {
+        const g = String(text || "").trim();
+        if (!g || g.length > 2000) return bad("Write the macro's steps, at most 2,000 characters.");
+        const steps = LlmPlan.fallbackPlan(g).map(x => ({ ...x, depends: x.depends || [] }));
+        const proof = LlmPlan.provePlan(steps);
+        if (!proof.verified) return bad("The macro did not pass the formal proof; nothing was made.");
+        const m = newMission({ title: g.slice(0, 120), goal: g, steps }, "llm-plan", { title: g.slice(0, 120), capsuleEvery: 1 });
+        m.planner = { engine: "macro", model: null, planFrom: "Ctrl+K macro", label: "fixed rules (no model)", proof: { verified: true, states: proof.states, transitions: proof.transitions, effects: proof.effects, lockedStates: proof.lockedStates }, at: new Date().toISOString() };
+        MS().push(m); W().events.push(ev("member:owner", "mission.created", m.id)); save(); return ok(missionOut(m));
+      },
       studioSnapshots() { return ok((W().snapshots || []).slice().reverse().map(snapSummary)); },
       studioGet(id) { const r = (W().snapshots || []).find(x => x.id === id); return r ? ok({ ...snapSummary(r), site: r.site }) : bad("No snapshot with that id."); },
       studioSave({ site, label, parentId }) {
@@ -891,6 +902,7 @@
       llmStatus: () => req("GET", "/api/llm/status"),
       llmRun: body => req("POST", "/api/llm/run", { ...body, workspace: slug }),
       council: body => req("POST", "/api/llm/council", { ...body, workspace: slug }),
+      macroMission: body => req("POST", w("/missions/macro"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -1658,6 +1670,39 @@
       [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), go], from);
   }
 
+  // ADR-145: the Ctrl+K macro composer. The fixed rules turn the text into steps and the prover checks the
+  // state machine as you type; sensitive steps stop at a locked card, and the server proves it again.
+  function macroDialog(from) {
+    const text = h("textarea", { class: "textarea", id: "f-macro", name: "macro", autocomplete: "off", rows: 4, maxLength: 2000, dir: "auto", placeholder: "Read the latest commits, then run the tests, then publish the site", "aria-describedby": "h-macro" });
+    const proofBox = h("div", { class: "stack macro-proof", "aria-live": "polite" });
+    const runBtn = h("button", { class: "btn btn-primary", type: "button", disabled: true }, icon("i-run", "sm"), "Run macro");
+    let timer = null;
+    const check = () => {
+      const steps = text.value.trim() ? LlmPlan.fallbackPlan(text.value) : [];
+      if (!steps.length) { proofBox.replaceChildren(h("p", { class: "muted t-sm", text: "Write the steps to see the proof." })); runBtn.disabled = true; return; }
+      const p = LlmPlan.provePlan(steps);
+      runBtn.disabled = !p.verified;
+      proofBox.replaceChildren(...[
+        h("div", { class: "row" }, p.verified ? badge("ok", "Formal Proof: Verified") : badge("failed", "Formal Proof: Failed"),
+          h("span", { class: "t-caption muted", text: p.states + " states · " + p.transitions + " transitions · " + p.deadlocks.length + " deadlocks · " + (p.effects - p.violations.length) + "/" + p.effects + " effects behind a lock" })),
+        h("ol", { class: "plist final" }, steps.map(x => h("li", { class: x.locked ? "locked" : "" }, h("span", { dir: "auto", text: x.title }),
+          x.locked ? h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· the macro stops here until Director 00 approves (" + x.category + ")" }))
+            : h("span", { class: "t-caption subtle", text: x.kind === "gate" ? "gate" : x.kind === "approval" ? "approval" : "read tool" })))),
+        p.violations.length ? h("ul", { class: "plist" }, p.violations.map(v => h("li", { class: "err", translate: "no", text: v.effect + ": " + v.path.join(" → ") }))) : null].filter(Boolean));
+    };
+    text.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(check, 150); });
+    runBtn.addEventListener("click", () => {
+      runBtn.disabled = true; runBtn.setAttribute("aria-busy", "true");
+      store.macroMission({ text: text.value }).then(m => { closeDialog(); toast("ok", "Macro proved and started as a mission. Locked steps wait for Director 00."); location.hash = "#/missions/" + m.id; },
+        e => { toast("error", e.message); runBtn.disabled = false; }).finally(() => runBtn.removeAttribute("aria-busy"));
+    });
+    check();
+    openDialog("Compose a macro", h("div", { class: "stack" },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-macro", text: "Steps" }), text,
+        h("span", { class: "hint", id: "h-macro", text: "One per line, or joined with “then”. No model: the fixed rules make the steps, and a breadth-first proof checks for deadlocks and for any money, publishing, permission, install or outbound step that could run without a locked approval." })),
+      proofBox), [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), runBtn], from);
+  }
+
   pages.missions = () => {
     const box = h("div");
     const render = list => list.length ? h("ul", { class: "mlist", "aria-label": "Missions" }, list.map(m => {
@@ -1740,6 +1785,7 @@
     const byModel = pl.engine === "ollama-local-loopback";
     return h("section", { class: "panel planner", "aria-labelledby": "h-planner" }, h("h2", { id: "h-planner", text: "Planner" }),
       pl.engine === "workflow" ? h("p", { class: "t-sm" }, "Built from the workflow graph ", h("a", { href: "#/workflows/" + pl.workflowId, text: pl.planFrom || "" }), " (no model)") :
+      pl.engine === "macro" ? h("p", { class: "t-sm" }, "Composed in Ctrl+K from the fixed rules (no model) ", pl.proof && pl.proof.verified ? badge("ok", "Formal Proof: Verified") : null) :
       pl.engine === "council" ? h("p", { class: "t-sm" }, "Agreed by the council: architect, red team and UX critic, synthesizer", pl.model ? h("span", null, " (", h("code", { translate: "no", text: pl.model }), ") ", h("span", { class: "tag-inf", text: "[INFERENCE - local LLM]" })) : " (fixed rules, no model)") :
       h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
       h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
@@ -2250,7 +2296,8 @@
     /*@MEMORY_LIBS@*/
     /*@COUNCIL_LIBS@*/
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
-      runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport };
+      runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
+      planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -2339,7 +2386,7 @@
       liveBadge.replaceChildren(h("span", { class: "dot", "aria-hidden": "true" }), fails ? fails + " colour pair" + (fails > 1 ? "s" : "") + " below WCAG 4.5 / APCA 60" : "All pairs pass WCAG 4.5 and APCA 60");
     };
     const liveBadge = h("span", { class: "badge" });
-    const changed = () => { save(); push(); checkContrast(); reHeat(); };
+    const changed = () => { save(); push(); checkContrast(); reHeat(); renderExportInfo(); };
 
     const nameIn = h("input", { class: "input", id: "f-site", name: "site-name", autocomplete: "off", value: site.name, maxLength: 80 });
     nameIn.addEventListener("input", () => { site.name = nameIn.value; changed(); });
@@ -2379,17 +2426,41 @@
       if (focusId) { const b = blockList.querySelector("[data-move='" + focusId + "']"); if (b && !b.disabled) b.focus(); else { const o = blockList.querySelector("[data-move^='" + focusId.split(":")[0] + ":']:not([disabled])"); if (o) o.focus(); } }
     }
 
-    const download = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-download", "sm"), "Download HTML");
-    download.addEventListener("click", () => {
-      const p = DATA.preview || {};
-      const csp = p.cssHash && p.jsHash ? "default-src 'none'; script-src '" + p.jsHash + "'; style-src '" + p.cssHash + "'; font-src data:; img-src data:; base-uri 'none'; form-action 'none'; object-src 'none'" : null;
-      const blob = new Blob([siteHtml(site, csp)], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      const a = h("a", { href: url, download: (site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site") + ".html", hidden: true });
+    const saveText = (name, text, type) => {
+      const url = URL.createObjectURL(new Blob([text], { type }));
+      const a = h("a", { href: url, download: name, hidden: true });
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    const pageHtml = () => {
+      const p = DATA.preview || {};
+      const csp = p.cssHash && p.jsHash ? "default-src 'none'; script-src '" + p.jsHash + "'; style-src '" + p.cssHash + "'; font-src data:; img-src data:; base-uri 'none'; form-action 'none'; object-src 'none'" : null;
+      return siteHtml(site, csp);
+    };
+    const download = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-download", "sm"), "Download HTML");
+    download.addEventListener("click", () => {
+      saveText((site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site") + ".html", pageHtml(), "text/html");
       toast("ok", "Saved a single HTML file with its fonts and a strict CSP. Nothing was published.");
     });
+    // ADR-145: five files from one site. Each is written in this browser; nothing is sent or run.
+    const exportInfo = h("div", { class: "stack", "aria-live": "polite" });
+    const tokensOf = () => LlmPlan.exportTokens(site, (a, b) => { const x = C.rgb(a), y = C.rgb(b); return { ratio: C.ratio(x, y), apca: C.apca(x, y) }; });
+    const EXPORTS = [
+      ["HTML page", ".html", "text/html", () => pageHtml()],
+      ["Web Component", ".mjs", "text/javascript", () => LlmPlan.exportComponent(site, PV_CSS)],
+      ["Design tokens", ".tokens.json", "application/json", () => JSON.stringify(tokensOf(), null, 2) + "\n"],
+      ["SQL schema", ".sql", "text/plain", () => LlmPlan.exportSql(site).sql],
+      ["Three-size test", ".spec.mjs", "text/javascript", () => LlmPlan.exportSpec(site)],
+    ];
+    const exportBtns = EXPORTS.map(([label, ext, type, make]) => h("button", { class: "btn btn-secondary btn-sm", type: "button", dataset: { export: ext },
+      onclick: () => { saveText(LlmPlan.slugOf(site.name) + ext, make(), type); toast("ok", "Saved " + LlmPlan.slugOf(site.name) + ext + ". Nothing was published."); } }, icon("i-download", "sm"), label));
+    const renderExportInfo = () => {
+      const sq = LlmPlan.exportSql(site), tk = tokensOf().$extensions["jarvis.contrast"].checks;
+      exportInfo.replaceChildren(
+        h("p", { class: "t-caption muted" }, "SQL: " + plural(sq.tables.length, "table") + " inferred ", h("span", { class: "tag-inf", text: "[INFERENCE]" })),
+        h("ul", { class: "row diff-blocks", "aria-label": "Tables that start locked" }, sq.locked.map(t => h("li", { class: "badge s-pending" }, icon("i-lock", "sm"), h("span", { translate: "no", text: t })))),
+        h("p", { class: "t-caption muted", text: "Tokens: " + tk.filter(c => c.pass).length + " of " + tk.length + " text pairs pass WCAG 4.5 and APCA 60." }));
+    };
     const publish = h("button", { class: "btn btn-ghost", type: "button" }, icon("i-lock", "sm"), "Publish…");
     publish.addEventListener("click", e => openDialog("Publishing is locked", lockedCard({ id: "pub", category: "publish", action: "Publish “" + site.name + "” to an outside domain", createdAt: Date.now() }),
       [h("button", { class: "btn btn-secondary", type: "button", text: "Close", onclick: closeDialog })], e.currentTarget));
@@ -2601,7 +2672,7 @@
       diffBox);
     loadSnaps().catch(e => toast("error", e.message));
 
-    renderColors(); renderBlocks(); checkContrast();
+    renderColors(); renderBlocks(); checkContrast(); renderExportInfo();
     requestAnimationFrame(fit);
     return h("div", { class: "stack" },
       pageHead("Studio", "Design a page live. The preview runs in a sandbox with no network."),
@@ -2613,7 +2684,9 @@
           h("section", { class: "panel", "aria-labelledby": "h-colors" }, h("h2", { id: "h-colors", text: "Colours" }), h("div", { class: "field" }, h("label", { htmlFor: "f-preset", text: "Preset" }), presetSel), colorBox,
             h("div", { class: "field" }, h("span", { class: "legend", text: "Contrast (live)" }), badges)),
           h("section", { class: "panel", "aria-labelledby": "h-blocks" }, h("h2", { id: "h-blocks", text: "Sections" }), blockList),
-          h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn)),
+          h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn),
+            h("h3", { class: "t-sm", text: "Export 5 files" }), h("div", { class: "row" }, exportBtns), exportInfo,
+            h("p", { class: "hint", text: "Payments, publishing and permissions tables start at pending_approval, and a check refuses approval without a person and a time." })),
           timePanel),
         h("div", { class: "preview-col" },
           h("div", { class: "preview-bar" }, widthSeg, h("div", { class: "row" }, heatBtn, liveBadge, widthNote)),
@@ -3230,6 +3303,7 @@
     ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
+    ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],
     ["Switch theme", "Action", () => setTheme(theme() === "light" ? "dark" : "light")],
     ["Switch direction", "Action", () => setDir(root.dir === "rtl" ? "ltr" : "rtl")],
     ["Switch workspace", "Action", () => wsOpen(true, 0)],

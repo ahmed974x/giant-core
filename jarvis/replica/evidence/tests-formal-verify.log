@@ -1,0 +1,12 @@
+test_mutants_written_inside_root_and_differ (test_formal_verify.Mutation.test_mutants_written_inside_root_and_differ) ... ok
+test_points_and_static_strength (test_formal_verify.Mutation.test_points_and_static_strength) ... ok
+test_cli (test_formal_verify.Prover.test_cli) ... ok
+test_plan_is_verified (test_formal_verify.Prover.test_plan_is_verified) ... ok
+test_shortcut_and_deadlock (test_formal_verify.Prover.test_shortcut_and_deadlock) ... ok
+test_ui_completeness (test_formal_verify.Prover.test_ui_completeness) ... ok
+test_unlocked_publish_is_a_violation_with_a_path (test_formal_verify.Prover.test_unlocked_publish_is_a_violation_with_a_path) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.011s
+
+OK

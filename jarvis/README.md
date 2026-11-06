@@ -288,6 +288,17 @@ python3 .claude/skills/replica-ux-physics/ux_physics.py jarvis/app/index.html
 python3 .claude/skills/replica-ux-physics/chaos_fuzzer.py --seed 144 --count 60 --out jarvis/replica/evidence/fuzz-cases.json --root .
 ```
 
+## Macros and the 5-in-1 export (ADR-145)
+
+- **Ctrl+K → Compose a macro.** Write steps joined with "then". The fixed rules make the steps (no model), and a breadth-first proof checks the plan as you type: no deadlock, every step reached, and no money, publishing, permission, install or outbound step reachable without a locked approval. The badge reads **Formal Proof: Verified**. **Run macro** sends only the text; the server proves it again, and the mission stops at each «قيد الموافقة» step.
+- **Studio → Export 5 files:** the HTML page, a Web Component (`.mjs`, Shadow DOM, `lang="ar"` for right to left), W3C design tokens with contrast results, an inferred PostgreSQL schema whose payments, publishing and permissions tables start locked, and a Playwright test for the three sizes.
+
+The same prover runs without a browser:
+
+```bash
+python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
+```
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

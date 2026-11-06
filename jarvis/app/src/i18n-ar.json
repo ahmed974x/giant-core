@@ -663,6 +663,34 @@
   [
    "^Rewrite by (.+), locked again by rule$",
    "إعادة كتابة من $1، ثم أُقفلت بالقاعدة مرة أخرى"
+  ],
+  [
+   "^(\\d+) states · (\\d+) transitions · (\\d+) deadlocks · (\\d+)/(\\d+) effects behind a lock$",
+   "$1 حالة · $2 انتقال · $3 جمود · $4/$5 آثار خلف قفل"
+  ],
+  [
+   "^· the macro stops here until Director 00 approves \\((\\w+)\\)$",
+   "· يتوقف الماكرو هنا حتى يوافق المدير 00 ({{$1}})"
+  ],
+  [
+   "^Saved (\\S+)\\. Nothing was published\\.$",
+   "حُفظ $1. لم يُنشر شيء."
+  ],
+  [
+   "^SQL: 1 table inferred$",
+   "SQL: جدول واحد مستنتَج"
+  ],
+  [
+   "^SQL: (\\d+) tables inferred$",
+   "SQL: $1 جداول مستنتَجة"
+  ],
+  [
+   "^Tokens: (\\d+) of (\\d+) text pairs pass WCAG 4\\.5 and APCA 60\\.$",
+   "الرموز: $1 من $2 أزواج نص تجتاز WCAG 4.5 و APCA 60."
+  ],
+  [
+   "^The macro did not pass the formal proof \\((.+)\\); nothing was made\\.$",
+   "لم يجتز الماكرو البرهان الصوري ($1)؛ لم يُصنع شيء."
   ]
  ],
  "strings": {
@@ -1725,6 +1753,25 @@
   "Agreed by the council: architect, red team and UX critic, synthesizer": "اتفق عليها المجلس: المعماري، والفريق الأحمر وناقد تجربة الاستخدام، والمُركِّب",
   " (fixed rules, no model)": " (قواعد ثابتة، بلا نموذج)",
   "(fixed rules, no model)": "(قواعد ثابتة، بلا نموذج)",
-  "studio snapshot": "لقطة الاستوديو"
+  "studio snapshot": "لقطة الاستوديو",
+  "Compose a macro": "ركّب ماكرو",
+  "Read the latest commits, then run the tests, then publish the site": "اقرأ آخر التعديلات، ثم شغّل الاختبارات، ثم انشر الموقع",
+  "One per line, or joined with “then”. No model: the fixed rules make the steps, and a breadth-first proof checks for deadlocks and for any money, publishing, permission, install or outbound step that could run without a locked approval.": "خطوة في كل سطر، أو اربطها بكلمة «ثم». بلا نموذج: القواعد الثابتة تصنع الخطوات، وبرهان بالبحث عرضاً أولاً يتحقق من خلوّها من الجمود ومن أي خطوة مال أو نشر أو صلاحيات أو تثبيت أو رسالة خارجية قد تعمل دون موافقة مقفلة.",
+  "Write the steps to see the proof.": "اكتب الخطوات لترى البرهان.",
+  "Formal Proof: Verified": "البرهان الصوري: مُتحقَّق",
+  "Formal Proof: Failed": "البرهان الصوري: فشل",
+  "Run macro": "شغّل الماكرو",
+  "Macro proved and started as a mission. Locked steps wait for Director 00.": "بُرهن الماكرو وبدأ كمهمة. الخطوات المقفلة تنتظر المدير 00.",
+  "Composed in Ctrl+K from the fixed rules (no model)": "رُكّب في Ctrl+K من القواعد الثابتة (بلا نموذج)",
+  "Export 5 files": "صدّر 5 ملفات",
+  "HTML page": "صفحة HTML",
+  "Web Component": "مكوّن ويب",
+  "Design tokens": "رموز التصميم",
+  "SQL schema": "مخطط SQL",
+  "Three-size test": "اختبار المقاسات الثلاثة",
+  "Tables that start locked": "جداول تبدأ مقفلة",
+  "Payments, publishing and permissions tables start at pending_approval, and a check refuses approval without a person and a time.": "جداول المدفوعات والنشر والصلاحيات تبدأ بحالة pending_approval، وقيد يرفض الموافقة دون شخص ووقت.",
+  "Write the macro's steps, at most 2,000 characters.": "اكتب خطوات الماكرو، بحد أقصى 2,000 حرف.",
+  "The macro did not pass the formal proof; nothing was made.": "لم يجتز الماكرو البرهان الصوري؛ لم يُصنع شيء."
  }
 }
