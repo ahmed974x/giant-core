@@ -1,0 +1,146 @@
+{
+ "tool": "jarvis/scripts/mutation-harness.mjs",
+ "ranAt": "2026-11-06T13:33:33.532Z",
+ "targets": [
+  {
+   "file": "jarvis/server/lib/fetch-public.mjs",
+   "sha256": "3934e5122be7c406e9da10874b39ca63155683dc2418c979ea8676d7b604a04d",
+   "functions": [
+    "v4Blocked",
+    "v6Groups",
+    "isBlockedAddress"
+   ],
+   "mutants": 222,
+   "killed": 210,
+   "equivalent": 12,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "=== -> !==",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "&& -> ||",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "|| -> &&",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "true -> false",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "0xffff -> 65536",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "slice(0, 9) of eight groups equals slice(0, 8)"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "1 -> 2",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0x2001 -> 8194",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/llm-plan.mjs",
+   "sha256": "2d474b092c0346afa7392711296f80a17ce27610d679d8940ea452515661d87d",
+   "functions": [
+    "lockCategory",
+    "enforceApprovalGates",
+    "LOCK_RULES"
+   ],
+   "mutants": 118,
+   "killed": 115,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "LOCK_RULES.money",
+     "line": 13,
+     "kind": "drop ادفع",
+     "why": "every text with ادفع also contains دفع, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.publish",
+     "line": 14,
+     "kind": "drop انشر",
+     "why": "every text with انشر also contains نشر, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.install",
+     "line": 16,
+     "kind": "drop pip install",
+     "why": "every text with pip install also contains install, a word of the same rule"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/prover.mjs",
+   "sha256": "2fa5d1840018c57f387f1ac50a54046ec7e52f2c7937ce1f99503ce9b5573d4b",
+   "functions": [
+    "planMachine",
+    "search",
+    "prove"
+   ],
+   "mutants": 54,
+   "killed": 54,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  }
+ ]
+}

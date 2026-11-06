@@ -107,6 +107,24 @@ function readQuality() {
   const r = JSON.parse(readFileSync(p, "utf8"));
   return { rules: r.rules, files: r.files, summary: r.summary, byRule: r.byRule, sha256: r.sha256, findings: r.findings.filter(f => f.severity !== "low").concat(r.findings.filter(f => f.severity === "low").slice(0, 30)), built: new Date(statSync(p).mtimeMs).toISOString() };
 }
+// ADR-146: measured evidence. A mutation result counts only while each tested file still has the hash it was
+// tested with; the UI-state gate is a hard gate, so a failed gate stops the build.
+function readMutation() {
+  const p = join(here, "..", "replica", "evidence", "mutation-audit.log");
+  if (!existsSync(p)) return null;
+  const log = JSON.parse(readFileSync(p, "utf8"));
+  const root = join(here, "..", "..");
+  const targets = log.targets.map(t => ({ file: t.file, functions: t.functions, mutants: t.mutants, killed: t.killed, equivalent: t.equivalent, survived: t.survived, score: t.score,
+    current: existsSync(join(root, t.file)) && createHash("sha256").update(readFileSync(join(root, t.file))).digest("hex") === t.sha256 }));
+  return { ranAt: log.ranAt, total: log.total, killed: log.killed, equivalent: log.equivalent, score: log.score, sha256: log.sha256, targets, verified: targets.every(t => t.current) };
+}
+function readUiStates() {
+  const p = join(here, "..", "replica", "evidence", "ui-states.json");
+  if (!existsSync(p)) fail("jarvis/replica/evidence/ui-states.json is missing: run state_prover.py --ui jarvis/app/src/app.css --spec jarvis/replica/ui-states.json --json.");
+  const r = JSON.parse(readFileSync(p, "utf8"));
+  if (!r.gate || !r.complete) fail("the UI-state gate failed: " + r.components.filter(c => c.missing.length).map(c => c.component + " misses " + c.missing.join(", ")).join("; "));
+  return { covered: r.covered, total: r.total, percent: r.percent, components: r.components.map(c => ({ component: c.component, required: c.required })) };
+}
 const data = {
   built: new Date(statSync(scanPath).mtimeMs).toISOString(),
   scan: { generated: scan.generated, summary: scan.summary },
@@ -118,6 +136,8 @@ const data = {
   // ADR-143: build-time snapshots from replica-graphify and replica-impeccable (rerun the tools, then build).
   graph: readGraph(),
   quality: readQuality(),
+  mutation: readMutation(),
+  uiStates: readUiStates(),
 };
 
 // 4. Assemble.

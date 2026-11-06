@@ -800,7 +800,7 @@
    "kind": "screen",
    "label": "memory",
    "file": "jarvis/app/src/app.js",
-   "line": 3156,
+   "line": 3175,
    "nav": true
   },
   {
@@ -1658,6 +1658,7 @@
     "covered",
     "reached",
     "audit",
+    "verified_result",
     "main"
    ]
   },
@@ -3146,7 +3147,7 @@
   }
  ],
  "files": {
-  "jarvis/app/src/app.js": "b5787daf366b07e74b8d3a597697f7f380f03dfc99e2e5d09033964ef91115ec",
+  "jarvis/app/src/app.js": "ee24f29d54caf71e55af29e2e33707c7cc09c7615652b8b817055d14021bdfc9",
   "jarvis/app/src/shell.tmpl": "460b51dd9c28ee17bca339f4d5b3905e35df8db70f62f8dae20cac3d4a478197",
   "jarvis/server/server.mjs": "07a1d7954ed94790480e1e420b1dc580bd0a0156e8ca821da05a0fa6cf8a8e23",
   "jarvis/server/lib/schema-sqlite.sql": "b87fff5b4257428e5fde7ead51cc529c4f379d3034fd1f597a62e752b0cb0396",
@@ -3204,8 +3205,8 @@
   ".claude/skills/replica-entrepreneur/SKILL.md": "9349a4a25f792df34e9acadd9d07bce783add5bd32206a8d14140a92f2ee084c",
   ".claude/skills/replica-entrepreneur/reviews.py": "4e48d770727d6229ebdc398824bb947b919b5e267c5fcc23a11ab1be63995beb",
   ".claude/skills/replica-formal-verify/SKILL.md": "848664acc3e91c73a175ce2a3afc5c8353b058c3f878160695f0e044a1bfd859",
-  ".claude/skills/replica-formal-verify/mutation_audit.py": "61039b59d163edf4bb3750467fdfaf8ba4d23bbdb07fcb73fb0ebf5c961ee81d",
-  ".claude/skills/replica-formal-verify/state_prover.py": "93d541cbdf98754e32dca9e417322bcfb3aa53a0435b564bae5f55781ebd8e94",
+  ".claude/skills/replica-formal-verify/mutation_audit.py": "2c235f10ba80656923057c50b7c3ae48c6acb824531a42aabb9b3adcb07b8338",
+  ".claude/skills/replica-formal-verify/state_prover.py": "19c2b5eb58ec6f6080b073927e67ed840e82cf955ca3d5d1df9caa12df4ff07c",
   ".claude/skills/replica-graphify/SKILL.md": "cdea1bc2f9c7dc7f1dcba7e32c5a6009ba343b1795ff84e4c643e924c5929334",
   ".claude/skills/replica-graphify/graphify.py": "1ccc7e2baafccde4c175d5d21290ac13ddc73f507e55826d1848c6befb5017ab",
   ".claude/skills/replica-humanizer/SKILL.md": "7535e911e9b6bab10e77ea9d556e52dac13982b285f427fe2c68447fd53c2173",
@@ -3237,5 +3238,5 @@
   ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
   ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
  },
- "sha256": "744e18bde0984d2ec0a357a5cf5f8eb67a7e496716c63d5e5c9f7394a6455bbc"
+ "sha256": "af39b9dbc501a0ad8e9859dc2b214310e86afac5a8bc7298e1de3b4cdeec2079"
 }

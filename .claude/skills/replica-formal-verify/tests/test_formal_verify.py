@@ -48,6 +48,22 @@ class Prover(unittest.TestCase):
         self.assertEqual(r["components"][0]["missing"], [])
         self.assertEqual(r["components"][1]["missing"], ["hover", "loading", "error", "locked"])
 
+    def test_ui_gate_fails_on_a_gap(self):
+        css = ".input{} .input:hover{} :focus-visible{} .input[aria-busy=true]{} .input::placeholder{} .input[aria-invalid]{} .input:disabled{} .btn{} .btn:hover{}"
+        ok = sp.ui_completeness(css, [], {"input": list(sp.UI_STATES)})
+        self.assertTrue(ok["complete"])
+        self.assertEqual(ok["percent"], 100.0)
+        bad = sp.ui_completeness(css, [], {"btn": ["default", "hover", "active", "loading"]})
+        self.assertFalse(bad["complete"])
+        self.assertEqual(bad["components"][0]["missing"], ["active", "loading"])
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "a.css"), "w", encoding="utf-8") as fh:
+            fh.write(css)
+        with open(os.path.join(d, "spec.json"), "w", encoding="utf-8") as fh:
+            json.dump({"btn": ["default", "active"]}, fh)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(sp.main(["--ui", os.path.join(d, "a.css"), "--spec", os.path.join(d, "spec.json")]), 1)
+
     def test_cli(self):
         d = tempfile.mkdtemp()
         p = os.path.join(d, "plan.json")

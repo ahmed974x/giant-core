@@ -2,97 +2,94 @@
  "components": [
   {
    "component": "btn",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "active",
+    "loading",
+    "locked"
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "active": true,
+    "loading": true,
+    "locked": true
+   },
+   "missing": []
+  },
+  {
+   "component": "input",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "loading",
+    "empty",
+    "error",
+    "locked"
+   ],
    "states": {
     "default": true,
     "hover": true,
     "focus-visible": true,
     "loading": true,
     "empty": true,
-    "error": false,
-    "locked": true
-   },
-   "missing": [
-    "error"
-   ]
-  },
-  {
-   "component": "input",
-   "states": {
-    "default": true,
-    "hover": false,
-    "focus-visible": true,
-    "loading": false,
-    "empty": true,
     "error": true,
     "locked": true
    },
-   "missing": [
-    "hover",
-    "loading"
-   ]
+   "missing": []
   },
   {
    "component": "select",
-   "states": {
-    "default": true,
-    "hover": false,
-    "focus-visible": true,
-    "loading": false,
-    "empty": true,
-    "error": false,
-    "locked": false
-   },
-   "missing": [
+   "required": [
+    "default",
     "hover",
+    "focus-visible",
     "loading",
+    "empty",
     "error",
     "locked"
-   ]
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "locked": true
+   },
+   "missing": []
   },
   {
    "component": "textarea",
-   "states": {
-    "default": true,
-    "hover": false,
-    "focus-visible": true,
-    "loading": false,
-    "empty": true,
-    "error": true,
-    "locked": false
-   },
-   "missing": [
+   "required": [
+    "default",
     "hover",
+    "focus-visible",
     "loading",
-    "locked"
-   ]
-  },
-  {
-   "component": "switch",
-   "states": {
-    "default": true,
-    "hover": false,
-    "focus-visible": true,
-    "loading": false,
-    "empty": true,
-    "error": false,
-    "locked": false
-   },
-   "missing": [
-    "hover",
-    "loading",
+    "empty",
     "error",
     "locked"
-   ]
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "locked": true
+   },
+   "missing": []
   }
  ],
- "complete": false,
- "required": [
-  "default",
-  "hover",
-  "focus-visible",
-  "loading",
-  "empty",
-  "error",
-  "locked"
- ]
+ "complete": true,
+ "covered": 27,
+ "total": 27,
+ "percent": 100.0,
+ "gate": true
 }

@@ -1,0 +1,189 @@
+{
+ "format": "jarvis-mutation-audit-v1",
+ "ranAt": "2026-11-06T13:33:58Z",
+ "javascriptRanAt": "2026-11-06T13:33:33.532Z",
+ "tools": [
+  "jarvis/scripts/mutation-harness.mjs",
+  "jarvis/scripts/mutation_harness.py",
+  ".claude/skills/replica-formal-verify/mutation_audit.py"
+ ],
+ "total": 493,
+ "killed": 493,
+ "equivalent": 15,
+ "score": 100.0,
+ "targets": [
+  {
+   "file": "jarvis/server/lib/fetch-public.mjs",
+   "sha256": "3934e5122be7c406e9da10874b39ca63155683dc2418c979ea8676d7b604a04d",
+   "functions": [
+    "v4Blocked",
+    "v6Groups",
+    "isBlockedAddress"
+   ],
+   "mutants": 222,
+   "killed": 210,
+   "equivalent": 12,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "=== -> !==",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "&& -> ||",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "|| -> &&",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "true -> false",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "0xffff -> 65536",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "slice(0, 9) of eight groups equals slice(0, 8)"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "1 -> 2",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0x2001 -> 8194",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/llm-plan.mjs",
+   "sha256": "2d474b092c0346afa7392711296f80a17ce27610d679d8940ea452515661d87d",
+   "functions": [
+    "lockCategory",
+    "enforceApprovalGates",
+    "LOCK_RULES"
+   ],
+   "mutants": 118,
+   "killed": 115,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "LOCK_RULES.money",
+     "line": 13,
+     "kind": "drop ادفع",
+     "why": "every text with ادفع also contains دفع, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.publish",
+     "line": 14,
+     "kind": "drop انشر",
+     "why": "every text with انشر also contains نشر, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.install",
+     "line": 16,
+     "kind": "drop pip install",
+     "why": "every text with pip install also contains install, a word of the same rule"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/prover.mjs",
+   "sha256": "2fa5d1840018c57f387f1ac50a54046ec7e52f2c7937ce1f99503ce9b5573d4b",
+   "functions": [
+    "planMachine",
+    "search",
+    "prove"
+   ],
+   "mutants": 54,
+   "killed": 54,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-long-horizon/gate.py",
+   "sha256": "05c71d4a2c558d8d62be2941be22af5309e2a10065358d179e9fc24c9bd5112f",
+   "functions": [
+    "judge"
+   ],
+   "mutants": 51,
+   "killed": 51,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-formal-verify/state_prover.py",
+   "sha256": "19c2b5eb58ec6f6080b073927e67ed840e82cf955ca3d5d1df9caa12df4ff07c",
+   "functions": [
+    "plan_machine",
+    "_search",
+    "_path",
+    "prove",
+    "ui_completeness"
+   ],
+   "mutants": 63,
+   "killed": 63,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  }
+ ],
+ "sha256": "63a4f5ebcd3b0be635439a1cf02866458005f6deaa65565b26a7c6e3af814c59"
+}

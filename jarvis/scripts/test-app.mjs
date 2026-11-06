@@ -579,6 +579,21 @@ const wcInfo = await wc.evaluate(() => [...document.querySelectorAll("jarvis-my-
 ok(wcInfo.length === 2 && wcInfo.every(x => x.shadow && x.light === 0 && x.h1) && wcInfo[0].dir === "ltr" && wcInfo[1].dir === "rtl" && /[\u0600-\u06FF]/.test(wcInfo[1].h1), "F27 the Web Component renders in Shadow DOM, English left to right and Arabic right to left", JSON.stringify(wcInfo));
 await wc.close();
 
+// F28: field states render and the evidence gates read measured results (ADR-146).
+await go("#/studio");
+const site = page.locator("#f-site");
+const rest = await site.evaluate(el => getComputedStyle(el).borderColor);
+await site.hover(); await page.waitForTimeout(150);
+const hovered = await site.evaluate(el => getComputedStyle(el).borderColor);
+await site.evaluate(el => el.setAttribute("aria-busy", "true"));
+const busy = await site.evaluate(el => [getComputedStyle(el).borderStyle, getComputedStyle(el).cursor]);
+await site.evaluate(el => el.removeAttribute("aria-busy"));
+ok(rest !== hovered && busy[0] === "dashed" && busy[1] === "progress", "F28 a field changes on hover and shows a busy state", [rest, hovered, busy].join(" / "));
+await go("#/governance");
+const gui = page.locator("section[aria-labelledby=h-gui]"), gmut = page.locator("section[aria-labelledby=h-gmut]");
+ok(await gui.getByText("Gate passed").isVisible() && /(\d+)\/\1 · 100%/.test(await gui.innerText()), "F28 the UI-state gate shows every required state present");
+ok(await gmut.getByText("[VERIFIED]").isVisible() && (await gmut.locator("tbody tr").count()) === 5 && (await gmut.getByText("Matches the code").count()) === 5, "F28 the mutation result is measured and matches the code");
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.

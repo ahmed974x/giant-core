@@ -9,11 +9,13 @@ function (or a function that calls it) and asserts on a result. Run the written 
 rate.
 
     python3 mutation_audit.py MODULE.py --tests tests/ [--json] [--out work/mutants --root .] [--max 200]
+    python3 mutation_audit.py MODULE.py --evidence jarvis/replica/evidence/mutation-audit.log   # the measured result
 """
 
 import argparse
 import ast
 import copy
+import hashlib
 import json
 import os
 import re
@@ -111,11 +113,11 @@ def reached(tree, texts):
     return seen
 
 
-def audit(path, tests, limit=200):
+def audit(path, tests, limit=200, functions=None):
     with open(path, encoding="utf-8") as fh:
         src = fh.read()
     tree = ast.parse(src)
-    pts = mutation_points(tree)[:limit]
+    pts = [p for p in mutation_points(tree) if not functions or p["function"] in functions][:limit]
     texts = test_texts(tests)
     hit = reached(tree, texts)
     for p in pts:
@@ -132,6 +134,24 @@ def audit(path, tests, limit=200):
             "functions": sorted(by.values(), key=lambda b: b["covered"] / b["points"]), "mutants": pts}, tree
 
 
+def verified_result(module, log_path):
+    """The measured result for this module from the harness log, only if the module is byte-for-byte the one tested."""
+    try:
+        with open(log_path, encoding="utf-8") as fh:
+            log = json.load(fh)
+        with open(module, "rb") as fh:
+            digest = hashlib.sha256(fh.read()).hexdigest()
+    except (OSError, ValueError) as e:
+        return {"match": False, "reason": str(e)}
+    name = module.replace(os.sep, "/")
+    for t in log.get("targets", []):
+        if name.endswith(t.get("file", "\0")):
+            if t.get("sha256") != digest:
+                return {"match": False, "reason": "the module changed after the run"}
+            return {"match": True, "ranAt": log.get("ranAt"), **{k: t[k] for k in ("mutants", "killed", "equivalent", "survived", "score")}}
+    return {"match": False, "reason": "the module is not in the log"}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("module")
@@ -140,9 +160,13 @@ def main(argv=None):
     ap.add_argument("--out")
     ap.add_argument("--root", default=".")
     ap.add_argument("--max", type=int, default=200)
+    ap.add_argument("--functions", help="comma-separated function names to mutate (default: all)")
+    ap.add_argument("--evidence", help="a mutation-audit.log written by jarvis/scripts/mutation_harness.py: its measured kill rate replaces the estimate when the module's SHA-256 matches")
     a = ap.parse_args(argv)
     try:
-        rep, tree = audit(a.module, a.tests, max(1, min(a.max, 2000)))
+        rep, tree = audit(a.module, a.tests, max(1, min(a.max, 2000)), [f.strip() for f in a.functions.split(",")] if a.functions else None)
+        if a.evidence:
+            rep["verified"] = verified_result(a.module, a.evidence)
     except (OSError, SyntaxError) as e:
         print("mutation_audit: " + str(e), file=sys.stderr)
         return 2
@@ -160,9 +184,15 @@ def main(argv=None):
     if a.json:
         print(json.dumps(rep, indent=1))
     else:
-        print(f"{rep['module']}: {rep['points']} mutation points, {rep['covered']} covered by a test that asserts · strength {rep['strength']}% {rep['label']}")
-        for f in rep["functions"][:15]:
-            print(f"  {f['function']:<28} {f['covered']}/{f['points']}")
+        v = rep.get("verified")
+        if v and v.get("match"):
+            print(f"{rep['module']}: {v['killed']}/{v['mutants'] - v['equivalent']} mutants killed ({v['score']}%), {v['equivalent']} equivalent [VERIFIED] run {v['ranAt']}")
+        elif v:
+            print(f"{rep['module']}: the evidence is stale or missing ({v['reason']}); showing the static estimate")
+        if not (v and v.get("match")):
+            print(f"{rep['module']}: {rep['points']} mutation points, {rep['covered']} covered by a test that asserts · strength {rep['strength']}% {rep['label']}")
+            for f in rep["functions"][:15]:
+                print(f"  {f['function']:<28} {f['covered']}/{f['points']}")
         if a.out:
             print(f"wrote {rep['points']} mutants to {a.out}")
     return 0

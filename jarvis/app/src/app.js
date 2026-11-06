@@ -1723,9 +1723,9 @@
     const planBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-run", "sm"), "Plan mission");
     planBtn.addEventListener("click", () => {
       if (!goal.value.trim()) { toast("warn", "Write the goal first."); goal.focus(); return; }
-      planBtn.disabled = true; planBtn.setAttribute("aria-busy", "true");
+      planBtn.disabled = true; planBtn.setAttribute("aria-busy", "true"); goal.setAttribute("aria-busy", "true");
       store.planMission({ goal: goal.value }).then(m => { toast("ok", m.planner && m.planner.engine === "ollama-local-loopback" ? "Planned by " + m.planner.model + ". Locks were decided by rule." : "Planned by the fixed rules. Locks were decided by rule."); location.hash = "#/missions/" + m.id; },
-        e => toast("error", e.message)).finally(() => { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); });
+        e => toast("error", e.message)).finally(() => { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); goal.removeAttribute("aria-busy"); });
     });
     // ADR-144: the council debates the goal first (architect, red team and UX critic, synthesizer). The trace
     // shows each role; the rules have the last word, so a locked step stays locked whatever the roles say.
@@ -2509,7 +2509,7 @@
     const designBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-run", "sm"), "Design with local model");
     designBtn.addEventListener("click", async () => {
       if (!designIn.value.trim()) { toast("warn", "Describe the page first."); designIn.focus(); return; }
-      designBtn.disabled = true; designBtn.setAttribute("aria-busy", "true");
+      designBtn.disabled = true; designBtn.setAttribute("aria-busy", "true"); designIn.setAttribute("aria-busy", "true");
       try {
         const out = await store.llmRun({ mode: "design", prompt: designIn.value, lang: site.lang });
         site.blocks = out.blocks.map(b => ({ id: b.id, type: b.type, on: true, t: b.t, cols: b.cols || null, rows: b.rows || null }));
@@ -2522,7 +2522,7 @@
           out.thinking ? h("dt", { text: "Thinking" }) : null, out.thinking ? h("dd", null, h("details", { class: "think" }, h("summary", { text: "Show (untrusted model text)" }), h("pre", { class: "log", dir: "auto", text: out.thinking }))) : null));
         toast("ok", out.engine === "ollama-local-loopback" ? "Designed by the local model; only the layout was kept." : (out.warning || "Designed by the fixed rules."));
       } catch (e) { toast("error", e.message); }
-      finally { designBtn.disabled = false; designBtn.removeAttribute("aria-busy"); }
+      finally { designBtn.disabled = false; designBtn.removeAttribute("aria-busy"); designIn.removeAttribute("aria-busy"); }
     });
     const clonePanel = h("section", { class: "panel clone-bar", "aria-labelledby": "h-clone-t" }, h("h2", { id: "h-clone-t", text: "Clean-room template extractor" }),
       h("div", { class: "clone-row" }, h("div", { class: "field" }, h("label", { htmlFor: "f-design", text: "Describe a page" }), designIn), designBtn),
@@ -3147,8 +3147,27 @@
         h("section", { class: "panel", "aria-labelledby": "h-greg" }, h("h2", { id: "h-greg", text: "Skills and tools register" }), register, h("p", { class: "subtle t-caption", text: "Adopting means taking text rules; nothing outside is installed or run (AGENTS.md §1)." }))),
       h("section", { class: "panel", "aria-labelledby": "h-gmap" }, h("h2", { id: "h-gmap", text: "Knowledge map" }), h("p", { class: "t-sm", text: "Screens, server modules, database tables and skills, joined by what each one calls. From replica-graphify; no vector database." }), knowledgeMap(g)),
       h("section", { class: "panel", "aria-labelledby": "h-gq" }, h("h2", { id: "h-gq", text: "Quality gate" }), h("p", { class: "t-sm", text: "62 rules from replica-impeccable against filler copy, off-system design, unfinished code and broken docs. Rule text is shown as the tool wrote it." }), quality,
-        h("pre", { class: "diff", translate: "no", text: "python3 .claude/skills/replica-impeccable/slop_guard.py jarvis docs/adr --root .\npython3 .claude/skills/replica-humanizer/humanize.py jarvis/README.md --root ." })));
+        h("pre", { class: "diff", translate: "no", text: "python3 .claude/skills/replica-impeccable/slop_guard.py jarvis docs/adr --root .\npython3 .claude/skills/replica-humanizer/humanize.py jarvis/README.md --root ." })),
+      evidenceGates());
   };
+  // ADR-146: two gates with measured evidence. The UI-state gate stops the build when a state is missing; the
+  // mutation result is shown as verified only while each tested file still has the hash it was tested with.
+  function evidenceGates() {
+    const u = DATA.uiStates, m = DATA.mutation;
+    const ui = h("section", { class: "panel", "aria-labelledby": "h-gui" }, h("h2", { id: "h-gui", text: "UI-state gate" }),
+      h("div", { class: "row" }, badge("ok", "Gate passed"), h("span", { class: "num t-sm", text: u.covered + "/" + u.total + " · " + u.percent + "%" })),
+      h("ul", { class: "plist" }, u.components.map(c => h("li", null, h("code", { translate: "no", text: "." + c.component }), " ", h("span", { class: "t-caption muted", translate: "no", text: c.required.join(" · ") })))),
+      h("p", { class: "subtle t-caption", text: "Read from the page's CSS by state_prover.py --spec; a missing state stops the build." }));
+    const mut = m ? h("section", { class: "panel", "aria-labelledby": "h-gmut" }, h("h2", { id: "h-gmut", text: "Mutation testing" }),
+      h("div", { class: "row" }, m.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Stale: run the harness again"),
+        h("span", { class: "t-sm", text: m.killed + "/" + m.total + " killed · " + m.score + "%" }), h("span", { class: "t-caption muted", text: m.equivalent + " equivalent, each with its reason in the log" })),
+      h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Mutation results" }, h("table", null,
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "File" }), h("th", { scope: "col", text: "Killed" }), h("th", { scope: "col", text: "Equivalent" }), h("th", { scope: "col", text: "Status" }))),
+        h("tbody", null, m.targets.map(t => h("tr", null, h("td", { class: "wrap" }, h("code", { translate: "no", text: t.file }), h("div", { class: "t-caption muted", translate: "no", text: t.functions.join(", ") })),
+          h("td", { class: "num", text: t.killed + "/" + (t.mutants - t.equivalent) }), h("td", { class: "num", text: String(t.equivalent) }), h("td", null, t.current ? badge("ok", "Matches the code") : badge("warn", "Code changed"))))))),
+      h("p", { class: "subtle t-caption num", translate: "no", text: "jarvis/replica/evidence/mutation-audit.log · sha256 " + m.sha256.slice(0, 12) + " · " + fmtDate.format(new Date(m.ranAt)) })) : null;
+    return h("div", { class: "grid-2" }, ui, mut);
+  }
 
   /* ── Memory bank (ADR-138): BM25 over this workspace's episodes, self-check, JSONL export ── */
   const MEM_KINDS = ["plan", "design", "answer", "lesson", "note", "search", "skill"];

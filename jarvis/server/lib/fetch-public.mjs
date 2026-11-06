@@ -65,7 +65,7 @@ export function isBlockedAddress(ip) {
   if ((g[0] & 0xfe00) === 0xfc00) return true;                                      // unique local fc00::/7
   if ((g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xffc0) === 0xfec0) return true;        // link-local, old site-local
   if ((g[0] & 0xff00) === 0xff00) return true;                                      // multicast
-  if (g[0] === 0x100 && zeros(4)) return true;                                      // discard-only 100::/64
+  if (g[0] === 0x100 && !g[1] && !g[2] && !g[3]) return true;                      // discard-only 100::/64 (ADR-146: was never true)
   return false;
 }
 

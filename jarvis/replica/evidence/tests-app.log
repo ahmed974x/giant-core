@@ -150,6 +150,9 @@ PASS F27 the tokens are W3C format and record six passing contrast pairs
 PASS F27 the SQL starts publishing at pending_approval with a lock
 PASS F27 the test covers mobile, laptop and ultra-wide
 PASS F27 the Web Component renders in Shadow DOM, English left to right and Arabic right to left
+PASS F28 a field changes on hover and shows a busy state
+PASS F28 the UI-state gate shows every required state present
+PASS F28 the mutation result is measured and matches the code
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -158,4 +161,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-159 passed, 0 failed
+162 passed, 0 failed

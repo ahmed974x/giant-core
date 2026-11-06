@@ -76,5 +76,7 @@ UX heatmap with Fitts and Hick,studio,could,yes,yes,"ADR-144: preview measures i
 Ctrl+K macro composer with a formal proof,missions,should,yes,yes,"ADR-145: fixed rules, breadth-first proof (deadlocks, reachability, no sensitive effect without a lock) in the page and again on the server; locked steps stop at the violet card"
 Studio 5-in-1 export,studio,should,yes,yes,"ADR-145: HTML with CSP, Web Component with Shadow DOM, W3C tokens with contrast, SQL with locked payment, publish and permission tables, three-size Playwright test"
 Formal verification and mutation audit skill,quality,could,yes,yes,"ADR-145: replica-formal-verify state_prover.py and mutation_audit.py, standard library only"
+UI-state gate for buttons and fields,quality,should,yes,yes,"ADR-146: ui-states.json spec, state_prover.py --spec exits 1 on a gap, the build stops, F28 checks the states render"
+Measured mutation testing of the security core,quality,should,yes,yes,"ADR-146: SSRF check, lock rules, prover, gate.py, state_prover.py; 493/493 killed, equivalents with reasons; tied to file hashes"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

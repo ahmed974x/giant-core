@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """state_prover: breadth-first proofs over a state machine - deadlock freedom, reachability and the safety
 rule that no money, publish, permissions, install or outbound effect is reached without a locked approval -
-plus a check that each UI component has every state it needs.
+plus a check that each UI component has every state it needs (with --spec, a gate that fails on a gap).
 
 Standard library only (json, re, collections, argparse, sys). No network, no processes. The same algorithm
 as jarvis/server/lib/prover.mjs, which the Jarvis Ctrl+K macro composer runs.
@@ -9,6 +9,7 @@ as jarvis/server/lib/prover.mjs, which the Jarvis Ctrl+K macro composer runs.
     python3 state_prover.py --machine machine.json [--json]
     python3 state_prover.py --plan plan.json [--json]          # a Jarvis plan: {"steps": [...]} or [...]
     python3 state_prover.py --ui jarvis/app/src/app.css --components btn,input,select [--json]
+    python3 state_prover.py --ui jarvis/app/src/app.css --spec jarvis/replica/ui-states.json   # the gate
 
 A machine is {"initial": id, "states": [{"id", "terminal"?, "locked"?, "effect"?}], "transitions":
 [{"from", "to", "event"}]}. Exit 0 when verified, 1 when a property fails, 2 for a bad input.
@@ -22,6 +23,7 @@ from collections import deque
 
 SENSITIVE = ("money", "publish", "permissions", "install", "outbound")
 UI_STATES = ("default", "hover", "focus-visible", "loading", "empty", "error", "locked")
+ALL_UI_STATES = (*UI_STATES, "active")
 
 
 def plan_machine(steps):
@@ -99,9 +101,10 @@ def prove(m):
 # What shows each UI state in a selector that names the component (variants such as btn-primary count).
 UI_MARKS = {
     "hover": r":hover",
+    "active": r":active",
     "focus-visible": r":focus-visible",
     "loading": r"\[aria-busy",
-    "empty": r"(:empty|\.empty)",
+    "empty": r"(:empty|\.empty|::placeholder|:placeholder-shown|option\[value=\"\"\]:checked)",
     "error": r"(\[aria-invalid|\.err(?![\w-])|:invalid|:user-invalid)",
     "locked": r"(:disabled|\[disabled\]|\[aria-disabled|\.locked(?![\w-]))",
 }
@@ -121,17 +124,22 @@ def _selectors(css):
                 yield sel
 
 
-def ui_completeness(css, components):
+def ui_completeness(css, components, spec=None):
+    """components: names checked against all seven states; spec: {name: [states]} checks only those (the gate)."""
     sels = list(_selectors(css))
     rows = []
-    for c in components:
+    need = spec or {c: list(UI_STATES) for c in components}
+    for c, required in need.items():
         name = re.compile(r"\." + re.escape(c) + r"(-[\w-]+)?(?![\w-])")
         mine = [x for x in sels if name.search(x)]
         have = {"default": bool(mine)}
         for st, mark in UI_MARKS.items():
             have[st] = any(re.search(mark, x) for x in mine) or (st in UI_GLOBAL and any(re.search(UI_GLOBAL[st], x) for x in sels))
-        rows.append({"component": c, "states": have, "missing": [x for x in UI_STATES if not have[x]]})
-    return {"components": rows, "complete": all(not r["missing"] for r in rows), "required": list(UI_STATES)}
+        rows.append({"component": c, "required": list(required), "states": {k: have[k] for k in required}, "missing": [x for x in required if not have.get(x)]})
+    total = sum(len(r["required"]) for r in rows)
+    covered = total - sum(len(r["missing"]) for r in rows)
+    return {"components": rows, "complete": all(not r["missing"] for r in rows), "covered": covered, "total": total,
+            "percent": round(100 * covered / total, 1) if total else 100.0, "gate": bool(spec)}
 
 
 def _load(path):
@@ -146,12 +154,16 @@ def main(argv=None):
     g.add_argument("--plan")
     g.add_argument("--ui")
     ap.add_argument("--components", default="btn,input,select,textarea")
+    ap.add_argument("--spec", help="JSON {component: [states]}: the gate fails on any missing state")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     try:
         if a.ui:
+            spec = _load(a.spec) if a.spec else None
+            if spec is not None and (not isinstance(spec, dict) or any(not isinstance(v, list) or set(v) - set(ALL_UI_STATES) for v in spec.values())):
+                raise ValueError("a spec maps each component to a list of " + ", ".join(ALL_UI_STATES))
             with open(a.ui, encoding="utf-8") as fh:
-                rep = ui_completeness(fh.read(), [c.strip() for c in a.components.split(",") if c.strip()])
+                rep = ui_completeness(fh.read(), [c.strip() for c in a.components.split(",") if c.strip()], spec)
             ok = rep["complete"]
         else:
             if a.machine:
@@ -171,6 +183,7 @@ def main(argv=None):
     elif a.ui:
         for r in rep["components"]:
             print(f"{r['component']:<12} " + ("complete" if not r["missing"] else "missing: " + ", ".join(r["missing"])))
+        print(f"UI states: {rep['covered']}/{rep['total']} ({rep['percent']}%)" + (" · gate " + ("passed" if rep["complete"] else "FAILED") if rep["gate"] else " · report"))
     else:
         print("Formal proof: " + ("verified" if ok else "FAILED"))
         print(f"  {rep['states']} states, {rep['transitions']} transitions, {rep['reachable']} reachable")

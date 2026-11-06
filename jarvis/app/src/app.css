@@ -157,6 +157,12 @@ section.block > h2, .h2 { font-size: var(--text-headline); line-height: var(--te
 .input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; border-color: var(--color-focus); }
 .input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: var(--color-danger); }
 .input:disabled { opacity: 0.5; }
+/* ADR-146: every field has hover, loading, empty, error and locked states (the UI-state gate checks them). */
+.input:hover:not(:disabled, :focus-visible), .select:hover:not(:disabled, :focus-visible), .textarea:hover:not(:disabled, :focus-visible) { border-color: color-mix(in oklch, var(--color-border-input) 45%, var(--color-text-muted)); }
+.input[aria-busy="true"], .select[aria-busy="true"], .textarea[aria-busy="true"], .input.is-loading, .select.is-loading, .textarea.is-loading { border-style: dashed; cursor: progress; background-color: var(--color-surface-sunken); }
+.select:has(> option[value=""]:checked) { color: var(--color-text-subtle); }
+.select[aria-invalid="true"] { border-color: var(--color-danger); }
+.select:disabled, .textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 10px; min-width: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); cursor: pointer; }
 .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--color-accent); }

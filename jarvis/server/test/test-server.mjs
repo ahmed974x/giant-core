@@ -808,6 +808,10 @@ ok(stepsFromMission({ steps: [{ title: "Read commits", kind: "tool" }, { title: 
   ok(hg.grid.length === 16 && hg.grid[0].length === 24 && Math.max(...hg.grid.flat()) === 1, "the heat grid is 24 × 16, normalised to 1");
 }
 
+// ADR-146: the mutation run found the discard-only prefix check could never be true.
+{ const dm = planMachine([{ title: "a" }]); dm.transitions.push({ from: "s0", to: "nowhere", event: "x" }); const dp = prove(dm); ok(dp.verified === false && dp.danglingTransitions === 1, "a transition to a missing state fails the proof instead of crashing"); }
+ok(isBlockedAddress("100::1") && isBlockedAddress("100::0:0:0:5") && !isBlockedAddress("100:1::1"), "the discard-only prefix 100::/64 is refused, and only it");
+
 // ADR-145 pure: the prover and the 5-in-1 exporter.
 {
   const steps = fallbackPlan("read the commits then run the tests then publish the site then pay the invoice");

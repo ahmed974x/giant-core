@@ -55,7 +55,7 @@ export function prove(m) {
   const bad = m.transitions.filter(t => !byId.has(t.from) || !byId.has(t.to));
   const { prev, out } = search(m, new Set());
   const reachable = [...prev.keys()];
-  const deadlocks = reachable.filter(id => !byId.get(id).terminal && !(out.get(id) || []).length);
+  const deadlocks = reachable.filter(id => !(byId.get(id) || {}).terminal && !(out.get(id) || []).length);
   const unreachable = m.states.filter(s => !prev.has(s.id) && s.step !== undefined).map(s => s.id);
   const locked = new Set(m.states.filter(s => s.locked).map(s => s.id));
   const free = search(m, locked).prev;

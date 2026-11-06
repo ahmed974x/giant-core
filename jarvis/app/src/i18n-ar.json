@@ -691,6 +691,14 @@
   [
    "^The macro did not pass the formal proof \\((.+)\\); nothing was made\\.$",
    "لم يجتز الماكرو البرهان الصوري ($1)؛ لم يُصنع شيء."
+  ],
+  [
+   "^(\\d+) equivalent, each with its reason in the log$",
+   "$1 مكافئة، لكل واحدة سببها في السجل"
+  ],
+  [
+   "^(\\d+)/(\\d+) killed · ([\\d.]+)%$",
+   "$1/$2 مقتولة · $3%"
   ]
  ],
  "strings": {
@@ -1772,6 +1780,17 @@
   "Tables that start locked": "جداول تبدأ مقفلة",
   "Payments, publishing and permissions tables start at pending_approval, and a check refuses approval without a person and a time.": "جداول المدفوعات والنشر والصلاحيات تبدأ بحالة pending_approval، وقيد يرفض الموافقة دون شخص ووقت.",
   "Write the macro's steps, at most 2,000 characters.": "اكتب خطوات الماكرو، بحد أقصى 2,000 حرف.",
-  "The macro did not pass the formal proof; nothing was made.": "لم يجتز الماكرو البرهان الصوري؛ لم يُصنع شيء."
+  "The macro did not pass the formal proof; nothing was made.": "لم يجتز الماكرو البرهان الصوري؛ لم يُصنع شيء.",
+  "UI-state gate": "بوابة حالات الواجهة",
+  "Gate passed": "اجتازت البوابة",
+  "Read from the page's CSS by state_prover.py --spec; a missing state stops the build.": "تُقرأ من CSS الصفحة عبر state_prover.py --spec؛ أي حالة ناقصة توقف البناء.",
+  "Mutation testing": "اختبار الطفرات",
+  "Stale: run the harness again": "قديم: شغّل أداة الطفرات مجدداً",
+  "Mutation results": "نتائج الطفرات",
+  "File": "الملف",
+  "Killed": "المقتولة",
+  "Equivalent": "المكافئة",
+  "Matches the code": "يطابق الكود",
+  "Code changed": "تغيّر الكود"
  }
 }

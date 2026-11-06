@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 102,
+ "files": 103,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 125
+  "low": 126
  },
  "byRule": {
   "D05": 27,
-  "M05": 98
+  "M05": 99
  },
- "sha256": "68bfd1ec1a481e9b9f9c06087a7868cf3cc579ca1b6f00d88d48695b5d4b4f7c",
+ "sha256": "da893546ef119684c86151665a00d05a0b5bca348404091247b468fa61388010",
  "findings": [
   {
    "rule": "D05",
@@ -79,49 +79,35 @@
   {
    "rule": "D05",
    "severity": "low",
-   "line": 161,
+   "line": 167,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 181,
+   "line": 187,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 235,
+   "line": 241,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 240,
+   "line": 246,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 253,
-   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
-   "file": "jarvis/app/src/app.css"
-  },
-  {
-   "rule": "D05",
-   "severity": "low",
-   "line": 258,
-   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
-   "file": "jarvis/app/src/app.css"
-  },
-  {
-   "rule": "D05",
-   "severity": "low",
-   "line": 263,
+   "line": 259,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
@@ -135,63 +121,77 @@
   {
    "rule": "D05",
    "severity": "low",
-   "line": 281,
+   "line": 269,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 305,
+   "line": 270,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 330,
+   "line": 287,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 345,
+   "line": 311,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 356,
+   "line": 336,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 392,
+   "line": 351,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 394,
+   "line": 362,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 450,
+   "line": 398,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
   {
    "rule": "D05",
    "severity": "low",
-   "line": 504,
+   "line": 400,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 456,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 510,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },
@@ -887,6 +887,13 @@
    "line": 13,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-144-jarvis-council-time-machine-ux-physics.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 23,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-146-ui-state-gate-and-measured-mutation-testing.md"
   }
  ]
 }
