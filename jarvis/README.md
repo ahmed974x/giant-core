@@ -327,6 +327,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The local model answers in the language the page is in.
 - `test-app.mjs` F33 and `test-live.mjs` check every screen in both languages and write `jarvis/replica/evidence/bilingual-purity.log`; Diagnostics shows the result.
 
+## Passive recon (ADR-152)
+
+- **`#/recon`:** type a domain you own or may check, then **Check the domain**. Jarvis makes four GETs through the local server: the registration record (rdap.org), the certificate logs (crt.sh), the home page's headers and `/.well-known/security.txt`. It lists what each says: expiry and DNSSEC, the names on certificates, a 0-100 header grade with fixes, and whether security.txt has a Contact and an Expires still ahead.
+- No key is needed and nothing is scanned or guessed. A part that cannot be read is listed as not read.
+- Without the server, the page shows a teaching example for `example.com`, labelled as made-up records.
+- The same parsers run on saved files with `python3 .claude/skills/replica-passive-recon/passive_recon.py`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

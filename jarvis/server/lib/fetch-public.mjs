@@ -172,3 +172,19 @@ export async function fetchPublicPage(raw, { lookup = safeLookup } = {}) {
   if (!/text\/html|application\/xhtml/i.test(type)) throw new FetchError("type", "That address is not a web page (" + (type.split(";")[0] || "unknown type") + ").");
   return { html: r.body.toString("utf8"), url: r.url.toString(), host: r.url.hostname, bytes: r.bytes, robots, fetchedAt: new Date().toISOString() };
 }
+
+// ADR-152: one GET of any public resource for the passive recon (RDAP and certificate JSON, a page's
+// response headers, /.well-known/security.txt), with the same SSRF checks, redirect limit, 2 MB and 10 s.
+// robots.txt is obeyed for paths on the site being checked (robots: true); any type and status come back.
+export async function fetchPublicResource(raw, { lookup = safeLookup, accept = "*/*", robots = false } = {}) {
+  const u = checkUrl(raw);
+  if (robots) {
+    try {
+      const r = await follow(new URL("/robots.txt", u), { lookup, accept: "text/plain" });
+      if (r.status === 200 && !robotsAllows(r.body.toString("utf8"), u.pathname + u.search)) throw new FetchError("robots", "The site's robots.txt asks tools not to read " + u.pathname + ", so it was not read.");
+    } catch (e) { if (e.code === "blocked" || e.code === "robots") throw e; }
+  }
+  const r = await follow(u, { lookup, accept });
+  return { status: r.status, headers: r.headers, text: r.body.toString("utf8"), url: r.url.toString(), bytes: r.bytes };
+}
+

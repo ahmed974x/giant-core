@@ -100,6 +100,10 @@ svg.i.sm { width: 16px; height: 16px; }
 .locked-perm svg { color: var(--color-approval); }
 .clone-bar { display: grid; gap: 12px; }
 .ds-line { list-style: none; margin: 0; padding: 0; gap: 6px; }
+/* ADR-152: passive recon */
+.recon-codes { list-style: none; margin: 0; padding: 0; gap: 4px 8px; }
+.recon-codes code { overflow-wrap: anywhere; }
+.recon-score { font-size: var(--text-display); line-height: var(--text-display--line-height); font-weight: 700; }
 .clone-row { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 .report, .ux-report { display: grid; gap: 6px; font-size: var(--text-sm); }
 .report dl, .ux-report dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; }

@@ -176,7 +176,7 @@ const fpA = fpSrc.indexOf("function v4Blocked("), fpB = fpSrc.indexOf("export fu
 if (fpA < 0 || fpB < fpA) fail("fetch-public.mjs: could not find isBlockedAddress for the page.");
 const councilSrc = "const net = { isIPv4: s => /^(\\d{1,3})(\\.\\d{1,3}){3}$/.test(s) && s.split(\".\").every(n => Number(n) <= 255), isIPv6: s => /^[0-9a-f:.]+(%.+)?$/i.test(s) && s.includes(\":\") };\n" +
   "const isLocalModelEngine = e => e === \"ollama-local-loopback\" || e === \"openai-compat-loopback\";\n" +
-  fpSrc.slice(fpA, fpB).replace(/^export /gm, "") + inlineLib("council.mjs") + "\n" + inlineLib("snapshot.mjs") + "\n" + inlineLib("ux-physics.mjs") + "\n" + inlineLib("prover.mjs") + "\n" + inlineLib("exporter.mjs") + "\n" + inlineLib("timeseries.mjs") + "\n" + inlineLib("merkle-audit.mjs") + "\n" + inlineLib("diagnostics.mjs") + "\n" + inlineLib("reversal.mjs");
+  fpSrc.slice(fpA, fpB).replace(/^export /gm, "") + inlineLib("council.mjs") + "\n" + inlineLib("snapshot.mjs") + "\n" + inlineLib("ux-physics.mjs") + "\n" + inlineLib("prover.mjs") + "\n" + inlineLib("exporter.mjs") + "\n" + inlineLib("timeseries.mjs") + "\n" + inlineLib("merkle-audit.mjs") + "\n" + inlineLib("diagnostics.mjs") + "\n" + inlineLib("reversal.mjs") + "\n" + inlineLib("passive-recon.mjs");
 const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-graph.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");

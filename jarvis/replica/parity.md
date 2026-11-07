@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-151)
+# Parity: Jarvis (ADR-152)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -85,6 +85,11 @@ ADR-151 added two rows, both built and tested (`test-app.mjs` F33, `test-live.mj
 - the bilingual purity gate;
 - the local model answering in the chosen language.
 
+ADR-152 added three rows, all built and tested (`test-app.mjs` F34, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- passive recon of registration and certificate logs;
+- passive recon of security headers and security.txt;
+- the passive-recon skill.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -93,7 +98,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (93 counted, must-haves 34 of 34 done)
+features 100.0  (96 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -101,7 +106,7 @@ features 100.0  (93 counted, must-haves 34 of 34 done)
 - agents                       100.0  (5 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
-- quality                      100.0  (11 features)
+- quality                      100.0  (12 features)
 - studio                       100.0  (14 features)
 - skills                       100.0  (6 features)
 - backend                      100.0  (1 features)
@@ -117,7 +122,7 @@ features 100.0  (93 counted, must-haves 34 of 34 done)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)
-- security                     100.0  (2 features)
+- security                     100.0  (4 features)
 - diagnostics                  100.0  (3 features)
 
 ## Missing, in build order

@@ -23,7 +23,7 @@ import { createOllamaBridge, BridgeError, isLocalModelEngine } from "./lib/ollam
 import { createPlatform } from "./lib/platform.mjs";
 import { createMemory } from "./lib/memory.mjs";
 import { cleanClone } from "./lib/clean-clone.mjs";
-import { fetchPublicPage, FetchError } from "./lib/fetch-public.mjs";
+import { fetchPublicPage, fetchPublicResource, FetchError } from "./lib/fetch-public.mjs";
 import { createOpenWebSearch, SearchError } from "./lib/open-web-search.mjs";
 import { createFounderGate, loginPage, GateError } from "./lib/founder-gate.mjs";
 import { createAccess } from "./lib/access.mjs";
@@ -35,13 +35,14 @@ import { createAuditLog } from "./lib/audit-log.mjs";
 import { createTelemetry } from "./lib/telemetry.mjs";
 import { createReadiness } from "./lib/readiness.mjs";
 import { createReversalLog } from "./lib/reversal-log.mjs";
+import { createPassiveRecon } from "./lib/passive-recon.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, founderKey, publicHost, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, reconFetch = fetchPublicResource, founderKey, publicHost, quiet = false } = {}) {
   // ADR-141: the founder gate is on when JARVIS_FOUNDER_KEY is set; a bad key or public host stops the start.
   const gate = createFounderGate({ ...(founderKey !== undefined ? { key: founderKey } : {}), ...(publicHost !== undefined ? { publicHost } : {}) });
   const login = loginPage(t => createHash("sha256").update(t).digest("base64"));
@@ -80,6 +81,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   const readiness = createReadiness({ db, store, llm, search, audit, repoRoot, address: () => (server.address() || {}).address });
   // ADR-150: the reversal engine corrects plans and templates; each correction is logged, audited and remembered.
   const reversal = createReversalLog({ db, store, memory });
+  // ADR-152: passive recon of a domain: RDAP, certificate logs, response headers, security.txt (four GETs).
+  const recon = createPassiveRecon({ fetchResource: reconFetch });
   const latency = new Map();
   // Flushes run one after another, so awaiting one also waits for a timer flush that is still writing.
   let flushing = Promise.resolve();
@@ -348,6 +351,12 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "GET" && rest === "/audit/verify") return send(200, await audit.verify(slug));
         if (req.method === "GET" && rest === "/diagnostics") return send(200, { layers: await readiness.layers(slug), at: new Date().toISOString() });
         if (req.method === "GET" && rest === "/diagnostics/bundle") return send(200, await readiness.bundle(slug));
+        if (req.method === "POST" && rest === "/recon/passive") {
+          let rep;
+          try { rep = await recon(body.domain); } catch (e) { return fail(e.status || 500, e.message); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "recon.passive", rep.domain);
+          return send(200, rep);
+        }
         if (req.method === "POST" && rest === "/reversal/plan") return send(200, await reversal.plan(slug, body.steps, "person"));
         if (req.method === "POST" && rest === "/reversal/template") return send(200, await reversal.template(slug, body.text, "person"));
         if (req.method === "GET" && rest === "/reversal/log") return send(200, await reversal.list(slug, url.searchParams.get("limit")));

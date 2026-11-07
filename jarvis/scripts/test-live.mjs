@@ -61,7 +61,12 @@ const skillRequest = async url => {
   if (u.pathname === "/repos/acme/skills/contents/SKILL.md") return { type: "file", encoding: "base64", size: SKILL_MD.length, content: Buffer.from(SKILL_MD).toString("base64"), html_url: "https://github.com/acme/skills/blob/main/SKILL.md", sha: "abc123" };
   return null;
 };
-const srv = await startServer({ port: 0, dataDir, quiet: true, skillRequest, searchRequest, searxngUrl: "", ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
+// ADR-152: the recon fetcher answers from fixtures (the cloud sandbox has no outbound network).
+const reconFetch = async url => url.startsWith("https://rdap.org/") ? { status: 200, headers: {}, text: JSON.stringify({ status: ["client transfer prohibited"], secureDNS: { delegationSigned: true }, events: [{ eventAction: "expiration", eventDate: "2030-01-01T00:00:00Z" }], nameservers: [{ ldhName: "NS1.ACME.EXAMPLE" }] }) }
+  : url.startsWith("https://crt.sh/") ? { status: 200, headers: {}, text: JSON.stringify([{ name_value: "acme.example\nwww.acme.example\n*.acme.example", not_after: "2030-01-01T00:00:00", issuer_name: "Test CA" }]) }
+  : url.endsWith("/.well-known/security.txt") ? { status: 404, headers: { "content-type": "text/html" }, text: "" }
+  : { status: 200, headers: { "content-security-policy": "default-src 'self'", "x-content-type-options": "nosniff" }, text: "" };
+const srv = await startServer({ port: 0, dataDir, quiet: true, reconFetch, skillRequest, searchRequest, searxngUrl: "", ollamaUrl: "http://127.0.0.1:" + fake.address().port, fetchPage: async url => ({ html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }) });
 const BASE = `http://127.0.0.1:${srv.port}/`;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
@@ -466,12 +471,24 @@ ok(Object.keys(leftLive).length === 0, "live: no interface text is left in Engli
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 
+// ADR-152 live: passive recon through the real server (fixtures stand in for the four public GETs).
+{
+  await go("#/recon");
+  await page.locator("#f-recon").fill("https://ACME.example/");
+  await page.getByRole("button", { name: "Check the domain" }).click();
+  await page.waitForSelector("#h-rc-rdap");
+  ok(await page.getByRole("heading", { name: "acme.example" }).isVisible() && await page.getByText("No security.txt at /.well-known/security.txt.").isVisible() && await page.getByText("40/100").isVisible() && (await page.getByText("مثال تعليمي — أرقام افتراضية").count()) === 0, "live: recon reads the server's answer, with no teaching label");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "recon.passive" && e.target === "acme.example"), "live: the recon run is in the event log");
+}
+
 // ADR-151 live: the bilingual purity gate on the real server, after all the flows above.
 {
   const firstAgent = await page.evaluate(async () => { const r = await fetch("/api/w/giant-core/agents"); const a = await r.json(); return (a[0] || {}).id; });
   const pur = await checkPurity({ page, go, typed: TYPED, mode: "live", evidence: join(here, "..", "replica", "evidence", "bilingual-purity.log"), extra: [
     ["agent", () => go("#/agents/" + firstAgent)],
     ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
+    ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("acme.example"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
   ] });
   ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
   ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));

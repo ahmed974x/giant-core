@@ -716,6 +716,21 @@ await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await page.getByRole("link", { name: "Overview" }).isVisible() && (await englishLeft()).length > 0, "F15 switching back restores English");
 
+// F34: passive recon (ADR-152) in sample mode: no network, so the labelled teaching example.
+{
+  await go("#/recon");
+  await page.locator("#f-recon").fill("10.0.0.1");
+  await page.getByRole("button", { name: "Check the domain" }).click();
+  await page.waitForTimeout(300);
+  ok(await page.getByText("Give a domain name such as example.com: no address, port or path.").first().isVisible() && (await page.locator("#h-rc-rdap").count()) === 0, "F34 an address is refused; only domain names are checked");
+  await page.locator("#f-recon").fill("example.com");
+  await page.getByRole("button", { name: "Check the domain" }).click();
+  await page.waitForSelector("#h-rc-rdap");
+  ok(await page.getByText("مثال تعليمي — أرقام افتراضية").last().isVisible() && await page.getByText("52/100").isVisible() && await page.getByText("Grade D").isVisible(), "F34 the teaching example is labelled, with the header grade");
+  ok(await page.getByText("The domain expires in 21 days.").isVisible() && await page.getByText("Expires is in the past: 2026-06-30").isVisible() && await page.getByText("Certificates in use that expire within 14 days: 1.").isVisible(), "F34 RDAP, certificate and security.txt findings are listed");
+  ok((await page.locator("section[aria-labelledby=h-rlock] .lock-line").count()) === 1, "F34 the page states what stays locked");
+}
+
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
 // mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.
@@ -724,6 +739,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["agent", () => go("#/agents/ag_release")],
     ["workflow editor", async () => { await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click(); }],
     ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
+    ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));
   ok(pur.en === 0, "F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 700));

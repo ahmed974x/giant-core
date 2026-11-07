@@ -903,6 +903,74 @@
   [
    "^(\\d+) screens, (\\d+) left in either language$",
    "$1 شاشة، و$2 متبقٍّ في أي من اللغتين"
+  ],
+  [
+   "^Days left: (\\d+)$",
+   "الأيام المتبقية: $1"
+  ],
+  [
+   "^Grade ([A-F])$",
+   "الدرجة $1"
+  ],
+  [
+   "^High: (\\d+)$",
+   "عالٍ: $1"
+  ],
+  [
+   "^Medium: (\\d+)$",
+   "متوسط: $1"
+  ],
+  [
+   "^Low: (\\d+)$",
+   "منخفض: $1"
+  ],
+  [
+   "^The domain expired (\\d+) days ago\\.$",
+   "انتهى النطاق قبل $1 يوماً."
+  ],
+  [
+   "^The domain expires in (\\d+) days\\.$",
+   "ينتهي النطاق بعد $1 يوماً."
+  ],
+  [
+   "^Only the first (\\d+) certificates were read\\.$",
+   "قُرئت أول $1 شهادة فقط."
+  ],
+  [
+   "^A wildcard covers a whole top-level domain: (\\S+)$",
+   "اسم شامل يغطي نطاقاً علوياً كاملاً: $1"
+  ],
+  [
+   "^Wildcard names on certificates: (\\d+)\\.$",
+   "أسماء شاملة على الشهادات: $1."
+  ],
+  [
+   "^Certificates in use that expire within 14 days: (\\d+)\\.$",
+   "شهادات سارية تنتهي خلال 14 يوماً: $1."
+  ],
+  [
+   "^Expires appears (\\d+) times; it must appear once\\.$",
+   "يتكرر Expires ‏$1 مرات؛ ويجب أن يرد مرة واحدة."
+  ],
+  [
+   "^Expires is not an ISO 8601 date and time: (.+)$",
+   "قيمة Expires ليست تاريخاً ووقتاً بصيغة ISO 8601: $1"
+  ],
+  [
+   "^Expires is in the past: (\\S+)$",
+   "تاريخ Expires مضى: $1"
+  ],
+  [
+   "^RDAP answered HTTP (\\d+)\\.$",
+   "أجاب RDAP بالرمز HTTP $1."
+  ],
+  [
+   "^crt\\.sh answered HTTP (\\d+)\\.$",
+   "أجاب crt.sh بالرمز HTTP $1."
+  ],
+  [
+   "^· Days left: (\\d+)$",
+   "· الأيام المتبقية: $1"
   ]
  ],
  "strings": {
@@ -2121,6 +2189,73 @@
   "Fixed by the founder": "أصلحها المؤسس",
   "this browser (sample)": "هذا المتصفح (تجريبي)",
   "fixed rules": "القواعد الثابتة",
-  "Bilingual purity gate": "بوابة نقاء اللغتين"
+  "Bilingual purity gate": "بوابة نقاء اللغتين",
+  "Passive recon": "الاستطلاع السلبي",
+  "What a domain already publishes about itself: registration, certificates, security headers and security.txt.": "ما ينشره النطاق عن نفسه أصلاً: التسجيل والشهادات ورؤوس الأمان وملف security.txt.",
+  "Check a domain": "افحص نطاقاً",
+  "Domain": "النطاق",
+  "Check the domain": "افحص النطاق",
+  "A domain you own or may check. Four GETs: rdap.org, crt.sh, the home page's headers and /.well-known/security.txt. No key, no scan, no guessing.": "نطاق تملكه أو يحق لك فحصه. أربع قراءات GET: rdap.org وcrt.sh ورؤوس الصفحة الرئيسية و/.well-known/security.txt. بلا مفتاح ولا مسح ولا تخمين.",
+  "· Teaching example: made-up records for example.com. The real checks run on the local server.": "· مثال للتعلّم: سجلات مختلقة للنطاق example.com. الفحص الحقيقي يعمل على الخادم المحلي.",
+  "Registration (RDAP, RFC 7480)": "التسجيل (RDAP، RFC 7480)",
+  "DNSSEC": "DNSSEC",
+  "Signed": "موقّع",
+  "Not signed": "غير موقّع",
+  "Not stated": "غير مذكور",
+  "Registered": "تاريخ التسجيل",
+  "Expires": "ينتهي",
+  "Name servers": "خوادم الأسماء",
+  "Certificate Transparency (crt.sh)": "شفافية الشهادات (crt.sh)",
+  "Certificates read": "الشهادات المقروءة",
+  "Names": "الأسماء",
+  "Still valid · expired": "سارية · منتهية",
+  "Wildcards": "أسماء شاملة (*.)",
+  "Names on the certificates": "الأسماء على الشهادات",
+  "Security headers": "رؤوس الأمان",
+  "Header": "الرأس",
+  "Points": "النقاط",
+  "Fix": "الإصلاح",
+  "Good": "سليم",
+  "security.txt (RFC 9116)": "ملف security.txt (RFC 9116)",
+  "Valid": "صالح",
+  "Has problems": "فيه مشكلات",
+  "Missing": "مفقود",
+  "Contact": "جهة الاتصال",
+  "Could not be read; see the gaps above.": "تعذّرت قراءته؛ انظر الفجوات أعلاه.",
+  "Not read": "لم يُقرأ",
+  "Registration (RDAP)": "التسجيل (RDAP)",
+  "Certificate logs": "سجلات الشهادات",
+  "Medium": "متوسط",
+  "Low": "منخفض",
+  "Missing: add it.": "مفقود: أضفه.",
+  "Remove 'unsafe-inline' and pin inline code by hash.": "أزل 'unsafe-inline' وثبّت الكود المضمّن ببصمته.",
+  "Remove 'unsafe-eval'.": "أزل 'unsafe-eval'.",
+  "Name each source instead of *.": "سمِّ كل مصدر بدل *.",
+  "Add default-src 'none' or 'self'.": "أضف default-src 'none' أو 'self'.",
+  "Raise max-age to a year (31536000) or more.": "ارفع max-age إلى سنة (31536000) أو أكثر.",
+  "Add includeSubDomains.": "أضف includeSubDomains.",
+  "Set it to nosniff.": "اجعله nosniff.",
+  "Use strict-origin-when-cross-origin or no-referrer.": "استخدم strict-origin-when-cross-origin أو no-referrer.",
+  "Use same-origin.": "استخدم same-origin.",
+  "No RDAP record was returned.": "لم يرجع أي سجل RDAP.",
+  "The record gives no expiry date.": "السجل لا يذكر تاريخ انتهاء.",
+  "DNSSEC is off: the delegation is not signed.": "DNSSEC متوقف: التفويض غير موقّع.",
+  "The record does not say whether DNSSEC is on.": "السجل لا يقول هل DNSSEC يعمل.",
+  "The domain is being deleted.": "النطاق قيد الحذف.",
+  "The domain is on hold and does not resolve.": "النطاق موقوف ولا يُحلّ اسمه.",
+  "No transfer lock on the domain.": "لا قفل نقل على النطاق.",
+  "No logged certificate is still valid.": "لا شهادة مسجلة ما زالت سارية.",
+  "No security.txt at /.well-known/security.txt.": "لا ملف security.txt في /.well-known/security.txt.",
+  "No Contact line; RFC 9116 requires one.": "لا سطر Contact؛ ويشترطه RFC 9116.",
+  "No Expires line; RFC 9116 requires one.": "لا سطر Expires؛ ويشترطه RFC 9116.",
+  "Expires is more than a year ahead; RFC 9116 advises less.": "تاريخ Expires بعد أكثر من سنة؛ وينصح RFC 9116 بأقل.",
+  "No Canonical link uses https.": "لا رابط Canonical يستخدم https.",
+  "No Encryption key is named.": "لا مفتاح Encryption مذكور.",
+  "The answer is not JSON.": "الجواب ليس JSON.",
+  "· anything beyond reading what is public: port scans, login attempts and outbound messages are not part of Jarvis and wait for Director 00": "· أي شيء يتجاوز قراءة المنشور علناً: مسح المنافذ ومحاولات الدخول والرسائل الصادرة ليست جزءاً من Jarvis وتنتظر المدير 00",
+  "A Contact link uses plain http.": "رابط Contact يستخدم http غير المشفّر.",
+  "A Contact is not a mailto:, https: or tel: link.": "جهة اتصال ليست رابط mailto: أو https: أو tel:.",
+  "Give a domain name such as example.com: no address, port or path.": "اكتب اسم نطاق مثل example.com: بلا عنوان IP ولا منفذ ولا مسار.",
+  "recon passive": "استطلاع سلبي"
  }
 }

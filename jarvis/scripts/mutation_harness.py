@@ -255,10 +255,90 @@ def oracle_reversal(ns, work):
     return out
 
 
+def oracle_recon(ns, work):
+    """ADR-152: the same expected answers as the JavaScript oracle for passive-recon.mjs."""
+    nd, rd, ct, gh, st, rep, utc = ns["normalize_domain"], ns["parse_rdap"], ns["parse_ct"], ns["grade_headers"], ns["parse_security_txt"], ns["recon_report"], ns["utc_ms"]
+    now = utc("2026-11-07T00:00:00Z")
+    out = [("utc", now == 1794009600000 and utc("2027-03-01T23:59:59") == utc("2027-03-01T23:59:59Z") and utc("2027-01-01T00:00:00+03:00") == utc("2026-12-31T21:00:00Z") and utc("bad") is None and utc(None) is None and utc("2026-11-07") == now and utc("2026-11-07T00:00:00.5Z") == now + 500)]
+    out.append(("iso", ns["iso"](now + 7) == "2026-11-07T00:00:00.007Z"))
+    ok_names = ["Example.com", "a.b.example.com.", "https://X.example.org/p", "ab.co", "a.bc", "xn--mgbh0fb.xn--kgbechtv", "a-b.com", "x" * 63 + ".com", ("a" * 63 + ".") * 3 + "a" * 57 + ".com", "example.com/x/y"]
+    out.append(("domains ok", [nd(x) for x in ok_names] == ["example.com", "a.b.example.com", "x.example.org", "ab.co", "a.bc", "xn--mgbh0fb.xn--kgbechtv", "a-b.com", "x" * 63 + ".com", ("a" * 63 + ".") * 3 + "a" * 57 + ".com", "example.com"]))
+    bad = ["1.2.3.4", "localhost", "a..com", "-a.com", "a-.com", "a.c", "ab", "x" * 64 + ".com", ("a" * 63 + ".") * 3 + "a" * 58 + ".com", "a.com:80", "a_b.com", "a.c0m", "http://[", "", None, "a.xn--", "a.b-"]
+    out.append(("domains refused", all(nd(x) is None for x in bad)))
+
+    def ev(a, d):
+        return {"eventAction": a, "eventDate": d}
+    r1 = rd({"status": ["Client Transfer Prohibited", "x"], "secureDNS": {"delegationSigned": True}, "events": [ev("registration", "2000-01-01T00:00:00Z"), ev("expiration", "2026-12-07T00:00:00Z"), ev("last changed", "2020-01-01T00:00:00Z"), ev("expiration", "bad"), "x"], "nameservers": [{"ldhName": "NS1.X"}, {}, None]}, now)
+    out.append(("rdap fields", r1 == {"statuses": ["client transfer prohibited", "x"], "dnssec": True, "registered": "2000-01-01T00:00:00.000Z", "expires": "2026-12-07T00:00:00.000Z", "daysLeft": 30, "nameservers": ["ns1.x"], "findings": [{"level": "medium", "id": "domain-expiring", "text": "The domain expires in 30 days."}]}))
+    out.append(("rdap 31", rd({"status": ["servertransferprohibited"], "secureDNS": {"delegationSigned": True}, "events": [ev("expiration", "2026-12-08T00:00:00Z")]}, now)["findings"] == []))
+    out.append(("rdap day 0", [f["text"] for f in rd({"status": ["clienttransferprohibited"], "secureDNS": {"delegationSigned": True}, "events": [ev("expiration", "2026-11-07T23:00:00Z")]}, now)["findings"]] == ["The domain expires in 0 days."]))
+    out.append(("rdap expired", [(f["level"], f["id"], f["text"]) for f in rd({"status": ["client hold"], "secureDNS": {"delegationSigned": False}, "events": [ev("expiration", "2026-11-06T23:00:00Z")]}, now)["findings"]] ==
+                [("high", "domain-expired", "The domain expired 1 days ago."), ("medium", "dnssec-off", "DNSSEC is off: the delegation is not signed."), ("high", "status-hold", "The domain is on hold and does not resolve."), ("low", "transfer-unlocked", "No transfer lock on the domain.")]))
+    out.append(("rdap levels", [f["level"] for f in rd({"status": ["redemption period", "server hold"], "events": [ev("expiration", "2025-01-01T00:00:00Z")]}, now)["findings"]] == ["high", "low", "high", "high", "low"]))
+    out.append(("rdap delete", any(f["id"] == "status-deleting" for f in rd({"status": ["pending delete"]}, now)["findings"]) and any(f["id"] == "status-hold" for f in rd({"status": ["serverHold"]}, now)["findings"])))
+    out.append(("rdap missing", rd(None, now) == {"statuses": [], "dnssec": None, "registered": None, "expires": None, "daysLeft": None, "nameservers": [], "findings": [{"level": "high", "id": "rdap-missing", "text": "No RDAP record was returned."}]} and rd("x", now)["findings"][0]["id"] == "rdap-missing"))
+    out.append(("rdap empty", [f["level"] + f["id"] for f in rd({"secureDNS": {"delegationSigned": "yes"}, "status": "x", "events": "x", "nameservers": "x"}, now)["findings"]] == ["lowrdap-no-expiry", "lowdnssec-unknown", "lowtransfer-unlocked"]))
+    big = rd({"status": ["s%d" % i for i in range(25)], "events": [ev("x" if i < 50 else "expiration", "2030-01-01T00:00:00Z") for i in range(60)], "nameservers": [{"ldhName": "n%d" % i} for i in range(25)]}, now)
+    out.append(("rdap caps", len(big["statuses"]) == 20 and len(big["nameservers"]) == 20 and big["expires"] is None and rd({"events": [ev("x" if i < 49 else "expiration", "2030-01-01T00:00:00Z") for i in range(50)]}, now)["expires"] == "2030-01-01T00:00:00.000Z"))
+
+    def row(names, after, iss=None):
+        return {"name_value": names, "not_after": after, "issuer_name": iss}
+    c1 = ct([row("B.x.com\n*.x.com\n\n b.x.com ", "2026-11-20T23:59:59", "CA b"), row("*.com\n" + "y" * 254, "2026-11-01T00:00:00", "CA a"), row("z.x.com", "2026-11-21T00:00:01", "CA a"), row("w.x.com", "2026-11-21T00:00:00"), None, row(None, "bad", "")], now)
+    out.append(("ct fields", c1 == {"certificates": 6, "nameCount": 5, "names": ["*.com", "*.x.com", "b.x.com", "w.x.com", "z.x.com"], "wildcards": ["*.com", "*.x.com"], "expired": 1, "active": 3, "expiringSoon": 1, "issuers": [{"name": "CA a", "count": 2}, {"name": "CA b", "count": 1}],
+                                     "findings": [{"level": "high", "id": "ct-broad-wildcard", "text": "A wildcard covers a whole top-level domain: *.com"}, {"level": "low", "id": "ct-wildcards", "text": "Wildcard names on certificates: 2."}, {"level": "medium", "id": "ct-expiring", "text": "Certificates in use that expire within 14 days: 1."}]}))
+    out.append(("ct 253", ct([row("y" * 253, "2030-01-01T00:00:00")], now)["nameCount"] == 1))
+    five = ct([row("*.a.x\n*.b.x\n*.c.x\n*.d.x\n*.e.x", "2025-01-01T00:00:00")], now)
+    out.append(("ct five", [(f["id"], f["level"]) for f in five["findings"]] == [("ct-many-wildcards", "medium"), ("ct-no-active", "medium")] and five["findings"][0]["text"] == "Wildcard names on certificates: 5."))
+    out.append(("ct four", ct([row("*.a.x\n*.b.x\n*.c.x\n*.d.x", "2030-01-01T00:00:00")], now)["findings"][0]["id"] == "ct-wildcards"))
+    nb = ct([row("a.x", "2026-11-07T00:00:00")], now)
+    out.append(("ct now", (nb["active"], nb["expired"], nb["expiringSoon"]) == (1, 0, 1) and ct([row("a.x", "2026-11-21T00:00:00")], now)["expiringSoon"] == 0))
+    many = [row("h%04d.x" % i, "2030-01-01T00:00:00", "I%d" % (i % 7)) for i in range(5001)]
+    c2 = ct(many, now)
+    out.append(("ct caps", c2["certificates"] == 5000 and c2["nameCount"] == 5000 and len(c2["names"]) == 200 and c2["names"][199] == "h0199.x" and c2["findings"][0] == {"level": "low", "id": "ct-truncated", "text": "Only the first 5000 certificates were read."} and [x["count"] for x in c2["issuers"]] == [715, 715, 714, 714, 714]))
+    out.append(("ct exact", ct(many[:5000], now)["findings"] == [] and ct("x", now)["certificates"] == 0))
+    out.append(("ct issuers", [x["name"] for x in ct([row("a", "", "Z"), row("a", "", "A"), row("a", "", "M")], now)["issuers"]] == ["A", "M", "Z"] and [x["name"] for x in ct([row("a", "", "A"), row("a", "", "Z"), row("a", "", "Z")], now)["issuers"]] == ["Z", "A"] and len(ct([row("a", "", "x" * 130)], now)["issuers"][0]["name"]) == 120))
+    out.append(("ct dotted", all(f["id"] != "ct-broad-wildcard" for f in ct([row("*..com", "2030-01-01T00:00:00")], now)["findings"])))
+    full = {"Content-Security-Policy": "default-src 'none'", "strict-transport-security": "max-age=31536000; includeSubDomains", "permissions-policy": "camera=()", "cross-origin-opener-policy": "same-origin", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer"}
+    g = gh(full)
+    out.append(("headers full", g["score"] == 100 and g["grade"] == "A" and [(c["header"], c["points"], c["max"], c["fix"], c["present"]) for c in g["checks"]] == [("content-security-policy", 30, 30, None, True), ("strict-transport-security", 20, 20, None, True), ("permissions-policy", 15, 15, None, True), ("cross-origin-opener-policy", 15, 15, None, True), ("x-content-type-options", 10, 10, None, True), ("referrer-policy", 10, 10, None, True)]))
+
+    def pts(h, i=0):
+        c = gh(h)["checks"][i]
+        return "%s:%s" % (c["points"], c["fix"])
+    out.append(("csp", [pts({"content-security-policy": v}) for v in ("script-src * 'unsafe-inline' 'unsafe-eval'", "default-src 'self' 'unsafe-eval'", "default-src 'self' 'unsafe-inline'", "default-src *", "script-src 'self'", "default-src x;img-src *", "a" * 1989 + " default-src", "a" * 1988 + " default-src")] == ["0:unsafe-inline", "22:unsafe-eval", "22:unsafe-inline", "22:wildcard-source", "24:no-default-src", "22:wildcard-source", "24:no-default-src", "30:None"]))
+    out.append(("hsts", [pts({"strict-transport-security": v}, 1) for v in ("max-age=31536000", "max-age=31535999", "max-age=15552000", "max-age=15551999", "max-age=1", "max-age=0", 'max-age = "40000000"; includesubdomains', "preload")] == ["20:no-subdomains", "15:short-max-age", "15:short-max-age", "8:short-max-age", "8:short-max-age", "0:short-max-age", "20:None", "0:short-max-age"]))
+    small = [("x-content-type-options", "nosniff", 4), ("x-content-type-options", "NoSniff", 4), ("x-content-type-options", "sniff", 4), ("referrer-policy", "origin, strict-origin", 5), ("referrer-policy", "unsafe-url", 5), ("referrer-policy", "origin", 5), ("referrer-policy", ",", 5), ("cross-origin-opener-policy", "same-origin-allow-popups", 3), ("cross-origin-opener-policy", "unsafe-none", 3), ("permissions-policy", "x", 2)]
+    out.append(("small", [pts({k: v}, i) for k, v, i in small] == ["10:None", "10:None", "3:not-nosniff", "10:None", "0:weak-referrer", "5:weak-referrer", "5:weak-referrer", "10:weak-coop", "3:weak-coop", "15:None"]))
+    base = {"content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000"}
+    grades = [gh({**base, "permissions-policy": "x", "cross-origin-opener-policy": "same-origin", "referrer-policy": "no-referrer"})["grade"], gh({**base, "permissions-policy": "x", "cross-origin-opener-policy": "same-origin", "referrer-policy": "origin"})["grade"],
+              gh({**base, "permissions-policy": "x", "x-content-type-options": "nosniff"})["grade"], gh({**base, "permissions-policy": "x", "referrer-policy": "origin"})["grade"], gh({**base, "referrer-policy": "no-referrer"})["grade"],
+              gh({**base, "referrer-policy": "origin"})["grade"], gh({"content-security-policy": "default-src 'none'", "referrer-policy": "no-referrer"})["grade"], gh({"content-security-policy": "default-src 'none'", "x-content-type-options": "x"})["grade"]]
+    out.append(("grades", grades == ["A", "B", "B", "C", "C", "D", "D", "F"]))
+    out.append(("values", gh({"content-security-policy": ["default-src 'none'", "img-src x"]})["checks"][0]["value"] == "default-src 'none', img-src x" and len(gh({"permissions-policy": "a" * 400})["checks"][2]["value"]) == 300 and gh("x")["score"] == 0 and gh(None)["score"] == 0 and gh({"content-security-policy": "  "})["checks"][0]["fix"] == "missing"))
+    good = st("Contact: mailto:a@x\r\nExpires: 2027-01-01T00:00:00Z\nEncryption: https://k\nCanonical: HTTPS://x/.well-known/security.txt", now)
+    out.append(("sectxt good", good == {"present": True, "fields": {"contact": ["mailto:a@x"], "expires": ["2027-01-01T00:00:00Z"], "encryption": ["https://k"], "canonical": ["HTTPS://x/.well-known/security.txt"]}, "contacts": ["mailto:a@x"], "expires": "2027-01-01T00:00:00.000Z", "valid": True, "findings": []}))
+    pgp = st("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n# c\n#Contact: mailto:z\nnocolon\n:x\nx: y\nContact:tel:+1\nExpires: 2027-01-01T00:00:00+03:00\nEncryption: x\n-----BEGIN PGP SIGNATURE-----\niQEz\nContact: http://x\n-----END PGP SIGNATURE-----\nPolicy: https://p", now)
+    out.append(("sectxt pgp", pgp["fields"] == {"x": ["y"], "contact": ["tel:+1"], "expires": ["2027-01-01T00:00:00+03:00"], "encryption": ["x"], "policy": ["https://p"]}))
+    probs = st("Contact: http://a\nContact: HTTPS://b\nContact: mail\nExpires: 2026-11-06T23:59:59Z\nExpires: x\nCanonical: http://c", now)["findings"]
+    out.append(("sectxt problems", [(f["level"], f["id"], f.get("value", "")) for f in probs] == [("medium", "sectxt-contact-http", "http://a"), ("medium", "sectxt-contact-uri", "mail"), ("medium", "sectxt-many-expires", ""), ("high", "sectxt-expired", ""), ("low", "sectxt-canonical-http", ""), ("low", "sectxt-no-encryption", "")]
+                and st("Expires: 2026-11-06T23:59:59Z", now)["findings"][1]["text"] == "Expires is in the past: 2026-11-06" and st("Contact: a\nExpires: x\nExpires: y", now)["findings"][1]["text"] == "Expires appears 2 times; it must appear once."))
+    out.append(("sectxt window", any(f["id"] == "sectxt-long-expiry" and f["level"] == "low" for f in st("Expires: 2027-11-08T00:00:01Z", now)["findings"]) and not any(f["id"] == "sectxt-long-expiry" for f in st("Expires: 2027-11-08T00:00:00Z", now)["findings"]) and not any(f["id"] == "sectxt-expired" for f in st("Expires: 2026-11-07T00:00:00Z", now)["findings"])))
+    out.append(("sectxt dates", [sum(1 for f in st("Expires: " + x, now)["findings"] if f["id"] == "sectxt-bad-expires") for x in ("2027-01-01", "2027-01-01T00:00", "2027-01-01T00:00Z", "2027-13-01T00:00:00Z", " 2027-01-01T00:00:00Z")] == [1, 1, 0, 1, 0]
+                and next(f for f in st("Expires: nope", now)["findings"] if f["id"] == "sectxt-bad-expires")["text"] == "Expires is not an ISO 8601 date and time: nope"))
+    out.append(("sectxt missing", st(None, now) == {"present": False, "fields": {}, "contacts": [], "expires": None, "valid": False, "findings": [{"level": "high", "id": "sectxt-missing", "text": "No security.txt at /.well-known/security.txt."}]} and [f["level"] + f["id"] for f in st("", now)["findings"]] == ["highsectxt-no-contact", "highsectxt-no-expires", "lowsectxt-no-encryption"] and st("", now)["present"] is True))
+    out.append(("sectxt caps", len(st("\n".join("Contact: mailto:%d" % i for i in range(25)), now)["contacts"]) == 20 and len(st("Policy: " + "p" * 400, now)["fields"]["policy"][0]) == 300 and st("x" * 32760 + "\nContact: mailto:a", now)["contacts"] == [] and len(st("x" * 32740 + "\nContact: mailto:a", now)["contacts"]) == 1))
+    out.append(("sectxt valid with lows", st("Contact: mailto:a\nExpires: 2027-01-01T00:00:00Z", now)["valid"] is True))
+    r = rep("x.example", now, rdap=None, headers={})
+    out.append(("report", r["at"] == "2026-11-07T00:00:00.000Z" and r["ct"] is None and r["securityTxt"] is None and r["rdap"]["findings"][0]["id"] == "rdap-missing" and r["headers"]["score"] == 0 and r["counts"] == {"high": 1, "medium": 0, "low": 0}))
+    out.append(("headers file", ns["read_headers"]("X-A: 1\nbad\n: x\nB:2") == {"x-a": "1", "b": "2"}))
+    return out
+
+
 TARGETS = [
     {"file": ".claude/skills/replica-long-horizon/gate.py", "functions": ["judge"], "oracle": oracle_gate, "with": [".claude/skills/replica-long-horizon/lhcommon.py"]},
     {"file": ".claude/skills/replica-formal-verify/state_prover.py", "functions": ["plan_machine", "_search", "_path", "prove", "ui_completeness"], "oracle": oracle_prover, "with": []},
     {"file": ".claude/skills/replica-quantum-math/quantum_math.py", "functions": ["gf_mul", "gf_inv", "_eval", "split_secret_gf256", "reconstruct_secret_gf256", "compute_vpin_toxicity"], "oracle": oracle_quantum, "with": []},
+    {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-reversal-engine/reversal_engine.py", "functions": ["correction_vector", "sealed", "reverse_and_correct_plan", "_rgb_hue", "hue_of", "gradient_colours", "is_ai_gradient", "_fix_gradients", "css_of", "css_blocks", "glass_selectors", "_add_css", "reverse_and_correct_template"], "oracle": oracle_reversal, "with": []},
 ]
 # Mutants that cannot change any answer, each reviewed by hand; listed in the evidence, left out of the score.
@@ -275,6 +355,11 @@ EQUIVALENT = [
     {"file": "reversal_engine.py", "function": "css_of", "kind": "constant 0 -> 1", "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"},
     {"file": "reversal_engine.py", "function": "css_of", "kind": "constant 1 -> 2", "why": "-2 instead of -1 for 'not found' still fails close < 0"},
     {"file": "reversal_engine.py", "function": "_add_css", "kind": "constant 0 -> 1", "why": "a </head> at index 0 puts the new style first, which is exactly what the last line does"},
+    {"file": "passive_recon.py", "function": "utc_ms", "kind": "return None", "why": "the mutated line already returns None"},
+    {"file": "passive_recon.py", "function": "normalize_domain", "kind": "return None", "why": "the mutated lines already return None"},
+    {"file": "passive_recon.py", "function": "utc_ms", "kind": "constant 1 -> 2", "why": "s[-2:] in 'zZ' misses the Z, but datetime.fromisoformat reads a trailing Z itself since Python 3.11"},
+    {"file": "passive_recon.py", "function": "normalize_domain", "kind": "constant 1 -> 2", "why": "split('/', 2)[0] is the same text as split('/', 1)[0]"},
+    {"file": "passive_recon.py", "function": "normalize_domain", "kind": "constant 3 -> 4", "why": "the shortest name the label rules accept is four characters (a.bc)"},
     {"file": "quantum_math.py", "function": "reconstruct_secret_gf256", "kind": "constant True -> False", "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"},
 ]
 

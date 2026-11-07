@@ -111,9 +111,10 @@ const TARGETS = [
   { file: "fetch-public.mjs", functions: ["v4Blocked", "v6Groups", "isBlockedAddress"], oracle: "fetch" },
   { file: "llm-plan.mjs", functions: ["lockCategory", "enforceApprovalGates"], oracle: "llmPlan", regexConst: "LOCK_RULES" },
   { file: "prover.mjs", functions: ["planMachine", "search", "prove"], oracle: "prover" },
+  { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
@@ -139,6 +140,12 @@ const EQUIVALENT = [
   { file: "reversal.mjs", line: "close = open < 0 ? -1 : low.indexOf", why: "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)" },
   { file: "reversal.mjs", line: "if (close < 0) break;", why: "close, when found, is after open, so it is never 0" },
   { file: "reversal.mjs", line: "for (let i = 0; i < css.length; i++) {", kind: "< -> <=", why: "the extra turn reads css[css.length], which is undefined and matches no branch" },
+  { file: "passive-recon.mjs", line: "if (slash >= 0) s = s.slice(0, slash);", why: "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused" },
+  { file: "passive-recon.mjs", line: "if (s.length < 3 || s.length > 253", kind: "< -> <=", why: "the shortest name the label rules accept is four characters (a.bc), so < 3 and <= 3 refuse the same names" },
+  { file: "passive-recon.mjs", line: "if (s.length < 3 || s.length > 253", kind: "3 -> 4", why: "as above: no three- or four-character name differs, since a.bc is the shortest that passes" },
+  { file: "passive-recon.mjs", line: "return /^[a-z]{2,63}$/.test(tld)", kind: "63 -> 64", why: "a label longer than 63 characters is already refused by the loop above" },
+  { file: "passive-recon.mjs", line: "(a[0] < b[0] ? -1 : 1)", kind: "< -> <=", why: "issuer names are Map keys, so two of them are never equal" },
+  { file: "passive-recon.mjs", line: "(a[0] < b[0] ? -1 : 1)", kind: "1 -> 2", why: "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1" },
   { file: "llm-plan.mjs", drop: "ادفع", why: "every text with ادفع also contains دفع, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "انشر", why: "every text with انشر also contains نشر, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "pip install", why: "every text with pip install also contains install, a word of the same rule" },
@@ -204,6 +211,78 @@ function oracleReversal(m) {
   out.push(["style blocks read", css("<styles>a</styles><style media=x>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap" && css("<style<style>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap"
     && css("<style>p{color:red}</style><style>p{overflow-wrap:anywhere}</style><p>") === "" && css("<style>.g{backdrop-filter:blur(1px)}") === "overflow-wrap" && css("<style>x<style></style><p>{overflow-wrap:anywhere}") === "overflow-wrap"]);
   out.push(["style content exact", css("<style>overflow-wrap: anywhere</style><p>") === "" && m.reverseTemplate("<style>.g{backdrop-filter:blur(1px)}</style><p>").corrections[0].selectors.join() === ".g" && m.glassSelectors("}b{backdrop-filter:blur(1px)}").join() === "b"]);
+  return out;
+}
+
+// ADR-152: passive recon. Expected answers worked out by hand from the rules in passive-recon.mjs.
+function oracleRecon(m) {
+  const out = [], J = x => JSON.stringify(x), NOW = Date.parse("2026-11-07T00:00:00Z"), D = 86400000;
+  const nd = m.normalizeDomain;
+  out.push(["domains ok", J(["Example.com", "a.b.example.com.", "https://X.example.org/p", "ab.co", "a.bc", "xn--mgbh0fb.xn--kgbechtv", "a-b.com", "x".repeat(63) + ".com", ("a".repeat(63) + ".").repeat(3) + "a".repeat(57) + ".com"].map(nd)) ===
+    J(["example.com", "a.b.example.com", "x.example.org", "ab.co", "a.bc", "xn--mgbh0fb.xn--kgbechtv", "a-b.com", "x".repeat(63) + ".com", ("a".repeat(63) + ".").repeat(3) + "a".repeat(57) + ".com"])]);
+  out.push(["domains refused", ["1.2.3.4", "localhost", "a..com", "-a.com", "a-.com", "a.c", "ab", "x".repeat(64) + ".com", ("a".repeat(63) + ".").repeat(3) + "a".repeat(58) + ".com", "a.com:80", "a_b.com", "a.c0m", "http://[", "", null, "a.xn--", "a.b-"].every(x => nd(x) === null)]);
+  out.push(["domain path", nd("example.com/x/y") === "example.com" && nd("Ex.com.") === "ex.com"]);
+  const ev = (a, d) => ({ eventAction: a, eventDate: d });
+  const r1 = m.parseRdap({ status: ["Client Transfer Prohibited", "x"], secureDNS: { delegationSigned: true }, events: [ev("registration", "2000-01-01T00:00:00Z"), ev("expiration", "2026-12-07T00:00:00Z"), ev("last changed", "2020-01-01T00:00:00Z"), ev("expiration", "bad")], nameservers: [{ ldhName: "NS1.X" }, {}, null] }, NOW);
+  out.push(["rdap fields", J(r1) === J({ statuses: ["client transfer prohibited", "x"], dnssec: true, registered: "2000-01-01T00:00:00.000Z", expires: "2026-12-07T00:00:00.000Z", daysLeft: 30, nameservers: ["ns1.x"], findings: [{ level: "medium", id: "domain-expiring", text: "The domain expires in 30 days." }] })]);
+  out.push(["rdap 31 days", m.parseRdap({ status: ["servertransferprohibited"], secureDNS: { delegationSigned: true }, events: [ev("expiration", "2026-12-08T00:00:00Z")] }, NOW).findings.length === 0]);
+  out.push(["rdap day 0", J(m.parseRdap({ status: ["clienttransferprohibited"], secureDNS: { delegationSigned: true }, events: [ev("expiration", "2026-11-07T23:00:00Z")] }, NOW).findings.map(f => f.text)) === J(["The domain expires in 0 days."])]);
+  out.push(["rdap expired", J(m.parseRdap({ status: ["client hold"], secureDNS: { delegationSigned: false }, events: [ev("expiration", "2026-11-06T23:00:00Z")] }, NOW).findings.map(f => f.id + ":" + f.text)) ===
+    J(["domain-expired:The domain expired 1 days ago.", "dnssec-off:DNSSEC is off: the delegation is not signed.", "status-hold:The domain is on hold and does not resolve.", "transfer-unlocked:No transfer lock on the domain."])]);
+  out.push(["rdap levels", J(m.parseRdap({ status: ["redemption period", "server hold"], events: [ev("expiration", "2025-01-01T00:00:00Z")] }, NOW).findings.map(f => f.level)) === J(["high", "low", "high", "high", "low"])]);
+  out.push(["rdap pending delete", m.parseRdap({ status: ["pending delete"] }, NOW).findings.some(f => f.id === "status-deleting") && m.parseRdap({ status: ["serverHold"] }, NOW).findings.some(f => f.id === "status-hold")]);
+  out.push(["rdap missing", J(m.parseRdap(null, NOW)) === J({ statuses: [], dnssec: null, registered: null, expires: null, daysLeft: null, nameservers: [], findings: [{ level: "high", id: "rdap-missing", text: "No RDAP record was returned." }] }) && m.parseRdap("x", NOW).findings[0].id === "rdap-missing"]);
+  out.push(["rdap empty", J(m.parseRdap({ secureDNS: { delegationSigned: "yes" } }, NOW).findings.map(f => f.level + f.id)) === J(["lowrdap-no-expiry", "lowdnssec-unknown", "lowtransfer-unlocked"])]);
+  const big = { status: Array.from({ length: 25 }, (_, i) => "s" + i), events: Array.from({ length: 60 }, (_, i) => ev(i < 50 ? "x" : "expiration", "2030-01-01T00:00:00Z")), nameservers: Array.from({ length: 25 }, (_, i) => ({ ldhName: "n" + i })) };
+  const r2 = m.parseRdap(big, NOW);
+  out.push(["rdap caps", r2.statuses.length === 20 && r2.nameservers.length === 20 && r2.expires === null]);
+  out.push(["rdap 50th event", m.parseRdap({ events: Array.from({ length: 50 }, (_, i) => ev(i < 49 ? "x" : "expiration", "2030-01-01T00:00:00Z")) }, NOW).expires === "2030-01-01T00:00:00.000Z"]);
+  const row = (names, after, iss) => ({ name_value: names, not_after: after, issuer_name: iss });
+  const c1 = m.parseCt([row("B.x.com\n*.x.com\n\n b.x.com ", "2026-11-20T23:59:59", "CA b"), row("*.com\n" + "y".repeat(254), "2026-11-01T00:00:00", "CA a"), row("z.x.com", "2026-11-21T00:00:01", "CA a"), row("w.x.com", "2026-11-21T00:00:00", null), null, row(null, "bad", "")], NOW);
+  out.push(["ct fields", J(c1) === J({ certificates: 6, nameCount: 5, names: ["*.com", "*.x.com", "b.x.com", "w.x.com", "z.x.com"], wildcards: ["*.com", "*.x.com"], expired: 1, active: 3, expiringSoon: 1, issuers: [{ name: "CA a", count: 2 }, { name: "CA b", count: 1 }],
+    findings: [{ level: "high", id: "ct-broad-wildcard", text: "A wildcard covers a whole top-level domain: *.com" }, { level: "low", id: "ct-wildcards", text: "Wildcard names on certificates: 2." }, { level: "medium", id: "ct-expiring", text: "Certificates in use that expire within 14 days: 1." }] })]);
+  out.push(["ct 253", m.parseCt([row("y".repeat(253), "2030-01-01T00:00:00")], NOW).nameCount === 1]);
+  const five = m.parseCt([row("*.a.x\n*.b.x\n*.c.x\n*.d.x\n*.e.x", "2025-01-01T00:00:00")], NOW);
+  out.push(["ct five wildcards", J(five.findings.map(f => f.id)) === J(["ct-many-wildcards", "ct-no-active"]) && five.findings[0].text === "Wildcard names on certificates: 5." && five.findings[0].level === "medium" && five.findings[1].level === "medium"]);
+  out.push(["ct four wildcards", m.parseCt([row("*.a.x\n*.b.x\n*.c.x\n*.d.x", "2030-01-01T00:00:00")], NOW).findings[0].id === "ct-wildcards"]);
+  out.push(["ct now boundary", (() => { const c = m.parseCt([row("a.x", "2026-11-07T00:00:00")], NOW); return c.active === 1 && c.expired === 0 && c.expiringSoon === 1; })()]);
+  const many = Array.from({ length: 5001 }, (_, i) => row("h" + String(i).padStart(4, "0") + ".x", "2030-01-01T00:00:00", "I" + (i % 7)));
+  const c2 = m.parseCt(many, NOW);
+  out.push(["ct caps", c2.certificates === 5000 && c2.nameCount === 5000 && c2.names.length === 200 && c2.names[199] === "h0199.x" && c2.findings[0].text === "Only the first 5000 certificates were read." && c2.findings[0].level === "low" && c2.issuers.length === 5 && J(c2.issuers.map(x => x.count)) === J([715, 715, 714, 714, 714])]);
+  out.push(["ct exactly 5000", m.parseCt(many.slice(0, 5000), NOW).findings.length === 0 && m.parseCt("x", NOW).certificates === 0 && m.parseCt([], NOW).findings.length === 0]);
+  out.push(["ct issuer ties", J(m.parseCt([row("a", "", "Z"), row("a", "", "A"), row("a", "", "M")], NOW).issuers.map(x => x.name)) === J(["A", "M", "Z"]) && m.parseCt([row("a", "", "x".repeat(130))], NOW).issuers[0].name.length === 120]);
+  const g = m.gradeHeaders;
+  const full = { "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000; includeSubDomains", "permissions-policy": "camera=()", "cross-origin-opener-policy": "same-origin", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" };
+  out.push(["headers full", J(g(full)) === J({ score: 100, grade: "A", checks: [["content-security-policy", 30, "default-src 'none'"], ["strict-transport-security", 20, "max-age=31536000; includeSubDomains"], ["permissions-policy", 15, "camera=()"], ["cross-origin-opener-policy", 15, "same-origin"], ["x-content-type-options", 10, "nosniff"], ["referrer-policy", 10, "no-referrer"]].map(([header, max, value]) => ({ header, present: true, value, points: max, max, fix: null })) })]);
+  const pts = h => g(h).checks.map(c => c.points + ":" + c.fix).join(",");
+  out.push(["csp deductions", pts({ "content-security-policy": "script-src * 'unsafe-inline' 'unsafe-eval'" }).startsWith("0:unsafe-inline,") && pts({ "content-security-policy": "default-src 'self' 'unsafe-eval'" }).startsWith("22:unsafe-eval,") && pts({ "content-security-policy": "default-src 'self' 'unsafe-inline'" }).startsWith("22:unsafe-inline,") && pts({ "content-security-policy": "default-src *" }).startsWith("22:wildcard-source,") && pts({ "content-security-policy": "script-src 'self'" }).startsWith("24:no-default-src,") && pts({ "content-security-policy": "default-src x;img-src *" }).startsWith("22:wildcard-source,")]);
+  out.push(["hsts", ["max-age=31536000", "max-age=31535999", "max-age=15552000", "max-age=15551999", "max-age=1", "max-age=0", "max-age = \"40000000\"; includesubdomains", "preload"].map(v => g({ "strict-transport-security": v }).checks[1]).map(c => c.points + ":" + c.fix).join() === "20:no-subdomains,15:short-max-age,15:short-max-age,8:short-max-age,8:short-max-age,0:short-max-age,20:null,0:short-max-age"]);
+  out.push(["small headers", [["x-content-type-options", "nosniff"], ["x-content-type-options", "NoSniff"], ["x-content-type-options", "sniff"], ["referrer-policy", "origin, strict-origin"], ["referrer-policy", "unsafe-url"], ["referrer-policy", "origin"], ["referrer-policy", ","], ["cross-origin-opener-policy", "same-origin-allow-popups"], ["cross-origin-opener-policy", "unsafe-none"], ["permissions-policy", "x"]]
+    .map(([k, v]) => g({ [k]: v }).checks.find(c => c.header === k)).map(c => c.points + ":" + c.fix).join() === "10:null,10:null,3:not-nosniff,10:null,0:weak-referrer,5:weak-referrer,5:weak-referrer,10:weak-coop,3:weak-coop,15:null"]);
+  out.push(["grades", [90, 89, 75, 74, 60, 59, 40, 39].map(n => n) && g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "permissions-policy": "x", "cross-origin-opener-policy": "same-origin", "referrer-policy": "no-referrer" }).grade === "A" &&
+    g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "permissions-policy": "x", "cross-origin-opener-policy": "same-origin", "referrer-policy": "origin" }).grade === "B" &&
+    g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "permissions-policy": "x", "cross-origin-opener-policy": "same-origin" }).grade === "B" &&
+    g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "permissions-policy": "x", "referrer-policy": "origin" }).grade === "C" &&
+    g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "referrer-policy": "no-referrer" }).grade === "C" &&
+    g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "referrer-policy": "origin" }).grade === "D" &&
+    g({ "content-security-policy": "default-src 'none'", "referrer-policy": "no-referrer" }).grade === "D" && g({ "content-security-policy": "default-src 'none'", "x-content-type-options": "x" }).grade === "F"]);
+  out.push(["header values", g({ "content-security-policy": ["default-src 'none'", "img-src x"] }).checks[0].value === "default-src 'none', img-src x" && g({ "permissions-policy": "a".repeat(400) }).checks[2].value.length === 300 && g({ "content-security-policy": "a".repeat(1989) + " default-src" }).checks[0].points === 24 && g({ "content-security-policy": "a".repeat(1988) + " default-src" }).checks[0].points === 30 && g("x").score === 0 && g({ "content-security-policy": "  " }).checks[0].fix === "missing"]);
+  const s = m.parseSecurityTxt;
+  out.push(["sectxt good", J(s("Contact: mailto:a@x\r\nExpires: 2027-01-01T00:00:00Z\nEncryption: https://k\nCanonical: HTTPS://x/.well-known/security.txt", NOW)) === J({ present: true, fields: { contact: ["mailto:a@x"], expires: ["2027-01-01T00:00:00Z"], encryption: ["https://k"], canonical: ["HTTPS://x/.well-known/security.txt"] }, contacts: ["mailto:a@x"], expires: "2027-01-01T00:00:00.000Z", valid: true, findings: [] })]);
+  out.push(["sectxt pgp", J(s("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n# c\nnocolon\n:x\nContact: tel:+1\nExpires: 2027-01-01T00:00:00+03:00\nEncryption: x\n-----BEGIN PGP SIGNATURE-----\niQEz\nContact: http://x\n-----END PGP SIGNATURE-----\nPolicy: https://p", NOW).fields) === J({ contact: ["tel:+1"], expires: ["2027-01-01T00:00:00+03:00"], encryption: ["x"], policy: ["https://p"] })]);
+  out.push(["sectxt problems", J(s("Contact: http://a\nContact: HTTPS://b\nContact: mail\nExpires: 2026-11-06T23:59:59Z\nExpires: x\nCanonical: http://c", NOW).findings.map(f => f.level + ":" + f.id + ":" + (f.value || ""))) ===
+    J(["medium:sectxt-contact-http:http://a", "medium:sectxt-contact-uri:mail", "medium:sectxt-many-expires:", "high:sectxt-expired:", "low:sectxt-canonical-http:", "low:sectxt-no-encryption:"]) && s("Expires: 2026-11-06T23:59:59Z", NOW).findings[1].text === "Expires is in the past: 2026-11-06" && s("Contact: a\nExpires: x\nExpires: y", NOW).findings[1].text === "Expires appears 2 times; it must appear once."]);
+  out.push(["sectxt expiry window", s("Expires: 2027-11-08T00:00:01Z", NOW).findings.some(f => f.id === "sectxt-long-expiry" && f.level === "low") && !s("Expires: 2027-11-08T00:00:00Z", NOW).findings.some(f => f.id === "sectxt-long-expiry") && !s("Expires: 2026-11-07T00:00:00Z", NOW).findings.some(f => f.id === "sectxt-expired")]);
+  out.push(["sectxt bad dates", ["2027-01-01", "2027-01-01T00:00", "2027-01-01T00:00Z", "2027-13-01T00:00:00Z", " 2027-01-01T00:00:00Z"].map(x => s("Expires: " + x, NOW).findings.filter(f => f.id === "sectxt-bad-expires").length).join() === "1,1,0,1,0" && s("Expires: nope", NOW).findings.find(f => f.id === "sectxt-bad-expires").text === "Expires is not an ISO 8601 date and time: nope"]);
+  out.push(["sectxt missing", J(s(null, NOW)) === J({ present: false, fields: {}, contacts: [], expires: null, valid: false, findings: [{ level: "high", id: "sectxt-missing", text: "No security.txt at /.well-known/security.txt." }] }) && J(s("", NOW).findings.map(f => f.level + f.id)) === J(["highsectxt-no-contact", "highsectxt-no-expires", "lowsectxt-no-encryption"]) && s("", NOW).present === true]);
+  out.push(["sectxt caps", s(Array.from({ length: 25 }, (_, i) => "Contact: mailto:" + i).join("\n"), NOW).contacts.length === 20 && s("Policy: " + "p".repeat(400), NOW).fields.policy[0].length === 300 && s("x".repeat(32760) + "\nContact: mailto:a", NOW).contacts.length === 0 && s("x".repeat(32740) + "\nContact: mailto:a", NOW).contacts.length === 1]);
+  const rep = m.reconReport({ domain: "x.example", rdap: null, headers: {}, gaps: [1, 2, 3, 4, 5], now: NOW });
+  out.push(["report", rep.at === "2026-11-07T00:00:00.000Z" && rep.ct === null && rep.securityTxt === null && rep.rdap.findings[0].id === "rdap-missing" && rep.headers.score === 0 && rep.gaps.length === 4 && J(rep.counts) === J({ high: 1, medium: 0, low: 0 }) && rep.sample === false]);
+  out.push(["grade at 75", g({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000", "permissions-policy": "x", "x-content-type-options": "nosniff" }).grade === "B" && g(null).score === 0]);
+  out.push(["issuer order by count", J(m.parseCt([row("a", "", "A"), row("a", "", "Z"), row("a", "", "Z")], NOW).issuers.map(x => x.name)) === J(["Z", "A"]) && m.parseCt([row("*..com", "2030-01-01T00:00:00")], NOW).findings.every(f => f.id !== "ct-broad-wildcard")]);
+  out.push(["sectxt lines", J(s("#Contact: mailto:z\nx: y\nContact:tel:+2\nExpires: 2027-01-01T00:00:00Z", NOW).fields) === J({ x: ["y"], contact: ["tel:+2"], expires: ["2027-01-01T00:00:00Z"] }) && s("Contact: mailto:a\nExpires: 2027-01-01T00:00:00Z", NOW).valid === true]);
+  const sr = m.sampleReport();
+  out.push(["sample", sr.sample === true && J(sr.counts) === J({ high: 1, medium: 4, low: 3 }) && sr.headers.score === 52]);
   return out;
 }
 

@@ -581,6 +581,8 @@
           return { ...s.value, scrubbed: { redactions: s.redactions.length, rules: [...new Set(s.redactions.map(r => r.rule))], paths: s.redactions.map(r => r.path).slice(0, 50) } };
         });
       },
+      // ADR-152 in sample mode: no network, so the teaching example (made-up records for example.com).
+      passiveRecon(domain) { return LlmPlan.normalizeDomain(domain) ? ok(LlmPlan.sampleReport()) : bad("Give a domain name such as example.com: no address, port or path."); },
       // ADR-150 in sample mode: the same reversal engine; the log, its audit leaf and the lesson stay in this browser.
       reversePlan(steps) {
         if (!Array.isArray(steps) || !steps.length) return bad("Send the plan's steps.");
@@ -1006,6 +1008,7 @@
       reversePlan: steps => req("POST", w("/reversal/plan"), { steps }),
       reverseTemplate: text => req("POST", w("/reversal/template"), { text }),
       reversalLog: limit => req("GET", w("/reversal/log?limit=" + encodeURIComponent(limit || 20))),
+      passiveRecon: domain => req("POST", w("/recon/passive"), { domain }),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2526,7 +2529,7 @@
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
-      reversePlan, reverseTemplate, describeCorrection, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
+      reversePlan, reverseTemplate, describeCorrection, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
   const PRESETS = {
@@ -3486,6 +3489,70 @@
     return h("section", { class: "panel", "aria-labelledby": "h-rev" }, ...parts);
   }
 
+  /* ── Passive recon (ADR-152): what a domain already publishes, read with four GETs and no key ── */
+  const LEVEL_BADGE = { high: ["failed", "High"], medium: ["warn", "Medium"], low: ["idle", "Low"] };
+  const HEADER_FIX = { missing: "Missing: add it.", "unsafe-inline": "Remove 'unsafe-inline' and pin inline code by hash.", "unsafe-eval": "Remove 'unsafe-eval'.", "wildcard-source": "Name each source instead of *.",
+    "no-default-src": "Add default-src 'none' or 'self'.", "short-max-age": "Raise max-age to a year (31536000) or more.", "no-subdomains": "Add includeSubDomains.", "not-nosniff": "Set it to nosniff.",
+    "weak-referrer": "Use strict-origin-when-cross-origin or no-referrer.", "weak-coop": "Use same-origin." };
+  const CHECK_NAME = { rdap: "Registration (RDAP)", ct: "Certificate logs", headers: "Security headers", securityTxt: "security.txt" };
+  const findingList = list => list.length ? h("ul", { class: "plist" }, list.map(f => h("li", null, badge(LEVEL_BADGE[f.level][0], LEVEL_BADGE[f.level][1]), " ", h("span", { dir: "auto", text: f.text }), f.value ? h("code", { translate: "no", "data-verbatim": "", text: f.value }) : null)))
+    : h("p", { class: "t-sm" }, badge("ok", "Nothing found"));
+  const codeList = list => list.length ? h("ul", { class: "row recon-codes" }, list.map(x => h("li", null, h("code", { translate: "no", dir: "ltr", text: x })))) : h("span", { class: "muted t-sm", text: "—" });
+  function reconView(r) {
+    const R = r.rdap, C = r.ct, H = r.headers, T = r.securityTxt;
+    const part = (id, title, body) => h("section", { class: "panel layer", "aria-labelledby": "h-rc-" + id }, h("h2", { id: "h-rc-" + id, text: title }), ...body);
+    const missing = id => [h("p", { class: "muted t-sm", text: "Could not be read; see the gaps above." })];
+    return h("div", { class: "stack" },
+      r.sample ? h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), h("span", null, h("bdi", { lang: "ar", dir: "rtl", text: "مثال تعليمي — أرقام افتراضية" }), " · Teaching example: made-up records for example.com. The real checks run on the local server.")) : null,
+      h("div", { class: "row" }, h("h2", { class: "t-title" }, h("bdi", { translate: "no", dir: "ltr", text: r.domain })),
+        badge(r.counts.high ? "failed" : "ok", "High: " + r.counts.high), badge(r.counts.medium ? "warn" : "ok", "Medium: " + r.counts.medium), badge("idle", "Low: " + r.counts.low), timeEl(Date.parse(r.at))),
+      r.gaps.length ? h("ul", { class: "plist" }, r.gaps.map(g => h("li", null, badge("failed", "Not read"), " ", h("b", { text: CHECK_NAME[g.check] || g.check }), " ", h("span", { dir: "auto", text: g.error })))) : null,
+      h("div", { class: "layers" },
+        part("rdap", "Registration (RDAP, RFC 7480)", R ? [h("dl", { class: "kv" },
+          h("dt", { text: "Status" }), h("dd", null, codeList(R.statuses)),
+          h("dt", { text: "DNSSEC" }), h("dd", null, R.dnssec === true ? badge("ok", "Signed") : R.dnssec === false ? badge("warn", "Not signed") : badge("idle", "Not stated")),
+          h("dt", { text: "Registered" }), h("dd", { class: "num", text: R.registered ? R.registered.slice(0, 10) : "—" }),
+          h("dt", { text: "Expires" }), h("dd", null, h("span", { class: "num", text: R.expires ? R.expires.slice(0, 10) : "—" }), R.daysLeft != null ? h("span", { class: "muted t-caption", text: " · " + (R.daysLeft >= 0 ? "Days left: " + R.daysLeft : "Expired") }) : null),
+          h("dt", { text: "Name servers" }), h("dd", null, codeList(R.nameservers))), findingList(R.findings)] : missing()),
+        part("ct", "Certificate Transparency (crt.sh)", C ? [h("dl", { class: "kv" },
+          h("dt", { text: "Certificates read" }), h("dd", { class: "num", text: String(C.certificates) }),
+          h("dt", { text: "Names" }), h("dd", { class: "num", text: String(C.nameCount) }),
+          h("dt", { text: "Still valid · expired" }), h("dd", { class: "num", text: C.active + " · " + C.expired }),
+          h("dt", { text: "Wildcards" }), h("dd", null, codeList(C.wildcards))),
+          h("details", null, h("summary", { text: "Names on the certificates" }), codeList(C.names)), findingList(C.findings)] : missing()),
+        part("headers", "Security headers", H ? [h("p", null, h("span", { class: "num recon-score", text: H.score + "/100" }), " ", badge(H.score >= 75 ? "ok" : H.score >= 40 ? "warn" : "failed", "Grade " + H.grade)),
+          h("ul", { class: "plist" }, H.checks.map(c => h("li", { class: "stack" },
+            h("div", { class: "row between" }, h("code", { translate: "no", text: c.header }), h("span", { class: "num", text: c.points + "/" + c.max })),
+            c.fix ? h("span", { class: "t-sm muted", text: HEADER_FIX[c.fix] }) : h("div", { class: "row" }, badge("ok", "Good")))))] : missing()),
+        part("sectxt", "security.txt (RFC 9116)", T ? [h("dl", { class: "kv" },
+          h("dt", { text: "File" }), h("dd", null, T.present ? (T.valid ? badge("ok", "Valid") : badge("warn", "Has problems")) : badge("failed", "Missing")),
+          h("dt", { text: "Contact" }), h("dd", null, codeList(T.contacts)),
+          h("dt", { text: "Expires" }), h("dd", { class: "num", text: T.expires ? T.expires.slice(0, 10) : "—" })), findingList(T.findings)] : missing())));
+  }
+  pages.recon = () => {
+    const input = h("input", { class: "input", id: "f-recon", type: "text", name: "domain", autocomplete: "off", spellcheck: false, dir: "ltr", placeholder: "example.com", "aria-describedby": "h-recon-hint" });
+    const btn = h("button", { class: "btn btn-primary", type: "submit" }, icon("i-search", "sm"), "Check the domain");
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    const form = h("form", { class: "stack", novalidate: true },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-recon", text: "Domain" }), input,
+        h("span", { class: "hint", id: "h-recon-hint", text: "A domain you own or may check. Four GETs: rdap.org, crt.sh, the home page's headers and /.well-known/security.txt. No key, no scan, no guessing." })),
+      h("div", { class: "row" }, btn));
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { box.replaceChildren(reconView(await store.passiveRecon(input.value))); }
+      catch (err) { toast("error", err.message); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Passive recon", "What a domain already publishes about itself: registration, certificates, security headers and security.txt."),
+      sampleNote(),
+      h("section", { class: "panel", "aria-labelledby": "h-recon" }, h("h2", { id: "h-recon", text: "Check a domain" }), form),
+      box,
+      h("section", { class: "panel", "aria-labelledby": "h-rlock" }, h("h2", { id: "h-rlock", text: "Still locked" }),
+        lockLine("anything beyond reading what is public: port scans, login attempts and outbound messages are not part of Jarvis and wait for Director 00")));
+  };
+
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {
     const box = h("div", { class: "stack", "aria-live": "polite" });
@@ -3588,7 +3655,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -3669,7 +3736,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", diagnostics: "Diagnostics", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

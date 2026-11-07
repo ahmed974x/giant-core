@@ -33,6 +33,7 @@ import { exportSql, exportTokens, exportComponent, exportSpec, slugOf } from "..
 import { leafHash, merkleRoot, inclusionPath, verifyInclusion, frontierPush, frontierRoot, EMPTY_ROOT, auditEntry } from "../lib/merkle-audit.mjs";
 import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../lib/timeseries.mjs";
 import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
+import { normalizeDomain, parseRdap, parseCt, gradeHeaders, parseSecurityTxt, sampleReport, utcMs, createPassiveRecon } from "../lib/passive-recon.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -134,7 +135,17 @@ async function suite(mode, opts) {
   const dataDir = mkdtempSync(join(tmpdir(), "jarvis-test-"));
   const stubPage = async url => { if (String(url).includes("blocked")) throw new FetchError("blocked", "Private, loopback and reserved addresses are refused."); return { html: FIXTURE, url, host: "www.acmeflow.example", bytes: FIXTURE.length, robots: "allowed", fetchedAt: new Date().toISOString() }; };
   const { ollamaCalls, ...startOpts } = opts;
-  const s = await startServer({ port: 0, dataDir, quiet: true, fetchPage: stubPage, searchRequest: searchStub, skillRequest: githubStub, searxngUrl: "", ...startOpts });
+  // ADR-152: the recon fetcher answers from fixtures; "down.example" fails, as a real outage would.
+  const reconCalls = [];
+  const reconStub = async (url, o = {}) => {
+    reconCalls.push({ url, robots: !!o.robots });
+    if (url.includes("down.example")) throw new FetchError("network", "Could not reach the site (ENOTFOUND).");
+    if (url.startsWith("https://rdap.org/")) return { status: 200, headers: {}, text: JSON.stringify({ status: ["client transfer prohibited"], secureDNS: { delegationSigned: true }, events: [{ eventAction: "expiration", eventDate: "2030-01-01T00:00:00Z" }], nameservers: [{ ldhName: "NS1.ACME.EXAMPLE" }] }) };
+    if (url.startsWith("https://crt.sh/")) return { status: 200, headers: {}, text: JSON.stringify([{ name_value: "acme.example\nwww.acme.example", not_after: "2030-01-01T00:00:00", issuer_name: "Test CA" }]) };
+    if (url.endsWith("/.well-known/security.txt")) return { status: 200, headers: { "content-type": "text/plain; charset=utf-8" }, text: "Contact: mailto:sec@acme.example\nExpires: 2027-01-01T00:00:00Z\nEncryption: https://acme.example/key.asc\n" };
+    return { status: 200, headers: { "content-security-policy": "default-src 'self'", "strict-transport-security": "max-age=31536000; includeSubDomains", "x-content-type-options": "nosniff" }, text: "<html></html>" };
+  };
+  const s = await startServer({ port: 0, dataDir, quiet: true, fetchPage: stubPage, reconFetch: reconStub, searchRequest: searchStub, skillRequest: githubStub, searxngUrl: "", ...startOpts });
   const base = `http://127.0.0.1:${s.port}`;
   const H = { "content-type": "application/json", "x-jarvis": "1" };
   const j = async (p, o = {}) => { const r = await fetch(base + p, o); let b = null; try { b = await r.json(); } catch (e) { /* html */ } return { status: r.status, body: b }; };
@@ -705,6 +716,20 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-152: passive recon through the server, four GETs, gaps stated.
+  const rr = await post("/api/w/giant-core/recon/passive", { domain: "https://ACME.example/path" });
+  ok(rr.status === 200 && rr.body.domain === "acme.example" && rr.body.rdap.dnssec === true && rr.body.ct.nameCount === 2 && rr.body.headers.score === 60 && rr.body.securityTxt.valid === true && rr.body.gaps.length === 0,
+    tag("passive recon reads RDAP, certificate logs, headers and security.txt"), rr.body && { h: rr.body.headers && rr.body.headers.score, g: rr.body.gaps });
+  const urls = reconCalls.slice(-4).map(c => c.url + (c.robots ? " [robots]" : "")).sort();
+  ok(urls.join("|") === "https://acme.example/ [robots]|https://acme.example/.well-known/security.txt [robots]|https://crt.sh/?q=%25.acme.example&output=json|https://rdap.org/domain/acme.example", tag("exactly four GETs, robots.txt obeyed on the site's own paths"), urls);
+  const rd = await post("/api/w/giant-core/recon/passive", { domain: "down.example" });
+  ok(rd.status === 200 && rd.body.gaps.length === 4 && rd.body.rdap === null && /ENOTFOUND/.test(rd.body.gaps[0].error), tag("a site that cannot be reached gives four stated gaps, no guesses"), rd.body && rd.body.gaps);
+  ok((await post("/api/w/giant-core/recon/passive", { domain: "10.0.0.1" })).status === 400 && (await post("/api/w/giant-core/recon/passive", { domain: "localhost" })).status === 400 && (await post("/api/w/giant-core/recon/passive", {})).status === 400, tag("addresses, single names and empty input are refused"));
+  const evs = (await j("/api/w/giant-core/events")).body;
+  ok(Array.isArray(evs) && evs.some(e => e.kind === "recon.passive" && e.target === "acme.example"), tag("a recon run is an event in the log"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -760,6 +785,25 @@ async function suite(mode, opts) {
 }
 
 // Pure checks (no server)
+// ADR-152: passive recon parsers, pure.
+{
+  const NOW = Date.parse("2026-11-07T00:00:00Z");
+  ok(normalizeDomain("Example.COM.") === "example.com" && normalizeDomain("http://a.b.example/x") === "a.b.example" && [null, null, null, null].join() === ["1.2.3.4", "localhost", "a_b.com", "example.com:443"].map(normalizeDomain).join(), "recon: domain names only");
+  ok(utcMs("2027-03-01T23:59:59") === Date.parse("2027-03-01T23:59:59Z") && utcMs("2027-03-01T00:00:00+03:00") === Date.parse("2027-02-28T21:00:00Z"), "recon: crt.sh times are UTC");
+  const rd = parseRdap({ status: ["pending delete"], events: [{ eventAction: "expiration", eventDate: "2026-11-01T00:00:00Z" }] }, NOW);
+  ok(rd.daysLeft === -6 && rd.findings.map(f => f.id).join() === "domain-expired,dnssec-unknown,status-deleting,transfer-unlocked", "recon: RDAP findings", rd.findings);
+  const many = Array.from({ length: 20000 }, (_, i) => ({ name_value: "h" + i + ".example.com\n*.example.com", not_after: "2027-01-01T00:00:00" }));
+  const t0 = performance.now(), ct = parseCt(many, NOW), ms = performance.now() - t0;
+  ok(ct.certificates === 5000 && ct.nameCount === 5001 && ct.names.length === 200 && ct.findings[0].id === "ct-truncated" && ms < 1000, "recon: 20,000 certificate rows are cut to 5,000 and read in one pass", Math.round(ms) + " ms");
+  ok(gradeHeaders({ "content-security-policy": "default-src 'none'", "strict-transport-security": "max-age=31536000; includeSubDomains", "permissions-policy": "camera=()", "cross-origin-opener-policy": "same-origin", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" }).score === 100 && gradeHeaders(null).grade === "F", "recon: header grade from 0 to 100");
+  const st = parseSecurityTxt("Contact: mailto:a@b.example\nExpires: 2026-01-01T00:00:00Z\n", NOW);
+  ok(!st.valid && st.findings.map(f => f.id).join() === "sectxt-expired,sectxt-no-encryption", "recon: an expired security.txt is not valid", st.findings);
+  const hostile = "Contact:" + " ".repeat(200000) + "x";
+  const t1 = performance.now(); parseSecurityTxt(hostile, NOW); parseSecurityTxt("a:".repeat(100000), NOW);
+  ok(performance.now() - t1 < 500, "recon: hostile security.txt text is read in linear time");
+  const sr = sampleReport();
+  ok(sr.sample === true && sr.counts.high === 1 && sr.headers.score === 52 && sr.domain === "example.com", "recon: the teaching example is labelled and fixed", sr.counts);
+}
 // ADR-150: the reversal engine, pure.
 {
   ok(REVERSAL_RULES.join() === "lock-sensitive-step,ai-gradient,gradient,reduced-transparency,overflow-wrap" && correctionVector([{ rule: "gradient" }, { rule: "gradient" }]).values.join() === "0,0,2,0,0", "reversal: the correction vector counts each rule in a fixed order");

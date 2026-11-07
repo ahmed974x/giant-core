@@ -1,20 +1,20 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-07T00:48:11Z",
- "javascriptRanAt": "2026-11-07T00:47:01.124Z",
+ "ranAt": "2026-11-07T12:34:55Z",
+ "javascriptRanAt": "2026-11-07T12:33:02.453Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 1008,
- "killed": 1008,
- "equivalent": 52,
+ "total": 1506,
+ "killed": 1506,
+ "equivalent": 69,
  "score": 100.0,
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
-   "sha256": "3934e5122be7c406e9da10874b39ca63155683dc2418c979ea8676d7b604a04d",
+   "sha256": "a955281a4603fa17d7669fde73aa779ceb22de6277309e8bc02f8eaf0424868c",
    "functions": [
     "v4Blocked",
     "v6Groups",
@@ -151,6 +151,74 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/passive-recon.mjs",
+   "sha256": "cc840b56ca206213b7c998fcd8388e8c31b198186628a15be2aaaf98104b7876",
+   "functions": [
+    "normalizeDomain",
+    "parseRdap",
+    "parseCt",
+    "gradeHeaders",
+    "parseSecurityTxt",
+    "reconReport"
+   ],
+   "mutants": 242,
+   "killed": 234,
+   "equivalent": 8,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": ">= -> >",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "< -> <=",
+     "why": "the shortest name the label rules accept is four characters (a.bc), so < 3 and <= 3 refuse the same names"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": "0 -> 1",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "3 -> 4",
+     "why": "as above: no three- or four-character name differs, since a.bc is the shortest that passes"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 31,
+     "kind": "63 -> 64",
+     "why": "a label longer than 63 characters is already refused by the loop above"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "< -> <=",
+     "why": "issuer names are Map keys, so two of them are never equal"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/reversal.mjs",
@@ -375,6 +443,83 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-passive-recon/passive_recon.py",
+   "sha256": "0894e8592132e44eb897756bc7ba9eae91f7dddce743cfd19763dc1180be2e37",
+   "functions": [
+    "utc_ms",
+    "iso",
+    "normalize_domain",
+    "parse_rdap",
+    "parse_ct",
+    "grade_headers",
+    "parse_security_txt",
+    "recon_report",
+    "read_headers"
+   ],
+   "mutants": 273,
+   "killed": 264,
+   "equivalent": 9,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "utc_ms",
+     "line": 49,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 78,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 81,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "utc_ms",
+     "line": 57,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 84,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 73,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 74,
+     "kind": "constant 1 -> 2",
+     "why": "split('/', 2)[0] is the same text as split('/', 1)[0]"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 77,
+     "kind": "constant 3 -> 4",
+     "why": "the shortest name the label rules accept is four characters (a.bc)"
+    },
+    {
+     "fn": "utc_ms",
+     "line": 52,
+     "kind": "constant 1 -> 2",
+     "why": "s[-2:] in 'zZ' misses the Z, but datetime.fromisoformat reads a trailing Z itself since Python 3.11"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-reversal-engine/reversal_engine.py",
    "sha256": "d8ba2a6e69d088db3f231401d0749d6cdbc246afd881902b23562c12bffe73c5",
    "functions": [
@@ -480,5 +625,5 @@
    ]
   }
  ],
- "sha256": "b403a2a2a6009254a7219091fbcfa88c174a1ca23936751e5e84e3fdc59c8498"
+ "sha256": "5f4d44b0745790b3541f019ac102dd7fb3564185e3ca0e1b6f242377e53edd04"
 }

@@ -1,0 +1,12 @@
+test_report_from_files (test_passive_recon.Cli.test_report_from_files) ... ok
+test_cap_is_fast (test_passive_recon.Ct.test_cap_is_fast) ... ok
+test_dedupe_wildcards_and_dates (test_passive_recon.Ct.test_dedupe_wildcards_and_dates) ... ok
+test_names_only (test_passive_recon.Domains.test_names_only) ... ok
+test_grading (test_passive_recon.Headers.test_grading) ... ok
+test_findings (test_passive_recon.Rdap.test_findings) ... ok
+test_rfc9116 (test_passive_recon.SecurityTxt.test_rfc9116) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.038s
+
+OK
