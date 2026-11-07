@@ -138,3 +138,10 @@ Dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
 
 - `recon-live-*`: `#/recon` on the real server for `acme.example`, with fixture answers standing in for the four public GETs (the cloud sandbox has no outbound network): registration and DNSSEC, certificate names, the 0-100 header grade with fixes, security.txt;
 - `recon-sample-*`: the sample page's teaching example for `example.com`, labelled «مثال تعليمي — أرقام افتراضية».
+
+## ADR-153 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `studio-heal-*`: Studio → Colours after **Heal contrast automatically** on a theme with four failing pairs: every badge passes, and the report gives each change with WCAG and APCA Lc before and after;
+- `reversal-contrast-*`: the reversal engine healing a template's colour pairs (`#777777` on white, and an OKLCH blue on near-black, hue kept).
