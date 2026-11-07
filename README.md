@@ -117,3 +117,10 @@ Sample mode, dark and light, in **English and Arabic** (20 shots):
 
 - `studio-gz-template-*` (1440, 768, 375): Studio → Exports → «Compressed template», the `.json.gz` export and the import field (1 MB packed, 2 MB unpacked cap);
 - `studio-sync-window1-*` and `studio-sync-window2-*` (720): two windows of the same page; the site name typed in the first appears in the second (`BroadcastChannel`).
+
+## ADR-150 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `studio-reversal-*`: Studio → Autonomous Reversal Log after **Reverse and correct** on a blue to purple gradient and a glass bar: the corrections, the corrected copy and the log with SHA-256 hashes;
+- `diagnostics-reversal-*`: the same log in `#/diagnostics`, read-only.
