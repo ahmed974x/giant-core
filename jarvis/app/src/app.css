@@ -16,6 +16,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--color-accent); }
 .mono, code, kbd, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
 .num { direction: ltr; unicode-bidi: isolate; }
+/* ADR-151: names and identifiers kept as written sit apart from the sentence around them, as <bdi> does. */
+[translate="no"] { unicode-bidi: isolate; }
 .vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .skip { position: absolute; inset-inline-start: 8px; inset-block-start: -48px; z-index: 80; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-on-accent); text-decoration: none; font-weight: 600; }
 .skip:focus { inset-block-start: 8px; }

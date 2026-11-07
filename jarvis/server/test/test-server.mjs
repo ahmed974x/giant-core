@@ -705,6 +705,26 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-151: the local model is told to answer in the language the person is using.
+  const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
+  let at = opts.ollamaCalls.length;
+  await post("/api/llm/run", { mode: "chat", prompt: "Say hello", lang: "ar" });
+  const arChat = sysOf(at); at = opts.ollamaCalls.length;
+  await post("/api/llm/run", { mode: "plan", prompt: "Release this branch", lang: "ar" });
+  const arPlan = sysOf(at); at = opts.ollamaCalls.length;
+  await post("/api/llm/run", { mode: "chat", prompt: "Say hello", lang: "en" });
+  const enChat = sysOf(at); at = opts.ollamaCalls.length;
+  await post("/api/llm/run", { mode: "design", prompt: "A landing page", lang: "ar" });
+  const arDesign = sysOf(at);
+  ok(arChat.length === 1 && /Answer in Arabic/.test(arChat[0]) && arPlan.length === 1 && /Answer in Arabic/.test(arPlan[0]) && /Answer in English\.$/.test(enChat[0]) && arDesign.length === 1 && !/Answer in/.test(arDesign[0]),
+    tag("the local model answers chat and plans in the person's language; designs stay layout only"), [arChat, enChat, arDesign].map(x => x.map(y => y.slice(-60))));
+  at = opts.ollamaCalls.length;
+  await new Promise(done => { const r = http.request({ host: "127.0.0.1", port: s.port, path: "/api/llm/stream", method: "POST", headers: { "content-type": "application/json", "x-jarvis": "1", host: "127.0.0.1:" + s.port } }, res => { res.resume(); res.on("end", done); }); r.end(JSON.stringify({ prompt: "Say hello", lang: "ar" })); });
+  const arStream = sysOf(at);
+  ok(arStream.length === 1 && /Answer in Arabic/.test(arStream[0]), tag("a streamed answer is asked in Arabic too"), arStream.map(x => x.slice(-60)));
+  }
+
+  {
   // ADR-150: the reversal engine corrects, logs, audits and remembers.
   const head0 = (await j("/api/w/giant-core/audit/head")).body;
   const rp = await post("/api/w/giant-core/reversal/plan", { steps: [{ title: "Read the docs" }, { title: "Pay the hosting invoice", locked: false }, { title: "Publish the site", gate: "approval", locked: true, status: "done" }] });

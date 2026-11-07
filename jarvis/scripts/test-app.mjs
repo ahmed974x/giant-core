@@ -9,6 +9,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkPurity } from "./bilingual-purity.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const URL_ = "file://" + join(here, "..", "app", "index.html");
@@ -686,7 +687,7 @@ ok(dgb.format === "jarvis-diagnostics-v1" && dgb.layers.length === 5 && typeof d
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.
-const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
+const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|OpenAlex|Hacker|News|Algolia|GitHub|PyPI|SearXNG|JSON|MIT|Apache)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
@@ -714,6 +715,23 @@ ok(await page.evaluate(() => getComputedStyle(document.body).fontFamily.includes
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
 ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await page.getByRole("link", { name: "Overview" }).isVisible() && (await englishLeft()).length > 0, "F15 switching back restores English");
+
+// F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
+// English: Arabic mode shows no English outside code, marked English data and isolated names; English
+// mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.
+{
+  const pur = await checkPurity({ page, go, typed: [...TYPED], mode: "sample", evidence: join(here, "..", "replica", "evidence", "bilingual-purity.log"), extra: [
+    ["agent", () => go("#/agents/ag_release")],
+    ["workflow editor", async () => { await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click(); }],
+    ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
+  ] });
+  ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));
+  ok(pur.en === 0, "F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 700));
+  ok((await page.evaluate(() => document.documentElement.lang)) === "en", "F33 the page is back in English");
+  await go("#/diagnostics");
+  await page.waitForSelector(".layers .layer");
+  ok(await page.locator("#h-layer-proof").locator("..").locator("..").getByText("Bilingual purity gate").isVisible(), "F33 Diagnostics lists the bilingual purity gate in the proof layer");
+}
 
 // Shell: RTL switch and theme switch.
 await page.getByRole("button", { name: "Switch to right-to-left layout" }).click();

@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-150)
+# Parity: Jarvis (ADR-151)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -81,6 +81,10 @@ ADR-150 added four rows, all built and tested (`test-app.mjs` F32, `test-live.mj
 - the Autonomous Reversal Log;
 - the reversal-engine skill.
 
+ADR-151 added two rows, both built and tested (`test-app.mjs` F33, `test-live.mjs`, server tests):
+- the bilingual purity gate;
+- the local model answering in the chosen language.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -89,7 +93,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (91 counted, must-haves 34 of 34 done)
+features 100.0  (93 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -105,11 +109,11 @@ features 100.0  (91 counted, must-haves 34 of 34 done)
 - settings                     100.0  (3 features)
 - workflows                    100.0  (2 features)
 - logs                         100.0  (1 features)
-- i18n                         100.0  (1 features)
+- i18n                         100.0  (2 features)
 - integrations                 100.0  (1 features)
 - memory                       100.0  (3 features)
 - search                       100.0  (4 features)
-- models                       100.0  (3 features)
+- models                       100.0  (4 features)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)

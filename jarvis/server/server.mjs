@@ -211,7 +211,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         res.on("close", () => stop.abort());
         let out;
         try {
-          out = await llm.streamChat({ prompt, model: body.model || undefined, examples, signal: stop.signal, onToken: t => ev("token", { t }), onThinking: t => ev("thinking", { t }) });
+          out = await llm.streamChat({ prompt, model: body.model || undefined, examples, lang: body.lang === "ar" ? "ar" : "en", signal: stop.signal, onToken: t => ev("token", { t }), onThinking: t => ev("thinking", { t }) });
         } catch (e) { ev("error", { message: e.message }); return res.end(); }
         ev("done", { engine: out.engine, model: out.model, warning: out.warning, chars: out.content.length, memoryUsed: out.memoryUsed || [], label: isLocalModelEngine(out.engine) ? "[INFERENCE - local LLM] [UNTRUSTED_MODEL_OUTPUT]" : "fixed rules (no model)" });
         if (ws && isLocalModelEngine(out.engine) && out.content) {
@@ -415,7 +415,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         }
         if (req.method === "POST" && rest === "/missions") return send(201, await missions.create(slug, body));
         if (req.method === "POST" && rest === "/missions/plan") {
-          const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model, examples: await memory.examples(slug, String(body.goal || "")) });
+          const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model, lang: body.lang === "ar" ? "ar" : "en", examples: await memory.examples(slug, String(body.goal || "")) });
           await usage(slug, p.engine, p.model, String(body.goal || "").length + JSON.stringify(p.steps).length + String(p.thinking || "").length, "missions.plan");
           if (p.rawSteps) await reversal.plan(slug, p.rawSteps, "local model " + (p.model || "")).catch(() => null);
           const planner = { engine: p.engine, model: p.model, thinking: p.thinking, planFrom: p.planFrom, warning: p.warning, label: p.label, at: new Date().toISOString() };

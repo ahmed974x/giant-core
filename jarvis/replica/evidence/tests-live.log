@@ -92,6 +92,8 @@ PASS live: a template is corrected on the server
 PASS live: the correction is in the log and is a Merkle audit leaf
 PASS live: diagnostics list the reversal log
 PASS live: no interface text is left in English in Arabic mode
+PASS live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
+PASS live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS live overview renders
 PASS live logs renders
 PASS live dates show as relative times
@@ -109,4 +111,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-110 passed, 0 failed
+112 passed, 0 failed

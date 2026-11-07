@@ -125,6 +125,15 @@ function readUiStates() {
   if (!r.gate || !r.complete) fail("the UI-state gate failed: " + r.components.filter(c => c.missing.length).map(c => c.component + " misses " + c.missing.join(", ")).join("; "));
   return { covered: r.covered, total: r.total, percent: r.percent, components: r.components.map(c => ({ component: c.component, required: c.required })) };
 }
+// ADR-151: the last bilingual purity run (written by test-app.mjs and test-live.mjs). The flows run on the
+// built page, so a missing file only shows as "no evidence" here, never stops the build.
+function readPurity() {
+  const p = join(here, "..", "replica", "evidence", "bilingual-purity.log");
+  if (!existsSync(p)) return null;
+  const r = JSON.parse(readFileSync(p, "utf8"));
+  const modes = ["sample", "live"].filter(m => r[m]);
+  return { modes: modes.length, screens: modes.reduce((n, m) => n + r[m].screens, 0), left: modes.reduce((n, m) => n + r[m].arabic.violations + r[m].english.violations, 0) };
+}
 const data = {
   built: new Date(statSync(scanPath).mtimeMs).toISOString(),
   scan: { generated: scan.generated, summary: scan.summary },
@@ -138,6 +147,7 @@ const data = {
   quality: readQuality(),
   mutation: readMutation(),
   uiStates: readUiStates(),
+  purity: readPurity(),
 };
 
 // 4. Assemble.

@@ -319,6 +319,14 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - When the local model writes a plan that leaves a payment, a publish, a permission, an install or a message unlocked, the plan is locked by rule as before, and the log now says what the model tried, with SHA-256 hashes. Each entry is in the Merkle audit log and in memory as a lesson.
 - `#/diagnostics` shows the same log, read-only, and checks that it cannot be changed.
 
+## Arabic and English, each one whole (ADR-151)
+
+- In Arabic, every screen is in Arabic, the server's details included (for example «744 ناجح، 0 فاشل»). Paths, commands and product names stay as written, set apart so they read in the right order.
+- In English, the only Arabic is the language button, the locked «قيد الموافقة» marks, the teaching label and anything a person wrote in Arabic.
+- Notes, memory and file content are shown as they were written, in their own language.
+- The local model answers in the language the page is in.
+- `test-app.mjs` F33 and `test-live.mjs` check every screen in both languages and write `jarvis/replica/evidence/bilingual-purity.log`; Diagnostics shows the result.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

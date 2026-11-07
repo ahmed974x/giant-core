@@ -9,6 +9,7 @@ import { mkdtempSync, existsSync, readdirSync, readFileSync, copyFileSync } from
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkPurity } from "./bilingual-purity.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const { startServer } = await import(join(here, "..", "server", "server.mjs"));
@@ -444,7 +445,7 @@ ok(!lbText.includes(plantedLive) && JSON.parse(lbText).scrubbed.rules.includes("
 }
 
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
-const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
+const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST|OpenAlex|Hacker|News|Algolia|GitHub|PyPI|SearXNG|JSON|MIT|Apache)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
 const TYPED = ["Live two windows", "[REDACTED]", "Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];
 const englishLeft = () => page.evaluate(() => {
   const out = new Set(), skip = el => !el || el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage, template");
@@ -464,6 +465,17 @@ for (const r of ["overview", "agents", "runs", "missions", "workflows", "approva
 ok(Object.keys(leftLive).length === 0, "live: no interface text is left in English in Arabic mode", JSON.stringify(leftLive).slice(0, 1500));
 await page.locator("#langBtn").click();
 await page.waitForTimeout(300);
+
+// ADR-151 live: the bilingual purity gate on the real server, after all the flows above.
+{
+  const firstAgent = await page.evaluate(async () => { const r = await fetch("/api/w/giant-core/agents"); const a = await r.json(); return (a[0] || {}).id; });
+  const pur = await checkPurity({ page, go, typed: TYPED, mode: "live", evidence: join(here, "..", "replica", "evidence", "bilingual-purity.log"), extra: [
+    ["agent", () => go("#/agents/" + firstAgent)],
+    ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
+  ] });
+  ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
+  ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));
+}
 
 // Every screen renders in live mode (dates from the database included).
 for (const r of ["overview", "logs", "runs", "missions", "workflows", "analytics", "webhooks", "settings", "skills", "memory", "search", "loader", "governance", "agents/templates"]) {

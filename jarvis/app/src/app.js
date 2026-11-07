@@ -60,6 +60,8 @@
   }
   const timeEl = ts => h("time", { class: "subtle t-caption", datetime: new Date(ts).toISOString(), title: fmtDate.format(ts), text: ago(ts) });
   const plural = (n, word) => fmtN.format(n) + " " + word + (n === 1 ? "" : "s");
+  // ADR-151: workspace data is shown as written and marked with its own language, so each mode stays pure.
+  const langOf = t => (/[\u0600-\u06FF]/.test(String(t || "")) ? "ar" : "en");
   const dur = ms => (ms == null ? "—" : ms < 1000 ? fmtN.format(ms) + " ms" : (ms / 1000).toFixed(1) + " s");
 
   /* ── Data layer (phase 1: in-page sample data; phase 2 swaps in /api with the same names) ── */
@@ -562,6 +564,7 @@
           LlmPlan.layer("proof", "Development and proof", [
             ...DATA.evidence.filter(e => e.check === "tests").slice(0, 2).map(e => ({ name: "Tests: " + e.path.split("/").pop(), ok: e.ok, detail: e.detail })),
             { name: "UI-state gate", ok: true, detail: u.covered + "/" + u.total },
+            { name: "Bilingual purity gate", ok: !!DATA.purity && DATA.purity.modes === 2 && DATA.purity.left === 0, detail: DATA.purity ? DATA.purity.screens + " screens, " + DATA.purity.left + " left in either language" : "no evidence" },
             { name: "Mutation testing", ok: !!m && m.verified, detail: m ? m.killed + "/" + m.total + " killed" + (m.verified ? " [VERIFIED]" : "") : "no evidence" },
             { name: "Formal proof of a plan with locks", ok: proof.verified, detail: proof.states + " states, " + proof.effects + " effects behind a lock" }]),
           LlmPlan.layer("search", "Open search and SSRF shield", [{ name: "Private addresses refused", ok: !leaks.length, detail: (LlmPlan.SSRF_PROBES.length - leaks.length) + " of " + LlmPlan.SSRF_PROBES.length + " refused, IPv6 spellings included" }, { name: "Official keyless APIs", ...server }]),
@@ -1150,27 +1153,66 @@
   if (qLang === "ar" || qLang === "en") store$.set("jarvis-lang", qLang);
   let uiLang = (qLang || store$.get("jarvis-lang")) === "ar" ? "ar" : "en";
   // Text with a number inside: "3 steps", "Phase 2". Patterns may nest a dictionary word through {{$1}}.
-  function tr(text) {
-    if (uiLang !== "ar" || !text) return null;
+  // ADR-151: each captured group is looked up too (depth 3), so "Workflow: Review and release" turns its
+  // known name into Arabic as well; data that is not in the dictionary stays as written.
+  function tr(text, depth = 0) {
+    if (uiLang !== "ar" || !text || depth > 3) return null;
     const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text), core = m[2];
     if (!core || !/[A-Za-z]/.test(core)) return null;
     let out = AR.get(core);
-    if (out == null) for (const [re, rep] of AR_PATTERNS) { if (re.test(core)) { out = core.replace(re, rep).replace(/\{\{([^}]*)\}\}/g, (all, w) => AR.get(w) || w); break; } }
+    if (out == null) for (const [re, rep] of AR_PATTERNS) {
+      const g = re.exec(core);
+      if (!g) continue;
+      out = rep.replace(/\{\{\$(\d)\}\}|\$(\d)/g, (all, a, b) => { const v = g[Number(a || b)] || ""; return tr(v, depth + 1) || v; }).replace(/\{\{([^}$]*)\}\}/g, (all, w) => AR.get(w) || w);
+      break;
+    }
     return out == null ? null : m[1] + out + m[3];
   }
-  const skipEl = el => !!(el && el.closest && el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage"));
+  // data-i18n marks a number box (.num, .mono) whose words are interface text, such as "3 entries" (ADR-151).
+  const skipEl = el => {
+    const s = el && el.closest && el.closest("[translate=no], code, pre, .mono, .num, script, style, textarea, iframe, .stage");
+    const ok = s && el.closest("[data-i18n]");
+    return !!s && !(ok && s.contains(ok));
+  };
+  // ADR-151: in Arabic, each Latin run inside a translated sentence (a path, a command, a product name,
+  // with the numbers that follow it, as in "Apache 2.0") goes into its own <bdi dir="ltr" translate="no">, so it keeps its order inside right-to-left text and
+  // copies without hidden marks. The sentence becomes a <span data-tr>; English puts the text node back.
+  const LATIN_RUN = /[\w.:/@#%+\-=~$*&§[\]]*[A-Za-z][\w.:/@#%+\-=~$*&§[\]]*(?:[ ,]+[\w.:/@#%+=~$*&§[\]][\w.:/@#%+\-=~$*&§[\]]*)*/g;
+  const wrapped = new WeakMap();
+  function isolate(out) {
+    if (!/[A-Za-z]/.test(out)) return null;
+    const span = document.createElement("span");
+    span.dataset.tr = "";
+    let last = 0;
+    for (const m of out.matchAll(LATIN_RUN)) {
+      const run = m[0].replace(/[.:,;-]+$/, "");
+      if (m.index > last) span.append(out.slice(last, m.index));
+      const b = document.createElement("bdi");
+      b.dir = "ltr"; b.setAttribute("translate", "no"); b.textContent = run;
+      span.append(b);
+      last = m.index + run.length;
+    }
+    if (last < out.length) span.append(out.slice(last));
+    return span;
+  }
   function trNode(n) {
     if (n.nodeType === 3) {
       if (skipEl(n.parentElement)) return;
       const src = origText.has(n) && n.nodeValue === origText.get(n).out ? origText.get(n).src : n.nodeValue;
       const out = uiLang === "ar" ? tr(src) : null;
+      const span = out != null ? isolate(out) : null;
+      if (span) { wrapped.set(span, src); origText.delete(n); n.replaceWith(span); return; }
       if (out != null) { origText.set(n, { src, out }); if (n.nodeValue !== out) n.nodeValue = out; }
       else if (origText.has(n) && n.nodeValue === origText.get(n).out) { n.nodeValue = src; origText.delete(n); }
       return;
     }
     if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE|IFRAME)$/.test(n.tagName)) return;
+    if (wrapped.has(n)) {
+      if (uiLang !== "ar") { const t = document.createTextNode(wrapped.get(n)); wrapped.delete(n); n.replaceWith(t); }
+      return;
+    }
     // A textarea's own text is data, but its placeholder and label are interface text.
-    if (!skipEl(n) || (n.tagName === "TEXTAREA" && n.getAttribute("translate") !== "no" && !skipEl(n.parentElement))) {
+    if (!skipEl(n) || (n.tagName === "TEXTAREA" && !skipEl(n.parentElement))) {
       let saved = origAttr.get(n);
       for (const a of ATTRS) {
         if (!n.hasAttribute(a)) continue;
@@ -1329,7 +1371,7 @@
         h("a", { class: "stat", href: "#/approvals" }, h("span", { class: "label", text: "Waiting for you" }), h("span", { class: "value num s-pending", text: fmtN.format(s.waiting) }), h("span", { class: "subtle t-caption" }, fmtN.format(s.locked) + " more locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" }))),
         h("a", { class: "stat", href: "#/runs" }, h("span", { class: "label", text: "Failed runs (24 h)" }), h("span", { class: "value num" + (s.failed ? " s-failed" : ""), text: fmtN.format(s.failed) })))));
     loadInto(feed, () => store.listEvents(), evs => evs.length
-      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", null, h("span", { text: e.kind.replace(".", " ") }), e.target ? h("span", { class: "mono t-caption subtle", translate: "no", text: " · " + e.target }) : null), timeEl(e.at)))))
+      ? h("div", { class: "card" }, h("ul", { class: "feed" }, evs.slice(0, 8).map(e => h("li", null, h("span", { class: "mono t-caption subtle", text: e.actor }), h("span", null, h("span", { text: e.kind.replace(".", " ") }), e.target ? h("span", { class: "mono t-caption subtle", translate: "no", "data-verbatim": "", lang: langOf(e.target), text: " · " + e.target }) : null), timeEl(e.at)))))
       : emptyState("i-inbox", "Nothing has happened yet", "Create an agent and run it. Every action shows up here."));
     return wrap;
   };
@@ -1513,7 +1555,7 @@
           const cb = h("input", { type: "checkbox", name: "compare", value: r.id, "aria-label": "Compare run " + r.id });
           cb.addEventListener("change", () => { const i = picked.indexOf(r.id); if (cb.checked && i < 0) picked.push(r.id); if (!cb.checked && i >= 0) picked.splice(i, 1); while (picked.length > 2) { const old = picked.shift(); const o = box.querySelector("input[value='" + CSS.escape(old) + "']"); if (o) o.checked = false; } cmp.disabled = picked.length !== 2; });
           return h("tr", null, h("td", null, cb), h("td", null, h("a", { class: "mono", href: "#/runs/" + r.id, text: r.id })), h("td", { dir: "auto" }, h("span", { class: "trunc", text: r.agentName })), h("td", null, badge(r.status), r.trigger === "schedule" ? h("span", { class: "badge", text: "scheduled" }) : null),
-            h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", title: "Zero-token: fixed rules and local tools", text: "0" }), h("td", { class: "end num", text: String(r.steps.length) }));
+            h("td", null, timeEl(r.createdAt)), h("td", { class: "end num", text: dur(r.finishedAt && r.startedAt ? r.finishedAt - r.startedAt : null) }), h("td", { class: "end num", "data-i18n": "", title: "Zero-token: fixed rules and local tools", text: "0" }), h("td", { class: "end num", text: String(r.steps.length) }));
         }))))
       : emptyState("i-run", "No runs yet", "Open an agent and press Run once.", h("a", { class: "btn btn-primary", href: "#/agents", text: "Go to agents" })));
     return h("div", { class: "stack" }, pageHead("Runs", "Every run, newest first. Cost is 0: runs use local tools and fixed rules.", cmp), sampleNote(), box);
@@ -1603,7 +1645,7 @@
       if (!list.length) return emptyState("i-logs", evs.length ? "No event matches" : "No events yet", evs.length ? "Try another word or kind." : "Every action is written here and never edited.");
       return h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Event log" }, h("table", null,
         h("thead", null, h("tr", null, ["When", "Actor", "Action", "Target"].map(c => h("th", { scope: "col", text: c })))),
-        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { class: "mono t-caption", translate: "no", text: e.kind }), h("td", { class: "mono t-caption", translate: "no", text: e.target || "—" }))))));
+        h("tbody", null, list.map(e => h("tr", null, h("td", null, timeEl(e.at)), h("td", { class: "mono t-caption", text: e.actor }), h("td", { class: "mono t-caption", translate: "no", text: e.kind }), h("td", { class: "mono t-caption", translate: "no", "data-verbatim": "", lang: langOf(e.target), text: e.target || "—" }))))));
     });
     let t;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(load, 150); });
@@ -1628,7 +1670,7 @@
     }, e => toast("error", e.message));
     const load = () => Promise.all([store.auditHead(), store.auditLeaves(10)]).then(([hd, leaves]) => {
       showHead(hd);
-      list.replaceChildren(...leaves.map(l => h("li", { class: "row between" }, h("span", null, h("span", { class: "num", text: "#" + l.seq }), " ", h("code", { translate: "no", text: l.kind }), " ", h("span", { class: "t-caption subtle", translate: "no", text: l.target || "" })),
+      list.replaceChildren(...leaves.map(l => h("li", { class: "row between" }, h("span", null, h("span", { class: "num", text: "#" + l.seq }), " ", h("code", { translate: "no", text: l.kind }), " ", h("span", { class: "t-caption subtle", translate: "no", "data-verbatim": "", lang: langOf(l.target), text: l.target || "" })),
         h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Prove", "aria-label": "Prove entry " + l.seq, onclick: () => prove(l.seq) }))));
       if (!leaves.length) list.replaceChildren(h("li", { class: "muted t-sm", text: "No audited entries yet. Approvals, agent changes, gate results and exports are added here." }));
     }, () => {});
@@ -1667,7 +1709,7 @@
       go.disabled = true; stopBtn.hidden = false; ctl = new AbortController();
       const t0 = performance.now();
       try {
-        const d = await store.llmStream({ prompt: q.value }, { signal: ctl.signal, token: t => { if (!out.textContent) meta.textContent = "Streaming…"; out.textContent += t; }, thinking: t => { thinkBox.hidden = false; think.textContent += t; } });
+        const d = await store.llmStream({ prompt: q.value, lang: uiLang }, { signal: ctl.signal, token: t => { if (!out.textContent) meta.textContent = "Streaming…"; out.textContent += t; }, thinking: t => { thinkBox.hidden = false; think.textContent += t; } });
         meta.textContent = (d.model ? d.model + " · " : "") + (d.label || "") + " · " + fmtN.format(Math.round(performance.now() - t0)) + " ms · cost 0" + (d.warning ? " · " + d.warning : "");
       } catch (e) {
         meta.textContent = e.name === "AbortError" ? "Stopped." : e.message;
@@ -1686,9 +1728,9 @@
       h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model catalog" }, h("table", null,
         h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Here" }))),
         h("tbody", null, LlmPlan.MODEL_PROFILES.map(p => h("tr", null,
-          h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", text: p.maker + " · " + p.origin })),
+          h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: p.maker + " · " + p.origin })),
           h("td", { text: LlmPlan.ROLE_LABEL[p.role] || p.role }),
-          h("td", { class: "t-caption wrap", translate: "no", text: p.licence }),
+          h("td", { class: "t-caption wrap", dir: "auto", text: p.licence }),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
   function llmPanel() {
@@ -1704,7 +1746,7 @@
         : h("p", { class: "t-sm muted", text: st.sample ? "Sample mode has no model. Start jarvis/server and Ollama on this computer." : "No local model answers on 127.0.0.1. Missions and the Studio use the fixed rules until one does." }),
       st.profiles && st.profiles.length ? h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model families found" }, h("table", null,
         h("thead", null, h("tr", null, h("th", { scope: "col", text: "Model" }), h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Used for" }))),
-        h("tbody", null, st.profiles.map(p => h("tr", null, h("td", { class: "mono t-caption", translate: "no", text: p.model }), h("td", { translate: "no", text: p.maker + " " + p.family }), h("td", { class: "t-caption", translate: "no", text: p.licence }), h("td", { text: { plan: "Plans", design: "Designs and code", chat: "Answers" }[p.role] })))))) : null,
+        h("tbody", null, st.profiles.map(p => h("tr", null, h("td", { class: "mono t-caption", translate: "no", text: p.model }), h("td", { translate: "no", lang: "en", text: p.maker + " " + p.family }), h("td", { class: "t-caption", dir: "auto", text: p.licence }), h("td", { text: { plan: "Plans", design: "Designs and code", chat: "Answers" }[p.role] })))))) : null,
       catalogTable(st),
       llmAsk(st),
       h("p", { class: "t-caption muted", text: "Ollama: build the two Jarvis models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused." })));
@@ -1857,7 +1899,7 @@
         h("span", { class: "mono t-caption subtle", translate: "no", text: m.template }),
         h("div", { class: "meter", role: "img", "aria-label": m.done + " of " + m.steps + " steps done" }, bar),
         h("div", { class: "row t-caption muted" },
-          h("span", { class: "num", text: m.done + "/" + m.steps + " steps" }), h("span", { text: "·" }), h("span", { text: plural(m.phases, "phase") }), h("span", { text: "·" }), h("span", { text: plural(m.capsules, "capsule") }),
+          h("span", { class: "num", "data-i18n": "", text: m.done + "/" + m.steps + " steps" }), h("span", { text: "·" }), h("span", { text: plural(m.phases, "phase") }), h("span", { text: "·" }), h("span", { text: plural(m.capsules, "capsule") }),
           m.blocked ? h("span", { class: "badge s-pending" }, icon("i-lock", "sm"), m.blocked + " waiting") : null,
           m.failed ? badge("failed", m.failed + " failed") : null),
         h("span", { class: "t-caption subtle" }, "Context health " + m.health.score + " · " + m.health.label + " ", h("span", { class: "tag-inf", text: "[INFERENCE]" }))));
@@ -1868,7 +1910,7 @@
     planBtn.addEventListener("click", () => {
       if (!goal.value.trim()) { toast("warn", "Write the goal first."); goal.focus(); return; }
       planBtn.disabled = true; planBtn.setAttribute("aria-busy", "true"); goal.setAttribute("aria-busy", "true");
-      store.planMission({ goal: goal.value }).then(m => { toast("ok", m.planner && m.planner.engine === "ollama-local-loopback" ? "Planned by " + m.planner.model + ". Locks were decided by rule." : "Planned by the fixed rules. Locks were decided by rule."); location.hash = "#/missions/" + m.id; },
+      store.planMission({ goal: goal.value, lang: uiLang }).then(m => { toast("ok", m.planner && m.planner.engine === "ollama-local-loopback" ? "Planned by " + m.planner.model + ". Locks were decided by rule." : "Planned by the fixed rules. Locks were decided by rule."); location.hash = "#/missions/" + m.id; },
         e => toast("error", e.message)).finally(() => { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); goal.removeAttribute("aria-busy"); });
     });
     // ADR-144: the council debates the goal first (architect, red team and UX critic, synthesizer). The trace
@@ -1879,7 +1921,7 @@
       if (!goal.value.trim()) { toast("warn", "Write the goal first."); goal.focus(); return Promise.resolve(); }
       councilBtn.disabled = true; councilBtn.setAttribute("aria-busy", "true");
       if (!createMission) councilBox.replaceChildren(h("p", { class: "muted", text: "The council is debating…" }));
-      return store.council({ mode: "plan", prompt: goal.value, createMission }).then(out => {
+      return store.council({ mode: "plan", prompt: goal.value, lang: uiLang, createMission }).then(out => {
         if (createMission && out.mission) { toast("ok", "Mission made from the council's plan. Locked steps wait for Director 00."); location.hash = "#/missions/" + out.mission.id; return; }
         councilBox.replaceChildren(councilTrace(out, () => askCouncil(true)));
       }, e => { councilBox.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message)); toast("error", e.message); })
@@ -2056,7 +2098,7 @@
             h("section", { class: "panel", "aria-labelledby": "h-files" }, h("h2", { id: "h-files", text: "Plan files" }),
               h("p", { class: "t-sm", text: "The replica-long-horizon record of this mission:" }),
               h("ul", { class: "row" }, m.files.names.map(n => h("li", { class: "badge mono", translate: "no", text: n }))),
-              h("p", { class: "mono t-caption subtle", translate: "no", text: m.files.dir }),
+              h("p", { class: "mono t-caption subtle", translate: "no", "data-i18n": "", text: m.files.dir }),
               h("p", { class: "t-caption muted", text: "gate.py and capsule.py from .claude/skills/replica-long-horizon read the same files." })))));
     };
     loadInto(box, () => store.getMission(id), render);
@@ -2241,7 +2283,7 @@
   };
   const barRows = (rows, label) => {
     const max = Math.max(1, ...rows.map(r => r.value));
-    return h("ul", { class: "bars", "aria-label": label }, rows.map(r => h("li", null, h("span", { class: "bar-label", dir: "auto", text: r.label }), barSvg(r.value, max, r.cls), h("span", { class: "num bar-value", text: r.text || fmtN.format(r.value) }))));
+    return h("ul", { class: "bars", "aria-label": label }, rows.map(r => h("li", null, h("span", { class: "bar-label", dir: "auto", text: r.label }), barSvg(r.value, max, r.cls), h("span", { class: "num bar-value", "data-i18n": "", text: r.text || fmtN.format(r.value) }))));
   };
   pages.analytics = () => {
     const box = h("div", { class: "stack" });
@@ -2555,7 +2597,7 @@
       heat.style.width = frame.style.width; heat.style.height = frame.style.height; heat.style.transform = frame.style.transform;
       widthNote.textContent = site.width + " px" + (s < 1 ? " · shown at " + Math.round(s * 100) + "%" : "");
     };
-    const widthNote = h("span", { class: "subtle t-caption num" });
+    const widthNote = h("span", { class: "subtle t-caption num", "data-i18n": "" });
     if (typeof ResizeObserver === "function") new ResizeObserver(fit).observe(stage);
 
     const PAIRS = [["Body text on page", "text", "bg"], ["Muted text on page", "muted", "bg"], ["Text on cards", "text", "surface"], ["Muted text on cards", "muted", "surface"], ["Button text", "onAccent", "accent"], ["Links on page", "accent", "bg"]];
@@ -2765,7 +2807,7 @@
       h("p", { class: "hint", id: "h-clone", text: live
         ? "Keeps only the layout (sections, card counts, table shapes). Text, images, colours, scripts and trackers are dropped and replaced with our own copy in English and Arabic. One request; robots.txt is respected."
         : "Pasted HTML is extracted right here, with no network. Reading an address needs the local server: node jarvis/server/server.mjs, then open http://127.0.0.1:8798." }),
-      h("ul", { class: "row ds-line", "aria-label": "Design system applied to the template" }, ["OKLCH tokens", "accent #77bcff", "glass blur 16 · saturate 180", "Readex Pro · Inter · Geist Mono", "EN LTR · AR RTL"].map(t => h("li", { class: "badge", translate: "no", text: t }))),
+      h("ul", { class: "row ds-line", "aria-label": "Design system applied to the template" }, ["OKLCH tokens", "accent #77bcff", "glass blur 16 · saturate 180", "Readex Pro · Inter · Geist Mono", "EN LTR · AR RTL"].map((t, i) => h("li", { class: "badge", ...(i < 3 ? {} : { translate: "no" }), text: t }))),
       report);
 
     // ADR-144: UX heatmap. The sandboxed preview measures its own boxes (sizes and positions only) in this
@@ -2839,7 +2881,7 @@
     async function loadSnaps() {
       const [list, ver] = await Promise.all([store.studioSnapshots(), store.studioVerify()]);
       snapList.replaceChildren(...list.slice(0, 12).map(x => h("li", null,
-        h("span", { class: "num", text: "#" + x.seq }), " ", h("b", { dir: "auto", translate: "no", text: x.label }),
+        h("span", { class: "num", text: "#" + x.seq }), " ", h("b", { dir: "auto", translate: "no", "data-i18n": "", "data-verbatim": "", lang: langOf(x.label), text: x.label }),
         h("span", { class: "t-caption subtle" }, " · ", h("code", { translate: "no", text: short(x.hash) }), " · " + plural(x.blocks, "section") + (x.parentId ? " · fork of #" + ((list.find(y => y.id === x.parentId) || {}).seq || "?") : "")))));
       const opts = () => list.map(x => h("option", { value: x.id, translate: "no", text: "#" + x.seq + " " + x.label }));
       fromSel.replaceChildren(...opts()); toSel.replaceChildren(...opts());
@@ -3003,7 +3045,7 @@
         sw.addEventListener("change", () => { if (sw.checked) { if (!mix.includes(s.name)) mix.push(s.name); } else mix = mix.filter(n => n !== s.name); saveMix(); renderList(); renderMix(); });
         return h("li", { class: "skill" + (on ? " on" : "") },
           h("div", { class: "skill-head" }, sw, h("b", { class: "mono", translate: "no", text: s.name })),
-          s.description ? h("p", { lang: "en", dir: "ltr", translate: "no", text: s.description }) : h("p", { text: "No description." }),
+          s.description ? h("p", { lang: "en", dir: "ltr", translate: "no", "data-verbatim": "", text: s.description }) : h("p", { text: "No description." }),
           h("div", { class: "row" }, h("span", { class: "badge", text: SOURCE_LABEL[s.source] || s.source }), findingsBadge(s.findings), s.review ? h("span", { class: "subtle t-caption mono", text: s.review }) : null));
       }));
     };
@@ -3097,7 +3139,7 @@
     const reload = () => store.listForged().then(list => {
       onList(list);
       mounted.replaceChildren(list.length ? h("ul", { class: "feed" }, list.map(f => h("li", { class: "forged" },
-        h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: f.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: f.description }),
+        h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: f.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", lang: langOf(f.description), text: f.description }),
           h("span", { class: "row" }, findingsBadge({ critical: f.scan.critical, high: f.scan.high, medium: f.scan.medium, low: f.scan.low }), h("span", { class: "badge", text: f.kind === "python-tool" ? "Python tool" : f.kind === "pasted" ? "Pasted" : "Checklist" }),
             f.approvalId ? h("span", { class: "badge s-locked" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" })) : null)),
         h("div", { class: "row" },
@@ -3122,7 +3164,7 @@
   }
 
   /* ── Live open-web search (ADR-139): official keyless JSON APIs through the local server ── */
-  const SEARCH_LABEL = { "wikipedia-en": "Wikipedia (English)", "wikipedia-ar": "Wikipedia (العربية)", openalex: "OpenAlex", hn: "Hacker News (Algolia)", github: "GitHub", npm: "npm registry", pypi: "PyPI", osv: "OSV.dev", searxng: "SearXNG (JSON)" };
+  const SEARCH_LABEL = { "wikipedia-en": "Wikipedia (English)", "wikipedia-ar": "Wikipedia (Arabic)", openalex: "OpenAlex", hn: "Hacker News (Algolia)", github: "GitHub", npm: "npm registry", pypi: "PyPI", osv: "OSV.dev", searxng: "SearXNG (JSON)" };
   const safeUrl = u => { try { const x = new URL(String(u)); return x.protocol === "https:" && !x.username && !x.password ? x.href : null; } catch (e) { return null; } };
   let PENDING_CLONE = null;
   const SEARCH_MODES = [
@@ -3156,7 +3198,7 @@
     };
     const sourceRow = x => h("li", null,
       badge(x.skipped ? "idle" : x.ok ? "ok" : "failed", x.skipped ? "Skipped" : x.ok ? (x.cached ? "Cached" : "Answered") : "Failed"),
-      h("span", { class: "t-sm", translate: "no", text: x.label || SEARCH_LABEL[x.source] }),
+      h("span", { class: "t-sm", dir: "auto", text: SEARCH_LABEL[x.source] || x.label }),
       h("span", { class: "subtle t-caption", text: x.skipped ? x.note : x.ok ? (x.count === 1 ? "1 result" : x.count + " results") : x.error }),
       h("span", { class: "num t-caption subtle", text: x.ms ? x.ms + " ms" : "" }));
     const resultCard = r => {
@@ -3164,7 +3206,7 @@
       const meta = r.meta || {};
       const bits = [meta.stars != null ? "★ " + fmtN.format(meta.stars) : null, meta.language, meta.licence, meta.version ? "v" + meta.version : null, meta.year, meta.citations != null ? meta.citations + " cites" : null, meta.points != null ? meta.points + " pts" : null, (meta.aliases || []).join(" "), meta.engine].filter(Boolean);
       return h("li", { class: "mem hit" },
-        h("div", { class: "row" }, h("span", { class: "badge", translate: "no", text: SEARCH_LABEL[r.source] || r.source }), bits.length ? h("span", { class: "mono t-caption subtle", translate: "no", text: bits.join(" · ") }) : null),
+        h("div", { class: "row" }, h("span", { class: "badge", dir: "auto", text: SEARCH_LABEL[r.source] || r.source }), bits.length ? h("span", { class: "mono t-caption subtle", translate: "no", text: bits.join(" · ") }) : null),
         h("h3", { dir: "auto", translate: "no" }, url ? h("a", { href: url, target: "_blank", rel: "noopener noreferrer", text: r.title }) : r.title),
         r.snippet ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", lang: r.lang || null, text: r.snippet }) : null,
         url ? h("p", { class: "mono t-caption subtle url", translate: "no", text: url }) : null);
@@ -3184,7 +3226,7 @@
         if (r.offline) body.push(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), r.fallback ? r.fallback.note : "No source answered."));
         if (r.memoryId) body.push(h("p", { class: "sample-note live-note" }, icon("i-check", "sm"), "Saved to memory as a search episode: titles and links only."));
         if (r.results.length) body.push(h("p", { class: "subtle t-caption", role: "status", text: (r.results.length === 1 ? "1 result" : r.results.length + " results") + " from " + ((n => n === 1 ? "1 source" : n + " sources")(r.sources.filter(x => x.ok && !x.skipped && x.count).length)) }), h("ul", { class: "memlist" }, r.results.map(resultCard)));
-        else if (r.fallback && r.fallback.hits.length) body.push(h("h2", { text: "From this workspace's memory" }), h("ul", { class: "memlist" }, r.fallback.hits.map(e => h("li", { class: "mem" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", text: "score " + e.score }) : null), h("h3", { dir: "auto", translate: "no", text: e.title }), h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: e.body.slice(0, 300) })))));
+        else if (r.fallback && r.fallback.hits.length) body.push(h("h2", { text: "From this workspace's memory" }), h("ul", { class: "memlist" }, r.fallback.hits.map(e => h("li", { class: "mem" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", "data-i18n": "", text: "score " + e.score }) : null), h("h3", { dir: "auto", translate: "no", "data-verbatim": "", lang: langOf(e.title), text: e.title }), h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", "data-verbatim": "", lang: langOf(e.body), text: e.body.slice(0, 300) })))));
         else body.push(emptyState("i-search", "Nothing found", r.offline ? "No source answered and memory has nothing that matches." : "Try other words, or another mode."));
         results.replaceChildren(...body);
       } catch (err) { results.replaceChildren(errorBox(err, run)); }
@@ -3196,7 +3238,7 @@
     form.addEventListener("submit", e => { e.preventDefault(); run(); });
     setMode();
     side.replaceChildren(h("section", { class: "panel", "aria-labelledby": "h-src" }, h("h2", { id: "h-src", text: "Sources" }),
-      h("ul", { class: "feed" }, Object.entries(SEARCH_LABEL).map(([id, label]) => h("li", null, h("span", { class: "t-sm", translate: "no", text: label }), h("span", { class: "subtle t-caption", text: { searxng: "only if JARVIS_SEARXNG_URL is set", pypi: "one package by name", osv: "vulnerabilities" }[id] || "keyless JSON API" })))),
+      h("ul", { class: "feed" }, Object.entries(SEARCH_LABEL).map(([id, label]) => h("li", null, h("span", { class: "t-sm", dir: "auto", text: label }), h("span", { class: "subtle t-caption", text: { searxng: "only if JARVIS_SEARXNG_URL is set", pypi: "one package by name", osv: "vulnerabilities" }[id] || "keyless JSON API" })))),
       h("p", { class: "subtle t-caption", text: "No search page is scraped and no anti-bot check is bypassed. With no internet, Jarvis answers from this workspace's memory and says so." })));
     return h("div", { class: "stack" },
       pageHead("Search", "Live search across official, keyless public APIs, through the local server. Results are untrusted text with links; a summary goes into memory."), sampleNote(),
@@ -3241,7 +3283,7 @@
           return h("li", { class: "mem hit" },
             h("div", { class: "row" }, h("span", { class: "badge", translate: "no", text: "GitHub" }), h("span", { class: "mono t-caption subtle", translate: "no", text: "★ " + fmtN.format(x.stars) + (x.licence ? " · " + x.licence : " · no licence stated") })),
             h("h3", { translate: "no" }, h("a", { href: x.url, target: "_blank", rel: "noopener noreferrer", text: x.repo })),
-            x.description ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: x.description }) : null,
+            x.description ? h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", lang: langOf(x.description), text: x.description }) : null,
             h("div", { class: "row" }, path, imp));
         })) : (r.offline ? null : h("p", { class: "muted t-sm", text: "No repository matches." }))].filter(Boolean)), err => results.replaceChildren(h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), err.message)));
     });
@@ -3267,7 +3309,7 @@
         [h("button", { class: "btn btn-secondary", type: "button", text: "Cancel", onclick: closeDialog }), h("button", { class: "btn btn-primary", type: "button", text: "Derive and mount", onclick: () => { const steps = ta.value.split("\n").map(x => x.trim()).filter(Boolean); closeDialog(); store.evolveSkill({ type: "DERIVED", skillId: r.id, steps }).then(x => afterMount(x, from), err => toast("error", err.message)); } })], from);
     };
     const renderMounted = list => list.length ? h("ul", { class: "feed" }, list.map(r => h("li", { class: "forged" },
-      h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: r.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: r.description }),
+      h("div", { class: "stack" }, h("b", { class: "mono", translate: "no", text: r.name }), h("span", { class: "t-caption", dir: "auto", translate: "no", lang: langOf(r.description), text: r.description }),
         h("span", { class: "row" }, findingsBadge({ critical: r.scan.critical, high: r.scan.high, medium: r.scan.medium, low: r.scan.low }), h("span", { class: "badge", text: ORIGIN_LABEL[r.origin] || r.origin }), h("span", { class: "badge num", text: "v" + r.version }),
           r.licence ? h("span", { class: "badge", translate: "no", text: r.licence }) : null,
           r.sourceUrl ? h("a", { class: "t-caption", href: r.sourceUrl, target: "_blank", rel: "noopener noreferrer", text: "Source" }) : null,
@@ -3277,7 +3319,7 @@
         h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Derive…", onclick: e => deriveDialog(r, e.currentTarget) }),
         h("button", { class: "btn btn-ghost btn-sm", type: "button", onclick: e => { const from = e.currentTarget; store.installRuntime(r.id).then(() => showLocked(from, "install", "Install the skill “" + r.name + "” into .claude/skills"), err => toast("error", err.message)); } }, icon("i-lock", "sm"), "Install into the repo…"),
         h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Unmount", onclick: () => store.unmountRuntime(r.id).then(() => { toast("ok", "Unmounted " + r.name + "."); reloadAll(); }, err => toast("error", err.message)) }))))) : h("p", { class: "muted t-sm", text: "No skill loaded yet. Search GitHub, synthesize one, or capture a finished mission." });
-    const renderEvo = list => list.length ? h("ul", { class: "feed" }, list.slice(0, 20).map(e => h("li", null, h("span", { class: "badge", translate: "no", text: EVO_LABEL[e.type] || e.type }), h("span", { class: "mono t-caption", translate: "no", text: e.skillName || "—" }), h("span", { class: "t-caption", dir: "auto", translate: "no", text: e.note }), timeEl(typeof e.createdAt === "number" ? e.createdAt : Date.parse(e.createdAt))))) : h("p", { class: "muted t-sm", text: "No change logged yet." });
+    const renderEvo = list => list.length ? h("ul", { class: "feed" }, list.slice(0, 20).map(e => h("li", null, h("span", { class: "badge", translate: "no", text: EVO_LABEL[e.type] || e.type }), h("span", { class: "mono t-caption", translate: "no", text: e.skillName || "—" }), h("span", { class: "t-caption", dir: "auto", translate: "no", "data-i18n": "", "data-verbatim": "", lang: langOf(e.note), text: e.note }), timeEl(typeof e.createdAt === "number" ? e.createdAt : Date.parse(e.createdAt))))) : h("p", { class: "muted t-sm", text: "No change logged yet." });
     const reloadAll = () => { loadInto(mounted, () => store.listRuntime(), renderMounted); loadInto(evoBox, () => store.evolutionLog(), renderEvo); };
     reloadAll();
     const off = store.subscribe(() => { if (!mounted.isConnected) { off(); return; } if (!dlg.open) { store.listRuntime().then(l => mounted.replaceChildren(renderMounted(l)), () => {}); store.evolutionLog().then(l => evoBox.replaceChildren(renderEvo(l)), () => {}); } });
@@ -3352,11 +3394,11 @@
     const map = svg("svg", { class: "gmap", viewBox: `0 0 ${16 + cols.length * COLW} ${height}`, role: "img", "aria-label": "Map of screens, modules, tables and skills" },
       cols.map(([k, title], ci) => svg("text", { class: "gmap-col", x: 16 + ci * COLW, y: 18 }, tr(title) || title)),
       edgeEls,
-      [...pos].map(([id, p]) => { const n = byId.get(id); const gEl = svg("g", { class: "gmap-node k-" + n.kind, transform: `translate(${p.x},${p.y})`, tabindex: "0", role: "button", translate: "no", "aria-label": n.kind + " " + n.label, "data-id": id },
+      [...pos].map(([id, p]) => { const n = byId.get(id); const gEl = svg("g", { class: "gmap-node k-" + n.kind, transform: `translate(${p.x},${p.y})`, tabindex: "0", role: "button", translate: "no", "aria-label": (tr(n.kind) || n.kind) + " " + n.label, "data-id": id },
         svg("circle", { r: 4, cx: 0, cy: 0 }), svg("text", { x: 10, y: 4 }, n.label.length > 28 ? n.label.slice(0, 27) + "…" : n.label));
         gEl.addEventListener("click", () => select(id)); gEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(id); } }); return gEl; }));
     return h("div", { class: "stack" },
-      h("p", { class: "subtle t-caption num", translate: "no", text: Object.entries(g.counts).map(([k, v]) => v + " " + k + "s").join(" · ") + " · " + g.edges.length + " edges · sha256 " + g.sha256.slice(0, 12) }),
+      h("p", { class: "subtle t-caption num", "data-i18n": "", text: Object.entries(g.counts).map(([k, v]) => v + " " + k + "s").join(" · ") + " · " + g.edges.length + " edges · sha256 " + g.sha256.slice(0, 12) }),
       h("div", { class: "gmap-wrap" }, h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Knowledge map" }, map), inspector),
       g.unlinked.length ? h("p", { class: "t-caption" }, h("b", { text: "Not reached from the page: " }), h("span", { class: "mono", translate: "no", text: g.unlinked.map(id => (byId.get(id) || { label: id }).label).join(", ") })) : null);
   }
@@ -3365,7 +3407,7 @@
     const rules = h("ol", { class: "gov-rules" }, GOV_RULES.map(([t, d]) => h("li", null, h("b", { text: t }), h("span", { class: "t-sm", text: d }))));
     const register = h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Skills and tools register" }, h("table", null,
       h("thead", null, h("tr", null, h("th", { scope: "col", text: "Name" }), h("th", { scope: "col", text: "Decision" }), h("th", { scope: "col", text: "Why" }))),
-      h("tbody", null, GOV_REGISTER.map(([n, st, why]) => h("tr", null, h("td", { translate: "no", text: n }), h("td", null, badge(GOV_STATE[st][0], GOV_STATE[st][1])), h("td", { class: "wrap t-sm", text: why }))))));
+      h("tbody", null, GOV_REGISTER.map(([n, st, why]) => h("tr", null, h("td", { translate: "no", lang: "en", text: n }), h("td", null, badge(GOV_STATE[st][0], GOV_STATE[st][1])), h("td", { class: "wrap t-sm", text: why }))))));
     const quality = q ? h("div", { class: "stack" },
       h("div", { class: "stats" },
         h("div", { class: "stat" }, h("span", { class: "label", text: "Rules" }), h("span", { class: "value num", text: String(q.rules) })),
@@ -3373,7 +3415,7 @@
         h("div", { class: "stat" }, h("span", { class: "label", text: "High" }), h("span", { class: "value num", text: String(q.summary.high) })),
         h("div", { class: "stat" }, h("span", { class: "label", text: "Medium · low" }), h("span", { class: "value num", text: q.summary.medium + " · " + q.summary.low }))),
       h("div", { class: "row" }, Object.entries(q.byRule).map(([rid, n]) => h("span", { class: "badge num", translate: "no", text: rid + " × " + n }))),
-      q.findings.length ? h("ul", { class: "feed" }, q.findings.slice(0, 12).map(f => h("li", null, badge(f.severity === "high" ? "failed" : f.severity === "medium" ? "warn" : "idle", f.severity), h("span", { class: "mono t-caption", translate: "no", text: f.rule + " " + f.file + ":" + f.line }), h("span", { class: "t-caption", translate: "no", text: f.message })))) : null,
+      q.findings.length ? h("ul", { class: "feed" }, q.findings.slice(0, 12).map(f => h("li", null, badge(f.severity === "high" ? "failed" : f.severity === "medium" ? "warn" : "idle", f.severity), h("span", { class: "mono t-caption", translate: "no", text: f.rule + " " + f.file + ":" + f.line }), h("span", { class: "t-caption", dir: "auto", text: f.message })))) : null,
       h("p", { class: "subtle t-caption num", translate: "no", text: "sha256 " + q.sha256.slice(0, 12) + " · " + fmtDate.format(new Date(q.built)) })) : h("p", { class: "muted t-sm", text: "No quality report in this build. Run replica-impeccable, then build the page." });
     return h("div", { class: "stack" },
       pageHead("Governance", "How Jarvis is kept honest: the working rules, a map of what calls what, the quality gate, and which outside tools were taken in or kept out."),
@@ -3409,14 +3451,14 @@
   const REV_RULE = { "lock-sensitive-step": "Locked a sensitive step", "ai-gradient": "Removed a blue to purple gradient", gradient: "Removed a gradient", "reduced-transparency": "Added a reduced-transparency fallback", "overflow-wrap": "Added overflow-wrap" };
   const revDetail = c => c.rule === "lock-sensitive-step" ? "«" + c.title + "» · " + c.category + " · locked " + c.from.locked + " → true · status " + (c.from.status || "none") + " → pending_approval"
     : c.rule === "reduced-transparency" ? c.selectors.join(", ") : c.rule === "overflow-wrap" ? "overflow-wrap: anywhere" : c.property + ": " + c.from + " → " + c.to;
-  const revList = list => h("ul", { class: "plist" }, list.map(c => h("li", null, h("span", { text: REV_RULE[c.rule] || c.rule }), " ", h("bdi", { class: "t-caption muted", dir: "auto", translate: "no", text: revDetail(c) }))));
+  const revList = list => h("ul", { class: "plist" }, list.map(c => h("li", null, h("span", { text: REV_RULE[c.rule] || c.rule }), " ", h("code", { class: "t-caption muted", dir: "ltr", translate: "no", text: revDetail(c) }))));
   function reversalPanel(withInput) {
     const listBox = h("div", { class: "stack", "aria-live": "polite" });
     const reload = () => loadInto(listBox, () => store.reversalLog(10), d => h("div", { class: "stack" }, h("p", { class: "t-sm", text: "Entries in the log: " + d.total }),
       d.entries.length ? h("ul", { class: "plist" }, d.entries.map(e => h("li", { class: "stack" },
         h("div", { class: "row" }, e.kind === "plan" ? badge(e.verified ? "ok" : "failed", e.verified ? "Plan, proved" : "Plan, not proved") : badge("ok", "Template"), h("b", { text: plural(e.corrections.length, "correction") }),
           h("span", { class: "t-caption muted", text: e.source === "person" ? "From a person" : "From the local model" })),
-        h("bdi", { class: "mono t-caption", dir: "ltr", translate: "no", text: "SHA-256 " + e.before.slice(0, 12) + "… → " + e.after.slice(0, 12) + "… · proof " + e.proofHash.slice(0, 16) + "…" }),
+        h("bdi", { class: "mono t-caption", dir: "ltr", translate: "no", "data-i18n": "", text: "SHA-256 " + e.before.slice(0, 12) + "… → " + e.after.slice(0, 12) + "… · proof " + e.proofHash.slice(0, 16) + "…" }),
         revList(e.corrections))))
         : emptyState("i-check", "No corrections yet", "When a plan or a page breaks a rule, the corrected copy and what changed appear here.")));
     const parts = [h("h2", { id: "h-rev", text: "Autonomous Reversal Log" }),
@@ -3464,7 +3506,7 @@
     });
     loadInto(box, () => store.diagnostics(), d => h("div", { class: "layers" }, d.layers.map((l, i) => h("section", { class: "panel layer", "aria-labelledby": "h-layer-" + l.id },
       h("div", { class: "row between" }, h("h2", { id: "h-layer-" + l.id }, h("bdi", { class: "num", text: String(i + 1) }), " · ", l.name), l.ok ? badge("ok", "Ready") : badge("warn", "Needs attention")),
-      h("ul", { class: "plist" }, l.checks.map(c => h("li", null, c.ok ? badge("ok", "OK") : badge(c.detail === "needs the local server" ? "idle" : "failed", c.detail === "needs the local server" ? "Server" : "Check"), " ", h("b", { text: c.name }), " ", h("bdi", { class: "t-caption muted", dir: "ltr", translate: "no", text: c.detail }))))))));
+      h("ul", { class: "plist" }, l.checks.map(c => h("li", null, c.ok ? badge("ok", "OK") : badge(c.detail === "needs the local server" ? "idle" : "failed", c.detail === "needs the local server" ? "Server" : "Check"), " ", h("b", { text: c.name }), " ", h("bdi", { class: "t-caption muted", "data-i18n": "", text: c.detail }))))))));
     return h("div", { class: "stack" },
       pageHead("Diagnostics", "Whether each layer of Jarvis is ready, checked now from the database, the evidence files and the running services."),
       sampleNote(),
@@ -3488,11 +3530,11 @@
     const render = r => h("div", { class: "stack" },
       h("p", { class: "subtle t-caption", role: "status", text: q.value.trim() ? r.hits.length + " of " + r.total + " episodes match (BM25)" : r.total + " episodes" }),
       r.hits.length ? h("ul", { class: "memlist" }, r.hits.map(e => h("li", { class: "mem" },
-        h("div", { class: "row between" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", text: "score " + e.score }) : null),
-          h("button", { class: "btn btn-ghost btn-icon btn-sm", type: "button", "aria-label": "Delete " + e.title, onclick: () => store.removeMemory(e.id).then(() => { toast("ok", "Deleted from memory."); reload(); }, err => toast("error", err.message)) }, icon("i-x", "sm"))),
-        h("h3", { dir: "auto", translate: "no", text: e.title }),
-        h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", text: e.body.length > 420 ? e.body.slice(0, 420) + "…" : e.body }),
-        h("div", { class: "row" }, (e.terms || []).map(t => h("mark", { class: "term", dir: "auto", text: t })), (e.tags || []).map(t => h("span", { class: "badge", dir: "auto", translate: "no", text: "#" + t })), outcomeBadges(e.outcome),
+        h("div", { class: "row between" }, h("div", { class: "row" }, h("span", { class: "badge", text: MEM_KIND_LABEL[e.kind] || e.kind }), e.score != null ? h("span", { class: "num t-caption subtle", "data-i18n": "", text: "score " + e.score }) : null),
+          h("button", { class: "btn btn-ghost btn-icon btn-sm", type: "button", "aria-label": "Delete this memory", "aria-describedby": "mt-" + e.id, onclick: () => store.removeMemory(e.id).then(() => { toast("ok", "Deleted from memory."); reload(); }, err => toast("error", err.message)) }, icon("i-x", "sm"))),
+        h("h3", { id: "mt-" + e.id, dir: "auto", translate: "no", "data-verbatim": "", lang: langOf(e.title), text: e.title }),
+        h("p", { class: "mem-body t-sm", dir: "auto", translate: "no", "data-verbatim": "", lang: langOf(e.body), text: e.body.length > 420 ? e.body.slice(0, 420) + "…" : e.body }),
+        h("div", { class: "row" }, (e.terms || []).map(t => h("mark", { class: "term", dir: "auto", text: t })), (e.tags || []).map(t => h("span", { class: "badge", dir: "auto", translate: "no", lang: langOf(t), text: "#" + t })), outcomeBadges(e.outcome),
           h("span", { class: "subtle t-caption", translate: "no", text: e.source || "" }), timeEl(typeof e.createdAt === "number" ? e.createdAt : Date.parse(e.createdAt)))))) :
         emptyState("i-brain", q.value.trim() ? "Nothing matches" : "Memory is empty", q.value.trim() ? "Try other words, or another kind." : "Finished missions, model answers and self-check lessons are kept here. Add a note, or run a self-check."));
     const reload = () => loadInto(box, () => store.searchMemory({ q: q.value, kind: kind.value }), render);

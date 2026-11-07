@@ -86,7 +86,7 @@ export function requestJson(url, { method = "GET", body = null, timeoutMs = 8000
 }
 
 const wiki = lang => ({
-  label: lang === "ar" ? "Wikipedia (العربية)" : "Wikipedia (English)", host: lang + ".wikipedia.org", licence: "CC BY-SA 4.0",
+  label: lang === "ar" ? "Wikipedia (Arabic)" : "Wikipedia (English)", host: lang + ".wikipedia.org", licence: "CC BY-SA 4.0",
   request: ({ q }, n) => ({ url: `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&format=json&utf8=1&srlimit=${n}&srsearch=${enc(q)}` }),
   parse: j => ((j && j.query && j.query.search) || []).map(r => ({ title: clean(r.title, 200), url: `https://${lang}.wikipedia.org/wiki/${enc(String(r.title).replace(/ /g, "_"))}`, snippet: clean(r.snippet, 300), meta: { words: r.wordcount, updated: clean(r.timestamp, 30) }, lang })),
 });

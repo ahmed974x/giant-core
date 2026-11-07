@@ -176,8 +176,12 @@ PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
 PASS F15 switching back restores English
+PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
+PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
+PASS F33 the page is back in English
+PASS F33 Diagnostics lists the bilingual purity gate in the proof layer
 PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-181 passed, 0 failed
+185 passed, 0 failed

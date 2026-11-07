@@ -96,14 +96,14 @@ export async function runCouncil(llm, { mode = "plan", prompt, lang = "en" }) {
   const findings = critiquePlan(a.rawSteps || a.steps, final0);
   let opinion = null;
   if (modelRan) {
-    const c = await llm.run({ mode: "chat", prompt: "Review this plan for risks in two or three short sentences. Plan:\n" + final0.map((s, i) => `${i + 1}. ${s.title}`).join("\n") });
+    const c = await llm.run({ mode: "chat", lang, prompt: "Review this plan for risks in two or three short sentences. Plan:\n" + final0.map((s, i) => `${i + 1}. ${s.title}`).join("\n") });
     if (isLocalModelEngine(c.engine)) opinion = { model: c.model, text: String(c.text || "").slice(0, 1200), label: "[INFERENCE - local LLM] [UNTRUSTED_MODEL_OUTPUT]" };
   }
   trace.push({ role: "critic", engine: "rules" + (opinion ? " + " + opinion.model : ""), findings, opinion });
   // 3. Synthesizer
   let merged = final0, rewrite = null;
   if (modelRan && findings.length) {
-    const s = await llm.run({ mode: "plan", prompt: "Fix this plan for: " + findings.map(f => f.text).join(" ") + "\nGoal: " + p, model: st.designModel || undefined });
+    const s = await llm.run({ mode: "plan", lang, prompt: "Fix this plan for: " + findings.map(f => f.text).join(" ") + "\nGoal: " + p, model: st.designModel || undefined });
     const raw = s.rawSteps || parsePlanJson("");
     if (isLocalModelEngine(s.engine) && raw && raw.length) { merged = enforceApprovalGates(raw); rewrite = { model: s.model, steps: raw.length }; }
   }

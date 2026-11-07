@@ -32,6 +32,9 @@ export function createReadiness({ db, store, llm, search, audit, repoRoot, addre
       const mutation = json("jarvis/replica/evidence/mutation-audit.log");
       const mutationOk = !!mutation && mutation.targets.every(t => existsSync(file(t.file)) && createHash("sha256").update(readFileSync(file(t.file))).digest("hex") === t.sha256);
       const ui = json("jarvis/replica/evidence/ui-states.json");
+      const purity = json("jarvis/replica/evidence/bilingual-purity.log");
+      const purityModes = purity ? ["sample", "live"].filter(m => purity[m]) : [];
+      const purityLeft = purityModes.reduce((n, m) => n + purity[m].arabic.violations + purity[m].english.violations, 0);
       const proof = provePlan(fallbackPlan("read the commits then run the tests then publish the site then pay the invoice"));
       const st = search.status();
       const leaks = SSRF_PROBES.filter(a => !isBlockedAddress(a));
@@ -52,6 +55,7 @@ export function createReadiness({ db, store, llm, search, audit, repoRoot, addre
           { name: "Server tests", ...passLine("jarvis/replica/evidence/tests-server.log") },
           { name: "Flow tests", ...passLine("jarvis/replica/evidence/tests-app.log") },
           { name: "UI-state gate", ok: !!ui && ui.complete === true, detail: ui ? ui.covered + "/" + ui.total : "no evidence" },
+          { name: "Bilingual purity gate", ok: purityModes.length === 2 && purityLeft === 0, detail: purity ? purityModes.reduce((n, m) => n + purity[m].screens, 0) + " screens, " + purityLeft + " left in either language" : "no evidence" },
           { name: "Mutation testing", ok: mutationOk, detail: mutation ? mutation.killed + "/" + mutation.total + " killed" + (mutationOk ? " [VERIFIED]" : ", code changed since the run") : "no evidence" },
           { name: "Formal proof of a plan with locks", ok: proof.verified, detail: proof.states + " states, " + proof.effects + " effects behind a lock" },
         ]),

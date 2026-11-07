@@ -90,5 +90,7 @@ Plan reversal: sensitive steps locked after the fact,security,should,yes,yes,"AD
 "Template reversal: gradients, glass fallback, overflow-wrap",studio,could,yes,yes,"ADR-150: reverseTemplate in the Studio; linear scans, 200 KB cap"
 Autonomous Reversal Log,diagnostics,should,yes,yes,"ADR-150: append-only reversal_log, Merkle audit leaf and memory lesson per correction; panel in the Studio and #/diagnostics"
 Reversal-engine skill,quality,could,yes,yes,"ADR-150: replica-reversal-engine reversal_engine.py, standard library only; same hashes as the server; in the mutation run"
+Bilingual purity gate,i18n,should,yes,yes,"ADR-151: every screen in Arabic and English, sample and live; server details translated, identifiers isolated; evidence log and a Diagnostics check"
+Local model answers in the chosen language,models,should,yes,yes,"ADR-151: chat, plan, stream and council send the page language; designs stay layout only"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

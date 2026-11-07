@@ -38,11 +38,11 @@
   ],
   [
    "^critical (\\d+), high (\\d+), (\\d+) files$",
-   "حرج $1، عالٍ $2، $3 ملفات"
+   "$1 حرج، $2 عالي، $3 ملفات"
   ],
   [
    "^critical (\\d+), high (\\d+)$",
-   "حرج $1، عالٍ $2"
+   "$1 حرج، $2 عالي"
   ],
   [
    "^(\\d+) checks, (\\d+) failing$",
@@ -763,6 +763,146 @@
   [
    "^(\\d+) corrections$",
    "$1 تصحيحات"
+  ],
+  [
+   "^(\\d+)/(\\d+) steps$",
+   "$1/$2 خطوات"
+  ],
+  [
+   "^(\\d+) px · shown at (\\d+)%$",
+   "$1 px · معروض بنسبة $2%"
+  ],
+  [
+   "^(\\d+)/(\\d+) killed \\[VERIFIED\\]$",
+   "تم القضاء على $1/$2 طفرة [VERIFIED]"
+  ],
+  [
+   "^(\\d+)/(\\d+) killed, code changed since the run$",
+   "تم القضاء على $1/$2 طفرة، وتغيّر الكود بعد التشغيل"
+  ],
+  [
+   "^(\\d+)/(\\d+) killed$",
+   "تم القضاء على $1/$2 طفرة"
+  ],
+  [
+   "^(\\d+) states, (\\d+) effects behind a lock$",
+   "$1 حالات، و$2 آثار خلف قفل"
+  ],
+  [
+   "^(\\d+) of (\\d+) refused, IPv6 spellings included$",
+   "رُفض $1 من $2، مع صيغ IPv6"
+  ],
+  [
+   "^(\\d+) entries$",
+   "$1 قيود"
+  ],
+  [
+   "^(\\d+) in this browser$",
+   "$1 في هذا المتصفح"
+  ],
+  [
+   "^(\\d+) in this workspace$",
+   "$1 في مساحة العمل هذه"
+  ],
+  [
+   "^(\\d+) fixed hosts \\+ SearXNG$",
+   "$1 مضيفات ثابتة + SearXNG"
+  ],
+  [
+   "^(\\d+) fixed hosts$",
+   "$1 مضيفات ثابتة"
+  ],
+  [
+   "^not refused: (.+)$",
+   "لم يُرفض: $1"
+  ],
+  [
+   "^broken at (\\d+): (.+)$",
+   "انكسر عند $1: $2"
+  ],
+  [
+   "^missing: (.+)$",
+   "ناقص: $1"
+  ],
+  [
+   "^online: (.+)$",
+   "يعمل: $1"
+  ],
+  [
+   "^offline, fixed rules: (.+)$",
+   "متوقف، القواعد الثابتة: $1"
+  ],
+  [
+   "^(\\d+) local models$",
+   "$1 نماذج محلية"
+  ],
+  [
+   "^(\\d+) corrections logged$",
+   "$1 تصحيحات مسجلة"
+  ],
+  [
+   "^no result in (.+)$",
+   "لا نتيجة في $1"
+  ],
+  [
+   "^(\\d+) screens · (\\d+) routes · (\\d+) modules · (\\d+) tables · (\\d+) skills · (\\d+) tools · (\\d+) edges · sha256 ([0-9a-f]+)$",
+   "$1 شاشات · $2 مسارات · $3 وحدات · $4 جداول · $5 مهارات · $6 أدوات · $7 روابط · sha256 $8"
+  ],
+  [
+   "^(\\d+) of (\\d+)$",
+   "$1 من $2"
+  ],
+  [
+   "^score ([\\d.]+)$",
+   "الدرجة $1"
+  ],
+  [
+   "^Workflow: (.+)$",
+   "مسار العمل: $1"
+  ],
+  [
+   "^(.+) · long run$",
+   "$1 · تشغيل طويل"
+  ],
+  [
+   "^Fork of #(\\d+)$",
+   "تفرّع من #$1"
+  ],
+  [
+   "^SHA-256 (\\S+) → (\\S+) · proof (\\S+)$",
+   "SHA-256 $1 → $2 · البرهان $3"
+  ],
+  [
+   "^Captured from mission (.+)$",
+   "التُقطت من المهمة $1"
+  ],
+  [
+   "^Derived from (\\S+) with (\\d+) new steps$",
+   "اشتُقت من $1 مع $2 خطوات جديدة"
+  ],
+  [
+   "^Derived from (\\S+)$",
+   "اشتُقت من $1"
+  ],
+  [
+   "^Synthesized by fixed rules from: (.+)$",
+   "وُلّدت بالقواعد الثابتة من: $1"
+  ],
+  [
+   "^Synthesized by the fixed template from: (.+)$",
+   "وُلّدت بالقالب الثابت من: $1"
+  ],
+  [
+   "^Synthesized by (.+) \\[INFERENCE - local LLM\\] from: (.+)$",
+   "وُلّدت بالنموذج $1 [INFERENCE - local LLM] من: $2"
+  ],
+  [
+   "^Imported text from (.+)$",
+   "نص مستورد من $1"
+  ],
+  [
+   "^(\\d+) screens, (\\d+) left in either language$",
+   "$1 شاشة، و$2 متبقٍّ في أي من اللغتين"
   ]
  ],
  "strings": {
@@ -1411,7 +1551,7 @@
   "You build and run everything at no token cost: local rules and the local model on 127.0.0.1. Paid plans for other people are drafts; charging anyone stays locked for Director 00.": "تبني وتشغّل كل شيء بلا تكلفة توكنز: قواعد محلية ونموذج محلي على 127.0.0.1. الباقات المدفوعة لغيرك مسودات؛ وتحصيل أي مبلغ يبقى مقفلاً للمدير 00.",
   "You pay nothing: every entry in the ledger is yours at cost 0. Plans for future subscribers are drafts; turning on billing or a plan is a money decision that waits for Director 00 (AGENTS.md §1), and the database keeps both off.": "لا تدفع شيئاً: كل قيد في السجل لك بتكلفة 0. باقات المشتركين المستقبليين مسودات؛ وتشغيل الفوترة أو أي باقة قرار مالي ينتظر المدير 00 (AGENTS.md §1)، وقاعدة البيانات تبقيهما متوقفين.",
   "Zero-token · unlimited": "بلا توكنز · بلا حدود",
-  "Zero-token: fixed rules and local tools": "بلا توكنز: قواعد ثابتة وأدوات محلية",
+  "Zero-token: fixed rules and local tools": "بلا رموز: قواعد ثابتة وأدوات محلية",
   "[INFERENCE]": "[استدلال]",
   "[INFERENCE] fixed rule: 100 − 12 per step since the last capsule − 1 per 400 output tokens over 4,000 (tokens ≈ bytes ÷ 4).": "[استدلال] قاعدة ثابتة: 100 − 12 لكل خطوة منذ آخر كبسولة − 1 لكل 400 توكن مخرجات فوق 4,000 (التوكنز ≈ البايتات ÷ 4).",
   "a pair fails or no summary line": "زوج يفشل أو لا يوجد سطر ملخص",
@@ -1440,7 +1580,7 @@
   "file_write": "كتابة ملف",
   "gate": "بوابة",
   "gate.py and capsule.py from .claude/skills/replica-long-horizon read the same files.": "يقرأ gate.py و capsule.py من .claude/skills/replica-long-horizon الملفات نفسها.",
-  "glass blur 16 · saturate 180": "زجاج blur 16 · saturate 180",
+  "glass blur 16 · saturate 180": "زجاج: تمويه 16 · تشبّع 180",
   "good": "جيدة",
   "install": "التثبيت",
   "installs a skill into the repo": "يثبّت مهارة في المستودع",
@@ -1953,6 +2093,34 @@
   "From the local model": "من النموذج المحلي",
   "reversal template": "تصحيح قالب",
   "reversal plan": "تصحيح خطة",
-  "Reversal log is append-only": "سجل التصحيح للإضافة فقط"
+  "Reversal log is append-only": "سجل التصحيح للإضافة فقط",
+  "Wikipedia (English)": "ويكيبيديا (الإنجليزية)",
+  "Wikipedia (Arabic)": "ويكيبيديا (العربية)",
+  "npm registry": "سجل npm",
+  "no evidence": "لا دليل",
+  "database trigger": "مشغّل في قاعدة البيانات",
+  "Llama 4 Community License (not OSI open source)": "رخصة مجتمع Llama 4 (ليست مفتوحة المصدر وفق OSI)",
+  "Llama 3.3 Community License (not OSI open source)": "رخصة مجتمع Llama 3.3 (ليست مفتوحة المصدر وفق OSI)",
+  "Gemma Terms of Use (not OSI open source)": "شروط استخدام Gemma (ليست مفتوحة المصدر وفق OSI)",
+  "Mistral AI Non-Production License (no commercial use)": "رخصة Mistral AI لغير الإنتاج (لا استخدام تجاري)",
+  "MIT (V3-0324 and later; earlier checkpoints: DeepSeek Model License)": "رخصة MIT (من V3-0324 فما بعد؛ والنسخ الأقدم برخصة نموذج DeepSeek)",
+  "Apache 2.0 (0.5B, 1.5B, 7B, 14B, 32B; the 3B uses the Qwen Research License)": "رخصة Apache 2.0 (0.5B و1.5B و7B و14B و32B؛ ونموذج 3B برخصة Qwen البحثية)",
+  "Apache 2.0 (weights, data and code all open)": "رخصة Apache 2.0 (الأوزان والبيانات والكود كلها مفتوحة)",
+  "MIT (GLM-4-0414 series)": "رخصة MIT (سلسلة GLM-4-0414)",
+  "---\nname: my-skill\ndescription: What it does and when to use it.\n---\n\n# my-skill\n\nSteps…": "---\nname: my-skill\ndescription: ما تفعله ومتى تُستخدم.\n---\n\n# my-skill\n\nالخطوات…",
+  "screen": "شاشة",
+  "route": "مسار",
+  "module": "وحدة",
+  "table": "جدول",
+  "skill": "مهارة",
+  "Spacing off the 4/8 scale (DESIGN.md §3).": "مسافة خارج سلّم 4/8 (DESIGN.md §3).",
+  "Paragraph longer than 150 words.": "فقرة أطول من 150 كلمة.",
+  "<!doctype html>…": "<!doctype html>… (الصق الصفحة هنا)",
+  "Delete this memory": "احذف هذه الذاكرة",
+  "No agent with that id in this workspace.": "لا وكيل بهذا المعرّف في مساحة العمل هذه.",
+  "Fixed by the founder": "أصلحها المؤسس",
+  "this browser (sample)": "هذا المتصفح (تجريبي)",
+  "fixed rules": "القواعد الثابتة",
+  "Bilingual purity gate": "بوابة نقاء اللغتين"
  }
 }
