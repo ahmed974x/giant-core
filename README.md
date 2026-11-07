@@ -131,3 +131,10 @@ Real server, dark and light, at 1440, 768 and 375, in **pure English and pure Ar
 
 - `pure-diagnostics-*`: the proof layer with the server's own details in the page's language («748 ناجح، 0 فاشل», «تم القضاء على 1008/1008 طفرة», «0 حرج، 0 عالي») and the new bilingual purity check;
 - `pure-settings-models-*`: the open-weight catalog, licence notes translated, names and identifiers isolated.
+
+## ADR-152 (2026-11-07)
+
+Dark and light, at 1440, 768 and 375, in **English and Arabic** (24 shots):
+
+- `recon-live-*`: `#/recon` on the real server for `acme.example`, with fixture answers standing in for the four public GETs (the cloud sandbox has no outbound network): registration and DNSSEC, certificate names, the 0-100 header grade with fixes, security.txt;
+- `recon-sample-*`: the sample page's teaching example for `example.com`, labelled «مثال تعليمي — أرقام افتراضية».
