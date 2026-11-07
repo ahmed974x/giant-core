@@ -124,3 +124,10 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24
 
 - `studio-reversal-*`: Studio → Autonomous Reversal Log after **Reverse and correct** on a blue to purple gradient and a glass bar: the corrections, the corrected copy and the log with SHA-256 hashes;
 - `diagnostics-reversal-*`: the same log in `#/diagnostics`, read-only.
+
+## ADR-151 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **pure English and pure Arabic** (24 shots):
+
+- `pure-diagnostics-*`: the proof layer with the server's own details in the page's language («748 ناجح، 0 فاشل», «تم القضاء على 1008/1008 طفرة», «0 حرج، 0 عالي») and the new bilingual purity check;
+- `pure-settings-models-*`: the open-weight catalog, licence notes translated, names and identifiers isolated.
