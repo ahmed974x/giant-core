@@ -1,0 +1,10 @@
+test_graph (test_graphify.Graphify.test_graph) ... ok
+test_missing_file_is_an_error (test_graphify.Graphify.test_missing_file_is_an_error) ... graphify: jarvis/server/lib/schema-sqlite.sql is not a file inside /tmp/tmputzkzb2d.
+ok
+test_out_must_stay_inside_root (test_graphify.Graphify.test_out_must_stay_inside_root) ... graphify: ../x.json is not inside /tmp/tmp3kueyjvy
+ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.006s
+
+OK

@@ -1,0 +1,17 @@
+test_entropy (test_cyber_recon.CyberRecon.test_entropy) ... ok
+test_llms_security_robots (test_cyber_recon.CyberRecon.test_llms_security_robots) ... ok
+test_openapi (test_cyber_recon.CyberRecon.test_openapi) ... ok
+test_paths_cannot_leave_root (test_cyber_recon.CyberRecon.test_paths_cannot_leave_root) ... ok
+test_reviewed_marker_downgrades_but_keeps_the_finding (test_cyber_recon.CyberRecon.test_reviewed_marker_downgrades_but_keeps_the_finding) ... ok
+test_rule_blocks_are_skipped_but_reported (test_cyber_recon.CyberRecon.test_rule_blocks_are_skipped_but_reported) ... ok
+test_sbom (test_cyber_recon.CyberRecon.test_sbom) ... ok
+test_secret_ignore_and_clean (test_cyber_recon.CyberRecon.test_secret_ignore_and_clean) ... ok
+test_secrets_found_and_redacted (test_cyber_recon.CyberRecon.test_secrets_found_and_redacted) ... ok
+test_static_guard_clean_file_passes (test_cyber_recon.CyberRecon.test_static_guard_clean_file_passes) ... ok
+test_static_guard_python_and_text (test_cyber_recon.CyberRecon.test_static_guard_python_and_text) ... ok
+test_static_guard_web (test_cyber_recon.CyberRecon.test_static_guard_web) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.023s
+
+OK

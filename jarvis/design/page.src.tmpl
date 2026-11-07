@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PIN'; style-src 'sha256-PIN'; font-src data:; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta name="color-scheme" content="dark light" />
+<title>Jarvis · Design system</title>
+<style>
+/*@FONTS@*/
+/*@TOKENS@*/
+:root {
+  --sb: var(--layout-sidebar);
+  --hairline: 1px;
+}
+@media (min-resolution: 2dppx) { :root { --hairline: 0.5px; } }
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100dvh; background: var(--color-bg); color: var(--color-text);
+  font: var(--text-base--font-weight) var(--text-base)/var(--text-base--line-height) var(--font-sans);
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+:lang(ar) body, [dir="rtl"] body { font-family: var(--font-arabic); }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; text-wrap: pretty; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.mono, code, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+.num { direction: ltr; unicode-bidi: isolate; }
+[dir="rtl"] .mono { direction: ltr; text-align: right; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip { position: absolute; inset-inline-start: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-on-accent); text-decoration: none; font-weight: 600; }
+.skip:focus { top: 8px; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Shell (S01) ───────────────────────────────────────────── */
+.app { display: grid; grid-template-columns: var(--sb) minmax(0, 1fr); min-height: 100dvh; }
+.app.rail { --sb: var(--layout-sidebar-rail); }
+.sidebar {
+  position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 8px calc(12px + env(safe-area-inset-bottom)); background: var(--color-surface);
+  border-inline-end: var(--hairline) solid var(--color-border); overflow-y: auto; overflow-x: hidden;
+}
+.brand { display: flex; align-items: center; gap: 10px; height: 40px; padding-inline: 8px; font-weight: 700; font-size: var(--text-headline); letter-spacing: -0.01em; }
+.brand svg { width: 24px; height: 24px; flex: none; }
+.nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nav a {
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 10px;
+  border-radius: var(--radius-sm); color: var(--color-text-muted); text-decoration: none;
+  font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
+}
+.nav a:hover { background: var(--color-surface-raised); color: var(--color-text); }
+.nav a[aria-current="page"] { color: var(--color-accent); background: var(--color-surface-raised); }
+.nav a[aria-current="page"]::before { content: ""; position: absolute; inset-inline-start: -8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--color-accent); }
+.nav .count { margin-inline-start: auto; min-width: 22px; padding: 0 6px; border-radius: var(--radius-pill); background: var(--color-surface-sunken); color: var(--color-approval); font-size: var(--text-caption); line-height: 20px; text-align: center; }
+.nav-label { overflow: hidden; text-overflow: ellipsis; }
+.nav-group { margin: 12px 10px 4px; color: var(--color-text-subtle); font-size: var(--text-caption); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.sidebar-foot { margin-top: auto; display: grid; gap: 2px; }
+.sidebar .collapse-btn { justify-content: flex-start; padding: 0 10px; }
+.app.rail .nav-label, .app.rail .nav-group, .app.rail .brand-word, .app.rail .nav .count { display: none; }
+.app.rail .nav a, .app.rail .sidebar .collapse-btn { justify-content: center; padding: 0; }
+.app.rail .collapse-btn svg { transform: scaleX(-1); }
+[dir="rtl"] .collapse-btn svg { transform: scaleX(-1); }
+[dir="rtl"] .app.rail .collapse-btn svg { transform: none; }
+.scrim { position: fixed; inset: 0; z-index: 30; background: rgb(0 0 0 / 0.5); }
+
+.main-col { min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
+  height: var(--layout-header); padding: 0 16px; padding-top: env(safe-area-inset-top);
+  background: var(--color-bg); border-bottom: var(--hairline) solid var(--color-border);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar, .sidebar { box-shadow: inset 0 1px 0 var(--color-glass-rim); background: var(--color-glass); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); }
+}
+.topbar .spacer { flex: 1; }
+.topbar .menu-btn { display: none; }
+.topbar .search-trigger { min-width: 0; flex: 0 1 320px; justify-content: space-between; color: var(--color-text-subtle); font-weight: 500; }
+.search-trigger .kbd { font-family: var(--font-mono); font-size: var(--text-caption); padding: 0 6px; border: var(--hairline) solid var(--color-border); border-radius: var(--radius-xs); color: var(--color-text-muted); }
+.ws { position: relative; }
+.ws-menu { position: absolute; z-index: 25; inset-inline-start: 0; top: calc(100% + 6px); min-width: 220px; padding: 6px; margin: 0; list-style: none; background: var(--color-surface-raised); border: var(--hairline) solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+.ws-menu [role="menuitemradio"] { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-sm); }
+.ws-menu [role="menuitemradio"]:hover, .ws-menu [role="menuitemradio"]:focus { background: var(--color-surface-sunken); outline: none; }
+.ws-menu [aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; color: var(--color-accent); }
+
+main { width: 100%; max-width: var(--layout-content-max); margin-inline: auto; padding: 24px 24px calc(48px + env(safe-area-inset-bottom)); display: grid; gap: 32px; }
+.page-head { display: grid; gap: 8px; }
+.page-head h1 { font-size: var(--text-title); line-height: var(--text-title--line-height); font-weight: var(--text-title--font-weight); }
+.sample-note { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--color-surface); border: var(--hairline) solid var(--color-border); color: var(--color-warning); font-size: var(--text-caption); font-weight: 500; }
+.muted { color: var(--color-text-muted); }
+.subtle { color: var(--color-text-subtle); }
+section.block { display: grid; gap: 16px; scroll-margin-top: calc(var(--layout-header) + 16px); }
+section.block > h2 { font-size: var(--text-headline); line-height: var(--text-headline--line-height); font-weight: 600; }
+.card { background: var(--color-surface); border: var(--hairline) solid var(--color-border); border-radius: var(--radius-lg); padding: 8px; box-shadow: var(--shadow-card); }
+.card-in { padding: 12px; border-radius: var(--radius-md); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.stack { display: grid; gap: 12px; }
+.grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+
+/* Swatches */
+.swatches { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr)); }
+.swatch { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); }
+.chip { width: 36px; height: 36px; border-radius: var(--radius-sm); border: var(--hairline) solid var(--color-border); }
+.swatch b { display: block; font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+.swatch span { display: block; font-size: var(--text-caption); color: var(--color-text-muted); }
+
+/* Type */
+.type-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 8px 12px; }
+.type-row + .type-row { border-top: var(--hairline) solid var(--color-border); }
+.t-caption { font-size: var(--text-caption); line-height: var(--text-caption--line-height); font-weight: 500; }
+.t-sm { font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
+.t-base { font-size: var(--text-base); line-height: var(--text-base--line-height); }
+.t-headline { font-size: var(--text-headline); line-height: var(--text-headline--line-height); font-weight: 600; }
+.t-title { font-size: var(--text-title); line-height: var(--text-title--line-height); font-weight: 650; }
+.t-display { font-size: var(--text-display); line-height: var(--text-display--line-height); font-weight: 700; }
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 14px;
+  border-radius: var(--radius-sm); border: var(--hairline) solid transparent; cursor: pointer;
+  font-size: var(--text-sm); font-weight: 600; white-space: nowrap; text-decoration: none;
+  transition: transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+}
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.btn-secondary { background: var(--color-surface-raised); color: var(--color-text); border-color: var(--color-border); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--color-border-input); }
+.btn-ghost { background: transparent; color: var(--color-text-muted); }
+.btn-ghost:hover:not(:disabled) { background: var(--color-surface-raised); color: var(--color-text); }
+.btn-danger { background: var(--color-danger); color: var(--color-on-danger); }
+.btn-sm { min-height: 32px; padding: 0 10px; }
+.btn-lg { min-height: 44px; padding: 0 18px; font-size: var(--text-base); }
+.btn-icon { width: 36px; padding: 0; }
+.btn[aria-busy="true"] { cursor: progress; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-inline-end-color: transparent; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Fields */
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .legend { font-size: var(--text-sm); font-weight: 500; }
+.hint { font-size: var(--text-caption); color: var(--color-text-subtle); }
+.err { display: flex; align-items: center; gap: 6px; font-size: var(--text-caption); color: var(--color-danger); }
+.input, .select, .textarea {
+  width: 100%; min-height: 36px; padding: 0 12px; border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken); border: 1px solid var(--color-border-input); color: var(--color-text);
+}
+.textarea { padding: 8px 12px; min-height: 88px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--color-text-subtle); opacity: 1; }
+.input:hover:not(:disabled), .select:hover:not(:disabled) { border-color: var(--color-text-subtle); }
+.input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; border-color: var(--color-focus); }
+.input[aria-invalid="true"] { border-color: var(--color-danger); }
+.input:disabled, .select:disabled { opacity: 0.5; cursor: not-allowed; }
+.with-icon { position: relative; }
+.with-icon svg { position: absolute; inset-inline-start: 10px; top: 50%; translate: 0 -50%; width: 16px; height: 16px; color: var(--color-text-subtle); pointer-events: none; }
+.with-icon .input { padding-inline-start: 34px; }
+.secret { display: flex; gap: 8px; }
+fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 10px; min-width: 0; }
+.check { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--color-accent); }
+.switch input { appearance: none; -webkit-appearance: none; position: relative; width: 36px; height: 20px; margin: 0; border-radius: var(--radius-pill); background: var(--color-surface-sunken); border: 1px solid var(--color-border-input); cursor: pointer; }
+.switch input::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-text-muted); transition: transform var(--motion-base) var(--motion-ease); }
+.switch input:checked { background: var(--color-accent); border-color: var(--color-accent); }
+.switch input:checked::after { transform: translateX(16px); background: var(--color-on-accent); }
+[dir="rtl"] .switch input:checked::after { transform: translateX(-16px); }
+.switch input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Tabs */
+.tablist { display: flex; gap: 4px; border-bottom: var(--hairline) solid var(--color-border); overflow-x: auto; scrollbar-width: none; }
+.tab { position: relative; min-height: 40px; padding: 0 12px; border: 0; background: none; color: var(--color-text-muted); cursor: pointer; font-size: var(--text-sm); font-weight: 500; white-space: nowrap; }
+.tab:hover { color: var(--color-text); }
+.tab[aria-selected="true"] { color: var(--color-text); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; inset-inline: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--color-accent); }
+.tabpanel { padding-top: 12px; font-size: var(--text-sm); }
+
+/* Status */
+.badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--radius-pill); background: var(--color-surface-sunken); border: var(--hairline) solid var(--color-border); font-size: var(--text-caption); font-weight: 500; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.s-idle { color: var(--color-text-subtle); }
+.s-running, .s-ok { color: var(--color-success); }
+.s-failed { color: var(--color-danger); }
+.s-queued { color: var(--color-info); }
+.s-retry { color: var(--color-warning); }
+.s-approval { color: var(--color-approval); }
+.s-paused { color: var(--color-text-muted); }
+.s-running .dot { animation: pulse 1.6s var(--motion-ease) infinite; }
+@keyframes pulse { 50% { opacity: 0.4; } }
+
+/* Stat tiles */
+.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.stat { display: grid; gap: 4px; padding: 16px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); }
+.stat .label { font-size: var(--text-caption); font-weight: 500; color: var(--color-text-muted); }
+.stat .value { font-size: var(--text-display); line-height: var(--text-display--line-height); font-weight: 700; }
+.stat .delta { font-size: var(--text-caption); }
+
+/* Table */
+.table-scroll { overflow-x: auto; border-radius: var(--radius-md); border: var(--hairline) solid var(--color-border); background: var(--color-surface); }
+table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+th, td { height: var(--layout-row); padding: 0 12px; text-align: start; white-space: nowrap; border-bottom: var(--hairline) solid var(--color-border); }
+th { font-size: var(--text-caption); font-weight: 500; color: var(--color-text-muted); background: var(--color-surface); }
+tbody tr:hover { background: var(--color-surface-raised); }
+tbody tr:last-child td { border-bottom: 0; }
+td.right, th.right { text-align: end; }
+
+/* Timeline */
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; }
+.step { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: var(--hairline) solid var(--color-border); }
+.step:last-child { border-bottom: 0; }
+.step .idx { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--color-surface-sunken); font-size: var(--text-caption); }
+.step .what { min-width: 0; display: grid; }
+.step .what b { font-size: var(--text-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step .what span { font-size: var(--text-caption); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log { margin: 0; padding: 12px; border-radius: var(--radius-md); background: var(--color-surface-sunken); font-family: var(--font-mono); font-size: var(--text-caption); line-height: 20px; color: var(--color-text-muted); overflow-x: auto; white-space: pre; direction: ltr; text-align: left; }
+.log .ln { color: var(--color-text-subtle); }
+
+/* Approval */
+.approval { display: grid; gap: 12px; padding: 16px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); }
+.approval.locked { border-style: dashed; }
+.approval h3 { font-size: var(--text-headline); font-weight: 600; }
+.diff { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--color-surface-sunken); font-family: var(--font-mono); font-size: var(--text-caption); line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; direction: ltr; text-align: left; }
+.diff .add { color: var(--color-success); }
+.diff .del { color: var(--color-danger); }
+
+/* Empty + skeleton */
+.empty { display: grid; justify-items: center; gap: 8px; padding: 32px 16px; text-align: center; border: 1px dashed var(--color-border); border-radius: var(--radius-md); }
+.empty svg { width: 32px; height: 32px; color: var(--color-text-subtle); }
+.empty h3 { font-size: var(--text-headline); font-weight: 600; }
+.skel { display: grid; gap: 10px; padding: 16px; border-radius: var(--radius-md); background: var(--color-surface); border: var(--hairline) solid var(--color-border); }
+.sk { height: 12px; border-radius: 6px; background: var(--color-surface-raised); animation: shimmer 1.4s var(--motion-ease) infinite; }
+.sk.w60 { width: 60%; } .sk.w80 { width: 80%; } .sk.w40 { width: 40%; } .sk.h32 { height: 32px; width: 32%; }
+@keyframes shimmer { 50% { opacity: 0.5; } }
+
+/* Dialog + palette */
+dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 64px); padding: 0; border: var(--hairline) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); color: var(--color-text); box-shadow: var(--shadow-pop); }
+dialog::backdrop { background: rgb(0 0 0 / 0.55); }
+.dlg { display: grid; gap: 16px; padding: 20px; }
+.dlg h2 { font-size: var(--text-headline); font-weight: 600; }
+.dlg .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.palette { margin-top: 12dvh; }
+.palette .pal-in { display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: var(--hairline) solid var(--color-border); }
+.palette .pal-in svg { color: var(--color-text-subtle); }
+.palette input { flex: 1; min-width: 0; height: 52px; border: 0; background: none; font-size: var(--text-headline); outline: none; }
+.palette input::placeholder { color: var(--color-text-subtle); opacity: 1; }
+.palette ul { list-style: none; margin: 0; padding: 6px; max-height: 50dvh; overflow-y: auto; }
+.palette li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-sm); }
+.palette li[aria-selected="true"] { background: var(--color-surface-sunken); color: var(--color-accent); }
+.palette li .kind { margin-inline-start: auto; color: var(--color-text-subtle); font-size: var(--text-caption); }
+.palette .none { padding: 16px; color: var(--color-text-muted); font-size: var(--text-sm); }
+
+/* Toasts */
+.toasts { position: fixed; z-index: 60; inset-inline-end: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.toast { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-surface-raised); border: var(--hairline) solid var(--color-border); box-shadow: var(--shadow-pop); font-size: var(--text-sm); animation: toast-in var(--motion-base) var(--motion-ease); }
+.toast .dot { margin-top: 6px; }
+.toast p { flex: 1; min-width: 0; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Responsive shell ─────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1279px) { .app { --sb: var(--layout-sidebar-rail); } .app .nav-label, .app .nav-group, .app .brand-word, .app .nav .count { display: none; } .app .nav a { justify-content: center; padding: 0; } .sidebar .collapse-btn { display: none; } }
+@media (max-width: 767px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: fixed; z-index: 40; inset-block: 0; inset-inline-start: 0; width: min(280px, 85vw); transform: translateX(-100%); visibility: hidden; transition: transform var(--motion-base) var(--motion-ease), visibility 0s linear var(--motion-base); }
+  [dir="rtl"] .sidebar { transform: translateX(100%); }
+  .app.drawer-open .sidebar { transform: none; visibility: visible; transition: transform var(--motion-base) var(--motion-ease); }
+  .topbar .menu-btn { display: inline-flex; }
+  .sidebar .collapse-btn { display: none; }
+  .search-trigger .search-word, .search-trigger .kbd { display: none; }
+  .topbar .search-trigger { flex: none; width: 36px; padding: 0; justify-content: center; }
+  .ws-name { max-width: 30vw; overflow: hidden; text-overflow: ellipsis; }
+  main { padding: 16px 16px calc(48px + env(safe-area-inset-bottom)); gap: 24px; }
+  .type-row { grid-template-columns: 72px minmax(0, 1fr); }
+}
+@media (pointer: coarse) {
+  .btn, .btn-sm, .input, .select, .nav a, .tab, .palette li, .ws-menu [role="menuitemradio"] { min-height: 44px; }
+  .btn-icon { width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" class="visually-hidden" aria-hidden="true">
+  <symbol id="i-mark" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" stroke-width="1.5"/><circle cx="12" cy="12" r="4" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke-width="1.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10v9h12v-9"/></symbol>
+  <symbol id="i-agent" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="5" rx="1.5"/><rect x="15" y="15" width="6" height="5" rx="1.5"/><path d="M6 9v3a3 3 0 0 0 3 3h6"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.4 3.2 8 7.5 9.5 4.3-1.5 7.5-5.1 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-logs" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13.5 6.5 5h11l2.5 8.5V19H4z"/><path d="M4 13.5h5l1 2h4l1-2h5"/></symbol>
+</svg>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+    <div class="brand"><svg class="i" aria-hidden="true"><use href="#i-mark"/></svg><span class="brand-word" translate="no">Jarvis</span></div>
+    <nav aria-label="Main">
+      <ul class="nav" id="nav">
+        <li><a href="#overview" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span class="nav-label">Overview</span></a></li>
+        <li><a href="#agents"><svg class="i" aria-hidden="true"><use href="#i-agent"/></svg><span class="nav-label">Agents</span></a></li>
+        <li><a href="#workflows"><svg class="i" aria-hidden="true"><use href="#i-flow"/></svg><span class="nav-label">Workflows</span></a></li>
+        <li><a href="#runs"><svg class="i" aria-hidden="true"><use href="#i-run"/></svg><span class="nav-label">Runs</span></a></li>
+        <li><a href="#approvals"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="nav-label">Approvals</span><span class="count num" aria-label="2 waiting">2</span></a></li>
+        <li><a href="#logs"><svg class="i" aria-hidden="true"><use href="#i-logs"/></svg><span class="nav-label">Logs</span></a></li>
+      </ul>
+      <p class="nav-group">System</p>
+      <ul class="nav">
+        <li><a href="#foundations"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nav-label">Design system</span></a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost collapse-btn" id="collapse" type="button" aria-controls="sidebar" aria-expanded="true">
+        <svg class="i" aria-hidden="true"><use href="#i-panel"/></svg><span class="nav-label">Collapse</span>
+      </button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon menu-btn" id="menu" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
+      <div class="ws">
+        <button class="btn btn-ghost" id="wsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="wsMenu"><span class="ws-name" id="wsName">Personal</span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button>
+        <ul class="ws-menu" id="wsMenu" role="menu" aria-label="Workspaces" hidden>
+          <li role="menuitemradio" aria-checked="true" tabindex="-1">Personal</li>
+          <li role="menuitemradio" aria-checked="false" tabindex="-1">Research lab</li>
+        </ul>
+      </div>
+      <button class="btn btn-secondary search-trigger" id="searchBtn" type="button" aria-label="Search (Ctrl+K)" aria-haspopup="dialog">
+        <span class="row"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><span class="search-word">Search…</span></span><span class="kbd" id="kbdHint">Ctrl K</span>
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-icon" id="dirBtn" type="button" aria-label="Switch to right-to-left layout"><svg class="i" aria-hidden="true"><use href="#i-dir"/></svg></button>
+      <button class="btn btn-ghost btn-icon" id="themeBtn" type="button" aria-label="Switch to light theme"><svg class="i" aria-hidden="true"><use href="#i-sun" id="themeIcon"/></svg></button>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div class="page-head">
+        <h1 dir="auto">Design system</h1>
+        <p class="muted" dir="auto">Every Jarvis primitive in every state. Switch theme and direction from the top bar.</p>
+        <p class="sample-note" dir="auto"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Design sample — placeholder data. Nothing here is live.</p>
+      </div>
+
+      <section class="block" id="foundations" aria-labelledby="h-colours">
+        <h2 id="h-colours">Colour roles</h2>
+        <div class="swatches" id="swatches"></div>
+      </section>
+
+      <section class="block" aria-labelledby="h-type">
+        <h2 id="h-type">Type</h2>
+        <div class="card"><div class="card-in" id="typeRows"></div></div>
+      </section>
+
+      <section class="block" aria-labelledby="h-buttons">
+        <h2 id="h-buttons">Buttons</h2>
+        <div class="card"><div class="card-in stack">
+          <div class="row">
+            <button class="btn btn-primary" type="button">Run agent</button>
+            <button class="btn btn-secondary" type="button">Edit</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+            <button class="btn btn-danger" type="button" id="dangerBtn">Delete agent</button>
+            <button class="btn btn-secondary btn-icon" type="button" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></button>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary btn-sm" type="button">Small</button>
+            <button class="btn btn-primary" type="button">Medium</button>
+            <button class="btn btn-primary btn-lg" type="button">Large</button>
+            <button class="btn btn-primary" type="button" disabled>Disabled</button>
+            <button class="btn btn-primary" type="button" id="saveBtn">Save changes</button>
+          </div>
+        </div></div>
+      </section>
+
+      <section class="block" aria-labelledby="h-fields">
+        <h2 id="h-fields">Fields</h2>
+        <div class="grid-2">
+          <div class="card"><div class="card-in stack">
+            <div class="field"><label for="f-name">Agent name</label><input class="input" id="f-name" name="agent-name" autocomplete="off" placeholder="Research assistant" /><span class="hint">Shown in lists and run logs.</span></div>
+            <div class="field"><label for="f-search">Search agents</label><div class="with-icon"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input class="input" id="f-search" name="q" type="search" autocomplete="off" placeholder="Name, model or tool" /></div></div>
+            <div class="field"><label for="f-key">Model key</label><div class="secret"><input class="input" id="f-key" name="model-key" type="password" autocomplete="off" value="placeholder-value" /><button class="btn btn-secondary btn-icon" type="button" id="revealBtn" aria-label="Show value" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg></button></div><span class="hint">Stored only in the encrypted vault.</span></div>
+            <div class="field"><label for="f-limit">Max steps per run</label><input class="input num" id="f-limit" name="max-steps" inputmode="numeric" autocomplete="off" value="0" aria-invalid="true" aria-describedby="f-limit-err" /><span class="err" id="f-limit-err"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Enter a number from 1 to 200.</span></div>
+          </div></div>
+          <div class="card"><div class="card-in stack">
+            <div class="field"><label for="f-model">Model</label><select class="select" id="f-model" name="model" autocomplete="off"><option>Local model (loopback)</option><option>Hosted model</option></select></div>
+            <div class="field"><label for="f-role">Role prompt</label><textarea class="textarea" id="f-role" name="role" autocomplete="off" placeholder="What this agent does, and what it must never do."></textarea></div>
+            <div class="field"><label for="f-dis">Workspace</label><input class="input" id="f-dis" name="workspace" autocomplete="off" value="Personal" disabled /></div>
+            <fieldset><legend class="legend">Tools</legend>
+              <label class="check"><input type="checkbox" name="tool-web" checked /> Read public web pages</label>
+              <label class="check"><input type="checkbox" name="tool-files" /> Read project files</label>
+              <label class="check switch"><input type="checkbox" role="switch" name="approval" checked /> Ask before acting outside the sandbox</label>
+              <label class="check switch"><input type="checkbox" role="switch" name="money" disabled /> Move money (locked)</label>
+            </fieldset>
+          </div></div>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="h-tabs">
+        <h2 id="h-tabs">Tabs</h2>
+        <div class="card"><div class="card-in">
+          <div class="tablist" role="tablist" aria-label="Agent sections" id="tabs">
+            <button class="tab" role="tab" id="t-1" aria-controls="p-1" aria-selected="true" type="button">Config</button>
+            <button class="tab" role="tab" id="t-2" aria-controls="p-2" aria-selected="false" tabindex="-1" type="button">Tools</button>
+            <button class="tab" role="tab" id="t-3" aria-controls="p-3" aria-selected="false" tabindex="-1" type="button">Runs</button>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="p-1" aria-labelledby="t-1" tabindex="0">Name, role prompt, model and limits.</div>
+          <div class="tabpanel" role="tabpanel" id="p-2" aria-labelledby="t-2" tabindex="0" hidden>Each tool the agent may call, with its scope.</div>
+          <div class="tabpanel" role="tabpanel" id="p-3" aria-labelledby="t-3" tabindex="0" hidden>Recent runs with status, time and cost.</div>
+        </div></div>
+      </section>
+
+      <section class="block" aria-labelledby="h-status">
+        <h2 id="h-status">Status</h2>
+        <div class="row" id="badges"></div>
+      </section>
+
+      <section class="block" id="overview" aria-labelledby="h-overview">
+        <h2 id="h-overview">Overview tiles</h2>
+        <div class="stats">
+          <div class="stat"><span class="label">Active agents</span><span class="value num">4</span><span class="delta s-ok">▲ 1 since yesterday</span></div>
+          <div class="stat"><span class="label">Runs today</span><span class="value num">27</span><span class="delta muted">Same as yesterday</span></div>
+          <div class="stat"><span class="label">Waiting for approval</span><span class="value num s-approval">2</span><span class="delta muted">Oldest 14 min</span></div>
+          <div class="stat"><span class="label">Failed runs</span><span class="value num s-failed">1</span><span class="delta s-failed">▲ 1 since yesterday</span></div>
+        </div>
+      </section>
+
+      <section class="block" id="agents" aria-labelledby="h-agents">
+        <h2 id="h-agents">Agents table</h2>
+        <div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-agents">
+          <table>
+            <thead><tr><th scope="col">Agent</th><th scope="col">Status</th><th scope="col">Model</th><th scope="col" class="right">Runs</th><th scope="col">Last run</th></tr></thead>
+            <tbody id="agentRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="runs" aria-labelledby="h-run">
+        <h2 id="h-run">Run timeline</h2>
+        <div class="grid-2">
+          <div class="card"><ol class="timeline" id="steps"></ol></div>
+          <pre class="log" id="logs" aria-label="Run log" tabindex="0"></pre>
+        </div>
+      </section>
+
+      <section class="block" id="approvals" aria-labelledby="h-approvals">
+        <h2 id="h-approvals">Approvals</h2>
+        <div class="grid-2">
+          <article class="approval" aria-labelledby="a1-title">
+            <div class="row"><span class="badge s-approval"><span class="dot" aria-hidden="true"></span>Awaiting approval</span><span class="subtle t-caption">Research assistant · 14 min ago</span></div>
+            <h3 id="a1-title">Write a summary file to the project folder</h3>
+            <pre class="diff"><span class="add">+ notes/weekly-summary.md (2.1 KB)</span>
+<span class="del">- notes/draft.md</span></pre>
+            <div class="row"><button class="btn btn-primary" type="button" id="approveBtn">Approve</button><button class="btn btn-secondary" type="button" id="rejectBtn">Reject…</button></div>
+          </article>
+          <article class="approval locked" aria-labelledby="a2-title">
+            <div class="row"><span class="badge s-approval"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>قيد الموافقة</span></div>
+            <h3 id="a2-title">Move money or place an order</h3>
+            <p class="muted t-sm">Locked. Jarvis cannot approve this. It needs Director 00's separate approval, a legal review and a security review.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block" id="workflows" aria-labelledby="h-empty">
+        <h2 id="h-empty">Empty and loading</h2>
+        <div class="grid-2">
+          <div class="empty"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg><h3>No workflows yet</h3><p class="muted t-sm">A workflow chains agents into steps you can run again.</p><button class="btn btn-primary" type="button">New workflow</button></div>
+          <div class="skel" aria-busy="true" aria-label="Loading"><div class="sk h32"></div><div class="sk w80"></div><div class="sk w60"></div><div class="sk w40"></div></div>
+        </div>
+      </section>
+
+      <section class="block" id="logs-sec" aria-labelledby="h-feedback">
+        <h2 id="h-feedback">Feedback</h2>
+        <div class="row" id="logsAnchor">
+          <button class="btn btn-secondary" type="button" data-toast="info">Info toast</button>
+          <button class="btn btn-secondary" type="button" data-toast="ok">Success toast</button>
+          <button class="btn btn-secondary" type="button" data-toast="retry">Warning toast</button>
+          <button class="btn btn-secondary" type="button" data-toast="failed">Error toast</button>
+          <button class="btn btn-secondary" type="button" id="paletteBtn2">Command palette</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <div class="dlg">
+    <h2 id="confirm-title">Delete “Research assistant”?</h2>
+    <p class="muted t-sm">Its configuration and run history are removed. Runs already finished stay in the audit log.</p>
+    <div class="actions"><button class="btn btn-secondary" type="button" data-close>Keep agent</button><button class="btn btn-danger" type="button" data-close data-done="Agent deleted (design sample).">Delete agent</button></div>
+  </div>
+</dialog>
+
+<dialog id="reject" aria-labelledby="reject-title">
+  <div class="dlg">
+    <h2 id="reject-title">Reject this action</h2>
+    <div class="field"><label for="f-reason">Reason</label><textarea class="textarea" id="f-reason" name="reason" autocomplete="off" placeholder="Tell the agent what to do instead."></textarea></div>
+    <div class="actions"><button class="btn btn-secondary" type="button" data-close>Back</button><button class="btn btn-primary" type="button" data-close data-done="Action rejected (design sample).">Reject</button></div>
+  </div>
+</dialog>
+
+<dialog id="palette" class="palette" aria-label="Command palette">
+  <div class="pal-in">
+    <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+    <input id="palInput" type="text" name="command" autocomplete="off" placeholder="Jump to a page or run an action…" role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list" aria-label="Command" />
+  </div>
+  <ul id="palList" role="listbox" aria-label="Results"></ul>
+  <p class="none" id="palNone" hidden>No match. Try an agent, page or action name.</p>
+</dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const root = document.documentElement;
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage off: page still works */ } }
+  };
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const icon = id => { const ns = "http://www.w3.org/2000/svg"; const s = document.createElementNS(ns, "svg"); s.setAttribute("class", "i"); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS(ns, "use"); u.setAttribute("href", "#" + id); s.appendChild(u); return s; };
+
+  /* Theme: dark by default; light is a toggle. Falls back to the suite's stored theme. */
+  const themeBtn = $("#themeBtn"), themeIcon = $("#themeIcon");
+  function applyTheme(t) {
+    if (t === "light") root.setAttribute("data-theme", "light"); else root.removeAttribute("data-theme");
+    const light = t === "light";
+    themeBtn.setAttribute("aria-label", light ? "Switch to dark theme" : "Switch to light theme");
+    themeIcon.setAttribute("href", light ? "#i-moon" : "#i-sun");
+  }
+  applyTheme(store.get("jarvis-theme") || store.get("omega-theme") || "dark");
+  themeBtn.addEventListener("click", () => {
+    const next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
+    applyTheme(next); store.set("jarvis-theme", next); swatches();
+  });
+
+  /* Direction: LTR now, RTL ready. */
+  const dirBtn = $("#dirBtn");
+  function applyDir(d) {
+    root.dir = d === "rtl" ? "rtl" : "ltr";
+    dirBtn.setAttribute("aria-label", d === "rtl" ? "Switch to left-to-right layout" : "Switch to right-to-left layout");
+  }
+  applyDir(store.get("jarvis-dir") || "ltr");
+  dirBtn.addEventListener("click", () => { const d = root.dir === "rtl" ? "ltr" : "rtl"; applyDir(d); store.set("jarvis-dir", d); });
+
+  /* Sidebar: collapse to rail (desktop), drawer (phone). */
+  const app = $("#app"), collapse = $("#collapse"), menu = $("#menu"), scrim = $("#scrim");
+  if (store.get("jarvis-rail") === "1") { app.classList.add("rail"); collapse.setAttribute("aria-expanded", "false"); }
+  collapse.addEventListener("click", () => {
+    const rail = app.classList.toggle("rail");
+    collapse.setAttribute("aria-expanded", String(!rail));
+    collapse.querySelector(".nav-label").textContent = rail ? "Expand" : "Collapse";
+    store.set("jarvis-rail", rail ? "1" : "0");
+  });
+  function drawer(open) {
+    app.classList.toggle("drawer-open", open);
+    scrim.hidden = !open;
+    menu.setAttribute("aria-expanded", String(open));
+    if (open) $("#nav a").focus(); else menu.focus();
+  }
+  menu.addEventListener("click", () => drawer(true));
+  scrim.addEventListener("click", () => drawer(false));
+  $$(".nav a").forEach(a => a.addEventListener("click", () => {
+    $$(".nav a").forEach(x => x.removeAttribute("aria-current"));
+    a.setAttribute("aria-current", "page");
+    if (app.classList.contains("drawer-open")) drawer(false);
+  }));
+
+  /* Workspace switcher: APG menu button. */
+  const wsBtn = $("#wsBtn"), wsMenu = $("#wsMenu"), wsItems = $$("[role=menuitemradio]", wsMenu);
+  function wsOpen(open, focusIdx) {
+    wsMenu.hidden = !open; wsBtn.setAttribute("aria-expanded", String(open));
+    if (open) wsItems[focusIdx || 0].focus();
+  }
+  wsBtn.addEventListener("click", () => wsOpen(wsMenu.hidden));
+  wsBtn.addEventListener("keydown", e => { if (e.key === "ArrowDown") { e.preventDefault(); wsOpen(true, 0); } });
+  wsItems.forEach((it, i) => {
+    const pick = () => { wsItems.forEach(x => x.setAttribute("aria-checked", "false")); it.setAttribute("aria-checked", "true"); $("#wsName").textContent = it.textContent; wsOpen(false); wsBtn.focus(); };
+    it.addEventListener("click", pick);
+    it.addEventListener("keydown", e => {
+      if (e.key === "ArrowDown") { e.preventDefault(); wsItems[(i + 1) % wsItems.length].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); wsItems[(i - 1 + wsItems.length) % wsItems.length].focus(); }
+      else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+      else if (e.key === "Escape" || e.key === "Tab") { wsOpen(false); wsBtn.focus(); }
+    });
+  });
+  document.addEventListener("click", e => { if (!wsMenu.hidden && !e.target.closest(".ws")) wsOpen(false); });
+
+  /* Colour roles, read from the live tokens. */
+  const ROLES = ["bg", "surface", "surface-raised", "surface-sunken", "border", "border-input", "text", "text-muted", "text-subtle", "accent", "accent-hover", "on-accent", "focus", "danger", "success", "warning", "info", "approval", "glass", "glass-rim", "glass-edge"];
+  function swatches() {
+    const box = $("#swatches"); box.replaceChildren();
+    const cs = getComputedStyle(root);
+    ROLES.forEach(r => {
+      const s = el("div", "swatch"), chip = el("span", "chip"), meta = el("div");
+      chip.style.background = "var(--color-" + r + ")";
+      meta.append(el("b", null, r), el("span", "mono", cs.getPropertyValue("--color-" + r).trim()));
+      s.append(chip, meta); box.appendChild(s);
+    });
+  }
+  swatches();
+
+  /* Type scale. */
+  [["caption", "12 / 16 · 500", "Table headers and meta"], ["sm", "13 / 20 · 400", "Dense tables and sidebar items"], ["base", "15 / 22 · 400", "Body text for descriptions and forms"], ["headline", "17 / 24 · 600", "Card titles"], ["title", "22 / 28 · 650", "Page titles"], ["display", "32 / 38 · 700", "1,284"]].forEach(([k, spec, sample]) => {
+    const row = el("div", "type-row");
+    const lab = el("div"); lab.append(el("b", "t-caption", k), el("div", "t-caption subtle mono", spec));
+    const s = el("div", "t-" + k + (k === "display" ? " num" : ""), sample);
+    row.append(lab, s); $("#typeRows").appendChild(row);
+  });
+
+  /* Status badges. */
+  const STATUS = [["s-idle", "Idle"], ["s-running", "Running"], ["s-ok", "Succeeded"], ["s-failed", "Failed"], ["s-queued", "Queued"], ["s-retry", "Retrying"], ["s-approval", "Awaiting approval"], ["s-paused", "Paused"]];
+  const badge = (cls, text) => { const b = el("span", "badge " + cls); const d = el("span", "dot"); d.setAttribute("aria-hidden", "true"); b.append(d, document.createTextNode(text)); return b; };
+  STATUS.forEach(([c, t]) => $("#badges").appendChild(badge(c, t)));
+
+  /* Sample agents (placeholder data). */
+  const fmt = new Intl.NumberFormat("en");
+  [["Research assistant", "s-running", "Running", "Local model", 128, "now"], ["Inbox triage", "s-ok", "Succeeded", "Local model", 342, "6 min ago"], ["Weekly report", "s-approval", "Awaiting approval", "Hosted model", 19, "14 min ago"], ["Docs indexer", "s-failed", "Failed", "Local model", 57, "1 h ago"], ["Release notes", "s-idle", "Idle", "Hosted model", 8, "3 d ago"]].forEach(([n, c, t, m, runs, last]) => {
+    const tr = el("tr"); const st = el("td"); st.appendChild(badge(c, t));
+    const r = el("td", "right num", fmt.format(runs));
+    tr.append(el("td", null, n), st, el("td", "muted", m), r, el("td", "muted", last));
+    $("#agentRows").appendChild(tr);
+  });
+
+  /* Sample run. */
+  [["s-ok", "Plan the task", "Research assistant · plan", "0.8 s"], ["s-ok", "Read three public pages", "web.read × 3", "4.2 s"], ["s-retry", "Summarise findings", "model.call · try 2 of 3", "6.1 s"], ["s-queued", "Ask to save the summary", "approval.request", "—"]].forEach(([c, title, sub, ms], i) => {
+    const li = el("li", "step"), idx = el("span", "idx num", String(i + 1)), what = el("div", "what");
+    what.append(el("b", null, title), el("span", null, sub));
+    const right = el("div", "row"); right.append(badge(c, STATUS.find(s => s[0] === c)[1]), el("span", "num subtle t-caption", ms));
+    li.append(idx, what, right); $("#steps").appendChild(li);
+  });
+  const LOG = ["12:04:01  plan       3 steps, budget 20 steps", "12:04:02  web.read   200  1.4 s", "12:04:04  web.read   200  1.3 s", "12:04:05  web.read   200  1.5 s", "12:04:11  model.call timeout after 6 s, retry in 2 s", "12:04:13  model.call try 2 of 3 …"];
+  LOG.forEach((line, i) => { const ln = el("span", "ln", String(i + 1).padStart(2, "0") + "  "); $("#logs").append(ln, document.createTextNode(line + (i < LOG.length - 1 ? "\n" : ""))); });
+
+  /* Tabs: APG automatic activation, arrows mirrored in RTL. */
+  const tabs = $$("#tabs [role=tab]");
+  function selectTab(t) {
+    tabs.forEach(x => { const on = x === t; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; $("#" + x.getAttribute("aria-controls")).hidden = !on; });
+    t.focus();
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => selectTab(t));
+    t.addEventListener("keydown", e => {
+      const rtl = root.dir === "rtl";
+      const next = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 }[e.key];
+      if (next) { e.preventDefault(); selectTab(tabs[(i + next + tabs.length) % tabs.length]); }
+      else if (e.key === "Home") { e.preventDefault(); selectTab(tabs[0]); }
+      else if (e.key === "End") { e.preventDefault(); selectTab(tabs[tabs.length - 1]); }
+    });
+  });
+
+  /* Toasts. */
+  const TOAST = { info: ["s-queued", "Run queued (design sample)."], ok: ["s-ok", "Agent saved (design sample)."], retry: ["s-retry", "Model slow. Retrying in 2 seconds (design sample)."], failed: ["s-failed", "Run failed at step 3. Open the run to see why (design sample)."] };
+  function toast(kind, text) {
+    const t = el("div", "toast"), d = el("span", "dot " + (TOAST[kind] ? TOAST[kind][0] : "s-queued"));
+    d.setAttribute("aria-hidden", "true");
+    t.append(d, el("p", null, text || TOAST[kind][1]));
+    const close = el("button", "btn btn-ghost btn-sm", "Dismiss"); close.type = "button";
+    t.appendChild(close); $("#toasts").appendChild(t);
+    let timer = setTimeout(() => t.remove(), 5000);
+    const pause = () => clearTimeout(timer), resume = () => { timer = setTimeout(() => t.remove(), 5000); };
+    t.addEventListener("mouseenter", pause); t.addEventListener("mouseleave", resume);
+    t.addEventListener("focusin", pause); t.addEventListener("focusout", resume);
+    close.addEventListener("click", () => t.remove());
+  }
+  $$("[data-toast]").forEach(b => b.addEventListener("click", () => toast(b.dataset.toast)));
+
+  /* Loading button keeps its label for screen readers. */
+  const save = $("#saveBtn");
+  save.addEventListener("click", () => {
+    if (save.getAttribute("aria-busy") === "true") return;
+    save.setAttribute("aria-busy", "true");
+    const sp = el("span", "spinner"); sp.setAttribute("aria-hidden", "true"); save.prepend(sp);
+    setTimeout(() => { sp.remove(); save.removeAttribute("aria-busy"); toast("ok"); }, 1200);
+  });
+
+  /* Secret reveal. */
+  const reveal = $("#revealBtn"), key = $("#f-key");
+  reveal.addEventListener("click", () => { const show = key.type === "password"; key.type = show ? "text" : "password"; reveal.setAttribute("aria-pressed", String(show)); reveal.setAttribute("aria-label", show ? "Hide value" : "Show value"); });
+
+  /* Dialogs: focus returns to the opener. */
+  let opener = null;
+  function openDialog(d, from) { opener = from || document.activeElement; d.showModal(); }
+  $$("dialog").forEach(d => {
+    d.addEventListener("close", () => { if (opener && opener.focus) opener.focus(); });
+    $$("[data-close]", d).forEach(b => b.addEventListener("click", () => { d.close(); if (b.dataset.done) toast("ok", b.dataset.done); }));
+  });
+  $("#dangerBtn").addEventListener("click", e => openDialog($("#confirm"), e.currentTarget));
+  $("#rejectBtn").addEventListener("click", e => openDialog($("#reject"), e.currentTarget));
+  $("#approveBtn").addEventListener("click", () => toast("ok", "Action approved (design sample)."));
+
+  /* Command palette: APG combobox in a modal dialog. */
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+  $("#kbdHint").textContent = isMac ? "⌘ K" : "Ctrl K";
+  $("#searchBtn").setAttribute("aria-label", isMac ? "Search (⌘K)" : "Search (Ctrl+K)");
+  const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
+  const CMDS = [["Overview", "Page", "#overview"], ["Agents", "Page", "#agents"], ["Workflows", "Page", "#workflows"], ["Runs", "Page", "#runs"], ["Approvals", "Page", "#approvals"], ["Design system", "Page", "#foundations"], ["Switch theme", "Action", "theme"], ["Switch direction", "Action", "dir"], ["New agent", "Action", "new"]];
+  let shown = [], active = 0;
+  function renderPal() {
+    const q = palIn.value.trim().toLowerCase();
+    // Match words against the command name only, at word starts, so "ag" finds Agents but not "Page".
+    shown = CMDS.filter(c => q.split(/\s+/).every(w => c[0].toLowerCase().split(/\s+/).some(n => n.startsWith(w))));
+    active = Math.min(active, Math.max(0, shown.length - 1));
+    palList.replaceChildren();
+    shown.forEach((c, i) => {
+      const li = el("li"); li.id = "cmd-" + i; li.setAttribute("role", "option"); li.setAttribute("aria-selected", String(i === active));
+      li.append(el("span", null, c[0]), el("span", "kind", c[1]));
+      li.addEventListener("click", () => runCmd(c));
+      li.addEventListener("mousemove", () => { if (active !== i) { active = i; renderPal(); } });
+      palList.appendChild(li);
+    });
+    palNone.hidden = shown.length > 0;
+    if (shown.length) palIn.setAttribute("aria-activedescendant", "cmd-" + active); else palIn.removeAttribute("aria-activedescendant");
+  }
+  function runCmd(c) {
+    pal.close();
+    if (c[2] === "theme") themeBtn.click();
+    else if (c[2] === "dir") dirBtn.click();
+    else if (c[2] === "new") toast("info", "Would open the agent editor (design sample).");
+    else { const t = $(c[2]); if (t) t.scrollIntoView({ block: "start" }); }
+  }
+  function openPal(from) { palIn.value = ""; active = 0; renderPal(); openDialog(pal, from); palIn.focus(); }
+  palIn.addEventListener("input", () => { active = 0; renderPal(); });
+  palIn.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" && shown.length) { e.preventDefault(); active = (active + 1) % shown.length; renderPal(); $("#cmd-" + active).scrollIntoView({ block: "nearest" }); }
+    else if (e.key === "ArrowUp" && shown.length) { e.preventDefault(); active = (active - 1 + shown.length) % shown.length; renderPal(); $("#cmd-" + active).scrollIntoView({ block: "nearest" }); }
+    else if (e.key === "Enter" && shown[active]) { e.preventDefault(); runCmd(shown[active]); }
+  });
+  pal.addEventListener("click", e => { if (e.target === pal) pal.close(); });
+  $("#searchBtn").addEventListener("click", e => openPal(e.currentTarget));
+  $("#paletteBtn2").addEventListener("click", e => openPal(e.currentTarget));
+
+  /* Global keys: Ctrl/⌘+K, Esc closes the drawer. */
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); if (!pal.open) openPal(document.activeElement); }
+    else if (e.key === "Escape" && app.classList.contains("drawer-open")) drawer(false);
+  });
+})();
+</script>
+</body>
+</html>

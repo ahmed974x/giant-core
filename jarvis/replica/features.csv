@@ -1,0 +1,101 @@
+feature,area,priority,original,clone,notes
+App shell with sidebar top bar and content slot,shell,must,yes,yes,S01
+Collapsible sidebar (expanded / icon rail / mobile drawer),shell,must,yes,yes,S01
+Workspace switcher,shell,must,yes,yes,"S01; OMEGA PRIME, Jarvis Studio and giant-core; switching reloads every screen's data (ADR-134)"
+Command palette (Ctrl+K / Cmd+K),shell,must,yes,yes,S01 F05
+Dark theme default with light theme toggle,shell,must,yes,yes,user brief
+RTL-ready layout (logical properties),shell,must,yes,yes,user brief: English now Arabic later
+Overview with stat tiles and activity feed,overview,must,yes,yes,S02
+Agents list with status filter and search,agents,must,yes,yes,S03
+Agent detail with tabs (config tools runs),agents,must,yes,yes,S04
+Create and edit an agent with validation,agents,must,yes,yes,"S05 F01; edit name, role, model, limits, tools (permissions) and linked skills; locked permissions shown and never switchable (ADR-134)"
+Run an agent and watch the run timeline,runs,must,yes,yes,S08 F01; live mode runs real tools on the local server; file:// keeps the labelled simulation (ADR-134)
+Approvals inbox with approve and reject (reason required),approvals,must,yes,yes,S09 F02
+Approval count badge in the sidebar,approvals,must,yes,yes,S01 F02
+Empty loading and error states on every list,quality,must,yes,yes,all lists; Settings → Test error states shows every error state
+Keyboard access and visible focus everywhere,quality,must,yes,yes,WCAG 2.2 AA; flow tests drive the palette and tabs by keyboard
+Contrast WCAG AA and APCA Lc 60 in both themes,quality,must,yes,yes,DESIGN.md gate; 118 token pairs (contrast.py) and 108 (verify-contrast.mjs)
+Studio split screen with a sandboxed live preview (srcdoc and no network),studio,must,yes,yes,S13 F06
+Studio AR RTL / EN LTR switch flips the preview,studio,must,yes,yes,S13
+Studio width switch 375 / 768 / 1440,studio,must,yes,yes,S13
+Studio live WCAG and APCA contrast badge,studio,must,yes,yes,S13
+Studio blocks on/off and reorder with text editing,studio,must,yes,yes,S13
+Skill Mixer lists installed skills with their SkillSpector status,skills,must,yes,yes,S14 F07; snapshot taken at build time
+Skill Mixer builds an ordered plan to copy,skills,must,yes,yes,S14 F07
+Locked approval cards for publish / permissions / money (no self-approval),approvals,must,yes,yes,AGENTS.md §1; also install and outbound; enforced in schema.sql too
+Local server on SQLite (zero setup) and PostgreSQL 16 with the approval rules in the database,backend,must,yes,yes,ADR-134 and ADR-135; the same server tests run on both databases
+"Real runs: files.read, notes.read, runs.read, git.log and web.read run for real; notes are written only after approval",runs,must,yes,yes,ADR-134
+"Clean-room clone of a public URL or pasted HTML into a clean template (layout only, sweep, our copy, RTL/LTR, download; publish locked)",studio,must,yes,yes,"ADR-134; robots.txt respected, private addresses refused"
+"Long-horizon missions: ordered phases, parallel steps in a phase, dependencies",missions,must,yes,yes,"ADR-135; S15 Mission Control, real engine in jarvis/server/lib/missions.mjs"
+"Evidence gates per step (TDD, Lint, Contrast, Security) judged from saved logs",missions,must,yes,yes,ADR-135; same rules as replica-long-horizon gate.py
+"State capsules: SHA-256 chain with inspect, verify and restore",missions,must,yes,yes,"ADR-135; append-only table, restore refuses a broken chain"
+Context health indicator per mission,missions,must,yes,yes,ADR-135; a fixed rule labelled [INFERENCE]
+Locked mission steps wait as «بانتظار الموافقة» cards while independent steps carry on,missions,must,yes,yes,ADR-135; mission_steps_locked_never_done in SQLite and PostgreSQL 16
+Agent editor: long-horizon execution mode and capsule interval,agents,must,yes,yes,ADR-135
+Studio clean-room template extractor in the Jarvis design system (pasted HTML works offline),studio,must,yes,yes,"ADR-135; OKLCH tokens, accent #77bcff, glass blur 16 / saturate 180, Readex Pro, Inter, Geist Mono"
+"Local model (Ollama on 127.0.0.1) plans missions and drafts layouts, fixed-rule fallback",missions,should,yes,yes,"ADR-136; locks decided by rule, model output untrusted"
+Creator zero-token mode with draft subscriber plans and a token ledger (billing locked),settings,should,yes,yes,"ADR-137; billing_settings_billing_locked, subscriber_tiers_draft_only, append-only token_ledger"
+Workflows list,workflows,should,yes,yes,"S06; ADR-137: list, create, delete; a run makes a mission"
+Workflow canvas with inspector,workflows,should,yes,yes,"S07 F03; ADR-137: SVG editor (drag and arrow keys), inspector, needs as links, cycle check by Kahn's sort, locked nodes"
+Live log streaming in the run view,runs,should,yes,yes,S08; ADR-137: server-sent events (/stream) push every change; the 1.5 s poll is only the fallback
+Logs and audit with filters,logs,should,yes,yes,S10
+Settings: workspace members and roles,settings,should,yes,yes,"S11; ADR-137: add, change role, remove; one owner (members_one_owner); no invitation is sent (outbound locked)"
+Settings: model and API keys stored in the vault only,settings,should,yes,yes,AGENTS.md §4; Jarvis has no key field at all
+Toasts for async results,quality,should,yes,yes,
+Design system page /design,quality,should,yes,yes,S12
+Cost and duration per run,runs,should,yes,yes,"S08; ADR-137: duration per step and run; cost is recorded as 0 (zero-token creator mode, token_ledger_creator_free)"
+Studio downloads the site as one HTML file with a pinned CSP,studio,should,yes,yes,S13; the file renders alone with no CSP errors (test-app.mjs)
+Studio theme presets and custom colours,studio,should,yes,yes,S13
+Check a new SKILL.md in the browser against the SkillSpector rules,skills,should,yes,yes,S14 F08
+Liquid Glass chrome with a reduced-transparency fallback,shell,should,yes,yes,ADR-133
+Arabic translation,i18n,could,yes,yes,"ADR-137: one dictionary, every screen; F15 and the live check fail on any English UI text left"
+Run comparison side by side,runs,could,yes,yes,ADR-137: #/runs/compare/a/b
+Agent templates gallery,agents,could,yes,yes,ADR-137: six templates fill the agent editor
+Scheduled runs,runs,could,yes,yes,ADR-137: every 5 min to 7 days; the server starts due runs (trigger schedule)
+Webhooks out,integrations,could,yes,yes,"ADR-137: in and out, HMAC-SHA256; outgoing only to 127.0.0.1 (webhooks_external_out_locked), anything else a locked approval"
+Usage analytics charts,overview,could,yes,yes,"ADR-137: runs per day, gate pass rate, agents, missions, tokens, approvals (SVG bars, HTML labels)"
+Memory bank with BM25 search (Arabic and English),memory,should,yes,yes,"ADR-138: agent_memory_episodes; ranked with BM25, boosted when gates passed; keys refused"
+Model examples from workspace memory,memory,should,yes,yes,"ADR-138: the best three episodes go to the local model as data, never instructions"
+Self-check sessions and JSONL export,memory,could,yes,yes,"ADR-138: computed answers stored as lessons, the local model graded; export per workspace"
+Live Skill Forge with hot-mount,skills,should,yes,yes,"ADR-138: SkillSpector rules on every file; forged_skills_scan_clean; install into .claude/skills stays a locked approval"
+Live open-web search across official APIs,search,should,yes,yes,"ADR-139: Wikipedia ar/en, OpenAlex, HN Algolia, GitHub, SearXNG JSON; fixed hosts, SSRF guarded, no scraping"
+Package and code search,search,should,yes,yes,"ADR-139: npm, PyPI JSON API by name, GitHub"
+Vulnerability lookup for a package,search,should,yes,yes,"ADR-139: OSV.dev query by ecosystem, package and version"
+Offline fallback and search memory,search,could,yes,yes,"ADR-139: no internet answers from BM25 memory and says so; results summarised into memory"
+OpenAI-compatible local model engine,models,should,yes,yes,"ADR-140: vLLM, llama.cpp, LM Studio or Ollama /v1 on 127.0.0.1; DeepSeek-R1/V3 and Qwen2.5-Coder profiles with licences"
+Streamed model answers,models,should,yes,yes,"ADR-140: POST /api/llm/stream (SSE), reasoning kept apart, untrusted label, stops when the tab closes"
+Founder-only sign-in gate,access,should,yes,yes,"ADR-141: scrypt + timingSafeEqual, HMAC-SHA256 HttpOnly SameSite=Strict cookie, lockout, /login; public host only with the key"
+Locked public access and hosted endpoints,access,should,yes,yes,"ADR-141: access_settings_founder_private_locked, model_endpoints_external_locked; requests become locked cards"
+Live skill discovery and import from GitHub,skills,should,yes,yes,"ADR-142: keyless search API, one SKILL.md as text, SSRF shield, licence and source kept"
+Skill synthesis and evolution (FIX/DERIVED/CAPTURED),skills,should,yes,yes,"ADR-142: local model or template, eleven loader rules plus SkillSpector, runtime_skills_scan_clean, append-only log, mounted at once in Mixer, agent editor and Ctrl+K"
+Governance page with knowledge map and quality gate,governance,should,yes,yes,"ADR-143: SVG map from replica-graphify, 62-rule replica-impeccable report, register of adopted and excluded patterns"
+Open-weight model catalog,models,could,yes,yes,"ADR-143: 12 families with licence, job and origin; marks the ones served on 127.0.0.1"
+Council of agents for plans and designs,missions,should,yes,yes,"ADR-144: architect, red team and UX critic, synthesizer; rules last, locked steps pending approval; trace shown; mission built on the server"
+Studio time machine with side-by-side diff and fork,studio,should,yes,yes,"ADR-144: studio_snapshots append-only, SHA-256 chained, verify, line and block diff, fork"
+UX heatmap with Fitts and Hick,studio,could,yes,yes,"ADR-144: preview measures its boxes; heat grid, 44 px targets, Hick RT, RTL/LTR symmetry [INFERENCE]"
+Ctrl+K macro composer with a formal proof,missions,should,yes,yes,"ADR-145: fixed rules, breadth-first proof (deadlocks, reachability, no sensitive effect without a lock) in the page and again on the server; locked steps stop at the violet card"
+Studio 5-in-1 export,studio,should,yes,yes,"ADR-145: HTML with CSP, Web Component with Shadow DOM, W3C tokens with contrast, SQL with locked payment, publish and permission tables, three-size Playwright test"
+Formal verification and mutation audit skill,quality,could,yes,yes,"ADR-145: replica-formal-verify state_prover.py and mutation_audit.py, standard library only"
+UI-state gate for buttons and fields,quality,should,yes,yes,"ADR-146: ui-states.json spec, state_prover.py --spec exits 1 on a gap, the build stops, F28 checks the states render"
+Measured mutation testing of the security core,quality,should,yes,yes,"ADR-146: SSRF check, lock rules, prover, gate.py, state_prover.py; 493/493 killed, equivalents with reasons; tied to file hashes"
+Telemetry chart with LTTB and anomaly marks,analytics,should,yes,yes,"ADR-147: Welford, EWMA, online z-score, VPIN-style imbalance [INFERENCE]; request latency measured; SVG with HTML labels"
+Merkle audit tree with inclusion proofs,security,should,yes,yes,"ADR-147: RFC 6962 hashing, CT test vectors, append-only audit_leaves, proofs checked in the browser"
+Time-series maths skill,quality,could,yes,yes,"ADR-147: replica-timeseries-math ts_math.py, standard library only"
+Readiness of the five layers,diagnostics,should,yes,yes,"ADR-148: memory, proof, open search and SSRF, security (Merkle log, 10 lock constraints), local bridge on 127.0.0.1; read-only"
+Scrubbed diagnostic bundle,diagnostics,should,yes,yes,"ADR-148: secret field names, key formats, Shannon entropy; hex digests kept; removals reported; saved locally, nothing sent"
+Windows that follow each other,shell,should,yes,yes,"ADR-149: BroadcastChannel syncs language, theme and the Studio site; messages checked, never re-sent"
+Compressed Studio templates,studio,could,yes,yes,"ADR-149: CompressionStream .json.gz export and import; 1 MB / 2 MB unpacked caps against zip bombs"
+Quantum-math skill,quality,could,yes,yes,"ADR-149: VPIN, fluid layout, Monte Carlo that never runs a locked step, Shamir GF(256); in the mutation run"
+Plan reversal: sensitive steps locked after the fact,security,should,yes,yes,"ADR-150: reversePlan through enforceApprovalGates and the prover; a local model's plan is checked on its own"
+"Template reversal: gradients, glass fallback, overflow-wrap",studio,could,yes,yes,"ADR-150: reverseTemplate in the Studio; linear scans, 200 KB cap"
+Autonomous Reversal Log,diagnostics,should,yes,yes,"ADR-150: append-only reversal_log, Merkle audit leaf and memory lesson per correction; panel in the Studio and #/diagnostics"
+Reversal-engine skill,quality,could,yes,yes,"ADR-150: replica-reversal-engine reversal_engine.py, standard library only; same hashes as the server; in the mutation run"
+Bilingual purity gate,i18n,should,yes,yes,"ADR-151: every screen in Arabic and English, sample and live; server details translated, identifiers isolated; evidence log and a Diagnostics check"
+Local model answers in the chosen language,models,should,yes,yes,"ADR-151: chat, plan, stream and council send the page language; designs stay layout only"
+Passive recon: registration and certificate logs,security,should,yes,yes,"ADR-152: RDAP status, DNSSEC and expiry; crt.sh names in one pass, wildcards, expiring certificates; four GETs through the SSRF shield"
+Passive recon: security headers and security.txt,security,should,yes,yes,"ADR-152: six headers graded 0-100 with fixes; RFC 9116 Contact and Expires checked"
+Passive-recon skill,quality,could,yes,yes,"ADR-152: replica-passive-recon passive_recon.py, standard library only, reads saved files; same report as the server; in the mutation run"
+Auto-heal contrast in the Studio,studio,should,yes,yes,"ADR-153: OKLCH lightness bisection (16 steps, hue kept) to WCAG 4.5 and APCA 60; report with before and after"
+Contrast healing in the reversal engine,quality,should,yes,yes,"ADR-153: sixth rule contrast; logged with WCAG and APCA Lc before and after; the same in reversal_engine.py; in the mutation run"
+Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
+Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

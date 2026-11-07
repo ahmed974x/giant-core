@@ -1,0 +1,502 @@
+{
+ "tool": "jarvis/scripts/mutation-harness.mjs",
+ "ranAt": "2026-11-07T13:11:42.508Z",
+ "targets": [
+  {
+   "file": "jarvis/server/lib/fetch-public.mjs",
+   "sha256": "a955281a4603fa17d7669fde73aa779ceb22de6277309e8bc02f8eaf0424868c",
+   "functions": [
+    "v4Blocked",
+    "v6Groups",
+    "isBlockedAddress"
+   ],
+   "mutants": 222,
+   "killed": 210,
+   "equivalent": 12,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "=== -> !==",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "&& -> ||",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "|| -> &&",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "true -> false",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "0xffff -> 65536",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "slice(0, 9) of eight groups equals slice(0, 8)"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "1 -> 2",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0x2001 -> 8194",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/llm-plan.mjs",
+   "sha256": "2d474b092c0346afa7392711296f80a17ce27610d679d8940ea452515661d87d",
+   "functions": [
+    "lockCategory",
+    "enforceApprovalGates",
+    "LOCK_RULES"
+   ],
+   "mutants": 118,
+   "killed": 115,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "LOCK_RULES.money",
+     "line": 13,
+     "kind": "drop ادفع",
+     "why": "every text with ادفع also contains دفع, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.publish",
+     "line": 14,
+     "kind": "drop انشر",
+     "why": "every text with انشر also contains نشر, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.install",
+     "line": 16,
+     "kind": "drop pip install",
+     "why": "every text with pip install also contains install, a word of the same rule"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/prover.mjs",
+   "sha256": "2fa5d1840018c57f387f1ac50a54046ec7e52f2c7937ce1f99503ce9b5573d4b",
+   "functions": [
+    "planMachine",
+    "search",
+    "prove"
+   ],
+   "mutants": 54,
+   "killed": 54,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/contrast-heal.mjs",
+   "sha256": "336bee8f2e5d0d5fbfd9dde1ee424dce5fd211b269dd79a6dc9cf664355fcaf7",
+   "functions": [
+    "parseColour",
+    "rgbToOklch",
+    "oklchToRgb",
+    "inGamut",
+    "wcagRatio",
+    "apcaLc",
+    "healOklchContrast"
+   ],
+   "mutants": 151,
+   "killed": 140,
+   "equivalent": 11,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "rgbToOklch",
+     "line": 42,
+     "kind": "< -> <=",
+     "why": "no colour has a chroma of exactly 1e-7, the grey cut-off"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "< -> <=",
+     "why": "no channel lands on exactly -0.000001"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "> -> >=",
+     "why": "no channel lands on exactly 1.000001"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "6 -> 7",
+     "why": "a tolerance of 1e-7 instead of 1e-6 changes no colour that rounds to a different 8-bit hex"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "when |yb - yt| is under 0.0005 (or both are small), the low-contrast clip below returns 0 as well"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 70,
+     "kind": "< -> <=",
+     "why": "APCA's clip is applied to a continuous value that is never exactly 0.1"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 67,
+     "kind": "> -> >=",
+     "why": "the soft clamp is continuous at 0.022: both branches give 0.022 there"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 70,
+     "kind": "> -> >=",
+     "why": "equal luminances were already answered 0 by the line above"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 72,
+     "kind": "> -> >=",
+     "why": "as above, for the reverse polarity"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 69,
+     "kind": "- -> +",
+     "why": "when |yb - yt| is under 0.0005 (or both are small), the low-contrast clip below returns 0 as well"
+    },
+    {
+     "fn": "healOklchContrast",
+     "line": 97,
+     "kind": "> -> >=",
+     "why": "the found lightness never equals the original, which failed"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/passive-recon.mjs",
+   "sha256": "cc840b56ca206213b7c998fcd8388e8c31b198186628a15be2aaaf98104b7876",
+   "functions": [
+    "normalizeDomain",
+    "parseRdap",
+    "parseCt",
+    "gradeHeaders",
+    "parseSecurityTxt",
+    "reconReport"
+   ],
+   "mutants": 242,
+   "killed": 234,
+   "equivalent": 8,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": ">= -> >",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "< -> <=",
+     "why": "the shortest name the label rules accept is four characters (a.bc), so < 3 and <= 3 refuse the same names"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": "0 -> 1",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "3 -> 4",
+     "why": "as above: no three- or four-character name differs, since a.bc is the shortest that passes"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 31,
+     "kind": "63 -> 64",
+     "why": "a label longer than 63 characters is already refused by the loop above"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "< -> <=",
+     "why": "issuer names are Map keys, so two of them are never equal"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/reversal.mjs",
+   "sha256": "fff4081d77fc34c79de8b164ce86a9513d54707d26d028725f59f6ba637f3f06",
+   "functions": [
+    "correctionVector",
+    "sealed",
+    "reversePlan",
+    "hueOf",
+    "rgbHue",
+    "gradientColours",
+    "fixGradients",
+    "cssOf",
+    "cssBlocks",
+    "glassSelectors",
+    "addCss",
+    "fixContrast",
+    "reverseTemplate"
+   ],
+   "mutants": 237,
+   "killed": 208,
+   "equivalent": 29,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "reversePlan",
+     "line": 41,
+     "kind": "&& -> ||",
+     "why": "a locked step is an object or a non-empty string, and a string has no gate, locked or status, so o reads the same"
+    },
+    {
+     "fn": "hueOf",
+     "line": 65,
+     "kind": "6 -> 7",
+     "why": "h always has exactly six characters, so slice(4, 7) equals slice(4, 6)"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 78,
+     "kind": "6 -> 7",
+     "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and % 6 or % 7 leaves it unchanged"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 79,
+     "kind": "360 -> 361",
+     "why": "h * 60 is always in [-60, 300], so the first % 360 changes nothing; the other two 360s are killed by the oracle"
+    },
+    {
+     "fn": "gradientColours",
+     "line": 84,
+     "kind": "+ -> -",
+     "why": "the extra two characters are always \"t(\" from \"-gradient(\", and \"t\" is not a colour"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 98,
+     "kind": ">= -> >",
+     "why": "nextStop[0] is read only when a gradient ends at index 0, which cannot happen"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 96,
+     "kind": "< -> <=",
+     "why": "the extra turn reads text[n], which is undefined, and writes past the end of the buffer, which is ignored"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 101,
+     "kind": "< -> <=",
+     "why": "last is the index of a stop character or the end of the text, and a gradient starts with a letter"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 94,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 94,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 95,
+     "kind": "0 -> 1",
+     "why": "prevStop[0] is read only for a gradient at index 0, which has no property before it, and prevStop[1] is written by the loop"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 98,
+     "kind": "0 -> 1",
+     "why": "as above: nextStop[0] is never read"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "< -> <=",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 124,
+     "kind": "< -> <=",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 122,
+     "kind": "7 -> 8",
+     "why": "the test is anchored at the start, so one more character after '<style' and its space or '>' changes nothing"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "0 -> 1",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "1 -> 2",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 124,
+     "kind": "0 -> 1",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "- -> +",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssBlocks",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "the extra turn reads css[css.length], which is undefined and matches no branch"
+    },
+    {
+     "fn": "addCss",
+     "line": 166,
+     "kind": ">= -> >",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    },
+    {
+     "fn": "addCss",
+     "line": 166,
+     "kind": "0 -> 1",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 181,
+     "kind": "< -> <=",
+     "why": "a declaration that starts with : has an empty property, which matches neither color nor background"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 192,
+     "kind": "< -> <=",
+     "why": "a body follows its {, so it is never found at index 0"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 174,
+     "kind": "0 -> 1",
+     "why": "for cursor: a rule body always starts after its {, so searching from index 1 finds the same place"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 178,
+     "kind": "1 -> 2",
+     "why": "-2 is as much 'no colour' as -1 for the fgAt < 0 test"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 181,
+     "kind": "0 -> 1",
+     "why": "a declaration that starts with : has an empty property, which matches neither color nor background"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 192,
+     "kind": "0 -> 1",
+     "why": "a body follows its {, so it is never found at index 0"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 196,
+     "kind": "+ -> -",
+     "why": "the healed body no longer matches the old text, so a search from an earlier point finds the same next occurrence"
+    }
+   ]
+  }
+ ]
+}

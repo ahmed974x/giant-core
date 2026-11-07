@@ -1,0 +1,195 @@
+PASS F01 agents page renders
+PASS F01 empty name is refused with a message
+PASS F01 the name field is marked invalid
+PASS F01 duplicate name is refused
+PASS F01 max steps out of range is refused
+PASS F01 create opens the new agent
+PASS F01 run opens the run view
+PASS F01 the run says it is simulated
+PASS F01 the run finishes
+PASS F01 notes.write asks for approval
+PASS F01 sidebar count goes from 2 to 3
+PASS F02 reject without a reason is refused
+PASS F02 two decisions leave one waiting
+PASS F02 five locked cards (money, publish, permissions, install, outbound)
+PASS F02 locked cards have no approve button
+PASS F02 locked cards say «قيد الموافقة»
+PASS F02 the reject reason is kept
+PASS F05 Ctrl+K → appr → Enter opens approvals
+PASS F06 the sandboxed preview frame loads
+PASS F06 sandbox is allow-scripts only (no same-origin)
+PASS F06 preview renders the hero
+PASS F06 AR switch flips the preview to rtl/ar
+PASS F06 preview shows the Arabic text
+PASS F06 width switch sets 375px
+PASS F06 the preview lays out at 375px
+PASS F06 badge passes for the default theme
+PASS F06 badge fails when text gets too dark
+PASS F06 colour change reaches the preview live
+PASS F06 download is named .html
+PASS F06 download carries a strict pinned CSP
+PASS F06 download keeps the chosen language
+PASS F06 publish shows a locked card
+PASS F06 downloaded site renders alone with no CSP errors
+PASS F07 lists the repo's skills
+PASS F07 pipeline plan lists the installed Replica skills in order
+PASS F07 skills that are not installed are left out
+PASS F08 missing frontmatter fails
+PASS F08 a clean SKILL.md passes
+PASS F08 a pipe-to-shell line is caught by the SkillSpector rules
+PASS editor shows five locked permissions
+PASS editing an agent saves in sample mode
+PASS switching workspace from a detail page opens its list
+PASS the sample workspace switch changes the agents
+PASS F09 missions page lists the seeded mission
+PASS F09 mission view shows its three phases
+PASS F09 phase 1 runs two steps in parallel
+PASS F09 the mission stops at the approvals
+PASS F09 the TDD gate passes on the repo's saved test log
+PASS F09 the outbound step waits as a locked «بانتظار الموافقة» card with no approve button
+PASS F09 capsules are saved after each phase and the chain is intact
+PASS F09 context health is labelled [INFERENCE]
+PASS F09 approving the note finishes that step while the locked one still waits
+PASS F09 carrying on without the locked step finishes the mission
+PASS F09 inspecting a capsule checks its hash
+PASS F09 the page's capsule hash equals Node's SHA-256 of the canonical JSON
+PASS F09 restoring capsule 1 pauses the mission and records the restore
+PASS F09 a restored mission runs again from the capsule
+PASS F10 capsule interval out of range is refused
+PASS F10 the agent shows its long-horizon mode
+PASS F10 starting a long-horizon agent opens its mission
+PASS F11 the extractor's sweep finds no source text
+PASS F11 the preview shows the clean template without the brand
+PASS F11 the template wears the Jarvis night tokens
+PASS F11 the template's sticky bar is glass (blur 16, saturate 180)
+PASS F12 the top bar says plans use the fixed rules
+PASS F12 a goal becomes a mission planned by the fixed rules
+PASS F12 the publish clause became a locked approval step and the tests a gate
+PASS F12 the Studio designs from a description with the fixed rules when there is no model
+PASS F13 the workflows list shows the starter workflow
+PASS F13 the SVG graph draws six steps, five links and one locked step
+PASS F13 arrow keys move a step and mark the graph unsaved
+PASS F13 a step about email is locked as soon as it is named
+PASS F13 the step inspector prints no stray null
+PASS F13 a loop is refused with the steps named
+PASS F13 saving bumps the version
+PASS F13 running the workflow makes a mission: publish waits locked, the email step is an approval step
+PASS F14 analytics shows creator mode, four numbers and the bar charts
+PASS F14 two runs compare side by side
+PASS F14 the templates gallery lists six agents
+PASS F14 a template fills the agent editor
+PASS F14 the agent is created from the template
+PASS F14 an agent can be scheduled
+PASS F14 a member is added locally
+PASS F14 the member's role changes
+PASS F14 a draft plan is saved
+PASS F14 turning on billing becomes a locked money card
+PASS F14 sample mode says webhooks need the local server
+PASS F16 memory starts empty with a plain empty state
+PASS F16 a note is saved to memory
+PASS F16 a key-shaped value is refused
+PASS F16 a self-check stores nine computed lessons
+PASS F16 BM25 search ranks the note first and shows the matched words
+PASS F16 the kind filter shows only lessons
+PASS F16 memory exports as JSONL with one episode per line
+PASS F16 an episode can be deleted
+PASS F16 a forged python-tool skill is scanned clean and mounted
+PASS F16 a clean forge result prints no stray null
+PASS F16 the mounted skill joins the Skill Mixer list
+PASS F16 a skill with a high finding is refused and not mounted
+PASS F16 installing a forged skill into the repo is a locked approval
+PASS F16 the mounted skill can be linked in the agent editor
+PASS F17 search opens in open-web mode with its sources named
+PASS F17 with no network the search says so and answers from memory
+PASS F17 every source states why it did not answer
+PASS F17 the OSV mode shows the ecosystem:package form
+PASS F17 the clone mode hands the address to the Studio's clean-room cloner
+PASS F18 sample mode says streaming needs a local model and shows no invented answer
+PASS F19 the access mode is shown as founder only
+PASS F19 opening to the public becomes a locked publish card
+PASS F19 a private address is refused as a hosted endpoint
+PASS F19 a hosted endpoint becomes a locked outbound card
+PASS F19 the endpoint stays a draft with a violet lock line
+PASS F19 both requests wait in the locked approvals
+PASS F20 sample mode says GitHub discovery needs the local server
+PASS F20 a synthesized skill is audited and mounted at once
+PASS F20 a skill with a dangerous step is refused with its rule
+PASS F20 FIX makes version 2
+PASS F20 DERIVED mounts a new skill grown from the first
+PASS F20 CAPTURED writes a skill from a finished mission
+PASS F20 the evolution log lists every change
+PASS F20 installing a loaded skill is a locked approval
+PASS F20 a loaded skill is a Ctrl+K command at once
+PASS F20 the command opens the Skill Mixer on the loaded skill
+PASS F21 the four surgical rules are listed
+PASS F21 the knowledge map draws screens, tables and their links
+PASS F21 picking a screen lists its API routes and lights its links
+PASS F21 the inspector prints no stray null
+PASS F21 the quality gate reports 62 rules and no high finding
+PASS F21 the register shows what was adopted, excluded and kept out
+PASS F21 the open-weight catalog lists 12 families with their licences
+PASS F22 two snapshots are saved and the SHA-256 chain verifies
+PASS F22 saving the same site again adds nothing
+PASS F22 the diff shows the old and new line side by side
+PASS F22 forking #1 brings it back as snapshot #3 and the Studio shows it
+PASS F23 the report gives Fitts, Hick with [INFERENCE] and mirror symmetry
+PASS F23 the heat grid is drawn over the preview
+PASS F23 the preview is back in its own language after the mirror measure
+PASS F23 the heatmap switches off
+PASS F25 every chaos kind (long Arabic with tashkeel, bidi controls, markup …) wraps and stays text
+PASS F24 the debate shows the three roles in order
+PASS F24 the critic finds the missing test gate and the synthesizer adds it
+PASS F24 publishing and paying leave the council locked, «بانتظار الموافقة»
+PASS F24 the council's plan becomes a mission with its two locked steps
+PASS F26 the macro is proved: no deadlock, both effects behind a lock
+PASS F26 the proof box prints no stray null
+PASS F26 publishing and paying stop at «قيد الموافقة»
+PASS F26 the macro becomes a mission that keeps its proof and two locked steps
+PASS F27 five files are saved, the page with its strict CSP
+PASS F27 the tokens are W3C format and record six passing contrast pairs
+PASS F27 the SQL starts publishing at pending_approval with a lock
+PASS F27 the test covers mobile, laptop and ultra-wide
+PASS F27 the Web Component renders in Shadow DOM, English left to right and Arabic right to left
+PASS F28 a field changes on hover and shows a busy state
+PASS F28 the UI-state gate shows every required state present
+PASS F28 the mutation result is measured and matches the code
+PASS F29 the teaching series is cut to 120 points and keeps its 4 spikes, labelled made-up
+PASS F29 drawing 60 points still shows every anomaly
+PASS F29 a Studio export is a leaf of the audit tree
+PASS F29 the browser checks the inclusion proof itself
+PASS F29 the whole log verifies
+PASS F30 five layers: the mutation run is verified and the SSRF list is refused in this browser
+PASS F30 sample mode says which checks need the server, and the locks stay
+PASS F30 the bundle is saved scrubbed, with the layers and the Merkle root
+PASS F31 switching to Arabic in one window switches the other
+PASS F31 the theme follows too, and English came back
+PASS F31 the Studio site follows in the other window
+PASS F31 the template is real gzip with the site inside
+PASS F31 importing the .json.gz brings the template back
+PASS F31 a gzip bomb is refused and the site is untouched
+PASS F32 the corrected copy has no gradient and gains both fallbacks
+PASS F32 the log shows the correction with its SHA-256 hashes
+PASS F32 the corrected copy needs nothing more and adds no log entry
+PASS F32 diagnostics show the same log, read-only
+PASS F32 the correction is an audited event and a lesson in memory
+PASS F15 the language button switches the whole shell to Arabic, right to left
+PASS F15 no interface text is left in English on any screen
+PASS F15 Arabic uses Readex Pro
+PASS F15 switching back restores English
+PASS F34 an address is refused; only domain names are checked
+PASS F34 the teaching example is labelled, with the header grade
+PASS F34 RDAP, certificate and security.txt findings are listed
+PASS F34 the page states what stays locked
+PASS F35 the Studio heals every failing pair; the live badge turns green
+PASS F35 the report gives WCAG and APCA Lc before and after each change
+PASS F35 a second press finds nothing to heal
+PASS F35 the reversal engine heals a template's colour pair and logs it
+PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
+PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
+PASS F33 the page is back in English
+PASS F33 Diagnostics lists the bilingual purity gate in the proof layer
+PASS Shell direction switches to RTL
+PASS Shell theme switches to light
+PASS no console or page errors
+
+193 passed, 0 failed

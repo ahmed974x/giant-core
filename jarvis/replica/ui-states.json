@@ -1,0 +1,6 @@
+{
+ "btn": ["default", "hover", "focus-visible", "active", "loading", "locked"],
+ "input": ["default", "hover", "focus-visible", "loading", "empty", "error", "locked"],
+ "select": ["default", "hover", "focus-visible", "loading", "empty", "error", "locked"],
+ "textarea": ["default", "hover", "focus-visible", "loading", "empty", "error", "locked"]
+}

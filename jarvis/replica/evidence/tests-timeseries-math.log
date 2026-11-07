@@ -1,0 +1,11 @@
+test_cli (test_ts_math.Lttb.test_cli) ... ok
+test_keeps_extremes_and_size (test_ts_math.Lttb.test_keeps_extremes_and_size) ... ok
+test_anomalies_found_online (test_ts_math.Stats.test_anomalies_found_online) ... ok
+test_ewma (test_ts_math.Stats.test_ewma) ... ok
+test_vpin (test_ts_math.Stats.test_vpin) ... ok
+test_welford_matches_statistics (test_ts_math.Stats.test_welford_matches_statistics) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.013s
+
+OK

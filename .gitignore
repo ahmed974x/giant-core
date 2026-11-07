@@ -27,3 +27,6 @@ _site/
 data/public-intel-snapshot.json
 start-omega-tools.bat
 start-omega-tools.sh
+
+# Gate evidence for Jarvis Mission Control (ADR-135): saved from the real check commands.
+!jarvis/replica/evidence/*.log

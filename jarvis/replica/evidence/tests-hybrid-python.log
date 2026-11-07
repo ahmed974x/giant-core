@@ -1,0 +1,11 @@
+test_curriculum (test_hybrid.Hybrid.test_curriculum) ... ok
+test_dag_batches_locks_cycle (test_hybrid.Hybrid.test_dag_batches_locks_cycle) ... ok
+test_fingerprint_is_stable_and_textless (test_hybrid.Hybrid.test_fingerprint_is_stable_and_textless) ... ok
+test_pattern_memory (test_hybrid.Hybrid.test_pattern_memory) ... ok
+test_static_intel (test_hybrid.Hybrid.test_static_intel) ... ok
+test_synth_clean_rtl_and_pinned_csp (test_hybrid.Hybrid.test_synth_clean_rtl_and_pinned_csp) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.749s
+
+OK

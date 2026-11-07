@@ -1,0 +1,969 @@
+{
+ "tool": "slop_guard",
+ "rules": 62,
+ "files": 120,
+ "summary": {
+  "high": 0,
+  "medium": 0,
+  "low": 136
+ },
+ "byRule": {
+  "D05": 27,
+  "M05": 109
+ },
+ "sha256": "d8abc2bd85d1e33bcf3f356c6c6b8c1a02abacf70c162fd47d3f37ef9d1ba656",
+ "findings": [
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 57,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 70,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 77,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 89,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 97,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 108,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 145,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 152,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 155,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 173,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 193,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 247,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 252,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 265,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 270,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 275,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 276,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 293,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 317,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 342,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 357,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 368,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 404,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 406,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 462,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 516,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/app.css"
+  },
+  {
+   "rule": "D05",
+   "severity": "low",
+   "line": 29,
+   "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
+   "file": "jarvis/app/src/preview.css"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 35,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 207,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 277,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 20,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-064-autostart-after-reboot.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 13,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-077-agent-system-design.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-078-second-brain-design.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-079-nervous-system-phase1.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-080-long-term-memory-phase2.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-081-second-brain-phase3.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 50,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-081-second-brain-phase3.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 73,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-081-second-brain-phase3.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-082-brain-loop-phase4.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 48,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-082-brain-loop-phase4.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-083-market-paper-gate-phase5.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-084-offices-and-guide-phase6.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-085-paper-vault-phase7.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 42,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-085-paper-vault-phase7.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-088-design-md-the-chain-finance-agents.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-089-skillspector-free-data-profit-split.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-090-full-repo-skillspector-remediation.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 20,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-090-full-repo-skillspector-remediation.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-091-paper-trading-desk-receipt-chain.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-091-paper-trading-desk-receipt-chain.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 15,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-092-osiris-quant-brain-apple-shell.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-093-phase8-straits-sat-learning-capsule-launcher.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-093-phase8-straits-sat-learning-capsule-launcher.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 26,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-093-phase8-straits-sat-learning-capsule-launcher.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 63,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-093-phase8-straits-sat-learning-capsule-launcher.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-094-local-server-short-paths-file-hint.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-095-rate-limit-shield.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 15,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-096-micro-units-pure-sha256-worker-clock-merkle.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-097-pwa-install-offline-shell.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-098-github-pages-public-site.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-100-osiris-deep-zoom-tiles-fly-to.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-101-apple-display-p3-colour-and-aura.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-102-retina-charts-rings-whale-sonar.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-103-rings-sonar-canyon-polish.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-105-shaded-vector-map-lanes-glass-popovers.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-106-binance-websocket-streams.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-107-self-test-app-switcher-sync.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 31,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-107-self-test-app-switcher-sync.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 24,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-108-brain2-synaptic-web-cyber-space-osiris-mcp-bridge.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 37,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-108-brain2-synaptic-web-cyber-space-osiris-mcp-bridge.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 63,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-108-brain2-synaptic-web-cyber-space-osiris-mcp-bridge.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 123,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-108-brain2-synaptic-web-cyber-space-osiris-mcp-bridge.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 36,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-109-neural-flow-xray-chrono-regime-source-fallbacks.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-110-cyber-storm-radar-continuous-time-neural-flow.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 26,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-111-agent-wiring-to-neural-heads.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 21,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-113-four-reviewer-pass-security-design-honesty.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 37,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-113-four-reviewer-pass-security-design-honesty.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 53,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-113-four-reviewer-pass-security-design-honesty.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 75,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-113-four-reviewer-pass-security-design-honesty.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 102,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-113-four-reviewer-pass-security-design-honesty.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-114-oracle-deep-research-agent.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 41,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-114-oracle-deep-research-agent.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 29,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-115-site-audit-oracle-intel-mode.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 105,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-115-site-audit-oracle-intel-mode.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 8,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-116-trade-lab-desk-manager-api-docs.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 28,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-116-trade-lab-desk-manager-api-docs.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 58,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-116-trade-lab-desk-manager-api-docs.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 74,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-116-trade-lab-desk-manager-api-docs.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 81,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-116-trade-lab-desk-manager-api-docs.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 18,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-117-neural-thread-inspector-debate-veto.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 40,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-117-neural-thread-inspector-debate-veto.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 35,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-118-prime-lead-agent-inspector-v2.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 17,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-119-live-readiness-i18n-second-brain.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 48,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-119-live-readiness-i18n-second-brain.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 91,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-119-live-readiness-i18n-second-brain.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-120-site-audit-fixes-headless-selftest.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 25,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-120-site-audit-fixes-headless-selftest.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 33,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-120-site-audit-fixes-headless-selftest.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 17,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-121-agent-core-3d-missions-memory.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 20,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-122-oracle-field-lenses-self-shield.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-124-apple-header-and-globe-restore.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 24,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-124-apple-header-and-globe-restore.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 46,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-124-apple-header-and-globe-restore.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 60,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-124-apple-header-and-globe-restore.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 29,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-125-selftest-recovery-open-cameras-oil-gold-library.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-126-knowledge-domain-graph.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-127-apex-council-dark-gold-peak.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-127-apex-council-dark-gold-peak.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-128-suite-search-nabd-tools.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 9,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-129-reviewed-local-tools.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-132-replica-design-skill-jarvis-design-system.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 42,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-133-jarvis-glass-studio-skill-mixer-replica-skills.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 17,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-134-jarvis-local-server-real-runs-clean-room-cloner.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 35,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-134-jarvis-local-server-real-runs-clean-room-cloner.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 51,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-134-jarvis-local-server-real-runs-clean-room-cloner.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 5,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-135-long-horizon-skill-jarvis-mission-control.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-136-jarvis-local-model-bridge-modelfiles.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 21,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-137-jarvis-parity-100-workflows-arabic-analytics-webhooks.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 46,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-137-jarvis-parity-100-workflows-arabic-analytics-webhooks.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 30,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-138-jarvis-memory-bank-skill-forge-cyber-recon-hybrid-python.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 20,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-139-jarvis-live-open-web-search.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-141-jarvis-founder-gate-locked-access-and-hosted-endpoints.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-142-jarvis-live-skill-loader-discover-synthesize-evolve.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 18,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-143-governance-impeccable-graphify-humanizer-model-catalog.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 13,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-144-jarvis-council-time-machine-ux-physics.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 23,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-146-ui-state-gate-and-measured-mutation-testing.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-147-time-series-engine-and-merkle-audit.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 13,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-148-diagnostics-readiness-and-scrubbed-bundle.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 12,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-149-quantum-math-window-sync-gzip-templates.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 23,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-149-quantum-math-window-sync-gzip-templates.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 26,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-150-reversal-engine-and-log.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 11,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-151-bilingual-purity-gate.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 28,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-151-bilingual-purity-gate.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 15,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-152-passive-recon.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 22,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-152-passive-recon.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 10,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-153-oklch-bisection-contrast-healer.md"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+test_arabic_suggestions (test_humanizer.Humanizer.test_arabic_suggestions) ... ok
+test_english_suggestions_keep_case (test_humanizer.Humanizer.test_english_suggestions_keep_case) ... ok
+test_out_is_a_copy_inside_root (test_humanizer.Humanizer.test_out_is_a_copy_inside_root) ... ok
+test_rewrite_and_code_left_alone (test_humanizer.Humanizer.test_rewrite_and_code_left_alone) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.005s
+
+OK

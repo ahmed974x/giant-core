@@ -1,0 +1,607 @@
+{
+ "format": "jarvis-fuzz-cases-v1",
+ "seed": 144,
+ "count": 60,
+ "cases": [
+  {
+   "id": "fz-001",
+   "kind": "arabic_tashkeel",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 2560,
+   "length": 1288,
+   "text": "اًلًاّخٍتٌبٌاّرٍ اِلٍوُاَجٍهَةْ اّللوِحٌةُ الٍتُصٌمِيَم اِلْوٍاِجٌهًةّ اًلّذّاّكُرًةْ اٍلٌذَاكَرًةِ اّلوُاٌجٌهُةً اُلَذْاِكرِةّ الْخٌادُم اْلخًاُدُمّ اٌلّخاًدَمٌ اّلٌخُاًدًمٍ اٍلْأٌمٍاٍن اًلَمهٌاْرٌةٌ اُلُخاًدٍمٌ اّلمْوَاٌفٌقِة اًلمْهٌمةَ اُلْذِاُكّرًةَ اِلْموٌاٍفٌقًةِ اّلٌمٌهُاِرٍة اِلُذَاْكِرْةٌ الٍبِحث اًلُمٍهاًرّةُ اًلًتصّمًيّمْ اٌلٌخُاْدمٍ اًلْتَصٌمٍيُمٍ اِلمَهمِةْ اٍلٍمِهِارَةٌ اٌلمْوْاّفَقةِ اّلًأمَاْنِ الٌتصُمْيمّ الٍلُوحةْ اُلَبَحُثٍ اَلٌاًخَتِبّاَرْ الخْاِدِمّ اِلمهْاٍرَةٌ الَمًسّتٌخّدم اّلّمهِاِرُةِ اِلُذِاٍكْرّة اٍلًوًاًجهٍةْ اٍلًلَوَحٌة اْلْبحُثٌ الٍمٌسًتُخَدِمً الّمّوٌاّفقُة اْلًمْوٍافْقّةً اْلْخِاِدُمٌ اٌلِذِاَكَرُةَ اٌلّمسٌتّخِدٍمْ اُلُأَمُاَنْ اُلمٌهُاِرْةُ اِلْمهِمْةُ اَلُوُاّجٍهَةْ اِلّمهٍمُةٌ الٍاًخُتٌباٌرْ الٍأِمُاْنٌ اِلًمواُفٍقٌةْ اُلْمٍوُاٍفّقٍةُ اّلِأٌمًان اّلبحِثَ اْلمٌهِارة اٌلًلوٌحةْ اْلٌلْوِحٍةْ اْلَوُاْجَهة اْلمهمة اٌللّوْحِةَ اّلِتِصّميُمٌ اُلتّصُمُيْمُ الِتًصٍمًيُمَ الَموُاَفُقْةّ اْلًاُخّتْبٍاّرٍ اِلٍاخِتبَارّ اًلٍخاِدّمْ الٌمسْتُخّدِمُ اُلّمِهّاٌرةٌ اّلٍأمٌاُنَ اّلُخْادٍمٌ اّلًذاّكْرٍةٍ اَلّمًسٍتخًدِمَ اٌلًمٍوٌاًفِقٌة اُلْتصمٌيٍمُ اِلذًاكٍرِةِ اَلَبحثّ اَلاْخًتّبُاّرّ اّلّمُهْاِرٌةٌ اٌلَذٍاكُرًةّ اِلمُهْمّةِ اٍلِأْمُاّنِ اٌلذاٍكرًة اِلٌأًمِاًن الَمْسٍتخدَمّ اٌلَأّمَاًنٌ اٌلِمًوَاٌفِقُةٌ اّلَتصٌميٌم اٍلًمهًمِة اْلٌمًهٌمٌةً الًوٍاجًهًةَ",
+   "expect": "wraps inside its box; marks stay on their letters; letter-spacing 0"
+  },
+  {
+   "id": "fz-002",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 768,
+   "length": 182,
+   "text": "699315 studio skill البحث mission memory 386091 v3.43 المستخدم v6.57 v1.61 v2.57 v9.54 المهارة studio 309479 المستخدم المهمة council البحث 491024 المهمة الاختبار memory 915763 622749",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-003",
+   "kind": "long_word",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 300,
+   "text": "ifungsssujzcsewilmpqatlafyrtntjdexqtcamftdcpdjepnrossdbwxygrfkiervnqypgybwhaxeblkyapwijfdmtsddkivjsgtzldsmscfekpovsmessicchjtdossqhdphqolnsraicslimumoljtgwontexncqnslobxmmqhwfxhmulyrvpjmmxfmgwnftimxvaaxwczwhtcochfjynuenxcusuhxvwnfwhcvqlvbqwemcmjqvimsqjhyhtlrbgdatzfzxudrrxqrfyttpvrisymqgrkgakrlnwankr",
+   "expect": "breaks inside its box (overflow-wrap); no horizontal page scroll"
+  },
+  {
+   "id": "fz-004",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 315,
+   "text": "https://example.org/mission/design/studio/search/studio/studio/skill/search/memory/approval/memory/memory/token/layout/council/search/memory/studio/memory/memory/token/server/token/contrast/design/council/skill/design/search/mission?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-005",
+   "kind": "emoji_zwj",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 67,
+   "text": "👨‍👩‍👧server 👍🏽mission 🇸🇦search 👍🏽server 👍🏽studio 🇸🇦token 🏳️‍🌈search",
+   "expect": "each emoji stays one glyph; width counted by grapheme"
+  },
+  {
+   "id": "fz-006",
+   "kind": "bidi_controls",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 2560,
+   "length": 14,
+   "text": "⁦council ⁩123‎",
+   "expect": "shown as text; an override does not flip the rest of the page"
+  },
+  {
+   "id": "fz-007",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 3,
+   "text": "​‌‍",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-008",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 20,
+   "text": "<script>x()</script>",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-009",
+   "kind": "numbers",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 5,
+   "text": "1e-09",
+   "expect": "tabular, left to right; no NaN or Infinity shown"
+  },
+  {
+   "id": "fz-010",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 1440,
+   "length": 0,
+   "text": "",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-011",
+   "kind": "long_line",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 1440,
+   "length": 2385,
+   "text": "skill server studio skill studio search design approval studio search studio council search council server memory studio studio council layout council server design mission memory memory mission search mission server studio server studio server memory design council studio contrast approval server studio memory skill mission skill skill studio contrast skill server memory token council design mission server mission council mission approval design studio server memory mission server layout studio memory token skill council design search contrast server contrast studio token server mission memory memory token server server server studio layout token skill skill search memory design studio skill search contrast studio mission memory memory design layout mission design layout search mission contrast studio contrast server skill token search server layout skill search approval approval layout contrast approval council memory approval server skill memory design search mission skill design layout server skill layout council studio mission skill council approval server contrast skill approval council contrast council design contrast skill design search search memory search council skill server council mission search contrast design mission council contrast search design search layout contrast approval token layout approval skill design search design token design token mission contrast layout layout server contrast memory layout token server layout skill studio design token server server council design layout token memory contrast contrast skill council skill contrast search token search skill council server studio memory mission studio server approval memory memory server memory contrast mission server council layout memory contrast memory contrast contrast design council council layout token council memory layout memory contrast approval server memory design contrast layout studio mission skill memory skill memory council memory token search memory contrast design search studio approval search approval layout token skill council design design server skill skill studio studio contrast approval council search layout server approval memory contrast skill council token skill council council server skill skill search mission design contrast layout token token skill skill approval skill council server studio design search skill mission token studio council",
+   "expect": "wraps; line length stays at most 75ch where text is read"
+  },
+  {
+   "id": "fz-012",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 21,
+   "text": "<img src=x onerror=y>",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-013",
+   "kind": "arabic_tashkeel",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 390,
+   "length": 1566,
+   "text": "اُلذَاكرِة اٍلّمٍهْمٌةٍ اًلتٍصِمٌيُمٍ الخاْدٌمَ اًلُمْوِاُفًقَةَ اًلًلًوّحًةُ الَأْماْنَ اَلِمٍستٌخُدْمً اٍلٍمٍهارَةِ الٍمًهِمةً اًلٌاٌخًتَبٌارَ اًلّاَخٍتِبٍاًرْ الِمٌوٍاٌفْقُةٍ اُلٌوْاٍجٍهْة اٌلّبٍحْثّ اْلّلوُحة الَاّخْتَبْاُرٍ اِلًمًهاْرةُ اُلًمِسِتًخُدُمْ اِلّمَهاَرّةَ الٍأُمْاُنً اَلَخًاِدَم اُلٍلوحةٍ اَلِمٍهَاَرةً اٌلٍمِهمّةِ اًلٍتًصمًيَمّ اِلًلُوحِةً اٍلُبٍحًث اٌلْذّاَكٍرة اّلمَوَاِفُقٍةْ اْلمهٍارةْ اِلَأٌمًاّنْ اّلٍخٌاُدمٍ اْلِتَصَميَمٌ الًمْسُتُخْدمُ اّلٍبٍحَث اْلّبٌحّثٍ الَأٌماْنً اٍلَأمَاَنّ الَمُوًاٍفقة اَلّاّختْبٌاِر اٍلِمٍهٍمَة اُلتُصِمًيٍمٍ الْوُاّجهٌةِ اٌلٍخُاُدٍمْ الٌتٍصّمِيٍمً اًلُأًمّاٍنٍ اَلموَاَفًقَةْ الٍذِاٌكٍرةِ الَمٌسُتًخدمً اٌلًلوْحًة اّلٌأمَاٍن اٌلْبْحٍثٌ اّلٌاّخّتبٍاَرٌ اْلّخٍاٍدٌمِ اٌلًلوُحٌةَ اٍلٍواَجهةّ اْلأمًاٌنٍ اٌلُمْسّتخًدمَ اّلٍاختَبارً اّلَمّهّمَةٍ الُأَماٍنَ المُوًاٌفِقّةٌ اّلُاُختّبّاٍرِ اُلْمْهُمًةُ اُلًواّجٍهًة اُلّاًخٍتبارّ اًلّذِاْكّرُةٍ اًلًأْمَاّنَ اٍلِمٍستٍخِدٌمٌ الٍاًخّتْبُاْرَ اْلَمَهًمْةٍ اّلْمًوَاٌفّقْة الٌمُسُتَخدٍم اُلَمّهًمَةّ اٍلُتًصْمْيٍمْ اْلُوُاِجٌهَةً اٍلْموّاُفٌقةْ اُلاّخًتُبٍاٌرْ اٍلَذُاْكّرْةٍ الٍذٍاٌكّرَة اْلّلُوٍحّةْ اًلِلِوَحةُ اٌلوٍاجّهةٍ الْمًهُمةٌ اًلُمَهارْةّ الَأٍمُاْن اٍلٍأِمِاٍنً اِلٍلِوًحْةّ الًمسٌتٍخًدًمّ اّلٌتصمِيمٍ اَلٍاخْتبّاَرٍ الٍوْاّجِهٌةٍ اِلِأَماّنً اّلأٌمٍاًنَ اْلّواْجهٌةَ اْلّمٍهٍاُرةٌ اُلُلَوُحٌةٌ اْلُتٍصًميمٍ الٍمٍهمٌة الِتًصمًيّمً المسٌتٌخُدُم اًلْتصٍمِيٍمَ الًبْحَثِ اْلًوُاٌجٍهُةً اِلْمًهَاّرةٍ اْلٍتِصمَيُمْ اَلَمْواًفٍقةَ اًلٌمٍسًتٌخِدمُ الذٌاٍكًرِةُ اُلمٍهٍاّرْةّ اٍلٍمَهاّرْةَ اِلتِصِمَيمّ الْلٍوّحةْ اْلمّوًاٍفُقةِ اَلُاًختًبًاًر اَلْاخٌتّباْرّ اَلَلًوحٌة",
+   "expect": "wraps inside its box; marks stay on their letters; letter-spacing 0"
+  },
+  {
+   "id": "fz-014",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 7,
+   "text": "{{7*7}}",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-015",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 390,
+   "length": 56,
+   "text": "v6.87 search المهمة 752715 المهمة studio contrast اللوحة",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-016",
+   "kind": "long_word",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 300,
+   "text": "tolvhkwlnhoxzuvwzsbfwolhrtvdgroywmepatuqtwllzvuifkkjroiwskmzgpmdvknfxthmnzuaxellhbkafhwhkodvgvjbdhmrcygftqqpoujosmkkhtyueischybybndbjjuwaeewhjjedcgnovwlfgkxkevhncwwaxdvkznfnznmrvsefjbpzuiqecetpsskbefxjkibytzaeryxzsgrajaamyswgfynwgqpnerpbzmjbrxgzfnckcdborxzlpjyubrqaotojhaemzhucuimlsnapqvcrrcyumpetnpo",
+   "expect": "breaks inside its box (overflow-wrap); no horizontal page scroll"
+  },
+  {
+   "id": "fz-017",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 11,
+   "text": "s​t​u​d​i​o",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-018",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 320,
+   "length": 69,
+   "text": "search v7.50 39236 v2.7 contrast الموافقة 823995 816953 token الواجهة",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-019",
+   "kind": "long_line",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 2763,
+   "text": "skill contrast studio mission mission council mission server server design design token search skill memory approval skill design design contrast search studio council search server mission mission layout server memory contrast skill design search server council token search contrast token contrast token skill search layout approval council contrast skill search token contrast skill mission memory server layout server search contrast skill token design server council contrast approval memory layout server approval studio layout layout council contrast server skill memory layout server token skill approval council server mission approval approval mission skill council contrast studio layout layout studio layout design council token layout token council layout contrast token skill design council token memory studio layout council council search layout search council skill studio server token contrast studio layout search server contrast skill design studio mission search council approval memory council memory contrast contrast studio layout layout skill memory contrast layout approval studio studio token approval contrast layout layout approval council server memory studio approval approval memory layout council design server mission server layout contrast token memory skill studio server skill mission token design server server mission contrast mission studio memory mission token approval approval approval server contrast studio token design server token studio design server token skill approval memory server skill search skill layout studio memory council skill skill memory skill council memory contrast search council approval mission skill approval approval server approval layout studio server studio memory mission contrast approval approval skill token layout skill mission memory approval council design memory design token memory council studio council layout contrast search approval search server search design studio memory search mission server studio mission council council server council studio approval skill layout mission contrast skill search studio layout design contrast layout contrast token mission approval memory memory contrast design studio approval server search server memory token studio server mission token token approval token token approval server memory server council memory token studio search approval studio skill layout server token mission contrast server contrast approval studio memory skill mission studio council design token memory contrast approval approval mission token layout server design layout approval layout search layout memory council search studio studio memory approval council studio search mission mission token mission approval council design server contrast contrast council",
+   "expect": "wraps; line length stays at most 75ch where text is read"
+  },
+  {
+   "id": "fz-020",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 11,
+   "text": "l​a​y​o​u​t",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-021",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 19,
+   "text": "'; drop table x; --",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-022",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 0,
+   "text": "",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-023",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 319,
+   "text": "https://example.org/skill/approval/token/search/studio/memory/studio/token/token/studio/council/memory/skill/council/token/council/server/design/token/mission/memory/design/mission/approval/approval/memory/server/contrast/server/council?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-024",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 6,
+   "text": "\"'><b>",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-025",
+   "kind": "long_line",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 2630,
+   "text": "search design council studio mission search design contrast server token memory memory layout design council design contrast studio contrast layout layout search memory skill studio memory search council memory council approval approval skill studio skill approval skill token approval token design council council studio server memory design token design layout layout server mission council contrast studio token mission token memory approval mission contrast search server search memory council memory mission server search approval mission layout server memory skill contrast search mission layout council search approval contrast design contrast mission council council server skill studio token design token design layout skill approval memory server contrast layout memory design skill mission design council layout skill design mission search skill token server contrast design search memory mission token layout skill server search mission skill mission token server approval skill layout skill layout approval approval search contrast server layout design layout approval search council memory memory approval skill search approval token studio approval approval mission studio layout mission token skill contrast design contrast search skill council search contrast studio search skill studio token token design skill layout studio contrast memory search memory server contrast mission memory design skill server server token approval layout memory studio mission token skill layout approval memory approval token search approval mission design approval token council approval approval approval layout skill council search approval search skill contrast contrast mission design council design studio approval approval server server council council search skill search search memory layout studio skill approval design approval design search memory search mission studio approval council memory skill token studio contrast studio studio server mission mission council search contrast skill mission memory mission memory design studio approval skill council council approval memory council council search contrast contrast token server contrast server design design memory skill search design layout mission contrast layout contrast design studio skill layout council memory layout mission mission contrast mission council server token server mission council search council token studio council contrast layout layout design memory studio approval council search approval approval mission skill server token server council memory mission studio council memory approval council mission council mission search studio server",
+   "expect": "wraps; line length stays at most 75ch where text is read"
+  },
+  {
+   "id": "fz-026",
+   "kind": "long_word",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 300,
+   "text": "sutzgqinuabvclibouyhnnzosibzvxajgpkvppakgtnmmubqfamghqdshnutumarciskhcyqcstdbrukuhkwrspdvdgyrzdljhlscgwmwimtsbmdsyjwuqnhkaiuyffdjepqrzqioralyryrqectxxhevkxtckruyslwxhlupudqzgtqdeohfhhjfmnigxqcaqvqqyxclzvtqtsrujmfzkoqsyhnledejduzyeghgmaidpmxmmdjwzsgakestkkklxmcukljffnaljqclmbejecdvonoeumevcrvoimzxglu",
+   "expect": "breaks inside its box (overflow-wrap); no horizontal page scroll"
+  },
+  {
+   "id": "fz-027",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 323,
+   "text": "https://example.org/memory/memory/server/token/token/layout/skill/search/studio/server/approval/design/studio/approval/skill/search/search/mission/search/contrast/mission/approval/mission/design/approval/layout/council/search/approval/skill?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-028",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 3,
+   "text": "​‌‍",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-029",
+   "kind": "arabic_tashkeel",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 320,
+   "length": 760,
+   "text": "اّلٌتّصٍمٍيُم المِهاَرٍةٌ اًلٍتٍصّمُيْمُ اِلمٍهِاُرٌةُ الْذّاكٌرٍةْ اُلْبْحٌثْ اٌلٍاّختبَارْ اٌلَتصٍمًيْم اٍلأْمُاَنْ اٌلٌتٌصُمًيٌم اِلَتّصمُيٌمٌ الًمَهمٍةْ الٍمًهمٍةً الٌذٍاكًرٍةَ اَلبَحًث اّلتْصُمُيُمٌ اِلٌمٍسُتٍخدٍمٌ اَلِبٌحّثٌ اّلٍمَوّافقة اٌلْاَخٌتٌبْارٌ الٌلٍوُحْةً اًلُتٌصٌمَيّمَ اُلُمِسّتٌخٌدْمُ اّلّمٌسٌتخْدٍمَ المهُاُرًةٌ اِلُاٌخٌتّبْاٍر اَلٌموْاُفِقةِ اَلأْمِاِنُ الِمًسٍتٌخدُم اٌلْأًمِانِ اَلْمِهٌمُة اٍلْخٌاًدًمٍ اًلَلوًحةٍ اّلٍمّهّمةُ اًلمًهِمًةً اّلُواُجّهَةً الٍمْهمِة اْلوٌاّجٍهْةّ اْلٌأِمّاًنٍ اٌلًأِمِاِن الٌلْوَحْة اٍلًلوٌحْةَ اٌلمِستخدٍمِ اٌلتَصمّيُمٍ اّلِخاّدْمُ اٍلَلوٍحَةُ اِلٍمواْفقِة اْلَبحًثٍ اِلبًحٍثٌ اْلوٍاَجهةْ اّلْلَوِحُةٌ اْلمسٍتٌخٍدًم اّلاِخّتُبّاُر الَمِسَتخْدِمّ اَلبِحَثٌ اًلًلٍوّحٌةُ اُلًبّحٍثّ اِلَمِوَاّفُقة اّلِأُمّاِنْ",
+   "expect": "wraps inside its box; marks stay on their letters; letter-spacing 0"
+  },
+  {
+   "id": "fz-030",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 6,
+   "text": "`${1}`",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-031",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 2560,
+   "length": 141,
+   "text": "v4.71 skill 232101 المستخدم v9.71 v8.72 v1.83 studio 368081 752539 788208 الأمان v0.19 v3.79 v9.15 اللوحة v6.59 347815 approval design 628803",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-032",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 321,
+   "text": "https://example.org/design/memory/mission/search/studio/token/approval/search/server/design/token/skill/token/council/approval/studio/search/design/contrast/memory/design/council/contrast/search/memory/layout/server/approval/council/token?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-033",
+   "kind": "numbers",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 1,
+   "text": "0",
+   "expect": "tabular, left to right; no NaN or Infinity shown"
+  },
+  {
+   "id": "fz-034",
+   "kind": "emoji_zwj",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 50,
+   "text": "👨‍👩‍👧search 👍🏽mission 👍🏽approval 👍🏽search 🇸🇦server",
+   "expect": "each emoji stays one glyph; width counted by grapheme"
+  },
+  {
+   "id": "fz-035",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 321,
+   "text": "https://example.org/contrast/token/memory/mission/token/server/council/contrast/token/mission/token/layout/contrast/mission/design/layout/contrast/token/memory/design/layout/token/approval/layout/skill/mission/design/layout/server/council?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-036",
+   "kind": "emoji_zwj",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 1440,
+   "length": 152,
+   "text": "🇸🇦council 👨‍👩‍👧skill 👍🏽design 👨‍👩‍👧design 🏳️‍🌈council 👍🏽server 👨‍👩‍👧layout 👍🏽search 🏳️‍🌈contrast 🏳️‍🌈studio 🏳️‍🌈skill 🏳️‍🌈approval 🇸🇦studio 🏳️‍🌈approval",
+   "expect": "each emoji stays one glyph; width counted by grapheme"
+  },
+  {
+   "id": "fz-037",
+   "kind": "arabic_tashkeel",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 390,
+   "length": 1558,
+   "text": "اُلٍمٌوِاْفقُةُ اَلٌلِوٍحًةِ الْمّسِتُخَدٌمْ الٍلُوٌحِةَ اِلُمْهُمْةّ اَلّوّاُجِهَة اِلٍوٍاِجٍهة المَوٍاُفًقِةُ اٍلتُصُمُيمٍ اّلْاّختُبٍاُرّ اِلّمْهاَرّةِ الخٍادِمِ اّلُمُهْمُةً اٍلْاخِتٌبٍاٌرٌ الٌمٍسَتخْدِم الّمهٍاًرٍةً الْمٍوًاْفّقِةْ اُلِخَاّدَمٌ الخادُمً الِاُخُتَبًاُرِ اِلّاختّبْاْرِ اًلاّختبًاٌر اْلًأْمْانٍ اًلْمٌوْاٍفًقُةُ اِلّلْوَحُةِ الٌمٍوٌاًفقة اّلٍأُمْاَنَ اَلُأٌماْن اِلّأّماّنٍ اُلمِسٍتًخٌدًمُ اّلُخّاُدٌمْ اّلٍذِاٌكّرةٌ الُأًمًاّنّ الْخاْدٌمِ اٍلُلوِحُةً اْلمْوّاْفّقُةٌ اٍلّذّاًكٌرَةْ اّلّتِصُمُيْمً اُلٌلًوُحُةْ اِلِمهمٌة الَلْوٍحٍةُ الذٌاًكرةَ الّبّحّث الٍمهاًرُةَ اٌلاْخَتِبِاْرَ اُلّذاْكِرًة اٌلّمٍسُتًخًدْمْ اَلُمسَتًخًدمْ اّلِتٌصًمٍيّمُ اٍلًمَهٌمُةّ اُلٍمُهُاٍرُةٍ اٌلَموًاُفٍقَةٍ الُاًخِتِبْاَر اْلٌلًوحٌةُ اّلُتّصّمٍيَم اٍلمٌسّتَخِدّمٍ البَحِثْ الّموَاُفِقٍة اْلمِوٍاًفٌقْةّ اٌلُاخِتّبًاْرٌ اْلِموٍاٌفْقٌةّ اِلُمٌوَاْفٍقْةّ اَلٍتِصمُيًمِ اٍلٍمِوّاّفْقًةً اٌلاخٌتًبْارُ اًلْأٌمّاَنٍ اْلمٍهَاٌرَةّ اًلواّجّهةٌ اُلُاْخٌتْبَاُرٍ الّمٌسًتٍخٌدَمُ اْلًمْسًتخّدّمَ اٌلٍخًاَدُمُ الِوِاّجِهّةَ اًلمِواْفِقَة اَلِبٌحثٍ اٍلِلّوحًة اّلًذَاُكرٌةٌ اًلَاختَبٍاْر اِلُمَوٍافقةُ اِلْمْوَاًفُقْة اِلًمسٌتَخٌدٌمّ اٌلمِهّاٌرَةَ اُلَذاكًرّةٌ اٍلْاٌختبّاِرُ اُلْاٍخَتبِارً اُلتٍصًمَيمِ اَلّذاُكًرْةُ اِلًمٌوٌاٍفقّةٌ اًلذاِكرةً اْلتًصّمُيٌمْ اًلُلوْحٌة اَلُمٌهَمًةً اًلُتصْمْيًمً اٍلمهَمة اٌلّمهِمَة اْلٍتصَمُيًمِ اًلّلِوٍحٌة اْلمْسّتخدمَ اٌلّمِهَمّةٍ اْلذٌاْكُرٌةٌ الْاِخٌتّبًاٌرٍ اَلمًهُاِرْة اَلّاٌختٌباٍرً اْلًأٌمُاٌنْ الُمهَاٌرِةَ اّلْأّماْنٍ اًلِأَمًاُن الّذاًكَرْةٌ اّلمّواُفٌقةٌ اِلْمْهٌاٌرّةّ اٍلْمْواًفَقٌةٍ اّلِمّهَمًةٍ اُلًاخًتًباُرٌ الأّمَاْنّ",
+   "expect": "wraps inside its box; marks stay on their letters; letter-spacing 0"
+  },
+  {
+   "id": "fz-038",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 11,
+   "text": "l​a​y​o​u​t",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-039",
+   "kind": "long_line",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 2460,
+   "text": "approval token council mission server layout contrast memory approval design approval design layout studio contrast layout design design studio server server design council contrast layout memory server council search token memory studio server mission server design contrast contrast token mission search token search memory studio server studio design council studio token server approval mission design memory design memory token token server layout server studio server contrast contrast council council approval search token token token mission mission server token search memory layout server mission search skill skill mission studio token council search search design contrast design council search mission approval contrast search mission search approval contrast token memory token studio studio council search council skill contrast mission search memory approval layout server approval studio token server memory contrast studio contrast studio approval approval contrast design council server contrast design approval memory design memory search search contrast memory token contrast studio skill council design token layout contrast approval contrast approval studio studio council approval server contrast council studio memory approval mission mission approval contrast layout skill design search approval token approval studio studio contrast studio council mission mission council search search memory layout search approval layout design token layout approval skill memory layout memory memory contrast council skill skill council contrast design layout memory design design token memory layout contrast layout studio design contrast skill memory mission server council design search token memory layout memory approval memory skill search skill layout server design token memory skill approval contrast search layout search design server contrast studio token mission skill council layout approval skill search mission server server token server design search memory contrast layout search server search memory layout search skill skill memory memory council design design memory memory council approval mission contrast contrast council token layout studio mission memory contrast token server token design memory server memory design server server server server memory token skill token contrast approval mission search skill layout contrast skill memory skill contrast memory studio skill memory search layout design search server studio",
+   "expect": "wraps; line length stays at most 75ch where text is read"
+  },
+  {
+   "id": "fz-040",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 768,
+   "length": 73,
+   "text": "council 850629 472242 v5.66 اللوحة v1.98 487945 303618 v0.14 البحث الخادم",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-041",
+   "kind": "numbers",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 5,
+   "text": "1e-09",
+   "expect": "tabular, left to right; no NaN or Infinity shown"
+  },
+  {
+   "id": "fz-042",
+   "kind": "bidi_controls",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 14,
+   "text": "‮المهارة ⁦123⁦",
+   "expect": "shown as text; an override does not flip the rest of the page"
+  },
+  {
+   "id": "fz-043",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 327,
+   "text": "https://example.org/approval/mission/memory/studio/approval/council/design/token/mission/token/design/council/mission/layout/design/server/contrast/skill/server/approval/memory/layout/studio/studio/approval/approval/contrast/search/layout/token?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-044",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 0,
+   "text": "",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-045",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 316,
+   "text": "https://example.org/skill/layout/memory/token/studio/contrast/mission/token/token/studio/server/mission/memory/approval/memory/server/skill/memory/contrast/layout/layout/contrast/skill/token/token/contrast/studio/search/memory/design?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-046",
+   "kind": "long_line",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 1839,
+   "text": "memory token memory memory approval server search design server contrast token mission mission token memory council search approval studio skill server studio design design council contrast design memory server token search mission studio studio design search token memory mission skill mission memory approval contrast approval token council search search design studio mission token contrast server council contrast skill contrast mission contrast token approval server skill design token design skill token skill token layout mission mission design skill council memory mission design contrast memory server contrast approval search skill mission search contrast design token memory skill layout mission contrast token studio server design layout studio contrast council token approval design server server server token contrast council mission design approval server studio token mission search approval layout token skill memory memory layout layout token token search council design mission search studio studio skill search layout layout council approval server approval contrast token memory token approval layout server approval studio mission token layout skill contrast layout contrast approval skill mission studio studio council studio memory contrast contrast design council search approval token design layout mission contrast layout layout server council layout studio server memory contrast approval council council layout layout server approval mission search layout contrast search design studio design council council mission design search contrast council token design token server token layout token server council council approval memory approval search design mission skill search search skill memory server contrast approval memory studio token layout memory approval studio server search memory skill layout token",
+   "expect": "wraps; line length stays at most 75ch where text is read"
+  },
+  {
+   "id": "fz-047",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 0,
+   "text": "",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-048",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 1440,
+   "length": 11,
+   "text": "s​t​u​d​i​o",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-049",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 768,
+   "length": 133,
+   "text": "layout 920210 v1.51 v5.95 2625 studio v7.7 layout 813488 token 831238 الخادم mission 551568 الأمان 126391 الذاكرة 426233 v9.44 545935",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  },
+  {
+   "id": "fz-050",
+   "kind": "markup",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 390,
+   "length": 19,
+   "text": "'; drop table x; --",
+   "expect": "shown as text; nothing runs, no element is created"
+  },
+  {
+   "id": "fz-051",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 11,
+   "text": "s​t​u​d​i​o",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-052",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 2,
+   "text": "\t\n",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-053",
+   "kind": "long_url",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 1440,
+   "length": 324,
+   "text": "https://example.org/studio/search/mission/token/token/server/approval/design/studio/studio/mission/approval/layout/council/token/design/search/studio/contrast/search/server/design/skill/council/mission/contrast/design/contrast/mission/server?q=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "expect": "breaks inside its box; never widens the page"
+  },
+  {
+   "id": "fz-054",
+   "kind": "long_word",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 768,
+   "length": 300,
+   "text": "jkazxvahkpcgzielyqqfxugmsqgsexxqingzxyeknfsyqlkzcllhabwahrxaigegdwmwyovilhuwsxmmwgndqjlepojynhkhqwwqevcllcngxfgvhzrtoqhywxjvehmmymhuhdpydgyyrgrkiuxxgyimegwwxlvqasjicmmmgcffwhaijlngfrgqkzmneppxjjfscptzxrpklssgmanfzvyvnjsiyoedysievjvupxgpdwenjrjtupsvsfcaecwwedwkmdoagnpbfiefdiqngmtouhverwsytbukfxscxhfn",
+   "expect": "breaks inside its box (overflow-wrap); no horizontal page scroll"
+  },
+  {
+   "id": "fz-055",
+   "kind": "empty",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 2,
+   "text": " 　",
+   "expect": "refused with a plain message, or shown as an empty state"
+  },
+  {
+   "id": "fz-056",
+   "kind": "zero_width",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 375,
+   "length": 3,
+   "text": "​‌‍",
+   "expect": "kept or removed, never makes an empty-looking name valid"
+  },
+  {
+   "id": "fz-057",
+   "kind": "emoji_zwj",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 99,
+   "text": "👨‍👩‍👧studio 🏳️‍🌈studio 🇸🇦council 👍🏽contrast 🏳️‍🌈studio 👨‍👩‍👧search 👨‍👩‍👧memory 🏳️‍🌈layout 🏳️‍🌈skill",
+   "expect": "each emoji stays one glyph; width counted by grapheme"
+  },
+  {
+   "id": "fz-058",
+   "kind": "long_word",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 2560,
+   "length": 300,
+   "text": "dgsfbfbmjcjdveaqftuspepxrqsutzjtgeeoohxcukvrieorlngniosckrbynwuomiabwnwbmbtnqnzmknnhgedrfiteqccvzevkqfvbnpcgmdwrqnflpjfmrhrzyhpzixuxcdpxdrcnhieoudtaeeghbpeulxzhzmarfhrrdwmudxpxbkhfljrdienfakrbptqkvnqvemihwxwzmlskwtbotvrndetviorucuvduybtcgwjwsnixxhwlfrtjxtpmttjgpiuzjgiinfcznxtjkdjpxlivtqutdkcltodrzxn",
+   "expect": "breaks inside its box (overflow-wrap); no horizontal page scroll"
+  },
+  {
+   "id": "fz-059",
+   "kind": "emoji_zwj",
+   "lang": "en",
+   "dir": "ltr",
+   "width": 320,
+   "length": 174,
+   "text": "🏳️‍🌈council 👍🏽mission 🏳️‍🌈council 👍🏽studio 👨‍👩‍👧token 👨‍👩‍👧token 🇸🇦design 👍🏽design 👨‍👩‍👧token 🏳️‍🌈skill 🏳️‍🌈skill 🇸🇦design 🏳️‍🌈layout 🏳️‍🌈council 🏳️‍🌈search 👍🏽mission 🇸🇦skill",
+   "expect": "each emoji stays one glyph; width counted by grapheme"
+  },
+  {
+   "id": "fz-060",
+   "kind": "mixed_bidi",
+   "lang": "ar",
+   "dir": "rtl",
+   "width": 390,
+   "length": 130,
+   "text": "approval 707273 البحث 890161 contrast v8.93 الأمان الموافقة v8.30 approval المهمة 658728 v0.51 810896 916785 100631 المستخدم v7.75",
+   "expect": "Arabic runs right to left; numbers and Latin stay left to right inside it"
+  }
+ ]
+}

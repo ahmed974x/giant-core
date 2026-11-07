@@ -1,0 +1,15 @@
+test_arabic_has_tashkeel_and_rtl (test_ux_physics.Fuzzer.test_arabic_has_tashkeel_and_rtl) ... ok
+test_out_stays_in_root (test_ux_physics.Fuzzer.test_out_stays_in_root) ... ok
+test_seeded_and_every_kind (test_ux_physics.Fuzzer.test_seeded_and_every_kind) ... ok
+test_python_and_js (test_ux_physics.Index.test_python_and_js) ... ok
+test_syntax_error_is_reported_not_raised (test_ux_physics.Index.test_syntax_error_is_reported_not_raised) ... ok
+test_cli_exit_codes (test_ux_physics.Physics.test_cli_exit_codes) ... ok
+test_fitts (test_ux_physics.Physics.test_fitts) ... ok
+test_hick (test_ux_physics.Physics.test_hick) ... ok
+test_html_mode (test_ux_physics.Physics.test_html_mode) ... ok
+test_symmetry_and_heat (test_ux_physics.Physics.test_symmetry_and_heat) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.018s
+
+OK
