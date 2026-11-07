@@ -145,3 +145,11 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (24
 
 - `studio-heal-*`: Studio → Colours after **Heal contrast automatically** on a theme with four failing pairs: every badge passes, and the report gives each change with WCAG and APCA Lc before and after;
 - `reversal-contrast-*`: the reversal engine healing a template's colour pairs (`#777777` on white, and an OKLCH blue on near-black, hue kept).
+
+## ADR-154 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `math-calculus-*`: `#/math` for x³ − 6x² + 11x − 6 on [0.5, 3.5]: the simplified expression, the derivative 3x² − 12x + 11, the roots 1, 2, 3 by Brent and Newton, Simpson's integral, each back-check passed and [VERIFIED];
+- `math-ode-plot-*`: RK4 for dy/dx = −2y + x, y(0) = 1, 20 steps: y(2) = 0.7728959917, the step-doubling check, and the solution drawn as one SVG path;
+- `math-number-theory-*`: 104729 prime by Miller-Rabin with 13 bases, and x ≡ 23 (mod 105) by the Chinese remainder theorem.
