@@ -2256,6 +2256,12 @@
   "A Contact link uses plain http.": "رابط Contact يستخدم http غير المشفّر.",
   "A Contact is not a mailto:, https: or tel: link.": "جهة اتصال ليست رابط mailto: أو https: أو tel:.",
   "Give a domain name such as example.com: no address, port or path.": "اكتب اسم نطاق مثل example.com: بلا عنوان IP ولا منفذ ولا مسار.",
-  "recon passive": "استطلاع سلبي"
+  "recon passive": "استطلاع سلبي",
+  "Healed the text contrast": "عولج تباين النص",
+  "Heal contrast automatically": "عالج التباين تلقائياً",
+  "Nothing could be healed by lightness alone.": "لم يمكن علاج أي زوج بالسطوع وحده.",
+  "All pairs already pass WCAG 4.5 and APCA 60.": "كل الأزواج تجتاز WCAG 4.5 وAPCA 60 أصلاً.",
+  "Cannot heal": "لا يمكن علاجه",
+  "No lightness of this hue passes on that background; change the hue or the background.": "لا يوجد سطوع لهذا اللون يجتاز على تلك الخلفية؛ غيّر اللون أو الخلفية."
  }
 }

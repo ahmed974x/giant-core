@@ -731,6 +731,28 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator("section[aria-labelledby=h-rlock] .lock-line").count()) === 1, "F34 the page states what stays locked");
 }
 
+// F35: the OKLCH contrast healer (ADR-153) in the Studio and in the reversal engine.
+{
+  await go("#/studio");
+  await page.locator("#f-c-muted").fill("#4a4f58");
+  await page.locator("#f-c-accent").fill("#3366cc");
+  await page.waitForTimeout(200);
+  const failing = await page.locator(".cbadges .badge.s-failed").count();
+  await page.getByRole("button", { name: "Heal contrast automatically" }).click();
+  await page.waitForTimeout(300);
+  ok(failing >= 3 && (await page.locator(".cbadges .badge.s-failed").count()) === 0 && await page.getByText("All pairs pass WCAG 4.5 and APCA 60").first().isVisible(), "F35 the Studio heals every failing pair; the live badge turns green");
+  const muted = await page.locator("#f-c-muted").inputValue();
+  ok(/^#[0-9a-f]{6}$/.test(muted) && muted !== "#4a4f58" && (await page.getByText(/^WCAG \d+(\.\d+)? → \d+(\.\d+)? · APCA Lc -?\d+(\.\d+)? → -?\d+(\.\d+)?$/).count()) >= 3, "F35 the report gives WCAG and APCA Lc before and after each change");
+  await page.getByRole("button", { name: "Heal contrast automatically" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("All pairs already pass WCAG 4.5 and APCA 60.").isVisible(), "F35 a second press finds nothing to heal");
+  await page.locator("#f-preset").selectOption("night");
+  await page.locator("#f-rev").fill(".card { color: #777777; background-color: #ffffff; overflow-wrap: anywhere }");
+  await page.getByRole("button", { name: "Reverse and correct" }).click();
+  await page.waitForTimeout(300);
+  ok(await page.locator("section[aria-labelledby=h-rev]").getByText("Healed the text contrast").first().isVisible() && /color: #767676/.test(await page.locator("#f-rev-out").inputValue()), "F35 the reversal engine heals a template's colour pair and logs it");
+}
+
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
 // mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.

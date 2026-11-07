@@ -111,10 +111,11 @@ const TARGETS = [
   { file: "fetch-public.mjs", functions: ["v4Blocked", "v6Groups", "isBlockedAddress"], oracle: "fetch" },
   { file: "llm-plan.mjs", functions: ["lockCategory", "enforceApprovalGates"], oracle: "llmPlan", regexConst: "LOCK_RULES" },
   { file: "prover.mjs", functions: ["planMachine", "search", "prove"], oracle: "prover" },
+  { file: "contrast-heal.mjs", functions: ["parseColour", "rgbToOklch", "oklchToRgb", "inGamut", "wcagRatio", "apcaLc", "healOklchContrast"], oracle: "heal" },
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
-  { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "reverseTemplate"], oracle: "reversal" },
+  { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
@@ -146,6 +147,22 @@ const EQUIVALENT = [
   { file: "passive-recon.mjs", line: "return /^[a-z]{2,63}$/.test(tld)", kind: "63 -> 64", why: "a label longer than 63 characters is already refused by the loop above" },
   { file: "passive-recon.mjs", line: "(a[0] < b[0] ? -1 : 1)", kind: "< -> <=", why: "issuer names are Map keys, so two of them are never equal" },
   { file: "passive-recon.mjs", line: "(a[0] < b[0] ? -1 : 1)", kind: "1 -> 2", why: "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1" },
+  { file: "contrast-heal.mjs", line: "C < 1e-7 ? 0", kind: "< -> <=", why: "no colour has a chroma of exactly 1e-7, the grey cut-off" },
+  { file: "contrast-heal.mjs", line: "clipped: raw.some(c => c < -1e-6 || c > 1 + 1e-6)", kind: "< -> <=", why: "no channel lands on exactly -0.000001" },
+  { file: "contrast-heal.mjs", line: "clipped: raw.some(c => c < -1e-6 || c > 1 + 1e-6)", kind: "> -> >=", why: "no channel lands on exactly 1.000001" },
+  { file: "contrast-heal.mjs", line: "clipped: raw.some(c => c < -1e-6 || c > 1 + 1e-6)", kind: "6 -> 7", why: "a tolerance of 1e-7 instead of 1e-6 changes no colour that rounds to a different 8-bit hex" },
+  { file: "contrast-heal.mjs", line: "return v > 0.022 ? v :", kind: "> -> >=", why: "the soft clamp is continuous at 0.022: both branches give 0.022 there" },
+  { file: "contrast-heal.mjs", line: "if (Math.abs(yb - yt) < 0.0005) return 0;", why: "when |yb - yt| is under 0.0005 (or both are small), the low-contrast clip below returns 0 as well" },
+  { file: "contrast-heal.mjs", line: "if (yb > yt) { const s = (yb ** 0.56", kind: "> -> >=", why: "equal luminances were already answered 0 by the line above" },
+  { file: "contrast-heal.mjs", line: "return s < 0.1 ? 0 :", kind: "< -> <=", why: "APCA's clip is applied to a continuous value that is never exactly 0.1" },
+  { file: "contrast-heal.mjs", line: "return s > -0.1 ? 0 :", kind: "> -> >=", why: "as above, for the reverse polarity" },
+  { file: "contrast-heal.mjs", line: "direction: best.L > lch[0] ?", kind: "> -> >=", why: "the found lightness never equals the original, which failed" },
+  { file: "contrast-heal.mjs", line: "for (let i = 0; i < HEAL_STEPS; i++) { const mid = (lo + hi) / 2; if (oklchToRgb([L, mid, H]).clipped)", kind: "< -> <=", why: "a seventeenth halving moves the in-gamut chroma by less than 2^-17 of C, which no 8-bit hex shows and no caller reads" },
+  { file: "reversal.mjs", line: "let out = text, cursor = 0, tried = 0;", kind: "0 -> 1", why: "for cursor: a rule body always starts after its {, so searching from index 1 finds the same place" },
+  { file: "reversal.mjs", line: "let fgAt = -1, bg = null;", why: "-2 is as much 'no colour' as -1 for the fgAt < 0 test" },
+  { file: "reversal.mjs", line: "if (k < 0) return;", why: "a declaration that starts with : has an empty property, which matches neither color nor background" },
+  { file: "reversal.mjs", line: "if (!r.changed || at < 0) continue;", why: "a body follows its {, so it is never found at index 0" },
+  { file: "reversal.mjs", line: "cursor = at + body.length;", kind: "+ -> -", why: "the healed body no longer matches the old text, so a search from an earlier point finds the same next occurrence" },
   { file: "llm-plan.mjs", drop: "ادفع", why: "every text with ادفع also contains دفع, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "انشر", why: "every text with انشر also contains نشر, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "pip install", why: "every text with pip install also contains install, a word of the same rule" },
@@ -163,12 +180,12 @@ function oracleReversal(m) {
   out.push(["plan locked steps", r.steps.filter(x => x.locked).length === 5 && r.steps.filter(x => x.locked).every(x => x.gate === "approval" && x.status === "pending_approval") && r.steps[0].locked === false && r.steps[0].status === undefined]);
   out.push(["plan titles", r.corrections.map(c => c.title).join("|") === "Pay the hosting invoice|Publish the site|Tidy|Grant admin access" && r.corrections.every(c => c.to.gate === "approval" && c.to.locked === true && c.to.status === "pending_approval" && c.rule === "lock-sensitive-step")]);
   out.push(["plan proof", r.proof.verified === true && r.proof.effects === 5 && r.proof.lockedStates === 5 && r.proof.violations === 0 && r.proof.states === 14]);
-  out.push(["plan vector", r.vector.values.join() === "4,0,0,0,0" && r.vector.total === 4 && r.vector.rules.length === 5 && r.changed === true && r.kind === "plan"]);
+  out.push(["plan vector", r.vector.values.join() === "4,0,0,0,0,0" && r.vector.total === 4 && r.vector.rules.length === 6 && r.changed === true && r.kind === "plan"]);
   out.push(["plan hashes", /^[0-9a-f]{64}$/.test(r.before) && r.before !== r.after && /^[0-9a-f]{64}$/.test(r.proofHash) && r.proofHash !== r.after]);
   const again = m.reversePlan(r.steps);
   out.push(["plan fixed point", again.corrections.length === 0 && again.changed === false && again.vector.total === 0]);
   out.push(["plan bad input", m.reversePlan(null).steps.length === 0 && m.reversePlan(Array.from({ length: 25 }, (_, i) => ({ title: "s" + i }))).steps.length === 20 && m.reversePlan([{ title: "x", status: "pending_approval", locked: true }]).corrections.length === 1]);
-  out.push(["vector", m.correctionVector([{ rule: "gradient" }, { rule: "overflow-wrap" }, { rule: "gradient" }]).values.join() === "0,0,2,0,1" && m.correctionVector([]).total === 0]);
+  out.push(["vector", m.correctionVector([{ rule: "gradient" }, { rule: "overflow-wrap" }, { rule: "gradient" }]).values.join() === "0,0,2,0,1,0" && m.correctionVector([]).total === 0]);
   const hues = [["#0000ff", 240], ["#00f", 240], ["#ff0000", 0], ["#00ff00", 120], ["#ff00ff", 300], ["#800080", 300], ["#3b82f6", 217], ["#8b5cf6", 258], ["#ffff00", 60], ["#00ffff", 180], ["#ff8000", 30], ["#ff0080", 330], ["#808080", null], ["#808787", null], ["#80888f", 208], ["#808088", 240], ["#808087", null], ["#808890", 210],
     ["rgb(0, 0, 255)", 240], ["rgba(128,0,128,.5)", 300], ["rgb(255 0 0)", 0], ["hsl(280 50% 50%)", 280], ["hsla(-40, 50%, 50%)", 320], ["hsl(400 1% 1%)", 40], ["oklch(54.5% 0.197 257.4)", 235], ["oklch(50% 0.01 250)", null], ["oklch(50% 0.02 22)", 0], ["oklch(50% 0.2 10)", 348],
     ["lch(50% 0 300)", 278], ["blue", 240], ["Purple", 300], ["white", null], ["to", undefined], ["deg", undefined], ["#12345", undefined]];
@@ -177,7 +194,7 @@ function oracleReversal(m) {
   const t = m.reverseTemplate(".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: linear-gradient(red, orange) 1; color: red }\n.d{background-image:radial-gradient(teal,navy)}");
   out.push(["template rules", t.corrections.map(c => c.rule).join() === "ai-gradient,gradient,gradient,reduced-transparency,overflow-wrap"]);
   out.push(["template text", t.text === ".hero { background-color: #3b82f6 }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: none; color: red }\n.d{background-color:teal}\n@media (prefers-reduced-transparency: reduce) {\n  .bar, .nav { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: Canvas; color: CanvasText; }\n}\n:where(h1, h2, h3, h4, p, li, td, th, dd, dt, a, blockquote, figcaption) { overflow-wrap: anywhere; }\n"]);
-  out.push(["template details", t.corrections[0].property === "background" && t.corrections[0].to === "#3b82f6" && t.corrections[1].from === "linear-gradient(red, orange) 1" && t.corrections[3].selectors.join() === ".bar,.nav" && t.vector.values.join() === "0,1,2,1,1" && t.html === false]);
+  out.push(["template details", t.corrections[0].property === "background" && t.corrections[0].to === "#3b82f6" && t.corrections[1].from === "linear-gradient(red, orange) 1" && t.corrections[3].selectors.join() === ".bar,.nav" && t.vector.values.join() === "0,1,2,1,1,0" && t.html === false]);
   out.push(["template fixed point", m.reverseTemplate(t.text).changed === false]);
   out.push(["no colour stop", m.reverseTemplate("a{background:linear-gradient(to right, 10%, 20%)}").text.startsWith("a{background-color:transparent}")]);
   out.push(["glass", m.glassSelectors(".a{backdrop-filter:blur(4px)} .b{backdrop-filter:none} @media (prefers-reduced-transparency: reduce){.c{backdrop-filter:none}} .c{-webkit-backdrop-filter:blur(2px)} .a{backdrop-filter:blur(1px)}").join() === ".a"]);
@@ -210,6 +227,15 @@ function oracleReversal(m) {
   const css = t2 => m.reverseTemplate(t2).corrections.map(c => c.rule).join();
   out.push(["style blocks read", css("<styles>a</styles><style media=x>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap" && css("<style<style>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap"
     && css("<style>p{color:red}</style><style>p{overflow-wrap:anywhere}</style><p>") === "" && css("<style>.g{backdrop-filter:blur(1px)}") === "overflow-wrap" && css("<style>x<style></style><p>{overflow-wrap:anywhere}") === "overflow-wrap"]);
+  // ADR-153: contrast pairs inside templates.
+  const pc = m.reverseTemplate(".a { color: #777777; background-color: #ffffff }\n.b{background:#090b10;color:oklch(55% 0.2 260)}\n.c { color: #4b5563; background: #3b82f6 }\n.d{color:#777777;background:#ffffff}\n.d{color:#777777;background:#ffffff}\n.e{color:red;background:#fff}\n.f{color:#777777;background:url(x)}\n@media (prefers-reduced-transparency: reduce){.g{color:#777777;background:#fff}}\n.h{ color : #777777 ; background-color:#FFFFFF; overflow-wrap:anywhere}");
+  out.push(["contrast text", pc.text === ".a { color: #767676; background-color: #ffffff }\n.b{background:#090b10;color:#84b2ff}\n.c { color: #4b5563; background: #3b82f6 }\n.d{color:#767676;background:#ffffff}\n.d{color:#767676;background:#ffffff}\n.e{color:red;background:#fff}\n.f{color:#777777;background:url(x)}\n@media (prefers-reduced-transparency: reduce){.g{color:#777777;background:#fff}}\n.h{ color : #767676 ; background-color:#FFFFFF; overflow-wrap:anywhere}"]);
+  out.push(["contrast corrections", JSON.stringify(pc.corrections.map(c => [c.rule, c.selector, c.from, c.to, c.background, c.before.ratio, c.before.lc, c.after.ratio, c.after.lc, c.steps, c.oklch])) === JSON.stringify([["contrast", ".a", "#777777", "#767676", "#ffffff", 4.48, 71.11, 4.54, 71.57, 16, "oklch(56.75% 0 0)"], ["contrast", ".b", "oklch(55% 0.2 260)", "#84b2ff", "#090b10", 3.92, -27.54, 9.18, -60.05, 16, "oklch(76.2% 0.122 260)"], ["contrast", ".d", "#777777", "#767676", "#ffffff", 4.48, 71.11, 4.54, 71.57, 16, "oklch(56.75% 0 0)"], ["contrast", ".d", "#777777", "#767676", "#ffffff", 4.48, 71.11, 4.54, 71.57, 16, "oklch(56.75% 0 0)"], ["contrast", ".h", "#777777", "#767676", "#FFFFFF", 4.48, 71.11, 4.54, 71.57, 16, "oklch(56.75% 0 0)"]]) && pc.vector.values.join() === "0,0,0,0,0,5"]);
+  out.push(["contrast cap", m.reverseTemplate(".a{color:#777;background:#fff}".repeat(51)).corrections.filter(c => c.rule === "contrast").length === 50 && m.reverseTemplate(".a{color:#777;background:#fff}".repeat(50)).text.startsWith(".a{color:#767676;background:#fff}".repeat(50)) && m.MAX_HEALS === 50]);
+  out.push(["contrast in html", m.reverseTemplate("<style>p{color:#777;background:#fff}</style><p>x</p>").text === "<style>p{color:#767676;background:#fff}:where(h1, h2, h3, h4, p, li, td, th, dd, dt, a, blockquote, figcaption) { overflow-wrap: anywhere; }\n</style><p>x</p>" && m.reverseTemplate(pc.text).corrections.length === 0]);
+  out.push(["contrast needs a color", m.reverseTemplate(".x{background:#ffffff; overflow-wrap:anywhere; border-color:#777777}").corrections.length === 0]);
+  out.push(["contrast needs a background", m.reverseTemplate(".x{color:#777777;border-color:#000000;overflow-wrap:anywhere}").corrections.length === 0]);
+  out.push(["contrast describe", m.describeCorrection(pc.corrections[0]) === "text colour in .a on #ffffff: #777777 -> #767676 (WCAG 4.48 -> 4.54, APCA Lc 71.11 -> 71.57)"]);
   out.push(["style content exact", css("<style>overflow-wrap: anywhere</style><p>") === "" && m.reverseTemplate("<style>.g{backdrop-filter:blur(1px)}</style><p>").corrections[0].selectors.join() === ".g" && m.glassSelectors("}b{backdrop-filter:blur(1px)}").join() === "b"]);
   return out;
 }
@@ -283,6 +309,51 @@ function oracleRecon(m) {
   out.push(["sectxt lines", J(s("#Contact: mailto:z\nx: y\nContact:tel:+2\nExpires: 2027-01-01T00:00:00Z", NOW).fields) === J({ x: ["y"], contact: ["tel:+2"], expires: ["2027-01-01T00:00:00Z"] }) && s("Contact: mailto:a\nExpires: 2027-01-01T00:00:00Z", NOW).valid === true]);
   const sr = m.sampleReport();
   out.push(["sample", sr.sample === true && J(sr.counts) === J({ high: 1, medium: 4, low: 3 }) && sr.headers.score === 52]);
+  return out;
+}
+
+// ADR-153: the contrast healer. Expected values pinned from the reviewed code (contrast-heal.mjs), and the
+// pass condition checked independently: each healed hex must reach WCAG 4.5 and APCA 60.
+function oracleHeal(m) {
+  const out = [], J = x => JSON.stringify(x), near = (a, b, e = 1e-9) => Math.abs(a - b) < e;
+  out.push(["parse", J(m.parseColour("#3b82f6")) === J([59 / 255, 130 / 255, 246 / 255]) && J(m.parseColour("#ABC")) === J([170 / 255, 187 / 255, 204 / 255]) && J(m.parseColour("oklch(62.8% 0.258 29.23)")) === J([1, 0, 0])
+    && J(m.parseColour("oklch(0.5 0.1 30deg / 50%)")) === J([0.5791996905788112, 0.29441917659953204, 0.2511037850158516])]);
+  out.push(["parse refused", ["red", "#12345", "#1234567", "oklch(1.01 0 0)", "oklch(101% 0 0)", "oklch(50% -1 0)", "oklch(50% 0.1)", "rgb(1,2,3)", "", null, "oklch(. 0 0)"].every(x => m.parseColour(x) === null) && m.parseColour("oklch(100% 0 0)") !== null && m.parseColour("oklch(0 0 0)") !== null && m.parseColour(" #FFF ") !== null]);
+  out.push(["hex", m.toHex([0, 0.5, 1]) === "#0080ff" && m.toHex([-1, 2, 0.0019]) === "#ff0000".replace("ff0000", "00ff00")]);
+  const lch = m.rgbToOklch([0.2, 0.4, 0.6]);
+  out.push(["to oklch", near(lch[0], 0.4993136, 1e-6) && near(lch[1], 0.0986640, 1e-6) && near(lch[2], 250.433054, 1e-5) && J(m.rgbToOklch([0.5, 0.5, 0.5]).slice(1)) === J([m.rgbToOklch([0.5, 0.5, 0.5])[1], 0]) && m.rgbToOklch([0.5, 0.5, 0.5])[1] < 1e-7 && m.rgbToOklch([1, 0, 0.0001])[2] < 30]);
+  const back = m.oklchToRgb([0.7, 0.1, 200]), out1 = m.oklchToRgb([0.9, 0.3, 30]);
+  out.push(["from oklch", back.clipped === false && near(back.rgb[0], 0.25183094033414793) && near(back.rgb[1], 0.6942495954401552) && near(back.rgb[2], 0.7170636897415913) && out1.clipped === true && J(out1.rgb.map(x => +x.toFixed(9))) === J([1, 0.437732832, 0.327081834]) && m.oklchToRgb([0, 0, 0]).rgb.every(x => x === 0) && m.oklchToRgb([1, 0, 0]).clipped === false]);
+  const g1 = m.inGamut([0.9, 0.3, 30]), g2 = m.inGamut([0.5, 0.05, 120]);
+  out.push(["gamut", g1.chromaReduced === true && near(g1.C, 0.052290344238281244) && near(g1.rgb[1], 0.823155678377453) && g2.chromaReduced === false && g2.C === 0.05 && near(g2.rgb[0], 0.3738194519814992)]);
+  out.push(["wcag", near(m.wcagRatio([0.2, 0.4, 0.6], [1, 1, 1]), 5.997786839657083) && near(m.wcagRatio([1, 1, 1], [0.2, 0.4, 0.6]), 5.997786839657083) && near(m.wcagRatio([1, 1, 1], [0, 0, 0]), 21) && m.wcagRatio([0.04, 0.04, 0.04], [0.04, 0.04, 0.04]) === 1]);
+  out.push(["apca", near(m.apcaLc([0.2, 0.4, 0.6], [1, 1, 1]), 79.75762881805088) && near(m.apcaLc([1, 1, 1], [0.2, 0.4, 0.6]), -84.96234789479297) && m.apcaLc([0.5, 0.5, 0.5], [0.52, 0.5, 0.5]) === 0 && m.apcaLc([0.01, 0.01, 0.01], [0.02, 0.02, 0.02]) === 0
+    && near(m.apcaLc([0, 0, 0], [0.4, 0.4, 0.4]), 25.312252871521167) && near(m.apcaLc([0.4, 0.4, 0.4], [0, 0, 0]), -23.043559570042547) && near(m.apcaLc([0.3, 0.3, 0.3], [0.45, 0.45, 0.45]), 14.319557698678043)
+    && near(m.apcaLc([0.42, 0.42, 0.42], [0.5, 0.5, 0.5]), 7.413229674736765) && m.apcaLc([0.43, 0.43, 0.43], [0.5, 0.5, 0.5]) === 0 && near(m.apcaLc([0.5, 0.5, 0.5], [0.43, 0.43, 0.43]), -7.384386752464361) && m.apcaLc([0.435, 0.435, 0.435], [0.5, 0.5, 0.5]) === 0
+    && near(m.apcaLc([0, 0, 0], [0.3, 0.3, 0.3]), 14.643133733026078) && near(m.apcaLc([0.3, 0.3, 0.3], [0, 0, 0]), -12.889438668857437) && m.apcaLc([0, 0, 0], [0.2, 0.2, 0.2]) === 0 && m.apcaLc([0.2, 0.2, 0.2], [0, 0, 0]) === 0]);
+  const want = {
+    a: ["#777777", "#ffffff", {}, { ok: true, changed: true, steps: 16, direction: "darker", chromaReduced: false, before: { hex: "#777777", ratio: 4.48, lc: 71.11, oklch: "oklch(56.93% 0 0)" }, after: { hex: "#767676", ratio: 4.54, lc: 71.57, oklch: "oklch(56.75% 0 0)" }, target: { ratio: 4.5, lc: 60 } }],
+    b: ["#777777", "#000000", {}, { ok: true, changed: true, steps: 16, direction: "lighter", chromaReduced: false, before: { hex: "#777777", ratio: 4.69, lc: -30.56, oklch: "oklch(56.93% 0 0)" }, after: { hex: "#b1b1b1", ratio: 9.79, lc: -60.1, oklch: "oklch(75.88% 0 0)" }, target: { ratio: 4.5, lc: 60 } }],
+    c: ["oklch(55% 0.2 260)", "#090b10", {}, { ok: true, changed: true, steps: 16, direction: "lighter", chromaReduced: true, before: { hex: "#1c69e3", ratio: 3.92, lc: -27.54, oklch: "oklch(55% 0.2 260)" }, after: { hex: "#84b2ff", ratio: 9.18, lc: -60.05, oklch: "oklch(76.2% 0.122 260)" }, target: { ratio: 4.5, lc: 60 } }],
+    d: ["#ff0000", "#00ff00", {}, { ok: true, changed: true, steps: 16, direction: "darker", chromaReduced: true, before: { hex: "#ff0000", ratio: 2.91, lc: 44.61, oklch: "oklch(62.8% 0.258 29.2)" }, after: { hex: "#bf0000", ratio: 4.76, lc: 60.02, oklch: "oklch(50.63% 0.208 29.2)" }, target: { ratio: 4.5, lc: 60 } }],
+    e: ["#949494", "#ffffff", { large: true }, { ok: true, changed: true, steps: 16, direction: "darker", chromaReduced: false, before: { hex: "#949494", ratio: 3.03, lc: 57.14, oklch: "oklch(66.65% 0 0)" }, after: { hex: "#8e8e8e", ratio: 3.28, lc: 60.12, oklch: "oklch(64.84% 0 0)" }, target: { ratio: 3, lc: 60 } }],
+    f: ["#767676", "#ffffff", { minLc: 80 }, { ok: true, changed: true, steps: 16, direction: "darker", chromaReduced: false, before: { hex: "#767676", ratio: 4.54, lc: 71.57, oklch: "oklch(56.58% 0 0)" }, after: { hex: "#636363", ratio: 6.01, lc: 80.05, oklch: "oklch(50.15% 0 0)" }, target: { ratio: 4.5, lc: 80 } }],
+    g: ["#888", "#fff", { minLc: 0 }, { ok: true, changed: true, steps: 16, direction: "darker", chromaReduced: false, before: { hex: "#888888", ratio: 3.54, lc: 63.06, oklch: "oklch(62.68% 0 0)" }, after: { hex: "#767676", ratio: 4.54, lc: 71.57, oklch: "oklch(56.75% 0 0)" }, target: { ratio: 4.5, lc: 0 } }],
+  };
+  const noL = r => { const { lightness, ...rest } = r; return rest; };
+  for (const [k, [f, b, o, w]] of Object.entries(want)) out.push(["heal " + k, J(noL(m.healOklchContrast(f, b, o))) === J(w)]);
+  out.push(["lightness", near(m.healOklchContrast("#777777", "#ffffff").lightness, 0.5675425212028896, 1e-12) && near(m.healOklchContrast("oklch(55% 0.2 260)", "#090b10").lightness, 0.7619605998706404, 1e-12)]);
+  const both = { large: true, minLc: 30 };
+  const up = m.healOklchContrast("#808080", "#7a7a7a", both), down = m.healOklchContrast("#6f6f6f", "#777777", both);
+  out.push(["both directions pass: nearer wins", up.direction === "lighter" && up.after.hex === "#d8d8d8" && near(up.lightness, 0.8807048888329371, 1e-12) && down.direction === "darker" && down.after.hex === "#212121" && near(down.lightness, 0.24985776946183672, 1e-12)]);
+  const g3 = m.inGamut([0.85, 0.35, 140]), g4 = m.inGamut([0.6, 0.4, 300]);
+  out.push(["gamut more", near(g3.C, 0.27363510131835933, 1e-15) && near(g4.C, 0.25833740234375, 1e-15) && m.oklchToRgb([0, 0, 0]).clipped === false]);
+  out.push(["parse NaN parts", m.parseColour("oklch(50% . 30)") === null && m.parseColour("oklch(50% 0.1 .)") === null]);
+  out.push(["heal none", J(m.healOklchContrast("#eef2f8", "#090b10")) === J({ ok: true, changed: false, steps: 0, before: { hex: "#eef2f8", ratio: 17.52, lc: -98.9, oklch: "oklch(95.98% 0.009 258.3)" }, after: { hex: "#eef2f8", ratio: 17.52, lc: -98.9, oklch: "oklch(95.98% 0.009 258.3)" }, target: { ratio: 4.5, lc: 60 } })]);
+  out.push(["heal impossible", J(m.healOklchContrast("#808080", "#808080")) === J({ ok: false, changed: false, reason: "no-lightness-passes", before: { hex: "#808080", ratio: 1, lc: 0, oklch: "oklch(59.99% 0 0)" }, target: { ratio: 4.5, lc: 60 } }) && J(m.healOklchContrast("x", "#fff")) === J({ ok: false, changed: false, reason: "not-a-colour" }) && m.healOklchContrast("#fff", "x").reason === "not-a-colour"]);
+  out.push(["heal exact edge", m.healOklchContrast("#767676", "#ffffff").changed === false && m.healOklchContrast("#777777", "#ffffff", { minLc: 71.57 }).after.hex === "#767676" && m.healOklchContrast("#000", "#fff", { minLc: 106 }).ok === true && m.healOklchContrast("#000", "#fff", { minLc: 107 }).ok === false]);
+  for (const k of Object.keys(want)) { const [, b] = want[k]; const r = m.healOklchContrast(want[k][0], b, want[k][2]); const fg = m.parseColour(r.after.hex), bg = m.parseColour(b); out.push(["passes " + k, m.wcagRatio(fg, bg) >= r.target.ratio && Math.abs(m.apcaLc(fg, bg)) >= r.target.lc]); }
+  out.push(["steps", m.HEAL_STEPS === 16]);
   return out;
 }
 

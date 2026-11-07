@@ -95,5 +95,7 @@ Local model answers in the chosen language,models,should,yes,yes,"ADR-151: chat,
 Passive recon: registration and certificate logs,security,should,yes,yes,"ADR-152: RDAP status, DNSSEC and expiry; crt.sh names in one pass, wildcards, expiring certificates; four GETs through the SSRF shield"
 Passive recon: security headers and security.txt,security,should,yes,yes,"ADR-152: six headers graded 0-100 with fixes; RFC 9116 Contact and Expires checked"
 Passive-recon skill,quality,could,yes,yes,"ADR-152: replica-passive-recon passive_recon.py, standard library only, reads saved files; same report as the server; in the mutation run"
+Auto-heal contrast in the Studio,studio,should,yes,yes,"ADR-153: OKLCH lightness bisection (16 steps, hue kept) to WCAG 4.5 and APCA 60; report with before and after"
+Contrast healing in the reversal engine,quality,should,yes,yes,"ADR-153: sixth rule contrast; logged with WCAG and APCA Lc before and after; the same in reversal_engine.py; in the mutation run"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

@@ -8,7 +8,8 @@ jarvis/server/lib/reversal.mjs.
               {"gate": "approval", "locked": true, "status": "pending_approval"} (AGENTS.md section 1).
   template  - a gradient becomes one solid colour (a blue to purple one is the "AI gradient" DESIGN.md
               forbids); glass (backdrop-filter) gets a prefers-reduced-transparency fallback; long words get
-              overflow-wrap: anywhere.
+              overflow-wrap: anywhere; a text colour on a solid background that misses WCAG 4.5 or APCA 60 is
+              healed by OKLCH bisection (heal_oklch_contrast, ADR-153).
 
 Running the engine on its own output finds nothing more to correct.
 
@@ -23,7 +24,7 @@ import math
 import re
 import sys
 
-RULES = ["lock-sensitive-step", "ai-gradient", "gradient", "reduced-transparency", "overflow-wrap"]
+RULES = ["lock-sensitive-step", "ai-gradient", "gradient", "reduced-transparency", "overflow-wrap", "contrast"]
 LOCKED_CATEGORIES = ["money", "publish", "permissions", "install", "outbound"]
 LOCKED_TO = {"gate": "approval", "locked": True, "status": "pending_approval"}
 # The lock words of jarvis/server/lib/llm-plan.mjs, English and Arabic, in the same order.
@@ -71,6 +72,9 @@ def describe(c):
         return "glass without a fallback: " + ", ".join(c["selectors"]) + "; now solid under prefers-reduced-transparency"
     if c["rule"] == "overflow-wrap":
         return "long words could overflow; added overflow-wrap: anywhere"
+    if c["rule"] == "contrast":
+        return (f"text colour in {c['selector']} on {c['background']}: {c['from']} -> {c['to']} "
+                f"(WCAG {c['before']['ratio']} -> {c['after']['ratio']}, APCA Lc {c['before']['lc']} -> {c['after']['lc']})")
     kind = "blue to purple gradient" if c["rule"] == "ai-gradient" else "gradient"
     return f"{kind} in {c['property']}; now {c['to']}"
 
@@ -281,10 +285,213 @@ def _add_css(text, css):
     return "<style>\n" + css + "\n</style>\n" + text
 
 
+# ---- OKLCH bisection contrast healer (ADR-153); the same maths as jarvis/server/lib/contrast-heal.mjs ----
+# The text colour's OKLCH lightness moves by bisection (16 steps), hue kept; chroma is lowered only as far as
+# sRGB needs. Each candidate is judged on its 8-bit hex.
+HEAL_STEPS = 16
+MAX_HEALS = 50
+
+
+def _clamp01(x):
+    return min(1.0, max(0.0, x))
+
+
+def _to_linear(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _to_gamma(c):
+    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def _num(x):
+    """A number as JSON.stringify writes it: an integral float loses its .0."""
+    return int(x) if float(x).is_integer() else x
+
+
+def parse_colour(s):
+    t = ("" if s is None else str(s)).strip().lower()
+    m = re.fullmatch(r"#([0-9a-f]{3}|[0-9a-f]{6})", t)
+    if m:
+        h = m.group(1) if len(m.group(1)) == 6 else "".join(x * 2 for x in m.group(1))
+        return [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    m = re.fullmatch(r"oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)(?:deg)?\s*(?:/\s*[\d.]+%?\s*)?\)", t)
+    if not m:
+        return None
+    try:
+        L, C, H = float(m.group(1)) / (100 if m.group(2) else 1), float(m.group(3)), float(m.group(4))
+    except ValueError:
+        return None
+    if not (0 <= L <= 1) or not (C >= 0) or not math.isfinite(H):
+        return None
+    return oklch_to_rgb([L, C, H])[0]
+
+
+def to_hex(rgb):
+    return "#" + "".join(f"{_js_round(_clamp01(c) * 255):02x}" for c in rgb)
+
+
+def rgb_to_oklch(rgb):
+    r, g, b = (_to_linear(c) for c in rgb)
+    l_ = math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+    m_ = math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+    s_ = math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+    A = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    C = math.sqrt(A * A + B * B)
+    return [L, C, 0.0 if C < 1e-7 else (math.atan2(B, A) * 180 / math.pi + 360) % 360]
+
+
+def oklch_to_rgb(lch):
+    L, C, H = lch
+    A, B = C * math.cos(H * math.pi / 180), C * math.sin(H * math.pi / 180)
+    l_ = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3
+    m_ = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3
+    s_ = (L - 0.0894841775 * A - 1.2914855480 * B) ** 3
+    lin = [4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_, -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_, -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_]
+    raw = [_to_gamma(c) for c in lin]
+    return [_clamp01(c) for c in raw], any(c < -1e-6 or c > 1 + 1e-6 for c in raw)
+
+
+def in_gamut(lch):
+    """[L, C, H] in sRGB; C is lowered by bisection only if the colour is outside sRGB, so the hue stays."""
+    L, C, H = lch
+    rgb, clipped = oklch_to_rgb([L, C, H])
+    if not clipped:
+        return rgb, C, False
+    lo, hi = 0.0, C
+    for _ in range(HEAL_STEPS):
+        mid = (lo + hi) / 2
+        if oklch_to_rgb([L, mid, H])[1]:
+            hi = mid
+        else:
+            lo = mid
+    return oklch_to_rgb([L, lo, H])[0], lo, True
+
+
+def _lum(rgb):
+    r, g, b = (_to_linear(c) for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def wcag_ratio(a, b):
+    x, y = _lum(a), _lum(b)
+    return (max(x, y) + 0.05) / (min(x, y) + 0.05)
+
+
+def apca_lc(text, bg):
+    def y(c):
+        v = 0.2126729 * c[0] ** 2.4 + 0.7151522 * c[1] ** 2.4 + 0.0721750 * c[2] ** 2.4
+        return v if v > 0.022 else v + (0.022 - v) ** 1.414
+    yt, yb = y(text), y(bg)
+    if abs(yb - yt) < 0.0005:
+        return 0
+    if yb > yt:
+        s = (yb ** 0.56 - yt ** 0.57) * 1.14
+        return 0 if s < 0.1 else (s - 0.027) * 100
+    s = (yb ** 0.65 - yt ** 0.62) * 1.14
+    return 0 if s > -0.1 else (s + 0.027) * 100
+
+
+def _round2(x):
+    return _num(_js_round(x * 100) / 100)
+
+
+def measure(fg, bg):
+    return {"hex": to_hex(fg), "ratio": _round2(wcag_ratio(fg, bg)), "lc": _round2(apca_lc(fg, bg))}
+
+
+def passes(fg, bg, min_ratio=4.5, min_lc=60):
+    return wcag_ratio(fg, bg) >= min_ratio and abs(apca_lc(fg, bg)) >= min_lc
+
+
+def _oklch_text(lch):
+    L, C, H = lch
+    return f"oklch({_num(_js_round(L * 10000) / 100)}% {_num(_js_round(C * 1000) / 1000)} {_num(_js_round(H * 10) / 10)})"
+
+
+def heal_oklch_contrast(fg_in, bg_in, large=False, min_lc=60):
+    fg, bg = parse_colour(fg_in), parse_colour(bg_in)
+    if fg is None or bg is None:
+        return {"ok": False, "changed": False, "reason": "not-a-colour"}
+    min_ratio = 3 if large else 4.5
+    target = {"ratio": _num(min_ratio), "lc": _num(min_lc)}
+    lch = rgb_to_oklch(fg)
+    before = {**measure(fg, bg), "oklch": _oklch_text(lch)}
+    if passes(fg, bg, min_ratio, min_lc):
+        return {"ok": True, "changed": False, "steps": 0, "before": before, "after": before, "target": target}
+
+    def at(L):
+        rgb, c, reduced = in_gamut([L, lch[1], lch[2]])
+        hx = to_hex(rgb)
+        return {"L": L, "C": c, "hex": hx, "rgb": parse_colour(hx), "chromaReduced": reduced}
+
+    def ok(c):
+        return passes(c["rgb"], bg, min_ratio, min_lc)
+
+    def search(end):
+        if not ok(at(end)):
+            return None
+        lo, hi, steps = lch[0], end, 0
+        while steps < HEAL_STEPS:
+            mid = (lo + hi) / 2
+            if ok(at(mid)):
+                hi = mid
+            else:
+                lo = mid
+            steps += 1
+        return {**at(hi), "steps": steps}
+
+    found = sorted((x for x in (search(1), search(0)) if x), key=lambda x: abs(x["L"] - lch[0]))
+    if not found:
+        return {"ok": False, "changed": False, "reason": "no-lightness-passes", "before": before, "target": target}
+    best = found[0]
+    return {"ok": True, "changed": True, "steps": best["steps"], "lightness": best["L"], "direction": "lighter" if best["L"] > lch[0] else "darker", "chromaReduced": best["chromaReduced"],
+            "before": before, "after": {**measure(best["rgb"], bg), "oklch": _oklch_text([best["L"], best["C"], lch[2]])}, "target": target}
+
+
+def _fix_contrast(text, corrections):
+    out, cursor, tried = text, 0, 0
+    for b in css_blocks(css_of(text)):
+        if b["fallback"] or tried >= MAX_HEALS:
+            continue
+        decls = b["body"].split(";")
+        fg_at, bg = -1, None
+        for i, d in enumerate(decls):
+            k = d.find(":")
+            if k < 0:
+                continue
+            prop, val = d[:k].strip().lower(), d[k + 1:].strip()
+            if prop == "color":
+                fg_at = i
+            elif prop in ("background-color", "background") and parse_colour(val):
+                bg = val
+        if fg_at < 0 or not bg:
+            continue
+        d = decls[fg_at]
+        k = d.find(":")
+        fg = d[k + 1:].strip()
+        if not parse_colour(fg):
+            continue
+        tried += 1
+        r = heal_oklch_contrast(fg, bg)
+        at = out.find(b["body"], cursor)
+        if not r["changed"] or at < 0:
+            continue
+        decls[fg_at] = d[:k + 1] + d[k + 1:].replace(fg, r["after"]["hex"], 1)
+        body = ";".join(decls)
+        out = out[:at] + body + out[at + len(b["body"]):]
+        cursor = at + len(body)
+        corrections.append({"rule": "contrast", "selector": b["selector"], "background": bg, "from": fg, "to": r["after"]["hex"], "oklch": r["after"]["oklch"],
+                            "before": {"ratio": r["before"]["ratio"], "lc": r["before"]["lc"]}, "after": {"ratio": r["after"]["ratio"], "lc": r["after"]["lc"]}, "steps": r["steps"]})
+    return out
+
+
 def reverse_and_correct_template(source):
     original = ("" if source is None else str(source))[:MAX_TEXT]
     corrections = []
-    text = _fix_gradients(original, corrections)
+    text = _fix_contrast(_fix_gradients(original, corrections), corrections)
     missing = glass_selectors(css_of(text))
     added = []
     if missing:

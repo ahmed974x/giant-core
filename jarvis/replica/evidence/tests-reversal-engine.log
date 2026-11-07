@@ -1,3 +1,5 @@
+test_bisection (test_reversal_engine.Contrast.test_bisection) ... ok
+test_heal_and_parity (test_reversal_engine.Contrast.test_heal_and_parity) ... ok
 test_bad_input_is_an_empty_plan (test_reversal_engine.Plan.test_bad_input_is_an_empty_plan) ... ok
 test_categories_and_declared_locks (test_reversal_engine.Plan.test_categories_and_declared_locks) ... ok
 test_fixed_point_and_hashes (test_reversal_engine.Plan.test_fixed_point_and_hashes) ... ok
@@ -8,6 +10,6 @@ test_hues_and_ai_gradient (test_reversal_engine.Template.test_hues_and_ai_gradie
 test_rules_and_server_parity (test_reversal_engine.Template.test_rules_and_server_parity) ... ok
 
 ----------------------------------------------------------------------
-Ran 8 tests in 0.004s
+Ran 10 tests in 0.006s
 
 OK

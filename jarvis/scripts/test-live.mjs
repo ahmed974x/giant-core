@@ -482,6 +482,16 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "recon.passive" && e.target === "acme.example"), "live: the recon run is in the event log");
 }
 
+// ADR-153 live: a template's failing colour pair is healed on the server and logged.
+{
+  await go("#/studio");
+  await page.locator("#f-rev").fill(".card { color: #777777; background-color: #ffffff; overflow-wrap: anywhere }");
+  await page.getByRole("button", { name: "Reverse and correct" }).click();
+  await page.waitForTimeout(500);
+  const lg = await (await fetch(BASE + "api/w/giant-core/reversal/log")).json();
+  ok(/color: #767676/.test(await page.locator("#f-rev-out").inputValue()) && lg.entries[0].corrections[0].rule === "contrast" && lg.entries[0].corrections[0].after.ratio >= 4.5, "live: the contrast heal is applied and logged on the server");
+}
+
 // ADR-151 live: the bilingual purity gate on the real server, after all the flows above.
 {
   const firstAgent = await page.evaluate(async () => { const r = await fetch("/api/w/giant-core/agents"); const a = await r.json(); return (a[0] || {}).id; });

@@ -34,6 +34,7 @@ import { leafHash, merkleRoot, inclusionPath, verifyInclusion, frontierPush, fro
 import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../lib/timeseries.mjs";
 import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
 import { normalizeDomain, parseRdap, parseCt, gradeHeaders, parseSecurityTxt, sampleReport, utcMs, createPassiveRecon } from "../lib/passive-recon.mjs";
+import { parseColour, toHex, rgbToOklch, oklchToRgb, wcagRatio, apcaLc, healOklchContrast, HEAL_STEPS } from "../lib/contrast-heal.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -764,6 +765,8 @@ async function suite(mode, opts) {
   ok(clean.status === 200 && clean.body.corrections.length === 0 && clean.body.log === null, tag("a plan with nothing to correct is not logged"));
   const css = ".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar { backdrop-filter: blur(16px) }";
   const rt = await post("/api/w/giant-core/reversal/template", { text: css });
+  const rc = await post("/api/w/giant-core/reversal/template", { text: ".card { color: #777777; background-color: #ffffff; overflow-wrap: anywhere }" });
+  ok(rc.status === 200 && rc.body.corrections.length === 1 && rc.body.corrections[0].rule === "contrast" && rc.body.log && rc.body.log.vector.values.join() === "0,0,0,0,0,1", tag("a template's failing colour pair is healed and logged with WCAG and APCA before and after"), rc.body && rc.body.corrections);
   ok(rt.status === 200 && rt.body.corrections.map(c => c.rule).join() === "ai-gradient,reduced-transparency,overflow-wrap" && !/gradient\(/.test(rt.body.text) && /prefers-reduced-transparency/.test(rt.body.text) && /overflow-wrap: anywhere/.test(rt.body.text), tag("a template loses its blue-purple gradient and gains the two fallbacks"), rt.body && rt.body.corrections);
   ok((await post("/api/w/giant-core/reversal/template", { text: " " })).status === 400 && (await post("/api/w/giant-core/reversal/plan", { steps: [] })).status === 400, tag("empty input is refused"));
   const log = (await j("/api/w/giant-core/reversal/log")).body;
@@ -804,9 +807,27 @@ async function suite(mode, opts) {
   const sr = sampleReport();
   ok(sr.sample === true && sr.counts.high === 1 && sr.headers.score === 52 && sr.domain === "example.com", "recon: the teaching example is labelled and fixed", sr.counts);
 }
+// ADR-153: the OKLCH bisection contrast healer, pure.
+{
+  ok(toHex(parseColour("#abc")) === "#aabbcc" && parseColour("oklch(50% 0.1 30)").length === 3 && parseColour("oklch(1.2 0 0)") === null && parseColour("red") === null && toHex(oklchToRgb(rgbToOklch(parseColour("#3b82f6"))).rgb) === "#3b82f6", "heal: colours parse and round-trip through OKLCH");
+  ok(Math.abs(wcagRatio([1, 1, 1], [0, 0, 0]) - 21) < 1e-9 && Math.round(apcaLc([0, 0, 0], [1, 1, 1])) === 106 && Math.round(apcaLc([1, 1, 1], [0, 0, 0])) === -108, "heal: WCAG 21:1 and APCA Lc 106 / -108 for black and white");
+  const cases = [["#777777", "#ffffff", "darker"], ["#777777", "#000000", "lighter"], ["oklch(55% 0.2 260)", "#090b10", "lighter"], ["#ff0000", "#00ff00", "darker"], ["#4a4f58", "#10141b", "lighter"]];
+  const res = cases.map(([f, b]) => healOklchContrast(f, b));
+  ok(res.every((r, i) => r.ok && r.changed && r.direction === cases[i][2] && r.steps === HEAL_STEPS && r.after.ratio >= 4.5 && Math.abs(r.after.lc) >= 60), "heal: 16 bisection steps reach WCAG 4.5 and APCA 60 in the right direction", res.map(r => r.after && r.after.hex));
+  const fg = parseColour("#777777"), back = parseColour(res[0].after.hex);
+  ok(Math.abs(rgbToOklch(back)[0] - rgbToOklch(fg)[0]) < 0.01 && res[0].after.hex === "#767676", "heal: the nearest passing lightness, not the extreme");
+  const keep = res[2], lchBefore = rgbToOklch(parseColour("oklch(55% 0.2 260)")), lchAfter = rgbToOklch(parseColour(keep.after.hex));
+  ok(Math.abs(lchAfter[2] - lchBefore[2]) < 2 && keep.chromaReduced === true && lchAfter[1] < lchBefore[1], "heal: the hue is kept; out of sRGB, chroma is lowered and the result says so", [lchBefore, lchAfter]);
+  ok(!healOklchContrast("#808080", "#808080").ok && healOklchContrast("#3b82f6", "#8b5cf6").reason === "no-lightness-passes" && healOklchContrast("x", "#fff").reason === "not-a-colour" && !healOklchContrast("#eef2f8", "#090b10").changed, "heal: an impossible pair is reported, a passing pair is left alone");
+  ok(healOklchContrast("#949494", "#ffffff", { large: true }).target.ratio === 3 && healOklchContrast("#949494", "#ffffff", { large: true }).after.ratio >= 3, "heal: large text uses WCAG 3:1");
+  const t = reverseTemplate(".card { color: #777777; background-color: #ffffff }\n.x { color: #4b5563; background: #3b82f6 }");
+  ok(t.corrections[0].rule === "contrast" && t.corrections[0].to === "#767676" && t.corrections[0].before.ratio === 4.48 && t.corrections[0].after.ratio === 4.54 && /#3b82f6; color: #4b5563|color: #4b5563; background: #3b82f6/.test(t.text) && reverseTemplate(t.text).corrections.length === 0, "heal: the reversal engine heals a template's colour pair and leaves an impossible one");
+  const many = ".a{color:#777;background:#fff}".repeat(7000), t0 = performance.now(), big = reverseTemplate(many);
+  ok(big.corrections.filter(c => c.rule === "contrast").length === 50 && performance.now() - t0 < 2000, "heal: at most 50 pairs per template, fast on a hostile paste", Math.round(performance.now() - t0) + " ms");
+}
 // ADR-150: the reversal engine, pure.
 {
-  ok(REVERSAL_RULES.join() === "lock-sensitive-step,ai-gradient,gradient,reduced-transparency,overflow-wrap" && correctionVector([{ rule: "gradient" }, { rule: "gradient" }]).values.join() === "0,0,2,0,0", "reversal: the correction vector counts each rule in a fixed order");
+  ok(REVERSAL_RULES.join() === "lock-sensitive-step,ai-gradient,gradient,reduced-transparency,overflow-wrap,contrast" && correctionVector([{ rule: "gradient" }, { rule: "gradient" }]).values.join() === "0,0,2,0,0,0", "reversal: the correction vector counts each rule in a fixed order");
   const r = reversePlan([{ title: "Read the docs" }, { title: "Email the team the summary", locked: true, gate: "approval", status: "pending_approval" }, { title: "Grant admin access", locked: false }]);
   ok(r.corrections.length === 1 && r.corrections[0].step === 2 && r.corrections[0].category === "permissions" && r.corrections[0].from.locked === false && r.steps[1].status === "pending_approval", "reversal: only the step that broke the rule is corrected", r.corrections);
   ok(reversePlan(r.steps).corrections.length === 0 && reversePlan(r.steps).after === reversePlan(reversePlan(r.steps).steps).after, "reversal: the corrected plan is a fixed point");

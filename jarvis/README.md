@@ -334,6 +334,12 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - Without the server, the page shows a teaching example for `example.com`, labelled as made-up records.
 - The same parsers run on saved files with `python3 .claude/skills/replica-passive-recon/passive_recon.py`.
 
+## Contrast that heals itself (ADR-153)
+
+- **Studio → Colours → Heal contrast automatically:** every colour pair below WCAG 4.5 or APCA 60 gets its text colour moved to the nearest lightness that passes, with the same hue. The report lists each change with WCAG and APCA Lc before and after. A pair no lightness can fix says so; change the background or the hue instead.
+- **The reversal engine** does the same for pasted CSS: a rule with a text colour and a solid background that fails is healed, and the log shows the numbers.
+- **Command line:** `python3 .claude/skills/replica-reversal-engine/reversal_engine.py template page.css` gives the same result.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

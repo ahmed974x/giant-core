@@ -26,7 +26,7 @@ class Plan(unittest.TestCase):
             self.assertEqual((s["gate"], s["locked"], s["status"], s["kind"]), ("approval", True, "pending_approval", "approval"))
         self.assertNotIn("locked", r["steps"][0])
         self.assertTrue(r["proof"]["verified"])
-        self.assertEqual(r["vector"]["values"], [2, 0, 0, 0, 0])
+        self.assertEqual(r["vector"]["values"], [2, 0, 0, 0, 0, 0])
 
     def test_categories_and_declared_locks(self):
         r = rv.reverse_and_correct_plan(["Grant admin access", "Install the plugin", {"title": "Do the thing", "gate": "approval"}, {"title": "Tidy", "category": "money"}])
@@ -85,6 +85,33 @@ class Template(unittest.TestCase):
             self.assertEqual(len(out["lines"]), 4)
             with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
                 rv.main(["template", src, "--out", src])
+
+
+class Contrast(unittest.TestCase):
+    CSS = ".card { color: #777777; background-color: #ffffff }\n.dark{color:oklch(55% 0.2 260);background:#090b10}\n.hero { background: #3b82f6; color: #4b5563 }"
+    # The server's reverseTemplate for CSS above (node, 2026-11-07): the same text and hashes.
+    SERVER_AFTER = "98b980f20d044550736a0e2ab5420e9105469ca97bffe1bd639d9d4fab93820f"
+    SERVER_PROOF = "5660460ed185f2bbfa8230033b5ba82e651c97838360a44e4315196c863e948a"
+
+    def test_heal_and_parity(self):
+        r = rv.reverse_and_correct_template(self.CSS)
+        heals = [c for c in r["corrections"] if c["rule"] == "contrast"]
+        self.assertEqual([(c["selector"], c["from"], c["to"]) for c in heals], [(".card", "#777777", "#767676"), (".dark", "oklch(55% 0.2 260)", "#84b2ff")])
+        self.assertEqual((r["after"], r["proofHash"]), (self.SERVER_AFTER, self.SERVER_PROOF))
+        self.assertEqual(rv.reverse_and_correct_template(r["text"])["corrections"], [])
+        self.assertIn("#3b82f6; color: #4b5563", r["text"])
+
+    def test_bisection(self):
+        h = rv.heal_oklch_contrast("#ff0000", "#00ff00")
+        self.assertEqual((h["after"]["hex"], h["steps"], h["direction"], h["chromaReduced"]), ("#bf0000", 16, "darker", True))
+        self.assertAlmostEqual(rv.rgb_to_oklch(rv.parse_colour(h["after"]["hex"]))[2], rv.rgb_to_oklch(rv.parse_colour("#ff0000"))[2], delta=1)
+        light = rv.heal_oklch_contrast("#777777", "#000000")
+        self.assertEqual((light["direction"], light["after"]["hex"]), ("lighter", "#b1b1b1"))
+        self.assertGreaterEqual(rv.wcag_ratio(rv.parse_colour(light["after"]["hex"]), [0, 0, 0]), 4.5)
+        self.assertFalse(rv.heal_oklch_contrast("#808080", "#808080")["ok"])
+        self.assertEqual(rv.heal_oklch_contrast("x", "#fff")["reason"], "not-a-colour")
+        self.assertFalse(rv.heal_oklch_contrast("#eef2f8", "#090b10")["changed"])
+        self.assertEqual(rv.heal_oklch_contrast("#767676", "#ffffff", large=True)["target"], {"ratio": 3, "lc": 60})
 
 
 if __name__ == "__main__":

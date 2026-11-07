@@ -206,7 +206,7 @@ def oracle_reversal(ns, work):
     out = [("plan corrections", [(c["step"], c["category"]) for c in r["corrections"]] == [(1, "money"), (2, "publish"), (4, "outbound"), (5, "permissions"), (6, "money")])]
     out.append(("plan from", [c["from"] for c in r["corrections"]][:3] == [{"gate": None, "locked": False, "status": None}, {"gate": "approval", "locked": True, "status": "done"}, {"gate": "Approval", "locked": True, "status": "pending_approval"}]))
     out.append(("plan steps", all(s["gate"] == "approval" and s["locked"] is True and s["status"] == "pending_approval" and s["kind"] == "approval" for s in r["steps"][1:]) and r["steps"][0] == {"title": "Read the docs"}))
-    out.append(("plan proof", r["proof"] == {"verified": True, "sensitive": 6, "locked": 6} and r["vector"]["values"] == [5, 0, 0, 0, 0] and r["changed"] is True))
+    out.append(("plan proof", r["proof"] == {"verified": True, "sensitive": 6, "locked": 6} and r["vector"]["values"] == [5, 0, 0, 0, 0, 0] and r["changed"] is True))
     out.append(("plan hashes", r["before"] == sha(compact(plan)) and r["after"] == sha(compact(r["steps"])) and r["proofHash"] == sha(r["before"] + "\n" + r["after"] + "\n" + compact(r["corrections"]))))
     out.append(("plan fixed point", plan_fn(r["steps"])["corrections"] == [] and plan_fn(r["steps"])["changed"] is False))
     big = [{"title": "s%d" % i} for i in range(25)]
@@ -215,7 +215,7 @@ def oracle_reversal(ns, work):
     out.append(("plan titles", plan_fn([{"name": "Pay"}, {"description": "Pay"}, {}, {"title": "  "}, {"title": "y" * 200}])["steps"][2]["title"] == "Step 3" and plan_fn([{"title": "y" * 200}])["steps"][0]["title"] == "y" * 140
                 and [s["title"] for s in plan_fn([{"name": "a"}, {"description": "b"}, {"title": "  "}])["steps"]] == ["a", "b", "Step 3"]))
     out.append(("plan text fields", [c["category"] for c in plan_fn([{"title": "x", "description": "pay"}, {"title": "x", "kind": "deploy"}, {"title": "x", "tool": "slack"}, {"title": "x", "category": "install"}])["corrections"]] == ["money", "publish", "outbound", "install"]))
-    out.append(("vector", ns["correction_vector"]([{"rule": "gradient"}, {"rule": "overflow-wrap"}, {"rule": "gradient"}])["values"] == [0, 0, 2, 0, 1]))
+    out.append(("vector", ns["correction_vector"]([{"rule": "gradient"}, {"rule": "overflow-wrap"}, {"rule": "gradient"}])["values"] == [0, 0, 2, 0, 1, 0]))
     hues = [("#0000ff", 240), ("#00f", 240), ("#ff0000", 0), ("#00ff00", 120), ("#800080", 300), ("#3b82f6", 217), ("#8b5cf6", 258), ("#ffff00", 60), ("#00ffff", 180), ("#ff8000", 30), ("#ff0080", 330),
             ("#808080", None), ("#808087", None), ("#808088", 240), ("#ff8040", 20), ("#40ff80", 140), ("#8040ff", 260), ("rgb(0, 0, 255)", 240), ("rgba(128,0,128,.5)", 300), ("hsl(280 50% 50%)", 280),
             ("hsla(-40, 50%, 50%)", 320), ("hsl(400 1% 1%)", 40), ("oklch(54.5% 0.197 257.4)", 235), ("oklch(50% 0.01 250)", None), ("oklch(50% 0.02 22)", 0), ("oklch(50% 0.2 10)", 348),
@@ -223,7 +223,7 @@ def oracle_reversal(ns, work):
     out.append(("hues", all(hue(c) == h for c, h in hues) and hue("to") is unknown and hue("#12345") is unknown))
     out.append(("colours", ns["gradient_colours"]("linear-gradient(to right, #fff, rgb(1, 2, 3) 40%, blue)") == ["#fff", "rgb(1, 2, 3)", "blue"]))
     t = tpl(".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: linear-gradient(red, orange) 1; color: red }\n.d{background-image:radial-gradient(teal,navy)}")
-    out.append(("template rules", [c["rule"] for c in t["corrections"]] == ["ai-gradient", "gradient", "gradient", "reduced-transparency", "overflow-wrap"] and t["vector"]["values"] == [0, 1, 2, 1, 1] and t["html"] is False))
+    out.append(("template rules", [c["rule"] for c in t["corrections"]] == ["ai-gradient", "gradient", "gradient", "reduced-transparency", "overflow-wrap"] and t["vector"]["values"] == [0, 1, 2, 1, 1, 0] and t["html"] is False))
     out.append(("template text", t["text"] == ".hero { background-color: #3b82f6 }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: none; color: red }\n.d{background-color:teal}\n@media (prefers-reduced-transparency: reduce) {\n  .bar, .nav { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: Canvas; color: CanvasText; }\n}\n" + ns["WRAP_RULE"] + "\n"))
     out.append(("template details", t["corrections"][0]["property"] == "background" and t["corrections"][0]["to"] == "#3b82f6" and t["corrections"][1]["from"] == "linear-gradient(red, orange) 1" and t["corrections"][3]["selectors"] == [".bar", ".nav"]))
     out.append(("template hashes", t["before"] != t["after"] and t["after"] == sha(t["text"]) and t["proofHash"] == sha(t["before"] + "\n" + t["after"] + "\n" + compact(t["corrections"]))))
@@ -252,6 +252,48 @@ def oracle_reversal(ns, work):
     out.append(("wrap present", tpl("<style>p{overflow-wrap: anywhere}</style><p>x</p>")["changed"] is False and tpl("p{overflow-wrap:anywhere}")["changed"] is False))
     out.append(("empty", tpl("")["changed"] is False and tpl("   ")["changed"] is False and tpl(None)["text"] == "" and len(tpl("a{}")["corrections"]) == 1))
     out.append(("long input cut", len(tpl("a" * 200005)["text"]) == 200000 + 2 + len(wrap)))
+    # ADR-153: the contrast healer; the same pinned values as the JavaScript oracle.
+    pcol, heal, ing, wr, apca, o2r, r2o = ns["parse_colour"], ns["heal_oklch_contrast"], ns["in_gamut"], ns["wcag_ratio"], ns["apca_lc"], ns["oklch_to_rgb"], ns["rgb_to_oklch"]
+    near = lambda a, b, e=1e-9: abs(a - b) < e  # noqa: E731
+    out.append(("parse", pcol("#3b82f6") == [59 / 255, 130 / 255, 246 / 255] and pcol("#ABC") == [170 / 255, 187 / 255, 204 / 255] and pcol("oklch(62.8% 0.258 29.23)") == [1, 0, 0]
+                and all(near(a, b) for a, b in zip(pcol("oklch(0.5 0.1 30deg / 50%)"), [0.5791996905788112, 0.29441917659953204, 0.2511037850158516], strict=True))))
+    out.append(("parse refused", all(pcol(x) is None for x in ["red", "#12345", "#1234567", "oklch(1.01 0 0)", "oklch(101% 0 0)", "oklch(50% -1 0)", "oklch(50% 0.1)", "rgb(1,2,3)", "", None, "oklch(. 0 0)", "oklch(50% . 30)", "oklch(50% 0.1 .)", "oklch(1.2.3 0 0)"])
+                and pcol("oklch(100% 0 0)") is not None and pcol("oklch(0 0 0)") is not None and pcol(" #FFF ") is not None))
+    out.append(("hex", ns["to_hex"]([0, 0.5, 1]) == "#0080ff" and ns["to_hex"]([-1, 2, 0.0019]) == "#00ff00"))
+    lch = r2o([0.2, 0.4, 0.6])
+    out.append(("to oklch", near(lch[0], 0.4993136, 1e-6) and near(lch[1], 0.0986640, 1e-6) and near(lch[2], 250.433054, 1e-5) and r2o([0.5, 0.5, 0.5])[2] == 0 and r2o([1, 0, 0.0001])[2] < 30))
+    back, out1 = o2r([0.7, 0.1, 200]), o2r([0.9, 0.3, 30])
+    out.append(("from oklch", back[1] is False and near(back[0][0], 0.25183094033414793) and near(back[0][2], 0.7170636897415913) and out1[1] is True and [round(x, 9) for x in out1[0]] == [1, 0.437732832, 0.327081834] and o2r([0, 0, 0]) == ([0.0, 0.0, 0.0], False) and o2r([1, 0, 0])[1] is False))
+    g1, g2, g3, g4 = ing([0.9, 0.3, 30]), ing([0.5, 0.05, 120]), ing([0.85, 0.35, 140]), ing([0.6, 0.4, 300])
+    out.append(("gamut", g1[2] is True and near(g1[1], 0.052290344238281244) and g2[2] is False and g2[1] == 0.05 and near(g3[1], 0.27363510131835933, 1e-15) and near(g4[1], 0.25833740234375, 1e-15)))
+    out.append(("wcag", near(wr([0.2, 0.4, 0.6], [1, 1, 1]), 5.997786839657083) and near(wr([1, 1, 1], [0, 0, 0]), 21) and wr([0.04] * 3, [0.04] * 3) == 1))
+    out.append(("apca", near(apca([0.2, 0.4, 0.6], [1, 1, 1]), 79.75762881805088) and near(apca([1, 1, 1], [0.2, 0.4, 0.6]), -84.96234789479297) and near(apca([0] * 3, [0.4] * 3), 25.312252871521167) and near(apca([0.4] * 3, [0] * 3), -23.043559570042547)
+                and near(apca([0.42] * 3, [0.5] * 3), 7.413229674736765) and apca([0.43] * 3, [0.5] * 3) == 0 and near(apca([0.5] * 3, [0.43] * 3), -7.384386752464361) and apca([0.435] * 3, [0.5] * 3) == 0 and apca([0] * 3, [0.2] * 3) == 0 and apca([0.2] * 3, [0] * 3) == 0 and apca([0.5] * 3, [0.52, 0.5, 0.5]) == 0))
+    want = [("#777777", "#ffffff", {}, "darker", "#767676", 4.48, 71.11, 4.54, 71.57, "oklch(56.75% 0 0)", False, (4.5, 60)), ("#777777", "#000000", {}, "lighter", "#b1b1b1", 4.69, -30.56, 9.79, -60.1, "oklch(75.88% 0 0)", False, (4.5, 60)),
+            ("oklch(55% 0.2 260)", "#090b10", {}, "lighter", "#84b2ff", 3.92, -27.54, 9.18, -60.05, "oklch(76.2% 0.122 260)", True, (4.5, 60)), ("#ff0000", "#00ff00", {}, "darker", "#bf0000", 2.91, 44.61, 4.76, 60.02, "oklch(50.63% 0.208 29.2)", True, (4.5, 60)),
+            ("#949494", "#ffffff", {"large": True}, "darker", "#8e8e8e", 3.03, 57.14, 3.28, 60.12, "oklch(64.84% 0 0)", False, (3, 60)), ("#767676", "#ffffff", {"min_lc": 80}, "darker", "#636363", 4.54, 71.57, 6.01, 80.05, "oklch(50.15% 0 0)", False, (4.5, 80)),
+            ("#888", "#fff", {"min_lc": 0}, "darker", "#767676", 3.54, 63.06, 4.54, 71.57, "oklch(56.75% 0 0)", False, (4.5, 0))]
+    for f, b, kw, d, hx, br, bl, ar, al, ok_, cr, tg in want:
+        r = heal(f, b, **kw)
+        good = r["ok"] and r["changed"] and r["steps"] == 16 and r["direction"] == d and r["after"]["hex"] == hx and (r["before"]["ratio"], r["before"]["lc"], r["after"]["ratio"], r["after"]["lc"]) == (br, bl, ar, al) and r["after"]["oklch"] == ok_ and r["chromaReduced"] is cr and (r["target"]["ratio"], r["target"]["lc"]) == tg
+        fg = pcol(r["after"]["hex"])
+        out.append(("heal " + f + b, good and wr(fg, pcol(b)) >= tg[0] and abs(apca(fg, pcol(b))) >= tg[1]))
+    out.append(("lightness", near(heal("#777777", "#ffffff")["lightness"], 0.5675425212028896, 1e-12) and near(heal("oklch(55% 0.2 260)", "#090b10")["lightness"], 0.7619605998706404, 1e-12)))
+    up, down = heal("#808080", "#7a7a7a", large=True, min_lc=30), heal("#6f6f6f", "#777777", large=True, min_lc=30)
+    out.append(("nearer wins", (up["direction"], up["after"]["hex"], down["direction"], down["after"]["hex"]) == ("lighter", "#d8d8d8", "darker", "#212121") and near(up["lightness"], 0.8807048888329371, 1e-12) and near(down["lightness"], 0.24985776946183672, 1e-12)))
+    none = heal("#eef2f8", "#090b10")
+    out.append(("heal none", none == {"ok": True, "changed": False, "steps": 0, "before": {"hex": "#eef2f8", "ratio": 17.52, "lc": -98.9, "oklch": "oklch(95.98% 0.009 258.3)"}, "after": {"hex": "#eef2f8", "ratio": 17.52, "lc": -98.9, "oklch": "oklch(95.98% 0.009 258.3)"}, "target": {"ratio": 4.5, "lc": 60}}))
+    out.append(("heal impossible", heal("#808080", "#808080") == {"ok": False, "changed": False, "reason": "no-lightness-passes", "before": {"hex": "#808080", "ratio": 1, "lc": 0, "oklch": "oklch(59.99% 0 0)"}, "target": {"ratio": 4.5, "lc": 60}}
+                and heal("x", "#fff") == {"ok": False, "changed": False, "reason": "not-a-colour"} and heal("#fff", "x")["reason"] == "not-a-colour"))
+    out.append(("heal edges", heal("#767676", "#ffffff")["changed"] is False and heal("#777777", "#ffffff", min_lc=71.57)["after"]["hex"] == "#767676" and heal("#000", "#fff", min_lc=106)["ok"] is True and heal("#000", "#fff", min_lc=107)["ok"] is False))
+    pc = tpl(".a { color: #777777; background-color: #ffffff }\n.b{background:#090b10;color:oklch(55% 0.2 260)}\n.c { color: #4b5563; background: #3b82f6 }\n.d{color:#777777;background:#ffffff}\n.d{color:#777777;background:#ffffff}\n.e{color:red;background:#fff}\n.f{color:#777777;background:url(x)}\n@media (prefers-reduced-transparency: reduce){.g{color:#777777;background:#fff}}\n.h{ color : #777777 ; background-color:#FFFFFF; overflow-wrap:anywhere}")
+    out.append(("contrast text", pc["text"] == ".a { color: #767676; background-color: #ffffff }\n.b{background:#090b10;color:#84b2ff}\n.c { color: #4b5563; background: #3b82f6 }\n.d{color:#767676;background:#ffffff}\n.d{color:#767676;background:#ffffff}\n.e{color:red;background:#fff}\n.f{color:#777777;background:url(x)}\n@media (prefers-reduced-transparency: reduce){.g{color:#777777;background:#fff}}\n.h{ color : #767676 ; background-color:#FFFFFF; overflow-wrap:anywhere}"))
+    out.append(("contrast corrections", [(c["selector"], c["from"], c["to"], c["background"], c["before"]["ratio"], c["after"]["lc"], c["steps"]) for c in pc["corrections"]] == [(".a", "#777777", "#767676", "#ffffff", 4.48, 71.57, 16), (".b", "oklch(55% 0.2 260)", "#84b2ff", "#090b10", 3.92, -60.05, 16), (".d", "#777777", "#767676", "#ffffff", 4.48, 71.57, 16), (".d", "#777777", "#767676", "#ffffff", 4.48, 71.57, 16), (".h", "#777777", "#767676", "#FFFFFF", 4.48, 71.57, 16)] and pc["vector"]["values"] == [0, 0, 0, 0, 0, 5]))
+    out.append(("contrast cap", sum(1 for c in tpl(".a{color:#777;background:#fff}" * 51)["corrections"] if c["rule"] == "contrast") == 50 and tpl(".a{color:#777;background:#fff}" * 50)["text"].startswith(".a{color:#767676;background:#fff}" * 50)))
+    out.append(("contrast html", tpl("<style>p{color:#777;background:#fff}</style><p>x</p>")["text"] == "<style>p{color:#767676;background:#fff}" + wrap + "\n</style><p>x</p>" and tpl(pc["text"])["corrections"] == [] and tpl(".x{color:#777777;border-color:#000000;overflow-wrap:anywhere}")["corrections"] == []))
+    out.append(("contrast needs a color", tpl(".x{background:#ffffff; overflow-wrap:anywhere; border-color:#777777}")["corrections"] == []))
+    out.append(("oklch text", ns["_oklch_text"]([0.5, 0.3004, 10.04]) == "oklch(50% 0.3 10)" and ns["_oklch_text"]([0.123456, 0.0995, 359.96]) == "oklch(12.35% 0.1 360)" and ns["_num"](2.0) == 2 and ns["_num"](2.5) == 2.5))
+    out.append(("contrast describe", ns["describe"](pc["corrections"][0]) == "text colour in .a on #ffffff: #777777 -> #767676 (WCAG 4.48 -> 4.54, APCA Lc 71.11 -> 71.57)"))
     return out
 
 
@@ -339,7 +381,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-formal-verify/state_prover.py", "functions": ["plan_machine", "_search", "_path", "prove", "ui_completeness"], "oracle": oracle_prover, "with": []},
     {"file": ".claude/skills/replica-quantum-math/quantum_math.py", "functions": ["gf_mul", "gf_inv", "_eval", "split_secret_gf256", "reconstruct_secret_gf256", "compute_vpin_toxicity"], "oracle": oracle_quantum, "with": []},
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
-    {"file": ".claude/skills/replica-reversal-engine/reversal_engine.py", "functions": ["correction_vector", "sealed", "reverse_and_correct_plan", "_rgb_hue", "hue_of", "gradient_colours", "is_ai_gradient", "_fix_gradients", "css_of", "css_blocks", "glass_selectors", "_add_css", "reverse_and_correct_template"], "oracle": oracle_reversal, "with": []},
+    {"file": ".claude/skills/replica-reversal-engine/reversal_engine.py", "functions": ["correction_vector", "sealed", "reverse_and_correct_plan", "_rgb_hue", "hue_of", "gradient_colours", "is_ai_gradient", "_fix_gradients", "css_of", "css_blocks", "glass_selectors", "_add_css", "reverse_and_correct_template", "parse_colour", "to_hex", "rgb_to_oklch", "oklch_to_rgb", "in_gamut", "wcag_ratio", "apca_lc", "heal_oklch_contrast", "_fix_contrast", "_num", "_round2", "_oklch_text", "measure", "passes"], "oracle": oracle_reversal, "with": []},
 ]
 # Mutants that cannot change any answer, each reviewed by hand; listed in the evidence, left out of the score.
 EQUIVALENT = [
@@ -360,6 +402,13 @@ EQUIVALENT = [
     {"file": "passive_recon.py", "function": "utc_ms", "kind": "constant 1 -> 2", "why": "s[-2:] in 'zZ' misses the Z, but datetime.fromisoformat reads a trailing Z itself since Python 3.11"},
     {"file": "passive_recon.py", "function": "normalize_domain", "kind": "constant 1 -> 2", "why": "split('/', 2)[0] is the same text as split('/', 1)[0]"},
     {"file": "passive_recon.py", "function": "normalize_domain", "kind": "constant 3 -> 4", "why": "the shortest name the label rules accept is four characters (a.bc)"},
+    {"file": "reversal_engine.py", "function": "parse_colour", "kind": "return None", "why": "the mutated lines already return None"},
+    {"file": "reversal_engine.py", "function": "heal_oklch_contrast", "kind": "return None", "why": "the mutated line (search finds nothing) already returns None"},
+    {"file": "reversal_engine.py", "function": "passes", "kind": "constant 60 -> 61", "why": "every caller passes min_lc, so the default is never used"},
+    {"file": "reversal_engine.py", "function": "rgb_to_oklch", "kind": "arith Add -> Sub", "why": "Python's % is never negative, so (h - 360) % 360 equals (h + 360) % 360"},
+    {"file": "reversal_engine.py", "function": "apca_lc", "kind": "arith Sub -> Add", "why": "when |yb - yt| < 0.0005 or yb + yt < 0.0005, APCA's low-contrast clip returns 0 as well"},
+    {"file": "reversal_engine.py", "function": "_fix_contrast", "kind": "constant 0 -> 1", "why": "for cursor and the not-found test: a rule body always follows its {, so it is never at index 0; a declaration starting with : has an empty property"},
+    {"file": "reversal_engine.py", "function": "_fix_contrast", "kind": "constant 1 -> 2", "why": "-2 is as much 'no colour' as -1; and replacing up to two copies of the value changes nothing, since a value that parses as one colour holds one copy"},
     {"file": "quantum_math.py", "function": "reconstruct_secret_gf256", "kind": "constant True -> False", "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"},
 ]
 

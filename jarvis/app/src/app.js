@@ -2529,7 +2529,7 @@
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
-      reversePlan, reverseTemplate, describeCorrection, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
+      reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
   const PRESETS = {
@@ -2630,12 +2630,33 @@
     const COLORS = [["bg", "Page"], ["surface", "Cards"], ["text", "Text"], ["muted", "Muted text"], ["accent", "Accent"], ["onAccent", "Text on accent"], ["border", "Lines"]];
     const renderColors = () => colorBox.replaceChildren(...COLORS.map(([k, label]) => {
       const pick = h("input", { type: "color", value: site.theme[k], "aria-label": label + " colour" });
-      const hex = h("input", { class: "input mono", id: "f-c-" + k, name: "color-" + k, autocomplete: "off", value: site.theme[k], maxLength: 7, spellcheck: false });
+      const hex = h("input", { class: "input mono", id: "f-c-" + k, name: "color-" + k, autocomplete: "off", value: site.theme[k], maxLength: 7, spellcheck: false, dir: "ltr" });
       const set = v => { site.theme[k] = v; site.preset = "custom"; presetSel.value = "custom"; changed(); };
       pick.addEventListener("input", () => { hex.value = pick.value; hex.removeAttribute("aria-invalid"); set(pick.value); });
       hex.addEventListener("input", () => { const ok = /^#[0-9a-fA-F]{6}$/.test(hex.value); hex.setAttribute("aria-invalid", String(!ok)); if (ok) { pick.value = hex.value; set(hex.value.toLowerCase()); } });
       return h("div", { class: "field" }, h("label", { htmlFor: "f-c-" + k, text: label }), h("div", { class: "color-row" }, pick, hex));
     }));
+    // ADR-153: heal every failing pair by moving the text colour's OKLCH lightness (bisection, C and H kept).
+    const healBox = h("div", { class: "stack", "aria-live": "polite" });
+    const healBtn = h("button", { class: "btn btn-secondary btn-sm", type: "button" }, icon("i-check", "sm"), "Heal contrast automatically");
+    healBtn.addEventListener("click", () => {
+      const done = [];
+      for (let round = 0; round < 4; round++) {
+        let fixed = 0;
+        for (const [label, fg, bg] of PAIRS) {
+          const r = LlmPlan.healOklchContrast(site.theme[fg], site.theme[bg]);
+          if (r.ok && r.changed) { done.push({ label, fg, r }); site.theme[fg] = r.after.hex; fixed++; }
+        }
+        if (!fixed) break;
+      }
+      const stuck = PAIRS.filter(([, fg, bg]) => !LlmPlan.healOklchContrast(site.theme[fg], site.theme[bg]).ok).map(([label]) => label);
+      if (done.length) { site.preset = "custom"; presetSel.value = "custom"; renderColors(); changed(); }
+      healBox.replaceChildren(
+        done.length ? h("ul", { class: "plist" }, done.map(d => h("li", { class: "stack" }, h("b", { text: d.label }),
+          h("code", { translate: "no", dir: "ltr", text: d.r.before.hex + " → " + d.r.after.hex + " · " + d.r.after.oklch }),
+          h("span", { class: "num t-caption", text: "WCAG " + d.r.before.ratio + " → " + d.r.after.ratio + " · APCA Lc " + d.r.before.lc + " → " + d.r.after.lc })))) : h("p", { class: "t-sm", text: stuck.length ? "Nothing could be healed by lightness alone." : "All pairs already pass WCAG 4.5 and APCA 60." }),
+        ...stuck.map(label => h("p", { class: "t-sm" }, badge("failed", "Cannot heal"), " ", h("span", { text: label }), " ", h("span", { class: "muted", text: "No lightness of this hue passes on that background; change the hue or the background." }))));
+    });
     presetSel.addEventListener("change", () => { if (PRESETS[presetSel.value]) { site.theme = { ...PRESETS[presetSel.value] }; delete site.theme.label; site.preset = presetSel.value; renderColors(); changed(); } });
 
     const blockList = h("ul", { class: "blocks", "aria-label": "Sections" });
@@ -2961,7 +2982,7 @@
           h("section", { class: "panel", "aria-labelledby": "h-site" }, h("h2", { id: "h-site", text: "Site" }), h("div", { class: "field" }, h("label", { htmlFor: "f-site", text: "Name" }), nameIn),
             h("div", { class: "field" }, h("span", { class: "legend", text: "Language" }), langSeg)),
           h("section", { class: "panel", "aria-labelledby": "h-colors" }, h("h2", { id: "h-colors", text: "Colours" }), h("div", { class: "field" }, h("label", { htmlFor: "f-preset", text: "Preset" }), presetSel), colorBox,
-            h("div", { class: "field" }, h("span", { class: "legend", text: "Contrast (live)" }), badges)),
+            h("div", { class: "field" }, h("span", { class: "legend", text: "Contrast (live)" }), badges, h("div", { class: "row" }, healBtn), healBox)),
           h("section", { class: "panel", "aria-labelledby": "h-blocks" }, h("h2", { id: "h-blocks", text: "Sections" }), blockList),
           h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn),
             h("h3", { class: "t-sm", text: "Export 5 files" }), h("div", { class: "row" }, exportBtns), exportInfo,
@@ -3451,9 +3472,10 @@
   }
 
   /* ── Autonomous Reversal Log (ADR-150): what the reversal engine corrected, with SHA-256 hashes ── */
-  const REV_RULE = { "lock-sensitive-step": "Locked a sensitive step", "ai-gradient": "Removed a blue to purple gradient", gradient: "Removed a gradient", "reduced-transparency": "Added a reduced-transparency fallback", "overflow-wrap": "Added overflow-wrap" };
+  const REV_RULE = { "lock-sensitive-step": "Locked a sensitive step", "ai-gradient": "Removed a blue to purple gradient", gradient: "Removed a gradient", "reduced-transparency": "Added a reduced-transparency fallback", "overflow-wrap": "Added overflow-wrap", contrast: "Healed the text contrast" };
   const revDetail = c => c.rule === "lock-sensitive-step" ? "«" + c.title + "» · " + c.category + " · locked " + c.from.locked + " → true · status " + (c.from.status || "none") + " → pending_approval"
-    : c.rule === "reduced-transparency" ? c.selectors.join(", ") : c.rule === "overflow-wrap" ? "overflow-wrap: anywhere" : c.property + ": " + c.from + " → " + c.to;
+    : c.rule === "reduced-transparency" ? c.selectors.join(", ") : c.rule === "overflow-wrap" ? "overflow-wrap: anywhere"
+    : c.rule === "contrast" ? c.selector + " · color: " + c.from + " → " + c.to + " · WCAG " + c.before.ratio + " → " + c.after.ratio + " · APCA Lc " + c.before.lc + " → " + c.after.lc : c.property + ": " + c.from + " → " + c.to;
   const revList = list => h("ul", { class: "plist" }, list.map(c => h("li", null, h("span", { text: REV_RULE[c.rule] || c.rule }), " ", h("code", { class: "t-caption muted", dir: "ltr", translate: "no", text: revDetail(c) }))));
   function reversalPanel(withInput) {
     const listBox = h("div", { class: "stack", "aria-live": "polite" });

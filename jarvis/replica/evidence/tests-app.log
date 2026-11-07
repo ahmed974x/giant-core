@@ -180,6 +180,10 @@ PASS F34 an address is refused; only domain names are checked
 PASS F34 the teaching example is labelled, with the header grade
 PASS F34 RDAP, certificate and security.txt findings are listed
 PASS F34 the page states what stays locked
+PASS F35 the Studio heals every failing pair; the live badge turns green
+PASS F35 the report gives WCAG and APCA Lc before and after each change
+PASS F35 a second press finds nothing to heal
+PASS F35 the reversal engine heals a template's colour pair and logs it
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -188,4 +192,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-189 passed, 0 failed
+193 passed, 0 failed

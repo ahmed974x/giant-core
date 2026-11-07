@@ -12,8 +12,9 @@
 import { enforceApprovalGates } from "./llm-plan.mjs";
 import { provePlan } from "./prover.mjs";
 import { sha256Hex } from "./snapshot.mjs";
+import { parseColour, healOklchContrast } from "./contrast-heal.mjs";
 
-export const REVERSAL_RULES = ["lock-sensitive-step", "ai-gradient", "gradient", "reduced-transparency", "overflow-wrap"];
+export const REVERSAL_RULES = ["lock-sensitive-step", "ai-gradient", "gradient", "reduced-transparency", "overflow-wrap", "contrast"];
 const LOCKED_TO = { gate: "approval", locked: true, status: "pending_approval" };
 const MAX_TEXT = 200000;
 
@@ -25,6 +26,7 @@ export function correctionVector(corrections) {
 export const describeCorrection = c => c.rule === "lock-sensitive-step" ? `step ${c.step + 1} «${c.title}» (${c.category}) was ${c.from.locked ? "locked, status " + (c.from.status || "none") : "not locked"}; now a locked approval, pending_approval`
   : c.rule === "reduced-transparency" ? "glass without a fallback: " + c.selectors.join(", ") + "; now solid under prefers-reduced-transparency"
   : c.rule === "overflow-wrap" ? "long words could overflow; added overflow-wrap: anywhere"
+  : c.rule === "contrast" ? `text colour in ${c.selector} on ${c.background}: ${c.from} -> ${c.to} (WCAG ${c.before.ratio} -> ${c.after.ratio}, APCA Lc ${c.before.lc} -> ${c.after.lc})`
   : `${c.rule === "ai-gradient" ? "blue to purple gradient" : "gradient"} in ${c.property}; now ${c.to}`;
 function sealed(kind, beforeText, afterText, corrections, extra) {
   const before = sha256Hex(beforeText), after = sha256Hex(afterText);
@@ -164,10 +166,43 @@ function addCss(text, css) {
   return head >= 0 ? text.slice(0, head) + "<style>\n" + css + "\n</style>\n" + text.slice(head) : "<style>\n" + css + "\n</style>\n" + text;
 }
 
+// ADR-153: a rule that sets both a text colour and a solid background (hex or oklch) and misses WCAG 4.5
+// or APCA 60 gets its text colour healed by OKLCH bisection (contrast-heal.mjs). A pair no lightness can
+// fix is left as it is. At most MAX_HEALS pairs per template, so a hostile paste stays fast.
+export const MAX_HEALS = 50;
+function fixContrast(text, corrections) {
+  let out = text, cursor = 0, tried = 0;
+  for (const b of cssBlocks(cssOf(text))) {
+    if (b.fallback || tried >= MAX_HEALS) continue;
+    const decls = b.body.split(";");
+    let fgAt = -1, bg = null;
+    decls.forEach((d, i) => {
+      const k = d.indexOf(":");
+      if (k < 0) return;
+      const prop = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim();
+      if (prop === "color") fgAt = i;
+      else if ((prop === "background-color" || prop === "background") && parseColour(val)) bg = val;
+    });
+    if (fgAt < 0 || !bg) continue;
+    const d = decls[fgAt], k = d.indexOf(":"), fg = d.slice(k + 1).trim();
+    if (!parseColour(fg)) continue;
+    tried++;
+    const r = healOklchContrast(fg, bg);
+    const at = out.indexOf(b.body, cursor);
+    if (!r.changed || at < 0) continue;
+    decls[fgAt] = d.slice(0, k + 1) + d.slice(k + 1).replace(fg, r.after.hex);
+    const body = decls.join(";");
+    out = out.slice(0, at) + body + out.slice(at + b.body.length);
+    cursor = at + body.length;
+    corrections.push({ rule: "contrast", selector: b.selector, background: bg, from: fg, to: r.after.hex, oklch: r.after.oklch, before: { ratio: r.before.ratio, lc: r.before.lc }, after: { ratio: r.after.ratio, lc: r.after.lc }, steps: r.steps });
+  }
+  return out;
+}
+
 export function reverseTemplate(input) {
   const original = String(input == null ? "" : input).slice(0, MAX_TEXT);
   const corrections = [];
-  let text = fixGradients(original, corrections);
+  let text = fixContrast(fixGradients(original, corrections), corrections);
   const missing = glassSelectors(cssOf(text));
   const added = [];
   if (missing.length) {
