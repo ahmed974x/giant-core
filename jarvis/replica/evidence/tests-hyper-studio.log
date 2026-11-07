@@ -1,0 +1,17 @@
+test_kelvin (test_hyper_studio.Optics.test_kelvin) ... ok
+test_portrait (test_hyper_studio.Optics.test_portrait) ... ok
+test_astar_matches_bfs (test_hyper_studio.Physics.test_astar_matches_bfs) ... ok
+test_no_code_is_run (test_hyper_studio.Physics.test_no_code_is_run) ... ok
+test_no_path (test_hyper_studio.Physics.test_no_path) ... ok
+test_refusals (test_hyper_studio.Physics.test_refusals) ... ok
+test_golden (test_hyper_studio.SameAsServer.test_golden) ... ok
+test_coxeter_plane (test_hyper_studio.Shapes.test_coxeter_plane) ... ok
+test_cube_painter (test_hyper_studio.Shapes.test_cube_painter) ... ok
+test_e8 (test_hyper_studio.Shapes.test_e8) ... ok
+test_svg_is_numbers_only (test_hyper_studio.Shapes.test_svg_is_numbers_only) ... ok
+test_tesseract_and_16cell (test_hyper_studio.Shapes.test_tesseract_and_16cell) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.071s
+
+OK

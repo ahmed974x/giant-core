@@ -779,6 +779,30 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.getByRole("button", { name: "Solve and check" }).click();
   ok(await page.getByText("The request is not valid JSON.").isVisible(), "F36 a request that is not JSON is said, not sent");
 }
+// F37: the hyper studio (ADR-155): projections from 3 to 8 dimensions, optics and grid physics, as SVG.
+{
+  await go("#/hyper");
+  await page.waitForSelector(".hy-stage svg");
+  ok((await page.locator("#f-hyshape").inputValue()) === "e8_lattice" && (await page.locator(".hy-stage .hy-vert").count()) === 240 && (await page.locator(".hy-stage path.hy-edge").getAttribute("d")).split("M").length === 6721 && await page.getByText("[VERIFIED]").first().isVisible(), "F37 E8 is drawn first: 240 roots, 6720 edges, verified");
+  ok(await page.getByText("Before rotation the roots fall on 8 rings of 30, a 30-fold symmetry.").isVisible() && (await page.locator(".hy-stage svg").getAttribute("aria-hidden")) === "true" && (await page.locator(".hy-stage linearGradient, .hy-stage radialGradient").count()) === 0, "F37 the Coxeter checks are listed beside an SVG with no gradient");
+  const d0 = await page.locator(".hy-stage path.hy-edge").getAttribute("d");
+  await page.locator("#f-hy-xy").fill("60");
+  ok((await page.locator(".hy-stage path.hy-edge").getAttribute("d")) !== d0 && (await page.locator("output[for=f-hy-xy]").textContent()) === "60°", "F37 a slider turns the shape; nothing moves on its own");
+  await page.locator("#f-hyshape").selectOption("cube");
+  ok((await page.locator(".hy-stage path.hy-face").count()) === 6 && (await page.locator(".hy-stage path.hy-face:not(.back)").count()) === 3 && /^oklch\(/.test(await page.locator(".hy-stage path.hy-face").first().getAttribute("fill")), "F37 the cube has six OKLCH-shaded faces, three facing the viewer");
+  await page.locator("#f-hyshape").selectOption("tesseract");
+  ok((await page.locator(".hy-stage .hy-vert").count()) === 16 && await page.getByText("16 vertices and 32 edges, each vertex on 4 edges.").isVisible(), "F37 the tesseract: 16 vertices, 32 edges");
+  await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click();
+  await page.waitForSelector(".hy-lights");
+  ok((await page.locator(".hy-lights li").count()) === 3 && await page.getByText("179.001").isVisible() && await page.getByText("EV100 8.94").isVisible(), "F37 optics: hyperfocal distance, EV100 and the three lights");
+  await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click();
+  await page.waitForSelector(".hy-game");
+  ok((await page.locator(".hy-game .hy-path").count()) === 1 && (await page.locator(".hy-game .hy-trail").count()) === 2 && await page.getByText("A* 22 = BFS 22").isVisible(), "F37 game physics: the A* path equals BFS, two particle tracks");
+  await page.locator("#f-hy-optics").fill('{"mode":"optics","key_kelvin":1000}');
+  await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("A value is out of range.").isVisible() && await page.getByText("key_kelvin: 1667–25000").isVisible(), "F37 an out-of-range Kelvin is refused with the field and its range");
+}
 
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
@@ -790,6 +814,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
     ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
     ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
+    ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click(); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));

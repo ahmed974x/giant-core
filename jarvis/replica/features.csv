@@ -99,5 +99,7 @@ Auto-heal contrast in the Studio,studio,should,yes,yes,"ADR-153: OKLCH lightness
 Contrast healing in the reversal engine,quality,should,yes,yes,"ADR-153: sixth rule contrast; logged with WCAG and APCA Lc before and after; the same in reversal_engine.py; in the mutation run"
 Math lab with checked steps,platform,should,yes,yes,"ADR-154: Pratt parser, exact derivative, Brent and Newton roots, adaptive Simpson, Gauss with pivoting, Jacobi eigenvalues, RK4, Miller-Rabin, Pollard's rho, CRT, Bayes; [VERIFIED] only after backward checks; SVG plot"
 Universal maths API and skill,platform,should,yes,yes,"ADR-154: POST /api/w/:slug/math/solve with ?lang=ar; replica-universal-math gives the same answers (golden file); in the mutation run"
+Hyper studio projections from 3D to 8D,studio,should,yes,yes,"ADR-155: cube with painter's sort and OKLCH shading, tesseract and 16-cell (SO(4), R4 to R3 to R2), 8-cube Petrie, E8 roots in the Coxeter plane; checks per shape; sliders, no animation"
+Hyper studio optics and game physics,studio,should,yes,yes,"ADR-155: thin-lens depth of field, hyperfocal, EV100, Kelvin to OKLCH lights; A* checked against BFS, Verlet particles; API, skill with the same answers, in the mutation run"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

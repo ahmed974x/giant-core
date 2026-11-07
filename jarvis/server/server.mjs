@@ -37,6 +37,7 @@ import { createReadiness } from "./lib/readiness.mjs";
 import { createReversalLog } from "./lib/reversal-log.mjs";
 import { createPassiveRecon } from "./lib/passive-recon.mjs";
 import { solve as solveMath, localize as localizeMath, umText } from "./lib/universal-math.mjs";
+import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
@@ -371,6 +372,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/reversal/template") return send(200, await reversal.template(slug, body.text, "person"));
         if (req.method === "GET" && rest === "/reversal/log") return send(200, await reversal.list(slug, url.searchParams.get("limit")));
         if (req.method === "POST" && rest === "/audit/record") return send(201, await audit.record(slug, String(body.kind || ""), body.target));
+        // ADR-155: the hyper studio. Pure and bounded (8 dimensions, a 40 x 40 grid, 24 particles, 600 ticks);
+        // a projection also comes back as SVG text built from numbers only.
+        if (req.method === "POST" && rest === "/studio/hyper") {
+          let out;
+          try { out = hyperStudio(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          if (out.mode === "projection") out.svg = hyperSvg(out);
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "hyper.solve", out.mode + (out.polytope ? " " + out.polytope : "") + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
+        }
         // ADR-144: the Studio time machine.
         if (req.method === "GET" && rest === "/studio/snapshots") return send(200, await studio.list(slug));
         if (req.method === "POST" && rest === "/studio/snapshots") return send(201, await studio.save(slug, body));

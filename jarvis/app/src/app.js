@@ -583,6 +583,11 @@
       },
       // ADR-152 in sample mode: no network, so the teaching example (made-up records for example.com).
       passiveRecon(domain) { return LlmPlan.normalizeDomain(domain) ? ok(LlmPlan.sampleReport()) : bad("Give a domain name such as example.com: no address, port or path."); },
+      // ADR-155 in sample mode: the same engine as the server, in this page.
+      hyperStudio(body) {
+        try { return ok(Hyper.hyper(body)); }
+        catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); }
+      },
       // ADR-154 in sample mode: the same engine as the server, in this page.
       mathSolve(body) {
         try { return ok(UniMath.solve(body)); }
@@ -1015,6 +1020,7 @@
       reversalLog: limit => req("GET", w("/reversal/log?limit=" + encodeURIComponent(limit || 20))),
       passiveRecon: domain => req("POST", w("/recon/passive"), { domain }),
       mathSolve: body => req("POST", w("/math/solve"), body),
+      hyperStudio: body => req("POST", w("/studio/hyper"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2538,6 +2544,11 @@
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
+  // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
+  const Hyper = (() => {
+    /*@HYPER_STUDIO@*/
+    return { hyper, HS_LIMITS };
+  })();
   // ADR-154: universal maths (jarvis/server/lib/universal-math.mjs, inlined by the build in its own scope).
   const UniMath = (() => {
     /*@UNIVERSAL_MATH@*/
@@ -3648,6 +3659,110 @@
       box);
   };
 
+  /* ── Hyper studio (ADR-155): shapes from 3 to 8 dimensions, camera optics and grid physics, as SVG ── */
+  const HY_SHAPES = { cube: ["Cube (3D)", ["xy", "yz", "xz"]], tesseract: ["Tesseract (4D)", ["xw", "yw", "zw"]], "16cell": ["16-cell (4D)", ["xw", "yw", "zw"]], octeract: ["8-cube (8D)", ["xy", "zw", "xw"]], e8_lattice: ["E8 roots (8D)", ["xy", "zw", "xw"]] };
+  const HY_EXAMPLES = {
+    optics: { mode: "optics", focal_mm: 85, f_stop: 1.4, subject_distance_m: 2.5, sensor_width_mm: 36, iso: 100, shutter_s: 0.004, key_kelvin: 5600, fill_kelvin: 4200, rim_kelvin: 3200 },
+    game_physics: { mode: "game_physics", grid_size: [12, 12], start: [0, 0], goal: [11, 11], obstacles: [[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [7, 11], [7, 10], [7, 9], [7, 8], [7, 7], [7, 6]], particles: [{ x: 2, y: 6, vx: 0.4, vy: 0.1, radius: 0.5 }, { x: 9, y: 6, vx: -0.3, vy: 0, radius: 0.5 }], ticks: 30 },
+  };
+  const hyChecks = r => h("div", { class: "stack" },
+    h("div", { class: "row" }, r.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified")),
+    h("ul", { class: "plist" }, r.checks.map(c => h("li", { class: "row" }, badge(c.ok ? "ok" : "failed", c.ok ? "Passed" : "Failed"), h("span", { text: c.text })))));
+  const hyError = err => h("p", { class: "t-sm" }, badge("failed", "Not drawn"), " ", h("span", { text: err.message }), err.detail ? h("code", { translate: "no", dir: "ltr", "data-verbatim": "", text: err.detail }) : null);
+  function hyDrawing(g) {
+    const S = 640, c = S / 2, k = S * 0.42, X = p => (c + p[0] * k).toFixed(2), Y = p => (c - p[1] * k).toFixed(2);
+    const kids = [];
+    if (g.faces) for (const f of g.faces) kids.push(svg("path", { class: "hy-face" + (f.visible ? "" : " back"), fill: f.fill, d: "M" + f.vertices.map(i => X(g.points[i]) + " " + Y(g.points[i])).join(" L") + " Z" }));
+    else {
+      kids.push(svg("path", { class: "hy-edge" + (g.edges.length > 2000 ? " dense" : ""), d: g.edges.map(([a, b]) => "M" + X(g.points[a]) + " " + Y(g.points[a]) + " L" + X(g.points[b]) + " " + Y(g.points[b])).join(" ") }));
+      if (g.points.length <= 256) for (const p of g.points) kids.push(svg("circle", { class: "hy-vert", cx: X(p), cy: Y(p), r: g.points.length > 64 ? 1.6 : 3 }));
+    }
+    return svg("svg", { class: "hy-svg", viewBox: "0 0 " + S + " " + S, "aria-hidden": "true" }, ...kids);
+  }
+  function hyProjection() {
+    const sel = h("select", { class: "select", id: "f-hyshape", name: "hyper-shape", autocomplete: "off" }, Object.entries(HY_SHAPES).map(([k, v]) => h("option", { value: k, text: v[0], selected: k === "e8_lattice" })));
+    const sliders = h("div", { class: "hy-sliders" }), stage = h("div", { class: "hy-stage", "aria-live": "polite" }), info = h("div", { class: "stack" });
+    const vals = {};
+    const draw = () => {
+      const planes = HY_SHAPES[sel.value][1];
+      const angles = Object.fromEntries(planes.map(p => [p, Number(vals[p] ? vals[p].value : 0)]));
+      let g;
+      try { g = Hyper.hyper({ mode: "projection", polytope: sel.value, angles, theme: theme() }); } catch (e) { stage.replaceChildren(hyError(e)); return; }
+      stage.replaceChildren(hyDrawing(g));
+      info.replaceChildren(h("p", { class: "t-sm", text: g.method }),
+        h("p", { class: "num t-caption muted", dir: "ltr", translate: "no", text: "V " + g.counts.vertices + " · E " + g.counts.edges + (g.counts.faces ? " · F " + g.counts.faces : "") }), hyChecks(g));
+    };
+    const build = () => {
+      sliders.replaceChildren(...HY_SHAPES[sel.value][1].map((p, i) => {
+        const id = "f-hy-" + p, out = h("output", { class: "num", htmlFor: id, text: "0°" });
+        const inp = h("input", { class: "range", type: "range", id, name: "angle-" + p, min: -180, max: 180, step: 1, value: [15, 30, 45][i], autocomplete: "off" });
+        vals[p] = inp; out.textContent = inp.value + "°";
+        inp.addEventListener("input", () => { out.textContent = inp.value + "°"; draw(); });
+        return h("div", { class: "field" }, h("label", { htmlFor: id }, h("span", { text: "Rotation in the plane" }), " ", h("code", { translate: "no", text: p })), h("div", { class: "row" }, inp, out));
+      }));
+      draw();
+    };
+    sel.addEventListener("change", build);
+    build();
+    return h("section", { class: "panel", "aria-labelledby": "h-hy-proj" }, h("h2", { id: "h-hy-proj", text: "Projection" }),
+      h("p", { class: "t-sm muted", text: "Turn the shape with the sliders; nothing moves on its own. Drawn in this page with the same engine as the server." }),
+      h("div", { class: "hy-grid" }, h("div", { class: "stack" }, h("div", { class: "field" }, h("label", { htmlFor: "f-hyshape", text: "Shape" }), sel), sliders, info), stage));
+  }
+  function hyOpticsView(o) {
+    const D = o.depth_of_field, L = o.lens, max = D.infinite ? L.subject_m * 2 : Math.max(D.far_m * 1.2, L.subject_m * 1.5), W = 640, X = m => (16 + (W - 32) * Math.min(m, max) / max).toFixed(1);
+    const bar = svg("svg", { class: "hy-dof", viewBox: "0 0 " + W + " 40", "aria-hidden": "true" },
+      svg("line", { class: "um-axis", x1: 16, x2: W - 16, y1: 20, y2: 20 }),
+      svg("rect", { class: "hy-dof-band", x: X(D.near_m), y: 8, width: Math.max(2, X(D.infinite ? max : D.far_m) - X(D.near_m)).toFixed(1), height: 24, rx: 4 }),
+      svg("line", { class: "hy-dof-subject", x1: X(L.subject_m), x2: X(L.subject_m), y1: 4, y2: 36 }));
+    const row = (k, v, unit) => [h("dt", { text: k }), h("dd", null, h("bdi", { class: "num", dir: "ltr", translate: "no", text: v }), unit ? " " : null, unit ? h("span", { text: unit }) : null)];
+    return h("div", { class: "stack" }, hyChecks(o),
+      h("figure", { class: "ts-wrap um-plot" }, bar, h("figcaption", { class: "t-caption muted" }, h("span", { text: "In focus from the near to the far limit; the line is the subject." }), " ",
+        h("bdi", { class: "num", dir: "ltr", translate: "no", text: "0 – " + Number(max.toPrecision(3)) + " m" }))),
+      h("dl", { class: "kv" }, ...row("Near limit", String(D.near_m), "m"), ...row("Far limit", D.infinite ? "∞" : String(D.far_m), D.infinite ? null : "m"), ...row("Depth of field", D.infinite ? "∞" : String(D.total_m), D.infinite ? null : "m"), ...row("Hyperfocal distance", String(D.hyperfocal_m), "m"),
+        ...row("Circle of confusion", String(L.coc_mm), "mm"), ...row("Field of view", o.field_of_view_deg.horizontal + "° × " + o.field_of_view_deg.vertical + "°"), ...row("Background blur", String(o.background_blur.disc_mm), "mm"), ...row("Blur as a share of the width", o.background_blur.percent_of_width + "%"), ...row("Exposure value", "EV100 " + o.exposure.ev100)),
+      h("ul", { class: "hy-lights" }, Object.entries(o.lights).map(([k, c]) => h("li", { class: "stack" },
+        svg("svg", { class: "hy-swatch", viewBox: "0 0 48 48", "aria-hidden": "true" }, svg("rect", { x: 0, y: 0, width: 48, height: 48, rx: 12, fill: c.hex })),
+        h("b", { text: { key: "Key light", fill: "Fill light", rim: "Rim light" }[k] }), h("code", { translate: "no", dir: "ltr", text: c.kelvin + " K · " + c.hex + " · " + c.oklch + " · " + c.mired + " mired" })))),
+      h("p", { class: "t-sm" }, h("span", { text: "Fill against key, in mireds:" }), " ", h("bdi", { class: "num", dir: "ltr", translate: "no", text: (o.fill_shift_mired > 0 ? "+" : "") + o.fill_shift_mired })));
+  }
+  function hyGameView(gp) {
+    const [W, H] = gp.grid, cell = Math.min(36, 640 / Math.max(W, H)), P = v => (v * cell).toFixed(1);
+    const kids = [];
+    for (let x = 0; x <= W; x++) kids.push(svg("line", { class: "hy-cell", x1: P(x), x2: P(x), y1: 0, y2: P(H) }));
+    for (let y = 0; y <= H; y++) kids.push(svg("line", { class: "hy-cell", y1: P(y), y2: P(y), x1: 0, x2: P(W) }));
+    for (const [x, y] of gp.obstacles) kids.push(svg("rect", { class: "hy-obst", x: P(x), y: P(y), width: P(1), height: P(1) }));
+    if (gp.path) kids.push(svg("polyline", { class: "hy-path", points: gp.path.map(([x, y]) => P(x + 0.5) + "," + P(y + 0.5)).join(" ") }));
+    kids.push(svg("circle", { class: "hy-start", cx: P(gp.start[0] + 0.5), cy: P(gp.start[1] + 0.5), r: (cell / 3).toFixed(1) }), svg("circle", { class: "hy-goal", cx: P(gp.goal[0] + 0.5), cy: P(gp.goal[1] + 0.5), r: (cell / 3).toFixed(1) }));
+    gp.trails.forEach((t, i) => { kids.push(svg("polyline", { class: "hy-trail", points: t.map(([x, y]) => P(x) + "," + P(y)).join(" ") })); const f = gp.particles[i]; kids.push(svg("circle", { class: "hy-part", cx: P(f.x), cy: P(f.y), r: P(f.radius) })); });
+    return h("div", { class: "stack" }, hyChecks(gp),
+      h("figure", { class: "ts-wrap um-plot" }, svg("svg", { class: "hy-svg hy-game", viewBox: "0 0 " + P(W) + " " + P(H), "aria-hidden": "true" }, ...kids),
+        h("figcaption", { class: "t-caption muted" }, h("span", { text: gp.path ? "A* path from the filled dot to the ring; dashed lines are the particles' tracks." : "No path from the filled dot to the ring; dashed lines are the particles' tracks." }), " ",
+          gp.path ? h("bdi", { class: "num", dir: "ltr", translate: "no", text: "A* " + gp.path_length + " = BFS " + gp.shortest }) : null),
+        h("p", { class: "t-caption muted" }, h("span", { text: "Cells expanded:" }), " ", h("bdi", { class: "num", text: String(gp.expanded) }), " · ", h("span", { text: "Ticks:" }), " ", h("bdi", { class: "num", text: String(gp.ticks) }))));
+  }
+  function hyRequestPanel(mode, title, lede, view) {
+    const id = "f-hy-" + mode, ta = h("textarea", { class: "textarea code", id, name: "hyper-" + mode, autocomplete: "off", rows: 5, spellcheck: false, dir: "ltr" });
+    ta.value = JSON.stringify(HY_EXAMPLES[mode]);
+    const btn = h("button", { class: "btn btn-secondary", type: "submit" }, icon("i-check", "sm"), "Compute and check");
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    const form = h("form", { class: "stack", novalidate: true }, h("div", { class: "field" }, h("label", { htmlFor: id, text: "The request" }), ta), h("div", { class: "row" }, btn));
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      let body;
+      try { body = JSON.parse(ta.value); } catch (err) { box.replaceChildren(hyError(new Error("The request is not valid JSON."))); return; }
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { box.replaceChildren(view(await store.hyperStudio(body))); } catch (err) { box.replaceChildren(hyError(err)); } finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    return h("section", { class: "panel", "aria-labelledby": "h-hy-" + mode }, h("h2", { id: "h-hy-" + mode, text: title }), h("p", { class: "t-sm muted", text: lede }), form, box);
+  }
+  pages.hyper = () => h("div", { class: "stack" },
+    pageHead("Hyper studio", "Shapes from 3 to 8 dimensions, a camera's optics and grid physics, drawn as SVG with no library, each with its checks."),
+    sampleNote(),
+    hyProjection(),
+    h("div", { class: "grid-2" },
+      hyRequestPanel("optics", "Optics", "Thin-lens depth of field, hyperfocal distance, field of view, background blur, EV100, and the colour of each light from its Kelvin.", hyOpticsView),
+      hyRequestPanel("game_physics", "Game physics", "A shortest path by A*, checked against breadth-first search, and Verlet particles bouncing in the grid.", hyGameView)));
+
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {
     const box = h("div", { class: "stack", "aria-live": "polite" });
@@ -3750,7 +3865,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -3831,7 +3946,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

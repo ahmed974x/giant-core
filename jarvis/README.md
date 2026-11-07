@@ -346,6 +346,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - No code is run: a parser reads the expression into a tree, with limits on length and depth. A pole is named, and no integral is given across it.
 - The API is `POST /api/w/:slug/math/solve` (send the `x-jarvis: 1` header; `?lang=ar` for Arabic steps). The same maths runs with `python3 .claude/skills/replica-universal-math/universal_math.py solve request.json`.
 
+## Hyper studio (ADR-155)
+
+- **`#/hyper`:** pick a shape (cube, tesseract, 16-cell, 8-cube or the E8 roots) and turn it with the three sliders; nothing moves on its own. Under the drawing are the method and the checks, for example that E8's Coxeter element has order 30 and its roots fall on 8 rings of 30.
+- **Optics:** depth of field, hyperfocal distance, field of view, background blur, EV100 and the colour of each light from its Kelvin.
+- **Game physics:** an A* path checked against breadth-first search, and particles bouncing in the grid.
+- The API is `POST /api/w/:slug/studio/hyper` with `mode` set to `projection`, `optics` or `game_physics`; a projection also comes back as `svg`. The same maths runs with `python3 .claude/skills/replica-hyper-studio/hyper_studio.py run request.json`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

@@ -38,7 +38,7 @@ export const PURITY = (lang) => {
   return [...new Set(out)];
 };
 
-export const PURITY_ROUTES = ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "recon", "math", "webhooks", "settings", "design-system"];
+export const PURITY_ROUTES = ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "recon", "math", "hyper", "webhooks", "settings", "design-system"];
 
 // Visits each route in both languages (the language button switches them) and runs PURITY on each.
 // extra: [name, async () => {}] steps that open a deeper screen (an agent, a mission, the workflow editor).

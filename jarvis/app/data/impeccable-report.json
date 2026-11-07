@@ -1,17 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 122,
+ "files": 124,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 137
+  "low": 139
  },
  "byRule": {
   "D05": 27,
-  "M05": 110
+  "M05": 111,
+  "P21": 1
  },
- "sha256": "adde4949b379c555039ca31112d31e14708b1d126e822d7f20dcb7e0a818c69b",
+ "sha256": "6e1e5491f95a4cdb26c645cef05ca0bdd84203946078189027cd955408dbbb6a",
  "findings": [
   {
    "rule": "D05",
@@ -971,6 +972,20 @@
    "line": 13,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-154-universal-math.md"
+  },
+  {
+   "rule": "P21",
+   "severity": "low",
+   "line": 38,
+   "message": "Repeated word.",
+   "file": "docs/adr/ADR-155-hyper-studio.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 17,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-155-hyper-studio.md"
   }
  ]
 }

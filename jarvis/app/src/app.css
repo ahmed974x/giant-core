@@ -548,3 +548,29 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .um-plot { margin: 0; display: grid; gap: 8px; }
 .um-step { gap: 4px; }
 .um-step > code { justify-self: start; overflow-wrap: anywhere; }
+/* ADR-155: the hyper studio. One accent for edges and faces' outlines; faces are OKLCH shades of it. */
+.hy-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) { .hy-grid { grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr); } }
+.hy-stage { border-radius: var(--radius-md); background: var(--color-surface-sunken); padding: 8px; }
+.hy-svg { display: block; inline-size: 100%; block-size: auto; max-block-size: 72dvh; }
+.hy-edge { fill: none; stroke: var(--color-accent); stroke-width: 1.2; stroke-opacity: 0.85; vector-effect: non-scaling-stroke; }
+.hy-edge.dense { stroke-width: 0.5; stroke-opacity: 0.5; }
+.hy-vert { fill: var(--color-accent); }
+.hy-face { stroke: var(--color-accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.hy-face.back { fill-opacity: 0.25; }
+.hy-sliders { display: grid; gap: 8px; }
+.hy-sliders .range { flex: 1 1 auto; min-inline-size: 0; accent-color: var(--color-accent); }
+.hy-sliders output { min-inline-size: 4ch; text-align: end; }
+.hy-dof { display: block; inline-size: 100%; block-size: auto; }
+.hy-dof-band { fill: var(--color-accent); fill-opacity: 0.35; stroke: var(--color-accent); vector-effect: non-scaling-stroke; }
+.hy-dof-subject { stroke: var(--color-text); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.hy-lights { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+.hy-lights code { overflow-wrap: anywhere; font-size: var(--text-caption); }
+.hy-swatch { inline-size: 48px; block-size: 48px; }
+.hy-cell { stroke: var(--color-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hy-obst { fill: var(--color-text-subtle); }
+.hy-path { fill: none; stroke: var(--color-accent); stroke-width: 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.hy-start { fill: var(--color-accent); }
+.hy-goal { fill: none; stroke: var(--color-accent); stroke-width: 3; vector-effect: non-scaling-stroke; }
+.hy-trail { fill: none; stroke: var(--color-text-muted); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.hy-part { fill: var(--color-text); }

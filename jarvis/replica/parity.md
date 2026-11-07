@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-154)
+# Parity: Jarvis (ADR-155)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -98,6 +98,10 @@ ADR-154 added two rows, both built and tested (`test-app.mjs` F36, `test-live.mj
 - the math lab with checked steps;
 - the universal maths API and skill.
 
+ADR-155 added two rows, both built and tested (`test-app.mjs` F37, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- hyper studio projections from 3D to 8D;
+- hyper studio optics and game physics.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -106,7 +110,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (100 counted, must-haves 34 of 34 done)
+features 100.0  (102 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -115,7 +119,7 @@ features 100.0  (100 counted, must-haves 34 of 34 done)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (13 features)
-- studio                       100.0  (15 features)
+- studio                       100.0  (17 features)
 - skills                       100.0  (6 features)
 - backend                      100.0  (1 features)
 - missions                     100.0  (8 features)

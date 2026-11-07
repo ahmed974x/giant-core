@@ -36,6 +36,7 @@ import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
 import { normalizeDomain, parseRdap, parseCt, gradeHeaders, parseSecurityTxt, sampleReport, utcMs, createPassiveRecon } from "../lib/passive-recon.mjs";
 import { parseColour, toHex, rgbToOklch, oklchToRgb, wcagRatio, apcaLc, healOklchContrast, HEAL_STEPS } from "../lib/contrast-heal.mjs";
 import { solve as umSolve, localize as umLocalize, parse as umParse, show as umShow, derivative as umDerivative, evaluate as umEvaluate, simplify as umSimplify, isPrime as umIsPrime, factorize as umFactorize, crt as umCrt, egcd as umEgcd, gaussSolve, jacobiEigen, brent as umBrent, adaptiveSimpson, rk4 as umRk4, MathError, UM_AR } from "../lib/universal-math.mjs";
+import { hyper as hsHyper, hyperSvg, hypercube, sixteenCell, e8Roots, coxeterPlane, rings as hsRings, dot as hsDot, kelvinToColour, astar, bfsLength, verlet, rotatePlane, HyperError } from "../lib/hyper-studio.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -749,6 +750,22 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-155: the hyper studio through the server, Ahmad's three example requests.
+  const e8 = await post("/api/w/jarvis-studio/studio/hyper", { mode: "projection", dimension: 8, polytope: "e8_lattice", angles: { xy: 15, zw: 30, xw: 45 }, theme: "dark" });
+  ok(e8.status === 200 && e8.body.verified && e8.body.counts.vertices === 240 && e8.body.counts.edges === 6720 && e8.body.accent === "#77bcff" && /^<svg [^>]*viewBox="0 0 640 640"/.test(e8.body.svg) && !/<script|on\w+=/i.test(e8.body.svg) && !/gradient/i.test(e8.body.svg), tag("hyper: E8 in the Coxeter plane, verified, drawn as SVG with the dark accent and no gradient"), e8.body && e8.body.checks);
+  const op = await post("/api/w/jarvis-studio/studio/hyper", { mode: "optics", focal_mm: 85, f_stop: 1.4, subject_distance_m: 2.5, sensor_width_mm: 36, iso: 100, shutter_s: 0.004, key_kelvin: 5600, fill_kelvin: 4200, rim_kelvin: 3200 });
+  ok(op.status === 200 && op.body.verified && op.body.depth_of_field.near_m < 2.5 && op.body.depth_of_field.far_m > 2.5 && op.body.exposure.ev100 === 8.94 && op.body.lights.rim.oklch.startsWith("oklch(") && op.body.fill_shift_mired === 59.53, tag("hyper: thin-lens optics, EV100 and three lights in OKLCH"), op.body && op.body.depth_of_field);
+  const gp = await post("/api/w/jarvis-studio/studio/hyper", { mode: "game_physics", grid_size: [12, 12], start: [0, 0], goal: [11, 11], obstacles: [[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [7, 11], [7, 10], [7, 9], [7, 8], [7, 7], [7, 6]], particles: [{ x: 2, y: 6, vx: 0.4, vy: 0.1, radius: 0.5 }, { x: 9, y: 6, vx: -0.3, vy: 0, radius: 0.5 }], ticks: 30 });
+  ok(gp.status === 200 && gp.body.verified && gp.body.path_length === 22 && gp.body.shortest === 22 && gp.body.trails.length === 2 && gp.body.trails[0].length === 31, tag("hyper: A* equals breadth-first search, Verlet particles stay in the box"), gp.body && gp.body.checks);
+  const lt = await post("/api/w/jarvis-studio/studio/hyper", { mode: "projection", polytope: "cube", angles: { xy: 20 }, theme: "light" });
+  ok(lt.status === 200 && lt.body.accent === "#0b5ed7" && lt.body.faces.length === 6 && lt.body.svg.includes("#0b5ed7"), tag("hyper: the light theme uses the light accent"));
+  const bad = await post("/api/w/jarvis-studio/studio/hyper", { mode: "projection", polytope: "cube", angles: { xw: 10 } });
+  ok(bad.status === 400 && bad.body.detail === "xw" && (await post("/api/w/jarvis-studio/studio/hyper", { mode: "game_physics", grid_size: [500, 500] })).status === 400 && (await post("/api/w/jarvis-studio/studio/hyper", { mode: "warp" })).status === 400, tag("hyper: an axis the shape lacks, a huge grid and an unknown mode are refused"), bad.body);
+  const hev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(Array.isArray(hev) && hev.some(e => e.kind === "hyper.solve" && e.target === "projection e8_lattice verified"), tag("hyper: a calculation is an event in the log"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -824,6 +841,34 @@ async function suite(mode, opts) {
   ok(performance.now() - t1 < 500, "recon: hostile security.txt text is read in linear time");
   const sr = sampleReport();
   ok(sr.sample === true && sr.counts.high === 1 && sr.headers.score === 52 && sr.domain === "example.com", "recon: the teaching example is labelled and fixed", sr.counts);
+}
+// ADR-155: the hyper studio, pure.
+{
+  const t4 = hypercube(4), c16 = sixteenCell(), o8 = hypercube(8), e8 = e8Roots();
+  ok(t4.vertices.length === 16 && t4.edges.length === 32 && c16.vertices.length === 8 && c16.edges.length === 24 && o8.vertices.length === 256 && o8.edges.length === 1024 && e8.vertices.length === 240 && e8.edges.length === 6720, "hyper: tesseract 16/32, 16-cell 8/24, 8-cube 256/1024, E8 240/6720");
+  ok(e8.vertices.every(v => hsDot(v, v) === 2) && e8.vertices.filter(v => v.some(x => x === 0.5 || x === -0.5)).length === 128, "hyper: every E8 root has length² 2, 128 of them half-integer");
+  const cp = coxeterPlane();
+  ok(Math.abs(cp.top[0] - 2 * Math.cos(2 * Math.PI / 30)) < 1e-12 && Math.abs(hsDot(cp.u, cp.v)) < 1e-12 && Math.abs(hsDot(cp.u, cp.u) - 1) < 1e-12 && hsRings(e8.vertices.map(p => [hsDot(p, cp.u), hsDot(p, cp.v)])).map(g => g.n).join() === "30,30,30,30,30,30,30,30", "hyper: the Coxeter plane is orthonormal and shows 8 rings of 30 roots");
+  const r = rotatePlane([[1, 0, 0, 0]], 0, 3, 90)[0];
+  ok(Math.abs(r[0]) < 1e-15 && Math.abs(r[3] - 1) < 1e-15, "hyper: a 90° turn in the xw plane takes x to w");
+  for (const name of ["cube", "tesseract", "16cell", "octeract", "e8_lattice"]) ok(hsHyper({ mode: "projection", polytope: name, angles: { xy: 33, ...(name === "cube" ? {} : { xw: -71 }) } }).verified, "hyper: " + name + " is verified after rotation");
+  const cube = hsHyper({ mode: "projection", polytope: "cube", angles: { xy: 20, yz: 30, xz: 25 } });
+  ok(cube.faces.every((f, i) => i === 0 || cube.faces[i - 1].depth <= f.depth) && cube.faces.filter(f => f.visible).length === 3 && cube.faces.every(f => /^oklch\(\d+(\.\d+)?% 0\.12 248\.9\)$/.test(f.fill)), "hyper: faces back to front, three facing the viewer, shaded from the accent in OKLCH");
+  const warm = kelvinToColour(3200), cool = kelvinToColour(6500);
+  ok(warm.hex > "#ff" && parseInt(warm.hex.slice(5), 16) < parseInt(warm.hex.slice(1, 3), 16) && Math.abs(cool.xy[0] - 0.3135) < 0.001 && Math.abs(cool.xy[1] - 0.3237) < 0.001, "hyper: 3200 K is warm and 6500 K sits near D65 on the Planckian locus", [warm, cool]);
+  const W = 12, H = 12, blocked = new Set(); for (let y = 0; y < 11; y++) blocked.add(y * W + 5);
+  const a = astar(W, H, blocked, [0, 0], [11, 0]);
+  ok(a.path.length - 1 === bfsLength(W, H, blocked, [0, 0], [11, 0]) && a.path.length - 1 === 33, "hyper: A* around a wall is as short as breadth-first search", a.path.length);
+  const v = verlet([{ x: 1, y: 1, vx: 0.5, vy: 0.5, radius: 0.4 }, { x: 2, y: 2, vx: -0.5, vy: -0.5, radius: 0.4 }], 6, 4, 40, 0.05);
+  ok(v.maxOverlap <= 0.01 && v.trails.every(t => t.every(([x, y]) => x >= 0.4 - 1e-9 && x <= 5.6 + 1e-9 && y >= 0.4 - 1e-9 && y <= 3.6 + 1e-9)), "hyper: a head-on collision under gravity keeps both particles apart and in the box", v.maxOverlap);
+  const refused = [{ mode: "projection", polytope: "cube", angles: { xy: 400 } }, { mode: "projection", polytope: "tesseract", dimension: 8 }, { mode: "optics", key_kelvin: 1000 }, { mode: "optics", focal_mm: 100, subject_distance_m: 0.08 }, { mode: "game_physics", particles: Array(25).fill({ x: 1, y: 1, vx: 0, vy: 0, radius: 0.2 }) }, { mode: "game_physics", ticks: 601 }].map(q => { try { hsHyper(q); return false; } catch (e) { return e instanceof HyperError && e.status === 400; } });
+  ok(refused.every(Boolean), "hyper: angles, dimension, Kelvin, focus, particle count and ticks are bounded", refused);
+  const t0 = performance.now(); hsHyper({ mode: "projection", polytope: "e8_lattice" }); hsHyper({ mode: "game_physics", grid_size: [40, 40], ticks: 600, particles: Array.from({ length: 24 }, (_, i) => ({ x: 2 + (i % 6) * 6, y: 2 + Math.floor(i / 6) * 8, vx: 0.3, vy: -0.2, radius: 0.5 })) });
+  ok(performance.now() - t0 < 2000, "hyper: E8 and the largest physics run stay fast", Math.round(performance.now() - t0) + " ms");
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-hyper-studio", "tests", "golden.json"), "utf8"));
+  const got = g.requests.map(q => { try { return hsHyper(q); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } });
+  ok(JSON.stringify(got) === JSON.stringify(g.outputs), "hyper: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok(hyperSvg(hsHyper({ mode: "projection", polytope: "16cell" })).startsWith("<svg xmlns"), "hyper: a projection is written as SVG text");
 }
 // ADR-154: universal maths, pure.
 {

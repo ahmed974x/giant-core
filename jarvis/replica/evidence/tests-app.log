@@ -191,6 +191,14 @@ PASS F36 104729 is prime and the CRT answer is 23 mod 105
 PASS F36 a pole is named, and no integral is given across it
 PASS F36 a sign it does not read is refused with the reason and the sign
 PASS F36 a request that is not JSON is said, not sent
+PASS F37 E8 is drawn first: 240 roots, 6720 edges, verified
+PASS F37 the Coxeter checks are listed beside an SVG with no gradient
+PASS F37 a slider turns the shape; nothing moves on its own
+PASS F37 the cube has six OKLCH-shaded faces, three facing the viewer
+PASS F37 the tesseract: 16 vertices, 32 edges
+PASS F37 optics: hyperfocal distance, EV100 and the three lights
+PASS F37 game physics: the A* path equals BFS, two particle tracks
+PASS F37 an out-of-range Kelvin is refused with the field and its range
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -199,4 +207,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-200 passed, 0 failed
+208 passed, 0 failed

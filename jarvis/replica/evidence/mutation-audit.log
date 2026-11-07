@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-07T18:28:20Z",
- "javascriptRanAt": "2026-11-07T18:08:51.626Z",
+ "ranAt": "2026-11-07T19:40:23Z",
+ "javascriptRanAt": "2026-11-07T19:06:57.118Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 3964,
- "killed": 3964,
- "equivalent": 193,
+ "total": 5824,
+ "killed": 5824,
+ "equivalent": 258,
  "score": 100.0,
  "targets": [
   {
@@ -477,6 +477,292 @@
      "line": 479,
      "kind": "2 -> 3",
      "why": "steps is at most 10000, so steps * 2 never exceeds 20000 or 30000"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/hyper-studio.mjs",
+   "sha256": "b2ba20a22f6904e903f4259eb07876964d8da6808c127e90780701beadbea649",
+   "functions": [
+    "rotatePlane",
+    "applyAngles",
+    "hypercube",
+    "sixteenCell",
+    "e8Roots",
+    "matMul",
+    "reflection",
+    "symEigen",
+    "coxeterPlane",
+    "perspective",
+    "rings",
+    "faceShade",
+    "projection",
+    "facesViewer",
+    "lengthsKept",
+    "normsKept",
+    "backToFront",
+    "facingOk",
+    "countsOk",
+    "isIdentity",
+    "coxeterOk",
+    "ringsExact",
+    "ringsMultiple",
+    "dofOk",
+    "harmonicOk",
+    "ev100Ok",
+    "insideBox",
+    "pathOk",
+    "overlapOk",
+    "hyperSvg",
+    "kelvinToXy",
+    "kelvinToColour",
+    "optics",
+    "astar",
+    "bfsLength",
+    "verlet",
+    "gamePhysics",
+    "hyper"
+   ],
+   "mutants": 847,
+   "killed": 808,
+   "equivalent": 39,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "hypercube",
+     "line": 47,
+     "kind": "> -> >=",
+     "why": "o = k ^ (1 << b) differs from k in bit b, so it never equals k"
+    },
+    {
+     "fn": "sixteenCell",
+     "line": 55,
+     "kind": "< -> <=",
+     "why": "for a = 8 the inner loop starts at b = 9 and does nothing"
+    },
+    {
+     "fn": "sixteenCell",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "as above: an outer a = 8 has an empty inner loop"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 62,
+     "kind": "< -> <=",
+     "why": "for i = 8 the inner loop starts at j = 9 and adds no root"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "for a = V.length the inner loop is empty"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 62,
+     "kind": "8 -> 9",
+     "why": "as above"
+    },
+    {
+     "fn": "matMul",
+     "line": 76,
+     "kind": "0 -> 1",
+     "why": "every matrix multiplied here has at least two rows of the same length, so B[1] has as many columns as B[0]"
+    },
+    {
+     "fn": "symEigen",
+     "line": 84,
+     "kind": "< -> <=",
+     "why": "for i = n the inner loop starts at j = n + 1 and adds nothing (j <= n is killed by the exact-1e-26 probe)"
+    },
+    {
+     "fn": "symEigen",
+     "line": 86,
+     "kind": "< -> <=",
+     "why": "for p = n the inner loop does nothing"
+    },
+    {
+     "fn": "symEigen",
+     "line": 87,
+     "kind": "< -> <=",
+     "why": "a rotation of an entry this small is the identity to double precision, and of 0 exactly the identity (theta is infinite, t is 0)"
+    },
+    {
+     "fn": "symEigen",
+     "line": 90,
+     "kind": "< -> <=",
+     "why": "column n does not exist; the values written there are never read"
+    },
+    {
+     "fn": "symEigen",
+     "line": 87,
+     "kind": "300 -> 301",
+     "why": "as above"
+    },
+    {
+     "fn": "symEigen",
+     "line": 88,
+     "kind": "1 -> 2",
+     "why": "Math.sign(2) is 1, the same as Math.sign(1)"
+    },
+    {
+     "fn": "projection",
+     "line": 169,
+     "kind": "6 -> 7",
+     "why": "distinct ring radii of these projections differ by more than 1e-3 and equal radii agree to about 1e-15, so 1e-6 and 1e-7 group them the same"
+    },
+    {
+     "fn": "projection",
+     "line": 174,
+     "kind": "1 -> 2",
+     "why": "every shape has a vertex off the origin, so the span is never 0"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "< -> <=",
+     "why": "|top[0] - w| and |top[1] - top[0]| are differences of doubles near 1.96 (the first comparison must hold for the second to matter), so they are multiples of 2^-52 and never exactly 1e-9"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "< -> <=",
+     "why": "|top[0] - w| and |top[1] - top[0]| are differences of doubles near 1.96 (the first comparison must hold for the second to matter), so they are multiples of 2^-52 and never exactly 1e-9"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "0 -> 1",
+     "why": "swapping top[0] for top[1] in the first comparison: the second comparison makes both within 1e-9 of each other, so the answer is the same"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "0 -> 1",
+     "why": "swapping top[0] for top[1] in the first comparison: the second comparison makes both within 1e-9 of each other, so the answer is the same"
+    },
+    {
+     "fn": "harmonicOk",
+     "line": 203,
+     "kind": "< -> <=",
+     "why": "s (1/near + 1/far) - 2 is a difference of doubles near 2, a multiple of 2^-52, never exactly 1e-9"
+    },
+    {
+     "fn": "ev100Ok",
+     "line": 204,
+     "kind": "< -> <=",
+     "why": "the ratio minus 1 is a difference of doubles near 1, a multiple of 2^-53, never exactly 1e-9"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 2000 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 2000 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 64 points (8, 16, 240, 256)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "2000 -> 2001",
+     "why": "no shape has 2001 edges"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "2000 -> 2001",
+     "why": "no shape has 2001 edges"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "256 -> 257",
+     "why": "no shape has 257 points"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "64 -> 65",
+     "why": "no shape has 65 points"
+    },
+    {
+     "fn": "kelvinToColour",
+     "line": 240,
+     "kind": "<= -> <",
+     "why": "the two branches of the sRGB curve meet at 0.0031308 (both give 0.04045), so the hex is the same either way"
+    },
+    {
+     "fn": "kelvinToColour",
+     "line": 244,
+     "kind": "1 -> 2",
+     "why": "every channel is at most 1 here (the largest is scaled to 1 before the curve), so min(1, v) and min(2, v) agree"
+    },
+    {
+     "fn": "optics",
+     "line": 253,
+     "kind": "< -> <=",
+     "why": "when s equals H the formula divides by 0 and also gives Infinity"
+    },
+    {
+     "fn": "optics",
+     "line": 259,
+     "kind": "2 -> 3",
+     "why": "both mireds are already rounded to 2 decimals, so their difference rounds the same to 2 or 3"
+    },
+    {
+     "fn": "astar",
+     "line": 279,
+     "kind": "0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same; the start's own f is never compared, because it is alone in the list when it is taken"
+    },
+    {
+     "fn": "astar",
+     "line": 279,
+     "kind": "0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same; the start's own f is never compared, because it is alone in the list when it is taken"
+    },
+    {
+     "fn": "bfsLength",
+     "line": 310,
+     "kind": "+ -> -",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "bfsLength",
+     "line": 310,
+     "kind": "+ -> -",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "verlet",
+     "line": 327,
+     "kind": "< -> <=",
+     "why": "for i = P.length the inner loop does nothing"
+    },
+    {
+     "fn": "verlet",
+     "line": 336,
+     "kind": "< -> <=",
+     "why": "with dv = 0 the swap adds 0 to every position"
+    },
+    {
+     "fn": "verlet",
+     "line": 345,
+     "kind": "< -> <=",
+     "why": "as above"
     }
    ]
   },
@@ -1305,6 +1591,224 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-hyper-studio/hyper_studio.py",
+   "sha256": "f975e04169d69144b2a7c611391b8ce1c9342cd75bbecbc8101ac0d9363312f0",
+   "functions": [
+    "r",
+    "_num",
+    "_js_num_str",
+    "_number",
+    "rotate_plane",
+    "apply_angles",
+    "hypercube",
+    "sixteen_cell",
+    "e8_roots",
+    "mat_mul",
+    "reflection",
+    "sym_eigen",
+    "coxeter_plane",
+    "_petrie",
+    "perspective",
+    "rings",
+    "face_shade",
+    "oklch_css",
+    "faces_viewer",
+    "lengths_kept",
+    "norms_kept",
+    "back_to_front",
+    "facing_ok",
+    "counts_ok",
+    "is_identity",
+    "coxeter_ok",
+    "rings_exact",
+    "rings_multiple",
+    "dof_ok",
+    "harmonic_ok",
+    "ev100_ok",
+    "overlap_ok",
+    "inside_box",
+    "path_ok",
+    "projection",
+    "hyper_svg",
+    "kelvin_to_xy",
+    "kelvin_to_colour",
+    "_pos",
+    "_get",
+    "optics",
+    "_is_int",
+    "_cell",
+    "astar",
+    "bfs_length",
+    "verlet",
+    "game_physics",
+    "hyper"
+   ],
+   "mutants": 1078,
+   "killed": 1052,
+   "equivalent": 26,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "bfs_length",
+     "line": 601,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "sym_eigen",
+     "line": 156,
+     "kind": "constant 60 -> 61",
+     "why": "the 8 x 8 matrix converges in far fewer sweeps; after convergence a sweep is the identity to double precision"
+    },
+    {
+     "fn": "e8_roots",
+     "line": 128,
+     "kind": "constant 8 -> 9",
+     "why": "for i = 8 the inner range starts at 9 and adds no root"
+    },
+    {
+     "fn": "projection",
+     "line": 415,
+     "kind": "constant 1 -> 2",
+     "why": "every shape has a vertex off the origin, so the span is never 0"
+    },
+    {
+     "fn": "kelvin_to_colour",
+     "line": 474,
+     "kind": "arith Add -> Sub",
+     "why": "Python's % with a positive divisor is never negative, so adding or subtracting 360 first gives the same angle"
+    },
+    {
+     "fn": "optics",
+     "line": 513,
+     "kind": "constant 2 -> 3",
+     "why": "both mireds are already rounded to 2 decimals, so their difference rounds the same to 2 or 3"
+    },
+    {
+     "fn": "astar",
+     "line": 544,
+     "kind": "constant 0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 434,
+     "kind": "constant 2000 -> 2001",
+     "why": "no shape has 2001 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 436,
+     "kind": "constant 256 -> 257",
+     "why": "no shape has 257 points (8, 16, 240, 256)"
+    },
+    {
+     "fn": "astar",
+     "line": 547,
+     "kind": "constant 0 -> 1",
+     "why": "the start's f is never compared: it is alone in the list when it is taken"
+    },
+    {
+     "fn": "sixteen_cell",
+     "line": 122,
+     "kind": "constant 8 -> 9",
+     "why": "for a = 8 the inner range is empty"
+    },
+    {
+     "fn": "_js_num_str",
+     "line": 250,
+     "kind": "constant 0 -> 1",
+     "why": "v is infinite here, so v > 0 and v > 1 agree"
+    },
+    {
+     "fn": "projection",
+     "line": 373,
+     "kind": "arith Div -> Mult",
+     "why": "a face centre of the cube lies at distance 1, so multiplying or dividing by its length differs only in the last bit, below every rounding of the output"
+    },
+    {
+     "fn": "bfs_length",
+     "line": 595,
+     "kind": "arith Add -> Sub",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "bfs_length",
+     "line": 595,
+     "kind": "arith Add -> Sub",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "r",
+     "line": 50,
+     "kind": "constant 2 -> 3",
+     "why": "no rounded value here is a whole number at or above 2^53, so the bound is never reached"
+    },
+    {
+     "fn": "r",
+     "line": 50,
+     "kind": "constant 53 -> 54",
+     "why": "as above"
+    },
+    {
+     "fn": "_js_num_str",
+     "line": 262,
+     "kind": "constant 0 -> 1",
+     "why": "this branch has e10 >= 21 or e10 <= -7, never 1"
+    },
+    {
+     "fn": "coxeter_ok",
+     "line": 312,
+     "kind": "constant 0 -> 1",
+     "why": "swapping top[0] for top[1] in the first or last comparison: the middle comparison makes them equal within 1e-9, against margins of 1e-9 (unreachable for doubles near 1.96) and 1e-3"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 437,
+     "kind": "constant 64 -> 65",
+     "why": "no shape has 65 points"
+    },
+    {
+     "fn": "coxeter_ok",
+     "line": 312,
+     "kind": "constant 0 -> 1",
+     "why": "swapping top[0] for top[1] in the first or last comparison: the middle comparison makes them equal within 1e-9, against margins of 1e-9 (unreachable for doubles near 1.96) and 1e-3"
+    },
+    {
+     "fn": "e8_roots",
+     "line": 137,
+     "kind": "compare Lt -> GtE",
+     "why": "there are 8 signs, so the count of non-negative ones has the same parity as the count of negative ones"
+    },
+    {
+     "fn": "mat_mul",
+     "line": 148,
+     "kind": "constant 0 -> 1",
+     "why": "every matrix multiplied here has at least two rows of the same length, so B[1] has as many columns as B[0]"
+    },
+    {
+     "fn": "projection",
+     "line": 396,
+     "kind": "constant 8 -> 9",
+     "why": "a ninth row is all zeros (i never equals j), stays zero after the products, and is 0 where the identity test expects 0"
+    },
+    {
+     "fn": "oklch_css",
+     "line": 266,
+     "kind": "constant 2 -> 3",
+     "why": "L is already rounded to 4 decimals, so L * 100 rounds the same to 2 or 3 decimals"
+    },
+    {
+     "fn": "kelvin_to_colour",
+     "line": 475,
+     "kind": "constant 1 -> 2",
+     "why": "every channel is at most 1 here (the largest is scaled to 1 before the curve)"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-reversal-engine/reversal_engine.py",
    "sha256": "8a3b024381e40e172ad5b7649c35029b0098cd8fffbe103b7cc3f36cd247916f",
    "functions": [
@@ -1496,5 +2000,5 @@
    ]
   }
  ],
- "sha256": "f12c39885f7ac34ed757aa369007caa096a3b9e4e308c5f983815805f0b9196a"
+ "sha256": "860cc83e1a4325264ed008eb5ecd60f30cdb0601b20c85eac3eafce75c04db20"
 }
