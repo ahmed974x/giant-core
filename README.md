@@ -153,3 +153,12 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36
 - `math-calculus-*`: `#/math` for x³ − 6x² + 11x − 6 on [0.5, 3.5]: the simplified expression, the derivative 3x² − 12x + 11, the roots 1, 2, 3 by Brent and Newton, Simpson's integral, each back-check passed and [VERIFIED];
 - `math-ode-plot-*`: RK4 for dy/dx = −2y + x, y(0) = 1, 20 steps: y(2) = 0.7728959917, the step-doubling check, and the solution drawn as one SVG path;
 - `math-number-theory-*`: 104729 prime by Miller-Rabin with 13 bases, and x ≡ 23 (mod 105) by the Chinese remainder theorem.
+
+## ADR-155 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48 shots):
+
+- `hyper-e8-*`: `#/hyper` opens on the 240 E8 roots in the Coxeter plane, with 6720 edges in the accent (`#77bcff` dark, `#0b5ed7` light). Beside them: Coxeter element of order 30, the double eigenvalue, 8 rings of 30 roots, and [VERIFIED];
+- `hyper-cube-*`: the cube with its faces sorted back to front and shaded in OKLCH from the accent;
+- `hyper-tesseract-*`: the tesseract turned 35° in the xw plane, perspective R4 → R3 → R2;
+- `hyper-optics-physics-*`: 85 mm at f/1.4 focused at 2.5 m (depth of field, hyperfocal 179 m, EV100 8.94, three lights from their Kelvin), and A* on a 12 × 12 grid equal to breadth-first search, with two particle tracks.
