@@ -752,6 +752,33 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.waitForTimeout(300);
   ok(await page.locator("section[aria-labelledby=h-rev]").getByText("Healed the text contrast").first().isVisible() && /color: #767676/.test(await page.locator("#f-rev-out").inputValue()), "F35 the reversal engine heals a template's colour pair and logs it");
 }
+// F36: the math lab (ADR-154): steps, checks, [VERIFIED] and the plot, from the same engine as the server.
+{
+  await go("#/math");
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForSelector("#h-um-steps");
+  ok(await page.getByText("[VERIFIED]").isVisible() && await page.getByText("d/dx = 3 * x^2 - 12 * x + 11").isVisible() && await page.locator("code", { hasText: /^1, 2, 3$/ }).isVisible() && (await page.locator(".um-plot .um-root").count()) === 3, "F36 the cubic's derivative, its roots 1, 2, 3 and a plot with the roots marked");
+  ok((await page.locator(".um-plot path.ts-line").getAttribute("d")).split("L").length === 201 && (await page.locator(".um-plot svg").getAttribute("aria-hidden")) === "true", "F36 the plot is one SVG path of 201 points, labelled in HTML beside it");
+  await page.locator("#f-umtask").selectOption("linear_algebra");
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("x = [1, 1, 1]").isVisible() && await page.getByText("det(A) = 83").isVisible() && (await page.locator(".um-plot").count()) === 0, "F36 the 3 × 3 system, its determinant, and no plot for a matrix");
+  await page.locator("#f-umtask").selectOption("number_theory");
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("x ≡ 23 (mod 105)").isVisible() && await page.getByText("Miller-Rabin test with 13 fixed bases: prime").isVisible(), "F36 104729 is prime and the CRT answer is 23 mod 105");
+  await page.locator("#f-umbody").fill('{"task":"calculus","expression":"1/(x-1)","interval":[0,3]}');
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("A sign change without a root: a pole or a jump").isVisible() && await page.getByText("The definite integral could not be computed.").isVisible(), "F36 a pole is named, and no integral is given across it");
+  await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}');
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Not solved").isVisible() && await page.getByText("This sign is not maths Jarvis reads.").isVisible() && (await page.locator("code[data-verbatim]", { hasText: "$" }).count()) === 1, "F36 a sign it does not read is refused with the reason and the sign");
+  await page.locator("#f-umbody").fill("{not json");
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  ok(await page.getByText("The request is not valid JSON.").isVisible(), "F36 a request that is not JSON is said, not sent");
+}
 
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
@@ -762,6 +789,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["workflow editor", async () => { await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click(); }],
     ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
     ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
+    ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
+    ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));
   ok(pur.en === 0, "F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 700));

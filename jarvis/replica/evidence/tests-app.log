@@ -184,6 +184,13 @@ PASS F35 the Studio heals every failing pair; the live badge turns green
 PASS F35 the report gives WCAG and APCA Lc before and after each change
 PASS F35 a second press finds nothing to heal
 PASS F35 the reversal engine heals a template's colour pair and logs it
+PASS F36 the cubic's derivative, its roots 1, 2, 3 and a plot with the roots marked
+PASS F36 the plot is one SVG path of 201 points, labelled in HTML beside it
+PASS F36 the 3 × 3 system, its determinant, and no plot for a matrix
+PASS F36 104729 is prime and the CRT answer is 23 mod 105
+PASS F36 a pole is named, and no integral is given across it
+PASS F36 a sign it does not read is refused with the reason and the sign
+PASS F36 a request that is not JSON is said, not sent
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -192,4 +199,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-193 passed, 0 failed
+200 passed, 0 failed

@@ -340,6 +340,12 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **The reversal engine** does the same for pasted CSS: a rule with a text colour and a solid background that fails is healed, and the log shows the numbers.
 - **Command line:** `python3 .claude/skills/replica-reversal-engine/reversal_engine.py template page.css` gives the same result.
 
+## Math lab (ADR-154)
+
+- **`#/math`:** pick an example or write a request (calculus, a differential equation, a matrix, number theory or Bayes), then **Solve and check**. Each step is shown with its formula, every answer is checked backwards (a root by |f(root)| ≤ 1e-9, a system by its residual, factors by multiplying back), and **[VERIFIED]** appears only when every check passed. Functions and ODEs are plotted as SVG.
+- No code is run: a parser reads the expression into a tree, with limits on length and depth. A pole is named, and no integral is given across it.
+- The API is `POST /api/w/:slug/math/solve` (send the `x-jarvis: 1` header; `?lang=ar` for Arabic steps). The same maths runs with `python3 .claude/skills/replica-universal-math/universal_math.py solve request.json`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

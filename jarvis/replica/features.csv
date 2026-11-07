@@ -97,5 +97,7 @@ Passive recon: security headers and security.txt,security,should,yes,yes,"ADR-15
 Passive-recon skill,quality,could,yes,yes,"ADR-152: replica-passive-recon passive_recon.py, standard library only, reads saved files; same report as the server; in the mutation run"
 Auto-heal contrast in the Studio,studio,should,yes,yes,"ADR-153: OKLCH lightness bisection (16 steps, hue kept) to WCAG 4.5 and APCA 60; report with before and after"
 Contrast healing in the reversal engine,quality,should,yes,yes,"ADR-153: sixth rule contrast; logged with WCAG and APCA Lc before and after; the same in reversal_engine.py; in the mutation run"
+Math lab with checked steps,platform,should,yes,yes,"ADR-154: Pratt parser, exact derivative, Brent and Newton roots, adaptive Simpson, Gauss with pivoting, Jacobi eigenvalues, RK4, Miller-Rabin, Pollard's rho, CRT, Bayes; [VERIFIED] only after backward checks; SVG plot"
+Universal maths API and skill,platform,should,yes,yes,"ADR-154: POST /api/w/:slug/math/solve with ?lang=ar; replica-universal-math gives the same answers (golden file); in the mutation run"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

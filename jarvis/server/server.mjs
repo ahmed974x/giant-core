@@ -36,6 +36,7 @@ import { createTelemetry } from "./lib/telemetry.mjs";
 import { createReadiness } from "./lib/readiness.mjs";
 import { createReversalLog } from "./lib/reversal-log.mjs";
 import { createPassiveRecon } from "./lib/passive-recon.mjs";
+import { solve as solveMath, localize as localizeMath, umText } from "./lib/universal-math.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
@@ -356,6 +357,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           try { rep = await recon(body.domain); } catch (e) { return fail(e.status || 500, e.message); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "recon.passive", rep.domain);
           return send(200, rep);
+        }
+        // ADR-154: universal maths. Pure and bounded (400 characters, depth 40, 10 x 10, 10,000 steps); the
+        // answer comes back in the language asked for (?lang=ar or body.lang), formulas as written.
+        if (req.method === "POST" && rest === "/math/solve") {
+          const lang = (url.searchParams.get("lang") || body.lang) === "ar" ? "ar" : "en";
+          let out;
+          try { out = localizeMath(solveMath(body), lang); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: umText(e.message, lang), detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "math.solve", out.task + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
         }
         if (req.method === "POST" && rest === "/reversal/plan") return send(200, await reversal.plan(slug, body.steps, "person"));
         if (req.method === "POST" && rest === "/reversal/template") return send(200, await reversal.template(slug, body.text, "person"));

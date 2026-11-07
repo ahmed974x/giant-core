@@ -1,0 +1,14 @@
+test_calculus (test_universal_math.Examples.test_calculus) ... ok
+test_linear_algebra (test_universal_math.Examples.test_linear_algebra) ... ok
+test_number_theory (test_universal_math.Examples.test_number_theory) ... ok
+test_ode (test_universal_math.Examples.test_ode) ... ok
+test_pole_is_not_a_root (test_universal_math.Examples.test_pole_is_not_a_root) ... ok
+test_js_numbers (test_universal_math.Safety.test_js_numbers) ... ok
+test_no_code_is_run (test_universal_math.Safety.test_no_code_is_run) ... ok
+test_refusals (test_universal_math.Safety.test_refusals) ... ok
+test_golden (test_universal_math.SameAsServer.test_golden) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.106s
+
+OK

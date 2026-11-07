@@ -583,6 +583,11 @@
       },
       // ADR-152 in sample mode: no network, so the teaching example (made-up records for example.com).
       passiveRecon(domain) { return LlmPlan.normalizeDomain(domain) ? ok(LlmPlan.sampleReport()) : bad("Give a domain name such as example.com: no address, port or path."); },
+      // ADR-154 in sample mode: the same engine as the server, in this page.
+      mathSolve(body) {
+        try { return ok(UniMath.solve(body)); }
+        catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); }
+      },
       // ADR-150 in sample mode: the same reversal engine; the log, its audit leaf and the lesson stay in this browser.
       reversePlan(steps) {
         if (!Array.isArray(steps) || !steps.length) return bad("Send the plan's steps.");
@@ -940,7 +945,7 @@
       const r = await fetch(path, { method, cache: "no-store", credentials: "same-origin", headers: body !== undefined ? { "content-type": "application/json", "x-jarvis": "1" } : {}, body: body !== undefined ? JSON.stringify(body) : undefined });
       let j = null;
       try { j = await r.json(); } catch (e) { /* not JSON */ }
-      if (!r.ok) throw new Error((j && j.error) || "The server answered " + r.status + ".");
+      if (!r.ok) { const err = new Error((j && j.error) || "The server answered " + r.status + "."); if (j && typeof j.detail === "string") err.detail = j.detail; throw err; }
       return j;
     }
     const w = p => "/api/w/" + encodeURIComponent(slug) + p;
@@ -1009,6 +1014,7 @@
       reverseTemplate: text => req("POST", w("/reversal/template"), { text }),
       reversalLog: limit => req("GET", w("/reversal/log?limit=" + encodeURIComponent(limit || 20))),
       passiveRecon: domain => req("POST", w("/recon/passive"), { domain }),
+      mathSolve: body => req("POST", w("/math/solve"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2532,6 +2538,11 @@
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
+  // ADR-154: universal maths (jarvis/server/lib/universal-math.mjs, inlined by the build in its own scope).
+  const UniMath = (() => {
+    /*@UNIVERSAL_MATH@*/
+    return { solve, MathError };
+  })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
@@ -3575,6 +3586,68 @@
         lockLine("anything beyond reading what is public: port scans, login attempts and outbound messages are not part of Jarvis and wait for Director 00")));
   };
 
+  /* ── Math lab (ADR-154): exact steps, each answer checked backwards before it is marked verified ── */
+  const MATH_EXAMPLES = {
+    calculus: { label: "Calculus: derivative, roots and integral", body: { task: "calculus", expression: "x^3 - 6*x^2 + 11*x - 6", variable: "x", interval: [0.5, 3.5] } },
+    ode_rk4: { label: "Differential equation (RK4)", body: { task: "ode_rk4", expression: "-2 * y + x", x0: 0, y0: 1, x_end: 2, steps: 20 } },
+    linear_algebra: { label: "Matrix: solve, determinant, inverse, eigenvalues", body: { task: "linear_algebra", matrix: [[4, 2, 1], [2, 5, 2], [1, 2, 6]], rhs: [7, 9, 9] } },
+    number_theory: { label: "Number theory: primes, factors, CRT", body: { task: "number_theory", n: 104729, crt_remainders: [2, 3, 2], crt_moduli: [3, 5, 7] } },
+    bayes: { label: "Bayes' theorem", body: { task: "bayes", prior: 0.01, sensitivity: 0.9, false_positive: 0.05 } },
+  };
+  function mathPlot(plot) {
+    const pts = plot.points;
+    if (pts.length < 2) return null;
+    const W = 720, H = 260, P = 12, xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys);
+    const X = x => P + (x1 > x0 ? (x - x0) / (x1 - x0) : 0.5) * (W - 2 * P), Y = y => H - P - (y1 > y0 ? (y - y0) / (y1 - y0) : 0.5) * (H - 2 * P);
+    const axes = [svg("line", { class: "um-axis", x1: P, x2: W - P, y1: Y(0).toFixed(1), y2: Y(0).toFixed(1) })];
+    if (x0 <= 0 && x1 >= 0) axes.push(svg("line", { class: "um-axis", x1: X(0).toFixed(1), x2: X(0).toFixed(1), y1: P, y2: H - P }));
+    const d = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+    return h("figure", { class: "ts-wrap um-plot" },
+      svg("svg", { class: "ts-svg", viewBox: "0 0 " + W + " " + H, "aria-hidden": "true" }, ...axes, svg("path", { class: "ts-line", d }),
+        ...(plot.roots || []).map(r => svg("circle", { class: "um-root", cx: X(r).toFixed(1), cy: Y(0).toFixed(1), r: 5 }))),
+      h("figcaption", { class: "t-caption muted" }, h("span", { text: plot.kind === "ode" ? "The solution y(x), point by point" : "The function on the interval, roots marked" }), " ",
+        h("bdi", { class: "num", dir: "ltr", translate: "no", text: "x ∈ [" + x0 + ", " + x1 + "] · y ∈ [" + Number(y0.toPrecision(4)) + ", " + Number(y1.toPrecision(4)) + "]" })));
+  }
+  function mathView(r) {
+    const line = x => h("li", { class: "stack um-step" }, h("span", { text: x.text }), x.formula ? h("code", { translate: "no", dir: "ltr", text: x.formula }) : null);
+    return h("div", { class: "stack" },
+      h("div", { class: "row" }, r.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"),
+        h("span", { class: "t-sm muted", text: r.verified ? "Every check below passed." : "A check below did not pass; read it before using the answer." })),
+      h("section", { class: "panel", "aria-labelledby": "h-um-steps" }, h("h2", { id: "h-um-steps", text: "Steps" }), h("ol", { class: "plist" }, r.steps.map(line))),
+      h("section", { class: "panel", "aria-labelledby": "h-um-checks" }, h("h2", { id: "h-um-checks", text: "Checks" }),
+        h("ul", { class: "plist" }, r.checks.map(c => h("li", { class: "stack um-step" }, h("div", { class: "row" }, badge(c.ok ? "ok" : "failed", c.ok ? "Passed" : "Failed"), h("span", { text: c.text })), c.formula ? h("code", { translate: "no", dir: "ltr", text: c.formula }) : null)))),
+      r.plot ? h("section", { class: "panel", "aria-labelledby": "h-um-plot" }, h("h2", { id: "h-um-plot", text: "Plot" }), mathPlot(r.plot)) : null,
+      h("details", null, h("summary", { text: "The answer as JSON" }), h("pre", { class: "diff", translate: "no", dir: "ltr", text: JSON.stringify(r.result, null, 1) })));
+  }
+  pages.math = () => {
+    const sel = h("select", { class: "select", id: "f-umtask", name: "math-task", autocomplete: "off" }, Object.entries(MATH_EXAMPLES).map(([k, v]) => h("option", { value: k, text: v.label })));
+    const ta = h("textarea", { class: "textarea code", id: "f-umbody", name: "math-request", autocomplete: "off", rows: 6, spellcheck: false, dir: "ltr", "aria-describedby": "h-um-hint" });
+    const fill = () => { ta.value = JSON.stringify(MATH_EXAMPLES[sel.value].body, null, 1); };
+    sel.addEventListener("change", fill); fill();
+    const btn = h("button", { class: "btn btn-primary", type: "submit" }, icon("i-check", "sm"), "Solve and check");
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    const form = h("form", { class: "stack", novalidate: true },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-umtask", text: "Example" }), sel),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-umbody", text: "The request" }), ta,
+        h("span", { class: "hint", id: "h-um-hint", text: "JSON, as sent to the server. Expressions use + - * / ^, brackets, sin cos tan exp ln log10 sqrt abs, pi and e. No code is run: a parser reads the expression into a tree." })),
+      h("div", { class: "row" }, btn));
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      let body;
+      try { body = JSON.parse(ta.value); } catch (err) { box.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not solved"), " ", h("span", { text: "The request is not valid JSON." }))); return; }
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { box.replaceChildren(mathView(await store.mathSolve(body))); }
+      catch (err) { box.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not solved"), " ", h("span", { text: err.message }), err.detail ? h("code", { translate: "no", dir: "ltr", "data-verbatim": "", text: err.detail }) : null)); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Math lab", "Calculus, differential equations, matrices, number theory and Bayes, step by step. Each answer is checked backwards before it is marked verified."),
+      sampleNote(),
+      h("section", { class: "panel", "aria-labelledby": "h-um" }, h("h2", { id: "h-um", text: "Ask for a calculation" }), form),
+      box);
+  };
+
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {
     const box = h("div", { class: "stack", "aria-live": "polite" });
@@ -3677,7 +3750,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -3758,7 +3831,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

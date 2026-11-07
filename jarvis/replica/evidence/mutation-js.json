@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-07T13:11:42.508Z",
+ "ranAt": "2026-11-07T18:08:51.626Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -141,6 +141,334 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/universal-math.mjs",
+   "sha256": "31da8bd3490e3d8554d9f2b699d28ba748b9ecebd71a350b6e620bc27ce12f76",
+   "functions": [
+    "tokenize",
+    "parse",
+    "evaluate",
+    "simplify",
+    "show",
+    "adaptiveSimpson",
+    "brent",
+    "findRoots",
+    "gaussSolve",
+    "determinant",
+    "inverse",
+    "jacobiEigen",
+    "rk4",
+    "egcd",
+    "isPrime",
+    "factorize",
+    "crt",
+    "bayes",
+    "solve",
+    "localize"
+   ],
+   "mutants": 778,
+   "killed": 729,
+   "equivalent": 49,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "tokenize",
+     "line": 31,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined, which is neither a digit nor a point, so the loop stops at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined: it is not e or E, and it is not a digit, so both bounds stop at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined: it is not e or E, and it is not a digit, so both bounds stop at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 39,
+     "kind": "< -> <=",
+     "why": "past the end the slice and the next start are the same: s.slice stops at the end of the string and the outer loop ends"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "3 -> 4",
+     "why": "the pattern is anchored at the start and needs at most three characters, so a longer slice gives the same answer"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "2 -> 3",
+     "why": "the pattern has already seen a digit right after the sign, and the digit loop takes that digit anyway, so skipping it first ends at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "1 -> 2",
+     "why": "as above, without a sign: the digit after e is taken by the digit loop either way"
+    },
+    {
+     "fn": "parse",
+     "line": 71,
+     "kind": "0 -> 1",
+     "why": "a right binding power of 0 or 1 is below the lowest operator's 10, so the same operators are read"
+    },
+    {
+     "fn": "parse",
+     "line": 79,
+     "kind": "0 -> 1",
+     "why": "as above, inside brackets"
+    },
+    {
+     "fn": "parse",
+     "line": 82,
+     "kind": "25 -> 26",
+     "why": "no operator binds between 25 and 26 (they bind at 10, 20 and 30)"
+    },
+    {
+     "fn": "parse",
+     "line": 83,
+     "kind": "25 -> 26",
+     "why": "as above, for a unary plus"
+    },
+    {
+     "fn": "parse",
+     "line": 87,
+     "kind": "1 -> 2",
+     "why": "^ reads its right side at 28 instead of 29; no operator binds between them, so it stays right-associative"
+    },
+    {
+     "fn": "parse",
+     "line": 91,
+     "kind": "0 -> 1",
+     "why": "as above, for the whole expression"
+    },
+    {
+     "fn": "simplify",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "b = 0 was already returned by the rule for adding 0 above"
+    },
+    {
+     "fn": "simplify",
+     "line": 142,
+     "kind": "< -> <=",
+     "why": "b = 0 was already returned by the rule for subtracting 0 above"
+    },
+    {
+     "fn": "show",
+     "line": 208,
+     "kind": "5 -> 6",
+     "why": "5 and 6 are both above every operator's precedence (1 to 4), so the same children get brackets"
+    },
+    {
+     "fn": "show",
+     "line": 208,
+     "kind": "4 -> 5",
+     "why": "the last clause brackets a negative left operand of ^; its precedence 3 is already below 4, so the first clause brackets it"
+    },
+    {
+     "fn": "show",
+     "line": 214,
+     "kind": "3 -> 4",
+     "why": "under a minus, every child below precedence 4 is bracketed either way, and ^ (4) is not bracketed on the right in both cases"
+    },
+    {
+     "fn": "adaptiveSimpson",
+     "line": 232,
+     "kind": "> -> >=",
+     "why": "evals starts at 3 and grows by 2, so it is always odd and never exactly 200000"
+    },
+    {
+     "fn": "brent",
+     "line": 255,
+     "kind": "< -> <=",
+     "why": "when f(s) is exactly 0 the other branch sets a = s and the swap below makes it b, so the next check returns s either way"
+    },
+    {
+     "fn": "brent",
+     "line": 243,
+     "kind": "> -> >=",
+     "why": "a product of 0 was already returned by the two lines above"
+    },
+    {
+     "fn": "brent",
+     "line": 245,
+     "kind": "- -> +",
+     "why": "d is read only when mflag is false, which needs one iteration, and every iteration first sets d = c"
+    },
+    {
+     "fn": "findRoots",
+     "line": 272,
+     "kind": "|| -> &&",
+     "why": "for d = 0 the step is infinite and leaves the bracket, for d = Infinity the step is 0 and keeps r, for NaN both parts break"
+    },
+    {
+     "fn": "findRoots",
+     "line": 270,
+     "kind": "< -> <=",
+     "why": "a zero at x1 is found as the next interval's left end (y0 === 0), the same point; at the last sample the final line adds it"
+    },
+    {
+     "fn": "findRoots",
+     "line": 278,
+     "kind": "< -> <=",
+     "why": "a root exactly 1e-9 from the right end would come from a bracket that ends at the end, and Brent returns the end itself when f is 0 there"
+    },
+    {
+     "fn": "findRoots",
+     "line": 270,
+     "kind": "0 -> 1",
+     "why": "brent itself returns null when there is no sign change, so the extra calls find nothing"
+    },
+    {
+     "fn": "gaussSolve",
+     "line": 301,
+     "kind": "0 -> 1",
+     "why": "back substitution writes x[r] before any later row reads it"
+    },
+    {
+     "fn": "determinant",
+     "line": 315,
+     "kind": "< -> <=",
+     "why": "column n does not exist in the determinant's copy; the value written there is never read"
+    },
+    {
+     "fn": "inverse",
+     "line": 329,
+     "kind": "0 -> 1",
+     "why": "column 0 of the left half is never read after its own pivot step, and only the right half is returned"
+    },
+    {
+     "fn": "inverse",
+     "line": 330,
+     "kind": "0 -> 1",
+     "why": "as above: column 0 of the left half is not read again"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 340,
+     "kind": "< -> <=",
+     "why": "for i = n the inner loop starts at j = n + 1 and adds nothing (j <= n is killed by the tiny-matrix probes)"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 342,
+     "kind": "< -> <=",
+     "why": "for p = n the inner loop starts at q = n + 1 and does nothing"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 343,
+     "kind": "< -> <=",
+     "why": "a rotation of an entry this small is the identity to double precision (and of 0 exactly the identity: theta is infinite, t is 0)"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 348,
+     "kind": "< -> <=",
+     "why": "column n does not exist; the values written there are never read"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 343,
+     "kind": "300 -> 301",
+     "why": "as above"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 345,
+     "kind": "1 -> 2",
+     "why": "Math.sign(2) is 1, the same as Math.sign(1)"
+    },
+    {
+     "fn": "isPrime",
+     "line": 390,
+     "kind": "< -> <=",
+     "why": "as above: the extra squaring tests a^(n-1) = -1 (mod n), which never holds"
+    },
+    {
+     "fn": "isPrime",
+     "line": 384,
+     "kind": "0 -> 1",
+     "why": "the extra squaring tests a^(n-1) = -1 (mod n), which has no solution for n > 2: for every prime p dividing n the order of a would need a higher power of 2 than divides n - 1, forcing n = 1 mod 2^(v+1)"
+    },
+    {
+     "fn": "factorize",
+     "line": 409,
+     "kind": "<= -> <",
+     "why": "a prime square left by the stricter bound is split by Pollard's rho into the same primes, and the list is sorted"
+    },
+    {
+     "fn": "factorize",
+     "line": 409,
+     "kind": "< -> <=",
+     "why": "1000 is not prime and its factors 2 and 5 are already divided out"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "< -> <=",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "> -> >=",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "1 -> 2",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "1 -> 2",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "0 -> 1",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "crt",
+     "line": 426,
+     "kind": "+ -> -",
+     "why": "ri enters only through (ri - r) / g and the final mod l, which give the same residue for any representative"
+    },
+    {
+     "fn": "solve",
+     "line": 530,
+     "kind": "&& -> ||",
+     "why": "all three parts are true for every list factorize returns (it pushes only primes, by exact BigInt division), so and and or agree"
+    },
+    {
+     "fn": "solve",
+     "line": 530,
+     "kind": "&& -> ||",
+     "why": "all three parts are true for every list factorize returns (it pushes only primes, by exact BigInt division), so and and or agree"
+    },
+    {
+     "fn": "solve",
+     "line": 479,
+     "kind": "2 -> 3",
+     "why": "steps is at most 10000, so steps * 2 never exceeds 20000 or 30000"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/contrast-heal.mjs",

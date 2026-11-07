@@ -542,3 +542,9 @@ td.wrap { white-space: normal; min-width: 16ch; }
 /* ADR-148: the five layers. */
 .layers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
 .layer h2 { margin: 0; }
+/* ADR-154: the math lab's plot (labels are HTML beside it) and its step lines. */
+.um-axis { stroke: var(--color-border-input); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.um-root { fill: var(--color-success); stroke: var(--color-surface); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.um-plot { margin: 0; display: grid; gap: 8px; }
+.um-step { gap: 4px; }
+.um-step > code { justify-self: start; overflow-wrap: anywhere; }

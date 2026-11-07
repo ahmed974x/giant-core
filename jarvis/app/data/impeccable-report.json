@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 120,
+ "files": 122,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 136
+  "low": 137
  },
  "byRule": {
   "D05": 27,
-  "M05": 109
+  "M05": 110
  },
- "sha256": "d8abc2bd85d1e33bcf3f356c6c6b8c1a02abacf70c162fd47d3f37ef9d1ba656",
+ "sha256": "adde4949b379c555039ca31112d31e14708b1d126e822d7f20dcb7e0a818c69b",
  "findings": [
   {
    "rule": "D05",
@@ -964,6 +964,13 @@
    "line": 10,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-153-oklch-bisection-contrast-healer.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 13,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-154-universal-math.md"
   }
  ]
 }

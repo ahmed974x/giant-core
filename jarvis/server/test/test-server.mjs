@@ -35,6 +35,7 @@ import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../l
 import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
 import { normalizeDomain, parseRdap, parseCt, gradeHeaders, parseSecurityTxt, sampleReport, utcMs, createPassiveRecon } from "../lib/passive-recon.mjs";
 import { parseColour, toHex, rgbToOklch, oklchToRgb, wcagRatio, apcaLc, healOklchContrast, HEAL_STEPS } from "../lib/contrast-heal.mjs";
+import { solve as umSolve, localize as umLocalize, parse as umParse, show as umShow, derivative as umDerivative, evaluate as umEvaluate, simplify as umSimplify, isPrime as umIsPrime, factorize as umFactorize, crt as umCrt, egcd as umEgcd, gaussSolve, jacobiEigen, brent as umBrent, adaptiveSimpson, rk4 as umRk4, MathError, UM_AR } from "../lib/universal-math.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -731,6 +732,23 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-154: universal maths through the server, Ahmad's four example requests, in both languages.
+  const c = await post("/api/w/jarvis-studio/math/solve?lang=ar", { task: "calculus", expression: "x^3 - 6*x^2 + 11*x - 6", variable: "x", operation: "differentiate_and_roots", interval: [0.5, 3.5] });
+  ok(c.status === 200 && c.body.verified && c.body.result.roots.join() === "1,2,3" && c.body.result.derivative === "3 * x^2 - 12 * x + 11" && c.body.lang === "ar" && c.body.steps[0].text === "التعبير بعد التبسيط" && c.body.plot.points.length === 201, tag("math: roots 1, 2, 3 and the derivative, steps in Arabic with ?lang=ar"), c.body && c.body.result);
+  const o = await post("/api/w/jarvis-studio/math/solve", { task: "ode_rk4", expression: "-2 * y + x", x0: 0, y0: 1, x_end: 2.0, steps: 20 });
+  ok(o.status === 200 && o.body.verified && Math.abs(o.body.result.y_end - (0.75 + 1.25 * Math.exp(-4))) < 1e-5 && o.body.plot.points.length === 21 && !o.body.lang, tag("math: RK4 matches the exact solution, English by default"), o.body && o.body.result);
+  const la = await post("/api/w/jarvis-studio/math/solve", { task: "linear_algebra", matrix: [[4, 2, 1], [2, 5, 2], [1, 2, 6]], rhs: [7, 9, 9], lang: "ar" });
+  ok(la.status === 200 && la.body.verified && la.body.result.solution.join() === "1,1,1" && la.body.result.determinant === 83 && la.body.result.eigenvalues.length === 3 && la.body.lang === "ar", tag("math: Gauss with pivoting, determinant, inverse and eigenvalues; lang in the body"));
+  const nt = await post("/api/w/jarvis-studio/math/solve", { task: "number_theory", n: 104729, crt_remainders: [2, 3, 2], crt_moduli: [3, 5, 7] });
+  ok(nt.status === 200 && nt.body.verified && nt.body.result.prime === true && nt.body.result.crt.x === "23" && nt.body.result.crt.modulus === "105", tag("math: 104729 is prime and x = 23 mod 105"));
+  const bad = await post("/api/w/jarvis-studio/math/solve?lang=ar", { task: "calculus", expression: "x $ 2" });
+  ok(bad.status === 400 && bad.body.error === UM_AR["This sign is not maths Jarvis reads."] && bad.body.detail === "$", tag("math: a sign it does not read is refused with the reason, in the language asked for"), bad.body);
+  ok((await post("/api/w/jarvis-studio/math/solve", { task: "calculus", expression: "x".repeat(401) })).status === 400 && (await post("/api/w/jarvis-studio/math/solve", { task: "rm -rf" })).status === 400, tag("math: a long expression and an unknown task are refused"));
+  const mev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(Array.isArray(mev) && mev.some(e => e.kind === "math.solve" && e.target === "calculus verified"), tag("math: a calculation is an event in the log"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -806,6 +824,33 @@ async function suite(mode, opts) {
   ok(performance.now() - t1 < 500, "recon: hostile security.txt text is read in linear time");
   const sr = sampleReport();
   ok(sr.sample === true && sr.counts.high === 1 && sr.headers.score === 52 && sr.domain === "example.com", "recon: the teaching example is labelled and fixed", sr.counts);
+}
+// ADR-154: universal maths, pure.
+{
+  const sh = e => umShow(umSimplify(umParse(e))), dd = e => umShow(umDerivative(umSimplify(umParse(e)), "x"));
+  ok(sh("2x(x+1)") === "2 * x * (x + 1)" && sh("x^2^3") === "x^8" && sh("-2 * y + x") === "-2 * y + x" && sh("x - -3") === "x + 3" && sh("2^3^2") === "512" && sh("(-2)^2") === "4", "math: Pratt parsing, right-associative powers, implicit products, simplification");
+  ok(dd("x^x") === "x^x * (ln(x) + 1)" && dd("e^x") === "e^x" && dd("sin(x)") === "cos(x)" && dd("ln(x)") === "1 / x" && dd("2^x") === "2^x * ln(2)" && dd("x^3") === "3 * x^2", "math: exact derivatives by the rules");
+  const exprs = ["sin(x)^2 + cos(3x)", "exp(2x)*ln(x)", "sqrt(x^2+1)/x", "tan(x) - log10(x)", "x^x", "abs(x-2)*x", "(x+1)/(x-3)^2"];
+  ok(exprs.every(e => { const a = umSimplify(umParse(e)), d = umDerivative(a, "x"); return [0.7, 1.3, 2.2].every(x => { const h = 1e-6, nd = (umEvaluate(a, { x: x + h }) - umEvaluate(a, { x: x - h })) / (2 * h); return Math.abs(nd - umEvaluate(d, { x })) < 1e-5 * Math.max(1, Math.abs(nd)); }); }), "math: every derivative agrees with a central difference");
+  ok(exprs.every(e => { const a = umSimplify(umParse(e)); return Math.abs(umEvaluate(a, { x: 1.7 }) - umEvaluate(umParse(umShow(a)), { x: 1.7 })) < 1e-12; }), "math: what is shown parses back to the same function");
+  const refused = ["", "x $ 2", "sin x", "(".repeat(41) + "x" + ")".repeat(41), "x".repeat(401), "1e999", "verylongname", "x +", "constructor(1)", "__proto__"].map(e => { try { umParse(e); return false; } catch (x) { return x instanceof MathError && x.status === 400; } });
+  ok(refused.every(Boolean) && refused.length === 10, "math: bad expressions are refused with a reason, never run", refused);
+  const own = ["valueof", "isproto"].map(e => { try { umEvaluate(umParse(e), {}); return false; } catch (x) { return x instanceof MathError; } });
+  ok(own.every(Boolean), "math: names are only looked up in the values given, never on the object prototype");
+  const t0 = performance.now(); umParse("x+".repeat(99) + "x"); umSolve({ task: "calculus", expression: "sin(1/x)", interval: [0.001, 1] });
+  ok(performance.now() - t0 < 1500, "math: the largest expression and a wild function stay fast", Math.round(performance.now() - t0) + " ms");
+  ok(Math.abs(umBrent(x => x * x - 2, 0, 2) - Math.SQRT2) < 1e-15 && umBrent(x => x * x + 1, -1, 1) === null && Math.abs(adaptiveSimpson(Math.sin, 0, Math.PI).value - 2) < 1e-10, "math: Brent finds sqrt 2 and refuses a bracket without a sign change; Simpson integrates sin to 2");
+  ok(gaussSolve([[0, 1], [1, 0]], [2, 3]).join() === "3,2" && gaussSolve([[1, 2], [2, 4]], [1, 2]) === null && jacobiEigen([[2, -1, 0], [-1, 2, -1], [0, -1, 2]]).map(v => v.toFixed(6)).join() === [2 - Math.SQRT2, 2, 2 + Math.SQRT2].map(v => v.toFixed(6)).join(), "math: pivoting swaps a zero pivot, a singular system is said, Jacobi eigenvalues of the second-difference matrix");
+  const pts = umRk4((x, y) => y, 0, 1, 1, 100);
+  ok(Math.abs(pts[100][1] - Math.E) < 1e-9 && pts.length === 101, "math: RK4 solves y' = y to e");
+  ok(umIsPrime(104729n) && !umIsPrime(3215031751n) && umIsPrime(18446744073709551557n) && !umIsPrime(1n) && umIsPrime(2n), "math: Miller-Rabin, including a strong pseudoprime to bases 2, 3, 5, 7");
+  ok(umFactorize("18446744030759878681").join() === "4294967291,4294967291" && umFactorize(600851475143).join() === "71,839,1471,6857", "math: factorisation by trial division and Pollard's rho");
+  ok(umCrt([2, 3, 2], [3, 5, 7]).x === 23n && umCrt([1, 2], [4, 6]) === null && umCrt([3, 1], [4, 6]).x === 7n && umEgcd(-240n, 46n).g === 2n, "math: CRT with coprime and shared moduli, and a contradiction");
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-universal-math", "tests", "golden.json"), "utf8"));
+  const got = g.requests.map(r => { try { return umLocalize(umSolve(r), r.task === "bayes" ? "ar" : "en"); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } });
+  ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
+  ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
 }
 // ADR-153: the OKLCH bisection contrast healer, pure.
 {

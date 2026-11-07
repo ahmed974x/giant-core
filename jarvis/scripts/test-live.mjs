@@ -482,6 +482,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "recon.passive" && e.target === "acme.example"), "live: the recon run is in the event log");
 }
 
+// ADR-154 live: the math lab answers from the server.
+{
+  await go("#/math");
+  await page.locator("#f-umtask").selectOption("ode_rk4");
+  await page.getByRole("button", { name: "Solve and check" }).click();
+  await page.waitForSelector("#h-um-plot");
+  ok(await page.getByText("[VERIFIED]").isVisible() && await page.getByText("y(2) = 0.7728959917").isVisible() && (await page.locator(".um-plot path.ts-line").getAttribute("d")).split("L").length === 21, "live: the RK4 answer and its plot come from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "math.solve" && e.target === "ode_rk4 verified"), "live: the calculation is in the event log");
+}
+
 // ADR-153 live: a template's failing colour pair is healed on the server and logged.
 {
   await go("#/studio");
@@ -499,6 +510,7 @@ await page.waitForTimeout(300);
     ["agent", () => go("#/agents/" + firstAgent)],
     ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
     ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("acme.example"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
+    ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
   ] });
   ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
   ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));
