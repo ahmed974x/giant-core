@@ -1,0 +1,13 @@
+test_bad_input_is_an_empty_plan (test_reversal_engine.Plan.test_bad_input_is_an_empty_plan) ... ok
+test_categories_and_declared_locks (test_reversal_engine.Plan.test_categories_and_declared_locks) ... ok
+test_fixed_point_and_hashes (test_reversal_engine.Plan.test_fixed_point_and_hashes) ... ok
+test_sensitive_steps_are_locked_and_pending (test_reversal_engine.Plan.test_sensitive_steps_are_locked_and_pending) ... ok
+test_cli_writes_a_copy_and_never_over_the_input (test_reversal_engine.Template.test_cli_writes_a_copy_and_never_over_the_input) ... ok
+test_html_gets_a_style_in_its_head (test_reversal_engine.Template.test_html_gets_a_style_in_its_head) ... ok
+test_hues_and_ai_gradient (test_reversal_engine.Template.test_hues_and_ai_gradient) ... ok
+test_rules_and_server_parity (test_reversal_engine.Template.test_rules_and_server_parity) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.004s
+
+OK

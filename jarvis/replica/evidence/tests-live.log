@@ -88,6 +88,9 @@ PASS live: the five layers are ready on the real server
 PASS live: a token planted in the log is removed from the bundle
 PASS live: the Studio site follows in a second window
 PASS live: the language follows in a second window
+PASS live: a template is corrected on the server
+PASS live: the correction is in the log and is a Merkle audit leaf
+PASS live: diagnostics list the reversal log
 PASS live: no interface text is left in English in Arabic mode
 PASS live overview renders
 PASS live logs renders
@@ -106,4 +109,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-107 passed, 0 failed
+110 passed, 0 failed

@@ -34,6 +34,7 @@ import { provePlan } from "./lib/prover.mjs";
 import { createAuditLog } from "./lib/audit-log.mjs";
 import { createTelemetry } from "./lib/telemetry.mjs";
 import { createReadiness } from "./lib/readiness.mjs";
+import { createReversalLog } from "./lib/reversal-log.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { createHash } from "node:crypto";
 
@@ -77,6 +78,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   const telemetry = createTelemetry({ db, store });
   // ADR-148: the five layers' readiness and the scrubbed diagnostics bundle (read-only).
   const readiness = createReadiness({ db, store, llm, search, audit, repoRoot, address: () => (server.address() || {}).address });
+  // ADR-150: the reversal engine corrects plans and templates; each correction is logged, audited and remembered.
+  const reversal = createReversalLog({ db, store, memory });
   const latency = new Map();
   // Flushes run one after another, so awaiting one also waits for a timer flush that is still writing.
   let flushing = Promise.resolve();
@@ -190,6 +193,8 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           await memory.add(ws, { kind: out.mode === "chat" ? "answer" : out.mode, title: String(body.prompt).slice(0, 160), body: summary.slice(0, 8000) || "(empty)", tags: ["llm", out.engine],
             outcome: out.mode === "design" ? { contrast: true, cleanRoom: out.report.sweep.leaks === 0 } : { engine: isLocalModelEngine(out.engine) }, source: out.engine }).catch(() => {});
         }
+        // ADR-150: a model plan that left a sensitive step unlocked is corrected by rule anyway; the log says so.
+        if (ws && out.mode === "plan" && out.rawSteps) out.reversal = await reversal.plan(ws, out.rawSteps, "local model " + (out.model || "")).catch(() => null);
         return send(200, { ok: true, ...out });
       }
       // ADR-140: a chat answer, token by token, as Server-Sent Events over this same-origin POST.
@@ -343,6 +348,9 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "GET" && rest === "/audit/verify") return send(200, await audit.verify(slug));
         if (req.method === "GET" && rest === "/diagnostics") return send(200, { layers: await readiness.layers(slug), at: new Date().toISOString() });
         if (req.method === "GET" && rest === "/diagnostics/bundle") return send(200, await readiness.bundle(slug));
+        if (req.method === "POST" && rest === "/reversal/plan") return send(200, await reversal.plan(slug, body.steps, "person"));
+        if (req.method === "POST" && rest === "/reversal/template") return send(200, await reversal.template(slug, body.text, "person"));
+        if (req.method === "GET" && rest === "/reversal/log") return send(200, await reversal.list(slug, url.searchParams.get("limit")));
         if (req.method === "POST" && rest === "/audit/record") return send(201, await audit.record(slug, String(body.kind || ""), body.target));
         // ADR-144: the Studio time machine.
         if (req.method === "GET" && rest === "/studio/snapshots") return send(200, await studio.list(slug));
@@ -409,6 +417,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/missions/plan") {
           const p = await llm.run({ mode: "plan", prompt: body.goal, model: body.model, examples: await memory.examples(slug, String(body.goal || "")) });
           await usage(slug, p.engine, p.model, String(body.goal || "").length + JSON.stringify(p.steps).length + String(p.thinking || "").length, "missions.plan");
+          if (p.rawSteps) await reversal.plan(slug, p.rawSteps, "local model " + (p.model || "")).catch(() => null);
           const planner = { engine: p.engine, model: p.model, thinking: p.thinking, planFrom: p.planFrom, warning: p.warning, label: p.label, at: new Date().toISOString() };
           return send(201, await missions.createFromPlan(slug, { goal: body.goal, steps: p.steps, planner, capsuleEvery: body.capsuleEvery }));
         }
@@ -450,7 +459,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   await new Promise((ok, no) => { server.once("error", no); server.listen(port, "127.0.0.1", ok); });
   const addr = server.address();
   if (!quiet) console.log(`Jarvis on http://127.0.0.1:${addr.port}  (database: ${db.kind}, ${db.where})`);
-  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, studio, audit, telemetry, db, async close() { clearInterval(ticker); clearInterval(latencyTimer); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
+  return { server, port: addr.port, store, runner, missions, llm, platform, memory, search, access, gate, loader, studio, audit, telemetry, reversal, db, async close() { clearInterval(ticker); clearInterval(latencyTimer); for (const s of streams) s.end(); streams.clear(); await new Promise(r => server.close(r)); await db.close(); } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -166,6 +166,16 @@
       [[900, 260], [2100, 34], [3300, 290], [4400, 250]].forEach(([i, v]) => { pts[i].v = v; });
       return pts;
     };
+    // ADR-150: one logged correction in sample mode: the log row, the audited event and a memory lesson.
+    const sampleReversal = (r, source) => {
+      if (!r.changed) return null;
+      const e = { id: uid("rv"), kind: r.kind, source, before: r.before, after: r.after, proofHash: r.proofHash, corrections: r.corrections, vector: r.vector, verified: r.kind === "plan" ? r.proof.verified : true, createdAt: Date.now() };
+      (W().reversals || (W().reversals = [])).push(e);
+      W().events.push(ev(source === "person" ? "member:owner" : "agent:reversal", "reversal." + r.kind, e.id));
+      (W().memory || (W().memory = [])).push({ id: uid("mem"), kind: "lesson", title: "Reversal: " + plural(r.corrections.length, "correction") + " in a " + r.kind + " from " + source, body: r.corrections.map(LlmPlan.describeCorrection).join("\n"), tags: ["reversal", r.kind], outcome: { corrected: true, verified: e.verified }, source: "reversal", createdAt: Date.now() });
+      save();
+      return e;
+    };
     const sampleAudit = () => {
       const evs = W().events.filter(e => LlmPlan.AUDITED.test(e.kind)).slice().sort((a, b) => a.at - b.at);
       let peaks = [];
@@ -568,6 +578,20 @@
           return { ...s.value, scrubbed: { redactions: s.redactions.length, rules: [...new Set(s.redactions.map(r => r.rule))], paths: s.redactions.map(r => r.path).slice(0, 50) } };
         });
       },
+      // ADR-150 in sample mode: the same reversal engine; the log, its audit leaf and the lesson stay in this browser.
+      reversePlan(steps) {
+        if (!Array.isArray(steps) || !steps.length) return bad("Send the plan's steps.");
+        const r = LlmPlan.reversePlan(steps);
+        return ok({ ...r, log: sampleReversal(r, "person") });
+      },
+      reverseTemplate(text) {
+        const t = String(text == null ? "" : text);
+        if (!t.trim()) return bad("Paste the HTML or CSS first.");
+        if (t.length > 200000) return bad("Keep it under 200,000 characters.");
+        const r = LlmPlan.reverseTemplate(t);
+        return ok({ ...r, log: sampleReversal(r, "person") });
+      },
+      reversalLog(limit) { const l = (W().reversals || []).slice().reverse(); return ok({ total: l.length, entries: l.slice(0, Math.max(1, Math.min(100, Number(limit) || 20))) }); },
       // ADR-145: a Ctrl+K macro, with the same rules and prover as the server.
       macroMission({ text }) {
         const g = String(text || "").trim();
@@ -976,6 +1000,9 @@
       auditRecord: (kind, target) => req("POST", w("/audit/record"), { kind, target }),
       diagnostics: () => req("GET", w("/diagnostics")),
       diagnosticsBundle: () => req("GET", w("/diagnostics/bundle")),
+      reversePlan: steps => req("POST", w("/reversal/plan"), { steps }),
+      reverseTemplate: text => req("POST", w("/reversal/template"), { text }),
+      reversalLog: limit => req("GET", w("/reversal/log?limit=" + encodeURIComponent(limit || 20))),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2457,7 +2484,7 @@
     return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
-      analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
+      reversePlan, reverseTemplate, describeCorrection, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
   })();
   const PRESETS = {
@@ -2896,7 +2923,7 @@
             h("h3", { class: "t-sm", text: "Compressed template" }), h("div", { class: "row" }, gzOut),
             h("div", { class: "field" }, h("label", { htmlFor: "f-gz", text: "Import a template (.json.gz)" }), gzIn, h("span", { class: "hint", id: "h-gz", text: "Compressed and read in this browser; nothing is uploaded." })),
             h("p", { class: "hint", text: "Payments, publishing and permissions tables start at pending_approval, and a check refuses approval without a person and a time." })),
-          timePanel),
+          timePanel, reversalPanel(true)),
         h("div", { class: "preview-col" },
           h("div", { class: "preview-bar" }, widthSeg, h("div", { class: "row" }, heatBtn, liveBadge, widthNote)),
           stage, uxBox)));
@@ -3378,6 +3405,45 @@
     return h("div", { class: "grid-2" }, ui, mut);
   }
 
+  /* ── Autonomous Reversal Log (ADR-150): what the reversal engine corrected, with SHA-256 hashes ── */
+  const REV_RULE = { "lock-sensitive-step": "Locked a sensitive step", "ai-gradient": "Removed a blue to purple gradient", gradient: "Removed a gradient", "reduced-transparency": "Added a reduced-transparency fallback", "overflow-wrap": "Added overflow-wrap" };
+  const revDetail = c => c.rule === "lock-sensitive-step" ? "«" + c.title + "» · " + c.category + " · locked " + c.from.locked + " → true · status " + (c.from.status || "none") + " → pending_approval"
+    : c.rule === "reduced-transparency" ? c.selectors.join(", ") : c.rule === "overflow-wrap" ? "overflow-wrap: anywhere" : c.property + ": " + c.from + " → " + c.to;
+  const revList = list => h("ul", { class: "plist" }, list.map(c => h("li", null, h("span", { text: REV_RULE[c.rule] || c.rule }), " ", h("bdi", { class: "t-caption muted", dir: "auto", translate: "no", text: revDetail(c) }))));
+  function reversalPanel(withInput) {
+    const listBox = h("div", { class: "stack", "aria-live": "polite" });
+    const reload = () => loadInto(listBox, () => store.reversalLog(10), d => h("div", { class: "stack" }, h("p", { class: "t-sm", text: "Entries in the log: " + d.total }),
+      d.entries.length ? h("ul", { class: "plist" }, d.entries.map(e => h("li", { class: "stack" },
+        h("div", { class: "row" }, e.kind === "plan" ? badge(e.verified ? "ok" : "failed", e.verified ? "Plan, proved" : "Plan, not proved") : badge("ok", "Template"), h("b", { text: plural(e.corrections.length, "correction") }),
+          h("span", { class: "t-caption muted", text: e.source === "person" ? "From a person" : "From the local model" })),
+        h("bdi", { class: "mono t-caption", dir: "ltr", translate: "no", text: "SHA-256 " + e.before.slice(0, 12) + "… → " + e.after.slice(0, 12) + "… · proof " + e.proofHash.slice(0, 16) + "…" }),
+        revList(e.corrections))))
+        : emptyState("i-check", "No corrections yet", "When a plan or a page breaks a rule, the corrected copy and what changed appear here.")));
+    const parts = [h("h2", { id: "h-rev", text: "Autonomous Reversal Log" }),
+      h("p", { class: "t-sm", text: "When a plan or a page breaks a rule, Jarvis writes a corrected copy and logs what changed, with SHA-256 of before, after and the corrections. A local model's plan is corrected on its own: a sensitive step becomes a locked approval, pending_approval." })];
+    if (withInput) {
+      const ta = h("textarea", { class: "textarea code", id: "f-rev", name: "reversal-template", autocomplete: "off", rows: 5, spellcheck: false, "aria-describedby": "h-rev-hint" });
+      const out = h("div", { class: "stack", "aria-live": "polite" });
+      const btn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-check", "sm"), "Reverse and correct");
+      btn.addEventListener("click", async () => {
+        btn.disabled = true; btn.setAttribute("aria-busy", "true");
+        try {
+          const r = await store.reverseTemplate(ta.value);
+          const copy = h("textarea", { class: "textarea code", id: "f-rev-out", name: "reversal-corrected", autocomplete: "off", rows: 6, readOnly: true, spellcheck: false });
+          copy.value = r.text;
+          out.replaceChildren(h("div", { class: "row" }, badge("ok", r.changed ? "Corrected" : "Nothing to correct"), r.changed ? h("span", { class: "t-sm", text: plural(r.corrections.length, "correction") }) : null),
+            r.changed ? revList(r.corrections) : null, r.changed ? h("div", { class: "field" }, h("label", { htmlFor: "f-rev-out", text: "Corrected copy" }), copy) : null);
+          reload();
+        } catch (e) { toast("error", e.message); } finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+      });
+      parts.push(h("div", { class: "field" }, h("label", { htmlFor: "f-rev", text: "HTML or CSS to correct" }), ta, h("span", { class: "hint", id: "h-rev-hint", text: "Gradients become one colour, glass gets a reduced-transparency fallback and long words get overflow-wrap. Nothing is sent anywhere else." })),
+        h("div", { class: "row" }, btn), out);
+    }
+    parts.push(listBox);
+    reload();
+    return h("section", { class: "panel", "aria-labelledby": "h-rev" }, ...parts);
+  }
+
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {
     const box = h("div", { class: "stack", "aria-live": "polite" });
@@ -3406,6 +3472,7 @@
       h("section", { class: "panel", "aria-labelledby": "h-bundle" }, h("h2", { id: "h-bundle", text: "Diagnostic bundle" }),
         h("p", { class: "t-sm", text: "One JSON file with these checks, the Merkle root and the latest events. Before it is saved, values under secret-like names, known key formats and long high-entropy strings are replaced with [REDACTED]. SHA-256 digests are kept: they are hashes, not secrets." }),
         h("div", { class: "row" }, dlBtn), bundleBox),
+      reversalPanel(false),
       h("section", { class: "panel", "aria-labelledby": "h-dlock" }, h("h2", { id: "h-dlock", text: "Still locked" }),
         lockLine("money, publishing, permissions, installs into .claude/skills and outbound messages wait for Director 00; the database refuses them and the API answers 403")));
   };

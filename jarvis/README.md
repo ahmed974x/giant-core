@@ -313,6 +313,12 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - Open Jarvis in two windows: switching the language or the theme, or editing the Studio site in one, shows in the other at once. Nothing leaves the browser.
 - **Studio → Output → Template (.json.gz)** saves the site compressed; **Import a template (.json.gz)** reads one back. Files over 1 MB, or over 2 MB unpacked, are refused.
 
+## Autonomous Reversal Log (ADR-150)
+
+- **Studio → Autonomous Reversal Log:** paste HTML or CSS and press **Reverse and correct**. Gradients become one colour, glass gets a fallback for people who ask for less transparency, and long words wrap. The corrected copy and the list of changes appear below; the original is not touched.
+- When the local model writes a plan that leaves a payment, a publish, a permission, an install or a message unlocked, the plan is locked by rule as before, and the log now says what the model tried, with SHA-256 hashes. Each entry is in the Merkle audit log and in memory as a lesson.
+- `#/diagnostics` shows the same log, read-only, and checks that it cannot be changed.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

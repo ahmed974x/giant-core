@@ -1,17 +1,17 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 112,
+ "files": 115,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 130
+  "low": 131
  },
  "byRule": {
   "D05": 27,
-  "M05": 103
+  "M05": 104
  },
- "sha256": "b96be108a8d8e66dd701511e530c1ada1e73cb3a9416070310fe9841a52a253b",
+ "sha256": "038d682a218604518361188ecab42b46127ee914d94be75837cb4bb6e339ced0",
  "findings": [
   {
    "rule": "D05",
@@ -922,6 +922,13 @@
    "line": 23,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-149-quantum-math-window-sync-gzip-templates.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 26,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-150-reversal-engine-and-log.md"
   }
  ]
 }

@@ -194,14 +194,87 @@ def oracle_quantum(ns, work):
     return out
 
 
+def oracle_reversal(ns, work):
+    """ADR-150: the same expected answers as the JavaScript oracle for reversal.mjs."""
+    plan_fn, tpl, hue, unknown = ns["reverse_and_correct_plan"], ns["reverse_and_correct_template"], ns["hue_of"], ns["UNKNOWN"]
+    sha = lambda t: hashlib.sha256(t.encode("utf-8")).hexdigest()  # noqa: E731
+    compact = lambda v: json.dumps(v, ensure_ascii=False, separators=(",", ":"))  # noqa: E731
+    plan = [{"title": "Read the docs"}, {"title": "Pay the hosting invoice", "locked": False}, {"title": "Publish the site", "gate": "approval", "locked": True, "status": "done"},
+            {"title": "Email the team", "gate": "approval", "locked": True, "status": "pending_approval"}, {"title": "Tidy", "gate": "Approval", "locked": True, "status": "pending_approval"}, "Grant admin access",
+            {"title": "Tidy", "category": "money"}]
+    r = plan_fn(plan)
+    out = [("plan corrections", [(c["step"], c["category"]) for c in r["corrections"]] == [(1, "money"), (2, "publish"), (4, "outbound"), (5, "permissions"), (6, "money")])]
+    out.append(("plan from", [c["from"] for c in r["corrections"]][:3] == [{"gate": None, "locked": False, "status": None}, {"gate": "approval", "locked": True, "status": "done"}, {"gate": "Approval", "locked": True, "status": "pending_approval"}]))
+    out.append(("plan steps", all(s["gate"] == "approval" and s["locked"] is True and s["status"] == "pending_approval" and s["kind"] == "approval" for s in r["steps"][1:]) and r["steps"][0] == {"title": "Read the docs"}))
+    out.append(("plan proof", r["proof"] == {"verified": True, "sensitive": 6, "locked": 6} and r["vector"]["values"] == [5, 0, 0, 0, 0] and r["changed"] is True))
+    out.append(("plan hashes", r["before"] == sha(compact(plan)) and r["after"] == sha(compact(r["steps"])) and r["proofHash"] == sha(r["before"] + "\n" + r["after"] + "\n" + compact(r["corrections"]))))
+    out.append(("plan fixed point", plan_fn(r["steps"])["corrections"] == [] and plan_fn(r["steps"])["changed"] is False))
+    big = [{"title": "s%d" % i} for i in range(25)]
+    out.append(("plan cut", len(plan_fn(big)["steps"]) == 20 and plan_fn(big)["before"] == sha(compact(big[:20])) and plan_fn(None)["steps"] == []))
+    out.append(("plan one", plan_fn([{"title": "Pay rent"}])["changed"] is True and plan_fn([{"title": "x", "status": "pending_approval", "locked": True}])["corrections"][0]["category"] == "outbound"))
+    out.append(("plan titles", plan_fn([{"name": "Pay"}, {"description": "Pay"}, {}, {"title": "  "}, {"title": "y" * 200}])["steps"][2]["title"] == "Step 3" and plan_fn([{"title": "y" * 200}])["steps"][0]["title"] == "y" * 140
+                and [s["title"] for s in plan_fn([{"name": "a"}, {"description": "b"}, {"title": "  "}])["steps"]] == ["a", "b", "Step 3"]))
+    out.append(("plan text fields", [c["category"] for c in plan_fn([{"title": "x", "description": "pay"}, {"title": "x", "kind": "deploy"}, {"title": "x", "tool": "slack"}, {"title": "x", "category": "install"}])["corrections"]] == ["money", "publish", "outbound", "install"]))
+    out.append(("vector", ns["correction_vector"]([{"rule": "gradient"}, {"rule": "overflow-wrap"}, {"rule": "gradient"}])["values"] == [0, 0, 2, 0, 1]))
+    hues = [("#0000ff", 240), ("#00f", 240), ("#ff0000", 0), ("#00ff00", 120), ("#800080", 300), ("#3b82f6", 217), ("#8b5cf6", 258), ("#ffff00", 60), ("#00ffff", 180), ("#ff8000", 30), ("#ff0080", 330),
+            ("#808080", None), ("#808087", None), ("#808088", 240), ("#ff8040", 20), ("#40ff80", 140), ("#8040ff", 260), ("rgb(0, 0, 255)", 240), ("rgba(128,0,128,.5)", 300), ("hsl(280 50% 50%)", 280),
+            ("hsla(-40, 50%, 50%)", 320), ("hsl(400 1% 1%)", 40), ("oklch(54.5% 0.197 257.4)", 235), ("oklch(50% 0.01 250)", None), ("oklch(50% 0.02 22)", 0), ("oklch(50% 0.2 10)", 348),
+            ("oklch(50% 0.2 400)", 18), ("oklch(50% 0.2 -400)", 298), ("lch(50% 0 300)", 278), ("blue", 240), ("Purple", 300), ("white", None)]
+    out.append(("hues", all(hue(c) == h for c, h in hues) and hue("to") is unknown and hue("#12345") is unknown))
+    out.append(("colours", ns["gradient_colours"]("linear-gradient(to right, #fff, rgb(1, 2, 3) 40%, blue)") == ["#fff", "rgb(1, 2, 3)", "blue"]))
+    t = tpl(".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: linear-gradient(red, orange) 1; color: red }\n.d{background-image:radial-gradient(teal,navy)}")
+    out.append(("template rules", [c["rule"] for c in t["corrections"]] == ["ai-gradient", "gradient", "gradient", "reduced-transparency", "overflow-wrap"] and t["vector"]["values"] == [0, 1, 2, 1, 1] and t["html"] is False))
+    out.append(("template text", t["text"] == ".hero { background-color: #3b82f6 }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: none; color: red }\n.d{background-color:teal}\n@media (prefers-reduced-transparency: reduce) {\n  .bar, .nav { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: Canvas; color: CanvasText; }\n}\n" + ns["WRAP_RULE"] + "\n"))
+    out.append(("template details", t["corrections"][0]["property"] == "background" and t["corrections"][0]["to"] == "#3b82f6" and t["corrections"][1]["from"] == "linear-gradient(red, orange) 1" and t["corrections"][3]["selectors"] == [".bar", ".nav"]))
+    out.append(("template hashes", t["before"] != t["after"] and t["after"] == sha(t["text"]) and t["proofHash"] == sha(t["before"] + "\n" + t["after"] + "\n" + compact(t["corrections"]))))
+    out.append(("template fixed point", tpl(t["text"])["changed"] is False))
+    out.append(("no colour stop", tpl("a{background:linear-gradient(to right, 10%, 20%)}")["text"].startswith("a{background-color:transparent}")))
+    out.append(("no declaration", [c["rule"] for c in tpl("x linear-gradient(red, blue)")["corrections"]] == ["overflow-wrap"]))
+    out.append(("gradient at the end", tpl("a:linear-gradient(red,blue)")["text"].startswith("a:none\n") and tpl(";a:linear-gradient(red,blue)")["text"].startswith(";a:none\n") and tpl("x;b:linear-gradient(red,blue)")["text"].startswith("x;b:none\n")))
+    out.append(("from is cut at 200", len(tpl("a{background:linear-gradient(red," + " " * 300 + "blue)}")["corrections"][0]["from"]) == 200))
+    gs = ns["glass_selectors"]
+    out.append(("glass", gs(".a{backdrop-filter:blur(4px)} .b{backdrop-filter:none} @media (prefers-reduced-transparency: reduce){.c{backdrop-filter:none}} .c{-webkit-backdrop-filter:blur(2px)} .a{backdrop-filter:blur(1px)}") == [".a"]
+                and gs(".x{color:red}") == [] and gs("x{ backdrop-filter : saturate(2)}") == ["x"] and gs("@font-face{backdrop-filter:blur(1px)} a;b{backdrop-filter:blur(1px)}") == ["b"]))
+    blocks = ns["css_blocks"]("@media (prefers-reduced-transparency: reduce) { .a { x: 1 } } b{y:2} } c{")
+    out.append(("blocks", [(b["selector"], b["body"], b["fallback"]) for b in blocks] == [(".a", " x: 1 ", True), ("b", "y:2", False)]))
+    out.append(("blocks nested and after }", [(b["selector"], b["body"]) for b in ns["css_blocks"]("a { b { c: 1 } }a{}b{y:2}")] == [("b", " c: 1 "), ("a", ""), ("b", "y:2")]))
+    out.append(("declared locks", [c["category"] for c in plan_fn([{"title": "x", "gate": "approval"}, {"title": "y", "locked": True}])["corrections"]] == ["outbound", "outbound"]))
+    ai = ns["is_ai_gradient"]
+    out.append(("ai gradient edges", ai("linear-gradient(hsl(190 50% 50%), purple)") and ai("linear-gradient(hsl(254 5% 5%), hsl(255 5% 5%))") and not ai("linear-gradient(white, purple)")
+                and not ai("linear-gradient(hsl(255 5% 5%), hsl(300 5% 5%))") and not ai("linear-gradient(hsl(220 5% 5%), hsl(320 5% 5%))") and not ai("linear-gradient(hsl(189 5% 5%), hsl(300 5% 5%))")))
+    out.append(("css of edges", ns["css_of"]("<style<style>a{}</style><p>") == "a{}" and ns["css_of"]("<style>x<style></style><p>") == "x<style>"))
+    wrap = ns["WRAP_RULE"]
+    out.append(("html head", tpl("<html><head></head><body><p>x</p></body></html>")["text"] == "<html><head><style>\n" + wrap + "\n</style>\n</head><body><p>x</p></body></html>"))
+    out.append(("html last style", tpl("<STYLE>a{x:1}</STYLE><style>b{y:2}</style><p>x</p>")["text"] == "<STYLE>a{x:1}</STYLE><style>b{y:2}" + wrap + "\n</style><p>x</p>"))
+    out.append(("html no head", tpl("<div>x</div>")["text"] == "<style>\n" + wrap + "\n</style>\n<div>x</div>" and tpl("<p>x</p></head>")["text"].startswith("<p>x</p><style>\n")))
+    out.append(("style at 0", tpl("</style><p>x</p>")["text"].startswith(":where(")))
+    out.append(("css of", ns["css_of"]("<styles>a</styles><style media=x>b{}</style><style>c{}</style><style>d") == "b{}\nc{}" and ns["css_of"]("a{}") == "a{}"))
+    out.append(("wrap present", tpl("<style>p{overflow-wrap: anywhere}</style><p>x</p>")["changed"] is False and tpl("p{overflow-wrap:anywhere}")["changed"] is False))
+    out.append(("empty", tpl("")["changed"] is False and tpl("   ")["changed"] is False and tpl(None)["text"] == "" and len(tpl("a{}")["corrections"]) == 1))
+    out.append(("long input cut", len(tpl("a" * 200005)["text"]) == 200000 + 2 + len(wrap)))
+    return out
+
+
 TARGETS = [
     {"file": ".claude/skills/replica-long-horizon/gate.py", "functions": ["judge"], "oracle": oracle_gate, "with": [".claude/skills/replica-long-horizon/lhcommon.py"]},
     {"file": ".claude/skills/replica-formal-verify/state_prover.py", "functions": ["plan_machine", "_search", "_path", "prove", "ui_completeness"], "oracle": oracle_prover, "with": []},
     {"file": ".claude/skills/replica-quantum-math/quantum_math.py", "functions": ["gf_mul", "gf_inv", "_eval", "split_secret_gf256", "reconstruct_secret_gf256", "compute_vpin_toxicity"], "oracle": oracle_quantum, "with": []},
+    {"file": ".claude/skills/replica-reversal-engine/reversal_engine.py", "functions": ["correction_vector", "sealed", "reverse_and_correct_plan", "_rgb_hue", "hue_of", "gradient_colours", "is_ai_gradient", "_fix_gradients", "css_of", "css_blocks", "glass_selectors", "_add_css", "reverse_and_correct_template"], "oracle": oracle_reversal, "with": []},
 ]
 # Mutants that cannot change any answer, each reviewed by hand; listed in the evidence, left out of the score.
 EQUIVALENT = [
     {"file": "quantum_math.py", "function": "gf_mul", "kind": "constant 8 -> 9", "why": "b is below 256, so after eight right shifts it is 0 and a ninth pass adds nothing"},
+    {"file": "reversal_engine.py", "function": "reverse_and_correct_plan", "kind": "bool And -> Or", "why": "the proof's and: every sensitive step has just been forced to a locked, pending approval, so each part is true and or gives the same"},
+    {"file": "reversal_engine.py", "function": "_rgb_hue", "kind": "return None", "why": "the mutated line already returns None"},
+    {"file": "reversal_engine.py", "function": "hue_of", "kind": "return None", "why": "the mutated line already returns None"},
+    {"file": "reversal_engine.py", "function": "_rgb_hue", "kind": "constant 6 -> 7", "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and fmod by 6 or 7 leaves it unchanged"},
+    {"file": "reversal_engine.py", "function": "hue_of", "kind": "constant 6 -> 7", "why": "h always has six characters, so h[4:7] equals h[4:6]"},
+    {"file": "reversal_engine.py", "function": "gradient_colours", "kind": "arith Add -> Sub", "why": "the two extra characters are always 't(' from '-gradient(', and 't' is not a colour"},
+    {"file": "reversal_engine.py", "function": "_fix_gradients", "kind": "constant 1 -> 2", "why": "the stop lists one item longer hold the same values at every index read"},
+    {"file": "reversal_engine.py", "function": "css_of", "kind": "constant 7 -> 8", "why": "re.match anchors at the start, so one more character after '<style' and its space or '>' changes nothing"},
+    {"file": "reversal_engine.py", "function": "css_of", "kind": "constant 0 -> 1", "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"},
+    {"file": "reversal_engine.py", "function": "css_of", "kind": "constant 1 -> 2", "why": "-2 instead of -1 for 'not found' still fails close < 0"},
+    {"file": "reversal_engine.py", "function": "_add_css", "kind": "constant 0 -> 1", "why": "a </head> at index 0 puts the new style first, which is exactly what the last line does"},
     {"file": "quantum_math.py", "function": "reconstruct_secret_gf256", "kind": "constant True -> False", "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"},
 ]
 

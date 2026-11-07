@@ -428,6 +428,21 @@ ok(!lbText.includes(plantedLive) && JSON.parse(lbText).scrubbed.rules.includes("
   await other.close();
 }
 
+// ADR-150 live: the reversal engine on the real server; the log is append-only in the database and audited.
+{
+  await go("#/studio");
+  await page.locator("#f-rev").fill(".card { background-image: linear-gradient(#2563eb, #7c3aed) }");
+  await page.getByRole("button", { name: "Reverse and correct" }).click();
+  await page.waitForTimeout(500);
+  ok(/background-color: #2563eb/.test(await page.locator("#f-rev-out").inputValue()) && await page.locator("section[aria-labelledby=h-rev]").getByText("Removed a blue to purple gradient").first().isVisible(), "live: a template is corrected on the server");
+  const lg = await (await fetch(BASE + "api/w/giant-core/reversal/log")).json();
+  const leaves = await (await fetch(BASE + "api/w/giant-core/audit/leaves?limit=5")).json();
+  ok(lg.entries[0].kind === "template" && /^[0-9a-f]{64}$/.test(lg.entries[0].proofHash) && leaves.some(l => l.kind === "reversal.template" && l.target === lg.entries[0].id), "live: the correction is in the log and is a Merkle audit leaf");
+  await go("#/diagnostics");
+  await page.waitForSelector("section[aria-labelledby=h-rev] .plist");
+  ok(await page.locator("section[aria-labelledby=h-rev]").getByText("Template").first().isVisible(), "live: diagnostics list the reversal log");
+}
+
 // The whole live interface in Arabic (ADR-137): same rule as test-app's F15.
 const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|SKILL\.md|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST)\b|[\w-]*[._/@:#][\w.\-/@:#]*|\b(run|ap|ms|wf)_\w+/g;
 const TYPED = ["Live two windows", "[REDACTED]", "Read the docs then publish the release", "Read the docs", "publish the release", "Live one", "Live renamed", "ADR reader v2", "CI results", "Team chat", "Release this branch", "A product page", "ops@example.com", "Lists what to check before a release, and stops at anything locked.", "Acme widgets layout", "database schema", "breadth first search", "npm:lodash@4.17.15", "Explain breadth-first search", "A hero, then three cards for the widgets, then a plan table."];

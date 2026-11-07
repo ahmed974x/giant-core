@@ -661,6 +661,28 @@ ok(dgb.format === "jarvis-diagnostics-v1" && dgb.layers.length === 5 && typeof d
   ok(await page.getByText("The template is larger than 2 MB unpacked.").first().isVisible() && (await page.locator("#f-site").inputValue()) === "Synced across windows", "F31 a gzip bomb is refused and the site is untouched");
 }
 
+// F32: the reversal engine (ADR-150): a template is corrected, logged with its hashes, audited and remembered.
+{
+  await go("#/studio");
+  const css = ".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar { backdrop-filter: blur(16px) }";
+  await page.locator("#f-rev").fill(css);
+  await page.getByRole("button", { name: "Reverse and correct" }).click();
+  await page.waitForTimeout(400);
+  const fixed = await page.locator("#f-rev-out").inputValue();
+  ok(!/gradient\(/.test(fixed) && /background-color: #3b82f6/.test(fixed) && /prefers-reduced-transparency/.test(fixed) && /overflow-wrap: anywhere/.test(fixed), "F32 the corrected copy has no gradient and gains both fallbacks");
+  const rev = page.locator("section[aria-labelledby=h-rev]");
+  ok(await rev.getByText("Removed a blue to purple gradient").first().isVisible() && await rev.getByText("Entries in the log: 1").isVisible() && /SHA-256 [0-9a-f]{12}… → [0-9a-f]{12}… · proof [0-9a-f]{16}…/.test(await rev.locator("bdi.mono").first().textContent()), "F32 the log shows the correction with its SHA-256 hashes");
+  await page.locator("#f-rev").fill(fixed);
+  await page.getByRole("button", { name: "Reverse and correct" }).click();
+  await page.waitForTimeout(300);
+  ok(await rev.getByText("Nothing to correct").isVisible() && await rev.getByText("Entries in the log: 1").isVisible(), "F32 the corrected copy needs nothing more and adds no log entry");
+  await go("#/diagnostics");
+  await page.waitForSelector("section[aria-labelledby=h-rev] .plist");
+  ok(await page.locator("section[aria-labelledby=h-rev]").getByText("Template").first().isVisible() && (await page.locator("#f-rev").count()) === 0, "F32 diagnostics show the same log, read-only");
+  const leaf = await page.evaluate(() => JSON.parse(localStorage.getItem("jarvis-sample-v2")).data);
+  ok(leaf && JSON.stringify(leaf).includes("reversal.template") && JSON.stringify(leaf).includes("Reversal: 3 corrections in a template"), "F32 the correction is an audited event and a lesson in memory");
+}
+
 // F15: the whole interface in Arabic (ADR-137). Every screen is visited in Arabic; any visible text,
 // aria-label, placeholder or title still in English fails, except names kept as written
 // (product and tool names, paths, codes, ids) and data under translate="no", code, .mono or .num.

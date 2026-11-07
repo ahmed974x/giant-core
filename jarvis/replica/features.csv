@@ -86,5 +86,9 @@ Scrubbed diagnostic bundle,diagnostics,should,yes,yes,"ADR-148: secret field nam
 Windows that follow each other,shell,should,yes,yes,"ADR-149: BroadcastChannel syncs language, theme and the Studio site; messages checked, never re-sent"
 Compressed Studio templates,studio,could,yes,yes,"ADR-149: CompressionStream .json.gz export and import; 1 MB / 2 MB unpacked caps against zip bombs"
 Quantum-math skill,quality,could,yes,yes,"ADR-149: VPIN, fluid layout, Monte Carlo that never runs a locked step, Shamir GF(256); in the mutation run"
+Plan reversal: sensitive steps locked after the fact,security,should,yes,yes,"ADR-150: reversePlan through enforceApprovalGates and the prover; a local model's plan is checked on its own"
+"Template reversal: gradients, glass fallback, overflow-wrap",studio,could,yes,yes,"ADR-150: reverseTemplate in the Studio; linear scans, 200 KB cap"
+Autonomous Reversal Log,diagnostics,should,yes,yes,"ADR-150: append-only reversal_log, Merkle audit leaf and memory lesson per correction; panel in the Studio and #/diagnostics"
+Reversal-engine skill,quality,could,yes,yes,"ADR-150: replica-reversal-engine reversal_engine.py, standard library only; same hashes as the server; in the mutation run"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

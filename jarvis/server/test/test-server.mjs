@@ -33,6 +33,7 @@ import { exportSql, exportTokens, exportComponent, exportSpec, slugOf } from "..
 import { leafHash, merkleRoot, inclusionPath, verifyInclusion, frontierPush, frontierRoot, EMPTY_ROOT, auditEntry } from "../lib/merkle-audit.mjs";
 import { welford, welfordPush, stdev, ewmaPush, vpin, lttb, analyse } from "../lib/timeseries.mjs";
 import { scrub, entropy, LOCK_CONSTRAINTS } from "../lib/diagnostics.mjs";
+import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
 // a payment and a skill install as unlocked and "done", and wraps it all in <think> and a code fence.
@@ -664,7 +665,7 @@ async function suite(mode, opts) {
   const head = (await j("/api/w/giant-core/audit/head")).body;
   ok(head.size > 3 && /^[0-9a-f]{64}$/.test(head.root), tag("approvals, agents, gates and snapshots made audit leaves"), head);
   const leaves = (await j("/api/w/giant-core/audit/leaves?limit=200")).body;
-  ok(leaves.every(l => /^(approval\.|agent\.|skill\.|endpoint\.|access\.|studio\.|export\.|gate\.|workspace\.|mission\.)/.test(l.kind)) && leaves.some(l => l.kind.startsWith("approval.")) && leaves.some(l => l.kind.startsWith("gate.")), tag("only sensitive kinds are audited, approvals and gates among them"), leaves.map(l => l.kind).slice(0, 12));
+  ok(leaves.every(l => /^(approval\.|agent\.|skill\.|endpoint\.|access\.|studio\.|export\.|gate\.|workspace\.|reversal\.|mission\.)/.test(l.kind)) && leaves.some(l => l.kind.startsWith("approval.")) && leaves.some(l => l.kind.startsWith("gate.")), tag("only sensitive kinds are audited, approvals and gates among them"), leaves.map(l => l.kind).slice(0, 12));
   const pr = (await j("/api/w/giant-core/audit/merkle-proof?seq=1")).body;
   ok(pr.verified === true && pr.size === head.size && verifyInclusion(leafHash(pr.entry), 1, pr.size, pr.path, pr.root) && pr.root === head.root, tag("an inclusion proof checks with the client's own hashing"), pr);
   ok(!verifyInclusion(leafHash(pr.entry.replace(pr.kind, "approval.approved-by-nobody")), 1, pr.size, pr.path, pr.root), tag("an edited entry fails its proof"));
@@ -703,10 +704,58 @@ async function suite(mode, opts) {
   ok(!btext.includes(homedir()) && !/JARVIS_FOUNDER_KEY|PATH=/.test(btext), tag("the bundle holds no environment or home path"));
   }
 
+  {
+  // ADR-150: the reversal engine corrects, logs, audits and remembers.
+  const head0 = (await j("/api/w/giant-core/audit/head")).body;
+  const rp = await post("/api/w/giant-core/reversal/plan", { steps: [{ title: "Read the docs" }, { title: "Pay the hosting invoice", locked: false }, { title: "Publish the site", gate: "approval", locked: true, status: "done" }] });
+  ok(rp.status === 200 && rp.body.corrections.length === 2 && rp.body.steps.filter(x => x.locked).every(x => x.gate === "approval" && x.status === "pending_approval") && rp.body.proof.verified, tag("a plan with an unlocked payment and a 'done' publish comes back locked, pending and proved"), rp.body && rp.body.corrections);
+  ok(rp.body.log && /^[0-9a-f]{64}$/.test(rp.body.log.proofHash) && rp.body.log.before !== rp.body.log.after && rp.body.log.vector.total === 2, tag("the correction is logged with SHA-256 before, after and proof"), rp.body.log);
+  const head1 = (await j("/api/w/giant-core/audit/head")).body;
+  const leaves = (await j("/api/w/giant-core/audit/leaves?limit=3")).body;
+  ok(head1.size === head0.size + 1 && leaves.some(l => l.kind === "reversal.plan" && l.target === rp.body.log.id), tag("the correction is a leaf of the Merkle audit tree"), leaves.map(l => l.kind));
+  const lesson = (await j("/api/w/giant-core/memory?q=" + encodeURIComponent("reversal hosting invoice") + "&kind=lesson")).body;
+  ok(lesson.hits.some(h => h.tags.includes("reversal") && /Pay the hosting invoice/.test(h.body) && /pending_approval/.test(h.body)), tag("the correction is a lesson in memory"), lesson.hits.map(h => h.title));
+  const clean = await post("/api/w/giant-core/reversal/plan", { steps: rp.body.steps });
+  ok(clean.status === 200 && clean.body.corrections.length === 0 && clean.body.log === null, tag("a plan with nothing to correct is not logged"));
+  const css = ".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar { backdrop-filter: blur(16px) }";
+  const rt = await post("/api/w/giant-core/reversal/template", { text: css });
+  ok(rt.status === 200 && rt.body.corrections.map(c => c.rule).join() === "ai-gradient,reduced-transparency,overflow-wrap" && !/gradient\(/.test(rt.body.text) && /prefers-reduced-transparency/.test(rt.body.text) && /overflow-wrap: anywhere/.test(rt.body.text), tag("a template loses its blue-purple gradient and gains the two fallbacks"), rt.body && rt.body.corrections);
+  ok((await post("/api/w/giant-core/reversal/template", { text: " " })).status === 400 && (await post("/api/w/giant-core/reversal/plan", { steps: [] })).status === 400, tag("empty input is refused"));
+  const log = (await j("/api/w/giant-core/reversal/log")).body;
+  ok(log.total >= 2 && log.entries[0].kind === "template" && log.entries.some(e => e.kind === "plan" && e.verified), tag("the log lists both corrections, newest first"), log.entries.map(e => e.kind));
+  let rUp = null, rDel = null;
+  try { await s.db.run("update reversal_log set source = 'x'"); } catch (e) { rUp = e; }
+  try { await s.db.run("delete from reversal_log"); } catch (e) { rDel = e; }
+  ok(rUp && rDel && /append-only/.test(rUp.message + rDel.message), tag("the reversal log cannot be changed or removed in the database"));
+  // A model plan that leaves sensitive steps unlocked is corrected and logged without anyone asking.
+  const before = log.total;
+  const mp = (await post("/api/llm/run", { mode: "plan", prompt: "Release this branch", workspace: "giant-core" })).body;
+  const after = (await j("/api/w/giant-core/reversal/log")).body;
+  ok(mp.reversal && mp.reversal.corrections.length >= 3 && after.total === before + 1 && /^local model/.test(after.entries[0].source), tag("a local model's unlocked plan is corrected and logged on its own"), mp.reversal && mp.reversal.corrections.map(c => c.title));
+  const sec = (await j("/api/w/giant-core/diagnostics")).body.layers.find(l => l.id === "security").checks.find(c => /Reversal/.test(c.name));
+  ok(sec && sec.ok && /corrections logged/.test(sec.detail), tag("diagnostics show the reversal log as append-only"), sec);
+  }
+
   await s.close();
 }
 
 // Pure checks (no server)
+// ADR-150: the reversal engine, pure.
+{
+  ok(REVERSAL_RULES.join() === "lock-sensitive-step,ai-gradient,gradient,reduced-transparency,overflow-wrap" && correctionVector([{ rule: "gradient" }, { rule: "gradient" }]).values.join() === "0,0,2,0,0", "reversal: the correction vector counts each rule in a fixed order");
+  const r = reversePlan([{ title: "Read the docs" }, { title: "Email the team the summary", locked: true, gate: "approval", status: "pending_approval" }, { title: "Grant admin access", locked: false }]);
+  ok(r.corrections.length === 1 && r.corrections[0].step === 2 && r.corrections[0].category === "permissions" && r.corrections[0].from.locked === false && r.steps[1].status === "pending_approval", "reversal: only the step that broke the rule is corrected", r.corrections);
+  ok(reversePlan(r.steps).corrections.length === 0 && reversePlan(r.steps).after === reversePlan(reversePlan(r.steps).steps).after, "reversal: the corrected plan is a fixed point");
+  ok(r.before === sha256Hex(JSON.stringify([{ title: "Read the docs" }, { title: "Email the team the summary", locked: true, gate: "approval", status: "pending_approval" }, { title: "Grant admin access", locked: false }])) && r.proofHash === sha256Hex(r.before + "\n" + r.after + "\n" + JSON.stringify(r.corrections)), "reversal: the hashes are SHA-256 of the canonical text");
+  ok(hueOf("#0000ff") === 240 && hueOf("purple") === 300 && hueOf("#808080") === null && hueOf("oklch(54.5% 0.197 257.4)") === 235 && hueOf("hsl(280 50% 50%)") === 280 && hueOf("rgb(255, 0, 0)") === 0 && hueOf("to") === undefined, "reversal: colour hues");
+  ok(isAiGradient("linear-gradient(90deg, #2563eb, #7c3aed)") && isAiGradient("linear-gradient(blue, rgba(128, 0, 128, 0.5))") && !isAiGradient("linear-gradient(red, orange)") && !isAiGradient("linear-gradient(#2563eb, #0ea5e9)"), "reversal: a blue to purple gradient is told apart");
+  ok(glassSelectors(".a{backdrop-filter:blur(4px)} .b{backdrop-filter:none} @media (prefers-reduced-transparency: reduce){.c{backdrop-filter:none}} .c{-webkit-backdrop-filter:blur(2px)}").join() === ".a", "reversal: only glass without a fallback is listed");
+  const t = reverseTemplate(".x { border-image: linear-gradient(red, blue) 1; color: red }");
+  ok(t.corrections[0].rule === "gradient" && /border-image: none;/.test(t.text) && t.corrections.length === 2, "reversal: a gradient outside the background becomes none", t.text);
+  const h = reverseTemplate('<html><head></head><body><p style="background-image: radial-gradient(#00f, #800080)">x</p></body></html>');
+  ok(/<style>[\s\S]*overflow-wrap: anywhere[\s\S]*<\/style>\n<\/head>/.test(h.text) && /background-color: #00f/.test(h.text) && h.corrections[0].rule === "ai-gradient" && h.html, "reversal: HTML gets a style element in its head", h.text);
+  ok(reverseTemplate(h.text).corrections.length === 0 && reverseTemplate("").corrections.length === 0 && !reverseTemplate("").changed, "reversal: corrected output and empty text need nothing more");
+}
 for (const u of ["http://127.0.0.1/", "http://10.0.0.5/", "http://192.168.1.1/", "http://169.254.169.254/latest/meta-data", "http://[::1]/", "http://localhost/", "http://intranet/", "file:///etc/passwd", "https://user:pw@example.com/", "https://example.com:8443/"]) {
   let e = null; try { checkUrl(u); } catch (x) { e = x; }
   ok(e instanceof FetchError, "checkUrl refuses " + u);

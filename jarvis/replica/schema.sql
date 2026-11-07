@@ -510,3 +510,26 @@ create table telemetry_state (
   last_t double precision,
   primary key (workspace_id, metric)
 );
+
+-- ADR-150: the reversal log. Each correction of a plan or a template, with SHA-256 of before, after and
+-- the corrections. No row can be changed or removed.
+create table reversal_log (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id),
+  kind text not null check (kind in ('plan', 'template')),
+  source text not null check (length(source) between 1 and 80),
+  before_hash text not null check (length(before_hash) = 64),
+  after_hash text not null check (length(after_hash) = 64),
+  proof_hash text not null check (length(proof_hash) = 64),
+  corrections jsonb not null,
+  vector jsonb not null,
+  verified boolean not null,
+  created_at timestamptz not null default now()
+);
+create index reversal_log_ws on reversal_log (workspace_id, created_at);
+create function reversal_log_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.reversal_log is append-only';
+end $$;
+create trigger reversal_log_no_update before update or delete on reversal_log
+  for each row execute function reversal_log_append_only();

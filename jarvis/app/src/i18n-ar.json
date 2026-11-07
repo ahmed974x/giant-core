@@ -751,6 +751,18 @@
   [
    "^Imported “(.+)”: (\\d+) sections?\\.$",
    "استُورد «$1»: $2 أقسام."
+  ],
+  [
+   "^Entries in the log: (\\d+)$",
+   "عدد القيود في السجل: $1"
+  ],
+  [
+   "^1 correction$",
+   "تصحيح واحد"
+  ],
+  [
+   "^(\\d+) corrections$",
+   "$1 تصحيحات"
   ]
  ],
  "strings": {
@@ -1919,6 +1931,28 @@
   "The template is larger than 2 MB unpacked.": "القالب أكبر من 2 ميغابايت بعد فك الضغط.",
   "This is not a Jarvis Studio template.": "هذا ليس قالباً من استوديو Jarvis.",
   "The file is not valid JSON inside the gzip.": "محتوى ملف gzip ليس JSON صالحاً.",
-  "Imported template": "قالب مستورد"
+  "Imported template": "قالب مستورد",
+  "Autonomous Reversal Log": "سجل التصحيح الذاتي",
+  "When a plan or a page breaks a rule, Jarvis writes a corrected copy and logs what changed, with SHA-256 of before, after and the corrections. A local model's plan is corrected on its own: a sensitive step becomes a locked approval, pending_approval.": "حين تخالف خطة أو صفحة قاعدة، يكتب Jarvis نسخة مصحّحة ويسجّل ما تغيّر، مع SHA-256 لما قبل وما بعد وللتصحيحات. وخطة النموذج المحلي تُصحَّح من تلقاء نفسها: الخطوة الحساسة تصير موافقة مقفلة بانتظار الموافقة.",
+  "HTML or CSS to correct": "HTML أو CSS للتصحيح",
+  "Gradients become one colour, glass gets a reduced-transparency fallback and long words get overflow-wrap. Nothing is sent anywhere else.": "يصير التدرّج لوناً واحداً، ويأخذ الزجاج بديلاً عند تقليل الشفافية، وتلتف الكلمات الطويلة. لا يُرسل شيء إلى أي مكان آخر.",
+  "Reverse and correct": "اعكس وصحّح",
+  "Corrected": "صُحّح",
+  "Nothing to correct": "لا شيء يحتاج تصحيحاً",
+  "Corrected copy": "النسخة المصحّحة",
+  "No corrections yet": "لا تصحيحات بعد",
+  "When a plan or a page breaks a rule, the corrected copy and what changed appear here.": "حين تخالف خطة أو صفحة قاعدة، تظهر هنا النسخة المصحّحة وما تغيّر.",
+  "Locked a sensitive step": "قُفلت خطوة حساسة",
+  "Removed a blue to purple gradient": "أُزيل تدرّج من الأزرق إلى البنفسجي",
+  "Removed a gradient": "أُزيل تدرّج",
+  "Added a reduced-transparency fallback": "أُضيف بديل لتقليل الشفافية",
+  "Added overflow-wrap": "أُضيف التفاف الكلمات الطويلة",
+  "Plan, proved": "خطة مُثبتة",
+  "Plan, not proved": "خطة غير مُثبتة",
+  "From a person": "من شخص",
+  "From the local model": "من النموذج المحلي",
+  "reversal template": "تصحيح قالب",
+  "reversal plan": "تصحيح خطة",
+  "Reversal log is append-only": "سجل التصحيح للإضافة فقط"
  }
 }

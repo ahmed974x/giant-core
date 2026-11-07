@@ -39,6 +39,7 @@ export function createReadiness({ db, store, llm, search, audit, repoRoot, addre
       const sum = scan && scan.summary ? scan.summary : {};
       const av = await audit.verify(slug);
       const missing = LOCK_CONSTRAINTS.filter(n => !names.includes(n));
+      const reversals = Number((await db.one("select count(*) as c from reversal_log where workspace_id = $1", [wid])).c);
       const ls = await llm.status();
       const cloud = (ls.models || []).filter(isCloudModel);
       return [
@@ -62,6 +63,7 @@ export function createReadiness({ db, store, llm, search, audit, repoRoot, addre
           { name: "SkillSpector on the skills", ok: sum.critical === 0 && sum.high === 0, detail: "critical " + sum.critical + ", high " + sum.high },
           { name: "Merkle audit log verifies", ok: av.ok, detail: av.ok ? av.size + " entries" : "broken at " + av.brokenAt + ": " + av.reason },
           { name: "Lock constraints in the database", ok: !missing.length, detail: missing.length ? "missing: " + missing.join(", ") : LOCK_CONSTRAINTS.length + " of " + LOCK_CONSTRAINTS.length },
+          { name: "Reversal log is append-only", ok: /reversal_log_no_update/.test(names), detail: reversals + " corrections logged" },
         ]),
         layer("bridge", "Local model bridge", [
           { name: "Model engine on 127.0.0.1", ok: /^http:\/\/127\.0\.0\.1:\d+/.test(String(ls.host || "")), detail: (ls.online ? "online: " : "offline, fixed rules: ") + ls.host },

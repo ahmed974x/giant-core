@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-149)
+# Parity: Jarvis (ADR-150)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -75,6 +75,12 @@ ADR-149 added three rows, all built and tested (`test-app.mjs` F31, `test-live.m
 - compressed Studio templates;
 - the quantum-math skill.
 
+ADR-150 added four rows, all built and tested (`test-app.mjs` F32, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- plan reversal (sensitive steps locked after the fact);
+- template reversal;
+- the Autonomous Reversal Log;
+- the reversal-engine skill.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -83,7 +89,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (87 counted, must-haves 34 of 34 done)
+features 100.0  (91 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -91,8 +97,8 @@ features 100.0  (87 counted, must-haves 34 of 34 done)
 - agents                       100.0  (5 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
-- quality                      100.0  (10 features)
-- studio                       100.0  (13 features)
+- quality                      100.0  (11 features)
+- studio                       100.0  (14 features)
 - skills                       100.0  (6 features)
 - backend                      100.0  (1 features)
 - missions                     100.0  (8 features)
@@ -107,8 +113,8 @@ features 100.0  (87 counted, must-haves 34 of 34 done)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)
-- security                     100.0  (1 features)
-- diagnostics                  100.0  (2 features)
+- security                     100.0  (2 features)
+- diagnostics                  100.0  (3 features)
 
 ## Missing, in build order
 - nothing. Every counted feature is done.

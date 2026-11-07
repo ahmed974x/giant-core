@@ -462,3 +462,24 @@ create table if not exists telemetry_state (
   last_t real,
   primary key (workspace_id, metric)
 );
+
+-- ADR-150: the reversal log. Each correction of a plan or a template, with SHA-256 of before, after and
+-- the corrections. No row can be changed or removed.
+create table if not exists reversal_log (
+  id text primary key,
+  workspace_id text not null references workspaces(id),
+  kind text not null check (kind in ('plan', 'template')),
+  source text not null check (length(source) between 1 and 80),
+  before_hash text not null check (length(before_hash) = 64),
+  after_hash text not null check (length(after_hash) = 64),
+  proof_hash text not null check (length(proof_hash) = 64),
+  corrections text not null,
+  vector text not null,
+  verified integer not null check (verified in (0, 1)),
+  created_at text not null
+);
+create index if not exists reversal_log_ws on reversal_log (workspace_id, created_at);
+create trigger if not exists reversal_log_no_update before update on reversal_log
+  begin select raise(abort, 'jarvis.reversal_log is append-only'); end;
+create trigger if not exists reversal_log_no_delete before delete on reversal_log
+  begin select raise(abort, 'jarvis.reversal_log is append-only'); end;

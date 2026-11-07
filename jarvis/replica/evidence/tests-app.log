@@ -167,6 +167,11 @@ PASS F31 the Studio site follows in the other window
 PASS F31 the template is real gzip with the site inside
 PASS F31 importing the .json.gz brings the template back
 PASS F31 a gzip bomb is refused and the site is untouched
+PASS F32 the corrected copy has no gradient and gains both fallbacks
+PASS F32 the log shows the correction with its SHA-256 hashes
+PASS F32 the corrected copy needs nothing more and adds no log entry
+PASS F32 diagnostics show the same log, read-only
+PASS F32 the correction is an audited event and a lesson in memory
 PASS F15 the language button switches the whole shell to Arabic, right to left
 PASS F15 no interface text is left in English on any screen
 PASS F15 Arabic uses Readex Pro
@@ -175,4 +180,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-176 passed, 0 failed
+181 passed, 0 failed

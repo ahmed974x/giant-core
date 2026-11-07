@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-06T23:28:04Z",
- "javascriptRanAt": "2026-11-06T23:27:36.052Z",
+ "ranAt": "2026-11-07T00:09:16Z",
+ "javascriptRanAt": "2026-11-07T00:08:04.501Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 592,
- "killed": 592,
- "equivalent": 17,
+ "total": 1008,
+ "killed": 1008,
+ "equivalent": 52,
  "score": 100.0,
  "targets": [
   {
@@ -153,6 +153,164 @@
    "equivalents": []
   },
   {
+   "file": "jarvis/server/lib/reversal.mjs",
+   "sha256": "5e42ff44ce8c935ec7649ed3720c3e96940937e6baed7514e9dad290f101689d",
+   "functions": [
+    "correctionVector",
+    "sealed",
+    "reversePlan",
+    "hueOf",
+    "rgbHue",
+    "gradientColours",
+    "fixGradients",
+    "cssOf",
+    "cssBlocks",
+    "glassSelectors",
+    "addCss",
+    "reverseTemplate"
+   ],
+   "mutants": 198,
+   "killed": 176,
+   "equivalent": 22,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "reversePlan",
+     "line": 39,
+     "kind": "&& -> ||",
+     "why": "a locked step is an object or a non-empty string, and a string has no gate, locked or status, so o reads the same"
+    },
+    {
+     "fn": "hueOf",
+     "line": 63,
+     "kind": "6 -> 7",
+     "why": "h always has exactly six characters, so slice(4, 7) equals slice(4, 6)"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 76,
+     "kind": "6 -> 7",
+     "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and % 6 or % 7 leaves it unchanged"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 77,
+     "kind": "360 -> 361",
+     "why": "h * 60 is always in [-60, 300], so the first % 360 changes nothing; the other two 360s are killed by the oracle"
+    },
+    {
+     "fn": "gradientColours",
+     "line": 82,
+     "kind": "+ -> -",
+     "why": "the extra two characters are always \"t(\" from \"-gradient(\", and \"t\" is not a colour"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 96,
+     "kind": ">= -> >",
+     "why": "nextStop[0] is read only when a gradient ends at index 0, which cannot happen"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 94,
+     "kind": "< -> <=",
+     "why": "the extra turn reads text[n], which is undefined, and writes past the end of the buffer, which is ignored"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 99,
+     "kind": "< -> <=",
+     "why": "last is the index of a stop character or the end of the text, and a gradient starts with a letter"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 92,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 92,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 93,
+     "kind": "0 -> 1",
+     "why": "prevStop[0] is read only for a gradient at index 0, which has no property before it, and prevStop[1] is written by the loop"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 96,
+     "kind": "0 -> 1",
+     "why": "as above: nextStop[0] is never read"
+    },
+    {
+     "fn": "cssOf",
+     "line": 121,
+     "kind": "< -> <=",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 122,
+     "kind": "< -> <=",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 120,
+     "kind": "7 -> 8",
+     "why": "the test is anchored at the start, so one more character after '<style' and its space or '>' changes nothing"
+    },
+    {
+     "fn": "cssOf",
+     "line": 121,
+     "kind": "0 -> 1",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 121,
+     "kind": "1 -> 2",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 122,
+     "kind": "0 -> 1",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 121,
+     "kind": "- -> +",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssBlocks",
+     "line": 133,
+     "kind": "< -> <=",
+     "why": "the extra turn reads css[css.length], which is undefined and matches no branch"
+    },
+    {
+     "fn": "addCss",
+     "line": 164,
+     "kind": ">= -> >",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    },
+    {
+     "fn": "addCss",
+     "line": 164,
+     "kind": "0 -> 1",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-long-horizon/gate.py",
    "sha256": "05c71d4a2c558d8d62be2941be22af5309e2a10065358d179e9fc24c9bd5112f",
    "functions": [
@@ -215,7 +373,112 @@
      "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"
     }
    ]
+  },
+  {
+   "file": ".claude/skills/replica-reversal-engine/reversal_engine.py",
+   "sha256": "d8ba2a6e69d088db3f231401d0749d6cdbc246afd881902b23562c12bffe73c5",
+   "functions": [
+    "correction_vector",
+    "sealed",
+    "reverse_and_correct_plan",
+    "_rgb_hue",
+    "hue_of",
+    "gradient_colours",
+    "is_ai_gradient",
+    "_fix_gradients",
+    "css_of",
+    "css_blocks",
+    "glass_selectors",
+    "_add_css",
+    "reverse_and_correct_template"
+   ],
+   "mutants": 253,
+   "killed": 240,
+   "equivalent": 13,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "_rgb_hue",
+     "line": 126,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "hue_of",
+     "line": 158,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "_add_css",
+     "line": 279,
+     "kind": "constant 0 -> 1",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the last line does"
+    },
+    {
+     "fn": "_rgb_hue",
+     "line": 128,
+     "kind": "constant 6 -> 7",
+     "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and fmod by 6 or 7 leaves it unchanged"
+    },
+    {
+     "fn": "gradient_colours",
+     "line": 164,
+     "kind": "arith Add -> Sub",
+     "why": "the two extra characters are always 't(' from '-gradient(', and 't' is not a colour"
+    },
+    {
+     "fn": "css_of",
+     "line": 222,
+     "kind": "constant 0 -> 1",
+     "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"
+    },
+    {
+     "fn": "reverse_and_correct_plan",
+     "line": 106,
+     "kind": "bool And -> Or",
+     "why": "the proof's and: every sensitive step has just been forced to a locked, pending approval, so each part is true and or gives the same"
+    },
+    {
+     "fn": "_fix_gradients",
+     "line": 180,
+     "kind": "constant 1 -> 2",
+     "why": "the stop lists one item longer hold the same values at every index read"
+    },
+    {
+     "fn": "_fix_gradients",
+     "line": 180,
+     "kind": "constant 1 -> 2",
+     "why": "the stop lists one item longer hold the same values at every index read"
+    },
+    {
+     "fn": "css_of",
+     "line": 221,
+     "kind": "constant 0 -> 1",
+     "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"
+    },
+    {
+     "fn": "css_of",
+     "line": 221,
+     "kind": "constant 1 -> 2",
+     "why": "-2 instead of -1 for 'not found' still fails close < 0"
+    },
+    {
+     "fn": "hue_of",
+     "line": 148,
+     "kind": "constant 6 -> 7",
+     "why": "h always has six characters, so h[4:7] equals h[4:6]"
+    },
+    {
+     "fn": "css_of",
+     "line": 217,
+     "kind": "constant 7 -> 8",
+     "why": "re.match anchors at the start, so one more character after '<style' and its space or '>' changes nothing"
+    }
+   ]
   }
  ],
- "sha256": "e21b6b391c5a5921bbc2e21290bb6e408259b3999e33c302a2430b16c8cc8739"
+ "sha256": "8b129a86119c145e79830413ba94ded5acb52e1fe4a7a2bdd56001066a3d1e99"
 }

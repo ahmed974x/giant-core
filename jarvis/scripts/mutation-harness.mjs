@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Mutation run for Jarvis's critical JavaScript (ADR-146): the SSRF address check, the AGENTS.md section 1
-// lock rules and the formal prover. Each mutant is a copy of the module with one operator changed, written
-// to a temporary folder and imported in a worker thread (no process is started, nothing comes from outside
-// this repository). A fixed oracle, the expected answers for each function, runs against it; a mutant is
+// lock rules, the formal prover and (ADR-150) the reversal engine. Each mutant is a copy of the module with
+// one operator changed, written to a temporary folder and imported in a worker thread (no process is
+// started, nothing comes from outside this repository). A fixed oracle, the expected answers for each function, runs against it; a mutant is
 // killed when an answer changes, an error is thrown or it runs past the time limit, and survives otherwise.
 //   node jarvis/scripts/mutation-harness.mjs [--out jarvis/replica/evidence/mutation-js.json]
 import { Worker, isMainThread, workerData, parentPort } from "node:worker_threads";
@@ -111,8 +111,9 @@ const TARGETS = [
   { file: "fetch-public.mjs", functions: ["v4Blocked", "v6Groups", "isBlockedAddress"], oracle: "fetch" },
   { file: "llm-plan.mjs", functions: ["lockCategory", "enforceApprovalGates"], oracle: "llmPlan", regexConst: "LOCK_RULES" },
   { file: "prover.mjs", functions: ["planMachine", "search", "prove"], oracle: "prover" },
+  { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
@@ -122,11 +123,89 @@ const EQUIVALENT = [
   { file: "fetch-public.mjs", line: "zeros(5) && g[5] === 0xffff", kind: "7 -> 8", why: "g[8] is undefined, so v4From keeps the first two octets; a mapped address is judged on them alone only when the last two are 0.0, which the oracle covers" },
   { file: "fetch-public.mjs", line: "zeros(4) && g[4] === 0xffff", kind: "7 -> 8", why: "as above, for the SIIT form" },
   { file: "fetch-public.mjs", line: "g[0] === 0x2001 && g[1] === 0)", why: "Teredo 2001::/32 is inside 2001::/23, refused three lines down" },
+  { file: "reversal.mjs", line: "list[i] && typeof list[i]", kind: "&& -> ||", why: "a locked step is an object or a non-empty string, and a string has no gate, locked or status, so o reads the same" },
+  { file: "reversal.mjs", line: "parseInt(h.slice(4, 6), 16)", kind: "6 -> 7", why: "h always has exactly six characters, so slice(4, 7) equals slice(4, 6)" },
+  { file: "reversal.mjs", line: "((g - b) / d) % 6", kind: "6 -> 7", why: "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and % 6 or % 7 leaves it unchanged" },
+  { file: "reversal.mjs", line: "((Math.round(h * 60) % 360) + 360) % 360", kind: "360 -> 361", why: "h * 60 is always in [-60, 300], so the first % 360 changes nothing; the other two 360s are killed by the oracle" },
+  { file: "reversal.mjs", line: "g.slice(g.indexOf(\"(\") + 1, -1)", kind: "+ -> -", why: "the extra two characters are always \"t(\" from \"-gradient(\", and \"t\" is not a colour" },
+  { file: "reversal.mjs", line: "new Int32Array(n + 1)", why: "a longer buffer holds the same values at every index read" },
+  { file: "reversal.mjs", line: "prevStop[0] = 0;", why: "prevStop[0] is read only for a gradient at index 0, which has no property before it, and prevStop[1] is written by the loop" },
+  { file: "reversal.mjs", line: "for (let i = n - 1; i >= 0; i--)", kind: ">= -> >", why: "nextStop[0] is read only when a gradient ends at index 0, which cannot happen" },
+  { file: "reversal.mjs", line: "for (let i = n - 1; i >= 0; i--)", kind: "0 -> 1", why: "as above: nextStop[0] is never read" },
+  { file: "reversal.mjs", line: "for (let i = 0; i < n; i++) prevStop", kind: "< -> <=", why: "the extra turn reads text[n], which is undefined, and writes past the end of the buffer, which is ignored" },
+  { file: "reversal.mjs", line: "if (g.index < last) continue;", kind: "< -> <=", why: "last is the index of a stop character or the end of the text, and a gradient starts with a letter" },
+  { file: "reversal.mjs", line: "return head >= 0 ?", why: "a </head> at index 0 puts the new style first, which is exactly what the other branch does" },
+  { file: "reversal.mjs", line: "if (!/^<style[\\s>]/.test(low.slice(i, i + 7)))", kind: "7 -> 8", why: "the test is anchored at the start, so one more character after '<style' and its space or '>' changes nothing" },
+  { file: "reversal.mjs", line: "close = open < 0 ? -1 : low.indexOf", why: "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)" },
+  { file: "reversal.mjs", line: "if (close < 0) break;", why: "close, when found, is after open, so it is never 0" },
+  { file: "reversal.mjs", line: "for (let i = 0; i < css.length; i++) {", kind: "< -> <=", why: "the extra turn reads css[css.length], which is undefined and matches no branch" },
   { file: "llm-plan.mjs", drop: "ادفع", why: "every text with ادفع also contains دفع, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "انشر", why: "every text with انشر also contains نشر, a word of the same rule" },
   { file: "llm-plan.mjs", drop: "pip install", why: "every text with pip install also contains install, a word of the same rule" },
 ];
 const isEquivalent = (file, src, mu) => EQUIVALENT.find(e => e.file === file && (e.drop ? mu.kind === "drop " + e.drop : src.split("\n")[mu.line - 1].includes(e.line) && (!e.kind || mu.kind === e.kind)));
+
+// ADR-150: the reversal engine. Expected answers worked out by hand from the rules in reversal.mjs.
+function oracleReversal(m) {
+  const out = [];
+  const plan = [{ title: "Read the docs" }, { title: "Pay the hosting invoice", locked: false }, { title: "Publish the site", gate: "approval", locked: true, status: "done" },
+    { title: "Email the team", gate: "approval", locked: true, status: "pending_approval" }, { title: "Tidy", gate: "Approval", locked: true, status: "pending_approval" }, "Grant admin access"];
+  const r = m.reversePlan(plan);
+  out.push(["plan corrections", r.corrections.map(c => c.step + ":" + c.category).join() === "1:money,2:publish,4:outbound,5:permissions"]);
+  out.push(["plan from", JSON.stringify(r.corrections.map(c => c.from)) === JSON.stringify([{ gate: null, locked: false, status: null }, { gate: "approval", locked: true, status: "done" }, { gate: "Approval", locked: true, status: "pending_approval" }, { gate: null, locked: false, status: null }])]);
+  out.push(["plan locked steps", r.steps.filter(x => x.locked).length === 5 && r.steps.filter(x => x.locked).every(x => x.gate === "approval" && x.status === "pending_approval") && r.steps[0].locked === false && r.steps[0].status === undefined]);
+  out.push(["plan titles", r.corrections.map(c => c.title).join("|") === "Pay the hosting invoice|Publish the site|Tidy|Grant admin access" && r.corrections.every(c => c.to.gate === "approval" && c.to.locked === true && c.to.status === "pending_approval" && c.rule === "lock-sensitive-step")]);
+  out.push(["plan proof", r.proof.verified === true && r.proof.effects === 5 && r.proof.lockedStates === 5 && r.proof.violations === 0 && r.proof.states === 14]);
+  out.push(["plan vector", r.vector.values.join() === "4,0,0,0,0" && r.vector.total === 4 && r.vector.rules.length === 5 && r.changed === true && r.kind === "plan"]);
+  out.push(["plan hashes", /^[0-9a-f]{64}$/.test(r.before) && r.before !== r.after && /^[0-9a-f]{64}$/.test(r.proofHash) && r.proofHash !== r.after]);
+  const again = m.reversePlan(r.steps);
+  out.push(["plan fixed point", again.corrections.length === 0 && again.changed === false && again.vector.total === 0]);
+  out.push(["plan bad input", m.reversePlan(null).steps.length === 0 && m.reversePlan(Array.from({ length: 25 }, (_, i) => ({ title: "s" + i }))).steps.length === 20 && m.reversePlan([{ title: "x", status: "pending_approval", locked: true }]).corrections.length === 1]);
+  out.push(["vector", m.correctionVector([{ rule: "gradient" }, { rule: "overflow-wrap" }, { rule: "gradient" }]).values.join() === "0,0,2,0,1" && m.correctionVector([]).total === 0]);
+  const hues = [["#0000ff", 240], ["#00f", 240], ["#ff0000", 0], ["#00ff00", 120], ["#ff00ff", 300], ["#800080", 300], ["#3b82f6", 217], ["#8b5cf6", 258], ["#ffff00", 60], ["#00ffff", 180], ["#ff8000", 30], ["#ff0080", 330], ["#808080", null], ["#808787", null], ["#80888f", 208], ["#808088", 240], ["#808087", null], ["#808890", 210],
+    ["rgb(0, 0, 255)", 240], ["rgba(128,0,128,.5)", 300], ["rgb(255 0 0)", 0], ["hsl(280 50% 50%)", 280], ["hsla(-40, 50%, 50%)", 320], ["hsl(400 1% 1%)", 40], ["oklch(54.5% 0.197 257.4)", 235], ["oklch(50% 0.01 250)", null], ["oklch(50% 0.02 22)", 0], ["oklch(50% 0.2 10)", 348],
+    ["lch(50% 0 300)", 278], ["blue", 240], ["Purple", 300], ["white", null], ["to", undefined], ["deg", undefined], ["#12345", undefined]];
+  for (const [c, h] of hues) out.push(["hue " + c, m.hueOf(c) === h]);
+  out.push(["colours", m.gradientColours("linear-gradient(to right, #fff, rgb(1, 2, 3) 40%, blue)").join("|") === "#fff|rgb(1, 2, 3)|blue"]);
+  const t = m.reverseTemplate(".hero { background: linear-gradient(135deg, #3b82f6, #8b5cf6) }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: linear-gradient(red, orange) 1; color: red }\n.d{background-image:radial-gradient(teal,navy)}");
+  out.push(["template rules", t.corrections.map(c => c.rule).join() === "ai-gradient,gradient,gradient,reduced-transparency,overflow-wrap"]);
+  out.push(["template text", t.text === ".hero { background-color: #3b82f6 }\n.bar, .nav { backdrop-filter: blur(16px) }\n.c { border-image: none; color: red }\n.d{background-color:teal}\n@media (prefers-reduced-transparency: reduce) {\n  .bar, .nav { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: Canvas; color: CanvasText; }\n}\n:where(h1, h2, h3, h4, p, li, td, th, dd, dt, a, blockquote, figcaption) { overflow-wrap: anywhere; }\n"]);
+  out.push(["template details", t.corrections[0].property === "background" && t.corrections[0].to === "#3b82f6" && t.corrections[1].from === "linear-gradient(red, orange) 1" && t.corrections[3].selectors.join() === ".bar,.nav" && t.vector.values.join() === "0,1,2,1,1" && t.html === false]);
+  out.push(["template fixed point", m.reverseTemplate(t.text).changed === false]);
+  out.push(["no colour stop", m.reverseTemplate("a{background:linear-gradient(to right, 10%, 20%)}").text.startsWith("a{background-color:transparent}")]);
+  out.push(["glass", m.glassSelectors(".a{backdrop-filter:blur(4px)} .b{backdrop-filter:none} @media (prefers-reduced-transparency: reduce){.c{backdrop-filter:none}} .c{-webkit-backdrop-filter:blur(2px)} .a{backdrop-filter:blur(1px)}").join() === ".a"]);
+  out.push(["glass none", m.glassSelectors(".x{color:red}").length === 0 && m.glassSelectors("x{ backdrop-filter : saturate(2)}").join() === "x"]);
+  const h1 = m.reverseTemplate("<html><head></head><body><p>x</p></body></html>");
+  out.push(["html head", h1.text === "<html><head><style>\n:where(h1, h2, h3, h4, p, li, td, th, dd, dt, a, blockquote, figcaption) { overflow-wrap: anywhere; }\n</style>\n</head><body><p>x</p></body></html>" && h1.html === true]);
+  const h2 = m.reverseTemplate("<STYLE>a{x:1}</STYLE><style>b{y:2}</style><p>x</p>");
+  out.push(["html last style", h2.text === "<STYLE>a{x:1}</STYLE><style>b{y:2}:where(h1, h2, h3, h4, p, li, td, th, dd, dt, a, blockquote, figcaption) { overflow-wrap: anywhere; }\n</style><p>x</p>"]);
+  out.push(["html no head", m.reverseTemplate("<div>x</div>").text.startsWith("<style>\n:where(") && m.reverseTemplate("<div>x</div>").text.endsWith("\n</style>\n<div>x</div>")]);
+  out.push(["html wrap present", m.reverseTemplate("<style>p{overflow-wrap: anywhere}</style><p>x</p>").changed === false && m.reverseTemplate("p{overflow-wrap:anywhere}").changed === false]);
+  out.push(["empty", m.reverseTemplate("").changed === false && m.reverseTemplate("   ").changed === false && m.reverseTemplate(null).text === "" && m.reverseTemplate("a{}").corrections.length === 1]);
+  out.push(["long input cut", m.reverseTemplate("a".repeat(200005)).text.length === 200103]);
+  // The hashes are SHA-256 of the exact text, and the one-correction case still counts as changed.
+  const sha = x => createHash("sha256").update(x).digest("hex");
+  const one = m.reversePlan([{ title: "Pay rent" }]);
+  out.push(["sealed hashes", one.changed === true && one.before === sha(JSON.stringify([{ title: "Pay rent" }])) && one.after === sha(JSON.stringify(one.steps)) && one.proofHash === sha(one.before + "\n" + one.after + "\n" + JSON.stringify(one.corrections))]);
+  const big = Array.from({ length: 25 }, (_, i) => ({ title: "s" + i }));
+  out.push(["plan cut at 20", m.reversePlan(big).before === sha(JSON.stringify(big.slice(0, 20)))]);
+  const tt = m.reverseTemplate("a{color:red}");
+  out.push(["template hashes", tt.before === sha("a{color:red}") && tt.after === sha(tt.text) && tt.proofHash === sha(tt.before + "\n" + tt.after + "\n" + JSON.stringify(tt.corrections))]);
+  for (const [c, h] of [["#ff8040", 20], ["#40ff80", 140], ["#8040ff", 260], ["oklch(50% 0.2 400)", 18], ["oklch(50% 0.2 -400)", 298]]) out.push(["hue " + c, m.hueOf(c) === h]);
+  out.push(["no declaration", m.reverseTemplate("x linear-gradient(red, blue)").corrections.map(c => c.rule).join() === "overflow-wrap"]);
+  out.push(["gradient at the end", m.reverseTemplate("a:linear-gradient(red,blue)").text.startsWith("a:none\n")]);
+  out.push(["after a stop", m.reverseTemplate(";a:linear-gradient(red,blue)").text.startsWith(";a:none\n") && m.reverseTemplate("x;b:linear-gradient(red,blue)").text.startsWith("x;b:none\n")]);
+  const longValue = m.reverseTemplate("a{background:linear-gradient(red," + " ".repeat(300) + "blue)}");
+  out.push(["from is cut at 200", longValue.corrections[0].from.length === 200]);
+  out.push(["style at 0", m.reverseTemplate("</style><p>x</p>").text.startsWith(":where(") && m.reverseTemplate("<p>x</p></head>").text.startsWith("<p>x</p><style>\n:where(")]);
+  out.push(["blocks nested and after }", JSON.stringify(m.cssBlocks("a { b { c: 1 } }a{}b{y:2}").map(b => [b.selector, b.body])) === JSON.stringify([["b", " c: 1 "], ["a", ""], ["b", "y:2"]]) && m.glassSelectors("a;b{backdrop-filter:blur(1px)} @font-face{backdrop-filter:blur(1px)}").join() === "b"]);
+  out.push(["blocks fallback", JSON.stringify(m.cssBlocks("@media (prefers-reduced-transparency: reduce) { .a { x: 1 } } b{y:2} } c{").map(b => [b.selector, b.fallback])) === JSON.stringify([[".a", true], ["b", false]])]);
+  const css = t2 => m.reverseTemplate(t2).corrections.map(c => c.rule).join();
+  out.push(["style blocks read", css("<styles>a</styles><style media=x>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap" && css("<style<style>.g{backdrop-filter:blur(1px)}</style><p>") === "reduced-transparency,overflow-wrap"
+    && css("<style>p{color:red}</style><style>p{overflow-wrap:anywhere}</style><p>") === "" && css("<style>.g{backdrop-filter:blur(1px)}") === "overflow-wrap" && css("<style>x<style></style><p>{overflow-wrap:anywhere}") === "overflow-wrap"]);
+  out.push(["style content exact", css("<style>overflow-wrap: anywhere</style><p>") === "" && m.reverseTemplate("<style>.g{backdrop-filter:blur(1px)}</style><p>").corrections[0].selectors.join() === ".g" && m.glassSelectors("}b{backdrop-filter:blur(1px)}").join() === "b"]);
+  return out;
+}
 
 if (!isMainThread) {
   const { url, oracle } = workerData;

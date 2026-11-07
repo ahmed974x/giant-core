@@ -65,8 +65,8 @@ export function frontierRoot(peaks) {
 }
 
 // Which event kinds are audited: locked-step requests and decisions, agent changes, gate results, skills,
-// endpoints, access, Studio exports and snapshots, and mission milestones.
-export const AUDITED = /^(approval\.|agent\.|skill\.|endpoint\.|access\.|studio\.|export\.|gate\.|workspace\.|mission\.(created|waiting|step_failed|restored))/;
+// endpoints, access, Studio exports and snapshots, mission milestones and reversal-engine corrections (ADR-150).
+export const AUDITED = /^(approval\.|agent\.|skill\.|endpoint\.|access\.|studio\.|export\.|gate\.|workspace\.|reversal\.|mission\.(created|waiting|step_failed|restored))/;
 
 // The text that is hashed for one audit entry: canonical, so the page can recompute it from the row.
 export const auditEntry = e => JSON.stringify({ seq: e.seq, kind: e.kind, actor: e.actor, target: e.target == null ? null : String(e.target), at: e.at });
