@@ -162,3 +162,11 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48
 - `hyper-cube-*`: the cube with its faces sorted back to front and shaded in OKLCH from the accent;
 - `hyper-tesseract-*`: the tesseract turned 35° in the xw plane, perspective R4 → R3 → R2;
 - `hyper-optics-physics-*`: 85 mm at f/1.4 focused at 2.5 m (depth of field, hyperfocal 179 m, EV100 8.94, three lights from their Kelvin), and A* on a 12 × 12 grid equal to breadth-first search, with two particle tracks.
+
+## ADR-156 (2026-11-07)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `metacodes-missions-*`: the Meta-codes panel under the council in `#/missions`, ALT3 and KILLCRITIC pressed: three proved plans, each with payment and deploy as locked approvals «بانتظار الموافقة», [VERIFIED] and the SHA-256;
+- `metacodes-critic-*`: the critic in the Studio: the accent `#0b5ed7` on black healed to `#82b2ff` (WCAG 3.6 → 9.76, APCA −23.42 → −60.09), the gradient named, and the reminder that sizes and UI states need a real run;
+- `metacodes-stages-*`: the Math lab with X10THINK and /HUMAN: four stages and the short paragraph.
