@@ -39,6 +39,7 @@ import { createPassiveRecon } from "./lib/passive-recon.mjs";
 import { solve as solveMath, localize as localizeMath, umText } from "./lib/universal-math.mjs";
 import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
+import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -379,6 +380,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           try { out = hyperStudio(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           if (out.mode === "projection") out.svg = hyperSvg(out);
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "hyper.solve", out.mode + (out.polytope ? " " + out.polytope : "") + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
+        }
+        // ADR-156: prompt meta-codes. Pure and bounded (4,000 characters, 20 addresses); it always answers, and
+        // every money, publishing, permissions, install or outbound step comes back as a locked approval.
+        if (req.method === "POST" && rest === "/metacodes/compile") {
+          const lang = (url.searchParams.get("lang") || body.lang) === "ar" ? "ar" : "en";
+          if (body.prompt != null && typeof body.prompt !== "string") return send(400, { error: mcText("err.prompt", lang), detail: "prompt" });
+          const out = compileMetacodes({ prompt: body.prompt, codes: body.codes, lang });
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "metacodes.compile", out.codes.join(" ") + (out.verified ? " verified" : " unverified"));
           return send(200, out);
         }
         // ADR-144: the Studio time machine.

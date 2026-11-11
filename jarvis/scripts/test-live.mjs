@@ -503,6 +503,16 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "hyper.solve" && e.target === "game_physics verified"), "live: the calculation is in the event log");
 }
 
+// ADR-156 live: meta-codes compile on the server and are logged.
+{
+  await go("#/missions");
+  await page.getByRole("button", { name: "Compile" }).click();
+  await page.waitForSelector("#h-mc-x10");
+  ok((await page.locator(".council-card").count()) === 3 && (await page.locator(".council-card .lock-line").count()) === 6, "live: three plans from the server, sensitive steps locked");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "metacodes.compile" && e.target === "/HUMAN X10THINK ALT3 verified"), "live: the compile is in the event log");
+}
+
 // ADR-153 live: a template's failing colour pair is healed on the server and logged.
 {
   await go("#/studio");
@@ -522,6 +532,7 @@ await page.waitForTimeout(300);
     ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("acme.example"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
     ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
+    ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
   ] });
   ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
   ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));

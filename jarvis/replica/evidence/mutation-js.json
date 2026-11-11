@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-07T19:06:57.118Z",
+ "ranAt": "2026-11-07T22:26:49.175Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -755,6 +755,25 @@
      "why": "as above"
     }
    ]
+  },
+  {
+   "file": "jarvis/server/lib/prompt-metacodes.mjs",
+   "sha256": "eacf995123e83f9dcc2e4e3dca44c7b7fae2eea8580a44b380d56f4ce40e1678",
+   "functions": [
+    "parseMetacodes",
+    "privateHost",
+    "sensitiveCategories",
+    "proveOption",
+    "buildOption",
+    "compileMetacodes"
+   ],
+   "mutants": 150,
+   "killed": 150,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
   },
   {
    "file": "jarvis/server/lib/contrast-heal.mjs",

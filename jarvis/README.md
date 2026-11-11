@@ -353,6 +353,12 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **Game physics:** an A* path checked against breadth-first search, and particles bouncing in the grid.
 - The API is `POST /api/w/:slug/studio/hyper` with `mode` set to `projection`, `optics` or `game_physics`; a projection also comes back as `svg`. The same maths runs with `python3 .claude/skills/replica-hyper-studio/hyper_studio.py run request.json`.
 
+## Meta-codes (ADR-156)
+
+- **Where:** a «Meta-codes» panel in Missions (under the council), the Studio and the Math lab. Press `ALT3`, `KILLCRITIC`, `X10THINK`, `EL10` or `/HUMAN`, or type them in the request, then Compile.
+- **What comes back:** three plans (the fastest slice, tests and proof first, self-hosted on this computer), each proved; a payment, deploy, permission, install or outbound step is a locked approval marked «بانتظار الموافقة» in every plan. KILLCRITIC adds the gate findings with their fixes, X10THINK four stages, EL10 one plain sentence per plan and /HUMAN one paragraph.
+- The API is `POST /api/w/:slug/metacodes/compile` with `{prompt, codes, lang}`. The same engine runs with `python3 .claude/skills/replica-prompt-metacodes/prompt_metacodes.py request.json`, and gives the same SHA-256.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

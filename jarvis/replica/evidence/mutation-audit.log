@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-07T19:40:23Z",
- "javascriptRanAt": "2026-11-07T19:06:57.118Z",
+ "ranAt": "2026-11-07T22:59:28Z",
+ "javascriptRanAt": "2026-11-07T22:26:49.175Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 5824,
- "killed": 5824,
- "equivalent": 258,
+ "total": 6146,
+ "killed": 6146,
+ "equivalent": 260,
  "score": 100.0,
  "targets": [
   {
@@ -765,6 +765,25 @@
      "why": "as above"
     }
    ]
+  },
+  {
+   "file": "jarvis/server/lib/prompt-metacodes.mjs",
+   "sha256": "eacf995123e83f9dcc2e4e3dca44c7b7fae2eea8580a44b380d56f4ce40e1678",
+   "functions": [
+    "parseMetacodes",
+    "privateHost",
+    "sensitiveCategories",
+    "proveOption",
+    "buildOption",
+    "compileMetacodes"
+   ],
+   "mutants": 150,
+   "killed": 150,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
   },
   {
    "file": "jarvis/server/lib/contrast-heal.mjs",
@@ -1809,6 +1828,43 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py",
+   "sha256": "9611d6c3d710da7759d1ed5476c72711979202367d963f5f56fba8b2616fb030",
+   "functions": [
+    "js_num",
+    "mc_text",
+    "_join_list",
+    "parse_metacodes",
+    "private_host",
+    "sensitive_categories",
+    "prove_option",
+    "build_option",
+    "js_json",
+    "sha256_hex",
+    "compile_metacodes"
+   ],
+   "mutants": 174,
+   "killed": 172,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "private_host",
+     "line": 138,
+     "kind": "constant 1 -> 2",
+     "why": "the pattern is anchored with ^, and re.sub matches ^ only at the start of the original string, so a second replacement never happens"
+    },
+    {
+     "fn": "private_host",
+     "line": 144,
+     "kind": "constant 1 -> 2",
+     "why": "as above: an anchored pattern is replaced at most once"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-reversal-engine/reversal_engine.py",
    "sha256": "8a3b024381e40e172ad5b7649c35029b0098cd8fffbe103b7cc3f36cd247916f",
    "functions": [
@@ -2000,5 +2056,5 @@
    ]
   }
  ],
- "sha256": "860cc83e1a4325264ed008eb5ecd60f30cdb0601b20c85eac3eafce75c04db20"
+ "sha256": "f1bcda2ec589e34274cc95a5668563b6bf1a15115b2ecd23f64aeaea4934aa0a"
 }

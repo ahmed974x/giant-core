@@ -1,10 +1,10 @@
 {
-  "generated": "2026-11-07T19:06:42.733Z",
+  "generated": "2026-11-07T22:26:25.958Z",
   "summary": {
-    "scanned": 151,
+    "scanned": 155,
     "critical": 0,
     "high": 0,
-    "medium": 28,
+    "medium": 48,
     "low": 0,
     "suppressed": 6
   },
@@ -183,6 +183,166 @@
       "sev": "medium",
       "line": 74,
       "excerpt": "http://x",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://user",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://10.0.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://172.20.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://100.70.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://169.254.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1152,
+      "excerpt": "http://foo.localhost",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://user",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://10.0.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://172.20.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://100.70.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://169.254.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1160,
+      "excerpt": "http://foo.localhost",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1233,
+      "excerpt": "http://user",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1234,
+      "excerpt": "http://10.0.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1235,
+      "excerpt": "http://172.20.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1236,
+      "excerpt": "http://100.70.0.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1237,
+      "excerpt": "http://169.254.1.1",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1239,
+      "excerpt": "http://foo.localhost",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/test_prompt_metacodes.py",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 45,
+      "excerpt": "http://192.168.1.4",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-prompt-metacodes/tests/test_prompt_metacodes.py",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 48,
+      "excerpt": "http://192.168.1.4",
       "msg": "Plain http:// to an outside host. Use https://."
     },
     {

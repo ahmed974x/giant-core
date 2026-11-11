@@ -101,5 +101,6 @@ Math lab with checked steps,platform,should,yes,yes,"ADR-154: Pratt parser, exac
 Universal maths API and skill,platform,should,yes,yes,"ADR-154: POST /api/w/:slug/math/solve with ?lang=ar; replica-universal-math gives the same answers (golden file); in the mutation run"
 Hyper studio projections from 3D to 8D,studio,should,yes,yes,"ADR-155: cube with painter's sort and OKLCH shading, tesseract and 16-cell (SO(4), R4 to R3 to R2), 8-cube Petrie, E8 roots in the Coxeter plane; checks per shape; sliders, no animation"
 Hyper studio optics and game physics,studio,should,yes,yes,"ADR-155: thin-lens depth of field, hyperfocal, EV100, Kelvin to OKLCH lights; A* checked against BFS, Verlet particles; API, skill with the same answers, in the mutation run"
+Prompt meta-codes with three proved plans,missions,should,yes,yes,"ADR-156: /HUMAN, EL10, X10THINK, KILLCRITIC and ALT3 in one pass; three fixed-rule plans with sensitive steps locked and proved; a critic over the gates; panel in Missions, the Studio and the Math lab; API and skill with the same SHA-256, in the mutation run"
 Third-party marketplace and app network of any other product,integrations,could,yes,skip,their network is not something to rebuild
 Agents that sign orders or move real money,agents,could,yes,skip,locked by AGENTS.md §1 until separate approval and reviews

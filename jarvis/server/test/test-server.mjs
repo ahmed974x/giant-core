@@ -37,6 +37,7 @@ import { normalizeDomain, parseRdap, parseCt, gradeHeaders, parseSecurityTxt, sa
 import { parseColour, toHex, rgbToOklch, oklchToRgb, wcagRatio, apcaLc, healOklchContrast, HEAL_STEPS } from "../lib/contrast-heal.mjs";
 import { solve as umSolve, localize as umLocalize, parse as umParse, show as umShow, derivative as umDerivative, evaluate as umEvaluate, simplify as umSimplify, isPrime as umIsPrime, factorize as umFactorize, crt as umCrt, egcd as umEgcd, gaussSolve, jacobiEigen, brent as umBrent, adaptiveSimpson, rk4 as umRk4, MathError, UM_AR } from "../lib/universal-math.mjs";
 import { hyper as hsHyper, hyperSvg, hypercube, sixteenCell, e8Roots, coxeterPlane, rings as hsRings, dot as hsDot, kelvinToColour, astar, bfsLength, verlet, rotatePlane, HyperError } from "../lib/hyper-studio.mjs";
+import { compileMetacodes, parseMetacodes } from "../lib/prompt-metacodes.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -766,6 +767,23 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-156: prompt meta-codes through the server, Ahmad's example request.
+  const mc = await post("/api/w/jarvis-studio/metacodes/compile?lang=ar", { prompt: "ALT3 X10THINK KILLCRITIC بناء منصة تحليلات فورية مع نشر خارجي وتفعيل بوابة دفع" });
+  const lockedOk = o => o.steps.filter(x => x.locked).map(x => x.category).join() === "money,publish,outbound" && o.steps.filter(x => x.locked).every(x => x.gate === "approval" && x.status === "pending_approval");
+  ok(mc.status === 200 && mc.body.lang === "ar" && mc.body.codes.join() === "X10THINK,KILLCRITIC,ALT3" && mc.body.options.length === 3 && mc.body.options.every(o => o.proved && lockedOk(o)) && mc.body.verified && mc.body.stages.length === 4 && mc.body.options[0].title === "أسرع شريحة عاملة", tag("metacodes: three plans in Arabic, money, publishing and outbound locked in each, four stages"), mc.body && mc.body.options);
+  ok(/^[0-9a-f]{64}$/.test(mc.body.sha256) && mc.body.sha256 === compileMetacodes({ prompt: "ALT3 X10THINK KILLCRITIC بناء منصة تحليلات فورية مع نشر خارجي وتفعيل بوابة دفع", lang: "ar" }).sha256, tag("metacodes: the answer carries its SHA-256, the same as the engine's"));
+  const crit = await post("/api/w/jarvis-studio/metacodes/compile", { prompt: "read http://10.0.0.5/admin, text #0b5ed7 on #000000, key " + "sk" + "-" + "a".repeat(22), codes: ["KILLCRITIC", "EL10", "/HUMAN"] });
+  const ct = crit.body.critic.map(f => f.text);
+  ok(crit.status === 200 && !crit.body.prompt.includes("sk" + "-aaa") && ct.includes("Private addresses are refused by the SSRF shield.") && crit.body.critic.some(f => f.data[0] === "#0b5ed7 → #82b2ff") && crit.body.options.length === 1 && crit.body.plain.length === 1 && typeof crit.body.human === "string", tag("metacodes: the critic removes a pasted key, refuses a private address and heals contrast"), crit.body.critic);
+  const mbad = await post("/api/w/jarvis-studio/metacodes/compile", { prompt: 7, lang: "ar" });
+  ok(mbad.status === 400 && mbad.body.error === "يجب أن يكون الطلب نصاً." && mbad.body.detail === "prompt", tag("metacodes: a prompt that is not text is refused in the language asked for"), mbad.body);
+  const nohdr = await raw(s.port, { method: "POST", path: "/api/w/jarvis-studio/metacodes/compile", headers: { host: "127.0.0.1:" + s.port, "content-type": "application/json" }, body: "{}" });
+  ok(nohdr.status === 403, tag("metacodes: a write without x-jarvis: 1 is refused"), nohdr.status);
+  const mev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(Array.isArray(mev) && mev.some(e => e.kind === "metacodes.compile" && e.target === "X10THINK KILLCRITIC ALT3 verified"), tag("metacodes: each compile is an event in the log"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -896,6 +914,12 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-156: prompt meta-codes, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-prompt-metacodes", "tests", "golden.json"), "utf8"));
+  ok(g.length >= 19 && g.every(c => JSON.stringify(compileMetacodes(c.request)) === JSON.stringify(c.response)), "metacodes: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok(parseMetacodes("el10. Hello /HUMAN human").codes.join() === "EL10,/HUMAN" && parseMetacodes("x ".repeat(4001)).truncated, "metacodes: one pass finds the codes, ignores trailing punctuation and cuts at 4,000 characters");
 }
 // ADR-153: the OKLCH bisection contrast healer, pure.
 {

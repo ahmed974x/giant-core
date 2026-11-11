@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 124,
+ "files": 126,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 139
+  "low": 140
  },
  "byRule": {
   "D05": 27,
-  "M05": 111,
+  "M05": 112,
   "P21": 1
  },
- "sha256": "6e1e5491f95a4cdb26c645cef05ca0bdd84203946078189027cd955408dbbb6a",
+ "sha256": "82545b262e1d7e2b29826b03194a71fd4e3204f099c426cd4bcdb68165481401",
  "findings": [
   {
    "rule": "D05",
@@ -986,6 +986,13 @@
    "line": 17,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-155-hyper-studio.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 15,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-156-prompt-metacodes.md"
   }
  ]
 }

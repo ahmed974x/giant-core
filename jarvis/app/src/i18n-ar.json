@@ -971,6 +971,10 @@
   [
    "^· Days left: (\\d+)$",
    "· الأيام المتبقية: $1"
+  ],
+  [
+   "^(\\d+) steps? · (\\d+) checks? · (\\d+) approvals?$",
+   "$1 خطوات · $2 فحوص · $3 موافقات"
   ]
  ],
  "strings": {
@@ -2433,6 +2437,22 @@
   "Give at most 24 particles.": "أعطِ 24 جسيماً على الأكثر.",
   "Each particle needs x, y, vx, vy and a radius that fits the grid.": "كل جسيم يحتاج x و y و vx و vy ونصف قطر يناسب الشبكة.",
   "Gravity is from -1 to 1 cells per tick squared.": "الجاذبية من -1 إلى 1 خلية لكل نبضة مربعة.",
-  "Choose a mode: projection, optics or game_physics.": "اختر وضعاً: projection أو optics أو game_physics."
+  "Choose a mode: projection, optics or game_physics.": "اختر وضعاً: projection أو optics أو game_physics.",
+  "Proved": "مُبرهَن",
+  "Not proved": "غير مُبرهَن",
+  "Compile": "حوّل الطلب",
+  "Request": "الطلب",
+  "Critic": "الناقد",
+  "Thinking stages": "مراحل التفكير",
+  "In short": "باختصار",
+  "Run by hand": "يُشغَّل يدوياً",
+  "Meta-codes": "أكواد الأوامر",
+  "Not compiled": "لم يُحوَّل",
+  "check": "فحص",
+  "build": "بناء",
+  "Every plan was proved: each sensitive step is a locked approval.": "كل خطة مُبرهَنة: كل خطوة حساسة موافقة مقفلة.",
+  "Press a code or type it in the request. ALT3 gives three plans, KILLCRITIC checks the gates, X10THINK shows four stages, EL10 and /HUMAN say it plainly. It always answers; money, publishing, permissions, installs and outbound messages stay locked approvals.": "اضغط كوداً أو اكتبه في الطلب. ALT3 يعطي ثلاث خطط، و KILLCRITIC يفحص البوابات، و X10THINK يعرض أربع مراحل، و EL10 و /HUMAN يقولانها ببساطة. يجيب دائماً؛ والمال والنشر والصلاحيات والتثبيت والرسائل الخارجية تبقى موافقات مقفلة.",
+  "The request must be text.": "يجب أن يكون الطلب نصاً.",
+  "metacodes compile": "تحويل أكواد الأوامر"
  }
 }

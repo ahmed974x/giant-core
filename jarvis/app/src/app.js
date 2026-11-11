@@ -588,6 +588,8 @@
         try { return ok(Hyper.hyper(body)); }
         catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); }
       },
+      // ADR-156 in sample mode: the same meta-codes engine as the server, in this page.
+      metacodes(body) { return typeof body.prompt === "string" ? ok(LlmPlan.compileMetacodes(body)) : bad("The request must be text."); },
       // ADR-154 in sample mode: the same engine as the server, in this page.
       mathSolve(body) {
         try { return ok(UniMath.solve(body)); }
@@ -1020,6 +1022,7 @@
       reversalLog: limit => req("GET", w("/reversal/log?limit=" + encodeURIComponent(limit || 20))),
       passiveRecon: domain => req("POST", w("/recon/passive"), { domain }),
       mathSolve: body => req("POST", w("/math/solve"), body),
+      metacodes: body => req("POST", w("/metacodes/compile"), body),
       hyperStudio: body => req("POST", w("/studio/hyper"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
@@ -1947,6 +1950,7 @@
       h("div", { class: "field" }, h("label", { htmlFor: "f-goal", text: "Goal" }), goal,
         h("span", { class: "hint", id: "h-goal", text: "The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Jarvis decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00." })),
       h("div", { class: "row" }, planBtn, councilBtn), councilBox);
+    const mcPanel = metacodesPanel("ALT3 X10THINK /HUMAN Build a real-time analytics dashboard, then deploy it and add a payment gate");
     // Changes made from a dialog land after it closes, so the close event refreshes too.
     const refresh = () => { if (!box.isConnected) { off(); dlg.removeEventListener("close", refresh); return; } if (dlg.open) return; store.listMissions().then(l => box.replaceChildren(render(l)), () => {}); };
     const off = store.subscribe(refresh);
@@ -1954,7 +1958,7 @@
     return h("div", { class: "stack" },
       pageHead("Missions", "Long tasks in ordered phases. Gates need evidence, capsules keep a verified trail, and locked steps wait while the rest carries on.",
         h("button", { class: "btn btn-primary", type: "button", onclick: e => missionDialog(e.currentTarget) }, icon("i-plus", "sm"), "New mission")),
-      sampleNote(), planPanel, box);
+      sampleNote(), planPanel, mcPanel, box);
   };
 
   // The council's debate (ADR-144): three role cards, then whether the locks held. Model text is untrusted.
@@ -2542,7 +2546,7 @@
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
-      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress };
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
   const Hyper = (() => {
@@ -3006,6 +3010,7 @@
           h("section", { class: "panel", "aria-labelledby": "h-colors" }, h("h2", { id: "h-colors", text: "Colours" }), h("div", { class: "field" }, h("label", { htmlFor: "f-preset", text: "Preset" }), presetSel), colorBox,
             h("div", { class: "field" }, h("span", { class: "legend", text: "Contrast (live)" }), badges, h("div", { class: "row" }, healBtn), healBox)),
           h("section", { class: "panel", "aria-labelledby": "h-blocks" }, h("h2", { id: "h-blocks", text: "Sections" }), blockList),
+          metacodesPanel("KILLCRITIC A landing page with text #0b5ed7 on #000000 and a blue to purple gradient hero"),
           h("section", { class: "panel", "aria-labelledby": "h-out" }, h("h2", { id: "h-out", text: "Output" }), h("div", { class: "row" }, download, publish, resetBtn),
             h("h3", { class: "t-sm", text: "Export 5 files" }), h("div", { class: "row" }, exportBtns), exportInfo,
             h("h3", { class: "t-sm", text: "Compressed template" }), h("div", { class: "row" }, gzOut),
@@ -3631,8 +3636,56 @@
       r.plot ? h("section", { class: "panel", "aria-labelledby": "h-um-plot" }, h("h2", { id: "h-um-plot", text: "Plot" }), mathPlot(r.plot)) : null,
       h("details", null, h("summary", { text: "The answer as JSON" }), h("pre", { class: "diff", translate: "no", dir: "ltr", text: JSON.stringify(r.result, null, 1) })));
   }
+  /* ── Meta-codes (ADR-156): five codes, three plans that always answer, sensitive steps locked by rule ── */
+  // The engine writes its sentences in the page's language; in Arabic each Latin run (Director 00, WCAG 4.5)
+  // is isolated the same way translated sentences are.
+  const mcLine = t => (uiLang === "ar" && isolate(t)) || document.createTextNode(t);
+  const MC_LEVEL = { high: ["failed", "High"], medium: ["warn", "Medium"], low: ["idle", "Low"], ok: ["ok", "Passed"], manual: ["idle", "Run by hand"] };
+  function metacodesView(r) {
+    const data = d => d.length ? h("code", { translate: "no", dir: "ltr", "data-verbatim": "", text: d.join(" · ") }) : null;
+    const step = s => h("li", { class: "stack um-step" + (s.locked ? " locked" : "") }, h("span", null, mcLine(s.title)),
+      s.locked ? h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Waiting for Director 00" }))
+        : h("span", { class: "t-caption subtle", text: s.kind === "gate" ? "check" : s.kind === "build" ? "build" : "read tool" }));
+    return h("div", { class: "stack" },
+      h("div", { class: "row" }, r.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"),
+        h("span", { class: "t-sm muted", text: "Every plan was proved: each sensitive step is a locked approval." }),
+        h("code", { class: "t-caption", translate: "no", dir: "ltr", title: r.sha256, text: "sha256 " + r.sha256.slice(0, 16) })),
+      h("div", { class: "council-grid" }, r.options.map((o, i) => h("article", { class: "council-card" },
+        h("h3", null, mcLine(o.title)), h("p", { class: "row t-caption" }, h("span", { class: "tag-inf", text: o.tag }), badge(o.proved ? "ok" : "failed", o.proved ? "Proved" : "Not proved"),
+          h("span", { class: "t-caption muted", text: [[o.counts.steps, "step"], [o.counts.gates, "check"], [o.counts.approvals, "approval"]].map(([n, w]) => n + " " + w + (n === 1 ? "" : "s")).join(" · ") })),
+        r.plain ? h("p", { class: "t-sm" }, mcLine(r.plain[i])) : null,
+        h("ol", { class: "plist" }, o.steps.map(step))))),
+      r.critic ? h("section", { class: "stack", "aria-labelledby": "h-mc-crit" }, h("h3", { id: "h-mc-crit", text: "Critic" }),
+        h("ul", { class: "plist" }, r.critic.map(f => h("li", { class: "stack um-step" }, h("div", { class: "row" }, badge(MC_LEVEL[f.level][0], MC_LEVEL[f.level][1]), h("span", null, mcLine(f.text))), data(f.data))))) : null,
+      r.stages ? h("section", { class: "stack", "aria-labelledby": "h-mc-x10" }, h("h3", { id: "h-mc-x10", text: "Thinking stages" }),
+        h("ol", { class: "plist" }, r.stages.map(s => h("li", { class: "stack um-step" }, h("span", null, mcLine(s.text)), data(s.data))))) : null,
+      r.human ? h("section", { class: "stack", "aria-labelledby": "h-mc-human" }, h("h3", { id: "h-mc-human", text: "In short" }), h("p", { class: "t-sm" }, mcLine(r.human))) : null);
+  }
+  function metacodesPanel(seed) {
+    const pressed = new Set(["ALT3"]);
+    const buttons = LlmPlan.METACODES.map(c => {
+      const b = h("button", { class: "btn btn-secondary btn-sm", type: "button", "aria-pressed": String(pressed.has(c)), translate: "no", dir: "ltr" }, h("bdi", { text: c }));
+      b.addEventListener("click", () => { if (pressed.has(c)) pressed.delete(c); else pressed.add(c); b.setAttribute("aria-pressed", String(pressed.has(c))); });
+      return b;
+    });
+    const ta = h("textarea", { class: "textarea", id: "f-mc", name: "metacodes-request", autocomplete: "off", rows: 3, maxLength: 4000, dir: "auto", "aria-describedby": "h-mc-hint" });
+    ta.value = seed;
+    const btn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Compile");
+    const box = h("div", { class: "stack", "aria-live": "polite" });
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { box.replaceChildren(metacodesView(await store.metacodes({ prompt: ta.value, codes: [...pressed], lang: uiLang }))); }
+      catch (err) { box.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not compiled"), " ", h("span", { text: err.message }))); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    return h("section", { class: "panel", "aria-labelledby": "h-mc" }, h("h2", { id: "h-mc", text: "Meta-codes" }),
+      h("div", { class: "row", role: "group", "aria-label": "Meta-codes" }, ...buttons),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-mc", text: "Request" }), ta,
+        h("span", { class: "hint", id: "h-mc-hint", text: "Press a code or type it in the request. ALT3 gives three plans, KILLCRITIC checks the gates, X10THINK shows four stages, EL10 and /HUMAN say it plainly. It always answers; money, publishing, permissions, installs and outbound messages stay locked approvals." })),
+      h("div", { class: "row" }, btn), box);
+  }
   pages.math = () => {
-    const sel = h("select", { class: "select", id: "f-umtask", name: "math-task", autocomplete: "off" }, Object.entries(MATH_EXAMPLES).map(([k, v]) => h("option", { value: k, text: v.label })));
+    const sel =h("select", { class: "select", id: "f-umtask", name: "math-task", autocomplete: "off" }, Object.entries(MATH_EXAMPLES).map(([k, v]) => h("option", { value: k, text: v.label })));
     const ta = h("textarea", { class: "textarea code", id: "f-umbody", name: "math-request", autocomplete: "off", rows: 6, spellcheck: false, dir: "ltr", "aria-describedby": "h-um-hint" });
     const fill = () => { ta.value = JSON.stringify(MATH_EXAMPLES[sel.value].body, null, 1); };
     sel.addEventListener("change", fill); fill();
@@ -3656,7 +3709,7 @@
       pageHead("Math lab", "Calculus, differential equations, matrices, number theory and Bayes, step by step. Each answer is checked backwards before it is marked verified."),
       sampleNote(),
       h("section", { class: "panel", "aria-labelledby": "h-um" }, h("h2", { id: "h-um", text: "Ask for a calculation" }), form),
-      box);
+      box, metacodesPanel("EL10 X10THINK Explain how the roots of x^3 - 6x^2 + 11x - 6 are found and checked"));
   };
 
   /* ── Hyper studio (ADR-155): shapes from 3 to 8 dimensions, camera optics and grid physics, as SVG ── */

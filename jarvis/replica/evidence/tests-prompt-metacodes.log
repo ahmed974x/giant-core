@@ -1,0 +1,13 @@
+test_codes_come_out_in_one_pass (test_prompt_metacodes.Parse.test_codes_come_out_in_one_pass) ... ok
+test_long_text_is_cut (test_prompt_metacodes.Parse.test_long_text_is_cut) ... ok
+test_always_answers_and_locks (test_prompt_metacodes.Plans.test_always_answers_and_locks) ... ok
+test_arabic (test_prompt_metacodes.Plans.test_arabic) ... ok
+test_critic (test_prompt_metacodes.Plans.test_critic) ... ok
+test_no_code_is_run (test_prompt_metacodes.Plans.test_no_code_is_run) ... ok
+test_proof_refuses_an_unlocked_sensitive_step (test_prompt_metacodes.Plans.test_proof_refuses_an_unlocked_sensitive_step) ... ok
+test_golden (test_prompt_metacodes.SameAsServer.test_golden) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.012s
+
+OK

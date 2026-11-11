@@ -199,6 +199,11 @@ PASS F37 the tesseract: 16 vertices, 32 edges
 PASS F37 optics: hyperfocal distance, EV100 and the three lights
 PASS F37 game physics: the A* path equals BFS, two particle tracks
 PASS F37 an out-of-range Kelvin is refused with the field and its range
+PASS F38 five codes as toggle buttons, ALT3 pressed
+PASS F38 three plans; payment and deploy are locked approvals in each, verified
+PASS F38 X10THINK and /HUMAN typed in the request add the stages and the paragraph
+PASS F38 the Studio critic heals the accent on black and names the gradient
+PASS F38 the Math lab: EL10 adds plain words; email is a locked approval
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -207,4 +212,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-208 passed, 0 failed
+213 passed, 0 failed

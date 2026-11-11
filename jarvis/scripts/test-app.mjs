@@ -803,6 +803,26 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.waitForTimeout(200);
   ok(await page.getByText("A value is out of range.").isVisible() && await page.getByText("key_kelvin: 1667–25000").isVisible(), "F37 an out-of-range Kelvin is refused with the field and its range");
 }
+// F38: prompt meta-codes (ADR-156): five toggles in Missions, the Studio and the Math lab; three proved plans.
+{
+  await go("#/missions");
+  const grp = page.locator('[role=group][aria-label="Meta-codes"]');
+  ok((await grp.locator("button").count()) === 5 && (await grp.locator("button[aria-pressed=true]").count()) === 1 && (await grp.locator("button", { hasText: "ALT3" }).getAttribute("aria-pressed")) === "true", "F38 five codes as toggle buttons, ALT3 pressed");
+  await grp.locator("button", { hasText: "KILLCRITIC" }).click();
+  await page.getByRole("button", { name: "Compile" }).click();
+  await page.waitForSelector("#h-mc-crit");
+  ok((await page.locator(".council-card", { hasText: "The fastest slice" }).count()) === 1 && (await page.locator(".council-card", { hasText: "Self-hosted on this computer" }).count()) === 1 && (await page.locator(".council-card .lock-line").count()) === 6 && await page.getByText("[VERIFIED]").first().isVisible(), "F38 three plans; payment and deploy are locked approvals in each, verified");
+  ok(await page.getByText("Parts in the request: 2.").isVisible() && (await page.locator("#h-mc-x10").count()) === 1 && (await page.locator("#h-mc-human").count()) === 1, "F38 X10THINK and /HUMAN typed in the request add the stages and the paragraph");
+  await go("#/studio");
+  await page.getByRole("button", { name: "Compile" }).click();
+  await page.waitForSelector("#h-mc-crit");
+  ok(await page.getByText("#0b5ed7 → #82b2ff").isVisible() && await page.getByText("DESIGN.md allows one solid accent: no blue to purple gradient.").isVisible(), "F38 the Studio critic heals the accent on black and names the gradient");
+  await go("#/math");
+  await page.locator("#f-mc").fill("EL10 email the result to the team");
+  await page.getByRole("button", { name: "Compile" }).click();
+  await page.waitForSelector(".council-card");
+  ok((await page.locator(".council-card").count()) === 3 && (await page.locator(".council-card .lock-line").count()) === 3 && await page.getByText("Do the smallest thing that works, test it, and stop.").isVisible(), "F38 the Math lab: EL10 adds plain words; email is a locked approval");
+}
 
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
@@ -815,6 +835,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
     ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click(); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
+    ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));
