@@ -518,6 +518,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
 }
 
+// ADR-158 live: the atlas and the shield answer from the server.
+{
+  await go("#/atlas");
+  await page.waitForSelector(".fa-entry");
+  await page.getByRole("button", { name: "Plan the stack" }).click();
+  await page.waitForSelector("#h-fa-steps");
+  ok((await page.locator("#h-fa-steps ~ ol .lock-line").count()) === 4, "live: the stack plan comes from the server, installs locked");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "atlas.plan" && e.target === "3 picks verified"), "live: the plan is in the event log, as a count");
+}
+
 // ADR-156 live: meta-codes compile on the server and are logged.
 {
   await go("#/missions");
@@ -549,6 +560,7 @@ await page.waitForTimeout(300);
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
+    ["atlas plan", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); }],
   ] });
   ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
   ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));

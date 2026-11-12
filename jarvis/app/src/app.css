@@ -554,6 +554,15 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .hy-stage, .cine-stage { border-radius: var(--radius-md); background: var(--color-surface-sunken); padding: 8px; }
 .hy-svg { display: block; inline-size: 100%; block-size: auto; max-block-size: 72dvh; }
 .hy-edge { fill: none; stroke: var(--color-accent); stroke-width: 1.2; stroke-opacity: 0.85; vector-effect: non-scaling-stroke; }
+/* ADR-158: the FOSS atlas. */
+.fa-list { gap: 8px; }
+.fa-entry { display: grid; gap: 4px; padding-block: 8px; border-block-end: var(--hairline) solid var(--color-border); }
+.fa-entry:last-child { border-block-end: 0; }
+.fa-name { font-weight: 600; }
+.fa-side { align-content: start; }
+.fa-entry > .badge, .fa-entry > [lang="ar"] { justify-self: start; }
+.fa-teach { color: var(--color-warning); }
+.fa-big { font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem); font-weight: 600; }
 /* ADR-157: typeset formulas (box and glue) and the cinematic composition: one ink, one accent, nothing moves. */
 .mt-fig { margin: 0; }
 .mt-wrap { overflow-x: auto; padding-block: 4px; }

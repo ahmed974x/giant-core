@@ -211,6 +211,13 @@ PASS F39 21 presets in four groups, golden hour first
 PASS F39 the composition: a spiral, the subject point, no gradient and no text in the SVG
 PASS F39 three lights with their Kelvin and the colour healed for text
 PASS F39 another preset changes the lights and the hyperfocal distance
+PASS F40 26 entries, three picked, 24 licence files linked
+PASS F40 a missing licence says so; the seven skill projects are ideas awaiting review
+PASS F40 the plan: four locked approvals, verified, savings only from the price entered
+PASS F40 the secret check shows the SHA-1 prefix and the secret is gone from the page
+PASS F40 the shield replaces an e-mail address and a phone number
+PASS F40 three teaching personas, labelled
+PASS F40 a persona's picks can be used
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -219,4 +226,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-220 passed, 0 failed
+227 passed, 0 failed

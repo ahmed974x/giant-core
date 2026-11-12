@@ -590,6 +590,11 @@
       },
       // ADR-156 in sample mode: the same meta-codes engine as the server, in this page.
       metacodes(body) { return typeof body.prompt === "string" ? ok(LlmPlan.compileMetacodes(body)) : bad("The request must be text."); },
+      // ADR-158 in sample mode: the same atlas engine as the server, in this page.
+      atlas() { return ok(LlmPlan.atlasView()); },
+      atlasPlan(body) { try { return ok(LlmPlan.planFossStack(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
+      privacyScrub(text) { try { return ok(LlmPlan.scrubPrivate(text)); } catch (e) { return bad(e.message); } },
+      atlasPersonas(q) { return ok(LlmPlan.personas(q)); },
       // ADR-157 in sample mode: the same presets engine as the server, in this page.
       cinematic(body) {
         try { return ok(Hyper.compileCinematic(body)); }
@@ -1030,6 +1035,10 @@
       metacodes: body => req("POST", w("/metacodes/compile"), body),
       hyperStudio: body => req("POST", w("/studio/hyper"), body),
       cinematic: body => req("POST", w("/studio/cinematic"), body),
+      atlas: () => req("GET", w("/atlas")),
+      atlasPlan: body => req("POST", w("/atlas/plan"), body),
+      privacyScrub: text => req("POST", w("/privacy-shield/scrub"), { text }),
+      atlasPersonas: q => req("GET", w("/atlas/personas?seed=" + encodeURIComponent(q.seed) + "&count=" + encodeURIComponent(q.count))),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2552,7 +2561,7 @@
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
-      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES };
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
   // ADR-157: the cinematic presets share this scope and use the contrast healer from the council's libraries.
@@ -3886,6 +3895,109 @@
       hyRequestPanel("game_physics", "Game physics", "A shortest path by A*, checked against breadth-first search, and Verlet particles bouncing in the grid.", hyGameView)),
     hyCinematic());
 
+  /* ── FOSS atlas and privacy shield (ADR-158): open-source replacements, a proved stack plan, the shield ── */
+  const FA_CAT = { office: "Office", files: "Files", chat: "Team chat", analytics: "Web analytics", automation: "Automation", images: "Images", design: "Design", photos: "Photos", music: "Music",
+    video: "Video", screen: "Screen recording", voice: "Voice", ai: "Local AI", scraping: "Page parsing", browser: "Browser", books: "Books", apis: "APIs", mcp: "MCP servers", "free-tiers": "Free tiers", skills: "Agent skills (ideas)" };
+  const faLicence = e => e.licence
+    ? h("span", { class: "row" }, h("bdi", { class: "t-caption", lang: "en", dir: "ltr", text: e.licence.text }), h("a", { class: "t-caption", href: safeUrl(e.licence.file) || "#", target: "_blank", rel: "noopener noreferrer", text: "Licence file" }),
+      h("span", { class: "t-caption muted" }, h("span", { text: "read" }), " ", h("bdi", { class: "num", dir: "ltr", translate: "no", text: e.licence.read })))
+    : h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" });
+  function faEntry(e, picked, onToggle) {
+    const box = h("input", { type: "checkbox", name: "atlas-pick", value: e.id, checked: picked.has(e.id) });
+    box.addEventListener("change", () => { if (box.checked) picked.add(e.id); else picked.delete(e.id); onToggle(); });
+    const status = e.kind === "skill-idea" ? badge("pending", "Idea: needs a security review") : e.kind === "list" ? badge("idle", "Reference list") : e.selfHost ? badge("ok", "Runs on your machine") : badge("idle", "Hosted");
+    return h("li", { class: "fa-entry" }, h("label", { class: "check" }, box, h("bdi", { class: "fa-name", lang: "en", translate: "no", dir: "ltr", text: e.name })), status,
+      h("span", { class: "t-sm" }, h("span", { class: "muted", text: "Replaces" }), " ", h("bdi", { lang: "en", dir: "ltr", text: e.replaces })), faLicence(e));
+  }
+  function faPlanView(p, secret) {
+    const step = s => h("li", { class: "stack um-step" + (s.locked ? " locked" : "") }, h("span", { lang: "en", dir: "ltr", text: s.title }),
+      s.locked ? h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Waiting for Director 00" }))
+        : h("span", { class: "t-caption subtle", text: s.kind === "gate" ? "check" : "read tool" }));
+    return h("div", { class: "stack" },
+      h("div", { class: "row" }, p.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"),
+        h("span", { class: "t-sm muted", text: "Every install and outbound connection is a locked approval, proved on the plan's state machine." })),
+      h("div", { class: "grid-2" },
+        h("div", { class: "stack" }, h("h3", { text: "Data sovereignty" }), p.sovereignty
+          ? h("p", { class: "row" }, h("bdi", { class: "num fa-big", dir: "ltr", translate: "no", text: p.sovereignty.percent + "%" }), h("span", { class: "tag-inf", text: p.sovereignty.tag }), h("span", { class: "t-caption muted", text: "Share of the picked tools that run on your own machine." }))
+          : h("p", { class: "t-sm muted", text: "No tool picked, only lists or ideas." })),
+        h("div", { class: "stack" }, h("h3", { text: "Yearly savings" }), p.savings
+          ? h("p", { class: "row" }, h("bdi", { class: "num fa-big", dir: "ltr", translate: "no", text: "$" + fmtN.format(p.savings.usd_per_year) }), h("span", { class: "t-caption muted", text: "From the prices you entered, nothing else." }))
+          : h("p", { class: "t-sm muted", text: "No savings figure: enter what you pay now to see one." }))),
+      h("section", { class: "stack", "aria-labelledby": "h-fa-steps" }, h("h3", { id: "h-fa-steps", text: "Steps" }), h("ol", { class: "plist" }, p.steps.map(step))),
+      p.notes.length ? h("ul", { class: "plist" }, p.notes.map(n => h("li", { class: "t-sm" }, h("bdi", { translate: "no", text: n.id }), " ", h("span", { lang: "en", dir: "ltr", text: n.text })))) : null,
+      secret ? h("section", { class: "stack", "aria-labelledby": "h-fa-secret" }, h("h3", { id: "h-fa-secret", text: "Secret check (in this page)" }),
+        h("p", { class: "row" }, h("span", { class: "t-sm muted", text: "SHA-1 prefix" }), h("code", { translate: "no", dir: "ltr", text: secret.prefix }),
+          h("span", { class: "t-sm muted", text: "Entropy" }), h("bdi", { class: "num", dir: "ltr", translate: "no", text: String(secret.entropy_bits) }), h("span", { class: "t-sm", text: "bits" })),
+        h("p", { class: "t-caption muted", text: "Only these 5 characters would ever leave this page, for a k-anonymity range lookup. Nothing was looked up, and the secret was not sent." })) : null,
+      h("details", null, h("summary", { text: "The n8n blueprint as JSON (inert: no node runs anything)" }), h("pre", { class: "diff", translate: "no", dir: "ltr", text: JSON.stringify(p.blueprint, null, 1) })));
+  }
+  pages.atlas = () => {
+    const picked = new Set(["nextcloud", "matomo", "n8n"]), prices = new Map();
+    const atlasBox = h("div"), list = h("div", { class: "stack" }), priceBox = h("div", { class: "stack" }), planBox = h("div", { class: "stack", "aria-live": "polite" });
+    const shieldBox = h("div", { class: "stack", "aria-live": "polite" }), personaBox = h("div", { class: "stack", "aria-live": "polite" });
+    const secretIn = h("input", { class: "input", type: "password", id: "f-fa-secret", name: "secret-check", autocomplete: "off", "aria-describedby": "h-fa-sec-hint" });
+    const renderPrices = atlas => priceBox.replaceChildren(...atlas.entries.filter(e => picked.has(e.id) && e.kind === "tool").map(e => {
+      const id = "f-fa-price-" + e.id, inp = h("input", { class: "input", type: "number", id, name: "price-" + e.id, min: 0, step: 1, autocomplete: "off", value: prices.has(e.id) ? String(prices.get(e.id)) : "" });
+      inp.addEventListener("input", () => { if (inp.value === "") prices.delete(e.id); else prices.set(e.id, Number(inp.value)); });
+      return h("div", { class: "field" }, h("label", { htmlFor: id }, h("span", { text: "What you pay now each year (USD) for" }), " ", h("bdi", { lang: "en", dir: "ltr", text: e.replaces })), inp);
+    }));
+    let atlasData = null;
+    const renderList = () => list.replaceChildren(...Object.entries(FA_CAT).map(([cat, label]) => {
+      const rows = atlasData.entries.filter(e => e.category === cat);
+      return rows.length ? h("section", { class: "stack", "aria-label": label }, h("h3", { text: label }), h("ul", { class: "plist fa-list" }, rows.map(e => faEntry(e, picked, () => renderPrices(atlasData))))) : null;
+    }));
+    const planBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the stack");
+    planBtn.addEventListener("click", async () => {
+      planBtn.disabled = true; planBtn.setAttribute("aria-busy", "true");
+      let secret = null;
+      try { if (secretIn.value) secret = LlmPlan.kAnonymity(secretIn.value); } catch (e) { secret = null; }
+      secretIn.value = "";
+      try { planBox.replaceChildren(faPlanView(await store.atlasPlan({ selectedIds: [...picked], prices: Object.fromEntries([...prices].filter(([k]) => picked.has(k))) }), secret)); }
+      catch (err) { planBox.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not planned"), " ", h("span", { text: err.message }))); }
+      finally { planBtn.disabled = false; planBtn.removeAttribute("aria-busy"); }
+    });
+    const shieldIn = h("textarea", { class: "textarea", id: "f-fa-shield", name: "shield-text", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
+    const shieldBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-lock", "sm"), "Scrub");
+    shieldBtn.addEventListener("click", async () => {
+      try {
+        const r = await store.privacyScrub(shieldIn.value);
+        shieldBox.replaceChildren(h("p", { class: "row" }, r.total ? badge("ok", "Replaced " + r.total) : badge("idle", "Nothing to replace"), h("bdi", { class: "t-caption muted", lang: "en", dir: "ltr", text: r.framework })),
+          r.redactions.length ? h("ul", { class: "plist" }, r.redactions.map(x => h("li", { class: "row t-sm" }, h("bdi", { lang: "en", dir: "ltr", text: x.rule }), h("bdi", { class: "num", dir: "ltr", translate: "no", text: "× " + x.count })))) : null,
+          h("pre", { class: "diff", translate: "no", dir: "auto", "data-verbatim": "", text: r.text }));
+      } catch (err) { shieldBox.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not scrubbed"), " ", h("span", { text: err.message }))); }
+    });
+    let seed = 158;
+    const personaBtn = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-plus", "sm"), "New teaching examples");
+    const showPersonas = async () => {
+      const r = await store.atlasPersonas({ seed, count: 3 });
+      personaBox.replaceChildren(h("p", { class: "t-sm fa-teach", lang: "ar", dir: "rtl", text: r.label.ar }),
+        h("div", { class: "council-grid" }, r.personas.map(pp => {
+          const use = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Use these picks and prices" });
+          use.addEventListener("click", () => { picked.clear(); prices.clear(); pp.picks.forEach(id => { picked.add(id); prices.set(id, pp.prices[id]); }); renderList(); renderPrices(atlasData); });
+          return h("article", { class: "council-card" }, h("h3", { lang: uiLang, text: pp.name[uiLang === "ar" ? "ar" : "en"] + " · " + pp.role[uiLang === "ar" ? "ar" : "en"] }),
+            h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Team" }), h("bdi", { class: "num", dir: "ltr", translate: "no", text: String(pp.team) })),
+            h("ul", { class: "plist" }, pp.picks.map(id => h("li", { class: "row t-sm" }, h("bdi", { translate: "no", dir: "ltr", text: id }), h("bdi", { class: "num", dir: "ltr", translate: "no", text: "$" + fmtN.format(pp.prices[id]) })))), use);
+        })));
+    };
+    personaBtn.addEventListener("click", () => { seed += 1; showPersonas(); });
+    loadInto(atlasBox, () => store.atlas(), a => { atlasData = a; renderList(); renderPrices(a); showPersonas(); return list; });
+    return h("div", { class: "stack" },
+      pageHead("FOSS atlas", "Open-source tools that replace hosted products. Each licence was read from the project's own licence file; installs and outbound connections stay locked approvals."),
+      sampleNote(),
+      h("div", { class: "grid-2" },
+        h("section", { class: "panel", "aria-labelledby": "h-fa" }, h("h2", { id: "h-fa", text: "Atlas" }), atlasBox),
+        h("div", { class: "stack fa-side" },
+          h("section", { class: "panel", "aria-labelledby": "h-fa-plan" }, h("h2", { id: "h-fa-plan", text: "Plan a self-hosted stack" }), priceBox,
+            h("div", { class: "field" }, h("label", { htmlFor: "f-fa-secret", text: "Check a secret in this page (optional)" }), secretIn,
+              h("span", { class: "hint", id: "h-fa-sec-hint", text: "Hashed here with SHA-1. Only the first 5 hex characters and the entropy are shown; the secret is never sent or stored." })),
+            h("div", { class: "row" }, planBtn), planBox),
+          h("section", { class: "panel", "aria-labelledby": "h-fa-shield" }, h("h2", { id: "h-fa-shield", text: "Privacy shield" }),
+            h("div", { class: "field" }, h("label", { htmlFor: "f-fa-shield", text: "Text to scrub before it goes to any model" }), shieldIn,
+              h("span", { class: "hint", text: "Keys, tokens, e-mail addresses, phone numbers, IBANs, card numbers and IPv4 addresses are replaced." })),
+            h("div", { class: "row" }, shieldBtn), shieldBox),
+          h("section", { class: "panel", "aria-labelledby": "h-fa-personas" }, h("h2", { id: "h-fa-personas", text: "Teaching personas" }), h("div", { class: "row" }, personaBtn), personaBox))));
+  };
+
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {
     const box = h("div", { class: "stack", "aria-live": "polite" });
@@ -3988,7 +4100,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4069,7 +4181,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

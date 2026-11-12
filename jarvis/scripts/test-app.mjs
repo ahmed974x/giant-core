@@ -848,6 +848,27 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.locator(".cine-lights").getByText("3800 K", { exact: true }).isVisible() && await page.getByText("112.963", { exact: true }).isVisible(), "F39 another preset changes the lights and the hyperfocal distance");
 }
 
+// F40: the FOSS atlas and privacy shield (ADR-158).
+{
+  await go("#/atlas");
+  await page.waitForSelector(".fa-entry");
+  ok((await page.locator(".fa-entry").count()) === 26 && (await page.locator(".fa-entry input:checked").count()) === 3 && (await page.locator('.fa-entry a[href^="https://raw.githubusercontent.com/"]').count()) === 24, "F40 26 entries, three picked, 24 licence files linked");
+  ok(await page.getByText("تعذر التحقق منها").first().isVisible() && (await page.locator(".fa-entry .badge.s-pending").count()) === 7, "F40 a missing licence says so; the seven skill projects are ideas awaiting review");
+  await page.locator("#f-fa-price-nextcloud").fill("1200");
+  await page.locator("#f-fa-secret").fill("Jarvis-Sovereign-Test-2026!");
+  await page.getByRole("button", { name: "Plan the stack" }).click();
+  await page.waitForSelector("#h-fa-steps");
+  ok((await page.locator("#h-fa-steps ~ ol .lock-line").count()) === 4 && await page.getByText("[VERIFIED]").first().isVisible() && await page.getByText("$1,200").isVisible(), "F40 the plan: four locked approvals, verified, savings only from the price entered");
+  ok(await page.getByText("E3977").isVisible() && (await page.locator("#f-fa-secret").inputValue()) === "" && !(await page.content()).includes("Jarvis-Sovereign-Test-2026!"), "F40 the secret check shows the SHA-1 prefix and the secret is gone from the page");
+  await page.locator("#f-fa-shield").fill("mail a.b@x.org or call +966 50 123 4567");
+  await page.getByRole("button", { name: "Scrub" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Replaced 2").isVisible() && (await page.locator("pre[data-verbatim]").last().textContent()).includes("[E-MAIL_ADDRESS]"), "F40 the shield replaces an e-mail address and a phone number");
+  ok((await page.locator(".council-card").count()) === 3 && await page.getByText("مثال تعليمي — أرقام افتراضية").first().isVisible(), "F40 three teaching personas, labelled");
+  await page.locator(".council-card button").first().click();
+  ok((await page.locator(".fa-entry input:checked").count()) === 3, "F40 a persona's picks can be used");
+}
+
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
 // mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.
@@ -862,6 +883,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
+    ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));

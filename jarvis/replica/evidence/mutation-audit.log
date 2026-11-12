@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-12T16:03:49Z",
- "javascriptRanAt": "2026-11-12T15:26:49.286Z",
+ "ranAt": "2026-11-12T16:57:18Z",
+ "javascriptRanAt": "2026-11-12T16:17:37.829Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 6872,
- "killed": 6872,
- "equivalent": 260,
+ "total": 7304,
+ "killed": 7304,
+ "equivalent": 266,
  "score": 100.0,
  "targets": [
   {
@@ -822,6 +822,61 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/foss-atlas.mjs",
+   "sha256": "9e9dcf119962e11bad2c270101885f88a33d1362329b2f49f7b4fee2da61231f",
+   "functions": [
+    "sha1Hex",
+    "rotl",
+    "kAnonymity",
+    "luhnOk",
+    "scrubPrivate",
+    "planSteps",
+    "n8nBlueprint",
+    "planFossStack",
+    "mulberry32",
+    "personas",
+    "atlasView"
+   ],
+   "mutants": 232,
+   "killed": 227,
+   "equivalent": 5,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "sha1Hex",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "b[n] is undefined, and undefined << k is 0, so one more pass ORs in zero"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "< -> <=",
+     "why": "one more pass writes w[80], which no round reads"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 73,
+     "kind": "80 -> 81",
+     "why": "the length is only a size hint; the rounds read w[0] to w[79], which are always written first"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "80 -> 81",
+     "why": "as above: w[80] is written and never read"
+    },
+    {
+     "fn": "luhnOk",
+     "line": 112,
+     "kind": "> -> >=",
+     "why": "d is a doubled digit, so it is even and never exactly 9"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/prompt-metacodes.mjs",
@@ -1885,6 +1940,42 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-foss-atlas/foss_atlas.py",
+   "sha256": "031ce353fb732738f71a705dcbe8f60f193870e0c17036e27a4202de51983da0",
+   "functions": [
+    "_num",
+    "fa_r",
+    "_utf16_len",
+    "entropy",
+    "sha1_hex",
+    "k_anonymity",
+    "luhn_ok",
+    "scrub_private",
+    "plan_steps",
+    "n8n_blueprint",
+    "_is_num",
+    "plan_foss_stack",
+    "mulberry32",
+    "_is_int",
+    "personas",
+    "atlas_view"
+   ],
+   "mutants": 206,
+   "killed": 205,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "sha1_hex",
+     "line": 115,
+     "kind": "constant False -> True",
+     "why": "usedforsecurity only tells hashlib how the digest is used; the digest is the same either way"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-hyper-studio/cinematic_presets.py",
    "sha256": "63951597cd55113bc63dc603aed91b1958aab3c31422aa0415668ff263b31647",
    "functions": [
@@ -2142,5 +2233,5 @@
    ]
   }
  ],
- "sha256": "89d15b3ec187c6a2e106931e5ee8c8f1ec8dbc1e6d6419a2370f0a242777c128"
+ "sha256": "3f7245bff12c04a4cc97fa634f18dc2faae1b7c6b25decf01e598741eff056e0"
 }

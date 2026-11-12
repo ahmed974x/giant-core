@@ -40,6 +40,7 @@ import { hyper as hsHyper, hyperSvg, hypercube, sixteenCell, e8Roots, coxeterPla
 import { compileMetacodes, parseMetacodes } from "../lib/prompt-metacodes.mjs";
 import { layout as mtLayout, solutionLines, boxesHold, typesetSvg, integralBox, textBox as mtText } from "../lib/math-typeset.mjs";
 import { compileCinematic, presetList, CINEMATIC_PRESETS, goldenSpiral, goldenRect, spiralEye } from "../lib/cinematic-presets.mjs";
+import { atlasView as faAtlas, planFossStack, scrubPrivate, personas as faPersonas, sha1Hex, kAnonymity } from "../lib/foss-atlas.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -802,6 +803,29 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-158: the FOSS atlas and privacy shield through the server, Ahmad's example request.
+  const probe = "Jarvis-Sovereign-Test-2026!";
+  const at = await j("/api/w/jarvis-studio/atlas");
+  ok(at.status === 200 && at.body.entries.length === 26 && at.body.entries.filter(e => e.kind === "skill-idea").length === 7 && at.body.entries.filter(e => e.licence).every(e => e.licence.read === "2026-11-12" && e.licence.file.startsWith("https://raw.githubusercontent.com/")) && at.body.entries.find(e => e.id === "free-for-dev").licence === null, tag("atlas: 26 entries, every licence with its file and date, none invented"));
+  const pl = await post("/api/w/jarvis-studio/atlas/plan", { selectedIds: ["nextcloud", "n8n", "matomo", "agentmemory"], prices: { nextcloud: 1200, matomo: 3000 }, secretCheck: probe });
+  const lockedSteps = pl.body.steps.filter(s => s.category);
+  ok(pl.status === 200 && pl.body.verified && pl.body.proof.verified && lockedSteps.length === 5 && lockedSteps.every(s => s.gate === "approval" && s.locked && s.status === "pending_approval") && lockedSteps.some(s => s.category === "outbound"), tag("atlas: installs and n8n's outbound link are locked approvals, proved"), pl.body && pl.body.steps);
+  ok(pl.body.savings.usd_per_year === 4200 && pl.body.sovereignty.percent === 100 && pl.body.blueprint.active === false && JSON.stringify(pl.body.mcp.servers) === "{}", tag("atlas: savings from the prices given, an inert blueprint, no MCP server"));
+  ok(!JSON.stringify(pl.body).includes(probe) && pl.body.secret.prefix === sha1Hex(probe).slice(0, 5).toUpperCase() && pl.body.secret.looked_up === false, tag("atlas: the secret is not returned, only its SHA-1 prefix"));
+  const pev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(pev.some(e => e.kind === "atlas.plan" && e.target === "4 picks verified") && !JSON.stringify(pev.map(e => [e.target, e.data])).includes(probe) && !JSON.stringify(pev.map(e => [e.target, e.data])).includes("4200"), tag("atlas: the event log keeps the count only, not the secret or the prices"));
+  const bad = await post("/api/w/jarvis-studio/atlas/plan", { selectedIds: ["nope"] });
+  ok(bad.status === 400 && bad.body.detail === "nope" && (await post("/api/w/jarvis-studio/atlas/plan", { selectedIds: ["gimp"], prices: { gimp: -5 } })).status === 400, tag("atlas: an unknown entry and a negative price are refused"), bad.body);
+  const key = "sk" + "-" + "q".repeat(26);
+  const sc = await post("/api/w/jarvis-studio/privacy-shield/scrub", { text: "write to a.b@x.org with " + key });
+  ok(sc.status === 200 && sc.body.total === 2 && !sc.body.text.includes(key) && !sc.body.text.includes("a.b@x.org"), tag("shield: a key and an e-mail address are replaced"), sc.body);
+  const sev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(sev.some(e => e.kind === "privacy.scrub" && e.target === "2 replaced") && !JSON.stringify(sev).includes("a.b@x.org"), tag("shield: the event log keeps the count, not the text"));
+  const ps = await j("/api/w/jarvis-studio/atlas/personas?seed=158&count=2");
+  ok(ps.status === 200 && ps.body.personas.length === 2 && ps.body.label.ar === "مثال تعليمي — أرقام افتراضية" && (await j("/api/w/jarvis-studio/atlas/personas?count=99")).status === 400, tag("atlas: seeded personas are labelled as teaching examples"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -932,6 +956,14 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-158: the FOSS atlas and privacy shield, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-foss-atlas", "tests", "golden.json"), "utf8"));
+  const run = (f, r) => { try { return f(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  ok(JSON.stringify(faAtlas()) === JSON.stringify(g.atlas) && g.requests.plans.every((r, i) => JSON.stringify(run(planFossStack, r)) === JSON.stringify(g.plans[i])) && g.requests.scrubs.every((t, i) => JSON.stringify(run(scrubPrivate, t)) === JSON.stringify(g.scrubs[i])), "atlas: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok([{}, { seed: 7, count: 12 }, { seed: 0, count: 1 }, { count: 13 }, { count: 0 }].every((r, i) => JSON.stringify(run(faPersonas, r)) === JSON.stringify(g.personas[i])), "atlas: the personas equal the golden file");
+  ok(["", "abc", "مرحبا", "x".repeat(100)].every(s => sha1Hex(s) === crypto.createHash("sha1").update(s).digest("hex")) && kAnonymity("abc").prefix === "A9993", "atlas: the page's SHA-1 equals node:crypto's");
 }
 // ADR-157: the typesetter and the cinematic presets, pure.
 {

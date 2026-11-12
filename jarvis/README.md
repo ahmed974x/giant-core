@@ -365,6 +365,14 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **`#/hyper`:** the «Cinematic presets» panel. Pick one of 21 presets to see its composition (golden lines, the spiral and the subject point), lens, focus range, hyperfocal distance, field of view and three lights. Each light's colour is shown as text that passes WCAG 4.5 and APCA Lc 60 on the panel. The values are starting points, marked [INFERENCE].
 - The API is `GET /api/w/:slug/studio/cinematic/presets` and `POST /api/w/:slug/studio/cinematic` with `{preset, theme}`. The same presets run with `python3 .claude/skills/replica-hyper-studio/cinematic_presets.py run '{"preset":"desert_dusk"}'`.
 
+## FOSS atlas and privacy shield (ADR-158)
+
+- **`#/atlas`:** 26 open-source tools, lists and agent-skill projects by category, each with what it replaces, its licence as its own licence file states it (linked, read 2026-11-12) and whether it runs on your machine. The seven skill projects are ideas awaiting a security review; nothing is installed.
+- **Plan a stack:** pick tools and enter what you pay now; the plan shows the data-sovereignty share, the savings from your prices only, every install and outbound link as a locked step «بانتظار الموافقة», and an inert n8n blueprint. A secret typed in the check is hashed in the page: only its SHA-1 prefix and entropy are shown.
+- **Privacy shield:** paste text to replace keys, tokens, e-mail addresses, phone numbers, IBANs, card numbers and IPv4 addresses before it goes to any model.
+- **Personas:** seeded teaching examples, «مثال تعليمي — أرقام افتراضية», whose picks and prices can be used in the planner.
+- The API is `GET /api/w/:slug/atlas`, `POST /api/w/:slug/atlas/plan` with `{selectedIds, prices, secretCheck}`, `POST /api/w/:slug/privacy-shield/scrub` and `GET /api/w/:slug/atlas/personas`. The same engine runs with `python3 .claude/skills/replica-foss-atlas/foss_atlas.py`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

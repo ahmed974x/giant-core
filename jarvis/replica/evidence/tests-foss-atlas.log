@@ -1,0 +1,14 @@
+test_every_licence_has_its_file_and_date (test_foss_atlas.Atlas.test_every_licence_has_its_file_and_date) ... ok
+test_installs_and_outbound_are_locked (test_foss_atlas.Plan.test_installs_and_outbound_are_locked) ... ok
+test_no_savings_without_prices (test_foss_atlas.Plan.test_no_savings_without_prices) ... ok
+test_refusals (test_foss_atlas.Plan.test_refusals) ... ok
+test_secret_is_not_returned (test_foss_atlas.Plan.test_secret_is_not_returned) ... ok
+test_golden (test_foss_atlas.SameAsServer.test_golden) ... ok
+test_no_code_is_run (test_foss_atlas.Shield.test_no_code_is_run) ... ok
+test_personas_are_labelled (test_foss_atlas.Shield.test_personas_are_labelled) ... ok
+test_scrub (test_foss_atlas.Shield.test_scrub) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.005s
+
+OK

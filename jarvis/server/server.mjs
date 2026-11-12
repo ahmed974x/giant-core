@@ -40,6 +40,7 @@ import { solve as solveMath, localize as localizeMath, umText } from "./lib/univ
 import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
 import { solutionLines, typesetSvg } from "./lib/math-typeset.mjs";
 import { compileCinematic, presetList } from "./lib/cinematic-presets.mjs";
+import { atlasView, planFossStack, scrubPrivate, personas as atlasPersonas } from "./lib/foss-atlas.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
@@ -385,6 +386,26 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           try { out = hyperStudio(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           if (out.mode === "projection") out.svg = hyperSvg(out);
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "hyper.solve", out.mode + (out.polytope ? " " + out.polytope : "") + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
+        }
+        // ADR-158: the FOSS atlas and privacy shield. Pure: nothing is installed, fetched or sent. A secret sent as
+        // secretCheck is hashed in memory and only its SHA-1 prefix and entropy come back; the event log records
+        // counts only, never the text, the secret or the prices.
+        if (req.method === "GET" && rest === "/atlas") return send(200, atlasView());
+        if (req.method === "GET" && rest === "/atlas/personas") {
+          const num = k => (url.searchParams.has(k) && /^-?\d{1,10}$/.test(url.searchParams.get(k)) ? Number(url.searchParams.get(k)) : undefined);
+          try { return send(200, atlasPersonas({ seed: num("seed"), count: num("count") })); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+        }
+        if (req.method === "POST" && rest === "/atlas/plan") {
+          let out;
+          try { out = planFossStack(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "atlas.plan", out.picks.length + " picks" + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
+        }
+        if (req.method === "POST" && rest === "/privacy-shield/scrub") {
+          let out;
+          try { out = scrubPrivate(body.text); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "privacy.scrub", out.total + " replaced");
           return send(200, out);
         }
         // ADR-157: cinematic presets: starting values for a shot, its optics, light colours healed for text and

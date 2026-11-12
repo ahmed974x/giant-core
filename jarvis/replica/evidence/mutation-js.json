@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-12T15:26:49.286Z",
+ "ranAt": "2026-11-12T16:17:37.829Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -812,6 +812,61 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/foss-atlas.mjs",
+   "sha256": "9e9dcf119962e11bad2c270101885f88a33d1362329b2f49f7b4fee2da61231f",
+   "functions": [
+    "sha1Hex",
+    "rotl",
+    "kAnonymity",
+    "luhnOk",
+    "scrubPrivate",
+    "planSteps",
+    "n8nBlueprint",
+    "planFossStack",
+    "mulberry32",
+    "personas",
+    "atlasView"
+   ],
+   "mutants": 232,
+   "killed": 227,
+   "equivalent": 5,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "sha1Hex",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "b[n] is undefined, and undefined << k is 0, so one more pass ORs in zero"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "< -> <=",
+     "why": "one more pass writes w[80], which no round reads"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 73,
+     "kind": "80 -> 81",
+     "why": "the length is only a size hint; the rounds read w[0] to w[79], which are always written first"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "80 -> 81",
+     "why": "as above: w[80] is written and never read"
+    },
+    {
+     "fn": "luhnOk",
+     "line": 112,
+     "kind": "> -> >=",
+     "why": "d is a doubled digit, so it is even and never exactly 9"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/prompt-metacodes.mjs",
