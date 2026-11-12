@@ -170,3 +170,12 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36
 - `metacodes-missions-*`: the Meta-codes panel under the council in `#/missions`, ALT3 and KILLCRITIC pressed: three proved plans, each with payment and deploy as locked approvals «بانتظار الموافقة», [VERIFIED] and the SHA-256;
 - `metacodes-critic-*`: the critic in the Studio: the accent `#0b5ed7` on black healed to `#82b2ff` (WCAG 3.6 → 9.76, APCA −23.42 → −60.09), the gradient named, and the reminder that sizes and UI states need a real run;
 - `metacodes-stages-*`: the Math lab with X10THINK and /HUMAN: four stages and the short paragraph.
+
+## ADR-157 (2026-11-12)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48 shots):
+
+- `typeset-calculus-*`: the Math lab's «Formula» panel for x³ − 6x² + 11x − 6: f(x), d/dx f as a fraction, and the integral from 0.5 to 3.5 with the sum in brackets before dx, all set with box and glue;
+- `typeset-matrix-*`: the matrix A, b and x in square brackets that stretch to the rows;
+- `cinematic-golden-hour-*`: the «Cinematic presets» panel for golden hour (5200 K): the golden lines, the spiral closing on the subject point, the depth-of-field bar, the lens and the three lights with their colour healed for text in the light theme;
+- `cinematic-desert-dusk-*`: desert dusk at 135 mm in 2.39 : 1, the spiral mirrored to the top right.
