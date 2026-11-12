@@ -595,6 +595,8 @@
       atlasPlan(body) { try { return ok(LlmPlan.planFossStack(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       privacyScrub(text) { try { return ok(LlmPlan.scrubPrivate(text)); } catch (e) { return bad(e.message); } },
       atlasPersonas(q) { return ok(LlmPlan.personas(q)); },
+      // ADR-159 in sample mode: the same universal agent as the server, in this page.
+      universal(body) { try { return ok(LlmPlan.universalAgent(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-157 in sample mode: the same presets engine as the server, in this page.
       cinematic(body) {
         try { return ok(Hyper.compileCinematic(body)); }
@@ -1039,6 +1041,7 @@
       atlasPlan: body => req("POST", w("/atlas/plan"), body),
       privacyScrub: text => req("POST", w("/privacy-shield/scrub"), { text }),
       atlasPersonas: q => req("GET", w("/atlas/personas?seed=" + encodeURIComponent(q.seed) + "&count=" + encodeURIComponent(q.count))),
+      universal: body => req("POST", w("/agent/universal"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2561,7 +2564,7 @@
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
-      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas };
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas, universalAgent: UniversalAgent.universalAgent };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
   // ADR-157: the cinematic presets share this scope and use the contrast healer from the council's libraries.
@@ -3895,6 +3898,104 @@
       hyRequestPanel("game_physics", "Game physics", "A shortest path by A*, checked against breadth-first search, and Verlet particles bouncing in the grid.", hyGameView)),
     hyCinematic());
 
+  /* ── Universal agent (ADR-159): plans and checks a model request; it never sends one ── */
+  const UA_EXAMPLES = {
+    request: { mode: "request", model: "claude-fable-5-2", temperature: 0.2, thinking: { type: "enabled", budget_tokens: 2000 }, effort: "high", messages: [{ role: "user", content: "Review this plan" }], gateway: "http://127.0.0.1:20128" },
+    route: { mode: "route", candidates: [{ id: "claude-haiku-5-5", health: 0.95, quota: 0.6, cost: 0.1, speed: 0.9, fit: 0.7, stability: 0.9 }, { id: "qwen3-coder-next", health: 0.8, quota: 1, cost: 0, speed: 0.6, fit: 0.8, stability: 0.7, local: true }, { id: "groq/gpt-oss-120b", health: 0.1, quota: 1, cost: null, speed: 1, fit: 0.6, stability: 0.4 }] },
+    relay: { mode: "relay", goal: "Finish the release checks", done: ["engine", "tests"], next: ["page", "screens"], decisions: ["hosted models stay locked"], files: ["jarvis/server/lib/universal-agent.mjs"] },
+    compress: { mode: "compress", text: "build ok\nbuild ok\nbuild ok\n\n\n\ntests: 42 passed\n" },
+    security: { mode: "security", candidates: [{ id: "auth-bypass", finder: "hunter-1", verifier: "checker-2", boundary_failure: true, source_trace: true, likelihood: 0.7, impact: 0.9 }, { id: "open-redirect", finder: "hunter-1", verifier: "hunter-1" }, { id: "xss-name", finder: "hunter-2", verifier: "checker-2", prevented_upstream: true }] },
+    graph: { mode: "graph", from: "page", to: "table", edges: [{ from: "page", to: "route", kind: "EXTRACTED" }, { from: "route", to: "module", kind: "EXTRACTED" }, { from: "module", to: "table", kind: "INFERRED", confidence: 0.7 }] },
+    lean: { mode: "lean", units: [{ name: "token check", lines: 30, risky: true, tested: false, rung: 6 }, { name: "date format", lines: 3, rung: 4 }, { name: "pdf export", lines: 2, rung: 5, new_dependency: true }] },
+    design: { mode: "design", css: ".hero{background:linear-gradient(90deg,#3b82f6,#8b5cf6);color:#777777;background-color:#ffffff}" },
+  };
+  const UA_MODE_LABEL = { request: "Request", route: "Route", relay: "Relay", compress: "Compress", security: "Security", graph: "Graph", lean: "Lean", design: "Design" };
+  const uaData = v => h("bdi", { lang: "en", dir: "ltr", translate: "no", text: String(v) });
+  const uaNum = v => h("bdi", { class: "num", dir: "ltr", translate: "no", text: v === null || v === undefined ? "—" : String(v) });
+  const uaLock = () => h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Waiting for Director 00" }));
+  function uaResult(r) {
+    const parts = [];
+    if (r.mode === "request") {
+      parts.push(h("p", { class: "row" }, r.proof.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"), badge("idle", "Not sent")),
+        r.dropped.length ? h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Removed fields" }), ...r.dropped.map(d => h("code", { translate: "no", dir: "ltr", text: d }))) : h("p", { class: "t-sm muted", text: "No field had to be removed." }),
+        h("ol", { class: "plist" }, r.plan.map(s => h("li", { class: "stack um-step" + (s.locked ? " locked" : "") }, uaData(s.title), s.locked ? uaLock() : null))),
+        h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: JSON.stringify(r.body, null, 1) }));
+    } else if (r.mode === "route") {
+      parts.push(h("p", { class: "row" }, h("span", { class: "muted t-sm", text: "Chosen" }), r.chosen ? uaData(r.chosen) : h("span", { class: "t-sm", text: "None: every candidate tripped the breaker." }), h("span", { class: "tag-inf", text: r.tag })),
+        h("p", { class: "t-sm" }, uaData(r.send)),
+        h("div", { class: "table-scroll" }, h("table", { class: "table" }, h("thead", null, h("tr", null, h("th", { text: "Model" }), h("th", { text: "Score" }), h("th", { text: "Catalog" }), h("th", { text: "Where" }))),
+          h("tbody", null, r.ranked.map(c => h("tr", null, h("td", null, uaData(c.id)), h("td", null, uaNum(c.score)), h("td", null, uaData(c.catalog)), h("td", { text: c.local ? "This computer" : "Hosted" })))))),
+        r.tripped.length ? h("p", { class: "row t-sm" }, badge("failed", "Breaker tripped"), ...r.tripped.map(uaData)) : null);
+    } else if (r.mode === "relay") {
+      parts.push(h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "First step" }), r.first_step ? uaData(r.first_step) : uaNum(null)),
+        h("pre", { class: "diff", translate: "no", dir: "auto", "data-verbatim": "", text: r.summary }));
+    } else if (r.mode === "compress") {
+      parts.push(h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Characters before" }), uaNum(r.before_chars), h("span", { class: "muted", text: "after" }), uaNum(r.after_chars),
+        h("span", { class: "muted", text: "saved" }), uaNum(r.saved_percent + "%"), h("span", { class: "muted", text: "repeated lines removed" }), uaNum(r.repeated_lines_removed)),
+        h("p", { class: "t-caption muted", text: "Measured in characters, not tokens." }), h("pre", { class: "diff", translate: "no", dir: "auto", "data-verbatim": "", text: r.text }));
+    } else if (r.mode === "security") {
+      const tone = { confirmed: "failed", needs_validation: "warn", rejected: "idle", hardening_note: "ok" };
+      parts.push(h("ul", { class: "plist" }, r.findings.map(f => h("li", { class: "row t-sm" }, badge(tone[f.verdict], { confirmed: "Confirmed", needs_validation: "Needs validation", rejected: "Rejected", hardening_note: "Hardening note" }[f.verdict]), uaData(f.id), f.severity ? uaData(f.severity) : null, h("span", { class: "muted" }, uaData(f.reason))))),
+        h("p", { class: "row t-caption muted" }, h("span", { text: "Phases" }), ...r.phases.map(uaData)));
+    } else if (r.mode === "graph") {
+      parts.push(r.path === null ? h("p", { class: "t-sm", text: "No path between the two nodes." })
+        : h("ol", { class: "plist" }, r.path.map(e => h("li", { class: "row t-sm" }, uaData(e.from + " → " + e.to), h("span", { translate: "no" }, badge(e.kind === "EXTRACTED" ? "ok" : "warn", e.kind)), uaNum(e.confidence)))),
+        h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Path confidence (weakest hop)" }), uaNum(r.confidence)));
+    } else if (r.mode === "lean") {
+      parts.push(h("p", { class: "row" }, r.verified ? badge("ok", "Lean") : badge("warn", "Needs work"), h("span", { class: "muted t-sm", text: "Risky code with tests" }), uaNum(r.risky_tested_percent === null ? null : r.risky_tested_percent + "%")),
+        ...r.must_fix.map(m => h("p", { class: "row t-sm" }, badge("failed", "Must fix"), uaData(m.name), h("span", { class: "muted" }, uaData(m.reason)))),
+        ...r.needs_review.map(m => h("p", { class: "row t-sm" }, badge("pending", "Needs review"), uaData(m.name))));
+    } else if (r.mode === "design") {
+      parts.push(h("p", { class: "row" }, r.verified ? badge("ok", "Clean") : badge("warn", "Corrected"), ...r.rules.map(uaData)),
+        h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: r.css }), h("p", { class: "row t-caption muted" }, h("span", { text: "SHA-256" }), h("code", { translate: "no", dir: "ltr", text: r.after_sha256 })));
+    }
+    parts.push(h("details", null, h("summary", { text: "The whole answer as JSON" }), h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: JSON.stringify(r, null, 1) })));
+    return h("div", { class: "stack" }, ...parts);
+  }
+  function uaCatalog(c) {
+    return h("div", { class: "stack" },
+      h("div", { class: "table-scroll" }, h("table", { class: "table" }, h("thead", null, h("tr", null, h("th", { text: "Model" }), h("th", { text: "Price in / out per million tokens" }), h("th", { text: "Default effort" }), h("th", { text: "Forced tool choice" }))),
+        h("tbody", null, c.claude.map(m => h("tr", null, h("td", null, uaData(m.id)), h("td", null, uaNum("$" + m.price_per_mtok.input + " / $" + m.price_per_mtok.output)), h("td", null, uaData(m.default_effort)), h("td", null, uaData(m.forced_tool_choice))))))),
+      h("p", { class: "row t-caption muted" }, h("span", { text: "Source" }), uaData(c.source), h("span", { text: "read" }), uaNum(c.read)),
+      h("h3", { text: "Other names in the request" }),
+      h("p", { class: "row t-sm" }, h("bdi", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }), h("span", { class: "muted", text: "No price, limit or benchmark is shown for these." })),
+      h("ul", { class: "plist ua-names" }, c.unverified.map(m => h("li", { class: "t-sm" }, uaData(m.id)))));
+  }
+  function uaReviewed(c) {
+    const tone = { "rules-adopted": "ok", "not-installed": "idle", reference: "idle" };
+    const label = { "rules-adopted": "Rules adopted", "not-installed": "Not installed", reference: "Reference only" };
+    return h("ul", { class: "plist" }, c.reviewed.map(p => h("li", { class: "stack" },
+      h("p", { class: "row t-sm" }, uaData(p.repo), badge(tone[p.verdict], label[p.verdict]), h("a", { class: "t-caption", href: safeUrl(p.licence_file) || "#", target: "_blank", rel: "noopener noreferrer" }, uaData(p.licence))),
+      p.adopted ? h("p", { class: "t-caption muted" }, uaData(p.adopted)) : null)));
+  }
+  pages.universal = () => {
+    let mode = "request";
+    const resultBox = h("div", { class: "stack", "aria-live": "polite" }), catBox = h("div"), revBox = h("div");
+    const input = h("textarea", { class: "textarea ua-input", id: "f-ua-json", name: "agent-request", rows: 12, autocomplete: "off", dir: "ltr", lang: "en", translate: "no", spellcheck: false, maxLength: 200000 });
+    const setMode = m => { mode = m; input.value = JSON.stringify(UA_EXAMPLES[m], null, 1); };
+    const modes = seg("Mode", Object.entries(UA_MODE_LABEL), mode, setMode);
+    const runBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Check");
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true; runBtn.setAttribute("aria-busy", "true");
+      try {
+        let body; try { body = JSON.parse(input.value); } catch (e) { throw new Error("The request is not valid JSON."); }
+        resultBox.replaceChildren(uaResult(await store.universal(body)));
+      } catch (err) { resultBox.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not checked"), " ", h("span", { text: err.message }), err.detail ? h("code", { translate: "no", dir: "ltr", text: " " + err.detail }) : null)); }
+      finally { runBtn.disabled = false; runBtn.removeAttribute("aria-busy"); }
+    });
+    setMode(mode);
+    loadInto(catBox, () => store.universal({ mode: "catalog" }), c => { revBox.replaceChildren(uaReviewed(c)); return uaCatalog(c); });
+    return h("div", { class: "stack" },
+      pageHead("Universal agent", "Builds and checks a model request, routes between models and checks security findings, graph paths, new code and styles. It never sends anything: every send is a locked approval."),
+      sampleNote(),
+      h("div", { class: "grid-2" },
+        h("section", { class: "panel", "aria-labelledby": "h-ua" }, h("h2", { id: "h-ua", text: "Ask the agent" }), modes,
+          h("div", { class: "field" }, h("label", { htmlFor: "f-ua-json", text: "Request (JSON)" }), input), h("div", { class: "row" }, runBtn), resultBox),
+        h("div", { class: "stack" },
+          h("section", { class: "panel", "aria-labelledby": "h-ua-models" }, h("h2", { id: "h-ua-models", text: "Models" }), catBox),
+          h("section", { class: "panel", "aria-labelledby": "h-ua-rev" }, h("h2", { id: "h-ua-rev", text: "Reviewed outside projects" }),
+            h("p", { class: "t-caption muted", text: "Read-only review on 12 November 2026. Nothing was installed; only text rules were written into this code." }), revBox))));
+  };
   /* ── FOSS atlas and privacy shield (ADR-158): open-source replacements, a proved stack plan, the shield ── */
   const FA_CAT = { office: "Office", files: "Files", chat: "Team chat", analytics: "Web analytics", automation: "Automation", images: "Images", design: "Design", photos: "Photos", music: "Music",
     video: "Video", screen: "Screen recording", voice: "Voice", ai: "Local AI", scraping: "Page parsing", browser: "Browser", books: "Books", apis: "APIs", mcp: "MCP servers", "free-tiers": "Free tiers", skills: "Agent skills (ideas)" };
@@ -4100,7 +4201,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4181,7 +4282,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

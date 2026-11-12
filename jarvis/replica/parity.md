@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-158)
+# Parity: Jarvis (ADR-159)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -113,6 +113,10 @@ ADR-158 added two rows, both built and tested (`test-app.mjs` F40, `test-live.mj
 - the FOSS atlas with read licences;
 - the stack planner and privacy shield.
 
+ADR-159 added two rows, both built and tested (`test-app.mjs` F41, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- the universal agent's request builder and router;
+- its checks and the review register.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -121,12 +125,12 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (107 counted, must-haves 34 of 34 done)
+features 100.0  (109 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
 - overview                     100.0  (2 features)
-- agents                       100.0  (5 features)
+- agents                       100.0  (7 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (13 features)

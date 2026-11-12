@@ -218,6 +218,13 @@ PASS F40 the secret check shows the SHA-1 prefix and the secret is gone from the
 PASS F40 the shield replaces an e-mail address and a phone number
 PASS F40 three teaching personas, labelled
 PASS F40 a persona's picks can be used
+PASS F41 the catalog: unchecked names say so; 13 reviewed projects
+PASS F41 request: two locked steps, not sent, effort in output_config
+PASS F41 route: the breaker trips the weak candidate
+PASS F41 security: the verdicts
+PASS F41 graph: weakest-hop confidence
+PASS F41 design: the gradient becomes one colour
+PASS F41 bad JSON is refused in the page
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -226,4 +233,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-227 passed, 0 failed
+234 passed, 0 failed

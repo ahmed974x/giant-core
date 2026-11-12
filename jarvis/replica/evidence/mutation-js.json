@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-12T16:17:37.829Z",
+ "ranAt": "2026-11-12T22:35:05.678Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -812,6 +812,53 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/universal-agent.mjs",
+   "sha256": "54964f998e46ed5e036822a3b0be928fa96ee41f16f401f24b2b1f3df206445c",
+   "functions": [
+    "uaR",
+    "unit",
+    "list",
+    "text",
+    "buildRequest",
+    "scoreCandidate",
+    "route",
+    "relay",
+    "compress",
+    "triageOne",
+    "security",
+    "graph",
+    "lean",
+    "design",
+    "universalAgent"
+   ],
+   "mutants": 256,
+   "killed": 253,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "< -> <=",
+     "why": "route refuses a repeated id, so two ids are never equal and < and <= agree"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/foss-atlas.mjs",

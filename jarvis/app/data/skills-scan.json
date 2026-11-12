@@ -1,10 +1,10 @@
 {
-  "generated": "2026-11-12T16:17:19.686Z",
+  "generated": "2026-11-12T22:34:40.351Z",
   "summary": {
-    "scanned": 162,
+    "scanned": 166,
     "critical": 0,
     "high": 0,
-    "medium": 48,
+    "medium": 50,
     "low": 0,
     "suppressed": 6
   },
@@ -343,6 +343,22 @@
       "sev": "medium",
       "line": 48,
       "excerpt": "http://192.168.1.4",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-universal-agent/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1,
+      "excerpt": "http://127.0.0.2",
+      "msg": "Plain http:// to an outside host. Use https://."
+    },
+    {
+      "file": ".claude/skills/replica-universal-agent/tests/golden.json",
+      "rule": "SEC-HTTP",
+      "sev": "medium",
+      "line": 1,
+      "excerpt": "http://127.0.0.2",
       "msg": "Plain http:// to an outside host. Use https://."
     },
     {

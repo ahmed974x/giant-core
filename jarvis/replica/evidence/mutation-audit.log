@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-12T16:57:18Z",
- "javascriptRanAt": "2026-11-12T16:17:37.829Z",
+ "ranAt": "2026-11-12T23:07:40Z",
+ "javascriptRanAt": "2026-11-12T22:35:05.678Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 7304,
- "killed": 7304,
- "equivalent": 266,
+ "total": 7831,
+ "killed": 7831,
+ "equivalent": 269,
  "score": 100.0,
  "targets": [
   {
@@ -822,6 +822,53 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/universal-agent.mjs",
+   "sha256": "54964f998e46ed5e036822a3b0be928fa96ee41f16f401f24b2b1f3df206445c",
+   "functions": [
+    "uaR",
+    "unit",
+    "list",
+    "text",
+    "buildRequest",
+    "scoreCandidate",
+    "route",
+    "relay",
+    "compress",
+    "triageOne",
+    "security",
+    "graph",
+    "lean",
+    "design",
+    "universalAgent"
+   ],
+   "mutants": 256,
+   "killed": 253,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "< -> <=",
+     "why": "route refuses a repeated id, so two ids are never equal and < and <= agree"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/foss-atlas.mjs",
@@ -1940,6 +1987,39 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-universal-agent/universal_agent.py",
+   "sha256": "20ac8605b54cd99f4e1f3ba88f4bbcab01fafa82aaa77401385ecefc683c1f91",
+   "functions": [
+    "ua_r",
+    "_num",
+    "_is_int",
+    "_len16",
+    "_unit",
+    "_list",
+    "_text",
+    "is_loopback",
+    "_get",
+    "build_request",
+    "score_candidate",
+    "route",
+    "relay",
+    "compress",
+    "triage_one",
+    "security",
+    "graph",
+    "lean",
+    "design",
+    "universal_agent"
+   ],
+   "mutants": 274,
+   "killed": 274,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
    "file": ".claude/skills/replica-foss-atlas/foss_atlas.py",
    "sha256": "031ce353fb732738f71a705dcbe8f60f193870e0c17036e27a4202de51983da0",
    "functions": [
@@ -2233,5 +2313,5 @@
    ]
   }
  ],
- "sha256": "3f7245bff12c04a4cc97fa634f18dc2faae1b7c6b25decf01e598741eff056e0"
+ "sha256": "5bdd53c186afcce181a10b420a38f2064af9b911820c561fb2899cfc73e662b1"
 }

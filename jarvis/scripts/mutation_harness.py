@@ -519,6 +519,33 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_agent(f, work):
+    """ADR-159: the skill's golden file (180 requests, the server's answers) and the large limits built here."""
+    out = []
+    with open(os.path.join(REPO, ".claude", "skills", "replica-universal-agent", "tests", "golden.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+
+    def run(r):
+        try:
+            return json.loads(json.dumps(f["universal_agent"](r)))
+        except f["AgentError"] as e:
+            return {"error": str(e), "detail": e.detail}
+    for i, (r, w) in enumerate(zip(g["requests"], g["outputs"], strict=True)):
+        out.append((f"golden {i}", run(r) == w))
+    clean = ".a{color:#000;background-color:#fff;overflow-wrap:anywhere}"
+    big = [({"mode": "compress", "text": "a\n" * 100000}, lambda r: r.get("after_chars") == 2 and r.get("saved_percent") == 100),
+           ({"mode": "compress", "text": "a\n" * 100000 + "a"}, lambda r: r.get("detail") == "text"),
+           ({"mode": "graph", "from": "a", "to": "b", "edges": [{"from": "a", "to": "b", "kind": "EXTRACTED"}] * 2000}, lambda r: r.get("hops") == 1),
+           ({"mode": "graph", "from": "a", "to": "b", "edges": [{"from": "a", "to": "b", "kind": "EXTRACTED"}] * 2001}, lambda r: r.get("detail") == "edges"),
+           ({"mode": "lean", "units": [{"name": "u", "lines": 1, "rung": 2}] * 400}, lambda r: r.get("units") == 400 and r.get("lines") == 400),
+           ({"mode": "lean", "units": [{"name": "u", "lines": 1, "rung": 2}] * 401}, lambda r: r.get("detail") == "units"),
+           ({"mode": "design", "css": clean + " " * (100000 - len(clean))}, lambda r: r.get("verified") is True),
+           ({"mode": "design", "css": clean + " " * (100001 - len(clean))}, lambda r: r.get("detail") == "css")]
+    for i, (r, check) in enumerate(big):
+        out.append((f"limit {i}", check(run(r))))
+    return out
+
+
 def oracle_atlas(f, work):
     """ADR-158: the skill's golden file (the server's answers) and probes pinned from the reviewed code."""
     out = []
@@ -710,6 +737,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-universal-agent/universal_agent.py", "functions": ["ua_r", "_num", "_is_int", "_len16", "_unit", "_list", "_text", "is_loopback", "_get", "build_request", "score_candidate", "route", "relay", "compress", "triage_one", "security", "graph", "lean", "design", "universal_agent"], "oracle": oracle_agent, "with": [".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-foss-atlas/foss_atlas.py", "functions": ["_num", "fa_r", "_utf16_len", "entropy", "sha1_hex", "k_anonymity", "luhn_ok", "scrub_private", "plan_steps", "n8n_blueprint", "_is_num", "plan_foss_stack", "mulberry32", "_is_int", "personas", "atlas_view"], "oracle": oracle_atlas, "with": [".claude/skills/replica-formal-verify/state_prover.py"]},
     {"file": ".claude/skills/replica-hyper-studio/cinematic_presets.py", "functions": ["cp_r", "frame_of", "golden_rect", "golden_spiral", "spiral_eye", "mirror_point", "arcs_join", "arcs_round", "inside_frame", "closes_on_eye", "sweep_of", "composition", "_s", "cinematic_svg", "compile_cinematic", "preset_list"], "oracle": oracle_cinematic, "with": [".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", "functions": ["js_num", "mc_text", "_join_list", "parse_metacodes", "private_host", "sensitive_categories", "prove_option", "build_option", "js_json", "sha256_hex", "compile_metacodes"], "oracle": oracle_metacodes, "with": [".claude/skills/replica-reversal-engine/reversal_engine.py"]},

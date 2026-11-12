@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 131,
+ "files": 133,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 145
+  "low": 148
  },
  "byRule": {
   "D05": 27,
-  "M05": 116,
+  "M05": 119,
   "P21": 2
  },
- "sha256": "f2e02848c95d3a6c65e2da9d937937ff6873e8c63b24582da66aafd754664b1f",
+ "sha256": "76fcd679b2635e99c8f3a13a328cbbaac276947aaf65fed5d31ae1632ce03bd9",
  "findings": [
   {
    "rule": "D05",
@@ -228,6 +228,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 370,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 378,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1028,6 +1035,20 @@
    "line": 15,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-158-foss-atlas-privacy-shield.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 3,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-159-universal-agent.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 16,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-159-universal-agent.md"
   }
  ]
 }

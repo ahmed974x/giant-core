@@ -41,6 +41,7 @@ import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
 import { solutionLines, typesetSvg } from "./lib/math-typeset.mjs";
 import { compileCinematic, presetList } from "./lib/cinematic-presets.mjs";
 import { atlasView, planFossStack, scrubPrivate, personas as atlasPersonas } from "./lib/foss-atlas.mjs";
+import { universalAgent } from "./lib/universal-agent.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
@@ -406,6 +407,14 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = scrubPrivate(body.text); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "privacy.scrub", out.total + " replaced");
+          return send(200, out);
+        }
+        // ADR-159: the universal agent. It plans and checks; it never calls a model. A send is a locked step in the
+        // answer's plan (hosted endpoints by ADR-141, a local gateway as an install). The event log records the mode only.
+        if (req.method === "POST" && rest === "/agent/universal") {
+          let out;
+          try { out = universalAgent(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "agent.universal", out.mode);
           return send(200, out);
         }
         // ADR-157: cinematic presets: starting values for a shot, its optics, light colours healed for text and

@@ -869,6 +869,28 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator(".fa-entry input:checked").count()) === 3, "F40 a persona's picks can be used");
 }
 
+// F41: the universal agent (ADR-159).
+{
+  await go("#/universal");
+  await page.waitForSelector("#f-ua-json");
+  await page.waitForSelector("text=claude-haiku-5-5");
+  ok((await page.getByText("تعذر التحقق منها").count()) >= 1 && (await page.locator("#h-ua-rev ~ div > ul > li").count()) === 13, "F41 the catalog: unchecked names say so; 13 reviewed projects");
+  const run = async label => { await page.locator("#h-ua ~ .seg button", { hasText: label }).click(); await page.getByRole("button", { name: "Check" }).click(); await page.waitForTimeout(150); };
+  await run("Request");
+  ok((await page.locator("#h-ua ~ div .lock-line").count()) === 2 && await page.getByText("Not sent").isVisible() && (await page.locator("#h-ua ~ div pre").first().textContent()).includes('"output_config"'), "F41 request: two locked steps, not sent, effort in output_config");
+  await run("Route");
+  ok(await page.getByText("Breaker tripped").isVisible() && await page.getByText("qwen3-coder-next").first().isVisible(), "F41 route: the breaker trips the weak candidate");
+  await run("Security");
+  ok(await page.getByText("Needs validation").isVisible() && await page.getByText("Hardening note").isVisible(), "F41 security: the verdicts");
+  await run("Graph");
+  ok(await page.getByText("Path confidence (weakest hop)").isVisible(), "F41 graph: weakest-hop confidence");
+  await run("Design");
+  ok((await page.locator("#h-ua ~ div pre").first().textContent()).includes("background-color:#3b82f6") && await page.getByText("Corrected").isVisible(), "F41 design: the gradient becomes one colour");
+  await page.locator("#f-ua-json").fill("{ not json");
+  await page.getByRole("button", { name: "Check" }).click();
+  ok(await page.getByText("The request is not valid JSON.").isVisible(), "F41 bad JSON is refused in the page");
+}
+
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
 // mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.
@@ -883,6 +905,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
+    ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],
     ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });

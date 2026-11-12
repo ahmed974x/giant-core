@@ -101,6 +101,8 @@ PASS live: the calculation is in the event log
 PASS live: the formula is typeset beside the server's answer
 PASS live: a cinematic preset compiles on the server
 PASS live: the preset is in the event log
+PASS live: the request plan comes from the server, sends locked
+PASS live: the check is in the event log, mode only
 PASS live: the stack plan comes from the server, installs locked
 PASS live: the plan is in the event log, as a count
 PASS live: three plans from the server, sensitive steps locked
@@ -125,4 +127,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-126 passed, 0 failed
+128 passed, 0 failed

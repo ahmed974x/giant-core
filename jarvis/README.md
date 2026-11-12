@@ -373,6 +373,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **Personas:** seeded teaching examples, «مثال تعليمي — أرقام افتراضية», whose picks and prices can be used in the planner.
 - The API is `GET /api/w/:slug/atlas`, `POST /api/w/:slug/atlas/plan` with `{selectedIds, prices, secretCheck}`, `POST /api/w/:slug/privacy-shield/scrub` and `GET /api/w/:slug/atlas/personas`. The same engine runs with `python3 .claude/skills/replica-foss-atlas/foss_atlas.py`.
 
+## Universal agent (ADR-159)
+
+- **`#/universal`:** pick a mode, edit the JSON and press Check. Request builds a Claude Messages body and lists the fields it dropped; Route ranks models by the six-factor score and trips the breaker below 0.20; Relay writes a handoff summary; Compress drops repeated lines; Security gives each finding a verdict; Graph finds a path and its weakest hop; Lean applies the ladder; Design runs the reversal engine.
+- It sends nothing. Every send is a locked step «بانتظار الموافقة»: a hosted model by ADR-141, and a local gateway such as OmniRoute also as an install that needs a review.
+- The Models panel shows the five Claude models from the claude-api skill's table; other model names show «تعذر التحقق منها». The review panel lists the 13 outside projects read on 2026-11-12, with their licence files; none is installed.
+- The API is `POST /api/w/:slug/agent/universal` with `{mode, …}`. The same engine runs with `python3 .claude/skills/replica-universal-agent/universal_agent.py`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

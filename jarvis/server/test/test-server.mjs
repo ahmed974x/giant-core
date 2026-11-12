@@ -41,6 +41,7 @@ import { compileMetacodes, parseMetacodes } from "../lib/prompt-metacodes.mjs";
 import { layout as mtLayout, solutionLines, boxesHold, typesetSvg, integralBox, textBox as mtText } from "../lib/math-typeset.mjs";
 import { compileCinematic, presetList, CINEMATIC_PRESETS, goldenSpiral, goldenRect, spiralEye } from "../lib/cinematic-presets.mjs";
 import { atlasView as faAtlas, planFossStack, scrubPrivate, personas as faPersonas, sha1Hex, kAnonymity } from "../lib/foss-atlas.mjs";
+import { universalAgent, UA_WEIGHTS, UA_REVIEWED } from "../lib/universal-agent.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -826,6 +827,22 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-159: the universal agent through the server, Ahmad's Fable request with the fields the model refuses.
+  const rq = await post("/api/w/jarvis-studio/agent/universal", { mode: "request", model: "claude-fable-5-2", temperature: 0.2, thinking: { type: "enabled", budget_tokens: 2000 }, effort: "xhigh", gateway: "http://localhost:20128" });
+  ok(rq.status === 200 && rq.body.body.output_config.effort === "xhigh" && !("temperature" in rq.body.body) && !("thinking" in rq.body.body) && rq.body.dropped.join() === "temperature,thinking" && rq.body.sent === false, tag("agent: effort goes in output_config, refused fields are dropped, nothing is sent"), rq.body);
+  const locked = rq.body.plan.filter(s => s.locked);
+  ok(locked.length === 2 && locked.every(s => s.gate === "approval" && s.status === "pending_approval") && locked.map(s => s.category).join() === "install,outbound" && rq.body.proof.verified, tag("agent: the local gateway is a locked install and the send a locked outbound step, proved"));
+  const rt = await post("/api/w/jarvis-studio/agent/universal", { mode: "route", candidates: [{ id: "claude-haiku-5-5", health: 1, quota: 1, cost: 0.1, speed: 1, fit: 1, stability: 1 }, { id: "flaky", health: 0.1, quota: 0, cost: null, speed: 0, fit: 0, stability: 0 }] });
+  ok(rt.status === 200 && rt.body.chosen === "claude-haiku-5-5" && rt.body.tripped.join() === "flaky" && rt.body.send.startsWith("locked"), tag("agent: the router trips the breaker below 0.20 and a hosted pick stays locked"), rt.body);
+  const cat = await post("/api/w/jarvis-studio/agent/universal", { mode: "catalog" });
+  ok(cat.body.reviewed.length === 13 && cat.body.reviewed.every(p => p.installed === false && p.read === "2026-11-12") && cat.body.unverified.every(m => m.source === null && m.note === "تعذر التحقق منها"), tag("agent: 13 reviewed projects, none installed; unchecked models carry no numbers"));
+  const bad = await post("/api/w/jarvis-studio/agent/universal", { mode: "request", model: "gpt-x" });
+  ok(bad.status === 400 && bad.body.detail === "gpt-x" && (await post("/api/w/jarvis-studio/agent/universal", { mode: "warp" })).status === 400, tag("agent: an unknown model and an unknown mode are refused"), bad.body);
+  const aev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(aev.some(e => e.kind === "agent.universal" && e.target === "request") && aev.some(e => e.kind === "agent.universal" && e.target === "route") && !JSON.stringify(aev).includes("flaky"), tag("agent: the event log keeps the mode only"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -956,6 +973,13 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-159: the universal agent, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-universal-agent", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return universalAgent(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  ok(g.requests.length === 180 && g.requests.every((r, i) => JSON.stringify(run(r)) === JSON.stringify(g.outputs[i])), "agent: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok(Math.abs(Object.values(UA_WEIGHTS).reduce((a, b) => a + b, 0) - 1) < 1e-12 && UA_REVIEWED.length === 13 && UA_REVIEWED.every(p => p.installed === false), "agent: the six weights sum to 1 and no reviewed project is installed");
 }
 // ADR-158: the FOSS atlas and privacy shield, pure: the server's answers equal the skill's golden file.
 {
