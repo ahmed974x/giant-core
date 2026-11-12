@@ -187,3 +187,13 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36
 - `atlas-list-*`: `#/atlas`, 26 entries by category, each with what it replaces, its licence as its own file states it (linked, read 2026-11-12) and its status; the seven agent-skill projects as ideas awaiting a security review;
 - `atlas-plan-*`: Nextcloud, Matomo and n8n with yearly prices: data sovereignty 100% [INFERENCE], savings $4,200 from the prices typed, each install and n8n's outbound link «بانتظار الموافقة», [VERIFIED], and the secret check showing only the SHA-1 prefix and entropy;
 - `atlas-shield-personas-*`: the privacy shield replacing an e-mail address, a phone number and an IBAN, and the seeded teaching personas «مثال تعليمي — أرقام افتراضية».
+
+## ADR-159 (2026-11-12)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (60 shots):
+
+- `agent-request-*`: `#/universal`, a Fable request with temperature and budget thinking: effort moved to `output_config.effort`, the removed fields listed, the local gateway install and the send each «بانتظار الموافقة», [VERIFIED], not sent;
+- `agent-route-*`: the six-factor ranking tagged [INFERENCE], with the breaker tripped below 0.20;
+- `agent-security-*`: the verdicts confirmed, needs validation and hardening note;
+- `agent-models-*`: the five Claude models from the claude-api skill's table, and 17 other names marked «تعذر التحقق منها»;
+- `agent-review-*`: the 13 outside projects reviewed read-only, each with its licence file; rules adopted or not installed.
