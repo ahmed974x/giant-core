@@ -824,6 +824,30 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator(".council-card").count()) === 3 && (await page.locator(".council-card .lock-line").count()) === 3 && await page.getByText("Do the smallest thing that works, test it, and stop.").isVisible(), "F38 the Math lab: EL10 adds plain words; email is a locked approval");
 }
 
+// F39: the typeset formula in the Math lab and the cinematic presets in the hyper studio (ADR-157).
+{
+  await go("#/math");
+  await page.locator("#f-umtask").selectOption("calculus");
+  await page.locator("form button[type=submit]").click();
+  await page.waitForSelector("#h-um-formula");
+  const texts = await page.locator(".mt-svg text").allTextContents();
+  ok(texts.includes("d") && texts.includes("3.5") && texts.includes("0.5") && (await page.locator(".mt-svg path.mt-stroke").count()) >= 4 && (await page.locator(".mt-svg rect.mt-rule").count()) === 1, "F39 the calculus request is typeset: d/dx as a fraction, the integral with its limits, brackets as strokes");
+  const fBox = await page.locator("#h-um-formula").boundingBox(), pBox = await page.locator("#h-um-plot").boundingBox();
+  ok(fBox.y < pBox.y && (await page.locator(".mt-fig").getAttribute("role")) === "img", "F39 the formula sits above the plot, as one labelled image");
+  await page.locator("#f-umtask").selectOption("linear_algebra");
+  await page.locator("form button[type=submit]").click();
+  await page.waitForTimeout(300);
+  ok((await page.locator(".mt-svg path.mt-stroke").count()) === 6, "F39 the matrix, b and x are typeset with square brackets");
+  await go("#/hyper");
+  await page.waitForSelector(".cine-svg");
+  ok((await page.locator("#f-cine option").count()) === 21 && (await page.locator("#f-cine optgroup").count()) === 4 && (await page.locator("#f-cine").inputValue()) === "golden_hour_5200k", "F39 21 presets in four groups, golden hour first");
+  ok((await page.locator(".cine-svg path.cine-spiral").count()) === 1 && (await page.locator(".cine-svg circle.cine-eye").count()) === 1 && (await page.locator(".cine-svg linearGradient, .cine-svg radialGradient, .cine-svg text").count()) === 0, "F39 the composition: a spiral, the subject point, no gradient and no text in the SVG");
+  ok((await page.locator(".cine-lights li").count()) === 3 && await page.locator(".cine-lights").getByText("5200 K", { exact: true }).isVisible(), "F39 three lights with their Kelvin and the colour healed for text");
+  await page.locator("#f-cine").selectOption("desert_dusk");
+  await page.waitForTimeout(300);
+  ok(await page.locator(".cine-lights").getByText("3800 K", { exact: true }).isVisible() && await page.getByText("112.963", { exact: true }).isVisible(), "F39 another preset changes the lights and the hyperfocal distance");
+}
+
 // F33: the bilingual purity gate (ADR-151). Every screen, after all the flows above, in Arabic and in
 // English: Arabic mode shows no English outside code, marked English data and isolated names; English
 // mode shows no Arabic outside the language button, the locked marks, the teaching label and Arabic data.
@@ -836,6 +860,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click(); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
+    ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
+    ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));

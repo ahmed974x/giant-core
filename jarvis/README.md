@@ -359,6 +359,12 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **What comes back:** three plans (the fastest slice, tests and proof first, self-hosted on this computer), each proved; a payment, deploy, permission, install or outbound step is a locked approval marked «بانتظار الموافقة» in every plan. KILLCRITIC adds the gate findings with their fixes, X10THINK four stages, EL10 one plain sentence per plan and /HUMAN one paragraph.
 - The API is `POST /api/w/:slug/metacodes/compile` with `{prompt, codes, lang}`. The same engine runs with `python3 .claude/skills/replica-prompt-metacodes/prompt_metacodes.py request.json`, and gives the same SHA-256.
 
+## Typeset formulas and cinematic presets (ADR-157)
+
+- **`#/math`:** a «Formula» panel above the steps and the plot shows the request typeset with box and glue: f(x), its derivative as d/dx and the integral with its limits, dy/dx, or the matrix with b and x. The API answer carries the same drawing as `formula_svg`.
+- **`#/hyper`:** the «Cinematic presets» panel. Pick one of 21 presets to see its composition (golden lines, the spiral and the subject point), lens, focus range, hyperfocal distance, field of view and three lights. Each light's colour is shown as text that passes WCAG 4.5 and APCA Lc 60 on the panel. The values are starting points, marked [INFERENCE].
+- The API is `GET /api/w/:slug/studio/cinematic/presets` and `POST /api/w/:slug/studio/cinematic` with `{preset, theme}`. The same presets run with `python3 .claude/skills/replica-hyper-studio/cinematic_presets.py run '{"preset":"desert_dusk"}'`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

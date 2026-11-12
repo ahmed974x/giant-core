@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-07T22:26:49.175Z",
+ "ranAt": "2026-11-12T15:26:49.286Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -755,6 +755,63 @@
      "why": "as above"
     }
    ]
+  },
+  {
+   "file": "jarvis/server/lib/math-typeset.mjs",
+   "sha256": "ed0cb6cc6881296d2b619b8a3353d77a408fa1d90210746026111220858cd541",
+   "functions": [
+    "textWidth",
+    "textBox",
+    "glue",
+    "moveItem",
+    "hbox",
+    "fracBox",
+    "supBox",
+    "subBox",
+    "delimBox",
+    "sqrtBox",
+    "numText",
+    "layout",
+    "integralBox",
+    "matrixBox",
+    "solutionLines",
+    "boxesHold",
+    "typesetSvg"
+   ],
+   "mutants": 277,
+   "killed": 277,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/cinematic-presets.mjs",
+   "sha256": "ef7be37994e700450f2ccec164171da077bf47bf1ee7d879e638fec7010881db",
+   "functions": [
+    "frameOf",
+    "goldenRect",
+    "goldenSpiral",
+    "spiralEye",
+    "mirrorPoint",
+    "arcsJoin",
+    "arcsRound",
+    "insideFrame",
+    "closesOnEye",
+    "composition",
+    "sweepOf",
+    "cinematicSvg",
+    "compileCinematic",
+    "presetList"
+   ],
+   "mutants": 184,
+   "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
   },
   {
    "file": "jarvis/server/lib/prompt-metacodes.mjs",

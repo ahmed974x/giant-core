@@ -1,3 +1,10 @@
+test_all_verify (test_cinematic_presets.Presets.test_all_verify) ... ok
+test_lights_readable (test_cinematic_presets.Presets.test_lights_readable) ... ok
+test_no_code_is_run (test_cinematic_presets.Presets.test_no_code_is_run) ... ok
+test_refusals (test_cinematic_presets.Presets.test_refusals) ... ok
+test_spiral_converges (test_cinematic_presets.Presets.test_spiral_converges) ... ok
+test_svg_has_no_text_or_gradient (test_cinematic_presets.Presets.test_svg_has_no_text_or_gradient) ... ok
+test_golden (test_cinematic_presets.SameAsServer.test_golden) ... ok
 test_kelvin (test_hyper_studio.Optics.test_kelvin) ... ok
 test_portrait (test_hyper_studio.Optics.test_portrait) ... ok
 test_astar_matches_bfs (test_hyper_studio.Physics.test_astar_matches_bfs) ... ok
@@ -12,6 +19,6 @@ test_svg_is_numbers_only (test_hyper_studio.Shapes.test_svg_is_numbers_only) ...
 test_tesseract_and_16cell (test_hyper_studio.Shapes.test_tesseract_and_16cell) ... ok
 
 ----------------------------------------------------------------------
-Ran 12 tests in 0.071s
+Ran 19 tests in 0.134s
 
 OK

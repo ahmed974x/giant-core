@@ -2453,6 +2453,26 @@
   "Every plan was proved: each sensitive step is a locked approval.": "كل خطة مُبرهَنة: كل خطوة حساسة موافقة مقفلة.",
   "Press a code or type it in the request. ALT3 gives three plans, KILLCRITIC checks the gates, X10THINK shows four stages, EL10 and /HUMAN say it plainly. It always answers; money, publishing, permissions, installs and outbound messages stay locked approvals.": "اضغط كوداً أو اكتبه في الطلب. ALT3 يعطي ثلاث خطط، و KILLCRITIC يفحص البوابات، و X10THINK يعرض أربع مراحل، و EL10 و /HUMAN يقولانها ببساطة. يجيب دائماً؛ والمال والنشر والصلاحيات والتثبيت والرسائل الخارجية تبقى موافقات مقفلة.",
   "The request must be text.": "يجب أن يكون الطلب نصاً.",
-  "metacodes compile": "تحويل أكواد الأوامر"
+  "metacodes compile": "تحويل أكواد الأوامر",
+  "Formula": "الصيغة",
+  "The request, typeset": "الطلب منضّداً",
+  "Cinematic presets": "قوالب سينمائية",
+  "Angles": "الزوايا",
+  "Lighting": "الإضاءة",
+  "Atmosphere": "الأجواء",
+  "Art": "الفن",
+  "Healed for text": "عولج ليُقرأ نصاً",
+  "Readable as is": "مقروء كما هو",
+  "Starting values for a shot, not measurements. The optics, colours and composition are computed.": "قيم بداية للقطة وليست قياسات. البصريات والألوان والتكوين محسوبة.",
+  "Lens": "العدسة",
+  "Aspect ratio": "نسبة الأبعاد",
+  "In focus": "المسافة الحادة",
+  "Each quarter circle of the spiral starts where the last one ended.": "كل ربع دائرة في الحلزون يبدأ حيث انتهى الذي قبله.",
+  "Each arc's ends lie on its circle.": "طرفا كل قوس يقعان على دائرته.",
+  "The spiral and the subject point stay inside the frame.": "الحلزون ونقطة الموضوع داخل الإطار.",
+  "The spiral closes on the subject point, where the golden rectangle's diagonals cross.": "ينغلق الحلزون على نقطة الموضوع، حيث يتقاطع قطرا المستطيل الذهبي.",
+  "Each light's colour, as text on the surface, passes WCAG 4.5 and APCA Lc 60 (healed where needed, hue kept).": "لون كل ضوء، نصاً على السطح، يجتاز WCAG 4.5 و APCA Lc 60 (يُعالج عند الحاجة مع حفظ درجة اللون).",
+  "Choose one of the cinematic presets.": "اختر أحد القوالب السينمائية.",
+  "cinematic compile": "قالب سينمائي"
  }
 }

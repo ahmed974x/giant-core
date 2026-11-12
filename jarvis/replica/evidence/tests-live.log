@@ -98,6 +98,9 @@ PASS live: the RK4 answer and its plot come from the server
 PASS live: the calculation is in the event log
 PASS live: game physics comes from the server
 PASS live: the calculation is in the event log
+PASS live: the formula is typeset beside the server's answer
+PASS live: a cinematic preset compiles on the server
+PASS live: the preset is in the event log
 PASS live: three plans from the server, sensitive steps locked
 PASS live: the compile is in the event log
 PASS live: the contrast heal is applied and logged on the server
@@ -120,4 +123,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-121 passed, 0 failed
+124 passed, 0 failed

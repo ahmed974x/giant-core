@@ -204,6 +204,13 @@ PASS F38 three plans; payment and deploy are locked approvals in each, verified
 PASS F38 X10THINK and /HUMAN typed in the request add the stages and the paragraph
 PASS F38 the Studio critic heals the accent on black and names the gradient
 PASS F38 the Math lab: EL10 adds plain words; email is a locked approval
+PASS F39 the calculus request is typeset: d/dx as a fraction, the integral with its limits, brackets as strokes
+PASS F39 the formula sits above the plot, as one labelled image
+PASS F39 the matrix, b and x are typeset with square brackets
+PASS F39 21 presets in four groups, golden hour first
+PASS F39 the composition: a spiral, the subject point, no gradient and no text in the SVG
+PASS F39 three lights with their Kelvin and the colour healed for text
+PASS F39 another preset changes the lights and the hyperfocal distance
 PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
@@ -212,4 +219,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-213 passed, 0 failed
+220 passed, 0 failed

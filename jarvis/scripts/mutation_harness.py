@@ -519,6 +519,50 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_cinematic(c, work):
+    """ADR-157: the skill's golden file (the server's answers) and probes pinned from the reviewed code."""
+    out = []
+    with open(os.path.join(REPO, ".claude", "skills", "replica-hyper-studio", "tests", "golden-cinematic.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+    HE = c["HyperError"]
+    for i, (req, want) in enumerate(zip(g["requests"], g["outputs"], strict=True)):
+        try:
+            got = c["compile_cinematic"](req)
+        except HE as e:
+            got = {"error": str(e), "detail": e.detail}
+        out.append((f"golden {i}", json.loads(json.dumps(got)) == want))
+    out.append(("golden list", json.loads(json.dumps(c["preset_list"]())) == g["list"]))
+
+    def H(x):
+        return hashlib.sha256(json.dumps(x, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+    def E(f):
+        try:
+            f()
+            return None
+        except HE as e:
+            return str(e) + "|" + str(e.detail)
+
+    out.append(('round', repr([c["cp_r"](v, d) for v, d in [(1.005, 2), (-0.004, 2), (2.5, 0), (-2.5, 0), (1.23456, 3), (7.0, 2), (-1e-9, 2), (0.125, 2)]]) == '[1, 0, 3, -2, 1.235, 7, 0, 0.13]'))
+    out.append(('frame', repr([c["frame_of"](a) for a in [[2.39, 1], [16, 9], [1, 1], [4, 5], [3, 2]]]) == "[{'w': 640, 'h': 267.78}, {'w': 640, 'h': 360}, {'w': 640, 'h': 640}, {'w': 640, 'h': 800}, {'w': 640, 'h': 426.67}]"))
+    out.append(('golden', repr([c["golden_rect"](640, 360), c["golden_rect"](640, 640), c["golden_rect"](640, 100), c["PHI"]]) == "[{'x': 28.753882025018925, 'y': 0.0, 'w': 582.4922359499622, 'h': 360.0}, {'x': 0.0, 'y': 122.22912360003366, 'w': 640, 'h': 395.5417527999327}, {'x': 239.09830056250524, 'y': 0.0, 'w': 161.80339887498948, 'h': 100.0}, 1.618033988749895]"))
+    out.append(('spiral', H([c["golden_spiral"](c["golden_rect"](640, 360)), c["golden_spiral"](c["golden_rect"](640, 800), 3), c["golden_spiral"]({"x": 0, "y": 0, "w": 8, "h": 5}, 5)]) == '8a082ddff042db96ebe09714b21544cd8ed7bde325a9c49b400f8de725c47cab'))
+    out.append(('eye', repr([c["spiral_eye"](c["golden_rect"](640, 360)), c["spiral_eye"]({"x": 10, "y": 20, "w": 300, "h": 200}), c["spiral_eye"]({"x": 0, "y": 0, "w": 2, "h": 1})]) == '[[450.2492235949962, 260.4984471899924], [235.0, 170.0], [1.3333333333333333, 0.6666666666666666]]'))
+    out.append(('mirror', repr([c["mirror_point"]([10, 20], k, 100, 50) for k in ("tl", "tr", "bl", "br")]) == '[[90, 30], [10, 30], [90, 20], [10, 20]]'))
+    out.append(('checks', repr((lambda a: [c["arcs_join"](a), c["arcs_round"](a), c["arcs_join"]([]), c["arcs_round"]([])])(c["golden_spiral"](c["golden_rect"](640, 360))["arcs"])) == '[True, True, True, True]'))
+    out.append(('edges', repr((lambda R, F, arc: [c["arcs_round"]([arc(1 + R, 1)]), c["arcs_round"]([arc(1, 1 + R)]), c["arcs_round"]([arc(1 + 2 * R, 1)]), c["arcs_round"]([arc(1, 1 + 2 * R)]), c["arcs_round"]([arc(1 - R, 1)]), c["arcs_round"]([arc(1, 1 - 2 * R)]), c["arcs_join"]([{"to": [1, 2]}, {"from": [1, 2]}]), c["arcs_join"]([{"to": [1, 2]}, {"from": [1 + F, 2]}]), c["arcs_join"]([{"to": [1, 2]}, {"from": [1, 2 + F]}]), c["inside_frame"]([[-F, 0]], 1, 1), c["inside_frame"]([[1 + F, 0]], 1, 1), c["inside_frame"]([[0, -F]], 1, 1), c["inside_frame"]([[0, 1 + F]], 1, 1), c["inside_frame"]([[-2 * F, 0]], 1, 1), c["inside_frame"]([[1 + 2 * F, 0]], 1, 1), c["inside_frame"]([[0, -2 * F]], 1, 1), c["inside_frame"]([[0, 1 + 2 * F]], 1, 1), c["inside_frame"]([], 1, 1), c["CP_EPS"]])(2 ** -30, 2 ** -20, lambda fx, tx: {"from": [fx, 0], "to": [tx, 0], "c": [0, 0], "r": 1})) == "[True, True, False, False, True, False, True, False, False, True, True, True, True, False, False, False, False, True, {'radius': 9.313225746154785e-10, 'frame': 9.5367431640625e-07}]"))
+    out.append(('radius 2', repr([c["arcs_round"]([{"from": [2 + 2 ** -29, 0], "to": [2, 0], "c": [0, 0], "r": 2}]), c["arcs_round"]([{"from": [2, 0], "to": [2 + 2 ** -29, 0], "c": [0, 0], "r": 2}]), c["arcs_round"]([{"from": [2 + 2 ** -28, 0], "to": [2, 0], "c": [0, 0], "r": 2}])]) == '[True, True, False]'))
+    out.append(('closes', repr([c["closes_on_eye"]({"x": 1, "y": 1, "w": 0.5, "h": 0.5}, [1, 1], 100), c["closes_on_eye"]({"x": 1, "y": 1, "w": 1, "h": 0}, [1, 1], 100), c["closes_on_eye"]({"x": 1, "y": 1, "w": 1.01, "h": 0}, [1, 1], 100), c["closes_on_eye"]({"x": 2.01, "y": 1, "w": 0, "h": 0}, [1, 1], 100), c["closes_on_eye"]({"x": 1, "y": 2.01, "w": 0, "h": 0}, [1, 1], 100), c["closes_on_eye"]({"x": 1, "y": 1, "w": 0, "h": 1.01}, [1, 1], 100), c["closes_on_eye"]({"x": 0.2, "y": 1, "w": 0.8, "h": 0}, [1, 1], 100), c["closes_on_eye"]({"x": 1, "y": 0.2, "w": 0, "h": 0.8}, [1, 1], 100)]) == '[True, True, False, False, False, False, True, True]'))
+    out.append(('sweep', repr([c["sweep_of"]({"from": [1, 0], "to": [0, 1], "c": [0, 0]}), c["sweep_of"]({"from": [0, 1], "to": [1, 0], "c": [0, 0]}), c["sweep_of"]({"from": [1, 0], "to": [2, 0], "c": [0, 0]})]) == '[1, 0, 0]'))
+    out.append(('composition', H([c["composition"](p) for p in c["CINEMATIC_PRESETS"]]) == '5493515770a5b4c5c123757d1865b89f1460d3158fc3d42e24acd5e45ff9305d'))
+    out.append(('svg', repr([hashlib.sha256(x.encode()).hexdigest() for x in [c["cinematic_svg"](c["composition"](c["CINEMATIC_PRESETS"][0]), {"near_m": 1, "far_m": 3}, 2, "dark"), c["cinematic_svg"](c["composition"](c["CINEMATIC_PRESETS"][1]), {"near_m": 30, "far_m": None}, 60, "light"), c["cinematic_svg"](c["composition"](c["CINEMATIC_PRESETS"][2]), {"near_m": 9, "far_m": 9}, 2, "x"), c["cinematic_svg"](c["composition"](c["CINEMATIC_PRESETS"][3]), {"near_m": 0.1, "far_m": 50}, 0.3, "dark")]]) == "['0d7b0c1edd700ee7848d0be194bc55412c96981c67f23a04ff3d77071337b67c', '8ae5747996e446846de1b1a8a8e65e0b2811d93f1c3dba87fcd0a72627b5ee63', '583498a3e5cb7f2e6a03f38ef7c2172f8efc6f7a1e98d197c1f9f7578e7612ac', '013ff51bd9e46c5dd00b6c67c2e6252c0e591a298a0bea7ae6ddad30225a8bc8']"))
+    out.append(('s', repr([c["_s"](v) for v in [1, 1.5, 0.0, -2, 1e21, 640]]) == "['1', '1.5', '0', '-2', '1e+21', '640']"))
+    out.append(('compile odd', repr([(lambda r: (lambda o: [o["theme"], o["lens"]["subject_m"], H(o)])(c["compile_cinematic"](r)))(r) if ok else None for r, ok in [({"preset": "drone_aerial", "theme": "LIGHT"}, True), ({"preset": "drone_aerial", "subject_distance_m": None}, True), (None, False)]]) == "[['dark', 60, 'f86e97e0472b6dd2da1c8257034441d9e33e230aadef20d5508b3f27038ca267'], ['dark', 60, 'f86e97e0472b6dd2da1c8257034441d9e33e230aadef20d5508b3f27038ca267'], None]"))
+    out.append(('refusals', repr([E(lambda r=r: c["compile_cinematic"](r)) for r in [None, "x", {"preset": 5}, {"preset": "warp"}, {"preset": "drone_aerial", "subject_distance_m": 0}]]) == "['Choose one of the cinematic presets.|', 'Choose one of the cinematic presets.|', 'Choose one of the cinematic presets.|', 'Choose one of the cinematic presets.|warp', 'A value is out of range.|subject_distance_m: 0.05–10000']"))
+    out.append(('list', H(c["preset_list"]()) == '6c23e2ff83610ecbc9b25cb7aae0ac9c4f4ebc1433416033e9822fa080303e85'))
+    return out
+
+
 def oracle_metacodes(ns, work):
     """ADR-156: the skill's golden file (the server's answers) and probes pinned from the reviewed code."""
     out = []
@@ -610,6 +654,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-hyper-studio/cinematic_presets.py", "functions": ["cp_r", "frame_of", "golden_rect", "golden_spiral", "spiral_eye", "mirror_point", "arcs_join", "arcs_round", "inside_frame", "closes_on_eye", "sweep_of", "composition", "_s", "cinematic_svg", "compile_cinematic", "preset_list"], "oracle": oracle_cinematic, "with": [".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", "functions": ["js_num", "mc_text", "_join_list", "parse_metacodes", "private_host", "sensitive_categories", "prove_option", "build_option", "js_json", "sha256_hex", "compile_metacodes"], "oracle": oracle_metacodes, "with": [".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-reversal-engine/reversal_engine.py", "functions": ["correction_vector", "sealed", "reverse_and_correct_plan", "_rgb_hue", "hue_of", "gradient_colours", "is_ai_gradient", "_fix_gradients", "css_of", "css_blocks", "glass_selectors", "_add_css", "reverse_and_correct_template", "parse_colour", "to_hex", "rgb_to_oklch", "oklch_to_rgb", "in_gamut", "wcag_ratio", "apca_lc", "heal_oklch_contrast", "_fix_contrast", "_num", "_round2", "_oklch_text", "measure", "passes"], "oracle": oracle_reversal, "with": []},
 ]

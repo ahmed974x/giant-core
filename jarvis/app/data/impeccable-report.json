@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 126,
+ "files": 129,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 140
+  "low": 142
  },
  "byRule": {
   "D05": 27,
-  "M05": 112,
-  "P21": 1
+  "M05": 113,
+  "P21": 2
  },
- "sha256": "82545b262e1d7e2b29826b03194a71fd4e3204f099c426cd4bcdb68165481401",
+ "sha256": "080fc098928eae0792803597f8afc32b2655fa4e90a4fc5cc927e3404de96de1",
  "findings": [
   {
    "rule": "D05",
@@ -993,6 +993,20 @@
    "line": 15,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-156-prompt-metacodes.md"
+  },
+  {
+   "rule": "P21",
+   "severity": "low",
+   "line": 11,
+   "message": "Repeated word.",
+   "file": "docs/adr/ADR-157-math-typesetter-cinematic-presets.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 15,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-157-math-typesetter-cinematic-presets.md"
   }
  ]
 }

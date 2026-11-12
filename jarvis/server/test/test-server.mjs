@@ -38,6 +38,8 @@ import { parseColour, toHex, rgbToOklch, oklchToRgb, wcagRatio, apcaLc, healOklc
 import { solve as umSolve, localize as umLocalize, parse as umParse, show as umShow, derivative as umDerivative, evaluate as umEvaluate, simplify as umSimplify, isPrime as umIsPrime, factorize as umFactorize, crt as umCrt, egcd as umEgcd, gaussSolve, jacobiEigen, brent as umBrent, adaptiveSimpson, rk4 as umRk4, MathError, UM_AR } from "../lib/universal-math.mjs";
 import { hyper as hsHyper, hyperSvg, hypercube, sixteenCell, e8Roots, coxeterPlane, rings as hsRings, dot as hsDot, kelvinToColour, astar, bfsLength, verlet, rotatePlane, HyperError } from "../lib/hyper-studio.mjs";
 import { compileMetacodes, parseMetacodes } from "../lib/prompt-metacodes.mjs";
+import { layout as mtLayout, solutionLines, boxesHold, typesetSvg, integralBox, textBox as mtText } from "../lib/math-typeset.mjs";
+import { compileCinematic, presetList, CINEMATIC_PRESETS, goldenSpiral, goldenRect, spiralEye } from "../lib/cinematic-presets.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -784,6 +786,22 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-157: the Math lab answer carries the request typeset as SVG; the cinematic presets through the server.
+  const ms = await post("/api/w/jarvis-studio/math/solve", { task: "calculus", expression: "x^3 - 6*x^2 + 11*x - 6", variable: "x", interval: [0.5, 3.5], theme: "light" });
+  ok(ms.status === 200 && /^<svg [^>]*viewBox="0 0 [\d.]+ [\d.]+"/.test(ms.body.formula_svg) && !/<script|on\w+=|gradient/i.test(ms.body.formula_svg) && ms.body.formula_svg.includes('fill="#16181d"') && (ms.body.formula_svg.match(/<text /g) || []).length > 20, tag("typeset: the calculus answer carries the request as SVG, light ink, no script or gradient"), ms.body && String(ms.body.formula_svg).slice(0, 200));
+  const nb = await post("/api/w/jarvis-studio/math/solve", { task: "bayes", prior: 0.01, sensitivity: 0.9, false_positive: 0.05 });
+  ok(nb.status === 200 && nb.body.formula_svg === undefined, tag("typeset: a task with no formula has no SVG"));
+  const pl = await j("/api/w/jarvis-studio/studio/cinematic/presets");
+  ok(pl.status === 200 && pl.body.length === 21 && ["angles", "lighting", "atmosphere", "art"].every(c => pl.body.some(p => p.category === c)), tag("cinematic: 21 presets in four groups"), pl.body && pl.body.length);
+  const gh = await post("/api/w/jarvis-studio/studio/cinematic", { preset: "golden_hour_5200k", theme: "light" });
+  ok(gh.status === 200 && gh.body.verified && gh.body.lights.key.kelvin === 5200 && gh.body.accent === "#0b5ed7" && gh.body.labels.key.healed && gh.body.labels.key.wcag >= 4.5 && gh.body.labels.key.apca >= 60 && gh.body.tag === "[INFERENCE]" && !/gradient|<text|<script/i.test(gh.body.svg), tag("cinematic: golden hour in light, lights healed for text, verified, SVG with no gradient or text"), gh.body && gh.body.checks);
+  const cb = await post("/api/w/jarvis-studio/studio/cinematic", { preset: "warp" });
+  ok(cb.status === 400 && cb.body.detail === "warp" && (await post("/api/w/jarvis-studio/studio/cinematic", { preset: "macro_closeup", subject_distance_m: 0.05 })).status === 400, tag("cinematic: an unknown preset and a subject inside the lens are refused"), cb.body);
+  const cev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(Array.isArray(cev) && cev.some(e => e.kind === "cinematic.compile" && e.target === "golden_hour_5200k light verified"), tag("cinematic: each compile is an event in the log"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -914,6 +932,29 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-157: the typesetter and the cinematic presets, pure.
+{
+  const exprs = ["x", "-x", "x - -x", "2x(x+1)^3", "sin(x)/sqrt(x^2+1)", "abs(x-1)^(1/2) + log10(x)", "((x+1)/(x-1))^(2/3)", "-(x+1)*-x", "e^(-x^2/2)/sqrt(2*pi)", "tan(x)^2 - --x", "1/(1/(1/x))", "x^2^3"];
+  const boxes = exprs.map(e => mtLayout(umParse(e)));
+  ok(boxes.every(boxesHold) && boxes.every(b => b.w > 0 && b.h > 0), "typeset: every box holds all its items, for twelve expressions");
+  const strs = b => b.items.filter(i => i.t === "text").map(i => i.str).join(" ");
+  const mm = mtLayout(umParse("x - -x"));
+  ok(mm.items.filter(i => i.t === "path").length === 2 && strs(mm) === "x − − x", "typeset: a minus after a minus is bracketed");
+  const lg = mtLayout(umParse("log10(x)")), ten = lg.items.find(i => i.str === "10");
+  ok(ten && ten.y > 0 && ten.s < 1 && lg.items.find(i => i.str === "log").y === 0, "typeset: log10 has its 10 lowered and small");
+  const cal = solutionLines({ task: "calculus", expression: "x^2 + 1", interval: [0, 1] }, { result: { derivative: "2x", integral: 1.3333 } });
+  ok(cal.length === 3 && cal.every(boxesHold) && cal[2].items.filter(i => i.t === "path").length === 3, "typeset: the integral of a sum is bracketed before dx, and its box holds the limits");
+  const ib = integralBox(mtText("x", "mi", 1), 0, 100000, "x");
+  ok(boxesHold(ib) && ib.h >= 1.1 && ib.d >= 0.9, "typeset: tall limits stay inside the integral's box");
+  ok(solutionLines({ task: "linear_algebra", matrix: [[1, 2], [3, 4]], rhs: [5, 6] }, { result: { solution: [-4, 4.5] } }).length === 3 && solutionLines({ task: "bayes" }, {}).length === 0, "typeset: matrices, and nothing for a task with no formula");
+  ok(/^<svg[^>]+viewBox="0 0 [\d.]+ [\d.]+"/.test(typesetSvg(cal, "dark")) && typesetSvg(cal, "dark").includes('fill="#eef2f8"'), "typeset: one SVG with the theme's ink");
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-hyper-studio", "tests", "golden-cinematic.json"), "utf8"));
+  const got = g.requests.map(r => { try { return compileCinematic(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } });
+  ok(JSON.stringify(got) === JSON.stringify(g.outputs) && JSON.stringify(presetList()) === JSON.stringify(g.list), "cinematic: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok(CINEMATIC_PRESETS.every(p => ["dark", "light"].every(theme => compileCinematic({ preset: p.id, theme }).verified)), "cinematic: all 21 presets verify in both themes");
+  const gr = goldenRect(640, 360), sp = goldenSpiral(gr, 40), eye = spiralEye(gr);
+  ok(Math.hypot(sp.rest.x - eye[0], sp.rest.y - eye[1]) < 1e-4, "cinematic: the spiral converges on the crossing of the diagonals");
 }
 // ADR-156: prompt meta-codes, pure: the server's answers equal the skill's golden file.
 {

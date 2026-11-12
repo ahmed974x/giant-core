@@ -1,14 +1,14 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-07T22:59:28Z",
- "javascriptRanAt": "2026-11-07T22:26:49.175Z",
+ "ranAt": "2026-11-12T16:03:49Z",
+ "javascriptRanAt": "2026-11-12T15:26:49.286Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 6146,
- "killed": 6146,
+ "total": 6872,
+ "killed": 6872,
  "equivalent": 260,
  "score": 100.0,
  "targets": [
@@ -765,6 +765,63 @@
      "why": "as above"
     }
    ]
+  },
+  {
+   "file": "jarvis/server/lib/math-typeset.mjs",
+   "sha256": "ed0cb6cc6881296d2b619b8a3353d77a408fa1d90210746026111220858cd541",
+   "functions": [
+    "textWidth",
+    "textBox",
+    "glue",
+    "moveItem",
+    "hbox",
+    "fracBox",
+    "supBox",
+    "subBox",
+    "delimBox",
+    "sqrtBox",
+    "numText",
+    "layout",
+    "integralBox",
+    "matrixBox",
+    "solutionLines",
+    "boxesHold",
+    "typesetSvg"
+   ],
+   "mutants": 277,
+   "killed": 277,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/cinematic-presets.mjs",
+   "sha256": "ef7be37994e700450f2ccec164171da077bf47bf1ee7d879e638fec7010881db",
+   "functions": [
+    "frameOf",
+    "goldenRect",
+    "goldenSpiral",
+    "spiralEye",
+    "mirrorPoint",
+    "arcsJoin",
+    "arcsRound",
+    "insideFrame",
+    "closesOnEye",
+    "composition",
+    "sweepOf",
+    "cinematicSvg",
+    "compileCinematic",
+    "presetList"
+   ],
+   "mutants": 184,
+   "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
   },
   {
    "file": "jarvis/server/lib/prompt-metacodes.mjs",
@@ -1828,6 +1885,35 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-hyper-studio/cinematic_presets.py",
+   "sha256": "63951597cd55113bc63dc603aed91b1958aab3c31422aa0415668ff263b31647",
+   "functions": [
+    "cp_r",
+    "frame_of",
+    "golden_rect",
+    "golden_spiral",
+    "spiral_eye",
+    "mirror_point",
+    "arcs_join",
+    "arcs_round",
+    "inside_frame",
+    "closes_on_eye",
+    "sweep_of",
+    "composition",
+    "_s",
+    "cinematic_svg",
+    "compile_cinematic",
+    "preset_list"
+   ],
+   "mutants": 265,
+   "killed": 265,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
    "file": ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py",
    "sha256": "9611d6c3d710da7759d1ed5476c72711979202367d963f5f56fba8b2616fb030",
    "functions": [
@@ -2056,5 +2142,5 @@
    ]
   }
  ],
- "sha256": "f1bcda2ec589e34274cc95a5668563b6bf1a15115b2ecd23f64aeaea4934aa0a"
+ "sha256": "89d15b3ec187c6a2e106931e5ee8c8f1ec8dbc1e6d6419a2370f0a242777c128"
 }

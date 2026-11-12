@@ -19,6 +19,21 @@ python3 -m unittest discover -s .claude/skills/replica-hyper-studio/tests
 
 The same maths runs in Jarvis (`jarvis/server/lib/hyper-studio.mjs`, `POST /api/w/:slug/studio/hyper`, the Hyper studio page). `tests/golden.json` holds the server's answers, and both test suites compare against it.
 
+## Cinematic presets (ADR-157)
+
+```bash
+python3 .claude/skills/replica-hyper-studio/cinematic_presets.py list
+python3 .claude/skills/replica-hyper-studio/cinematic_presets.py run '{"preset":"golden_hour_5200k","theme":"light"}'
+python3 .claude/skills/replica-hyper-studio/cinematic_presets.py svg '{"preset":"desert_dusk"}' > dusk.svg
+```
+
+21 presets in four groups (angles, lighting, atmosphere, art). Each is a set of starting values: focal length, f-stop, subject distance, aspect ratio, key, fill and rim Kelvin, and a spiral corner. They are marked `[INFERENCE]`. From them it computes:
+- the thin-lens optics above;
+- each light's colour as text on the theme's surface, healed to WCAG 4.5 and APCA Lc 60 by the reviewed `replica-reversal-engine` maths;
+- the golden section of the frame, with a golden spiral that closes on the crossing of the golden rectangle's diagonals, where the subject goes.
+
+The checks: the arcs meet exactly, each arc's ends lie on its circle, everything is inside the frame, and the spiral closes on the eye. The SVG holds no text and no gradient. `tests/golden-cinematic.json` holds the server's answers (`cinematic-presets.mjs`).
+
 ## Limits
 
 - The drawings are projections: depth is lost, and the 8D pictures are one chosen plane among many.

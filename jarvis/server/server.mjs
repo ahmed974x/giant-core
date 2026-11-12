@@ -38,6 +38,8 @@ import { createReversalLog } from "./lib/reversal-log.mjs";
 import { createPassiveRecon } from "./lib/passive-recon.mjs";
 import { solve as solveMath, localize as localizeMath, umText } from "./lib/universal-math.mjs";
 import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
+import { solutionLines, typesetSvg } from "./lib/math-typeset.mjs";
+import { compileCinematic, presetList } from "./lib/cinematic-presets.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
@@ -366,6 +368,9 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           const lang = (url.searchParams.get("lang") || body.lang) === "ar" ? "ar" : "en";
           let out;
           try { out = localizeMath(solveMath(body), lang); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: umText(e.message, lang), detail: e.detail }); }
+          // ADR-157: the request typeset as SVG (box and glue), from the same parse the solver used.
+          const lines = solutionLines(body, out);
+          if (lines.length) out.formula_svg = typesetSvg(lines, body.theme === "light" ? "light" : "dark");
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "math.solve", out.task + (out.verified ? " verified" : " unverified"));
           return send(200, out);
         }
@@ -380,6 +385,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           try { out = hyperStudio(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           if (out.mode === "projection") out.svg = hyperSvg(out);
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "hyper.solve", out.mode + (out.polytope ? " " + out.polytope : "") + (out.verified ? " verified" : " unverified"));
+          return send(200, out);
+        }
+        // ADR-157: cinematic presets: starting values for a shot, its optics, light colours healed for text and
+        // the golden-section composition as SVG.
+        if (req.method === "GET" && rest === "/studio/cinematic/presets") return send(200, presetList());
+        if (req.method === "POST" && rest === "/studio/cinematic") {
+          let out;
+          try { out = compileCinematic(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "cinematic.compile", out.preset + " " + out.theme + (out.verified ? " verified" : " unverified"));
           return send(200, out);
         }
         // ADR-156: prompt meta-codes. Pure and bounded (4,000 characters, 20 addresses); it always answers, and

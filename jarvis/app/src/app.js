@@ -590,6 +590,11 @@
       },
       // ADR-156 in sample mode: the same meta-codes engine as the server, in this page.
       metacodes(body) { return typeof body.prompt === "string" ? ok(LlmPlan.compileMetacodes(body)) : bad("The request must be text."); },
+      // ADR-157 in sample mode: the same presets engine as the server, in this page.
+      cinematic(body) {
+        try { return ok(Hyper.compileCinematic(body)); }
+        catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); }
+      },
       // ADR-154 in sample mode: the same engine as the server, in this page.
       mathSolve(body) {
         try { return ok(UniMath.solve(body)); }
@@ -1024,6 +1029,7 @@
       mathSolve: body => req("POST", w("/math/solve"), body),
       metacodes: body => req("POST", w("/metacodes/compile"), body),
       hyperStudio: body => req("POST", w("/studio/hyper"), body),
+      cinematic: body => req("POST", w("/studio/cinematic"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2549,14 +2555,16 @@
       scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
+  // ADR-157: the cinematic presets share this scope and use the contrast healer from the council's libraries.
   const Hyper = (() => {
+    const healOklchContrast = (fg, bg) => LlmPlan.healOklchContrast(fg, bg);
     /*@HYPER_STUDIO@*/
-    return { hyper, HS_LIMITS };
+    return { hyper, HS_LIMITS, compileCinematic, CINEMATIC_PRESETS, CP_CATEGORIES };
   })();
   // ADR-154: universal maths (jarvis/server/lib/universal-math.mjs, inlined by the build in its own scope).
   const UniMath = (() => {
     /*@UNIVERSAL_MATH@*/
-    return { solve, MathError };
+    return { solve, MathError, solutionLines, MT, textWidth };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -3625,11 +3633,32 @@
       h("figcaption", { class: "t-caption muted" }, h("span", { text: plot.kind === "ode" ? "The solution y(x), point by point" : "The function on the interval, roots marked" }), " ",
         h("bdi", { class: "num", dir: "ltr", translate: "no", text: "x ∈ [" + x0 + ", " + x1 + "] · y ∈ [" + Number(y0.toPrecision(4)) + ", " + Number(y1.toPrecision(4)) + "]" })));
   }
-  function mathView(r) {
+  // ADR-157: the request typeset with box and glue (jarvis/server/lib/math-typeset.mjs, inlined): each item is
+  // drawn with createElementNS; the text is digits, variable names, function names and fixed signs.
+  function mathFormula(lines) {
+    const em = UniMath.MT.em, pad = UniMath.MT.pad * em, kids = [];
+    let y = pad;
+    for (const b of lines) {
+      const by = y + b.h * em, X = x => (pad + x * em).toFixed(2), Y = v => (by + v * em).toFixed(2);
+      for (const it of b.items) {
+        if (it.t === "text") { const t = svg("text", { class: "mt-" + it.cls, x: X(it.x), y: Y(it.y), "font-size": (it.s * em).toFixed(2) }); t.textContent = it.str; kids.push(t); }
+        else if (it.t === "rect") kids.push(svg("rect", { class: "mt-rule", x: X(it.x), y: Y(it.y), width: (it.w * em).toFixed(2), height: (it.h * em).toFixed(2) }));
+        else kids.push(svg("path", { class: "mt-stroke", "stroke-width": (it.sw * em).toFixed(2), d: it.d.map(([c, ...p]) => c + p.map((q, i) => (i % 2 ? Y(q) : X(q))).join(" ")).join(" ") }));
+      }
+      y = by + b.d * em + 0.5 * em;
+    }
+    const W = Math.max(...lines.map(b => b.w)) * em + 2 * pad, H = y - 0.5 * em + pad;
+    return h("figure", { class: "mt-fig", role: "img", "aria-label": "The request, typeset" }, h("div", { class: "mt-wrap", dir: "ltr", translate: "no", "data-verbatim": "" },
+      svg("svg", { class: "mt-svg", viewBox: "0 0 " + W.toFixed(2) + " " + H.toFixed(2), width: W.toFixed(0), "aria-hidden": "true" }, ...kids)));
+  }
+  function mathView(r, body) {
+    let lines = [];
+    try { lines = UniMath.solutionLines(body, r); } catch (e) { lines = []; }
     const line = x => h("li", { class: "stack um-step" }, h("span", { text: x.text }), x.formula ? h("code", { translate: "no", dir: "ltr", text: x.formula }) : null);
     return h("div", { class: "stack" },
       h("div", { class: "row" }, r.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"),
         h("span", { class: "t-sm muted", text: r.verified ? "Every check below passed." : "A check below did not pass; read it before using the answer." })),
+      lines.length ? h("section", { class: "panel", "aria-labelledby": "h-um-formula" }, h("h2", { id: "h-um-formula", text: "Formula" }), mathFormula(lines)) : null,
       h("section", { class: "panel", "aria-labelledby": "h-um-steps" }, h("h2", { id: "h-um-steps", text: "Steps" }), h("ol", { class: "plist" }, r.steps.map(line))),
       h("section", { class: "panel", "aria-labelledby": "h-um-checks" }, h("h2", { id: "h-um-checks", text: "Checks" }),
         h("ul", { class: "plist" }, r.checks.map(c => h("li", { class: "stack um-step" }, h("div", { class: "row" }, badge(c.ok ? "ok" : "failed", c.ok ? "Passed" : "Failed"), h("span", { text: c.text })), c.formula ? h("code", { translate: "no", dir: "ltr", text: c.formula }) : null)))),
@@ -3701,7 +3730,7 @@
       let body;
       try { body = JSON.parse(ta.value); } catch (err) { box.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not solved"), " ", h("span", { text: "The request is not valid JSON." }))); return; }
       btn.disabled = true; btn.setAttribute("aria-busy", "true");
-      try { box.replaceChildren(mathView(await store.mathSolve(body))); }
+      try { box.replaceChildren(mathView(await store.mathSolve(body), body)); }
       catch (err) { box.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not solved"), " ", h("span", { text: err.message }), err.detail ? h("code", { translate: "no", dir: "ltr", "data-verbatim": "", text: err.detail }) : null)); }
       finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
     });
@@ -3808,13 +3837,54 @@
     });
     return h("section", { class: "panel", "aria-labelledby": "h-hy-" + mode }, h("h2", { id: "h-hy-" + mode, text: title }), h("p", { class: "t-sm muted", text: lede }), form, box);
   }
+  // ADR-157: cinematic presets: starting values for a shot [INFERENCE], with computed optics, the lights'
+  // colours healed for text on the surface, and the golden-section composition drawn from its arcs.
+  const CP_GROUP = { angles: "Angles", lighting: "Lighting", atmosphere: "Atmosphere", art: "Art" };
+  function hyCinematic() {
+    const sel = h("select", { class: "select", id: "f-cine", name: "cinematic-preset", autocomplete: "off" }, Hyper.CP_CATEGORIES.map(cat =>
+      h("optgroup", { label: CP_GROUP[cat] }, Hyper.CINEMATIC_PRESETS.filter(p => p.category === cat).map(p => h("option", { value: p.id, text: p.title[uiLang === "ar" ? "ar" : "en"], selected: p.id === "golden_hour_5200k" })))));
+    const stage = h("div", { class: "cine-stage" }), info = h("div", { class: "stack", "aria-live": "polite" });
+    const draw = async () => {
+      let o;
+      try { o = await store.cinematic({ preset: sel.value, theme: theme() }); } catch (e) { stage.replaceChildren(); info.replaceChildren(hyError(e)); return; }
+      const c = o.composition, sub = o.lens.subject_m, sc = (c.w - 40) / (2 * sub), dof = o.depth_of_field;
+      const near = 20 + Math.min(dof.near_m, 2 * sub) * sc, far = 20 + (dof.far_m == null ? 2 * sub : Math.min(dof.far_m, 2 * sub)) * sc;
+      stage.replaceChildren(svg("svg", { class: "hy-svg cine-svg", viewBox: "0 0 " + c.w + " " + (c.h + 40), "aria-hidden": "true" },
+        svg("rect", { class: "cine-frame", x: 1, y: 1, width: c.w - 2, height: c.h - 2 }),
+        ...c.lines.x.map(x => svg("line", { class: "cine-phi", x1: x, y1: 0, x2: x, y2: c.h })), ...c.lines.y.map(y => svg("line", { class: "cine-phi", x1: 0, y1: y, x2: c.w, y2: y })),
+        svg("path", { class: "cine-spiral", d: "M" + c.arcs[0].from.join(" ") + c.arcs.map(a => ` A${a.r} ${a.r} 0 0 ${a.sweep} ${a.to.join(" ")}`).join("") }),
+        svg("circle", { class: "cine-eye", cx: c.eye[0], cy: c.eye[1], r: 7 }),
+        svg("line", { class: "cine-phi", x1: 20, y1: c.h + 24, x2: c.w - 20, y2: c.h + 24 }),
+        svg("rect", { class: "cine-dof", x: near.toFixed(2), y: c.h + 18, width: Math.max(1, far - near).toFixed(2), height: 12 }),
+        svg("line", { class: "cine-subject", x1: (20 + sub * sc).toFixed(2), y1: c.h + 12, x2: (20 + sub * sc).toFixed(2), y2: c.h + 36 })));
+      const num = v => h("bdi", { class: "num", dir: "ltr", translate: "no", text: String(v) });
+      const row = (label, ...value) => h("div", { class: "row between" }, h("span", { class: "t-sm muted", text: label }), h("span", { class: "row" }, ...value.map(v => (typeof v === "string" ? num(v) : v))));
+      const unit = u => h("span", { class: "t-sm", text: u });
+      const lights = h("ul", { class: "plist cine-lights" }, ["key", "fill", "rim"].map(k => {
+        const sw = h("span", { class: "cine-swatch", "aria-hidden": "true" }); sw.style.background = o.labels[k].light;
+        const tx = h("code", { class: "cine-text", translate: "no", dir: "ltr", text: o.labels[k].text || "—" }); tx.style.color = o.labels[k].text || ""; tx.style.background = o.surface;
+        return h("li", { class: "row" }, sw, h("span", { text: { key: "Key light", fill: "Fill light", rim: "Rim light" }[k] }), h("bdi", { class: "num", dir: "ltr", translate: "no", text: o.lights[k].kelvin + " K" }), tx,
+          o.labels[k].healed ? badge("warn", "Healed for text") : badge("ok", "Readable as is"));
+      }));
+      info.replaceChildren(h("p", { class: "row t-caption" }, h("span", { class: "tag-inf", text: o.tag }), h("span", { class: "muted", text: "Starting values for a shot, not measurements. The optics, colours and composition are computed." })),
+        row("Lens", String(o.lens.focal_mm), unit("mm"), "f/" + o.lens.f_stop, String(o.lens.subject_m), unit("m")), row("Aspect ratio", o.aspect.join(" : ")),
+        row("In focus", dof.near_m + " – " + (dof.far_m == null ? "∞" : dof.far_m), unit("m")), row("Hyperfocal distance", String(dof.hyperfocal_m), unit("m")),
+        row("Field of view", o.field_of_view_deg.horizontal + "° × " + o.field_of_view_deg.vertical + "°"), lights, hyChecks(o));
+    };
+    sel.addEventListener("change", draw);
+    draw();
+    return h("section", { class: "panel", "aria-labelledby": "h-cine" }, h("h2", { id: "h-cine", text: "Cinematic presets" }),
+      h("div", { class: "field" }, h("label", { htmlFor: "f-cine", text: "Preset" }), sel),
+      h("div", { class: "grid-2" }, stage, info));
+  }
   pages.hyper = () => h("div", { class: "stack" },
     pageHead("Hyper studio", "Shapes from 3 to 8 dimensions, a camera's optics and grid physics, drawn as SVG with no library, each with its checks."),
     sampleNote(),
     hyProjection(),
     h("div", { class: "grid-2" },
       hyRequestPanel("optics", "Optics", "Thin-lens depth of field, hyperfocal distance, field of view, background blur, EV100, and the colour of each light from its Kelvin.", hyOpticsView),
-      hyRequestPanel("game_physics", "Game physics", "A shortest path by A*, checked against breadth-first search, and Verlet particles bouncing in the grid.", hyGameView)));
+      hyRequestPanel("game_physics", "Game physics", "A shortest path by A*, checked against breadth-first search, and Verlet particles bouncing in the grid.", hyGameView)),
+    hyCinematic());
 
   /* ── Diagnostics (ADR-148): the five layers, and a bundle scrubbed of anything secret-shaped ── */
   pages.diagnostics = () => {

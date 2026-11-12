@@ -503,6 +503,21 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "hyper.solve" && e.target === "game_physics verified"), "live: the calculation is in the event log");
 }
 
+// ADR-157 live: the formula and a cinematic preset come from the server.
+{
+  await go("#/math");
+  await page.locator("form button[type=submit]").click();
+  await page.waitForSelector("#h-um-formula");
+  ok((await page.locator(".mt-svg text").count()) > 20, "live: the formula is typeset beside the server's answer");
+  await go("#/hyper");
+  await page.waitForSelector(".cine-svg");
+  await page.locator("#f-cine").selectOption("blue_hour_7500k");
+  await page.waitForTimeout(400);
+  ok(await page.locator(".cine-lights").getByText("7500 K", { exact: true }).isVisible(), "live: a cinematic preset compiles on the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
+}
+
 // ADR-156 live: meta-codes compile on the server and are logged.
 {
   await go("#/missions");
@@ -533,6 +548,7 @@ await page.waitForTimeout(300);
     ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
+    ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
   ] });
   ok(pur.ar === 0, "live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 900));
   ok(pur.en === 0, "live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 900));
