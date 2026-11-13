@@ -42,6 +42,7 @@ import { solutionLines, typesetSvg } from "./lib/math-typeset.mjs";
 import { compileCinematic, presetList } from "./lib/cinematic-presets.mjs";
 import { atlasView, planFossStack, scrubPrivate, personas as atlasPersonas } from "./lib/foss-atlas.mjs";
 import { universalAgent } from "./lib/universal-agent.mjs";
+import { runWorkbench } from "./lib/unified-workbench.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
@@ -407,6 +408,14 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = scrubPrivate(body.text); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "privacy.scrub", out.total + " replaced");
+          return send(200, out);
+        }
+        // ADR-160: the unified workbench. One pipeline over the shield, meta-codes, the universal agent, the reversal
+        // engine, maths, the atlas and the security verdicts; nothing is sent. The event log keeps counts only.
+        if (req.method === "POST" && rest === "/workbench/run") {
+          let out;
+          try { out = runWorkbench(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "workbench.run", out.ran + " stages, " + out.locked + " locked" + (out.verified ? " verified" : " unverified"));
           return send(200, out);
         }
         // ADR-159: the universal agent. It plans and checks; it never calls a model. A send is a locked step in the

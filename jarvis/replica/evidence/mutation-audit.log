@@ -1,14 +1,14 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-12T23:07:40Z",
- "javascriptRanAt": "2026-11-12T22:35:05.678Z",
+ "ranAt": "2026-11-13T00:07:22Z",
+ "javascriptRanAt": "2026-11-12T23:28:44.329Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 7831,
- "killed": 7831,
+ "total": 7929,
+ "killed": 7929,
  "equivalent": 269,
  "score": 100.0,
  "targets": [
@@ -817,6 +817,22 @@
    ],
    "mutants": 184,
    "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/unified-workbench.mjs",
+   "sha256": "3da61ee5f34729f01a6cfbac06b4f85ccc17450e251cf9fa0c8d4a89f57ace21",
+   "functions": [
+    "runStage",
+    "lockedOf",
+    "runWorkbench"
+   ],
+   "mutants": 42,
+   "killed": 42,
    "equivalent": 0,
    "survived": 0,
    "score": 100,
@@ -1987,6 +2003,24 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-unified-workbench/unified_workbench.py",
+   "sha256": "6d9ccf70b9aada31b56dbb59d513a6a3a50b73f019e594526915f410c0c68d1b",
+   "functions": [
+    "_sha",
+    "_len16",
+    "run_stage",
+    "locked_of",
+    "run_workbench"
+   ],
+   "mutants": 56,
+   "killed": 56,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
    "file": ".claude/skills/replica-universal-agent/universal_agent.py",
    "sha256": "20ac8605b54cd99f4e1f3ba88f4bbcab01fafa82aaa77401385ecefc683c1f91",
    "functions": [
@@ -2313,5 +2347,5 @@
    ]
   }
  ],
- "sha256": "5bdd53c186afcce181a10b420a38f2064af9b911820c561fb2899cfc73e662b1"
+ "sha256": "f2dcc8a2a65893a10ccce4f53aa794653ece6fa5be08d44522913a33db76ef3e"
 }

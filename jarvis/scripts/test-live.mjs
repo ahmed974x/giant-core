@@ -518,6 +518,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
 }
 
+// ADR-160 live: the workbench runs on the server and logs counts only.
+{
+  await go("#/workbench");
+  await page.waitForSelector("#f-uw-task");
+  await page.getByRole("button", { name: "Run the pipeline" }).click();
+  await page.waitForSelector(".uw-stage");
+  ok((await page.locator(".uw-stage").count()) === 7 && (await page.locator("#h-uw-plan ~ ol .lock-line").count()) >= 4, "live: the workbench runs on the server, sends locked");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "workbench.run" && e.target.startsWith("7 stages")), "live: the run is in the event log, as counts");
+}
+
 // ADR-159 live: the universal agent answers from the server and logs the mode.
 {
   await go("#/universal");
@@ -571,6 +582,7 @@ await page.waitForTimeout(300);
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
+    ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(400); }],
     ["atlas plan", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); }],
   ] });

@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-12T22:35:05.678Z",
+ "ranAt": "2026-11-12T23:28:44.329Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -807,6 +807,22 @@
    ],
    "mutants": 184,
    "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/unified-workbench.mjs",
+   "sha256": "3da61ee5f34729f01a6cfbac06b4f85ccc17450e251cf9fa0c8d4a89f57ace21",
+   "functions": [
+    "runStage",
+    "lockedOf",
+    "runWorkbench"
+   ],
+   "mutants": 42,
+   "killed": 42,
    "equivalent": 0,
    "survived": 0,
    "score": 100,

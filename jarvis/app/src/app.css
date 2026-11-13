@@ -597,3 +597,6 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .hy-goal { fill: none; stroke: var(--color-accent); stroke-width: 3; vector-effect: non-scaling-stroke; }
 .hy-trail { fill: none; stroke: var(--color-text-muted); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
 .hy-part { fill: var(--color-text); }
+
+/* ADR-160: the workbench chain hash is 64 characters with no break point; let it wrap on a phone. */
+.uw-hash { overflow-wrap: anywhere; min-inline-size: 0; }

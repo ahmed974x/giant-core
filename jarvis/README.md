@@ -380,6 +380,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The Models panel shows the five Claude models from the claude-api skill's table; other model names show «تعذر التحقق منها». The review panel lists the 13 outside projects read on 2026-11-12, with their licence files; none is installed.
 - The API is `POST /api/w/:slug/agent/universal` with `{mode, …}`. The same engine runs with `python3 .claude/skills/replica-universal-agent/universal_agent.py`.
 
+## Workbench (ADR-160)
+
+- **`#/workbench`:** write a task, pick the model and effort, choose which checks to include (CSS, an expression, the atlas picks with a price, two sample findings) and press Run the pipeline.
+- The task goes through the privacy shield first, then the meta-codes, the model request, the design check, maths, the FOSS atlas and the security verdicts. Each stage shows its status, its summary and a link to its own page.
+- A stage that refuses its input says so and the others still run. Every send, install and outbound step is listed «بانتظار الموافقة» in one proved plan, with a chain hash over the stages. Nothing is sent.
+- The API is `POST /api/w/:slug/workbench/run` with `{task, model, effort, css, math, atlas, candidates, secretCheck}`. The same pipeline runs with `python3 .claude/skills/replica-unified-workbench/unified_workbench.py`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

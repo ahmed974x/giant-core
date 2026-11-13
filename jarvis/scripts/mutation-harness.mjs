@@ -116,6 +116,7 @@ const TARGETS = [
   { file: "hyper-studio.mjs", functions: ["rotatePlane", "applyAngles", "hypercube", "sixteenCell", "e8Roots", "matMul", "reflection", "symEigen", "coxeterPlane", "perspective", "rings", "faceShade", "projection", "facesViewer", "lengthsKept", "normsKept", "backToFront", "facingOk", "countsOk", "isIdentity", "coxeterOk", "ringsExact", "ringsMultiple", "dofOk", "harmonicOk", "ev100Ok", "insideBox", "pathOk", "overlapOk", "hyperSvg", "kelvinToXy", "kelvinToColour", "optics", "astar", "bfsLength", "verlet", "gamePhysics", "hyper"], oracle: "hyper" },
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
+  { file: "unified-workbench.mjs", functions: ["runStage", "lockedOf", "runWorkbench"], oracle: "workbench" },
   { file: "universal-agent.mjs", functions: ["uaR", "unit", "list", "text", "buildRequest", "scoreCandidate", "route", "relay", "compress", "triageOne", "security", "graph", "lean", "design", "universalAgent"], oracle: "agent" },
   { file: "foss-atlas.mjs", functions: ["sha1Hex", "rotl", "kAnonymity", "luhnOk", "scrubPrivate", "planSteps", "n8nBlueprint", "planFossStack", "mulberry32", "personas", "atlasView"], oracle: "atlas" },
   { file: "prompt-metacodes.mjs", functions: ["parseMetacodes", "privateHost", "sensitiveCategories", "proveOption", "buildOption", "compileMetacodes"], oracle: "metacodes" },
@@ -123,7 +124,7 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
@@ -556,6 +557,14 @@ function oracleMath(m) {
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
   return out;
+}
+
+// ADR-160: the unified workbench. The skill's golden file (the server's answers, edges included).
+function oracleWorkbench(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-unified-workbench", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return m.runWorkbench(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  return g.requests.map((r, i) => ["golden " + i, J(run(r)) === J(g.outputs[i])]);
 }
 
 // ADR-159: the universal agent. The skill's golden file (180 requests with the edges of every limit, the

@@ -869,6 +869,23 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator(".fa-entry input:checked").count()) === 3, "F40 a persona's picks can be used");
 }
 
+// F42: the unified workbench (ADR-160).
+{
+  await go("#/workbench");
+  await page.waitForSelector("#f-uw-task");
+  await page.getByRole("button", { name: "Run the pipeline" }).click();
+  await page.waitForSelector(".uw-stage");
+  ok((await page.locator(".uw-stage").count()) === 7 && (await page.locator(".uw-stage .badge.s-ok").count()) >= 7, "F42 seven stages, each done");
+  ok(!(await page.locator("#h-uw-out ~ div").textContent()).includes("team@example.org") && await page.getByText("Not sent").first().isVisible(), "F42 the shield cleaned the task and nothing was sent");
+  ok((await page.locator("#h-uw-plan ~ ol .lock-line").count()) >= 4 && /^[0-9a-f]{64}$/.test(await page.locator("#h-uw-plan ~ p code").textContent()), "F42 the joined plan's locked steps and the chain hash");
+  ok((await page.locator('.uw-stage a[href="#/math"]').count()) === 1 && (await page.locator('.uw-stage a[href="#/atlas"]').count()) === 2 && (await page.locator('.uw-stage a[href="#/universal"]').count()) === 2, "F42 each stage links to its page");
+  await page.locator("#f-uw-expr").fill("x^^");
+  await page.locator("#f-uw-price").fill("");
+  await page.getByRole("button", { name: "Run the pipeline" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Refused").first().isVisible() && await page.getByText("No savings figure: no price was typed.").isVisible() && (await page.locator(".uw-stage").count()) === 7, "F42 a bad expression is refused in its stage, the others still run, no price gives no savings");
+}
+
 // F41: the universal agent (ADR-159).
 {
   await go("#/universal");
@@ -905,6 +922,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
+    ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],
     ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }],
     ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],

@@ -596,6 +596,8 @@
       privacyScrub(text) { try { return ok(LlmPlan.scrubPrivate(text)); } catch (e) { return bad(e.message); } },
       atlasPersonas(q) { return ok(LlmPlan.personas(q)); },
       // ADR-159 in sample mode: the same universal agent as the server, in this page.
+      // ADR-160 in sample mode: the same workbench as the server, in this page.
+      workbench(body) { try { return ok(UnifiedWorkbench.runWorkbench(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       universal(body) { try { return ok(LlmPlan.universalAgent(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-157 in sample mode: the same presets engine as the server, in this page.
       cinematic(body) {
@@ -1042,6 +1044,7 @@
       privacyScrub: text => req("POST", w("/privacy-shield/scrub"), { text }),
       atlasPersonas: q => req("GET", w("/atlas/personas?seed=" + encodeURIComponent(q.seed) + "&count=" + encodeURIComponent(q.count))),
       universal: body => req("POST", w("/agent/universal"), body),
+      workbench: body => req("POST", w("/workbench/run"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2564,7 +2567,7 @@
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
-      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas, universalAgent: UniversalAgent.universalAgent };
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas, universalAgent: UniversalAgent.universalAgent, sha256Hex };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
   // ADR-157: the cinematic presets share this scope and use the contrast healer from the council's libraries.
@@ -2577,6 +2580,13 @@
   const UniMath = (() => {
     /*@UNIVERSAL_MATH@*/
     return { solve, MathError, solutionLines, MT, textWidth };
+  })();
+  // ADR-160: the unified workbench, the same engine as the server, over the scopes above.
+  const UnifiedWorkbench = (() => {
+    const { compileMetacodes, universalAgent, planFossStack, scrubPrivate, kAnonymity, provePlan, sha256Hex } = LlmPlan;
+    const solveMath = UniMath.solve;
+    /*@UNIFIED_WORKBENCH@*/
+    return { runWorkbench, UW_STAGES };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -3996,6 +4006,80 @@
           h("section", { class: "panel", "aria-labelledby": "h-ua-rev" }, h("h2", { id: "h-ua-rev", text: "Reviewed outside projects" }),
             h("p", { class: "t-caption muted", text: "Read-only review on 12 November 2026. Nothing was installed; only text rules were written into this code." }), revBox))));
   };
+  /* ── Unified workbench (ADR-160): one task through every engine, in order; nothing is sent ── */
+  const UW_LABEL = { shield: "Privacy shield", metacodes: "Meta-codes", request: "Model request", design: "Design check", math: "Maths", atlas: "FOSS atlas", security: "Security verdicts" };
+  const UW_SAMPLE = {
+    task: "Build a sign-up page, publish it and email the team at team@example.org. ALT3",
+    css: ".hero{background:linear-gradient(90deg,#3b82f6,#8b5cf6);color:#777777;background-color:#ffffff}",
+    expression: "x^3-2*x-5",
+    candidates: [{ id: "auth-bypass", finder: "hunter-1", verifier: "checker-2", boundary_failure: true, source_trace: true, likelihood: 0.7, impact: 0.9 }, { id: "open-redirect", finder: "hunter-1", verifier: "hunter-1" }],
+  };
+  function uwSummary(s) {
+    const m = s.summary, row = (...k) => h("p", { class: "row t-sm" }, ...k);
+    if (s.status === "skipped") return h("p", { class: "t-sm muted", text: "Not asked for in this run." });
+    if (s.status === "error") return row(h("span", { class: "muted", text: "Refused" }), uaData(m.error));
+    if (s.id === "shield") return h("div", { class: "stack" }, row(h("span", { class: "muted", text: "Replaced" }), uaNum(m.replaced), ...m.rules.map(uaData)),
+      m.secret_prefix ? row(h("span", { class: "muted", text: "SHA-1 prefix" }), h("code", { translate: "no", dir: "ltr", text: m.secret_prefix }), h("span", { class: "t-caption muted", text: "Nothing was looked up." })) : null);
+    if (s.id === "metacodes") return row(h("span", { class: "muted", text: "Codes" }), ...m.codes.map(uaData), h("span", { class: "muted", text: "Plan followed" }), uaData(m.followed));
+    if (s.id === "request") return h("div", { class: "stack" }, row(uaData(m.model), h("span", { class: "muted", text: "Effort" }), uaData(m.effort), badge("idle", "Not sent")),
+      m.dropped.length ? row(h("span", { class: "muted", text: "Removed fields" }), ...m.dropped.map(d => h("code", { translate: "no", dir: "ltr", text: d }))) : null);
+    if (s.id === "design") return h("div", { class: "stack" }, row(m.verified ? badge("ok", "Clean") : badge("warn", "Corrected"), ...m.rules.map(uaData)),
+      row(h("span", { class: "muted", text: "SHA-256" }), h("code", { translate: "no", dir: "ltr", text: m.after_sha256.slice(0, 16) + "…" })));
+    if (s.id === "math") return row(uaData(m.task), h("span", { class: "muted", text: "Checks passed" }), uaNum(m.passed + " / " + m.checks), m.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"));
+    if (s.id === "atlas") return row(h("span", { class: "muted", text: "Picks" }), uaNum(m.picks), m.usd_per_year === null ? h("span", { class: "t-sm muted", text: "No savings figure: no price was typed." })
+      : h("span", { class: "row" }, h("span", { class: "muted", text: "Yearly savings" }), uaNum("$" + fmtN.format(m.usd_per_year))));
+    return row(...[["confirmed", "Confirmed", "failed"], ["needs_validation", "Needs validation", "warn"], ["rejected", "Rejected", "idle"], ["hardening_note", "Hardening note", "ok"]]
+      .map(([k, label, tone]) => h("span", { class: "row" }, badge(tone, label), uaNum(m[k]))));
+  }
+  function uwResult(r) {
+    const tone = { ok: "ok", skipped: "idle", error: "failed" }, word = { ok: "Done", skipped: "Skipped", error: "Refused" };
+    return h("div", { class: "stack" },
+      h("p", { class: "row" }, r.verified ? h("span", { translate: "no" }, badge("ok", "[VERIFIED]")) : badge("warn", "Not verified"), badge("idle", "Not sent"),
+        h("span", { class: "muted t-sm", text: "Stages run" }), uaNum(r.ran + " / " + r.stages.length), h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(r.locked)),
+      h("ol", { class: "plist uw-stages" }, r.stages.map(s => h("li", { class: "stack uw-stage" },
+        h("p", { class: "row" }, h("strong", { text: UW_LABEL[s.id] }), badge(tone[s.status], word[s.status]), s.link ? h("a", { class: "t-caption", href: s.link, text: "Open the page" }) : null),
+        uwSummary(s)))),
+      h("section", { class: "stack", "aria-labelledby": "h-uw-plan" }, h("h3", { id: "h-uw-plan", text: "The joined plan" }),
+        h("ol", { class: "plist" }, r.plan.filter(s => s.locked).map(s => h("li", { class: "stack um-step locked" }, uaData(s.title), uaLock()))),
+        h("p", { class: "row t-caption muted" }, h("span", { text: "Chain hash" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.chain_sha256 }))),
+      h("details", null, h("summary", { text: "The whole answer as JSON" }), h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: JSON.stringify(r, null, 1) })));
+  }
+  pages.workbench = () => {
+    const resultBox = h("div", { class: "stack", "aria-live": "polite" });
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const taskIn = h("textarea", { class: "textarea", id: "f-uw-task", name: "task", rows: 4, autocomplete: "off", dir: "auto", maxLength: 4000 }); taskIn.value = UW_SAMPLE.task;
+    const modelIn = h("select", { class: "input", id: "f-uw-model", name: "model" }, ["claude-opus-5-5", "claude-fable-5-2", "claude-mythos-5-2", "claude-sonnet-5-5", "claude-haiku-5-5"].map(m => h("option", { value: m, text: m, translate: "no" })));
+    const effortIn = h("select", { class: "input", id: "f-uw-effort", name: "effort" }, ["low", "medium", "high", "xhigh", "max"].map(e => h("option", { value: e, text: e, translate: "no", selected: e === "high" })));
+    const check = (id, label, on) => { const b = h("input", { type: "checkbox", id, name: id, checked: on }); return [b, h("label", { class: "check", htmlFor: id }, b, h("span", { text: label }))]; };
+    const [cssOn, cssLabel] = check("f-uw-css-on", "Check this CSS", true), [mathOn, mathLabel] = check("f-uw-math-on", "Check this expression", true);
+    const [atlasOn, atlasLabel] = check("f-uw-atlas-on", "Plan Nextcloud and n8n", true), [secOn, secLabel] = check("f-uw-sec-on", "Triage two sample findings", true);
+    const cssIn = h("textarea", { class: "textarea", id: "f-uw-css", name: "css", rows: 3, autocomplete: "off", dir: "ltr", lang: "en", translate: "no", spellcheck: false, maxLength: 100000 }); cssIn.value = UW_SAMPLE.css;
+    const exprIn = h("input", { class: "input", id: "f-uw-expr", name: "expression", autocomplete: "off", dir: "ltr", lang: "en", translate: "no", value: UW_SAMPLE.expression });
+    const priceIn = h("input", { class: "input", type: "number", id: "f-uw-price", name: "price", min: 0, step: 1, autocomplete: "off", value: "1200" });
+    const runBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Run the pipeline");
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true; runBtn.setAttribute("aria-busy", "true");
+      const body = { task: taskIn.value, lang: uiLang === "ar" ? "ar" : "en", model: modelIn.value, effort: effortIn.value };
+      if (cssOn.checked) body.css = cssIn.value;
+      if (mathOn.checked) body.math = { task: "calculus", expression: exprIn.value, interval: [-5, 5] };
+      if (atlasOn.checked) body.atlas = { selectedIds: ["nextcloud", "n8n"], ...(priceIn.value === "" ? {} : { prices: { nextcloud: Number(priceIn.value) } }) };
+      if (secOn.checked) body.candidates = UW_SAMPLE.candidates;
+      try { resultBox.replaceChildren(uwResult(await store.workbench(body))); }
+      catch (err) { resultBox.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not run"), " ", h("span", { text: err.message }))); }
+      finally { runBtn.disabled = false; runBtn.removeAttribute("aria-busy"); }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Workbench", "Runs one task through the privacy shield, meta-codes, the model request, the design check, maths, the FOSS atlas and the security verdicts, in that order. Nothing is sent: every send, install and outbound step is a locked approval."),
+      sampleNote(),
+      h("div", { class: "grid-2" },
+        h("section", { class: "panel", "aria-labelledby": "h-uw" }, h("h2", { id: "h-uw", text: "Run a task" }),
+          field("f-uw-task", "Task", taskIn, "E-mail addresses, keys and card numbers are replaced before any other stage reads the text."),
+          h("div", { class: "grid-2" }, field("f-uw-model", "Model", modelIn), field("f-uw-effort", "Effort", effortIn)),
+          cssLabel, field("f-uw-css", "CSS", cssIn), mathLabel, field("f-uw-expr", "Expression", exprIn),
+          atlasLabel, field("f-uw-price", "What you pay now each year for Nextcloud's replacement (USD)", priceIn), secLabel,
+          h("div", { class: "row" }, runBtn)),
+        h("section", { class: "panel", "aria-labelledby": "h-uw-out" }, h("h2", { id: "h-uw-out", text: "Stages" }), resultBox)));
+  };
   /* ── FOSS atlas and privacy shield (ADR-158): open-source replacements, a proved stack plan, the shield ── */
   const FA_CAT = { office: "Office", files: "Files", chat: "Team chat", analytics: "Web analytics", automation: "Automation", images: "Images", design: "Design", photos: "Photos", music: "Music",
     video: "Video", screen: "Screen recording", voice: "Voice", ai: "Local AI", scraping: "Page parsing", browser: "Browser", books: "Books", apis: "APIs", mcp: "MCP servers", "free-tiers": "Free tiers", skills: "Agent skills (ideas)" };
@@ -4201,7 +4285,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4282,7 +4366,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

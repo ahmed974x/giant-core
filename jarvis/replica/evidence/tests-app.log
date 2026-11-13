@@ -218,6 +218,11 @@ PASS F40 the secret check shows the SHA-1 prefix and the secret is gone from the
 PASS F40 the shield replaces an e-mail address and a phone number
 PASS F40 three teaching personas, labelled
 PASS F40 a persona's picks can be used
+PASS F42 seven stages, each done
+PASS F42 the shield cleaned the task and nothing was sent
+PASS F42 the joined plan's locked steps and the chain hash
+PASS F42 each stage links to its page
+PASS F42 a bad expression is refused in its stage, the others still run, no price gives no savings
 PASS F41 the catalog: unchecked names say so; 13 reviewed projects
 PASS F41 request: two locked steps, not sent, effort in output_config
 PASS F41 route: the breaker trips the weak candidate
@@ -233,4 +238,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-234 passed, 0 failed
+239 passed, 0 failed

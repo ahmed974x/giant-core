@@ -519,6 +519,19 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_workbench(f, work):
+    """ADR-160: the skill's golden file (the server's answers, edges included)."""
+    with open(os.path.join(REPO, ".claude", "skills", "replica-unified-workbench", "tests", "golden.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+
+    def run(r):
+        try:
+            return json.loads(json.dumps(f["run_workbench"](r)))
+        except f["WorkbenchError"] as e:
+            return {"error": str(e), "detail": e.detail}
+    return [(f"golden {i}", run(r) == w) for i, (r, w) in enumerate(zip(g["requests"], g["outputs"], strict=True))]
+
+
 def oracle_agent(f, work):
     """ADR-159: the skill's golden file (180 requests, the server's answers) and the large limits built here."""
     out = []
@@ -737,6 +750,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-unified-workbench/unified_workbench.py", "functions": ["_sha", "_len16", "run_stage", "locked_of", "run_workbench"], "oracle": oracle_workbench, "with": [".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-universal-agent/universal_agent.py", "functions": ["ua_r", "_num", "_is_int", "_len16", "_unit", "_list", "_text", "is_loopback", "_get", "build_request", "score_candidate", "route", "relay", "compress", "triage_one", "security", "graph", "lean", "design", "universal_agent"], "oracle": oracle_agent, "with": [".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-foss-atlas/foss_atlas.py", "functions": ["_num", "fa_r", "_utf16_len", "entropy", "sha1_hex", "k_anonymity", "luhn_ok", "scrub_private", "plan_steps", "n8n_blueprint", "_is_num", "plan_foss_stack", "mulberry32", "_is_int", "personas", "atlas_view"], "oracle": oracle_atlas, "with": [".claude/skills/replica-formal-verify/state_prover.py"]},
     {"file": ".claude/skills/replica-hyper-studio/cinematic_presets.py", "functions": ["cp_r", "frame_of", "golden_rect", "golden_spiral", "spiral_eye", "mirror_point", "arcs_join", "arcs_round", "inside_frame", "closes_on_eye", "sweep_of", "composition", "_s", "cinematic_svg", "compile_cinematic", "preset_list"], "oracle": oracle_cinematic, "with": [".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},

@@ -42,6 +42,7 @@ import { layout as mtLayout, solutionLines, boxesHold, typesetSvg, integralBox, 
 import { compileCinematic, presetList, CINEMATIC_PRESETS, goldenSpiral, goldenRect, spiralEye } from "../lib/cinematic-presets.mjs";
 import { atlasView as faAtlas, planFossStack, scrubPrivate, personas as faPersonas, sha1Hex, kAnonymity } from "../lib/foss-atlas.mjs";
 import { universalAgent, UA_WEIGHTS, UA_REVIEWED } from "../lib/universal-agent.mjs";
+import { runWorkbench, UW_STAGES } from "../lib/unified-workbench.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -843,6 +844,23 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-160: the unified workbench through the server: one task through every engine, nothing sent.
+  const wb = await post("/api/w/jarvis-studio/workbench/run", { task: "Build a sign-up page, publish it and email team@example.org. ALT3", model: "claude-fable-5-2", effort: "xhigh",
+    css: ".hero{background:linear-gradient(#111,#333);color:#777}", math: { task: "calculus", expression: "x^2-2", interval: [0, 3] }, atlas: { selectedIds: ["nextcloud", "n8n"], prices: { nextcloud: 1200 } },
+    candidates: [{ id: "a", finder: "f", verifier: "v", boundary_failure: true, source_trace: true, likelihood: 0.8, impact: 0.9 }] });
+  ok(wb.status === 200 && wb.body.stages.map(s => s.id).join() === UW_STAGES.join() && wb.body.stages.every(s => s.status === "ok") && wb.body.sent === false && wb.body.verified, tag("workbench: seven stages run in order, nothing is sent"), wb.body && wb.body.stages);
+  ok(!JSON.stringify(wb.body).includes("team@example.org") && wb.body.stages[0].summary.replaced === 1, tag("workbench: the shield cleans the task before any other stage reads it"));
+  const lk = wb.body.plan.filter(s => s.locked);
+  ok(lk.length === wb.body.locked && lk.every(s => s.gate === "approval" && s.status === "pending_approval") && lk.some(s => s.category === "outbound") && lk.some(s => s.category === "install") && wb.body.proof.verified, tag("workbench: every send and install is a locked approval in one proved plan"));
+  ok(/^[0-9a-f]{64}$/.test(wb.body.chain_sha256) && wb.body.chain_sha256 === runWorkbench({ task: "Build a sign-up page, publish it and email team@example.org. ALT3", model: "claude-fable-5-2", effort: "xhigh", css: ".hero{background:linear-gradient(#111,#333);color:#777}", math: { task: "calculus", expression: "x^2-2", interval: [0, 3] }, atlas: { selectedIds: ["nextcloud", "n8n"], prices: { nextcloud: 1200 } }, candidates: [{ id: "a", finder: "f", verifier: "v", boundary_failure: true, source_trace: true, likelihood: 0.8, impact: 0.9 }] }).chain_sha256, tag("workbench: the chain hash is the engine's"));
+  const part = await post("/api/w/jarvis-studio/workbench/run", { task: "x", math: { task: "nope" } });
+  ok(part.status === 200 && part.body.stages.find(s => s.id === "math").status === "error" && part.body.stages.find(s => s.id === "design").status === "skipped" && part.body.verified === false, tag("workbench: a refused stage is an error and the others still run"));
+  ok((await post("/api/w/jarvis-studio/workbench/run", { task: "" })).status === 400, tag("workbench: an empty task is refused"));
+  const wev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(wev.some(e => e.kind === "workbench.run" && /^7 stages, \d+ locked verified$/.test(e.target)) && !JSON.stringify(wev).includes("sign-up page"), tag("workbench: the event log keeps counts, never the task"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -973,6 +991,12 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-160: the unified workbench, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-unified-workbench", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return runWorkbench(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  ok(g.requests.length >= 37 && g.requests.every((r, i) => JSON.stringify(run(r)) === JSON.stringify(g.outputs[i])), "workbench: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
 }
 // ADR-159: the universal agent, pure: the server's answers equal the skill's golden file.
 {

@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 133,
+ "files": 135,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 148
+  "low": 150
  },
  "byRule": {
   "D05": 27,
-  "M05": 119,
+  "M05": 121,
   "P21": 2
  },
- "sha256": "76fcd679b2635e99c8f3a13a328cbbaac276947aaf65fed5d31ae1632ce03bd9",
+ "sha256": "dd9ac41a1ad712354eb175291f4ef4265c69336ca92b5389cad1ecc583254207",
  "findings": [
   {
    "rule": "D05",
@@ -1049,6 +1049,20 @@
    "line": 16,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-159-universal-agent.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 14,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-160-unified-workbench.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 29,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-160-unified-workbench.md"
   }
  ]
 }
