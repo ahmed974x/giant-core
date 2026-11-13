@@ -206,3 +206,12 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48
 - `workbench-stages-*`: seven stages in order, each Done with its summary and a link to its page; the e-mail address in the task replaced by the shield; nothing sent;
 - `workbench-plan-*`: the joined plan, every send and install «بانتظار الموافقة», and the chain hash;
 - `workbench-refused-*`: a bad expression refused in the maths stage while the others run, and no savings figure without a typed price.
+
+## ADR-161 (2026-11-13)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48 shots):
+
+- `polymath-ask-*`: `#/polymath`, the question, the domains to always include, the engines' inputs, a two-option matrix with the person's weights and claims written as `domain: claim`;
+- `polymath-domains-*`: the answer, partly grounded: maths, time series and design ran with their ADR and a link to their page; optics and security not named; the e-mail address replaced by the shield;
+- `polymath-decision-*`: how each part could fail and what stops it, the weighted decision from the typed numbers only, the claims backed or not, and the Merkle root;
+- `polymath-abstain-*`: a question about tomorrow's market with no engine input, which abstains instead of guessing.
