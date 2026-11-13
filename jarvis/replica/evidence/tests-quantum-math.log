@@ -1,0 +1,13 @@
+test_gf256_known_products_and_inverses (test_quantum_math.Field.test_gf256_known_products_and_inverses) ... ok
+test_three_sizes_two_directions (test_quantum_math.Layout.test_three_sizes_two_directions) ... ok
+test_cli (test_quantum_math.Monte.test_cli) ... ok
+test_seeded_critical_path_and_locks (test_quantum_math.Monte.test_seeded_critical_path_and_locks) ... ok
+test_any_k_shares_rebuild_the_secret (test_quantum_math.Shamir.test_any_k_shares_rebuild_the_secret) ... ok
+test_checks_and_secure_default (test_quantum_math.Shamir.test_checks_and_secure_default) ... ok
+test_k_minus_1_shares_fit_every_secret (test_quantum_math.Shamir.test_k_minus_1_shares_fit_every_secret) ... ok
+test_healthy_toxic_and_mixed (test_quantum_math.Vpin.test_healthy_toxic_and_mixed) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.017s
+
+OK

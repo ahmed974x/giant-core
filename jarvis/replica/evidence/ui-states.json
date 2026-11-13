@@ -1,0 +1,95 @@
+{
+ "components": [
+  {
+   "component": "btn",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "active",
+    "loading",
+    "locked"
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "active": true,
+    "loading": true,
+    "locked": true
+   },
+   "missing": []
+  },
+  {
+   "component": "input",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "loading",
+    "empty",
+    "error",
+    "locked"
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "locked": true
+   },
+   "missing": []
+  },
+  {
+   "component": "select",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "loading",
+    "empty",
+    "error",
+    "locked"
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "locked": true
+   },
+   "missing": []
+  },
+  {
+   "component": "textarea",
+   "required": [
+    "default",
+    "hover",
+    "focus-visible",
+    "loading",
+    "empty",
+    "error",
+    "locked"
+   ],
+   "states": {
+    "default": true,
+    "hover": true,
+    "focus-visible": true,
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "locked": true
+   },
+   "missing": []
+  }
+ ],
+ "complete": true,
+ "covered": 27,
+ "total": 27,
+ "percent": 100.0,
+ "gate": true
+}

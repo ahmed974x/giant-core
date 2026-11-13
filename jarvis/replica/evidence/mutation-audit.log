@@ -1,0 +1,2351 @@
+{
+ "format": "jarvis-mutation-audit-v1",
+ "ranAt": "2026-11-13T00:07:22Z",
+ "javascriptRanAt": "2026-11-12T23:28:44.329Z",
+ "tools": [
+  "jarvis/scripts/mutation-harness.mjs",
+  "jarvis/scripts/mutation_harness.py",
+  ".claude/skills/replica-formal-verify/mutation_audit.py"
+ ],
+ "total": 7929,
+ "killed": 7929,
+ "equivalent": 269,
+ "score": 100.0,
+ "targets": [
+  {
+   "file": "jarvis/server/lib/fetch-public.mjs",
+   "sha256": "a955281a4603fa17d7669fde73aa779ceb22de6277309e8bc02f8eaf0424868c",
+   "functions": [
+    "v4Blocked",
+    "v6Groups",
+    "isBlockedAddress"
+   ],
+   "mutants": 222,
+   "killed": 210,
+   "equivalent": 12,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "=== -> !==",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "&& -> ||",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "|| -> &&",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "true -> false",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 53,
+     "kind": "0xffff -> 65536",
+     "why": "net.isIPv6 has already accepted the address, so v6Groups always gives eight groups in 0..0xffff; the check is defence in depth"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "slice(0, 9) of eight groups equals slice(0, 8)"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "7 -> 8",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 56,
+     "kind": "1 -> 2",
+     "why": "::1 is also refused by the compatible ::/96 rule two lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0x2001 -> 8194",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    },
+    {
+     "fn": "isBlockedAddress",
+     "line": 62,
+     "kind": "0 -> 1",
+     "why": "Teredo 2001::/32 is inside 2001::/23, refused three lines down"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/llm-plan.mjs",
+   "sha256": "2d474b092c0346afa7392711296f80a17ce27610d679d8940ea452515661d87d",
+   "functions": [
+    "lockCategory",
+    "enforceApprovalGates",
+    "LOCK_RULES"
+   ],
+   "mutants": 118,
+   "killed": 115,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "LOCK_RULES.money",
+     "line": 13,
+     "kind": "drop ادفع",
+     "why": "every text with ادفع also contains دفع, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.publish",
+     "line": 14,
+     "kind": "drop انشر",
+     "why": "every text with انشر also contains نشر, a word of the same rule"
+    },
+    {
+     "fn": "LOCK_RULES.install",
+     "line": 16,
+     "kind": "drop pip install",
+     "why": "every text with pip install also contains install, a word of the same rule"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/prover.mjs",
+   "sha256": "2fa5d1840018c57f387f1ac50a54046ec7e52f2c7937ce1f99503ce9b5573d4b",
+   "functions": [
+    "planMachine",
+    "search",
+    "prove"
+   ],
+   "mutants": 54,
+   "killed": 54,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/universal-math.mjs",
+   "sha256": "31da8bd3490e3d8554d9f2b699d28ba748b9ecebd71a350b6e620bc27ce12f76",
+   "functions": [
+    "tokenize",
+    "parse",
+    "evaluate",
+    "simplify",
+    "show",
+    "adaptiveSimpson",
+    "brent",
+    "findRoots",
+    "gaussSolve",
+    "determinant",
+    "inverse",
+    "jacobiEigen",
+    "rk4",
+    "egcd",
+    "isPrime",
+    "factorize",
+    "crt",
+    "bayes",
+    "solve",
+    "localize"
+   ],
+   "mutants": 778,
+   "killed": 729,
+   "equivalent": 49,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "tokenize",
+     "line": 31,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined, which is neither a digit nor a point, so the loop stops at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined: it is not e or E, and it is not a digit, so both bounds stop at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "< -> <=",
+     "why": "past the end s[j] is undefined: it is not e or E, and it is not a digit, so both bounds stop at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 39,
+     "kind": "< -> <=",
+     "why": "past the end the slice and the next start are the same: s.slice stops at the end of the string and the outer loop ends"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "3 -> 4",
+     "why": "the pattern is anchored at the start and needs at most three characters, so a longer slice gives the same answer"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "2 -> 3",
+     "why": "the pattern has already seen a digit right after the sign, and the digit loop takes that digit anyway, so skipping it first ends at the same place"
+    },
+    {
+     "fn": "tokenize",
+     "line": 32,
+     "kind": "1 -> 2",
+     "why": "as above, without a sign: the digit after e is taken by the digit loop either way"
+    },
+    {
+     "fn": "parse",
+     "line": 71,
+     "kind": "0 -> 1",
+     "why": "a right binding power of 0 or 1 is below the lowest operator's 10, so the same operators are read"
+    },
+    {
+     "fn": "parse",
+     "line": 79,
+     "kind": "0 -> 1",
+     "why": "as above, inside brackets"
+    },
+    {
+     "fn": "parse",
+     "line": 82,
+     "kind": "25 -> 26",
+     "why": "no operator binds between 25 and 26 (they bind at 10, 20 and 30)"
+    },
+    {
+     "fn": "parse",
+     "line": 83,
+     "kind": "25 -> 26",
+     "why": "as above, for a unary plus"
+    },
+    {
+     "fn": "parse",
+     "line": 87,
+     "kind": "1 -> 2",
+     "why": "^ reads its right side at 28 instead of 29; no operator binds between them, so it stays right-associative"
+    },
+    {
+     "fn": "parse",
+     "line": 91,
+     "kind": "0 -> 1",
+     "why": "as above, for the whole expression"
+    },
+    {
+     "fn": "simplify",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "b = 0 was already returned by the rule for adding 0 above"
+    },
+    {
+     "fn": "simplify",
+     "line": 142,
+     "kind": "< -> <=",
+     "why": "b = 0 was already returned by the rule for subtracting 0 above"
+    },
+    {
+     "fn": "show",
+     "line": 208,
+     "kind": "5 -> 6",
+     "why": "5 and 6 are both above every operator's precedence (1 to 4), so the same children get brackets"
+    },
+    {
+     "fn": "show",
+     "line": 208,
+     "kind": "4 -> 5",
+     "why": "the last clause brackets a negative left operand of ^; its precedence 3 is already below 4, so the first clause brackets it"
+    },
+    {
+     "fn": "show",
+     "line": 214,
+     "kind": "3 -> 4",
+     "why": "under a minus, every child below precedence 4 is bracketed either way, and ^ (4) is not bracketed on the right in both cases"
+    },
+    {
+     "fn": "adaptiveSimpson",
+     "line": 232,
+     "kind": "> -> >=",
+     "why": "evals starts at 3 and grows by 2, so it is always odd and never exactly 200000"
+    },
+    {
+     "fn": "brent",
+     "line": 255,
+     "kind": "< -> <=",
+     "why": "when f(s) is exactly 0 the other branch sets a = s and the swap below makes it b, so the next check returns s either way"
+    },
+    {
+     "fn": "brent",
+     "line": 243,
+     "kind": "> -> >=",
+     "why": "a product of 0 was already returned by the two lines above"
+    },
+    {
+     "fn": "brent",
+     "line": 245,
+     "kind": "- -> +",
+     "why": "d is read only when mflag is false, which needs one iteration, and every iteration first sets d = c"
+    },
+    {
+     "fn": "findRoots",
+     "line": 272,
+     "kind": "|| -> &&",
+     "why": "for d = 0 the step is infinite and leaves the bracket, for d = Infinity the step is 0 and keeps r, for NaN both parts break"
+    },
+    {
+     "fn": "findRoots",
+     "line": 270,
+     "kind": "< -> <=",
+     "why": "a zero at x1 is found as the next interval's left end (y0 === 0), the same point; at the last sample the final line adds it"
+    },
+    {
+     "fn": "findRoots",
+     "line": 278,
+     "kind": "< -> <=",
+     "why": "a root exactly 1e-9 from the right end would come from a bracket that ends at the end, and Brent returns the end itself when f is 0 there"
+    },
+    {
+     "fn": "findRoots",
+     "line": 270,
+     "kind": "0 -> 1",
+     "why": "brent itself returns null when there is no sign change, so the extra calls find nothing"
+    },
+    {
+     "fn": "gaussSolve",
+     "line": 301,
+     "kind": "0 -> 1",
+     "why": "back substitution writes x[r] before any later row reads it"
+    },
+    {
+     "fn": "determinant",
+     "line": 315,
+     "kind": "< -> <=",
+     "why": "column n does not exist in the determinant's copy; the value written there is never read"
+    },
+    {
+     "fn": "inverse",
+     "line": 329,
+     "kind": "0 -> 1",
+     "why": "column 0 of the left half is never read after its own pivot step, and only the right half is returned"
+    },
+    {
+     "fn": "inverse",
+     "line": 330,
+     "kind": "0 -> 1",
+     "why": "as above: column 0 of the left half is not read again"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 340,
+     "kind": "< -> <=",
+     "why": "for i = n the inner loop starts at j = n + 1 and adds nothing (j <= n is killed by the tiny-matrix probes)"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 342,
+     "kind": "< -> <=",
+     "why": "for p = n the inner loop starts at q = n + 1 and does nothing"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 343,
+     "kind": "< -> <=",
+     "why": "a rotation of an entry this small is the identity to double precision (and of 0 exactly the identity: theta is infinite, t is 0)"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 348,
+     "kind": "< -> <=",
+     "why": "column n does not exist; the values written there are never read"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 343,
+     "kind": "300 -> 301",
+     "why": "as above"
+    },
+    {
+     "fn": "jacobiEigen",
+     "line": 345,
+     "kind": "1 -> 2",
+     "why": "Math.sign(2) is 1, the same as Math.sign(1)"
+    },
+    {
+     "fn": "isPrime",
+     "line": 390,
+     "kind": "< -> <=",
+     "why": "as above: the extra squaring tests a^(n-1) = -1 (mod n), which never holds"
+    },
+    {
+     "fn": "isPrime",
+     "line": 384,
+     "kind": "0 -> 1",
+     "why": "the extra squaring tests a^(n-1) = -1 (mod n), which has no solution for n > 2: for every prime p dividing n the order of a would need a higher power of 2 than divides n - 1, forcing n = 1 mod 2^(v+1)"
+    },
+    {
+     "fn": "factorize",
+     "line": 409,
+     "kind": "<= -> <",
+     "why": "a prime square left by the stricter bound is split by Pollard's rho into the same primes, and the list is sorted"
+    },
+    {
+     "fn": "factorize",
+     "line": 409,
+     "kind": "< -> <=",
+     "why": "1000 is not prime and its factors 2 and 5 are already divided out"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "< -> <=",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "> -> >=",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "1 -> 2",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "1 -> 2",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "factorize",
+     "line": 418,
+     "kind": "0 -> 1",
+     "why": "only the sign of the comparison matters, and equal factors are the same number"
+    },
+    {
+     "fn": "crt",
+     "line": 426,
+     "kind": "+ -> -",
+     "why": "ri enters only through (ri - r) / g and the final mod l, which give the same residue for any representative"
+    },
+    {
+     "fn": "solve",
+     "line": 530,
+     "kind": "&& -> ||",
+     "why": "all three parts are true for every list factorize returns (it pushes only primes, by exact BigInt division), so and and or agree"
+    },
+    {
+     "fn": "solve",
+     "line": 530,
+     "kind": "&& -> ||",
+     "why": "all three parts are true for every list factorize returns (it pushes only primes, by exact BigInt division), so and and or agree"
+    },
+    {
+     "fn": "solve",
+     "line": 479,
+     "kind": "2 -> 3",
+     "why": "steps is at most 10000, so steps * 2 never exceeds 20000 or 30000"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/hyper-studio.mjs",
+   "sha256": "b2ba20a22f6904e903f4259eb07876964d8da6808c127e90780701beadbea649",
+   "functions": [
+    "rotatePlane",
+    "applyAngles",
+    "hypercube",
+    "sixteenCell",
+    "e8Roots",
+    "matMul",
+    "reflection",
+    "symEigen",
+    "coxeterPlane",
+    "perspective",
+    "rings",
+    "faceShade",
+    "projection",
+    "facesViewer",
+    "lengthsKept",
+    "normsKept",
+    "backToFront",
+    "facingOk",
+    "countsOk",
+    "isIdentity",
+    "coxeterOk",
+    "ringsExact",
+    "ringsMultiple",
+    "dofOk",
+    "harmonicOk",
+    "ev100Ok",
+    "insideBox",
+    "pathOk",
+    "overlapOk",
+    "hyperSvg",
+    "kelvinToXy",
+    "kelvinToColour",
+    "optics",
+    "astar",
+    "bfsLength",
+    "verlet",
+    "gamePhysics",
+    "hyper"
+   ],
+   "mutants": 847,
+   "killed": 808,
+   "equivalent": 39,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "hypercube",
+     "line": 47,
+     "kind": "> -> >=",
+     "why": "o = k ^ (1 << b) differs from k in bit b, so it never equals k"
+    },
+    {
+     "fn": "sixteenCell",
+     "line": 55,
+     "kind": "< -> <=",
+     "why": "for a = 8 the inner loop starts at b = 9 and does nothing"
+    },
+    {
+     "fn": "sixteenCell",
+     "line": 55,
+     "kind": "8 -> 9",
+     "why": "as above: an outer a = 8 has an empty inner loop"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 62,
+     "kind": "< -> <=",
+     "why": "for i = 8 the inner loop starts at j = 9 and adds no root"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "for a = V.length the inner loop is empty"
+    },
+    {
+     "fn": "e8Roots",
+     "line": 62,
+     "kind": "8 -> 9",
+     "why": "as above"
+    },
+    {
+     "fn": "matMul",
+     "line": 76,
+     "kind": "0 -> 1",
+     "why": "every matrix multiplied here has at least two rows of the same length, so B[1] has as many columns as B[0]"
+    },
+    {
+     "fn": "symEigen",
+     "line": 84,
+     "kind": "< -> <=",
+     "why": "for i = n the inner loop starts at j = n + 1 and adds nothing (j <= n is killed by the exact-1e-26 probe)"
+    },
+    {
+     "fn": "symEigen",
+     "line": 86,
+     "kind": "< -> <=",
+     "why": "for p = n the inner loop does nothing"
+    },
+    {
+     "fn": "symEigen",
+     "line": 87,
+     "kind": "< -> <=",
+     "why": "a rotation of an entry this small is the identity to double precision, and of 0 exactly the identity (theta is infinite, t is 0)"
+    },
+    {
+     "fn": "symEigen",
+     "line": 90,
+     "kind": "< -> <=",
+     "why": "column n does not exist; the values written there are never read"
+    },
+    {
+     "fn": "symEigen",
+     "line": 87,
+     "kind": "300 -> 301",
+     "why": "as above"
+    },
+    {
+     "fn": "symEigen",
+     "line": 88,
+     "kind": "1 -> 2",
+     "why": "Math.sign(2) is 1, the same as Math.sign(1)"
+    },
+    {
+     "fn": "projection",
+     "line": 169,
+     "kind": "6 -> 7",
+     "why": "distinct ring radii of these projections differ by more than 1e-3 and equal radii agree to about 1e-15, so 1e-6 and 1e-7 group them the same"
+    },
+    {
+     "fn": "projection",
+     "line": 174,
+     "kind": "1 -> 2",
+     "why": "every shape has a vertex off the origin, so the span is never 0"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "< -> <=",
+     "why": "|top[0] - w| and |top[1] - top[0]| are differences of doubles near 1.96 (the first comparison must hold for the second to matter), so they are multiples of 2^-52 and never exactly 1e-9"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "< -> <=",
+     "why": "|top[0] - w| and |top[1] - top[0]| are differences of doubles near 1.96 (the first comparison must hold for the second to matter), so they are multiples of 2^-52 and never exactly 1e-9"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "0 -> 1",
+     "why": "swapping top[0] for top[1] in the first comparison: the second comparison makes both within 1e-9 of each other, so the answer is the same"
+    },
+    {
+     "fn": "coxeterOk",
+     "line": 198,
+     "kind": "0 -> 1",
+     "why": "swapping top[0] for top[1] in the first comparison: the second comparison makes both within 1e-9 of each other, so the answer is the same"
+    },
+    {
+     "fn": "harmonicOk",
+     "line": 203,
+     "kind": "< -> <=",
+     "why": "s (1/near + 1/far) - 2 is a difference of doubles near 2, a multiple of 2^-52, never exactly 1e-9"
+    },
+    {
+     "fn": "ev100Ok",
+     "line": 204,
+     "kind": "< -> <=",
+     "why": "the ratio minus 1 is a difference of doubles near 1, a multiple of 2^-53, never exactly 1e-9"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 2000 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 2000 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "> -> >=",
+     "why": "no shape has exactly 64 points (8, 16, 240, 256)"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "2000 -> 2001",
+     "why": "no shape has 2001 edges"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 219,
+     "kind": "2000 -> 2001",
+     "why": "no shape has 2001 edges"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "256 -> 257",
+     "why": "no shape has 257 points"
+    },
+    {
+     "fn": "hyperSvg",
+     "line": 220,
+     "kind": "64 -> 65",
+     "why": "no shape has 65 points"
+    },
+    {
+     "fn": "kelvinToColour",
+     "line": 240,
+     "kind": "<= -> <",
+     "why": "the two branches of the sRGB curve meet at 0.0031308 (both give 0.04045), so the hex is the same either way"
+    },
+    {
+     "fn": "kelvinToColour",
+     "line": 244,
+     "kind": "1 -> 2",
+     "why": "every channel is at most 1 here (the largest is scaled to 1 before the curve), so min(1, v) and min(2, v) agree"
+    },
+    {
+     "fn": "optics",
+     "line": 253,
+     "kind": "< -> <=",
+     "why": "when s equals H the formula divides by 0 and also gives Infinity"
+    },
+    {
+     "fn": "optics",
+     "line": 259,
+     "kind": "2 -> 3",
+     "why": "both mireds are already rounded to 2 decimals, so their difference rounds the same to 2 or 3"
+    },
+    {
+     "fn": "astar",
+     "line": 279,
+     "kind": "0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same; the start's own f is never compared, because it is alone in the list when it is taken"
+    },
+    {
+     "fn": "astar",
+     "line": 279,
+     "kind": "0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same; the start's own f is never compared, because it is alone in the list when it is taken"
+    },
+    {
+     "fn": "bfsLength",
+     "line": 310,
+     "kind": "+ -> -",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "bfsLength",
+     "line": 310,
+     "kind": "+ -> -",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "verlet",
+     "line": 327,
+     "kind": "< -> <=",
+     "why": "for i = P.length the inner loop does nothing"
+    },
+    {
+     "fn": "verlet",
+     "line": 336,
+     "kind": "< -> <=",
+     "why": "with dv = 0 the swap adds 0 to every position"
+    },
+    {
+     "fn": "verlet",
+     "line": 345,
+     "kind": "< -> <=",
+     "why": "as above"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/math-typeset.mjs",
+   "sha256": "ed0cb6cc6881296d2b619b8a3353d77a408fa1d90210746026111220858cd541",
+   "functions": [
+    "textWidth",
+    "textBox",
+    "glue",
+    "moveItem",
+    "hbox",
+    "fracBox",
+    "supBox",
+    "subBox",
+    "delimBox",
+    "sqrtBox",
+    "numText",
+    "layout",
+    "integralBox",
+    "matrixBox",
+    "solutionLines",
+    "boxesHold",
+    "typesetSvg"
+   ],
+   "mutants": 277,
+   "killed": 277,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/cinematic-presets.mjs",
+   "sha256": "ef7be37994e700450f2ccec164171da077bf47bf1ee7d879e638fec7010881db",
+   "functions": [
+    "frameOf",
+    "goldenRect",
+    "goldenSpiral",
+    "spiralEye",
+    "mirrorPoint",
+    "arcsJoin",
+    "arcsRound",
+    "insideFrame",
+    "closesOnEye",
+    "composition",
+    "sweepOf",
+    "cinematicSvg",
+    "compileCinematic",
+    "presetList"
+   ],
+   "mutants": 184,
+   "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/unified-workbench.mjs",
+   "sha256": "3da61ee5f34729f01a6cfbac06b4f85ccc17450e251cf9fa0c8d4a89f57ace21",
+   "functions": [
+    "runStage",
+    "lockedOf",
+    "runWorkbench"
+   ],
+   "mutants": 42,
+   "killed": 42,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/universal-agent.mjs",
+   "sha256": "54964f998e46ed5e036822a3b0be928fa96ee41f16f401f24b2b1f3df206445c",
+   "functions": [
+    "uaR",
+    "unit",
+    "list",
+    "text",
+    "buildRequest",
+    "scoreCandidate",
+    "route",
+    "relay",
+    "compress",
+    "triageOne",
+    "security",
+    "graph",
+    "lean",
+    "design",
+    "universalAgent"
+   ],
+   "mutants": 256,
+   "killed": 253,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "< -> <=",
+     "why": "route refuses a repeated id, so two ids are never equal and < and <= agree"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "route",
+     "line": 110,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/foss-atlas.mjs",
+   "sha256": "9e9dcf119962e11bad2c270101885f88a33d1362329b2f49f7b4fee2da61231f",
+   "functions": [
+    "sha1Hex",
+    "rotl",
+    "kAnonymity",
+    "luhnOk",
+    "scrubPrivate",
+    "planSteps",
+    "n8nBlueprint",
+    "planFossStack",
+    "mulberry32",
+    "personas",
+    "atlasView"
+   ],
+   "mutants": 232,
+   "killed": 227,
+   "equivalent": 5,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "sha1Hex",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "b[n] is undefined, and undefined << k is 0, so one more pass ORs in zero"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "< -> <=",
+     "why": "one more pass writes w[80], which no round reads"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 73,
+     "kind": "80 -> 81",
+     "why": "the length is only a size hint; the rounds read w[0] to w[79], which are always written first"
+    },
+    {
+     "fn": "sha1Hex",
+     "line": 75,
+     "kind": "80 -> 81",
+     "why": "as above: w[80] is written and never read"
+    },
+    {
+     "fn": "luhnOk",
+     "line": 112,
+     "kind": "> -> >=",
+     "why": "d is a doubled digit, so it is even and never exactly 9"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/prompt-metacodes.mjs",
+   "sha256": "eacf995123e83f9dcc2e4e3dca44c7b7fae2eea8580a44b380d56f4ce40e1678",
+   "functions": [
+    "parseMetacodes",
+    "privateHost",
+    "sensitiveCategories",
+    "proveOption",
+    "buildOption",
+    "compileMetacodes"
+   ],
+   "mutants": 150,
+   "killed": 150,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/contrast-heal.mjs",
+   "sha256": "336bee8f2e5d0d5fbfd9dde1ee424dce5fd211b269dd79a6dc9cf664355fcaf7",
+   "functions": [
+    "parseColour",
+    "rgbToOklch",
+    "oklchToRgb",
+    "inGamut",
+    "wcagRatio",
+    "apcaLc",
+    "healOklchContrast"
+   ],
+   "mutants": 151,
+   "killed": 140,
+   "equivalent": 11,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "rgbToOklch",
+     "line": 42,
+     "kind": "< -> <=",
+     "why": "no colour has a chroma of exactly 1e-7, the grey cut-off"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "< -> <=",
+     "why": "no channel lands on exactly -0.000001"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "> -> >=",
+     "why": "no channel lands on exactly 1.000001"
+    },
+    {
+     "fn": "oklchToRgb",
+     "line": 51,
+     "kind": "6 -> 7",
+     "why": "a tolerance of 1e-7 instead of 1e-6 changes no colour that rounds to a different 8-bit hex"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 69,
+     "kind": "< -> <=",
+     "why": "when |yb - yt| is under 0.0005 (or both are small), the low-contrast clip below returns 0 as well"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 70,
+     "kind": "< -> <=",
+     "why": "APCA's clip is applied to a continuous value that is never exactly 0.1"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 67,
+     "kind": "> -> >=",
+     "why": "the soft clamp is continuous at 0.022: both branches give 0.022 there"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 70,
+     "kind": "> -> >=",
+     "why": "equal luminances were already answered 0 by the line above"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 72,
+     "kind": "> -> >=",
+     "why": "as above, for the reverse polarity"
+    },
+    {
+     "fn": "apcaLc",
+     "line": 69,
+     "kind": "- -> +",
+     "why": "when |yb - yt| is under 0.0005 (or both are small), the low-contrast clip below returns 0 as well"
+    },
+    {
+     "fn": "healOklchContrast",
+     "line": 97,
+     "kind": "> -> >=",
+     "why": "the found lightness never equals the original, which failed"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/passive-recon.mjs",
+   "sha256": "cc840b56ca206213b7c998fcd8388e8c31b198186628a15be2aaaf98104b7876",
+   "functions": [
+    "normalizeDomain",
+    "parseRdap",
+    "parseCt",
+    "gradeHeaders",
+    "parseSecurityTxt",
+    "reconReport"
+   ],
+   "mutants": 242,
+   "killed": 234,
+   "equivalent": 8,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": ">= -> >",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "< -> <=",
+     "why": "the shortest name the label rules accept is four characters (a.bc), so < 3 and <= 3 refuse the same names"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 24,
+     "kind": "0 -> 1",
+     "why": "a / at index 0 left in place makes the first label contain /, which the label check refuses just as the empty name is refused"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 26,
+     "kind": "3 -> 4",
+     "why": "as above: no three- or four-character name differs, since a.bc is the shortest that passes"
+    },
+    {
+     "fn": "normalizeDomain",
+     "line": 31,
+     "kind": "63 -> 64",
+     "why": "a label longer than 63 characters is already refused by the loop above"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "< -> <=",
+     "why": "issuer names are Map keys, so two of them are never equal"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    },
+    {
+     "fn": "parseCt",
+     "line": 90,
+     "kind": "1 -> 2",
+     "why": "a comparator's sign is all that matters; -2 and 2 order the same as -1 and 1"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/reversal.mjs",
+   "sha256": "fff4081d77fc34c79de8b164ce86a9513d54707d26d028725f59f6ba637f3f06",
+   "functions": [
+    "correctionVector",
+    "sealed",
+    "reversePlan",
+    "hueOf",
+    "rgbHue",
+    "gradientColours",
+    "fixGradients",
+    "cssOf",
+    "cssBlocks",
+    "glassSelectors",
+    "addCss",
+    "fixContrast",
+    "reverseTemplate"
+   ],
+   "mutants": 237,
+   "killed": 208,
+   "equivalent": 29,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "reversePlan",
+     "line": 41,
+     "kind": "&& -> ||",
+     "why": "a locked step is an object or a non-empty string, and a string has no gate, locked or status, so o reads the same"
+    },
+    {
+     "fn": "hueOf",
+     "line": 65,
+     "kind": "6 -> 7",
+     "why": "h always has exactly six characters, so slice(4, 7) equals slice(4, 6)"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 78,
+     "kind": "6 -> 7",
+     "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and % 6 or % 7 leaves it unchanged"
+    },
+    {
+     "fn": "rgbHue",
+     "line": 79,
+     "kind": "360 -> 361",
+     "why": "h * 60 is always in [-60, 300], so the first % 360 changes nothing; the other two 360s are killed by the oracle"
+    },
+    {
+     "fn": "gradientColours",
+     "line": 84,
+     "kind": "+ -> -",
+     "why": "the extra two characters are always \"t(\" from \"-gradient(\", and \"t\" is not a colour"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 98,
+     "kind": ">= -> >",
+     "why": "nextStop[0] is read only when a gradient ends at index 0, which cannot happen"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 96,
+     "kind": "< -> <=",
+     "why": "the extra turn reads text[n], which is undefined, and writes past the end of the buffer, which is ignored"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 101,
+     "kind": "< -> <=",
+     "why": "last is the index of a stop character or the end of the text, and a gradient starts with a letter"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 94,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 94,
+     "kind": "1 -> 2",
+     "why": "a longer buffer holds the same values at every index read"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 95,
+     "kind": "0 -> 1",
+     "why": "prevStop[0] is read only for a gradient at index 0, which has no property before it, and prevStop[1] is written by the loop"
+    },
+    {
+     "fn": "fixGradients",
+     "line": 98,
+     "kind": "0 -> 1",
+     "why": "as above: nextStop[0] is never read"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "< -> <=",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 124,
+     "kind": "< -> <=",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 122,
+     "kind": "7 -> 8",
+     "why": "the test is anchored at the start, so one more character after '<style' and its space or '>' changes nothing"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "0 -> 1",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "1 -> 2",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssOf",
+     "line": 124,
+     "kind": "0 -> 1",
+     "why": "close, when found, is after open, so it is never 0"
+    },
+    {
+     "fn": "cssOf",
+     "line": 123,
+     "kind": "- -> +",
+     "why": "open is found at least six characters in when the tag matched, so < 0 and <= 0 or < 1 agree; when no '>' follows, -1, -2 and +1 all end the loop before any rule can be read (at most the text's first character is kept)"
+    },
+    {
+     "fn": "cssBlocks",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "the extra turn reads css[css.length], which is undefined and matches no branch"
+    },
+    {
+     "fn": "addCss",
+     "line": 166,
+     "kind": ">= -> >",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    },
+    {
+     "fn": "addCss",
+     "line": 166,
+     "kind": "0 -> 1",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the other branch does"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 181,
+     "kind": "< -> <=",
+     "why": "a declaration that starts with : has an empty property, which matches neither color nor background"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 192,
+     "kind": "< -> <=",
+     "why": "a body follows its {, so it is never found at index 0"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 174,
+     "kind": "0 -> 1",
+     "why": "for cursor: a rule body always starts after its {, so searching from index 1 finds the same place"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 178,
+     "kind": "1 -> 2",
+     "why": "-2 is as much 'no colour' as -1 for the fgAt < 0 test"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 181,
+     "kind": "0 -> 1",
+     "why": "a declaration that starts with : has an empty property, which matches neither color nor background"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 192,
+     "kind": "0 -> 1",
+     "why": "a body follows its {, so it is never found at index 0"
+    },
+    {
+     "fn": "fixContrast",
+     "line": 196,
+     "kind": "+ -> -",
+     "why": "the healed body no longer matches the old text, so a search from an earlier point finds the same next occurrence"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-long-horizon/gate.py",
+   "sha256": "05c71d4a2c558d8d62be2941be22af5309e2a10065358d179e9fc24c9bd5112f",
+   "functions": [
+    "judge"
+   ],
+   "mutants": 51,
+   "killed": 51,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-formal-verify/state_prover.py",
+   "sha256": "19c2b5eb58ec6f6080b073927e67ed840e82cf955ca3d5d1df9caa12df4ff07c",
+   "functions": [
+    "plan_machine",
+    "_search",
+    "_path",
+    "prove",
+    "ui_completeness"
+   ],
+   "mutants": 63,
+   "killed": 63,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-quantum-math/quantum_math.py",
+   "sha256": "448589c4333b331fe321ac26fc8ea5d6b1f7ecace65df7315dc56c1c2cb7e1ee",
+   "functions": [
+    "gf_mul",
+    "gf_inv",
+    "_eval",
+    "split_secret_gf256",
+    "reconstruct_secret_gf256",
+    "compute_vpin_toxicity"
+   ],
+   "mutants": 101,
+   "killed": 99,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "gf_mul",
+     "line": 145,
+     "kind": "constant 8 -> 9",
+     "why": "b is below 256, so after eight right shifts it is 0 and a ninth pass adds nothing"
+    },
+    {
+     "fn": "reconstruct_secret_gf256",
+     "line": 198,
+     "kind": "constant True -> False",
+     "why": "zip(strict=...) over shares and ys, which are built from the same list, so the lengths always match"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-passive-recon/passive_recon.py",
+   "sha256": "0894e8592132e44eb897756bc7ba9eae91f7dddce743cfd19763dc1180be2e37",
+   "functions": [
+    "utc_ms",
+    "iso",
+    "normalize_domain",
+    "parse_rdap",
+    "parse_ct",
+    "grade_headers",
+    "parse_security_txt",
+    "recon_report",
+    "read_headers"
+   ],
+   "mutants": 273,
+   "killed": 264,
+   "equivalent": 9,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "utc_ms",
+     "line": 49,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 78,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 81,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "utc_ms",
+     "line": 57,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 84,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 73,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 74,
+     "kind": "constant 1 -> 2",
+     "why": "split('/', 2)[0] is the same text as split('/', 1)[0]"
+    },
+    {
+     "fn": "normalize_domain",
+     "line": 77,
+     "kind": "constant 3 -> 4",
+     "why": "the shortest name the label rules accept is four characters (a.bc)"
+    },
+    {
+     "fn": "utc_ms",
+     "line": 52,
+     "kind": "constant 1 -> 2",
+     "why": "s[-2:] in 'zZ' misses the Z, but datetime.fromisoformat reads a trailing Z itself since Python 3.11"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-universal-math/universal_math.py",
+   "sha256": "071ccf47553d1f1e1121aa2d323721771cf2feb86a60f80b5358d03c0895562c",
+   "functions": [
+    "js_round",
+    "js_str",
+    "to_precision",
+    "to_exponential",
+    "fmt",
+    "r12",
+    "_num",
+    "_div",
+    "_pow",
+    "_call",
+    "tokenize",
+    "parse",
+    "evaluate",
+    "num",
+    "is_n",
+    "has_var",
+    "simplify",
+    "_d",
+    "show",
+    "adaptive_simpson",
+    "brent",
+    "find_roots",
+    "check_matrix",
+    "_scale",
+    "gauss_solve",
+    "determinant",
+    "inverse",
+    "jacobi_eigen",
+    "rk4",
+    "_tdiv",
+    "_tmod",
+    "big",
+    "egcd",
+    "is_prime",
+    "_rho",
+    "factorize",
+    "crt",
+    "bayes",
+    "_interval",
+    "_number",
+    "solve",
+    "um_text",
+    "localize"
+   ],
+   "mutants": 1326,
+   "killed": 1281,
+   "equivalent": 45,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "_rho",
+     "line": 806,
+     "kind": "return None",
+     "why": "reached only when every constant fails, which no composite below 2^64 in reach does"
+    },
+    {
+     "fn": "brent",
+     "line": 526,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "jacobi_eigen",
+     "line": 679,
+     "kind": "constant 100 -> 101",
+     "why": "after convergence a sweep is the identity to double precision, so a 101st sweep changes nothing"
+    },
+    {
+     "fn": "_div",
+     "line": 121,
+     "kind": "arith Mult -> Div",
+     "why": "multiplying or dividing infinity by plus or minus 1 gives the same infinity"
+    },
+    {
+     "fn": "parse",
+     "line": 279,
+     "kind": "constant 0 -> 1",
+     "why": "as above, for the whole expression"
+    },
+    {
+     "fn": "brent",
+     "line": 525,
+     "kind": "arith Mult -> Div",
+     "why": "fb is not 0 here (returned above), and a quotient has the same sign as the product"
+    },
+    {
+     "fn": "brent",
+     "line": 529,
+     "kind": "arith Sub -> Add",
+     "why": "d is read only when mflag is false, which needs one iteration, and every iteration first sets d = c"
+    },
+    {
+     "fn": "gauss_solve",
+     "line": 617,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "inverse",
+     "line": 665,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "is_prime",
+     "line": 772,
+     "kind": "constant 0 -> 1",
+     "why": "the extra squaring tests a^(n-1) = -1 (mod n), which has no solution for n > 2: every prime p dividing n would need a higher power of 2 in p - 1 than in n - 1"
+    },
+    {
+     "fn": "is_prime",
+     "line": 775,
+     "kind": "constant 1 -> 2",
+     "why": "as above: the extra squarings test a^(2^k (n-1)) = -1 (mod n), which never holds for the same reason"
+    },
+    {
+     "fn": "_rho",
+     "line": 792,
+     "kind": "arith Mod -> Mult",
+     "why": "factorize divides out every prime below 1000 first, so rho never sees an even n, and for an even n the loop also finds 2"
+    },
+    {
+     "fn": "_rho",
+     "line": 794,
+     "kind": "constant 20 -> 21",
+     "why": "the constants are tried until one splits n; no composite below 2^64 in reach needs the 20th"
+    },
+    {
+     "fn": "_rho",
+     "line": 797,
+     "kind": "constant 0 -> 1",
+     "why": "the step budget is far above the about sqrt(p) <= 2^16 steps rho needs below 2^64"
+    },
+    {
+     "fn": "factorize",
+     "line": 817,
+     "kind": "compare Lt -> GtE",
+     "why": "trial division is a speed-up; Pollard's rho and Miller-Rabin give the same sorted primes"
+    },
+    {
+     "fn": "factorize",
+     "line": 817,
+     "kind": "compare LtE -> Gt",
+     "why": "as above"
+    },
+    {
+     "fn": "factorize",
+     "line": 821,
+     "kind": "constant 1 -> 2",
+     "why": "after 2 the odd candidates include every prime"
+    },
+    {
+     "fn": "crt",
+     "line": 838,
+     "kind": "constant 0 -> 1",
+     "why": "the first merge is with m = 1, which sets r to the first remainder whatever r was"
+    },
+    {
+     "fn": "crt",
+     "line": 847,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "is_prime",
+     "line": 770,
+     "kind": "arith Mod -> Mult",
+     "why": "n * p is never 0 here (n >= 2); a composite with a small prime factor p fails the Miller-Rabin round for base p, since p^d = +-1 (mod n) is impossible when p divides n"
+    },
+    {
+     "fn": "_rho",
+     "line": 803,
+     "kind": "constant 1 -> 2",
+     "why": "as above: half the budget is still far above what rho needs"
+    },
+    {
+     "fn": "factorize",
+     "line": 817,
+     "kind": "constant 1000 -> 1001",
+     "why": "1000 is not prime and its factors are already divided out"
+    },
+    {
+     "fn": "factorize",
+     "line": 817,
+     "kind": "arith Mult -> Div",
+     "why": "trial division by every p below 1000 gives the same primes, only slower"
+    },
+    {
+     "fn": "factorize",
+     "line": 818,
+     "kind": "arith Mod -> Mult",
+     "why": "without trial division rho and Miller-Rabin find the same primes"
+    },
+    {
+     "fn": "js_str",
+     "line": 60,
+     "kind": "constant 0 -> 1",
+     "why": "v is infinite here, so v > 0 and v > 1 agree"
+    },
+    {
+     "fn": "_div",
+     "line": 121,
+     "kind": "constant 1 -> 2",
+     "why": "infinity times 2 is infinity, with the same sign"
+    },
+    {
+     "fn": "show",
+     "line": 470,
+     "kind": "constant 5 -> 6",
+     "why": "5 and 6 are both above every operator's precedence (1 to 4)"
+    },
+    {
+     "fn": "show",
+     "line": 483,
+     "kind": "constant 3 -> 4",
+     "why": "under a minus every child below precedence 4 is bracketed either way, and ^ on the right is not bracketed in both cases"
+    },
+    {
+     "fn": "_tdiv",
+     "line": 729,
+     "kind": "constant 0 -> 1",
+     "why": "for a = 0 the quotient is 0 either way, and b is never 0 (abs(a) // 0 raises first)"
+    },
+    {
+     "fn": "_tdiv",
+     "line": 729,
+     "kind": "constant 0 -> 1",
+     "why": "for a = 0 the quotient is 0 either way, and b is never 0 (abs(a) // 0 raises first)"
+    },
+    {
+     "fn": "_rho",
+     "line": 798,
+     "kind": "constant 200000 -> 200001",
+     "why": "as above"
+    },
+    {
+     "fn": "_rho",
+     "line": 804,
+     "kind": "constant 1 -> 2",
+     "why": "the loop ends only with d != 1 or the budget spent; d = 2 is impossible for the odd n rho receives"
+    },
+    {
+     "fn": "js_str",
+     "line": 72,
+     "kind": "constant 0 -> 1",
+     "why": "this branch has e10 >= 21 or e10 <= -7, never 1"
+    },
+    {
+     "fn": "_pow",
+     "line": 131,
+     "kind": "constant 0 -> 1",
+     "why": "for a = 0 only a negative exponent raises; 0 ** b for 0 <= b < 1 returns without an error, so this line is not reached for it"
+    },
+    {
+     "fn": "tokenize",
+     "line": 190,
+     "kind": "constant 2 -> 3",
+     "why": "the pattern has already seen a digit right after the sign, and the digit loop takes that digit anyway"
+    },
+    {
+     "fn": "tokenize",
+     "line": 190,
+     "kind": "constant 1 -> 2",
+     "why": "as above, without a sign"
+    },
+    {
+     "fn": "find_roots",
+     "line": 570,
+     "kind": "bool Or -> And",
+     "why": "for dv = 0 the step raises no error but is infinite and leaves the bracket; for an infinite dv the step is 0 and keeps r; NaN breaks either way"
+    },
+    {
+     "fn": "solve",
+     "line": 965,
+     "kind": "constant 2 -> 3",
+     "why": "steps is at most 10000, so steps * 2 never exceeds 20000 or 30000"
+    },
+    {
+     "fn": "parse",
+     "line": 252,
+     "kind": "constant 0 -> 1",
+     "why": "a right binding power of 0 or 1 is below the lowest operator's 10"
+    },
+    {
+     "fn": "parse",
+     "line": 264,
+     "kind": "constant 0 -> 1",
+     "why": "as above, inside brackets"
+    },
+    {
+     "fn": "show",
+     "line": 471,
+     "kind": "constant 4 -> 5",
+     "why": "a negative left operand of ^ has precedence 3 < 4 and is bracketed by the first clause anyway"
+    },
+    {
+     "fn": "parse",
+     "line": 276,
+     "kind": "constant 1 -> 2",
+     "why": "^ reads its right side at 28 instead of 29; no operator binds between them"
+    },
+    {
+     "fn": "solve",
+     "line": 1028,
+     "kind": "bool And -> Or",
+     "why": "all three parts are true for every list factorize returns, so and and or agree"
+    },
+    {
+     "fn": "parse",
+     "line": 269,
+     "kind": "constant 25 -> 26",
+     "why": "no operator binds between 25 and 26 (they bind at 10, 20 and 30)"
+    },
+    {
+     "fn": "parse",
+     "line": 271,
+     "kind": "constant 25 -> 26",
+     "why": "as above, for a unary plus"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-hyper-studio/hyper_studio.py",
+   "sha256": "f975e04169d69144b2a7c611391b8ce1c9342cd75bbecbc8101ac0d9363312f0",
+   "functions": [
+    "r",
+    "_num",
+    "_js_num_str",
+    "_number",
+    "rotate_plane",
+    "apply_angles",
+    "hypercube",
+    "sixteen_cell",
+    "e8_roots",
+    "mat_mul",
+    "reflection",
+    "sym_eigen",
+    "coxeter_plane",
+    "_petrie",
+    "perspective",
+    "rings",
+    "face_shade",
+    "oklch_css",
+    "faces_viewer",
+    "lengths_kept",
+    "norms_kept",
+    "back_to_front",
+    "facing_ok",
+    "counts_ok",
+    "is_identity",
+    "coxeter_ok",
+    "rings_exact",
+    "rings_multiple",
+    "dof_ok",
+    "harmonic_ok",
+    "ev100_ok",
+    "overlap_ok",
+    "inside_box",
+    "path_ok",
+    "projection",
+    "hyper_svg",
+    "kelvin_to_xy",
+    "kelvin_to_colour",
+    "_pos",
+    "_get",
+    "optics",
+    "_is_int",
+    "_cell",
+    "astar",
+    "bfs_length",
+    "verlet",
+    "game_physics",
+    "hyper"
+   ],
+   "mutants": 1078,
+   "killed": 1052,
+   "equivalent": 26,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "bfs_length",
+     "line": 601,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "sym_eigen",
+     "line": 156,
+     "kind": "constant 60 -> 61",
+     "why": "the 8 x 8 matrix converges in far fewer sweeps; after convergence a sweep is the identity to double precision"
+    },
+    {
+     "fn": "e8_roots",
+     "line": 128,
+     "kind": "constant 8 -> 9",
+     "why": "for i = 8 the inner range starts at 9 and adds no root"
+    },
+    {
+     "fn": "projection",
+     "line": 415,
+     "kind": "constant 1 -> 2",
+     "why": "every shape has a vertex off the origin, so the span is never 0"
+    },
+    {
+     "fn": "kelvin_to_colour",
+     "line": 474,
+     "kind": "arith Add -> Sub",
+     "why": "Python's % with a positive divisor is never negative, so adding or subtracting 360 first gives the same angle"
+    },
+    {
+     "fn": "optics",
+     "line": 513,
+     "kind": "constant 2 -> 3",
+     "why": "both mireds are already rounded to 2 decimals, so their difference rounds the same to 2 or 3"
+    },
+    {
+     "fn": "astar",
+     "line": 544,
+     "kind": "constant 0 -> 1",
+     "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 434,
+     "kind": "constant 2000 -> 2001",
+     "why": "no shape has 2001 edges (12, 24, 32, 1024, 6720)"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 436,
+     "kind": "constant 256 -> 257",
+     "why": "no shape has 257 points (8, 16, 240, 256)"
+    },
+    {
+     "fn": "astar",
+     "line": 547,
+     "kind": "constant 0 -> 1",
+     "why": "the start's f is never compared: it is alone in the list when it is taken"
+    },
+    {
+     "fn": "sixteen_cell",
+     "line": 122,
+     "kind": "constant 8 -> 9",
+     "why": "for a = 8 the inner range is empty"
+    },
+    {
+     "fn": "_js_num_str",
+     "line": 250,
+     "kind": "constant 0 -> 1",
+     "why": "v is infinite here, so v > 0 and v > 1 agree"
+    },
+    {
+     "fn": "projection",
+     "line": 373,
+     "kind": "arith Div -> Mult",
+     "why": "a face centre of the cube lies at distance 1, so multiplying or dividing by its length differs only in the last bit, below every rounding of the output"
+    },
+    {
+     "fn": "bfs_length",
+     "line": 595,
+     "kind": "arith Add -> Sub",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "bfs_length",
+     "line": 595,
+     "kind": "arith Add -> Sub",
+     "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"
+    },
+    {
+     "fn": "r",
+     "line": 50,
+     "kind": "constant 2 -> 3",
+     "why": "no rounded value here is a whole number at or above 2^53, so the bound is never reached"
+    },
+    {
+     "fn": "r",
+     "line": 50,
+     "kind": "constant 53 -> 54",
+     "why": "as above"
+    },
+    {
+     "fn": "_js_num_str",
+     "line": 262,
+     "kind": "constant 0 -> 1",
+     "why": "this branch has e10 >= 21 or e10 <= -7, never 1"
+    },
+    {
+     "fn": "coxeter_ok",
+     "line": 312,
+     "kind": "constant 0 -> 1",
+     "why": "swapping top[0] for top[1] in the first or last comparison: the middle comparison makes them equal within 1e-9, against margins of 1e-9 (unreachable for doubles near 1.96) and 1e-3"
+    },
+    {
+     "fn": "hyper_svg",
+     "line": 437,
+     "kind": "constant 64 -> 65",
+     "why": "no shape has 65 points"
+    },
+    {
+     "fn": "coxeter_ok",
+     "line": 312,
+     "kind": "constant 0 -> 1",
+     "why": "swapping top[0] for top[1] in the first or last comparison: the middle comparison makes them equal within 1e-9, against margins of 1e-9 (unreachable for doubles near 1.96) and 1e-3"
+    },
+    {
+     "fn": "e8_roots",
+     "line": 137,
+     "kind": "compare Lt -> GtE",
+     "why": "there are 8 signs, so the count of non-negative ones has the same parity as the count of negative ones"
+    },
+    {
+     "fn": "mat_mul",
+     "line": 148,
+     "kind": "constant 0 -> 1",
+     "why": "every matrix multiplied here has at least two rows of the same length, so B[1] has as many columns as B[0]"
+    },
+    {
+     "fn": "projection",
+     "line": 396,
+     "kind": "constant 8 -> 9",
+     "why": "a ninth row is all zeros (i never equals j), stays zero after the products, and is 0 where the identity test expects 0"
+    },
+    {
+     "fn": "oklch_css",
+     "line": 266,
+     "kind": "constant 2 -> 3",
+     "why": "L is already rounded to 4 decimals, so L * 100 rounds the same to 2 or 3 decimals"
+    },
+    {
+     "fn": "kelvin_to_colour",
+     "line": 475,
+     "kind": "constant 1 -> 2",
+     "why": "every channel is at most 1 here (the largest is scaled to 1 before the curve)"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-unified-workbench/unified_workbench.py",
+   "sha256": "6d9ccf70b9aada31b56dbb59d513a6a3a50b73f019e594526915f410c0c68d1b",
+   "functions": [
+    "_sha",
+    "_len16",
+    "run_stage",
+    "locked_of",
+    "run_workbench"
+   ],
+   "mutants": 56,
+   "killed": 56,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-universal-agent/universal_agent.py",
+   "sha256": "20ac8605b54cd99f4e1f3ba88f4bbcab01fafa82aaa77401385ecefc683c1f91",
+   "functions": [
+    "ua_r",
+    "_num",
+    "_is_int",
+    "_len16",
+    "_unit",
+    "_list",
+    "_text",
+    "is_loopback",
+    "_get",
+    "build_request",
+    "score_candidate",
+    "route",
+    "relay",
+    "compress",
+    "triage_one",
+    "security",
+    "graph",
+    "lean",
+    "design",
+    "universal_agent"
+   ],
+   "mutants": 274,
+   "killed": 274,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-foss-atlas/foss_atlas.py",
+   "sha256": "031ce353fb732738f71a705dcbe8f60f193870e0c17036e27a4202de51983da0",
+   "functions": [
+    "_num",
+    "fa_r",
+    "_utf16_len",
+    "entropy",
+    "sha1_hex",
+    "k_anonymity",
+    "luhn_ok",
+    "scrub_private",
+    "plan_steps",
+    "n8n_blueprint",
+    "_is_num",
+    "plan_foss_stack",
+    "mulberry32",
+    "_is_int",
+    "personas",
+    "atlas_view"
+   ],
+   "mutants": 206,
+   "killed": 205,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "sha1_hex",
+     "line": 115,
+     "kind": "constant False -> True",
+     "why": "usedforsecurity only tells hashlib how the digest is used; the digest is the same either way"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-hyper-studio/cinematic_presets.py",
+   "sha256": "63951597cd55113bc63dc603aed91b1958aab3c31422aa0415668ff263b31647",
+   "functions": [
+    "cp_r",
+    "frame_of",
+    "golden_rect",
+    "golden_spiral",
+    "spiral_eye",
+    "mirror_point",
+    "arcs_join",
+    "arcs_round",
+    "inside_frame",
+    "closes_on_eye",
+    "sweep_of",
+    "composition",
+    "_s",
+    "cinematic_svg",
+    "compile_cinematic",
+    "preset_list"
+   ],
+   "mutants": 265,
+   "killed": 265,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py",
+   "sha256": "9611d6c3d710da7759d1ed5476c72711979202367d963f5f56fba8b2616fb030",
+   "functions": [
+    "js_num",
+    "mc_text",
+    "_join_list",
+    "parse_metacodes",
+    "private_host",
+    "sensitive_categories",
+    "prove_option",
+    "build_option",
+    "js_json",
+    "sha256_hex",
+    "compile_metacodes"
+   ],
+   "mutants": 174,
+   "killed": 172,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "private_host",
+     "line": 138,
+     "kind": "constant 1 -> 2",
+     "why": "the pattern is anchored with ^, and re.sub matches ^ only at the start of the original string, so a second replacement never happens"
+    },
+    {
+     "fn": "private_host",
+     "line": 144,
+     "kind": "constant 1 -> 2",
+     "why": "as above: an anchored pattern is replaced at most once"
+    }
+   ]
+  },
+  {
+   "file": ".claude/skills/replica-reversal-engine/reversal_engine.py",
+   "sha256": "8a3b024381e40e172ad5b7649c35029b0098cd8fffbe103b7cc3f36cd247916f",
+   "functions": [
+    "correction_vector",
+    "sealed",
+    "reverse_and_correct_plan",
+    "_rgb_hue",
+    "hue_of",
+    "gradient_colours",
+    "is_ai_gradient",
+    "_fix_gradients",
+    "css_of",
+    "css_blocks",
+    "glass_selectors",
+    "_add_css",
+    "reverse_and_correct_template",
+    "parse_colour",
+    "to_hex",
+    "rgb_to_oklch",
+    "oklch_to_rgb",
+    "in_gamut",
+    "wcag_ratio",
+    "apca_lc",
+    "heal_oklch_contrast",
+    "_fix_contrast",
+    "_num",
+    "_round2",
+    "_oklch_text",
+    "measure",
+    "passes"
+   ],
+   "mutants": 541,
+   "killed": 516,
+   "equivalent": 25,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "_rgb_hue",
+     "line": 130,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "parse_colour",
+     "line": 320,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "parse_colour",
+     "line": 326,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "passes",
+     "line": 405,
+     "kind": "constant 60 -> 61",
+     "why": "every caller passes min_lc, so the default is never used"
+    },
+    {
+     "fn": "hue_of",
+     "line": 162,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "_add_css",
+     "line": 283,
+     "kind": "constant 0 -> 1",
+     "why": "a </head> at index 0 puts the new style first, which is exactly what the last line does"
+    },
+    {
+     "fn": "parse_colour",
+     "line": 324,
+     "kind": "return None",
+     "why": "the mutated lines already return None"
+    },
+    {
+     "fn": "heal_oklch_contrast",
+     "line": 435,
+     "kind": "return None",
+     "why": "the mutated line (search finds nothing) already returns None"
+    },
+    {
+     "fn": "_fix_contrast",
+     "line": 455,
+     "kind": "constant 0 -> 1",
+     "why": "for cursor and the not-found test: a rule body always follows its {, so it is never at index 0; a declaration starting with : has an empty property"
+    },
+    {
+     "fn": "_rgb_hue",
+     "line": 132,
+     "kind": "constant 6 -> 7",
+     "why": "when red is the largest, |g - b| <= d, so the quotient is in [-1, 1] and fmod by 6 or 7 leaves it unchanged"
+    },
+    {
+     "fn": "gradient_colours",
+     "line": 168,
+     "kind": "arith Add -> Sub",
+     "why": "the two extra characters are always 't(' from '-gradient(', and 't' is not a colour"
+    },
+    {
+     "fn": "css_of",
+     "line": 226,
+     "kind": "constant 0 -> 1",
+     "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"
+    },
+    {
+     "fn": "apca_lc",
+     "line": 388,
+     "kind": "arith Sub -> Add",
+     "why": "when |yb - yt| < 0.0005 or yb + yt < 0.0005, APCA's low-contrast clip returns 0 as well"
+    },
+    {
+     "fn": "reverse_and_correct_plan",
+     "line": 110,
+     "kind": "bool And -> Or",
+     "why": "the proof's and: every sensitive step has just been forced to a locked, pending approval, so each part is true and or gives the same"
+    },
+    {
+     "fn": "_fix_gradients",
+     "line": 184,
+     "kind": "constant 1 -> 2",
+     "why": "the stop lists one item longer hold the same values at every index read"
+    },
+    {
+     "fn": "_fix_gradients",
+     "line": 184,
+     "kind": "constant 1 -> 2",
+     "why": "the stop lists one item longer hold the same values at every index read"
+    },
+    {
+     "fn": "css_of",
+     "line": 225,
+     "kind": "constant 0 -> 1",
+     "why": "opened and close are at least 6 when found, so < 0 and < 1 agree"
+    },
+    {
+     "fn": "css_of",
+     "line": 225,
+     "kind": "constant 1 -> 2",
+     "why": "-2 instead of -1 for 'not found' still fails close < 0"
+    },
+    {
+     "fn": "rgb_to_oklch",
+     "line": 343,
+     "kind": "arith Add -> Sub",
+     "why": "Python's % is never negative, so (h - 360) % 360 equals (h + 360) % 360"
+    },
+    {
+     "fn": "_fix_contrast",
+     "line": 460,
+     "kind": "constant 1 -> 2",
+     "why": "-2 is as much 'no colour' as -1; and replacing up to two copies of the value changes nothing, since a value that parses as one colour holds one copy"
+    },
+    {
+     "fn": "_fix_contrast",
+     "line": 463,
+     "kind": "constant 0 -> 1",
+     "why": "for cursor and the not-found test: a rule body always follows its {, so it is never at index 0; a declaration starting with : has an empty property"
+    },
+    {
+     "fn": "_fix_contrast",
+     "line": 480,
+     "kind": "constant 0 -> 1",
+     "why": "for cursor and the not-found test: a rule body always follows its {, so it is never at index 0; a declaration starting with : has an empty property"
+    },
+    {
+     "fn": "_fix_contrast",
+     "line": 482,
+     "kind": "constant 1 -> 2",
+     "why": "-2 is as much 'no colour' as -1; and replacing up to two copies of the value changes nothing, since a value that parses as one colour holds one copy"
+    },
+    {
+     "fn": "hue_of",
+     "line": 152,
+     "kind": "constant 6 -> 7",
+     "why": "h always has six characters, so h[4:7] equals h[4:6]"
+    },
+    {
+     "fn": "css_of",
+     "line": 221,
+     "kind": "constant 7 -> 8",
+     "why": "re.match anchors at the start, so one more character after '<style' and its space or '>' changes nothing"
+    }
+   ]
+  }
+ ],
+ "sha256": "f2dcc8a2a65893a10ccce4f53aa794653ece6fa5be08d44522913a33db76ef3e"
+}

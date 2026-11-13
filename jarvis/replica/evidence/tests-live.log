@@ -1,0 +1,132 @@
+PASS live mode says where the data comes from
+PASS first workspace is OMEGA PRIME
+PASS OMEGA PRIME shows its own agents
+PASS keyboard switch to Jarvis Studio
+PASS the agent list changes with the workspace
+PASS locked cards belong to the workspace
+PASS locked cards have no approve button
+PASS seeded locked requests are labelled sample
+PASS click switch back to OMEGA PRIME
+PASS edit dialog opens with the agent
+PASS five locked permissions, all off and disabled
+PASS the new name shows after saving
+PASS the linked skill shows in Config
+PASS the server stored the edit
+PASS run dialog offers a default path
+PASS the real run succeeds
+PASS the files.read step lists the real files
+PASS the run is not labelled simulated
+PASS approving writes the note to disk
+PASS the report shows 0 leaks and what was dropped
+PASS the clone rebuilt the sections in order
+PASS the preview shows the rebuilt table and our own headline
+PASS no source text in the preview, the editors or the saved site
+PASS the clone flips to Arabic RTL
+PASS the download is clean, pinned and RTL
+PASS publishing the clone is a locked card
+PASS live mission runs to its approvals
+PASS live gates pass on the saved contrast report and SkillSpector scan
+PASS live tool step read the design folder
+PASS live locked install step waits with no approve button
+PASS the mission keeps task_plan.md and progress.md on disk
+PASS approving the mission note writes it and the next step runs
+PASS live capsule hash checks out
+PASS live restore pauses the mission and keeps the chain intact
+PASS live top bar shows the local model
+PASS the mission says the local model planned it
+PASS the model's thinking is shown, folded, as text
+PASS the publish step the model left unlocked waits as a locked card
+PASS the Studio keeps only the layout of the model's page
+PASS live workflow editor draws the locked publish step
+PASS live workflow run says where it came from and waits on the locked publish step
+PASS live updates come over server-sent events
+PASS a new webhook shows its HMAC secret once
+PASS an incoming webhook switches on
+PASS an outgoing webhook to an outside address shows as locked
+PASS asking to switch it on leaves it a draft (locked request)
+PASS live: add a member
+PASS live analytics renders
+PASS live: the model's Studio design was kept as a memory episode
+PASS live: a note is saved to the server's memory
+PASS live BM25 search ranks episodes with their matched words
+PASS live self-check grades the local model against computed answers
+PASS live self-check stores nine lessons in the database
+PASS live export downloads every episode of this workspace as JSONL
+PASS live forge mounts the skill in the database
+PASS live install request becomes a locked approval
+PASS nothing is written into .claude/skills
+PASS live web search shows results from five official APIs as safe links
+PASS live search lists each source's status
+PASS live search is summarised into memory
+PASS live search asks only the official API hosts
+PASS live OSV search lists the vulnerability with its CVE alias
+PASS live: a streamed answer shows its text, its reasoning apart and the untrusted label
+PASS live: the Stop button hides again once the answer is done
+PASS live: a hosted endpoint is stored as a draft behind a locked card
+PASS live: asking to go public leaves the database founder_private
+PASS live: GitHub discovery lists the repository with its licence
+PASS live: discovery results print no stray null
+PASS live: an imported SKILL.md is mounted in the database with its origin and licence
+PASS live: the import is in the evolution log
+PASS live: nothing is written into .claude/skills
+PASS live: the architect is the local planner, and its unlocked publish step is shown as proposed
+PASS live: the red team flags the unlocked step and the locks hold
+PASS live: the mission says the council planned it
+PASS live: the council's sensitive steps are approvals in the database and not done
+PASS live: snapshots are rows in the database, chained by SHA-256
+PASS live: the database refuses to edit a snapshot
+PASS live: the server's diff is shown side by side
+PASS live: the UX heatmap is drawn from the preview's own boxes
+PASS live: the macro composer shows the proof
+PASS live: the server proved the macro again and stored the proof with the mission
+PASS live: the Studio exports a schema with locked tables
+PASS live: request latency is measured telemetry
+PASS live: Logs has no sideways page scroll on a phone, long ids scroll inside the table
+PASS live: audit leaves are rows in the database and their proofs check in the browser
+PASS live: the database refuses to delete audit leaves
+PASS live: the five layers are ready on the real server
+PASS live: a token planted in the log is removed from the bundle
+PASS live: the Studio site follows in a second window
+PASS live: the language follows in a second window
+PASS live: a template is corrected on the server
+PASS live: the correction is in the log and is a Merkle audit leaf
+PASS live: diagnostics list the reversal log
+PASS live: no interface text is left in English in Arabic mode
+PASS live: recon reads the server's answer, with no teaching label
+PASS live: the recon run is in the event log
+PASS live: the RK4 answer and its plot come from the server
+PASS live: the calculation is in the event log
+PASS live: game physics comes from the server
+PASS live: the calculation is in the event log
+PASS live: the formula is typeset beside the server's answer
+PASS live: a cinematic preset compiles on the server
+PASS live: the preset is in the event log
+PASS live: the workbench runs on the server, sends locked
+PASS live: the run is in the event log, as counts
+PASS live: the request plan comes from the server, sends locked
+PASS live: the check is in the event log, mode only
+PASS live: the stack plan comes from the server, installs locked
+PASS live: the plan is in the event log, as a count
+PASS live: three plans from the server, sensitive steps locked
+PASS live: the compile is in the event log
+PASS live: the contrast heal is applied and logged on the server
+PASS live: Arabic mode is all Arabic on every screen; names and identifiers sit in isolation
+PASS live: English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
+PASS live overview renders
+PASS live logs renders
+PASS live dates show as relative times
+PASS live runs renders
+PASS live missions renders
+PASS live workflows renders
+PASS live analytics renders
+PASS live webhooks renders
+PASS live settings renders
+PASS live skills renders
+PASS live memory renders
+PASS live search renders
+PASS live loader renders
+PASS live governance renders
+PASS live agents/templates renders
+PASS no console or page errors
+
+130 passed, 0 failed

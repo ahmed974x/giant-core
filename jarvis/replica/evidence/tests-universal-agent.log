@@ -1,0 +1,15 @@
+test_graph_weakest_hop (test_universal_agent.Modes.test_graph_weakest_hop) ... ok
+test_no_code_is_run (test_universal_agent.Modes.test_no_code_is_run) ... ok
+test_security_same_finder_needs_validation (test_universal_agent.Modes.test_security_same_finder_needs_validation) ... ok
+test_unverified_models_carry_no_numbers (test_universal_agent.Modes.test_unverified_models_carry_no_numbers) ... ok
+test_every_send_is_locked_and_proved (test_universal_agent.Request.test_every_send_is_locked_and_proved) ... ok
+test_fable_payload_is_corrected (test_universal_agent.Request.test_fable_payload_is_corrected) ... ok
+test_haiku_keeps_a_forced_tool (test_universal_agent.Request.test_haiku_keeps_a_forced_tool) ... ok
+test_breaker_and_unknown_cost (test_universal_agent.Route.test_breaker_and_unknown_cost) ... ok
+test_weights_sum_to_one (test_universal_agent.Route.test_weights_sum_to_one) ... ok
+test_golden (test_universal_agent.SameAsServer.test_golden) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.008s
+
+OK

@@ -1,0 +1,3186 @@
+[
+ {
+  "request": {
+   "prompt": "ALT3 X10THINK KILLCRITIC بناء منصة تحليلات فورية مع نشر خارجي وتفعيل بوابة دفع",
+   "lang": "ar"
+  },
+  "response": {
+   "codes": [
+    "X10THINK",
+    "KILLCRITIC",
+    "ALT3"
+   ],
+   "lang": "ar",
+   "prompt": "بناء منصة تحليلات فورية مع نشر خارجي وتفعيل بوابة دفع",
+   "options": [
+    {
+     "id": "speed",
+     "title": "أسرع شريحة عاملة",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ أصغر شريحة تعمل",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: المال",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 2
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: النشر",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 1,
+      "approvals": 3
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "الأكثر حرصاً: الاختبارات والبرهان أولاً",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "اكتب الاختبارات والمرجع أولاً",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ حتى تنجح كل الاختبارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبار الطفرات حتى 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "افحص التباين: WCAG 4.5 و APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: المال",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: النشر",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 6
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 7
+      }
+     ],
+     "counts": {
+      "steps": 9,
+      "gates": 4,
+      "approvals": 3
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "مستضاف ذاتياً على هذا الجهاز",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِه على 127.0.0.1 دون أي خدمة مستضافة",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل SkillSpector: 0 حرج و 0 عالٍ",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "صدّره ملفاتٍ تحتفظ بها",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: المال",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: النشر",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 6
+      }
+     ],
+     "counts": {
+      "steps": 8,
+      "gates": 2,
+      "approvals": 3
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "high",
+     "text": "خطوات تحتاج إلى شخص: تبقى موافقات مقفلة في كل خطة.",
+     "data": [
+      "المال",
+      "النشر",
+      "الرسائل الخارجية"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "لا يُفحص من النص: المقاسات الثلاثة وحالات الواجهة السبع والعشرون. شغّلها قبل أي كومِت.",
+     "data": []
+    }
+   ],
+   "stages": [
+    {
+     "text": "الفرضيات: ما يقوله الطلب",
+     "data": [
+      "words 10",
+      "clauses 1",
+      "urls 0",
+      "colours 0",
+      "المال",
+      "النشر",
+      "الرسائل الخارجية"
+     ]
+    },
+    {
+     "text": "النموذج: الخطط المبنية منه",
+     "data": [
+      "speed 6",
+      "proof 9",
+      "selfhost 8"
+     ]
+    },
+    {
+     "text": "التحقق العكسي: كل خطوة حساسة موافقة مقفلة",
+     "data": [
+      "speed proved",
+      "proof proved",
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "الحالات الحدية: ما قُطع أو رُفض أو حُذف",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "2e2789511da3d3120293a5eb849ea5e0f06c7c5be65279e2977b9f9298ee7020"
+  }
+ },
+ {
+  "request": {
+   "prompt": "ALT3 X10THINK KILLCRITIC Build a real-time analytics platform, then deploy it and add a Stripe payment gate.",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "X10THINK",
+    "KILLCRITIC",
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "Build a real-time analytics platform, then deploy it and add a Stripe payment gate.",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: money",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 2
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: publishing",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 1,
+      "approvals": 2
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: money",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: publishing",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 6
+      }
+     ],
+     "counts": {
+      "steps": 8,
+      "gates": 4,
+      "approvals": 2
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: money",
+       "category": "money",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "Wait for Director 00: publishing",
+       "category": "publish",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      }
+     ],
+     "counts": {
+      "steps": 7,
+      "gates": 2,
+      "approvals": 2
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "high",
+     "text": "Steps that need a person: they stay locked approvals in every plan.",
+     "data": [
+      "money",
+      "publishing"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 14",
+      "clauses 2",
+      "urls 0",
+      "colours 0",
+      "money",
+      "publishing"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "speed 5",
+      "proof 8",
+      "selfhost 7"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "speed proved",
+      "proof proved",
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "f5a2251a137ecb231e8f5260d15472c856dd3349eb987a8658a3f9fae265f78d"
+  }
+ },
+ {
+  "request": {
+   "prompt": "/HUMAN EL10 alt3, explain the plan simply",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "/HUMAN",
+    "EL10",
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "explain the plan simply",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      }
+     ],
+     "counts": {
+      "steps": 3,
+      "gates": 1,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 4,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "plain": [
+    "Do the smallest thing that works, test it, and stop.",
+    "Write the checks first, then build until every check passes.",
+    "Run everything on this computer, check it, and keep the files yourself."
+   ],
+   "human": "Parts in the request: 1. None of them needs an approval. The plans have 3, 6, 5 steps. Nothing that moves money, publishes, changes access, installs or sends runs without a person.",
+   "verified": true,
+   "sha256": "a16950cd738ff66d8e56b716f410c1bb425e4b70e55e8e5c7e7d2c1380d2ff02"
+  }
+ },
+ {
+  "request": {
+   "prompt": "/human el10 ALT3 اشرح الخطة ببساطة ثم أرسل بريداً",
+   "lang": "ar"
+  },
+  "response": {
+   "codes": [
+    "/HUMAN",
+    "EL10",
+    "ALT3"
+   ],
+   "lang": "ar",
+   "prompt": "اشرح الخطة ببساطة ثم أرسل بريداً",
+   "options": [
+    {
+     "id": "speed",
+     "title": "أسرع شريحة عاملة",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ أصغر شريحة تعمل",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 2
+      }
+     ],
+     "counts": {
+      "steps": 4,
+      "gates": 1,
+      "approvals": 1
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "الأكثر حرصاً: الاختبارات والبرهان أولاً",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "اكتب الاختبارات والمرجع أولاً",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ حتى تنجح كل الاختبارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبار الطفرات حتى 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "افحص التباين: WCAG 4.5 و APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      }
+     ],
+     "counts": {
+      "steps": 7,
+      "gates": 4,
+      "approvals": 1
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "مستضاف ذاتياً على هذا الجهاز",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِه على 127.0.0.1 دون أي خدمة مستضافة",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل SkillSpector: 0 حرج و 0 عالٍ",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "صدّره ملفاتٍ تحتفظ بها",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 2,
+      "approvals": 1
+     },
+     "proved": true
+    }
+   ],
+   "plain": [
+    "افعل أصغر شيء يعمل، واختبره، ثم توقّف.",
+    "اكتب الفحوص أولاً، ثم ابنِ حتى تنجح كلها.",
+    "شغّل كل شيء على هذا الجهاز، وافحصه، واحتفظ بالملفات بنفسك."
+   ],
+   "human": "عدد أجزاء الطلب: 2. 1 منها تحتاج إلى المدير 00 أولاً: الرسائل الخارجية. عدد خطوات الخطط: 4، 7، 6. لا شيء يحرّك المال أو ينشر أو يغيّر الصلاحيات أو يثبّت أو يرسل يعمل دون شخص.",
+   "verified": true,
+   "sha256": "faeec85c27630cdc27f57ba1dbe29620d16c7a8875812618eaf38315b3282a9f"
+  }
+ },
+ {
+  "request": {
+   "prompt": "",
+   "codes": [
+    "KILLCRITIC",
+    "X10THINK",
+    "EL10",
+    "/HUMAN"
+   ],
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "/HUMAN",
+    "EL10",
+    "X10THINK",
+    "KILLCRITIC"
+   ],
+   "lang": "en",
+   "prompt": "",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 0",
+      "clauses 0",
+      "urls 0",
+      "colours 0"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "selfhost 5"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0",
+      "No request text: these are the default plans."
+     ]
+    }
+   ],
+   "plain": [
+    "Run everything on this computer, check it, and keep the files yourself."
+   ],
+   "human": "No request text: these are the default plans. None of them needs an approval. The plans have 5 steps. Nothing that moves money, publishes, changes access, installs or sends runs without a person.",
+   "verified": true,
+   "sha256": "770be28ba36515374e9100cb92828d73070a7516614f215affb0af06bc4d6fab"
+  }
+ },
+ {
+  "request": {
+   "prompt": "KILLCRITIC read http://127.0.0.1:8798/api and https://example.org/a?b=1 and http://[::1]/x and http://user@192.168.1.4/ and http://10.0.0.1 and http://172.20.1.1 and http://100.70.0.1 and http://169.254.1.1 and http://0.0.0.0 and http://foo.localhost",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "KILLCRITIC"
+   ],
+   "lang": "en",
+   "prompt": "read http://127.0.0.1:8798/api and https://example.org/a?b=1 and http://[::1]/x and http://user@192.168.1.4/ and http://10.0.0.1 and http://172.20.1.1 and http://100.70.0.1 and http://169.254.1.1 and http://0.0.0.0 and http://foo.localhost",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "high",
+     "text": "Private addresses are refused by the SSRF shield.",
+     "data": [
+      "http://127.0.0.1:8798/api",
+      "http://[::1]/x",
+      "http://user@192.168.1.4/",
+      "http://10.0.0.1",
+      "http://172.20.1.1",
+      "http://100.70.0.1",
+      "http://169.254.1.1",
+      "http://0.0.0.0",
+      "http://foo.localhost"
+     ]
+    },
+    {
+     "level": "low",
+     "text": "Public addresses are read only through the SSRF shield: one GET, robots.txt obeyed.",
+     "data": [
+      "https://example.org/a?b=1"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "verified": true,
+   "sha256": "6217fe41b09ba07cdd3f6d7dd6ee225cfa6e557fa3cc0e18a497510635efb28d"
+  }
+ },
+ {
+  "request": {
+   "prompt": "KILLCRITIC text #777777 on #808080 with a blue to purple gradient",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "KILLCRITIC"
+   ],
+   "lang": "en",
+   "prompt": "text #777777 on #808080 with a blue to purple gradient",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "medium",
+     "text": "DESIGN.md allows one solid accent: no blue to purple gradient.",
+     "data": []
+    },
+    {
+     "level": "high",
+     "text": "No lightness of this text colour passes on that background; change the background.",
+     "data": [
+      "#777777 / #808080"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "verified": true,
+   "sha256": "4d1ddde2996ad1e22b21d4b7847fe27e06ac09d3d0f06878e505c35a8eaa0b31"
+  }
+ },
+ {
+  "request": {
+   "prompt": "KILLCRITIC text #ffffff on #000 please",
+   "lang": "ar"
+  },
+  "response": {
+   "codes": [
+    "KILLCRITIC"
+   ],
+   "lang": "ar",
+   "prompt": "text #ffffff on #000 please",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "مستضاف ذاتياً على هذا الجهاز",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِه على 127.0.0.1 دون أي خدمة مستضافة",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل SkillSpector: 0 حرج و 0 عالٍ",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "صدّره ملفاتٍ تحتفظ بها",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "لا خطوة مال أو نشر أو صلاحيات أو تثبيت أو رسائل خارجية.",
+     "data": []
+    },
+    {
+     "level": "ok",
+     "text": "اللونان الأولان يجتازان WCAG 4.5 و APCA 60.",
+     "data": [
+      "#ffffff / #000",
+      "WCAG 21",
+      "APCA Lc -107.88"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "لا يُفحص من النص: المقاسات الثلاثة وحالات الواجهة السبع والعشرون. شغّلها قبل أي كومِت.",
+     "data": []
+    }
+   ],
+   "verified": true,
+   "sha256": "094fa5c9eb3dccf4afa16bfe9001106d5e99f601eed1fbeef159183f8465ce36"
+  }
+ },
+ {
+  "request": {
+   "prompt": "KILLCRITIC text #0b5ed7 on #000000",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "KILLCRITIC"
+   ],
+   "lang": "en",
+   "prompt": "text #0b5ed7 on #000000",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "high",
+     "text": "The first two colours miss WCAG 4.5 or APCA 60; the healed text colour keeps the hue.",
+     "data": [
+      "#0b5ed7 → #82b2ff",
+      "WCAG 3.6 → 9.76",
+      "APCA Lc -23.42 → -60.09"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "verified": true,
+   "sha256": "fa1d3a776e72df00be3dbe45a5a4251e4286dad9e4389b512cec82e8afe6899e"
+  }
+ },
+ {
+  "request": {
+   "prompt": "KILLCRITIC my key is sk-abcdefghijklmnop and ghp_abcdefghijklmnopqrstu, not sk-abcdefghijklmno",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "KILLCRITIC"
+   ],
+   "lang": "en",
+   "prompt": "my key is [redacted] and [redacted], not sk-abcdefghijklmno",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "high",
+     "text": "Secret-shaped text was pasted. It was removed from the copy; revoke it.",
+     "data": [
+      "2"
+     ]
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "verified": true,
+   "sha256": "15bb9b371cc9c0b5a9b8ec015d163affec6277941686b1a265c63f02244f38b4"
+  }
+ },
+ {
+  "request": {
+   "prompt": "X10THINK word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ALT3",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "X10THINK"
+   ],
+   "lang": "en",
+   "prompt": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word w",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 799",
+      "clauses 1",
+      "urls 0",
+      "colours 0"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "selfhost 5"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "cut at 4000",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "5759e1cb2bd22f3ee7fa896b7e2f84315fd51f236e409a6087c088bee8d03b1f"
+  }
+ },
+ {
+  "request": {
+   "prompt": "grant admin access to a collaborator and install a plugin, then email the team",
+   "codes": [
+    "ALT3",
+    "X10THINK"
+   ],
+   "lang": "ar"
+  },
+  "response": {
+   "codes": [
+    "X10THINK",
+    "ALT3"
+   ],
+   "lang": "ar",
+   "prompt": "grant admin access to a collaborator and install a plugin, then email the team",
+   "options": [
+    {
+     "id": "speed",
+     "title": "أسرع شريحة عاملة",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ أصغر شريحة تعمل",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الصلاحيات",
+       "category": "permissions",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 2
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: التثبيت",
+       "category": "install",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 1,
+      "approvals": 3
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "الأكثر حرصاً: الاختبارات والبرهان أولاً",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "اكتب الاختبارات والمرجع أولاً",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "ابنِ حتى تنجح كل الاختبارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبار الطفرات حتى 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "افحص التباين: WCAG 4.5 و APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الصلاحيات",
+       "category": "permissions",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: التثبيت",
+       "category": "install",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 6
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 7
+      }
+     ],
+     "counts": {
+      "steps": 9,
+      "gates": 4,
+      "approvals": 3
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "مستضاف ذاتياً على هذا الجهاز",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِه على 127.0.0.1 دون أي خدمة مستضافة",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل SkillSpector: 0 حرج و 0 عالٍ",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "صدّره ملفاتٍ تحتفظ بها",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الصلاحيات",
+       "category": "permissions",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: التثبيت",
+       "category": "install",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الرسائل الخارجية",
+       "category": "outbound",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 6
+      }
+     ],
+     "counts": {
+      "steps": 8,
+      "gates": 2,
+      "approvals": 3
+     },
+     "proved": true
+    }
+   ],
+   "stages": [
+    {
+     "text": "الفرضيات: ما يقوله الطلب",
+     "data": [
+      "words 14",
+      "clauses 2",
+      "urls 0",
+      "colours 0",
+      "الصلاحيات",
+      "التثبيت",
+      "الرسائل الخارجية"
+     ]
+    },
+    {
+     "text": "النموذج: الخطط المبنية منه",
+     "data": [
+      "speed 6",
+      "proof 9",
+      "selfhost 8"
+     ]
+    },
+    {
+     "text": "التحقق العكسي: كل خطوة حساسة موافقة مقفلة",
+     "data": [
+      "speed proved",
+      "proof proved",
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "الحالات الحدية: ما قُطع أو رُفض أو حُذف",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "dd9e27f20002683a84f1bb72f363413aaf459db68e9dfbc9d85c03bb78bbd717"
+  }
+ },
+ {
+  "request": {
+   "prompt": "Plain request with no codes",
+   "lang": "fr"
+  },
+  "response": {
+   "codes": [
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "Plain request with no codes",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      }
+     ],
+     "counts": {
+      "steps": 3,
+      "gates": 1,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 4,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "verified": true,
+   "sha256": "7ee2b6d2db4d4612f0fb895546e72a0e1e7054f001803f3d75a5b5763a5fa420"
+  }
+ },
+ {
+  "request": {
+   "prompt": "EL10. KILLCRITIC, ALT3! hello",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "EL10",
+    "KILLCRITIC",
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "hello",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      }
+     ],
+     "counts": {
+      "steps": 3,
+      "gates": 1,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 4,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "ok",
+     "text": "No money, publishing, permission, install or outbound step.",
+     "data": []
+    },
+    {
+     "level": "manual",
+     "text": "Not checked from text: the three screen sizes and the 27 UI states. Run them before a commit.",
+     "data": []
+    }
+   ],
+   "plain": [
+    "Do the smallest thing that works, test it, and stop.",
+    "Write the checks first, then build until every check passes.",
+    "Run everything on this computer, check it, and keep the files yourself."
+   ],
+   "verified": true,
+   "sha256": "813000bd3f5fe1c1d7650cec1f9f46babf328ec50161b1d1aaf782024474aee2"
+  }
+ },
+ {
+  "request": {
+   "prompt": "تدرج لوني من الأزرق ثم صلاحيات المشرف؛ تثبيت إضافة.",
+   "codes": [
+    "KILLCRITIC",
+    "/HUMAN"
+   ],
+   "lang": "ar"
+  },
+  "response": {
+   "codes": [
+    "/HUMAN",
+    "KILLCRITIC"
+   ],
+   "lang": "ar",
+   "prompt": "تدرج لوني من الأزرق ثم صلاحيات المشرف؛ تثبيت إضافة.",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "مستضاف ذاتياً على هذا الجهاز",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "اقرأ الطلب وسجلات القرارات",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "ابنِه على 127.0.0.1 دون أي خدمة مستضافة",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل اختبارات الخادم والمسارات",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "شغّل SkillSpector: 0 حرج و 0 عالٍ",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "صدّره ملفاتٍ تحتفظ بها",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: الصلاحيات",
+       "category": "permissions",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 4
+      },
+      {
+       "kind": "approval",
+       "title": "انتظر موافقة المدير 00: التثبيت",
+       "category": "install",
+       "gate": "approval",
+       "locked": true,
+       "status": "pending_approval",
+       "after": 5
+      }
+     ],
+     "counts": {
+      "steps": 7,
+      "gates": 2,
+      "approvals": 2
+     },
+     "proved": true
+    }
+   ],
+   "critic": [
+    {
+     "level": "high",
+     "text": "خطوات تحتاج إلى شخص: تبقى موافقات مقفلة في كل خطة.",
+     "data": [
+      "الصلاحيات",
+      "التثبيت"
+     ]
+    },
+    {
+     "level": "medium",
+     "text": "DESIGN.md يسمح بلون مميز واحد: لا تدرج من الأزرق إلى البنفسجي.",
+     "data": []
+    },
+    {
+     "level": "manual",
+     "text": "لا يُفحص من النص: المقاسات الثلاثة وحالات الواجهة السبع والعشرون. شغّلها قبل أي كومِت.",
+     "data": []
+    }
+   ],
+   "human": "عدد أجزاء الطلب: 3. 2 منها تحتاج إلى المدير 00 أولاً: الصلاحيات، التثبيت. عدد خطوات الخطط: 7. لا شيء يحرّك المال أو ينشر أو يغيّر الصلاحيات أو يثبّت أو يرسل يعمل دون شخص.",
+   "verified": true,
+   "sha256": "674421186f98cb112785d4752735ed6dbed7529bcc01574f488f29c9315ef908"
+  }
+ },
+ {
+  "request": {
+   "prompt": "paypal payday then repay",
+   "codes": [
+    "X10THINK"
+   ],
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "X10THINK"
+   ],
+   "lang": "en",
+   "prompt": "paypal payday then repay",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 4",
+      "clauses 2",
+      "urls 0",
+      "colours 0"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "selfhost 5"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "0ea73f9ec5147d9e587e1c8268807dcc97447d0cc00127c1ae0a9802ab4d592e"
+  }
+ },
+ {
+  "request": {
+   "prompt": "tab\tnew\nline\rcr  double",
+   "codes": [
+    "/HUMAN",
+    "X10THINK"
+   ],
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "/HUMAN",
+    "X10THINK"
+   ],
+   "lang": "en",
+   "prompt": "tab new line cr double",
+   "options": [
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 5",
+      "clauses 1",
+      "urls 0",
+      "colours 0"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "selfhost 5"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0"
+     ]
+    }
+   ],
+   "human": "Parts in the request: 1. None of them needs an approval. The plans have 5 steps. Nothing that moves money, publishes, changes access, installs or sends runs without a person.",
+   "verified": true,
+   "sha256": "bac1ef3e11c336ac020eaafcb0a31eae793fb032560ef8ebabb17e6b92484e29"
+  }
+ },
+ {
+  "request": {
+   "codes": "ALT3",
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      }
+     ],
+     "counts": {
+      "steps": 3,
+      "gates": 1,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 4,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "verified": true,
+   "sha256": "4ae0c46a1e8ff0369e4de7ae25ce4c66baf8e5a37d5c2c94f6edbd335da64987"
+  }
+ },
+ {
+  "request": {
+   "prompt": 42,
+   "codes": [
+    1,
+    null,
+    "alt3",
+    "x10think"
+   ],
+   "lang": "en"
+  },
+  "response": {
+   "codes": [
+    "X10THINK",
+    "ALT3"
+   ],
+   "lang": "en",
+   "prompt": "",
+   "options": [
+    {
+     "id": "speed",
+     "title": "The fastest slice",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build the smallest working slice",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      }
+     ],
+     "counts": {
+      "steps": 3,
+      "gates": 1,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "proof",
+     "title": "The most careful: tests and proof first",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "gate",
+       "title": "Write the tests and the oracle first",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "build",
+       "title": "Build until every test passes",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "gate",
+       "title": "Run the mutation harness to 100%",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      },
+      {
+       "kind": "gate",
+       "title": "Check contrast: WCAG 4.5 and APCA 60",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 4
+      }
+     ],
+     "counts": {
+      "steps": 6,
+      "gates": 4,
+      "approvals": 0
+     },
+     "proved": true
+    },
+    {
+     "id": "selfhost",
+     "title": "Self-hosted on this computer",
+     "tag": "[INFERENCE]",
+     "steps": [
+      {
+       "kind": "tool",
+       "title": "Read the request and the decision records",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": null
+      },
+      {
+       "kind": "build",
+       "title": "Build it on 127.0.0.1 with no hosted service",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 0
+      },
+      {
+       "kind": "gate",
+       "title": "Run the server and flow tests",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 1
+      },
+      {
+       "kind": "gate",
+       "title": "Run SkillSpector: 0 critical, 0 high",
+       "category": null,
+       "gate": "check",
+       "locked": false,
+       "status": "ready",
+       "after": 2
+      },
+      {
+       "kind": "tool",
+       "title": "Export it as files you keep",
+       "category": null,
+       "gate": null,
+       "locked": false,
+       "status": "ready",
+       "after": 3
+      }
+     ],
+     "counts": {
+      "steps": 5,
+      "gates": 2,
+      "approvals": 0
+     },
+     "proved": true
+    }
+   ],
+   "stages": [
+    {
+     "text": "Assumptions: what the request says",
+     "data": [
+      "words 0",
+      "clauses 0",
+      "urls 0",
+      "colours 0"
+     ]
+    },
+    {
+     "text": "Model: the plans built from it",
+     "data": [
+      "speed 3",
+      "proof 6",
+      "selfhost 5"
+     ]
+    },
+    {
+     "text": "Reverse check: every sensitive step is a locked approval",
+     "data": [
+      "speed proved",
+      "proof proved",
+      "selfhost proved"
+     ]
+    },
+    {
+     "text": "Edge cases: what was cut, refused or removed",
+     "data": [
+      "not cut",
+      "refused 0",
+      "secrets removed 0",
+      "No request text: these are the default plans."
+     ]
+    }
+   ],
+   "verified": true,
+   "sha256": "9e036ebe11c2292d065961388438ce88aaa4207bd222bab27735ad33be1778e3"
+  }
+ }
+]

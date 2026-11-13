@@ -1,0 +1,12 @@
+test_a_refused_stage_does_not_stop_the_others (test_unified_workbench.Pipeline.test_a_refused_stage_does_not_stop_the_others) ... ok
+test_every_stage_runs_and_nothing_is_sent (test_unified_workbench.Pipeline.test_every_stage_runs_and_nothing_is_sent) ... ok
+test_locked_steps_are_locked (test_unified_workbench.Pipeline.test_locked_steps_are_locked) ... ok
+test_no_code_is_run (test_unified_workbench.Pipeline.test_no_code_is_run) ... ok
+test_refusals (test_unified_workbench.Pipeline.test_refusals) ... ok
+test_the_shield_runs_before_any_model_text (test_unified_workbench.Pipeline.test_the_shield_runs_before_any_model_text) ... ok
+test_golden (test_unified_workbench.SameAsServer.test_golden) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.034s
+
+OK
