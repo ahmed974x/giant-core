@@ -197,3 +197,12 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (60
 - `agent-security-*`: the verdicts confirmed, needs validation and hardening note;
 - `agent-models-*`: the five Claude models from the claude-api skill's table, and 17 other names marked «تعذر التحقق منها»;
 - `agent-review-*`: the 13 outside projects reviewed read-only, each with its licence file; rules adopted or not installed.
+
+## ADR-160 (2026-11-12)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48 shots):
+
+- `workbench-form-*`: `#/workbench`, the task, model, effort and the checks to include;
+- `workbench-stages-*`: seven stages in order, each Done with its summary and a link to its page; the e-mail address in the task replaced by the shield; nothing sent;
+- `workbench-plan-*`: the joined plan, every send and install «بانتظار الموافقة», and the chain hash;
+- `workbench-refused-*`: a bad expression refused in the maths stage while the others run, and no savings figure without a typed price.
