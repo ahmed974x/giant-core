@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-13T00:07:22Z",
- "javascriptRanAt": "2026-11-12T23:28:44.329Z",
+ "ranAt": "2026-11-13T17:16:37Z",
+ "javascriptRanAt": "2026-11-13T16:31:30.295Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 7929,
- "killed": 7929,
- "equivalent": 269,
+ "total": 8239,
+ "killed": 8239,
+ "equivalent": 276,
  "score": 100.0,
  "targets": [
   {
@@ -822,6 +822,42 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/polymath-engine.mjs",
+   "sha256": "a1362351bd69e565203aeae925216da5b1855efb93ac721b0ab3d134aa3d0f31",
+   "functions": [
+    "pmR",
+    "runDomain",
+    "decide",
+    "runPolymath"
+   ],
+   "mutants": 138,
+   "killed": 135,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "decide",
+     "line": 86,
+     "kind": "< -> <=",
+     "why": "decide refuses a repeated option name, so two names are never equal and < and <= agree"
+    },
+    {
+     "fn": "decide",
+     "line": 86,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "decide",
+     "line": 86,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/unified-workbench.mjs",
@@ -2003,6 +2039,55 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-polymath-engine/polymath_engine.py",
+   "sha256": "6c58c7f55913d4bdcfb4aea50a9cf71fbc3918065ee91547becd046922912bb1",
+   "functions": [
+    "_num",
+    "js_round",
+    "pm_r",
+    "_len16",
+    "_leaf",
+    "_node",
+    "merkle_root",
+    "series_summary",
+    "run_domain",
+    "decide",
+    "run_polymath"
+   ],
+   "mutants": 179,
+   "killed": 175,
+   "equivalent": 4,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "decide",
+     "line": 169,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    },
+    {
+     "fn": "series_summary",
+     "line": 116,
+     "kind": "constant 0 -> 1",
+     "why": "a z of 0 or 1 is never above the limit of 3, so the anomaly count is the same"
+    },
+    {
+     "fn": "series_summary",
+     "line": 124,
+     "kind": "constant 1 -> 2",
+     "why": "side is only compared with 0 and kept as the last side, so 1 and 2 (and -1 and -2) count the same"
+    },
+    {
+     "fn": "series_summary",
+     "line": 124,
+     "kind": "constant 1 -> 2",
+     "why": "side is only compared with 0 and kept as the last side, so 1 and 2 (and -1 and -2) count the same"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-unified-workbench/unified_workbench.py",
    "sha256": "6d9ccf70b9aada31b56dbb59d513a6a3a50b73f019e594526915f410c0c68d1b",
    "functions": [
@@ -2347,5 +2432,5 @@
    ]
   }
  ],
- "sha256": "f2dcc8a2a65893a10ccce4f53aa794653ece6fa5be08d44522913a33db76ef3e"
+ "sha256": "b31909ebe82093441c8e42aaf6f445ef8a3db63fd99161aee43ece5bf00624dc"
 }

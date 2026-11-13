@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 27 must-haves are done; parity is 88.5 (`replica/parity.md`).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-161).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -386,6 +386,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The task goes through the privacy shield first, then the meta-codes, the model request, the design check, maths, the FOSS atlas and the security verdicts. Each stage shows its status, its summary and a link to its own page.
 - A stage that refuses its input says so and the others still run. Every send, install and outbound step is listed «بانتظار الموافقة» in one proved plan, with a chain hash over the stages. Nothing is sent.
 - The API is `POST /api/w/:slug/workbench/run` with `{task, model, effort, css, math, atlas, candidates, secretCheck}`. The same pipeline runs with `python3 .claude/skills/replica-unified-workbench/unified_workbench.py`.
+
+## Polymath (ADR-161)
+
+- **`#/polymath`:** write a question, add what the engines need (an expression, a series of numbers, CSS, lens values), optionally two options with your own weights and scores, and claims written as `domain: claim`, then press Think it through.
+- The question goes through the privacy shield first. Each of the five domains (maths, time series, optics, design, security) says whether it ran, why it was named and which engine and ADR answered, with a link to its page. A domain named without its input says it needs input.
+- Every named domain lists how it could fail and what in this repository stops it. The decision matrix uses only your numbers. A claim on a domain that did not run is marked not backed, and with no engine run the answer abstains instead of guessing. An RFC 6962 Merkle root binds the records. Nothing is sent.
+- The API is `POST /api/w/:slug/polymath/run` with `{question, domains, math, series, optics, css, candidates, atlas, options, weights, claims}`. The same engine runs with `python3 .claude/skills/replica-polymath-engine/polymath_engine.py`.
 
 ## What Jarvis will not do
 

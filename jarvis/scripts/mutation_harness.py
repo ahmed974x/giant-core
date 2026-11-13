@@ -519,6 +519,24 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_polymath(f, work):
+    """ADR-161: the skill's golden file (the server's answers) and the series limit built here."""
+    with open(os.path.join(REPO, ".claude", "skills", "replica-polymath-engine", "tests", "golden.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+
+    def run(r):
+        try:
+            return json.loads(json.dumps(f["run_polymath"](r)))
+        except f["PolymathError"] as e:
+            return {"error": str(e), "detail": e.detail}
+    out = [(f"golden {i}", run(r) == w) for i, (r, w) in enumerate(zip(g["requests"], g["outputs"], strict=True))]
+    long = [{"t": i, "v": i % 9} for i in range(5000)]
+    out.append(("limit 5000", run({"question": "x", "series": long})["domains"][1]["status"] == "ok"))
+    out.append(("limit 5001", run({"question": "x", "series": [*long, {"t": 1, "v": 1}]})["domains"][1]["status"] == "error"))
+    out.append(("empty tree", f["merkle_root"]([]) == hashlib.sha256(b"").hexdigest()))
+    return out
+
+
 def oracle_workbench(f, work):
     """ADR-160: the skill's golden file (the server's answers, edges included)."""
     with open(os.path.join(REPO, ".claude", "skills", "replica-unified-workbench", "tests", "golden.json"), encoding="utf-8") as fh:
@@ -750,6 +768,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-polymath-engine/polymath_engine.py", "functions": ["_num", "js_round", "pm_r", "_len16", "_leaf", "_node", "merkle_root", "series_summary", "run_domain", "decide", "run_polymath"], "oracle": oracle_polymath, "with": [".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-timeseries-math/ts_math.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-unified-workbench/unified_workbench.py", "functions": ["_sha", "_len16", "run_stage", "locked_of", "run_workbench"], "oracle": oracle_workbench, "with": [".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-universal-agent/universal_agent.py", "functions": ["ua_r", "_num", "_is_int", "_len16", "_unit", "_list", "_text", "is_loopback", "_get", "build_request", "score_candidate", "route", "relay", "compress", "triage_one", "security", "graph", "lean", "design", "universal_agent"], "oracle": oracle_agent, "with": [".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-foss-atlas/foss_atlas.py", "functions": ["_num", "fa_r", "_utf16_len", "entropy", "sha1_hex", "k_anonymity", "luhn_ok", "scrub_private", "plan_steps", "n8n_blueprint", "_is_num", "plan_foss_stack", "mulberry32", "_is_int", "personas", "atlas_view"], "oracle": oracle_atlas, "with": [".claude/skills/replica-formal-verify/state_prover.py"]},
@@ -856,6 +875,10 @@ EQUIVALENT = [
     {"file": "reversal_engine.py", "function": "_fix_contrast", "kind": "constant 1 -> 2", "why": "-2 is as much 'no colour' as -1; and replacing up to two copies of the value changes nothing, since a value that parses as one colour holds one copy"},
     # ADR-158: foss_atlas.py.
     {"file": "foss_atlas.py", "function": "sha1_hex", "line": 'return hashlib.sha1(t.encode("utf-8"), usedforsecurity=False).hexdigest()', "kind": "constant False -> True", "why": "usedforsecurity only tells hashlib how the digest is used; the digest is the same either way"},
+    # ADR-161: polymath_engine.py.
+    {"file": "polymath_engine.py", "function": "decide", "line": "return None", "kind": "return None", "why": "the mutated line already returns None"},
+    {"file": "polymath_engine.py", "function": "series_summary", "line": 'if s["n"] >= 30 else 0', "kind": "constant 0 -> 1", "why": "a z of 0 or 1 is never above the limit of 3, so the anomaly count is the same"},
+    {"file": "polymath_engine.py", "function": "series_summary", "line": "side = 1 if x > prev else -1 if x < prev else last", "kind": "constant 1 -> 2", "why": "side is only compared with 0 and kept as the last side, so 1 and 2 (and -1 and -2) count the same"},
     # ADR-156: prompt_metacodes.py.
     {"file": "prompt_metacodes.py", "function": "private_host", "line": 'after = re.sub(r"^https?://", "", url, count=1, flags=re.I)', "kind": "constant 1 -> 2", "why": "the pattern is anchored with ^, and re.sub matches ^ only at the start of the original string, so a second replacement never happens"},
     {"file": "prompt_metacodes.py", "function": "private_host", "line": 'h = re.sub(r"^[^@]*@", "", "".join(host), count=1).lower()', "kind": "constant 1 -> 2", "why": "as above: an anchored pattern is replaced at most once"},

@@ -518,6 +518,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
 }
 
+// ADR-161 live: the polymath engine runs on the server and logs counts only.
+{
+  await go("#/polymath");
+  await page.waitForSelector("#f-pm-q");
+  await page.getByRole("button", { name: "Think it through" }).click();
+  await page.waitForSelector(".pm-domain");
+  ok((await page.locator(".pm-domain").count()) === 5 && await page.getByText("Partly grounded").isVisible(), "live: the polymath engine answers from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "polymath.run" && e.target === "3 domains partly grounded"), "live: the run is in the event log, as counts");
+}
+
 // ADR-160 live: the workbench runs on the server and logs counts only.
 {
   await go("#/workbench");
@@ -582,6 +593,7 @@ await page.waitForTimeout(300);
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
+    ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(400); }],
     ["atlas plan", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); }],

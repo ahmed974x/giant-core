@@ -869,6 +869,23 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator(".fa-entry input:checked").count()) === 3, "F40 a persona's picks can be used");
 }
 
+// F43: the polymath engine (ADR-161).
+{
+  await go("#/polymath");
+  await page.waitForSelector("#f-pm-q");
+  await page.getByRole("button", { name: "Think it through" }).click();
+  await page.waitForSelector(".pm-domain");
+  ok((await page.locator(".pm-domain").count()) === 5 && (await page.locator(".pm-domain .badge.s-ok").count()) >= 3 && await page.getByText("Partly grounded").isVisible(), "F43 five domains, three ran, the claim on markets is not backed");
+  ok(!(await page.locator("#h-pm-out ~ div").textContent()).includes("ops@example.org") && await page.getByText("Weighted decision").isVisible() && await page.getByText("Not backed").isVisible(), "F43 the shield cleaned the question; the decision and claims are shown");
+  ok((await page.locator('.pm-domain a[href="#/math"]').count()) === 1 && /^[0-9a-f]{64}$/.test(await page.locator("#h-pm-out ~ div code.uw-hash").textContent()), "F43 each domain links to its page; the Merkle root is shown");
+  await page.locator("#f-pm-q").fill("What will the market do tomorrow?");
+  for (const id of ["#f-pm-expr", "#f-pm-series", "#f-pm-css"]) await page.locator(id).fill("");
+  await page.locator("#f-pm-wdm").uncheck();
+  await page.getByRole("button", { name: "Think it through" }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Abstained", { exact: true }).isVisible() && await page.getByText("No options or weights were given, so nothing is scored.").isVisible(), "F43 with no engine run it abstains, and with no weights nothing is scored");
+}
+
 // F42: the unified workbench (ADR-160).
 {
   await go("#/workbench");
@@ -922,6 +939,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
+    ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],
     ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }],
