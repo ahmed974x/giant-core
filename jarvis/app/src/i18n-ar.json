@@ -2794,6 +2794,19 @@
   "No document shares a word or a title's letters with these words. Nothing is guessed.": "لا يشارك أي مستند هذه الكلمات كلمةً أو حروفَ عنوان. لا يُخمَّن شيء.",
   "Each document is searched in its title, its first 20 headings and its first 2000 characters.": "يُبحث في كل مستند في عنوانه وأول 20 عنواناً فرعياً فيه وأول 2000 حرف منه.",
   "Not searched": "لم يُبحث",
-  "docs search": "البحث في المشروع"
+  "docs search": "البحث في المشروع",
+  "Aether Prime": "أثير برايم",
+  "Runbook": "دفتر التشغيل",
+  "One goal through the engines already here: the privacy shield cleans it, project search finds the matching records, the skills are put in order, the workbench is read as a behaviour tree, a plan is chosen from your record, and each page's engine is probed. Nothing is sent or installed.": "هدف واحد يمر على المحركات الموجودة هنا: درع الخصوصية ينظفه، والبحث في المشروع يجد السجلات المطابقة، وتُرتَّب المهارات، وتُقرأ منضدة العمل كشجرة سلوك، وتُختار خطة من سجلك، ويُفحص محرك كل صفحة. لا يُرسل شيء ولا يُثبَّت شيء.",
+  "Secret to check (optional)": "سر للفحص (اختياري)",
+  "Only the first five characters of its SHA-1 are kept. The field is cleared.": "تُحفظ أول خمسة أحرف من بصمة SHA-1 فقط، ويُفرَّغ الحقل.",
+  "Run the runbook": "شغّل دفتر التشغيل",
+  "Every stage ran": "كل المراحل اشتغلت",
+  "A stage was refused": "رُفضت مرحلة",
+  "Secret check prefix": "بادئة فحص السر",
+  "Page probes": "فحص الصفحات",
+  "Server only": "على السيرفر فقط",
+  "Not found": "غير موجود",
+  "runbook run": "تشغيل دفتر التشغيل"
  }
 }

@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-164)
+# Parity: Jarvis (ADR-165)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -132,6 +132,9 @@ ADR-163 added one row, built and tested (`test-app.mjs` F45, `test-live.mjs`, se
 ADR-164 added one row, built and tested (`test-app.mjs` F46, `test-live.mjs`, server tests, skill unit tests, the mutation run):
 - project search: BM25 and title trigrams fused by RRF over the repository's documents.
 
+ADR-165 added one row, built and tested (`test-app.mjs` F47, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- the runbook, and the interface named «أثير برايم» / Aether Prime.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -140,12 +143,12 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (114 counted, must-haves 34 of 34 done)
+features 100.0  (115 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
 - overview                     100.0  (2 features)
-- agents                       100.0  (11 features)
+- agents                       100.0  (12 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (13 features)

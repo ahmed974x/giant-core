@@ -116,6 +116,7 @@ const TARGETS = [
   { file: "hyper-studio.mjs", functions: ["rotatePlane", "applyAngles", "hypercube", "sixteenCell", "e8Roots", "matMul", "reflection", "symEigen", "coxeterPlane", "perspective", "rings", "faceShade", "projection", "facesViewer", "lengthsKept", "normsKept", "backToFront", "facingOk", "countsOk", "isIdentity", "coxeterOk", "ringsExact", "ringsMultiple", "dofOk", "harmonicOk", "ev100Ok", "insideBox", "pathOk", "overlapOk", "hyperSvg", "kelvinToXy", "kelvinToColour", "optics", "astar", "bfsLength", "verlet", "gamePhysics", "hyper"], oracle: "hyper" },
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
+  { file: "runbook.mjs", functions: ["rbStage", "rbProbe", "probeRoutes", "runbook"], oracle: "runbook" },
   { file: "project-search.mjs", functions: ["psR", "byScore", "bm25Rank", "trigrams", "dice", "titleRank", "rrf", "snippet", "checkCorpus", "searchProject"], oracle: "search" },
   { file: "plan-order.mjs", functions: ["poR", "poName", "kahnOrder", "orderKept", "skillOrder", "poCheck", "poTick", "tickTree", "workbenchTree", "uctSelect", "planOrder"], oracle: "order" },
   { file: "skill-tree.mjs", functions: ["stR", "familyOf", "statusOf", "checkInput", "buildTree", "composeSkills", "skillTree"], oracle: "tree" },
@@ -128,10 +129,13 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch, runbook: oracleRunbook };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
+  // ADR-165: runbook.mjs.
+  { file: "runbook.mjs", line: 'if (route === "#/universal") { const u = universalAgent({ mode: "catalog" }); return [u.claude.length > 0, u]; }', kind: "> -> >=", why: "the catalog always lists the five Claude models from the claude-api table, so the length is never 0" },
+  { file: "runbook.mjs", line: 'if (route === "#/universal") { const u = universalAgent({ mode: "catalog" }); return [u.claude.length > 0, u]; }', kind: "0 -> 1", why: "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree" },
   // ADR-164: project-search.mjs.
   { file: "project-search.mjs", line: "function byScore(a, b) { return b.score - a.score || (a.id < b.id ? -1 : 1); }", kind: "< -> <=", why: "checkCorpus refuses a repeated document id, so two ids are never equal and < and <= agree" },
   { file: "project-search.mjs", line: "function byScore(a, b) { return b.score - a.score || (a.id < b.id ? -1 : 1); }", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
@@ -570,6 +574,14 @@ function oracleMath(m) {
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
   return out;
+}
+
+// ADR-165: the runbook. The skill's golden file (the server's answers, refusals included).
+function oracleRunbook(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-runbook", "tests", "golden.json"), "utf8"));
+  const run = c => { try { return { response: m.runbook(c.request, c.ctx ?? undefined) }; } catch (e) { if (e.status !== 400) return { crash: String(e) }; return { error: { error: e.message, detail: e.detail ?? null } }; } };
+  return g.map((c, i) => ["golden " + i, J(run(c)) === J(c.error ? { error: c.error } : { response: c.response })]);
 }
 
 // ADR-164: project search. The skill's golden file (the server's answers, refused corpora included).

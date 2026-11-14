@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 143,
+ "files": 145,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 159
+  "low": 160
  },
  "byRule": {
   "D05": 27,
-  "M05": 130,
+  "M05": 131,
   "P21": 2
  },
- "sha256": "c89b7b1e5ccb056f8a10c83b0743b1d811908f9d42063ab081a6422ad72f0ac1",
+ "sha256": "122450c4d5b9642df00959adf413d5b6d5845bd5784f7639e7e607bda76f5d9a",
  "findings": [
   {
    "rule": "D05",
@@ -1126,6 +1126,13 @@
    "line": 7,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-164-project-search.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-165-runbook-and-interface-name.md"
   }
  ]
 }

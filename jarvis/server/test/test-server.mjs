@@ -47,6 +47,7 @@ import { runPolymath, PM_DOMAINS } from "../lib/polymath-engine.mjs";
 import { skillTree, buildTree } from "../lib/skill-tree.mjs";
 import { planOrder } from "../lib/plan-order.mjs";
 import { searchProject } from "../lib/project-search.mjs";
+import { runbook } from "../lib/runbook.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -898,6 +899,25 @@ async function suite(mode, opts) {
   ok(bad.status === 400 && bad.body.detail === "nope" && (await post("/api/w/jarvis-studio/tree/compose", { names: [] })).status === 400, tag("tree: an unknown skill and an empty choice are refused"));
   const tev = (await j("/api/w/jarvis-studio/events")).body;
   ok(tev.some(e => e.kind === "tree.compose" && e.target === "2 skills ready"), tag("tree: composing is in the event log, as a count"));
+  }
+
+  {
+  // ADR-165: the runbook over the three snapshots on disk.
+  const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
+  const rctx = { corpus: data("search-corpus.json"), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json") };
+  const rq = { goal: "Heal the contrast of the login page and email ops@example.org", skills: ["replica-polymath-engine"] };
+  const rb = await post("/api/w/jarvis-studio/runbook", rq);
+  const st = Object.fromEntries((rb.body.stages || []).map(s => [s.id, s]));
+  ok(rb.status === 200 && rb.body.ready && rb.body.stages.map(s => s.id).join() === "shield,docs,order,tree,plan,routes" && rb.body.sent === false && !JSON.stringify(rb.body).includes("ops@example.org"),
+    tag("runbook: six stages run in order on the cleaned goal, nothing is sent"), rb.body.stages?.map(s => s.status));
+  ok(st.docs.summary.top[0].id === "docs/adr/ADR-153-oklch-bisection-contrast-healer.md" && st.order.summary.verified && st.order.summary.layers.at(-1).includes("replica-polymath-engine"), tag("runbook: the healer's record is found and the skills are ordered from the snapshot"));
+  ok(st.tree.summary.status === "running" && rb.body.locked > 0 && st.plan.summary.tag === "[INFERENCE]", tag("runbook: locked steps keep the workbench tree running; the plan choice is [INFERENCE]"));
+  ok(st.routes.summary.ok === 9 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: nine page probes pass and diagnostics is server only"), st.routes.summary);
+  ok(rb.body.chain_sha256 === runbook(rq, rctx).chain_sha256 && /^[0-9a-f]{64}$/.test(rb.body.chain_sha256), tag("runbook: the chain hash is the engine's"));
+  const bad = await post("/api/w/jarvis-studio/runbook", { goal: "Contrast", skills: ["nope"] });
+  ok(bad.status === 200 && bad.body.ready === false && bad.body.stages[2].status === "error" && (await post("/api/w/jarvis-studio/runbook", { goal: "" })).status === 400, tag("runbook: an unknown skill is a stage error, an empty goal is refused"));
+  const rev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(rev.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(rev).includes("ops@example.org"), tag("runbook: the event log keeps counts, never the goal"));
   }
 
   {

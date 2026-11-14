@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-14T14:37:54.690Z",
+ "ranAt": "2026-11-14T21:51:19.124Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -812,6 +812,36 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/runbook.mjs",
+   "sha256": "232787b35e18024e7b18beb50994dc915cdb7a7084d726aa726784b2a07bbb31",
+   "functions": [
+    "rbStage",
+    "rbProbe",
+    "probeRoutes",
+    "runbook"
+   ],
+   "mutants": 50,
+   "killed": 48,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "rbProbe",
+     "line": 53,
+     "kind": "> -> >=",
+     "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
+    },
+    {
+     "fn": "rbProbe",
+     "line": 53,
+     "kind": "0 -> 1",
+     "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/project-search.mjs",

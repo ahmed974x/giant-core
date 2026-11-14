@@ -888,6 +888,29 @@
    "review": "docs/security/CONTRAST-HEALER-REVIEW-2026-11-07.md"
   },
   {
+   "name": "replica-runbook",
+   "description": "One goal and the skills it needs, run through the engines this repository already has, in order - the privacy shield cleans the goal (a secret check gives only its SHA-1 prefix), project search finds ",
+   "tools": [
+    {
+     "name": "runbook.py",
+     "functions": 4
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 75,
+    "mutants": 75
+   },
+   "review": "docs/security/RUNBOOK-REVIEW-2026-11-14.md"
+  },
+  {
    "name": "replica-skill-tree",
    "description": "The repository's skills as one tree - roots (AGENTS.md, DESIGN.md, the approval locks, the state prover, the Merkle log, the privacy shield, the contrast healer), a trunk of the engines that join the ",
    "tools": [

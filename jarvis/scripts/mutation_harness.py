@@ -519,6 +519,27 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_runbook(f, work):
+    """ADR-165: the skill's golden file (the server's answers) and the snapshots of this repository."""
+    with open(os.path.join(REPO, ".claude", "skills", "replica-runbook", "tests", "golden.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+
+    def run(c):
+        try:
+            return {"response": json.loads(json.dumps(f["runbook"](c["request"], c["ctx"])))}
+        except f["RunbookError"] as e:
+            return {"error": {"error": str(e), "detail": e.detail}}
+    out = [(f"golden {i}", run(c) == ({"error": c["error"]} if "error" in c else {"response": c["response"]})) for i, c in enumerate(g)]
+    data = os.path.join(REPO, "jarvis", "app", "data")
+
+    def load(name):
+        with open(os.path.join(data, name), encoding="utf-8") as fh:
+            return json.load(fh)
+    ctx = f["load_context"](data)
+    out.append(("context", ctx == {"corpus": load("search-corpus.json"), "deps": load("skill-deps.json")["skills"], "tree": load("skill-tree-input.json")}))
+    return out
+
+
 def oracle_search(f, work):
     """ADR-164: the skill's golden file (the server's answers) and the corpus of this repository."""
     with open(os.path.join(REPO, ".claude", "skills", "replica-project-search", "tests", "golden.json"), encoding="utf-8") as fh:
@@ -849,6 +870,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-runbook/runbook.py", "functions": ["_fail", "_len16", "_stage", "_probe", "probe_routes", "runbook", "load_context"], "oracle": oracle_runbook, "with": [".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-project-search/project_search.py", ".claude/skills/replica-plan-order/plan_order.py", ".claude/skills/replica-unified-workbench/unified_workbench.py", ".claude/skills/replica-polymath-engine/polymath_engine.py", ".claude/skills/replica-skill-tree/skill_tree.py", ".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py", ".claude/skills/replica-timeseries-math/ts_math.py"]},
     {"file": ".claude/skills/replica-project-search/project_search.py", "functions": ["_fail", "js_round", "_len16", "normalize", "_word", "_split", "tokenize", "_by_score", "bm25_rank", "trigrams", "dice", "title_rank", "rrf", "snippet", "_check_corpus", "_whole", "search_project", "_doc", "corpus"], "oracle": oracle_search, "with": []},
     {"file": ".claude/skills/replica-plan-order/plan_order.py", "functions": ["_fail", "po_r", "_len16", "_name", "_num", "kahn_order", "order_kept", "skill_order", "_check", "_tick", "tick_tree", "workbench_tree", "uct_select", "_field", "plan_order", "_sys_path_text", "deps_snapshot"], "oracle": oracle_order, "with": [".claude/skills/replica-unified-workbench/unified_workbench.py", ".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-skill-tree/skill_tree.py", "functions": ["_fail", "st_r", "_int", "family_of", "status_of", "_check", "build_tree", "compose_skills", "skill_tree"], "oracle": oracle_tree, "with": []},
@@ -887,6 +909,7 @@ EQUIVALENT = [
     {"file": "hyper_studio.py", "function": "astar", "line": "g = {key(*start): 0}", "kind": "constant 0 -> 1", "why": "a start cost of 1 adds 1 to every cost and f alike, so the order is the same"},
     {"file": "hyper_studio.py", "function": "astar", "line": "open_ = [[0, start]]", "kind": "constant 0 -> 1", "why": "the start's f is never compared: it is alone in the list when it is taken"},
     {"file": "hyper_studio.py", "function": "bfs_length", "line": "nx, ny = x + dx, y + dy", "kind": "arith Add -> Sub", "why": "the four moves are symmetric, so x - dx or y - dy visits the same neighbours in another order, and breadth-first distances do not depend on the order"},
+    {"file": "runbook.py", "function": "_probe", "line": "return len(u[\"claude\"]) > 0, u", "kind": "constant 0 -> 1", "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"},
     {"file": "project_search.py", "function": "snippet", "line": "return None", "kind": "return None", "why": "the mutated line already returns None"},
     {"file": "hyper_studio.py", "function": "bfs_length", "line": "return None", "kind": "return None", "why": "the mutated line already returns None"},
     # ADR-154: universal_math.py.

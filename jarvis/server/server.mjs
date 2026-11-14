@@ -46,6 +46,7 @@ import { runWorkbench } from "./lib/unified-workbench.mjs";
 import { runPolymath } from "./lib/polymath-engine.mjs";
 import { planOrder } from "./lib/plan-order.mjs";
 import { searchProject } from "./lib/project-search.mjs";
+import { runbook } from "./lib/runbook.mjs";
 import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
@@ -426,6 +427,13 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-165: the runbook over the three snapshots on disk. Nothing is sent; events keep counts only.
+        if (req.method === "POST" && rest === "/runbook") {
+          let out;
+          try { out = runbook(body, { corpus: readSearchCorpus(), deps: readSkillDeps(), tree: readSkillTreeInput() }); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "runbook.run", out.stages.filter(s => s.status === "ok").length + " stages ok, " + out.locked + " locked");
           return send(200, out);
         }
         // ADR-164: project search over the corpus on disk. Lexical only; the event log keeps the count, never the query.

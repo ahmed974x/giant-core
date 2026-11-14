@@ -599,6 +599,8 @@
       // ADR-160 in sample mode: the same workbench as the server, in this page.
       // ADR-161 in sample mode: the same polymath engine as the server, in this page.
       // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
+      // ADR-165 in sample mode: the same runbook as the server, over the snapshots built into this page.
+      runbook(body) { try { return ok(Runbook.runbook(body, { corpus: DATA.corpus || { docs: [] }, deps: DATA.deps || {}, tree: DATA.tree || { skills: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-164 in sample mode: the same search as the server, over the corpus built into this page.
       docsSearch(body) { try { return ok(ProjectSearch.searchProject(DATA.corpus || { docs: [] }, body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-163 in sample mode: the same plan-order engine as the server, with the dependency snapshot built into this page.
@@ -1057,6 +1059,7 @@
       polymath: body => req("POST", w("/polymath/run"), body),
       order: body => req("POST", w("/order"), body),
       docsSearch: body => req("POST", w("/docs/search"), body),
+      runbook: body => req("POST", w("/runbook"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -2624,7 +2627,15 @@
   const PlanOrder = (() => {
     const { runWorkbench } = UnifiedWorkbench, compileMetacodes = LlmPlan.compileMetacodes;
     /*@PLAN_ORDER@*/
-    return { planOrder };
+    return { planOrder, skillOrder, workbenchTree };
+  })();
+  // ADR-165: the runbook, the same as the server, over the engines inlined above.
+  const Runbook = (() => {
+    const { scrubPrivate, kAnonymity, planFossStack, universalAgent, sha256Hex } = LlmPlan;
+    const { searchProject } = ProjectSearch, { planOrder, skillOrder, workbenchTree } = PlanOrder, { runWorkbench } = UnifiedWorkbench, { runPolymath } = Polymath, { buildTree } = SkillTree;
+    const solveMath = UniMath.solve, optics = Hyper.optics;
+    /*@RUNBOOK@*/
+    return { runbook, RB_STAGES };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -4142,6 +4153,59 @@
             h("p", { class: "t-caption muted", text: "Join chosen skills: their path to the roots, the commands that test them, and the trunk engine that already runs them together. Nothing is installed." }),
             chips, h("div", { class: "row" }, composeBtn), composeOut))));
   };
+  /* ── Runbook (ADR-165): one goal through the shield, project search, plan order and a probe of each page ── */
+  const RB_PLAN = { speed: "The fastest slice", proof: "The most careful: tests and proof first", selfhost: "Self-hosted on this computer" };
+  const RB_TITLE = { shield: "Privacy shield", docs: "Project search", order: "Order of skills", tree: "The workbench as a behaviour tree", plan: "Choose a plan by UCB1", routes: "Page probes" };
+  const RB_ROUTE = { ok: ["ok", "Passed"], failed: ["failed", "Failed"], error: ["failed", "Refused"], server_only: ["idle", "Server only"] };
+  function rbStageBody(s) {
+    const m = s.summary, row = (...k) => h("p", { class: "row t-sm" }, ...k), muted = t => h("span", { class: "muted", text: t });
+    if (s.status === "error") return row(badge("failed", "Refused"), uaData(m.error));
+    if (s.id === "shield") return row(muted("Replaced"), uaNum(m.replaced), ...m.rules.map(uaData), m.secret_prefix ? h("span", { class: "row" }, muted("Secret check prefix"), h("code", { translate: "no", dir: "ltr", text: m.secret_prefix })) : null);
+    if (s.id === "docs") return h("div", { class: "stack" }, row(m.found ? badge("ok", "Found") : badge("warn", "Nothing found"), muted("Documents searched"), uaNum(m.counts.docs)),
+      m.top.length ? h("ol", { class: "plist" }, m.top.map(x => h("li", { class: "stack t-sm" }, h("span", { class: "row" }, h("bdi", { lang: "en", dir: "auto", translate: "no", text: x.title }), uaNum(x.score)),
+        x.snippet ? h("span", { class: "muted" }, uaData(x.snippet)) : null))) : null);
+    if (s.id === "order") return h("div", { class: "stack" }, row(m.verified ? badge("ok", "Every edge kept") : badge("failed", "An edge is broken"), muted("Added because they are loaded"), uaNum(m.added.length)),
+      h("ol", { class: "plist" }, m.layers.map((l, i) => h("li", { class: "row t-sm" }, muted("Layer"), uaNum(i + 1), ...l.map(n => h("code", { translate: "no", dir: "ltr", text: n }))))),
+      m.cycle.length ? row(muted("On a cycle, left out of the order"), ...m.cycle.map(n => h("code", { translate: "no", dir: "ltr", text: n }))) : null);
+    if (s.id === "tree") return row(m.status === "success" ? badge("ok", "Success") : m.status === "running" ? badge("running", "Running: waiting for approval") : badge("failed", "Failure"),
+      m.stopped_at ? h("span", { class: "row" }, muted("Stopped at"), uaData(m.stopped_at)) : null, muted("Locked steps"), uaNum(m.waiting));
+    if (s.id === "plan") return row(muted("Chosen"), h("strong", { text: RB_PLAN[m.chosen] || m.chosen }), h("span", { class: "tag-inf", text: m.tag }), muted(PO_REASON[m.reason]));
+    return h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Page probes" }, h("table", { class: "table" },
+      h("thead", null, h("tr", null, ...["Page", "Decision record", "Engine", "State"].map(t => h("th", { scope: "col", text: t })))),
+      h("tbody", null, m.routes.map(x => h("tr", null, h("td", null, h("a", { href: x.route, translate: "no", dir: "ltr", text: x.route })), h("td", null, uaData(x.adr)),
+        h("td", null, h("code", { translate: "no", dir: "ltr", text: x.engine })), h("td", null, badge(RB_ROUTE[x.status][0], RB_ROUTE[x.status][1])))))));
+  }
+  pages.runbook = () => {
+    const out = h("div", { class: "stack", "aria-live": "polite" });
+    const goalIn = h("textarea", { class: "textarea", id: "f-rb-goal", name: "goal", rows: 3, autocomplete: "off", dir: "auto", maxLength: 2000 });
+    goalIn.value = "Heal the contrast of the login page and email ops@example.org the result";
+    const skillsIn = h("input", { class: "input", id: "f-rb-skills", name: "skills", autocomplete: "off", dir: "ltr", lang: "en", translate: "no", value: "replica-polymath-engine" });
+    const secretIn = h("input", { class: "input", type: "password", id: "f-rb-secret", name: "secret-check", autocomplete: "off", dir: "ltr" });
+    const btn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Run the runbook");
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      const body = { goal: goalIn.value, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean), lang: document.documentElement.lang === "ar" ? "ar" : "en" };
+      if (secretIn.value) body.secretCheck = secretIn.value;
+      secretIn.value = "";
+      try {
+        const r = await store.runbook(body);
+        out.replaceChildren(
+          h("p", { class: "row" }, r.ready ? badge("ok", "Every stage ran") : badge("warn", "A stage was refused"), badge("idle", "Not sent"), h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(r.locked)),
+          h("ol", { class: "plist rb-stages" }, r.stages.map(s => h("li", { class: "stack rb-stage" }, h("h3", { text: RB_TITLE[s.id] }), rbStageBody(s)))),
+          h("p", { class: "row t-caption muted" }, h("span", { text: "Chain hash" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.chain_sha256 })));
+      } catch (err) { out.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not run"), " ", h("span", { text: err.message }))); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    return h("div", { class: "stack" },
+      pageHead("Runbook", "One goal through the engines already here: the privacy shield cleans it, project search finds the matching records, the skills are put in order, the workbench is read as a behaviour tree, a plan is chosen from your record, and each page's engine is probed. Nothing is sent or installed."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-rb" }, h("h2", { id: "h-rb", text: "Goal" }),
+        field("f-rb-goal", "Goal", goalIn), field("f-rb-skills", "Skills, separated by commas", skillsIn),
+        field("f-rb-secret", "Secret to check (optional)", secretIn, "Only the first five characters of its SHA-1 are kept. The field is cleared."),
+        h("div", { class: "row" }, btn)),
+      h("section", { class: "panel stack", "aria-labelledby": "h-rb-r" }, h("h2", { id: "h-rb-r", text: "Stages" }), out));
+  };
   /* ── Project search (ADR-164): the repository's documents, three lexical rankers fused by RRF ── */
   const PS_KIND = { adr: "Decision record", review: "Security review", skill: "Skill" };
   const PS_RANKER = { body: "Text", field: "Headings", title: "Title letters" };
@@ -4637,7 +4701,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4656,10 +4720,10 @@
     $$(".nav a[data-route]").forEach(a => (a.dataset.route === navKey ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     if (!make) {
       main.replaceChildren(emptyState("i-search", "This page does not exist", "Check the address, or go back to the overview.", h("a", { class: "btn btn-primary", href: "#/overview", text: "Overview" })));
-      document.title = "Not found · Jarvis";
+      document.title = (tr("Not found") || "Not found") + " · " + (tr("Aether Prime") || "Aether Prime");
     } else {
       main.replaceChildren(make());
-      document.title = (tr(TITLES[key]) || TITLES[key]).trim() + " · Jarvis";
+      document.title = (tr(TITLES[key]) || TITLES[key]).trim() + " · " + (tr("Aether Prime") || "Aether Prime");
     }
     if (!first) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
     first = false;
@@ -4718,7 +4782,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

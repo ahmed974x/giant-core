@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-164).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-165).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -415,6 +415,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - Three rankers are joined by reciprocal rank fusion (k = 60): BM25 over each document's title, headings and text, BM25 over the title and headings only, and the title's letter trigrams, so a misspelt name still matches. Each result shows its rank and score in every list and the line that matched.
 - It is a word and letter search. Nothing is semantic or translated, and with nothing shared it says «Nothing found». Each document is searched in its title, first 20 headings and first 2000 characters.
 - Refresh the corpus with `python3 .claude/skills/replica-project-search/project_search.py corpus --root . --out jarvis/app/data/search-corpus.json`, then build the page. The API is `POST /api/w/:slug/docs/search` with `{query, kinds, limit, k}`.
+
+## Runbook (ADR-165)
+
+- **`#/runbook`** takes one goal and the skills it needs. The privacy shield cleans the goal first; project search finds the matching records; the skills are put in Kahn's order with what they load; the workbench is read as a behaviour tree; UCB1 picks one of the three plans from your record [INFERENCE]; and each page's engine gets one fixed probe. A SHA-256 chain binds the stages. Nothing is sent or installed, and locked steps stay locked.
+- `#/diagnostics` reads the running server, so the runbook lists it as server only.
+- The API is `POST /api/w/:slug/runbook` with `{goal, skills, record, c, secretCheck, lang}`. The same engine runs with `python3 .claude/skills/replica-runbook/runbook.py '{"goal": "...", "skills": ["..."]}' --data jarvis/app/data`.
+- The interface is named «أثير برايم» in Arabic and "Aether Prime" in English (sidebar and browser tab). Folders, the server and the workspace names are unchanged.
 
 ## What Jarvis will not do
 

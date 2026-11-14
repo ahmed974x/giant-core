@@ -531,6 +531,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-165 live: the runbook runs on the server over the snapshots on disk and logs counts only.
+{
+  await go("#/runbook");
+  await page.waitForSelector("#f-rb-goal");
+  await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
+  await page.waitForSelector(".rb-stage");
+  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 9, "live: the runbook answers from the server with nine page probes passed");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(evs).includes("ops@example.org"), "live: the runbook is in the event log, as counts");
+}
+
 // ADR-164 live: project search answers from the corpus on the server and logs counts only.
 {
   await go("#/docs");
@@ -631,6 +642,7 @@ await page.waitForTimeout(300);
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
     ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(400); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],

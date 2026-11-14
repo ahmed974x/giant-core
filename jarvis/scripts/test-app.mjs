@@ -885,6 +885,23 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F47: the runbook (ADR-165) and the interface name «أثير برايم» / Aether Prime.
+{
+  await go("#/runbook");
+  await page.waitForSelector("#f-rb-goal");
+  ok((await page.title()).endsWith("· Aether Prime") && (await page.locator(".brand-word").textContent()) === "Aether Prime", "F47 the interface is named Aether Prime");
+  await page.locator("#f-rb-secret").fill("correct horse battery staple");
+  await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
+  await page.waitForSelector(".rb-stage");
+  const body = await page.locator("#h-rb-r").locator("xpath=..").innerText();
+  ok((await page.locator(".rb-stage").count()) === 6 && await page.getByText("Every stage ran").isVisible() && !body.includes("ops@example.org") && (await page.locator("#f-rb-secret").inputValue()) === "", "F47 six stages on the cleaned goal; the secret field is cleared");
+  ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 10 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and ten page probes");
+  await page.locator("#f-rb-skills").fill("nope");
+  await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
+  await page.waitForTimeout(300);
+  ok(await page.getByText("A stage was refused").isVisible() && (await page.locator(".rb-stage").count()) === 6, "F47 an unknown skill refuses one stage and the others still run");
+}
+
 // F46: project search (ADR-164): three lexical rankers fused by RRF over the repository's documents.
 {
   await go("#/docs");
@@ -997,6 +1014,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
     ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
