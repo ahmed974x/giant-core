@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 139,
+ "files": 141,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 155
+  "low": 158
  },
  "byRule": {
   "D05": 27,
-  "M05": 126,
+  "M05": 129,
   "P21": 2
  },
- "sha256": "f4aae87b28b0b8c88ba750230bab4738685f91c97b198341d7f79fb1fee4bb99",
+ "sha256": "2d0c592cf067d56721789f2136f7d50745aeec0814037e3d57d993d6ebdead93",
  "findings": [
   {
    "rule": "D05",
@@ -249,6 +249,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 399,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 406,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1098,6 +1105,20 @@
    "line": 7,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-162-skill-tree.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-163-plan-order.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 22,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-163-plan-order.md"
   }
  ]
 }

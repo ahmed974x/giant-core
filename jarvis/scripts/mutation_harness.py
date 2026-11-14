@@ -519,6 +519,47 @@ def oracle_math(ns, work):
     return out
 
 
+def oracle_order(f, work):
+    """ADR-163: the skill's golden file (the server's answers) and the dependency snapshot of this repository."""
+    with open(os.path.join(REPO, ".claude", "skills", "replica-plan-order", "tests", "golden.json"), encoding="utf-8") as fh:
+        g = json.load(fh)
+    with open(os.path.join(REPO, "jarvis", "app", "data", "skill-deps.json"), encoding="utf-8") as fh:
+        snap = json.load(fh)
+
+    def run(c):
+        try:
+            return {"response": json.loads(json.dumps(f["plan_order"](c["request"], c.get("deps"))))}
+        except f["ERRORS"] as e:
+            return {"error": {"error": str(e), "detail": e.detail}}
+    out = [(f"golden {i}", run(c) == ({"error": c["error"]} if "error" in c else {"response": c["response"]})) for i, c in enumerate(g)]
+    out.append(("deps snapshot", f["deps_snapshot"](REPO) == snap))
+    # A made-up repository: a skill that names itself, another skill, a missing one, and a second line.
+    root = os.path.join(work, "order-root")
+    for d in ("a", "b", "c"):
+        os.makedirs(os.path.join(root, ".claude", "skills", d), exist_ok=True)
+        if d != "c":
+            with open(os.path.join(root, ".claude", "skills", d, "SKILL.md"), "w", encoding="utf-8") as fh:
+                fh.write("x")
+    with open(os.path.join(root, ".claude", "skills", "a", "x.py"), "w", encoding="utf-8") as fh:
+        fh.write('import os\nsys.path[:0] = [os.path.join(S, "a"),\n    "zzz", "c"]\nsys.path.insert(0, "b")\nx = ["b"]\n')
+    out.append(("deps: other skills only", f["deps_snapshot"](root)["skills"] == {"a": ["b"], "b": []}))
+    k = f["order_kept"]
+    out += [("kept: backwards", k(["b", "a"], [["a", "b"]]) is False), ("kept: self edge", k(["a"], [["a", "a"]]) is False),
+            ("kept: unplaced end", k(["a"], [["a", "b"]]) is True and k(["b"], [["a", "b"]]) is True), ("kept: forwards", k(["a", "b"], [["a", "b"]]) is True)]
+
+    def wt(x):
+        try:
+            return f["workbench_tree"](x)
+        except f["ERRORS"]:
+            return "refused"
+        except Exception:  # noqa: BLE001 - a crash is a different answer from a refusal
+            return "crash"
+    done = wt({"stages": [{"id": "shield", "status": "ok"}, {"id": "design", "status": "skipped"}], "locked": 0})
+    out += [("tree: nothing locked is success", isinstance(done, dict) and done["status"] == "success" and done["stopped_at"] is None and done["leaves"]["approvals"] == "success"),
+            ("tree: refused", wt({}) == "refused" and wt(None) == "refused")]
+    return out
+
+
 def oracle_tree(f, work):
     """ADR-162: the skill's golden file (the server's answers)."""
     with open(os.path.join(REPO, ".claude", "skills", "replica-skill-tree", "tests", "golden.json"), encoding="utf-8") as fh:
@@ -781,6 +822,7 @@ TARGETS = [
     {"file": ".claude/skills/replica-passive-recon/passive_recon.py", "functions": ["utc_ms", "iso", "normalize_domain", "parse_rdap", "parse_ct", "grade_headers", "parse_security_txt", "recon_report", "read_headers"], "oracle": oracle_recon, "with": []},
     {"file": ".claude/skills/replica-universal-math/universal_math.py", "functions": ["js_round", "js_str", "to_precision", "to_exponential", "fmt", "r12", "_num", "_div", "_pow", "_call", "tokenize", "parse", "evaluate", "num", "is_n", "has_var", "simplify", "_d", "show", "adaptive_simpson", "brent", "find_roots", "check_matrix", "_scale", "gauss_solve", "determinant", "inverse", "jacobi_eigen", "rk4", "_tdiv", "_tmod", "big", "egcd", "is_prime", "_rho", "factorize", "crt", "bayes", "_interval", "_number", "solve", "um_text", "localize"], "oracle": oracle_math, "with": []},
     {"file": ".claude/skills/replica-hyper-studio/hyper_studio.py", "functions": ["r", "_num", "_js_num_str", "_number", "rotate_plane", "apply_angles", "hypercube", "sixteen_cell", "e8_roots", "mat_mul", "reflection", "sym_eigen", "coxeter_plane", "_petrie", "perspective", "rings", "face_shade", "oklch_css", "faces_viewer", "lengths_kept", "norms_kept", "back_to_front", "facing_ok", "counts_ok", "is_identity", "coxeter_ok", "rings_exact", "rings_multiple", "dof_ok", "harmonic_ok", "ev100_ok", "overlap_ok", "inside_box", "path_ok", "projection", "hyper_svg", "kelvin_to_xy", "kelvin_to_colour", "_pos", "_get", "optics", "_is_int", "_cell", "astar", "bfs_length", "verlet", "game_physics", "hyper"], "oracle": oracle_hyper, "with": []},
+    {"file": ".claude/skills/replica-plan-order/plan_order.py", "functions": ["_fail", "po_r", "_len16", "_name", "_num", "kahn_order", "order_kept", "skill_order", "_check", "_tick", "tick_tree", "workbench_tree", "uct_select", "_field", "plan_order", "_sys_path_text", "deps_snapshot"], "oracle": oracle_order, "with": [".claude/skills/replica-unified-workbench/unified_workbench.py", ".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-skill-tree/skill_tree.py", "functions": ["_fail", "st_r", "_int", "family_of", "status_of", "_check", "build_tree", "compose_skills", "skill_tree"], "oracle": oracle_tree, "with": []},
     {"file": ".claude/skills/replica-polymath-engine/polymath_engine.py", "functions": ["_num", "js_round", "pm_r", "_len16", "_leaf", "_node", "merkle_root", "series_summary", "run_domain", "decide", "run_polymath"], "oracle": oracle_polymath, "with": [".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-hyper-studio/hyper_studio.py", ".claude/skills/replica-timeseries-math/ts_math.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},
     {"file": ".claude/skills/replica-unified-workbench/unified_workbench.py", "functions": ["_sha", "_len16", "run_stage", "locked_of", "run_workbench"], "oracle": oracle_workbench, "with": [".claude/skills/replica-universal-agent/universal_agent.py", ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py", ".claude/skills/replica-universal-math/universal_math.py", ".claude/skills/replica-foss-atlas/foss_atlas.py", ".claude/skills/replica-formal-verify/state_prover.py", ".claude/skills/replica-reversal-engine/reversal_engine.py"]},

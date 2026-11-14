@@ -599,6 +599,8 @@
       // ADR-160 in sample mode: the same workbench as the server, in this page.
       // ADR-161 in sample mode: the same polymath engine as the server, in this page.
       // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
+      // ADR-163 in sample mode: the same plan-order engine as the server, with the dependency snapshot built into this page.
+      order(body) { try { return ok(PlanOrder.planOrder(body, DATA.deps || {})); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       tree() { return ok(SkillTree.buildTree(DATA.tree || { skills: [] })); },
       treeCompose(body) { try { return ok(SkillTree.composeSkills(DATA.tree || { skills: [] }, body.names)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       polymath(body) { try { return ok(Polymath.runPolymath(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
@@ -1051,6 +1053,7 @@
       universal: body => req("POST", w("/agent/universal"), body),
       workbench: body => req("POST", w("/workbench/run"), body),
       polymath: body => req("POST", w("/polymath/run"), body),
+      order: body => req("POST", w("/order"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -2608,6 +2611,12 @@
     /*@SKILL_TREE@*/
     return { buildTree, composeSkills };
   })();
+  // ADR-163: plan order (Kahn, behaviour tree, UCB1), the same as the server, over the workbench and meta-codes above.
+  const PlanOrder = (() => {
+    const { runWorkbench } = UnifiedWorkbench, compileMetacodes = LlmPlan.compileMetacodes;
+    /*@PLAN_ORDER@*/
+    return { planOrder };
+  })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
@@ -4124,6 +4133,94 @@
             h("p", { class: "t-caption muted", text: "Join chosen skills: their path to the roots, the commands that test them, and the trunk engine that already runs them together. Nothing is installed." }),
             chips, h("div", { class: "row" }, composeBtn), composeOut))));
   };
+  /* ── Plan order (ADR-163): Kahn's order of skills, the workbench as a behaviour tree, UCB1 over the three plans ── */
+  const PO_STATUS = { success: ["ok", "Success"], failure: ["failed", "Failure"], running: ["running", "Running: waiting for approval"] };
+  const PO_REASON = { untried: "An untried plan is tried first.", tie: "The top scores are equal; the first listed is taken.", score: "The highest mean plus exploration bonus." };
+  function poTreeList(node, byPath, path) {
+    const t = byPath.get(path), st = t ? PO_STATUS[t.status] : ["idle", "Not ticked"];
+    const head = h("span", { class: "row t-sm" }, node.type === "leaf" ? uaData(node.id) : h("strong", { text: node.type === "sequence" ? "Sequence" : "Fallback" }),
+      node.type !== "leaf" && node.id ? uaData(node.id) : null, badge(st[0], st[1]));
+    return h("li", { class: "stack po-node" }, head, node.type === "leaf" ? null : h("ul", { class: "plist po-tree" }, node.children.map((c, i) => poTreeList(c, byPath, path + "." + i))));
+  }
+  pages.order = () => {
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const latin = (el) => { el.lang = "en"; el.translate = false; el.spellcheck = false; return el; };
+    // 1. Kahn's order of chosen skills.
+    const namesIn = latin(h("input", { class: "input", id: "f-po-names", name: "skills", autocomplete: "off", dir: "ltr", value: "replica-polymath-engine, replica-hyper-studio" }));
+    const kOut = h("div", { class: "stack", "aria-live": "polite" });
+    const kBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Order the skills");
+    kBtn.addEventListener("click", async () => {
+      kBtn.disabled = true;
+      try {
+        const r = await store.order({ mode: "skills", names: namesIn.value.split(/[\s,]+/).filter(Boolean) });
+        kOut.replaceChildren(h("p", { class: "row" }, r.acyclic ? badge("ok", "No cycle") : badge("failed", "Cycle found"), r.verified ? badge("ok", "Every edge kept") : badge("failed", "An edge is broken"),
+            h("span", { class: "muted t-sm", text: "Added because they are loaded" }), uaNum(r.added.length), h("span", { class: "tag-inf", text: r.source })),
+          h("ol", { class: "plist" }, r.layers.map((layer, i) => h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Layer" }), uaNum(i + 1), ...layer.map(n => h("code", { translate: "no", dir: "ltr", text: n }))))),
+          ...(r.cycle.length ? [h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "On a cycle, left out of the order" }), ...r.cycle.map(n => h("code", { translate: "no", dir: "ltr", text: n })))] : []));
+      } catch (err) { kOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not ordered"), " ", h("span", { text: err.message }))); }
+      finally { kBtn.disabled = false; }
+    });
+    // 2. The workbench as a behaviour tree.
+    const taskIn = h("textarea", { class: "textarea", id: "f-po-task", name: "task", rows: 2, autocomplete: "off", dir: "auto", maxLength: 4000 });
+    taskIn.value = "Install n8n and email ops@example.org the weekly report";
+    const exprIn = latin(h("input", { class: "input", id: "f-po-expr", name: "expression", autocomplete: "off", dir: "ltr", value: "x^2-9" }));
+    const tOut = h("div", { class: "stack", "aria-live": "polite" });
+    const tBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Tick the tree");
+    tBtn.addEventListener("click", async () => {
+      tBtn.disabled = true;
+      const request = { task: taskIn.value };
+      if (exprIn.value.trim()) request.math = { task: "calculus", expression: exprIn.value, interval: [-10, 10] };
+      try {
+        const r = await store.order({ mode: "workbench", request });
+        const st = PO_STATUS[r.status];
+        tOut.replaceChildren(h("p", { class: "row" }, badge(st[0], st[1]), r.stopped_at ? h("span", { class: "row t-sm" }, h("span", { class: "muted", text: "Stopped at" }), uaData(r.stopped_at)) : null,
+            h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(r.waiting), h("span", { class: "muted t-sm", text: "Leaves ticked" }), uaNum(r.ticked)),
+          h("ul", { class: "plist po-tree" }, poTreeList(r.tree, new Map(r.trace.map(x => [x.path, x])), "0")),
+          h("p", { class: "row t-caption muted" }, h("span", { text: "Workbench chain" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.chain_sha256 })));
+      } catch (err) { tOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not ticked"), " ", h("span", { text: err.message }))); }
+      finally { tBtn.disabled = false; }
+    });
+    // 3. UCB1 over the three meta-code plans, from the person's own record.
+    const promptIn = h("input", { class: "input", id: "f-po-prompt", name: "prompt", autocomplete: "off", dir: "auto", value: "Build a login page and publish it" });
+    const num = (id, value, label) => { const i = h("input", { class: "input", type: "number", id, name: id, min: "0", step: "any", autocomplete: "off", value: String(value) }); i.setAttribute("aria-label", label); return i; };
+    const PLANS = [["speed", "The fastest slice"], ["proof", "The most careful: tests and proof first"], ["selfhost", "Self-hosted on this computer"]];
+    const rec = PLANS.map(([id, t], i) => [id, num("f-po-v-" + id, [3, 5, 0][i], (tr(t) || t) + ": " + (tr("Tries") || "Tries")), num("f-po-r-" + id, [2, 4, 0][i], (tr(t) || t) + ": " + (tr("Wins") || "Wins"))]);
+    const cIn = num("f-po-c", 1.4142, "c");
+    const uOut = h("div", { class: "stack", "aria-live": "polite" });
+    const uBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Choose a plan");
+    uBtn.addEventListener("click", async () => {
+      uBtn.disabled = true;
+      const record = Object.fromEntries(rec.map(([id, v, w]) => [id, { visits: Number(v.value), reward: Number(w.value) }]));
+      try {
+        const r = await store.order({ mode: "plans", prompt: promptIn.value, record, c: Number(cIn.value) });
+        const title = id => { const o = r.options.find(x => x.id === id); return o ? (tr(o.title) || o.title) : id; };
+        uOut.replaceChildren(h("p", { class: "row" }, h("span", { class: "muted t-sm", text: "Chosen" }), h("strong", { text: title(r.chosen) }), h("span", { class: "tag-inf", text: r.tag })),
+          h("p", { class: "t-sm muted", text: PO_REASON[r.reason] }),
+          h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Plan scores" }, h("table", { class: "table" },
+            h("thead", null, h("tr", null, ...["Plan", "Tries", "Mean", "Bonus", "Score", "Proved"].map(t => h("th", { scope: "col", text: t })))),
+            h("tbody", null, r.ranked.map(a => h("tr", null, h("td", { text: title(a.id) }), h("td", null, uaNum(a.visits)), h("td", null, uaNum(a.mean)), h("td", null, uaNum(a.bonus)), h("td", null, uaNum(a.score)),
+              h("td", null, r.options.find(o => o.id === a.id).proved ? badge("ok", "Yes") : badge("failed", "No"))))))),
+          h("p", { class: "row t-caption muted" }, h("span", { text: "Total tries" }), uaNum(r.N), h("code", { translate: "no", dir: "ltr", text: "c" }), uaNum(r.c)));
+      } catch (err) { uOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not chosen"), " ", h("span", { text: err.message }))); }
+      finally { uBtn.disabled = false; }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Plan order", "Three fixed rules over the engines here: Kahn's order puts each skill after what it loads, a behaviour tree says whether the whole workbench task is done, and UCB1 picks one of the three plans from your own record of tries. Nothing is sent or installed."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-po-k" }, h("h2", { id: "h-po-k", text: "Order of skills" }),
+        h("p", { class: "t-caption muted", text: "Dependencies are read from each skill's own sys.path lines. A cycle is named and left out, never broken." }),
+        field("f-po-names", "Skills, separated by commas", namesIn), h("div", { class: "row" }, kBtn), kOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-po-t" }, h("h2", { id: "h-po-t", text: "The workbench as a behaviour tree" }),
+        h("p", { class: "t-caption muted", text: "Sequence stops at the first stage that is not done; each optional stage is a Fallback of ran or skipped. A locked approval keeps the tree running until Director 00 decides." }),
+        field("f-po-task", "Task", taskIn), field("f-po-expr", "Expression for the maths stage", exprIn, "Leave empty to skip the maths stage."), h("div", { class: "row" }, tBtn), tOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-po-u" }, h("h2", { id: "h-po-u", text: "Choose a plan by UCB1" }),
+        h("p", { class: "t-caption muted", text: "Type how often you tried each plan and how many tries worked. The score is the mean plus c times the square root of ln N over the plan's tries." }),
+        field("f-po-prompt", "Request", promptIn),
+        h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Your record" }, h("table", { class: "table" },
+          h("thead", null, h("tr", null, h("th", { scope: "col", text: "Plan" }), h("th", { scope: "col", text: "Tries" }), h("th", { scope: "col", text: "Wins" }))),
+          h("tbody", null, rec.map(([id, v, w], i) => h("tr", null, h("td", { text: PLANS[i][1] }), h("td", null, v), h("td", null, w)))))),
+        field("f-po-c", "Exploration c", cIn, "√2 is the usual value; 0 only exploits."), h("div", { class: "row" }, uBtn), uOut));
+  };
   /* ── Polymath engine (ADR-161): one question across the repository's engines; it abstains when none ran ── */
   const PM_LABEL = { math: "Maths", timeseries: "Time series", optics: "Optics", design: "Design", security: "Security" };
   const PM_STATUS = { ok: ["ok", "Ran"], needs_input: ["warn", "Needs input"], error: ["failed", "Refused"], not_named: ["idle", "Not named"] };
@@ -4495,7 +4592,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4576,7 +4673,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

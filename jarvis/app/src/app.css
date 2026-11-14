@@ -634,3 +634,7 @@ td.wrap { white-space: normal; min-width: 16ch; }
 @media (pointer: coarse) { .linklike { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .st-edge, .st-node circle { transition: none; } }
 
+
+/* ADR-163: plan order. The workbench's behaviour tree as nested lists, each level indented with a hairline. */
+.po-tree .po-tree { padding-inline-start: 16px; border-inline-start: 1px solid var(--color-border); margin-block-start: 4px; }
+.po-node { min-inline-size: 0; }

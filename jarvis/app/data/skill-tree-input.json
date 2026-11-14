@@ -750,6 +750,29 @@
    "review": "docs/security/PASSIVE-RECON-REVIEW-2026-11-07.md"
   },
   {
+   "name": "replica-plan-order",
+   "description": "Deterministic ordering and choice over the repository's engines - Kahn's topological order of chosen skills and everything they load (from each skill's own sys.path lines, EXTRACTED), in layers with t",
+   "tools": [
+    {
+     "name": "plan_order.py",
+     "functions": 10
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 212,
+    "mutants": 212
+   },
+   "review": "docs/security/PLAN-ORDER-REVIEW-2026-11-14.md"
+  },
+  {
    "name": "replica-polymath-engine",
    "description": "One question across the repository's own deterministic engines in five stages - the privacy shield cleans it and fixed word rules plus the person's choice name the domains (maths, time series, optics,",
    "tools": [

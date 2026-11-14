@@ -44,6 +44,7 @@ import { atlasView, planFossStack, scrubPrivate, personas as atlasPersonas } fro
 import { universalAgent } from "./lib/universal-agent.mjs";
 import { runWorkbench } from "./lib/unified-workbench.mjs";
 import { runPolymath } from "./lib/polymath-engine.mjs";
+import { planOrder } from "./lib/plan-order.mjs";
 import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
@@ -51,6 +52,8 @@ import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // ADR-162: the skill tree's input, written by .claude/skills/replica-skill-tree/skill_tree.py snapshot.
+// ADR-163: each skill's dependencies, written by .claude/skills/replica-plan-order/plan_order.py deps.
+const readSkillDeps = () => { const p = join(here, "..", "app", "data", "skill-deps.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")).skills : {}; };
 const readSkillTreeInput = () => { const p = join(here, "..", "app", "data", "skill-tree-input.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : { skills: [] }; };
 const repoRoot = resolve(here, "..", "..");
 
@@ -420,6 +423,15 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-163: plan order. Kahn's order of skills (dependencies from the snapshot on disk, never from the request),
+        // the workbench as a behaviour tree and UCB1 over the person's record. Nothing is sent; events keep counts only.
+        if (req.method === "POST" && rest === "/order") {
+          let out;
+          try { out = planOrder(body, readSkillDeps()); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          const n = out.order ? out.order.length + " in order" + (out.cycle.length ? ", " + out.cycle.length + " on a cycle" : "") : out.status ? "tree " + out.status : out.ranked.length + " arms";
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "order." + out.mode, n);
           return send(200, out);
         }
         // ADR-161: the polymath engine. Five stages over the repository's own engines; it abstains when none ran.

@@ -45,6 +45,7 @@ import { universalAgent, UA_WEIGHTS, UA_REVIEWED } from "../lib/universal-agent.
 import { runWorkbench, UW_STAGES } from "../lib/unified-workbench.mjs";
 import { runPolymath, PM_DOMAINS } from "../lib/polymath-engine.mjs";
 import { skillTree, buildTree } from "../lib/skill-tree.mjs";
+import { planOrder } from "../lib/plan-order.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -896,6 +897,27 @@ async function suite(mode, opts) {
   ok(bad.status === 400 && bad.body.detail === "nope" && (await post("/api/w/jarvis-studio/tree/compose", { names: [] })).status === 400, tag("tree: an unknown skill and an empty choice are refused"));
   const tev = (await j("/api/w/jarvis-studio/events")).body;
   ok(tev.some(e => e.kind === "tree.compose" && e.target === "2 skills ready"), tag("tree: composing is in the event log, as a count"));
+  }
+
+  {
+  // ADR-163: plan order. Kahn's order from the dependency snapshot, the workbench as a behaviour tree, UCB1.
+  const deps = JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", "skill-deps.json"), "utf8")).skills;
+  const ko = await post("/api/w/jarvis-studio/order", { mode: "skills", names: ["replica-polymath-engine"], deps: { "replica-polymath-engine": [] } });
+  const pos = n => ko.body.order.indexOf(n);
+  ok(ko.status === 200 && ko.body.acyclic && ko.body.verified && ko.body.order.at(-1) === "replica-polymath-engine" && ko.body.added.length === deps["replica-polymath-engine"].length && pos("replica-reversal-engine") < pos("replica-prompt-metacodes") && ko.body.source === "EXTRACTED",
+    tag("order: Kahn puts each skill after what it loads, from the snapshot on disk, not the request"), ko.body.order);
+  const cy = await post("/api/w/jarvis-studio/order", { mode: "kahn", nodes: ["a", "b", "x"], edges: [["a", "b"], ["b", "a"]] });
+  ok(cy.status === 200 && cy.body.cycle.join() === "a,b" && cy.body.order.join() === "x" && cy.body.acyclic === false, tag("order: a cycle is named, never broken"));
+  const wb = await post("/api/w/jarvis-studio/order", { mode: "workbench", request: { task: "Install n8n and email ops@example.org" } });
+  ok(wb.status === 200 && wb.body.status === "running" && wb.body.stopped_at === "approvals" && wb.body.waiting > 0 && !JSON.stringify(wb.body).includes("ops@example.org"), tag("order: locked approvals keep the workbench tree running, never success"), wb.body.status);
+  const wf = await post("/api/w/jarvis-studio/order", { mode: "workbench", request: { task: "Check", math: { task: "nope" } } });
+  ok(wf.status === 200 && wf.body.status === "failure" && wf.body.stopped_at === "math", tag("order: a refused stage fails the workbench Sequence at that stage"));
+  const pl = await post("/api/w/jarvis-studio/order", { mode: "plans", prompt: "Build a login page", record: { speed: { visits: 3, reward: 2 }, proof: { visits: 5, reward: 4 } } });
+  ok(pl.status === 200 && pl.body.chosen === "selfhost" && pl.body.reason === "untried" && pl.body.options.length === 3 && pl.body.options.every(o => o.proved) && pl.body.tag === "[INFERENCE]"
+    && JSON.stringify(pl.body) === JSON.stringify(planOrder({ mode: "plans", prompt: "Build a login page", record: { speed: { visits: 3, reward: 2 }, proof: { visits: 5, reward: 4 } } })), tag("order: UCB1 tries the untried plan first, from the person's record only"), pl.body.ranked);
+  ok((await post("/api/w/jarvis-studio/order", { mode: "uct", arms: [{ id: "a", visits: 1, reward: 2 }, { id: "b", visits: 1, reward: 0 }] })).status === 400 && (await post("/api/w/jarvis-studio/order", { mode: "fly" })).status === 400, tag("order: a reward above visits and an unknown mode are refused"));
+  const oev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(oev.some(e => e.kind === "order.skills" && /in order$/.test(e.target)) && oev.some(e => e.kind === "order.workbench" && e.target === "tree running") && !JSON.stringify(oev).includes("ops@example.org"), tag("order: the event log keeps counts, never the task"));
   }
 
   {

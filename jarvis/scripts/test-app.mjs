@@ -885,6 +885,30 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F45: plan order (ADR-163): Kahn's order of skills, the workbench as a behaviour tree, UCB1 over the three plans.
+{
+  await go("#/order");
+  await page.waitForSelector("#f-po-names");
+  await page.getByRole("button", { name: "Order the skills" }).click();
+  await page.waitForTimeout(150);
+  const layers = await page.locator("#h-po-k ~ div ol > li").allInnerTexts();
+  ok(layers.length === 3 && /replica-polymath-engine/.test(layers[2]) && /replica-reversal-engine/.test(layers[0]) && await page.getByText("No cycle").isVisible(), "F45 Kahn puts each skill after what it loads, in layers");
+  await page.getByRole("button", { name: "Tick the tree" }).click();
+  await page.waitForTimeout(150);
+  ok((await page.locator("#h-po-t ~ div .po-node").count()) >= 15 && (await page.locator("#h-po-t ~ div").getByText("Running: waiting for approval").count()) >= 2, "F45 the workbench tree keeps running while approvals are locked");
+  await page.locator("#f-po-expr").fill("x $ 2");
+  await page.getByRole("button", { name: "Tick the tree" }).click();
+  await page.waitForTimeout(150);
+  ok(await page.locator("#h-po-t ~ div").getByText("Failure").first().isVisible(), "F45 a refused maths stage fails the Sequence");
+  await page.getByRole("button", { name: "Choose a plan" }).click();
+  await page.waitForTimeout(150);
+  ok(await page.getByText("An untried plan is tried first.").isVisible() && (await page.locator("#h-po-u ~ div table").last().locator("tbody tr").count()) === 3, "F45 UCB1 tries the untried plan first and scores the others");
+  await page.locator("#f-po-v-selfhost").fill("4"); await page.locator("#f-po-r-selfhost").fill("1");
+  await page.getByRole("button", { name: "Choose a plan" }).click();
+  await page.waitForTimeout(150);
+  ok(await page.getByText("The highest mean plus exploration bonus.").isVisible(), "F45 with every plan tried, the highest score is chosen");
+}
+
 // F43: the polymath engine (ADR-161).
 {
   await go("#/polymath");
@@ -956,6 +980,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],

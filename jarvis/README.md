@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-162).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-163).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -400,6 +400,14 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - Each skill's state comes from facts: proved (every mutant killed and a golden file shared with the server), tested, text rules, reference, or needs attention (a critical or high finding). Pick a skill to see its tools, scan, tests, mutation result, the review that names it and its page.
 - **Compose skills:** add skills to the composer and press Compose to get each one's path to the roots, the command that tests it and the trunk engine that already runs them together. Nothing is installed or run.
 - Refresh the tree with `python3 .claude/skills/replica-skill-tree/skill_tree.py snapshot --root . --out jarvis/app/data/skill-tree-input.json`, then build the page. The API is `GET /api/w/:slug/tree` and `POST /api/w/:slug/tree/compose` with `{names}`.
+
+## Plan order (ADR-163)
+
+- **`#/order`** has three fixed rules over the engines here. Nothing is sent or installed.
+- **Order of skills:** type skill names. Kahn's algorithm adds what they load and orders them in layers, each skill after what it loads, ties by name. Dependencies come from each skill's own `sys.path` lines. A cycle is named and left out, never broken.
+- **The workbench as a behaviour tree:** a Sequence of the workbench stages, each optional stage a Fallback of "ran" or "skipped", and the approvals last. A refused stage fails the tree at that stage. A locked approval keeps it running until Director 00 decides; it is never shown as done.
+- **Choose a plan by UCB1:** type how often you tried each of the three meta-code plans and how many tries worked. An untried plan is tried first; otherwise the score is the mean plus c times the square root of ln N over the plan's tries. The choice carries [INFERENCE].
+- Refresh the dependencies with `python3 .claude/skills/replica-plan-order/plan_order.py deps --root . --out jarvis/app/data/skill-deps.json`, then build the page. The API is `POST /api/w/:slug/order` with `{mode: kahn | skills | tree | workbench | uct | plans, …}`.
 
 ## What Jarvis will not do
 

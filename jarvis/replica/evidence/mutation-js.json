@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-13T23:18:14.792Z",
+ "ranAt": "2026-11-14T13:39:23.093Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -807,6 +807,30 @@
    ],
    "mutants": 184,
    "killed": 184,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/plan-order.mjs",
+   "sha256": "1b019d53169135a7a879241f2cd7459d98c71715eb945d17319651add0c032c5",
+   "functions": [
+    "poR",
+    "poName",
+    "kahnOrder",
+    "orderKept",
+    "skillOrder",
+    "poCheck",
+    "poTick",
+    "tickTree",
+    "workbenchTree",
+    "uctSelect",
+    "planOrder"
+   ],
+   "mutants": 192,
+   "killed": 192,
    "equivalent": 0,
    "survived": 0,
    "score": 100,
