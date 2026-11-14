@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-14T14:13:22Z",
- "javascriptRanAt": "2026-11-14T13:39:23.093Z",
+ "ranAt": "2026-11-14T15:12:10Z",
+ "javascriptRanAt": "2026-11-14T14:37:54.690Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 9006,
- "killed": 9006,
- "equivalent": 279,
+ "total": 9283,
+ "killed": 9283,
+ "equivalent": 283,
  "score": 100.0,
  "targets": [
   {
@@ -822,6 +822,48 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/project-search.mjs",
+   "sha256": "296887965c6d2675ebbb863aa0a0595a394a778ef2a19d0f2e8eec82ce1267d2",
+   "functions": [
+    "psR",
+    "byScore",
+    "bm25Rank",
+    "trigrams",
+    "dice",
+    "titleRank",
+    "rrf",
+    "snippet",
+    "checkCorpus",
+    "searchProject"
+   ],
+   "mutants": 118,
+   "killed": 115,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "byScore",
+     "line": 20,
+     "kind": "< -> <=",
+     "why": "checkCorpus refuses a repeated document id, so two ids are never equal and < and <= agree"
+    },
+    {
+     "fn": "byScore",
+     "line": 20,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "byScore",
+     "line": 20,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/plan-order.mjs",
@@ -2102,6 +2144,45 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-project-search/project_search.py",
+   "sha256": "5eb36c44d77055883b382f7906d4483e7d84ba2f8834b16871037523c2d6b4fa",
+   "functions": [
+    "_fail",
+    "js_round",
+    "_len16",
+    "normalize",
+    "_word",
+    "_split",
+    "tokenize",
+    "_by_score",
+    "bm25_rank",
+    "trigrams",
+    "dice",
+    "title_rank",
+    "rrf",
+    "snippet",
+    "_check_corpus",
+    "_whole",
+    "search_project",
+    "_doc",
+    "corpus"
+   ],
+   "mutants": 163,
+   "killed": 162,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "snippet",
+     "line": 139,
+     "kind": "return None",
+     "why": "the mutated line already returns None"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-plan-order/plan_order.py",
    "sha256": "0916796c79b6aec6e66ade5cd2a71175ad6251f48757cce84dd0de42bd52d636",
    "functions": [
@@ -2547,5 +2628,5 @@
    ]
   }
  ],
- "sha256": "b3ffc06d74085fd2d256fc2377343eb60df628e01106bd9bbdb0ad6e83c621e9"
+ "sha256": "d5d618935d8c59d195af392ee205f27daa2532770965e1a365313853bd2f738f"
 }

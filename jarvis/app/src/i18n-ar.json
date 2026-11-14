@@ -2776,6 +2776,24 @@
   "order tree": "نبضة شجرة السلوك",
   "order workbench": "شجرة منضدة العمل",
   "order uct": "اختيار بقاعدة UCB1",
-  "order plans": "اختيار خطة بقاعدة UCB1"
+  "order plans": "اختيار خطة بقاعدة UCB1",
+  "Project search": "البحث في المشروع",
+  "Finds this repository's decision records, security reviews and skills. Three word rankers are joined by reciprocal rank fusion: BM25 over the text, BM25 over the title and headings, and the title's letters for misspelt names. Nothing is semantic, and nothing leaves this computer.": "يجد سجلات القرار والمراجعات الأمنية والمهارات في هذا المستودع. ثلاثة مرتِّبات للكلمات تُدمج بدمج الرتب التبادلي: BM25 على النص، وBM25 على العنوان والعناوين الفرعية، وحروف العنوان للأسماء المكتوبة خطأً. لا شيء دلالي، ولا شيء يغادر هذا الجهاز.",
+  "Words to find": "الكلمات المطلوبة",
+  "Arabic or English. A misspelt title still matches by its letters.": "بالعربية أو الإنجليزية. العنوان المكتوب خطأً يُطابَق بحروفه.",
+  "Search in": "ابحث في",
+  "Decision record": "سجل قرار",
+  "Decision records": "سجلات القرار",
+  "Security review": "مراجعة أمنية",
+  "Security reviews": "المراجعات الأمنية",
+  "Search the project": "ابحث في المشروع",
+  "Found": "وُجدت نتائج",
+  "Documents searched": "المستندات المبحوث فيها",
+  "Headings": "العناوين",
+  "Title letters": "حروف العنوان",
+  "No document shares a word or a title's letters with these words. Nothing is guessed.": "لا يشارك أي مستند هذه الكلمات كلمةً أو حروفَ عنوان. لا يُخمَّن شيء.",
+  "Each document is searched in its title, its first 20 headings and its first 2000 characters.": "يُبحث في كل مستند في عنوانه وأول 20 عنواناً فرعياً فيه وأول 2000 حرف منه.",
+  "Not searched": "لم يُبحث",
+  "docs search": "البحث في المشروع"
  }
 }

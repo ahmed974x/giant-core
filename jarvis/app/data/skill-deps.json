@@ -60,6 +60,7 @@
    "replica-universal-agent",
    "replica-universal-math"
   ],
+  "replica-project-search": [],
   "replica-prompt-metacodes": [
    "replica-reversal-engine"
   ],

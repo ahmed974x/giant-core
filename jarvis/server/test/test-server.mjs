@@ -46,6 +46,7 @@ import { runWorkbench, UW_STAGES } from "../lib/unified-workbench.mjs";
 import { runPolymath, PM_DOMAINS } from "../lib/polymath-engine.mjs";
 import { skillTree, buildTree } from "../lib/skill-tree.mjs";
 import { planOrder } from "../lib/plan-order.mjs";
+import { searchProject } from "../lib/project-search.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -897,6 +898,21 @@ async function suite(mode, opts) {
   ok(bad.status === 400 && bad.body.detail === "nope" && (await post("/api/w/jarvis-studio/tree/compose", { names: [] })).status === 400, tag("tree: an unknown skill and an empty choice are refused"));
   const tev = (await j("/api/w/jarvis-studio/events")).body;
   ok(tev.some(e => e.kind === "tree.compose" && e.target === "2 skills ready"), tag("tree: composing is in the event log, as a count"));
+  }
+
+  {
+  // ADR-164: project search over the repository's documents.
+  const corpus = JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", "search-corpus.json"), "utf8"));
+  const s1 = await post("/api/w/jarvis-studio/docs/search", { query: "contrast healer oklch" });
+  ok(s1.status === 200 && s1.body.found && s1.body.results[0].id === "docs/adr/ADR-153-oklch-bisection-contrast-healer.md" && s1.body.results[0].ranks.body >= 1 && s1.body.counts.docs === corpus.docs.length
+    && JSON.stringify(s1.body) === JSON.stringify(searchProject(corpus, { query: "contrast healer oklch" })), tag("search: the contrast healer's decision record comes first, from the corpus on disk"), s1.body.results.slice(0, 3).map(r => r.id));
+  const s2 = await post("/api/w/jarvis-studio/docs/search", { query: "skil tre" });
+  ok(s2.status === 200 && s2.body.counts.body === 0 && s2.body.results.some(r => r.id === "docs/adr/ADR-162-skill-tree.md" && r.ranks.title), tag("search: a misspelt title is found by its letters"));
+  const s3 = await post("/api/w/jarvis-studio/docs/search", { query: "zzqv xqzv", kinds: ["review"] });
+  ok(s3.status === 200 && s3.body.found === false && s3.body.results.length === 0 && s3.body.counts.docs < corpus.docs.length, tag("search: nothing shared is nothing found, and kinds narrow the documents"));
+  ok((await post("/api/w/jarvis-studio/docs/search", { query: "" })).status === 400 && (await post("/api/w/jarvis-studio/docs/search", { query: "a", limit: 21 })).status === 400, tag("search: an empty query and a limit above 20 are refused"));
+  const sev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(sev.some(e => e.kind === "docs.search" && e.target === "0 found") && !JSON.stringify(sev).includes("skil tre"), tag("search: the event log keeps the count, never the query"));
   }
 
   {

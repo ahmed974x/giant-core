@@ -599,6 +599,8 @@
       // ADR-160 in sample mode: the same workbench as the server, in this page.
       // ADR-161 in sample mode: the same polymath engine as the server, in this page.
       // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
+      // ADR-164 in sample mode: the same search as the server, over the corpus built into this page.
+      docsSearch(body) { try { return ok(ProjectSearch.searchProject(DATA.corpus || { docs: [] }, body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-163 in sample mode: the same plan-order engine as the server, with the dependency snapshot built into this page.
       order(body) { try { return ok(PlanOrder.planOrder(body, DATA.deps || {})); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       tree() { return ok(SkillTree.buildTree(DATA.tree || { skills: [] })); },
@@ -1054,6 +1056,7 @@
       workbench: body => req("POST", w("/workbench/run"), body),
       polymath: body => req("POST", w("/polymath/run"), body),
       order: body => req("POST", w("/order"), body),
+      docsSearch: body => req("POST", w("/docs/search"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -2574,7 +2577,7 @@
     /*@WORKFLOW_GRAPH@*/
     /*@MEMORY_LIBS@*/
     /*@COUNCIL_LIBS@*/
-    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
+    return { fallbackPlan, enforceApprovalGates, lockCategory, checkGraph, graphToSteps, starterGraph, nodeLocked, WF_TOOLS, WF_CHECKS, WF_CATEGORIES, bm25, tokenize, normalize, forgeSkill, readSkillMd, scanFiles, selfCheckItem, auditSkill, slugName, stepsFromMission, LOADER_RULES, MODEL_PROFILES, ROLE_LABEL,
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
@@ -2610,6 +2613,12 @@
   const SkillTree = (() => {
     /*@SKILL_TREE@*/
     return { buildTree, composeSkills };
+  })();
+  // ADR-164: project search, the same as the server, over the memory bank's tokenizer.
+  const ProjectSearch = (() => {
+    const { tokenize, normalize } = LlmPlan;
+    /*@PROJECT_SEARCH@*/
+    return { searchProject };
   })();
   // ADR-163: plan order (Kahn, behaviour tree, UCB1), the same as the server, over the workbench and meta-codes above.
   const PlanOrder = (() => {
@@ -4133,6 +4142,42 @@
             h("p", { class: "t-caption muted", text: "Join chosen skills: their path to the roots, the commands that test them, and the trunk engine that already runs them together. Nothing is installed." }),
             chips, h("div", { class: "row" }, composeBtn), composeOut))));
   };
+  /* ── Project search (ADR-164): the repository's documents, three lexical rankers fused by RRF ── */
+  const PS_KIND = { adr: "Decision record", review: "Security review", skill: "Skill" };
+  const PS_RANKER = { body: "Text", field: "Headings", title: "Title letters" };
+  pages.docs = () => {
+    const out = h("div", { class: "stack", "aria-live": "polite" });
+    const qIn = h("input", { class: "input", type: "search", id: "f-ps-q", name: "query", autocomplete: "off", dir: "auto", maxLength: 300, value: "contrast healer oklch" });
+    const boxes = Object.fromEntries(Object.keys(PS_KIND).map(k => [k, h("input", { type: "checkbox", id: "f-ps-k-" + k, name: "kind-" + k, checked: true })]));
+    const btn = h("button", { class: "btn btn-primary", type: "submit" }, icon("i-search", "sm"), "Search the project");
+    const form = h("form", { class: "stack", novalidate: true },
+      h("div", { class: "field" }, h("label", { htmlFor: "f-ps-q", text: "Words to find" }), qIn, h("span", { class: "hint", text: "Arabic or English. A misspelt title still matches by its letters." })),
+      h("fieldset", { class: "row" }, h("legend", { class: "t-sm muted", text: "Search in" }), ...Object.keys(PS_KIND).map(k => h("label", { class: "check", htmlFor: "f-ps-k-" + k }, boxes[k], h("span", { text: PS_KIND[k] + "s" })))),
+      h("div", { class: "row" }, btn));
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      const kinds = Object.keys(boxes).filter(k => boxes[k].checked);
+      try {
+        const r = await store.docsSearch({ query: qIn.value, ...(kinds.length === 3 ? {} : { kinds }) });
+        out.replaceChildren(
+          h("p", { class: "row t-sm" }, r.found ? badge("ok", "Found") : badge("warn", "Nothing found"), h("span", { class: "muted", text: "Documents searched" }), uaNum(r.counts.docs),
+            ...Object.keys(PS_RANKER).map(n => h("span", { class: "row" }, h("span", { class: "muted", text: PS_RANKER[n] }), uaNum(r.counts[n])))),
+          r.found ? h("ol", { class: "plist ps-results" }, r.results.map(x => h("li", { class: "stack ps-hit" },
+            h("p", { class: "row" }, h("strong", null, h("bdi", { lang: "en", dir: "auto", translate: "no", text: x.title })), badge("idle", PS_KIND[x.kind]), h("span", { class: "muted t-caption", text: "Score" }), uaNum(x.score)),
+            h("p", { class: "row t-caption muted" }, h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: x.path }),
+              ...Object.keys(PS_RANKER).filter(n => x.ranks[n]).map(n => h("span", { class: "row" }, h("span", { text: PS_RANKER[n] }), uaNum("#" + x.ranks[n])))),
+            x.snippet ? h("p", { class: "t-sm" }, uaData(x.snippet)) : null))) : h("p", { class: "t-sm muted", text: "No document shares a word or a title's letters with these words. Nothing is guessed." }),
+          h("p", { class: "t-caption muted", text: "Each document is searched in its title, its first 20 headings and its first 2000 characters." }));
+      } catch (err) { out.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not searched"), " ", h("span", { text: err.message }))); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Project search", "Finds this repository's decision records, security reviews and skills. Three word rankers are joined by reciprocal rank fusion: BM25 over the text, BM25 over the title and headings, and the title's letters for misspelt names. Nothing is semantic, and nothing leaves this computer."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-ps" }, h("h2", { id: "h-ps", text: "Search" }), form),
+      h("section", { class: "panel stack", "aria-labelledby": "h-ps-r" }, h("h2", { id: "h-ps-r", text: "Results" }), out));
+  };
   /* ── Plan order (ADR-163): Kahn's order of skills, the workbench as a behaviour tree, UCB1 over the three plans ── */
   const PO_STATUS = { success: ["ok", "Success"], failure: ["failed", "Failure"], running: ["running", "Running: waiting for approval"] };
   const PO_REASON = { untried: "An untried plan is tried first.", tie: "The top scores are equal; the first listed is taken.", score: "The highest mean plus exploration bonus." };
@@ -4592,7 +4637,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4673,7 +4718,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

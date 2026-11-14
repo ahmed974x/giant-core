@@ -45,6 +45,7 @@ import { universalAgent } from "./lib/universal-agent.mjs";
 import { runWorkbench } from "./lib/unified-workbench.mjs";
 import { runPolymath } from "./lib/polymath-engine.mjs";
 import { planOrder } from "./lib/plan-order.mjs";
+import { searchProject } from "./lib/project-search.mjs";
 import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
@@ -52,6 +53,8 @@ import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // ADR-162: the skill tree's input, written by .claude/skills/replica-skill-tree/skill_tree.py snapshot.
+// ADR-164: the documents project search reads, written by .claude/skills/replica-project-search/project_search.py corpus.
+const readSearchCorpus = () => { const p = join(here, "..", "app", "data", "search-corpus.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : { docs: [] }; };
 // ADR-163: each skill's dependencies, written by .claude/skills/replica-plan-order/plan_order.py deps.
 const readSkillDeps = () => { const p = join(here, "..", "app", "data", "skill-deps.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")).skills : {}; };
 const readSkillTreeInput = () => { const p = join(here, "..", "app", "data", "skill-tree-input.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : { skills: [] }; };
@@ -423,6 +426,13 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-164: project search over the corpus on disk. Lexical only; the event log keeps the count, never the query.
+        if (req.method === "POST" && rest === "/docs/search") {
+          let out;
+          try { out = searchProject(readSearchCorpus(), body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "docs.search", out.results.length + " found");
           return send(200, out);
         }
         // ADR-163: plan order. Kahn's order of skills (dependencies from the snapshot on disk, never from the request),

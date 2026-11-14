@@ -222,6 +222,9 @@ PASS F44 seven roots, a trunk of three and every skill
 PASS F44 states drawn from facts: proved skills, none needing attention
 PASS F44 a skill's facts and its page
 PASS F44 composing two skills names the workbench and their test commands
+PASS F46 the contrast healer's record comes first
+PASS F46 a misspelt title is found by its letters
+PASS F46 nothing shared is nothing found, and it says so
 PASS F45 Kahn puts each skill after what it loads, in layers
 PASS F45 the workbench tree keeps running while approvals are locked
 PASS F45 a refused maths stage fails the Sequence
@@ -251,4 +254,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-252 passed, 0 failed
+255 passed, 0 failed

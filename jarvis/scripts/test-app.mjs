@@ -885,6 +885,23 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F46: project search (ADR-164): three lexical rankers fused by RRF over the repository's documents.
+{
+  await go("#/docs");
+  await page.waitForSelector("#f-ps-q");
+  await page.locator("#h-ps ~ form button[type=submit]").click();
+  await page.waitForSelector(".ps-hit");
+  ok(/ADR-153/.test(await page.locator(".ps-hit").first().innerText()) && await page.getByText("Found", { exact: true }).isVisible(), "F46 the contrast healer's record comes first");
+  await page.locator("#f-ps-q").fill("skil tre");
+  await page.locator("#h-ps ~ form button[type=submit]").click();
+  await page.waitForTimeout(200);
+  ok((await page.locator(".ps-hit").filter({ hasText: "ADR-162" }).count()) === 1, "F46 a misspelt title is found by its letters");
+  await page.locator("#f-ps-q").fill("zzqv xqzv");
+  await page.locator("#h-ps ~ form button[type=submit]").click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Nothing found").isVisible() && (await page.locator(".ps-hit").count()) === 0, "F46 nothing shared is nothing found, and it says so");
+}
+
 // F45: plan order (ADR-163): Kahn's order of skills, the workbench as a behaviour tree, UCB1 over the three plans.
 {
   await go("#/order");
@@ -980,6 +997,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],

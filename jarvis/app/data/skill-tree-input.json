@@ -796,6 +796,29 @@
    "review": "docs/security/POLYMATH-ENGINE-REVIEW-2026-11-13.md"
   },
   {
+   "name": "replica-project-search",
+   "description": "Search the repository's own documents - every ADR, every security review and every skill's SKILL.md - with three lexical rankers fused by Reciprocal Rank Fusion - Okapi BM25 over the title, headings a",
+   "tools": [
+    {
+     "name": "project_search.py",
+     "functions": 12
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 162,
+    "mutants": 162
+   },
+   "review": "docs/security/PROJECT-SEARCH-REVIEW-2026-11-14.md"
+  },
+  {
    "name": "replica-prompt-metacodes",
    "description": "Five prompt meta-codes that change what the answer holds and never turn a request away - ALT3 (three plans - the fastest slice, the most careful with tests, mutation and contrast first, and self-hoste",
    "tools": [
