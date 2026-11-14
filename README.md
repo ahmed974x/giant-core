@@ -241,3 +241,11 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48
 - `docs-misspelt-*`: "skil tre": no word matches, and the skill tree's record and skill are found by their title letters;
 - `docs-arabic-*`: «قيد الموافقة»: the Arabic phrase found in the documents that use it;
 - `docs-nothing-*`: words no document shares: «Nothing found», with nothing guessed.
+
+## ADR-165 (2026-11-14)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `runbook-stages-*`: `#/runbook`: one goal through the shield, project search, the order of skills, the workbench tree waiting on approvals and the plan choice; the brand reads «أثير برايم» / Aether Prime;
+- `runbook-probes-*`: the ten page probes (nine passed, diagnostics server only) and the chain hash;
+- `runbook-refused-*`: an unknown skill refuses the order stage while the other stages still run.
