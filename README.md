@@ -232,3 +232,12 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36
 - `order-skills-*`: `#/order`, Kahn's order of the polymath engine and the hyper studio with everything they load, in three layers, no cycle;
 - `order-tree-*`: the workbench as a behaviour tree: Sequence and Fallback nodes with each status, running at the approvals while steps are locked;
 - `order-uct-*`: UCB1 over the three meta-code plans from the typed record: the untried plan is chosen first, the others scored.
+
+## ADR-164 (2026-11-14)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48 shots):
+
+- `docs-results-*`: `#/docs`, "contrast healer oklch": the healer's decision record first, each result with its kind, path, fused score, rank in each list and the matching line;
+- `docs-misspelt-*`: "skil tre": no word matches, and the skill tree's record and skill are found by their title letters;
+- `docs-arabic-*`: «قيد الموافقة»: the Arabic phrase found in the documents that use it;
+- `docs-nothing-*`: words no document shares: «Nothing found», with nothing guessed.
