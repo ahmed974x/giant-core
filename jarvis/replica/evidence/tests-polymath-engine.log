@@ -1,0 +1,13 @@
+test_golden (test_polymath_engine.SameAsServer.test_golden) ... ok
+test_abstains_without_any_engine (test_polymath_engine.Stages.test_abstains_without_any_engine) ... ok
+test_decision_uses_only_given_numbers (test_polymath_engine.Stages.test_decision_uses_only_given_numbers) ... ok
+test_limits (test_polymath_engine.Stages.test_limits) ... ok
+test_merkle_root_is_rfc6962 (test_polymath_engine.Stages.test_merkle_root_is_rfc6962) ... ok
+test_named_domain_without_input_needs_input (test_polymath_engine.Stages.test_named_domain_without_input_needs_input) ... ok
+test_no_code_is_run (test_polymath_engine.Stages.test_no_code_is_run) ... ok
+test_shield_runs_first (test_polymath_engine.Stages.test_shield_runs_first) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.044s
+
+OK

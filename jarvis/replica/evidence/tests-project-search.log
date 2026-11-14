@@ -1,0 +1,12 @@
+test_no_code_is_run (test_project_search.Corpus.test_no_code_is_run) ... ok
+test_reads_this_repository (test_project_search.Corpus.test_reads_this_repository) ... ok
+test_same_answers_as_the_server (test_project_search.Golden.test_same_answers_as_the_server) ... ok
+test_nothing_shared_is_nothing_found (test_project_search.Rankers.test_nothing_shared_is_nothing_found) ... ok
+test_rrf_adds_reciprocal_ranks (test_project_search.Rankers.test_rrf_adds_reciprocal_ranks) ... ok
+test_tokenizer_folds_arabic_and_drops_stop_words (test_project_search.Rankers.test_tokenizer_folds_arabic_and_drops_stop_words) ... ok
+test_trigrams_find_a_misspelt_title (test_project_search.Rankers.test_trigrams_find_a_misspelt_title) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.029s
+
+OK

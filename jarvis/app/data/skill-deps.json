@@ -1,0 +1,94 @@
+{
+ "format": "jarvis-skill-deps-v1",
+ "source": "EXTRACTED from sys.path lines",
+ "skills": {
+  "algorithmic-art": [],
+  "apple-liquid-glass-hig": [],
+  "autonomous-24-selftest-gate": [],
+  "awesome-research": [],
+  "build-mcpb": [],
+  "cyber-space-osint-grid": [],
+  "frontend-design": [],
+  "hvplot": [],
+  "liquid-neural-139-flow": [],
+  "local-glm-agent-windows-mcp": [],
+  "mcp-builder": [],
+  "neural-139-inputs-heads": [],
+  "neural-flow-decision-viz": [],
+  "omega-apex-council": [],
+  "omega-deep-research-agent": [],
+  "omega-design": [],
+  "omega-extend": [],
+  "omega-finance-chain": [],
+  "omega-knowledge-domain": [],
+  "osint-bgp-cables": [],
+  "panel": [],
+  "panel-material-ui": [],
+  "param": [],
+  "quant-microstructure-gex": [],
+  "replica-architect": [],
+  "replica-backend": [],
+  "replica-build": [],
+  "replica-cyber-recon": [],
+  "replica-design": [],
+  "replica-diff": [],
+  "replica-entrepreneur": [],
+  "replica-formal-verify": [],
+  "replica-foss-atlas": [
+   "replica-formal-verify"
+  ],
+  "replica-graphify": [],
+  "replica-humanizer": [],
+  "replica-hybrid-python": [],
+  "replica-hyper-studio": [
+   "replica-reversal-engine"
+  ],
+  "replica-impeccable": [],
+  "replica-long-horizon": [],
+  "replica-passive-recon": [],
+  "replica-plan-order": [
+   "replica-prompt-metacodes",
+   "replica-unified-workbench"
+  ],
+  "replica-polymath-engine": [
+   "replica-formal-verify",
+   "replica-foss-atlas",
+   "replica-hyper-studio",
+   "replica-prompt-metacodes",
+   "replica-reversal-engine",
+   "replica-timeseries-math",
+   "replica-universal-agent",
+   "replica-universal-math"
+  ],
+  "replica-project-search": [],
+  "replica-prompt-metacodes": [
+   "replica-reversal-engine"
+  ],
+  "replica-quantum-math": [],
+  "replica-reversal-engine": [],
+  "replica-skill-tree": [],
+  "replica-test": [],
+  "replica-timeseries-math": [],
+  "replica-unified-workbench": [
+   "replica-formal-verify",
+   "replica-foss-atlas",
+   "replica-prompt-metacodes",
+   "replica-reversal-engine",
+   "replica-universal-agent",
+   "replica-universal-math"
+  ],
+  "replica-universal-agent": [
+   "replica-formal-verify",
+   "replica-reversal-engine"
+  ],
+  "replica-universal-math": [],
+  "replica-ux-physics": [],
+  "safe-vault-cryptographic-ratchet": [],
+  "stablecoin-cyber-vuln-intel": [],
+  "supreme-software-ui-architect": [],
+  "synaptic-spiderweb-viz": [],
+  "theme-factory": [],
+  "web-artifacts-builder": [],
+  "webapp-testing": []
+ }
+}

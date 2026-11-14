@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 27 must-haves are done; parity is 88.5 (`replica/parity.md`).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-164).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -386,6 +386,35 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The task goes through the privacy shield first, then the meta-codes, the model request, the design check, maths, the FOSS atlas and the security verdicts. Each stage shows its status, its summary and a link to its own page.
 - A stage that refuses its input says so and the others still run. Every send, install and outbound step is listed «بانتظار الموافقة» in one proved plan, with a chain hash over the stages. Nothing is sent.
 - The API is `POST /api/w/:slug/workbench/run` with `{task, model, effort, css, math, atlas, candidates, secretCheck}`. The same pipeline runs with `python3 .claude/skills/replica-unified-workbench/unified_workbench.py`.
+
+## Polymath (ADR-161)
+
+- **`#/polymath`:** write a question, add what the engines need (an expression, a series of numbers, CSS, lens values), optionally two options with your own weights and scores, and claims written as `domain: claim`, then press Think it through.
+- The question goes through the privacy shield first. Each of the five domains (maths, time series, optics, design, security) says whether it ran, why it was named and which engine and ADR answered, with a link to its page. A domain named without its input says it needs input.
+- Every named domain lists how it could fail and what in this repository stops it. The decision matrix uses only your numbers. A claim on a domain that did not run is marked not backed, and with no engine run the answer abstains instead of guessing. An RFC 6962 Merkle root binds the records. Nothing is sent.
+- The API is `POST /api/w/:slug/polymath/run` with `{question, domains, math, series, optics, css, candidates, atlas, options, weights, claims}`. The same engine runs with `python3 .claude/skills/replica-polymath-engine/polymath_engine.py`.
+
+## Skill tree (ADR-162)
+
+- **`#/tree`:** every skill in `.claude/skills` as one tree. The roots under the ground line are the rules and core engines (AGENTS.md, DESIGN.md, the approval locks, the state prover, the Merkle log, the privacy shield, the contrast healer); the trunk is the workbench, the polymath engine and the universal agent; the branches are Jarvis skills, OMEGA skills and vendored references; the leaves are each skill's tools.
+- Each skill's state comes from facts: proved (every mutant killed and a golden file shared with the server), tested, text rules, reference, or needs attention (a critical or high finding). Pick a skill to see its tools, scan, tests, mutation result, the review that names it and its page.
+- **Compose skills:** add skills to the composer and press Compose to get each one's path to the roots, the command that tests it and the trunk engine that already runs them together. Nothing is installed or run.
+- Refresh the tree with `python3 .claude/skills/replica-skill-tree/skill_tree.py snapshot --root . --out jarvis/app/data/skill-tree-input.json`, then build the page. The API is `GET /api/w/:slug/tree` and `POST /api/w/:slug/tree/compose` with `{names}`.
+
+## Plan order (ADR-163)
+
+- **`#/order`** has three fixed rules over the engines here. Nothing is sent or installed.
+- **Order of skills:** type skill names. Kahn's algorithm adds what they load and orders them in layers, each skill after what it loads, ties by name. Dependencies come from each skill's own `sys.path` lines. A cycle is named and left out, never broken.
+- **The workbench as a behaviour tree:** a Sequence of the workbench stages, each optional stage a Fallback of "ran" or "skipped", and the approvals last. A refused stage fails the tree at that stage. A locked approval keeps it running until Director 00 decides; it is never shown as done.
+- **Choose a plan by UCB1:** type how often you tried each of the three meta-code plans and how many tries worked. An untried plan is tried first; otherwise the score is the mean plus c times the square root of ln N over the plan's tries. The choice carries [INFERENCE].
+- Refresh the dependencies with `python3 .claude/skills/replica-plan-order/plan_order.py deps --root . --out jarvis/app/data/skill-deps.json`, then build the page. The API is `POST /api/w/:slug/order` with `{mode: kahn | skills | tree | workbench | uct | plans, …}`.
+
+## Project search (ADR-164)
+
+- **`#/docs`** finds this repository's decision records, security reviews and skills. Type words in Arabic or English and choose where to search.
+- Three rankers are joined by reciprocal rank fusion (k = 60): BM25 over each document's title, headings and text, BM25 over the title and headings only, and the title's letter trigrams, so a misspelt name still matches. Each result shows its rank and score in every list and the line that matched.
+- It is a word and letter search. Nothing is semantic or translated, and with nothing shared it says «Nothing found». Each document is searched in its title, first 20 headings and first 2000 characters.
+- Refresh the corpus with `python3 .claude/skills/replica-project-search/project_search.py corpus --root . --out jarvis/app/data/search-corpus.json`, then build the page. The API is `POST /api/w/:slug/docs/search` with `{query, kinds, limit, k}`.
 
 ## What Jarvis will not do
 

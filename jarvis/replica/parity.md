@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-160)
+# Parity: Jarvis (ADR-164)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -120,6 +120,18 @@ ADR-159 added two rows, both built and tested (`test-app.mjs` F41, `test-live.mj
 ADR-160 added one row, built and tested (`test-app.mjs` F42, `test-live.mjs`, server tests, skill unit tests, the mutation run):
 - the unified workbench pipeline.
 
+ADR-161 added one row, built and tested (`test-app.mjs` F43, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- the polymath engine with grounding and abstention.
+
+ADR-162 added one row, built and tested (`test-app.mjs` F44, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- the skill tree and composer.
+
+ADR-163 added one row, built and tested (`test-app.mjs` F45, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- plan order: Kahn's order of skills, the workbench as a behaviour tree, UCB1 over the three plans.
+
+ADR-164 added one row, built and tested (`test-app.mjs` F46, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- project search: BM25 and title trigrams fused by RRF over the repository's documents.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -128,12 +140,12 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (110 counted, must-haves 34 of 34 done)
+features 100.0  (114 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
 - overview                     100.0  (2 features)
-- agents                       100.0  (8 features)
+- agents                       100.0  (11 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (13 features)
@@ -147,7 +159,7 @@ features 100.0  (110 counted, must-haves 34 of 34 done)
 - i18n                         100.0  (2 features)
 - integrations                 100.0  (3 features)
 - memory                       100.0  (3 features)
-- search                       100.0  (4 features)
+- search                       100.0  (5 features)
 - models                       100.0  (4 features)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)

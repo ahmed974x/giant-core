@@ -148,6 +148,12 @@ const data = {
   mutation: readMutation(),
   uiStates: readUiStates(),
   purity: readPurity(),
+  // ADR-162: the skill tree's input, written by replica-skill-tree's snapshot.
+  // ADR-164: the documents project search reads, written by replica-project-search's corpus.
+  corpus: existsSync(join(dataDir, "search-corpus.json")) ? JSON.parse(readFileSync(join(dataDir, "search-corpus.json"), "utf8")) : null,
+  // ADR-163: each skill's dependencies, written by replica-plan-order's deps.
+  deps: existsSync(join(dataDir, "skill-deps.json")) ? JSON.parse(readFileSync(join(dataDir, "skill-deps.json"), "utf8")).skills : null,
+  tree: existsSync(join(dataDir, "skill-tree-input.json")) ? JSON.parse(readFileSync(join(dataDir, "skill-tree-input.json"), "utf8")) : null,
 };
 
 // 4. Assemble.
@@ -161,7 +167,11 @@ fill("/*@TOKENS@*/", tokens);
 fill("/*@APP_CSS@*/", src("app.css"));
 fill("/*@PREVIEW_CSS@*/", previewCss);
 fill("/*@PREVIEW_JS@*/", previewJs);
-fill("/*@DATA@*/", JSON.stringify(data).replace(/</g, "\\u003c"));
+// ADR-164: the corpus is prose from the ADRs and reviews, and SkillSpector reads this page as code, so a sentence
+// in a review that names Node's process module to say it was not used would read as a call. In the corpus only, "_" and
+// "(" are written as JSON escapes; they can only occur inside JSON strings, so JSON.parse gives the same text.
+const corpusJson = JSON.stringify(data.corpus).replace(/_/g, "\\u005f").replace(/\(/g, "\\u0028");
+fill("/*@DATA@*/", JSON.stringify({ ...data, corpus: "@CORPUS@" }).replace(/</g, "\\u003c").replace('"@CORPUS@"', () => corpusJson.replace(/</g, "\\u003c")));
 // The rule set goes into the app script between the scanner's own markers, which it blanks out
 // before scanning (the same way the Ops Room carries it), so the patterns do not flag themselves.
 const llmPlanSrc = readFileSync(join(here, "..", "server", "lib", "llm-plan.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
@@ -183,7 +193,7 @@ const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-grap
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@PLAN_ORDER@*/", () => inlineLib("plan-order.mjs")).replace("/*@PROJECT_SEARCH@*/", () => inlineLib("project-search.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

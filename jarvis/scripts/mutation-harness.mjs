@@ -116,6 +116,10 @@ const TARGETS = [
   { file: "hyper-studio.mjs", functions: ["rotatePlane", "applyAngles", "hypercube", "sixteenCell", "e8Roots", "matMul", "reflection", "symEigen", "coxeterPlane", "perspective", "rings", "faceShade", "projection", "facesViewer", "lengthsKept", "normsKept", "backToFront", "facingOk", "countsOk", "isIdentity", "coxeterOk", "ringsExact", "ringsMultiple", "dofOk", "harmonicOk", "ev100Ok", "insideBox", "pathOk", "overlapOk", "hyperSvg", "kelvinToXy", "kelvinToColour", "optics", "astar", "bfsLength", "verlet", "gamePhysics", "hyper"], oracle: "hyper" },
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
+  { file: "project-search.mjs", functions: ["psR", "byScore", "bm25Rank", "trigrams", "dice", "titleRank", "rrf", "snippet", "checkCorpus", "searchProject"], oracle: "search" },
+  { file: "plan-order.mjs", functions: ["poR", "poName", "kahnOrder", "orderKept", "skillOrder", "poCheck", "poTick", "tickTree", "workbenchTree", "uctSelect", "planOrder"], oracle: "order" },
+  { file: "skill-tree.mjs", functions: ["stR", "familyOf", "statusOf", "checkInput", "buildTree", "composeSkills", "skillTree"], oracle: "tree" },
+  { file: "polymath-engine.mjs", functions: ["pmR", "runDomain", "decide", "runPolymath"], oracle: "polymath" },
   { file: "unified-workbench.mjs", functions: ["runStage", "lockedOf", "runWorkbench"], oracle: "workbench" },
   { file: "universal-agent.mjs", functions: ["uaR", "unit", "list", "text", "buildRequest", "scoreCandidate", "route", "relay", "compress", "triageOne", "security", "graph", "lean", "design", "universalAgent"], oracle: "agent" },
   { file: "foss-atlas.mjs", functions: ["sha1Hex", "rotl", "kAnonymity", "luhnOk", "scrubPrivate", "planSteps", "n8nBlueprint", "planFossStack", "mulberry32", "personas", "atlasView"], oracle: "atlas" },
@@ -124,10 +128,19 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
+  // ADR-164: project-search.mjs.
+  { file: "project-search.mjs", line: "function byScore(a, b) { return b.score - a.score || (a.id < b.id ? -1 : 1); }", kind: "< -> <=", why: "checkCorpus refuses a repeated document id, so two ids are never equal and < and <= agree" },
+  { file: "project-search.mjs", line: "function byScore(a, b) { return b.score - a.score || (a.id < b.id ? -1 : 1); }", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
+  // ADR-162: skill-tree.mjs.
+  { file: "skill-tree.mjs", line: "const skills = checkInput(input).slice().sort((a, b) => (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "checkInput refuses a repeated skill name, so two names are never equal and < and <= agree" },
+  { file: "skill-tree.mjs", line: "const skills = checkInput(input).slice().sort((a, b) => (a.name < b.name ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
+  // ADR-161: polymath-engine.mjs.
+  { file: "polymath-engine.mjs", line: "rows.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "decide refuses a repeated option name, so two names are never equal and < and <= agree" },
+  { file: "polymath-engine.mjs", line: "rows.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
   // ADR-159: universal-agent.mjs.
   { file: "universal-agent.mjs", line: ".sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));", kind: "< -> <=", why: "route refuses a repeated id, so two ids are never equal and < and <= agree" },
   { file: "universal-agent.mjs", line: ".sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
@@ -556,6 +569,50 @@ function oracleMath(m) {
 
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
+  return out;
+}
+
+// ADR-164: project search. The skill's golden file (the server's answers, refused corpora included).
+function oracleSearch(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-project-search", "tests", "golden.json"), "utf8"));
+  const run = (c, r) => { try { return { response: m.searchProject(c, r) }; } catch (e) { if (e.status !== 400) return { crash: String(e) }; return { error: { error: e.message, detail: e.detail ?? null } }; } };
+  const want = c => (c.error ? { error: c.error } : { response: c.response });
+  return [...g.cases.map((c, i) => ["golden " + i, J(run(g.corpus, c.request)) === J(want(c))]), ...g.bad.map((c, i) => ["corpus " + i, J(run(c.corpus, { query: "contrast" })) === J(want(c))])];
+}
+
+// ADR-163: plan order. The skill's golden file (the server's answers).
+function oracleOrder(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-plan-order", "tests", "golden.json"), "utf8"));
+  const run = c => { try { return { response: m.planOrder(c.request, c.deps) }; } catch (e) { if (e.status !== 400) return { crash: String(e) }; return { error: { error: e.message, detail: e.detail ?? null } }; } };
+  const out = g.map((c, i) => ["golden " + i, J(run(c)) === J(c.error ? { error: c.error } : { response: c.response })]);
+  // The order check and the workbench tree, called directly with inputs the engines never build themselves.
+  out.push(["kept: backwards", m.orderKept(["b", "a"], [["a", "b"]]) === false], ["kept: self edge", m.orderKept(["a"], [["a", "a"]]) === false],
+    ["kept: unplaced end", m.orderKept(["a"], [["a", "b"]]) === true && m.orderKept(["b"], [["a", "b"]]) === true], ["kept: forwards", m.orderKept(["a", "b"], [["a", "b"]]) === true]);
+  const wt = x => { try { return m.workbenchTree(x); } catch (e) { return e.status === 400 ? "refused" : "crash"; } };
+  const done = wt({ stages: [{ id: "shield", status: "ok" }, { id: "design", status: "skipped" }], locked: 0 });
+  out.push(["tree: nothing locked is success", done.status === "success" && done.stopped_at === null && done.leaves.approvals === "success"],
+    ["tree: refused", wt({}) === "refused" && wt(null) === "refused"]);
+  return out;
+}
+
+// ADR-162: the skill tree. The skill's golden file (the server's answers).
+function oracleTree(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-skill-tree", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return m.skillTree(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  return g.requests.map((r, i) => ["golden " + i, J(run(r)) === J(g.outputs[i])]);
+}
+
+// ADR-161: the polymath engine. The skill's golden file (the server's answers) and the series limit built here.
+function oraclePolymath(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-polymath-engine", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return m.runPolymath(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  const out = g.requests.map((r, i) => ["golden " + i, J(run(r)) === J(g.outputs[i])]);
+  const long = Array.from({ length: 5000 }, (_, i) => ({ t: i, v: i % 9 }));
+  out.push(["limit 5000", run({ question: "x", series: long }).domains[1].status === "ok"], ["limit 5001", run({ question: "x", series: [...long, { t: 1, v: 1 }] }).domains[1].status === "error"]);
   return out;
 }
 

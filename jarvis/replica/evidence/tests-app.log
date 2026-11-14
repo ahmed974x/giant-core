@@ -218,6 +218,22 @@ PASS F40 the secret check shows the SHA-1 prefix and the secret is gone from the
 PASS F40 the shield replaces an e-mail address and a phone number
 PASS F40 three teaching personas, labelled
 PASS F40 a persona's picks can be used
+PASS F44 seven roots, a trunk of three and every skill
+PASS F44 states drawn from facts: proved skills, none needing attention
+PASS F44 a skill's facts and its page
+PASS F44 composing two skills names the workbench and their test commands
+PASS F46 the contrast healer's record comes first
+PASS F46 a misspelt title is found by its letters
+PASS F46 nothing shared is nothing found, and it says so
+PASS F45 Kahn puts each skill after what it loads, in layers
+PASS F45 the workbench tree keeps running while approvals are locked
+PASS F45 a refused maths stage fails the Sequence
+PASS F45 UCB1 tries the untried plan first and scores the others
+PASS F45 with every plan tried, the highest score is chosen
+PASS F43 five domains, three ran, the claim on markets is not backed
+PASS F43 the shield cleaned the question; the decision and claims are shown
+PASS F43 each domain links to its page; the Merkle root is shown
+PASS F43 with no engine run it abstains, and with no weights nothing is scored
 PASS F42 seven stages, each done
 PASS F42 the shield cleaned the task and nothing was sent
 PASS F42 the joined plan's locked steps and the chain hash
@@ -238,4 +254,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-239 passed, 0 failed
+255 passed, 0 failed

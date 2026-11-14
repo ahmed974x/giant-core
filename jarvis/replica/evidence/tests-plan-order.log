@@ -1,0 +1,15 @@
+test_no_process_or_network (test_plan_order.Bounds.test_no_process_or_network) ... ok
+test_reads_sys_path_lines (test_plan_order.Deps.test_reads_sys_path_lines) ... ok
+test_same_answers_as_the_server (test_plan_order.Golden.test_same_answers_as_the_server) ... ok
+test_a_cycle_is_named_not_broken (test_plan_order.Kahn.test_a_cycle_is_named_not_broken) ... ok
+test_layers_and_ties_by_name (test_plan_order.Kahn.test_layers_and_ties_by_name) ... ok
+test_skills_pull_in_what_they_load (test_plan_order.Kahn.test_skills_pull_in_what_they_load) ... ok
+test_locked_approvals_keep_the_workbench_running (test_plan_order.Tree.test_locked_approvals_keep_the_workbench_running) ... ok
+test_sequence_and_fallback (test_plan_order.Tree.test_sequence_and_fallback) ... ok
+test_only_the_persons_record (test_plan_order.Uct.test_only_the_persons_record) ... ok
+test_untried_first_then_score (test_plan_order.Uct.test_untried_first_then_score) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.015s
+
+OK

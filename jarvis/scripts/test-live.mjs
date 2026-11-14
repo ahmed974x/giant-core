@@ -518,6 +518,54 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
 }
 
+// ADR-162 live: the skill tree comes from the server, and composing is logged as a count.
+{
+  await go("#/tree");
+  await page.waitForSelector(".st-svg");
+  await page.locator('.st-node[data-id="skill:replica-universal-math"]').click();
+  await page.getByRole("button", { name: "Add to the composer" }).click();
+  await page.getByRole("button", { name: "Compose", exact: true }).click();
+  await page.waitForSelector("#h-st-comp ~ div code");
+  ok((await page.locator(".st-node.k-skill").count()) >= 57 && await page.getByText("Ready: every skill is tested").isVisible(), "live: the tree and the composer answer from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
+}
+
+// ADR-164 live: project search answers from the corpus on the server and logs counts only.
+{
+  await go("#/docs");
+  await page.waitForSelector("#f-ps-q");
+  await page.locator("#h-ps ~ form button[type=submit]").click();
+  await page.waitForSelector(".ps-hit");
+  ok(/ADR-153/.test(await page.locator(".ps-hit").first().innerText()), "live: project search answers from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "docs.search" && e.target === "10 found") && !JSON.stringify(evs).includes("contrast healer oklch"), "live: project search is in the event log, as a count");
+}
+
+// ADR-163 live: plan order runs on the server, with the dependency snapshot on disk, and logs counts only.
+{
+  await go("#/order");
+  await page.waitForSelector("#f-po-names");
+  await page.getByRole("button", { name: "Order the skills" }).click();
+  await page.waitForSelector("#h-po-k ~ div ol");
+  await page.getByRole("button", { name: "Tick the tree" }).click();
+  await page.waitForSelector(".po-node");
+  ok((await page.locator("#h-po-k ~ div ol > li").count()) === 3 && (await page.locator("#h-po-t ~ div").getByText("Running: waiting for approval").count()) >= 2, "live: Kahn's order and the workbench tree answer from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "order.skills" && e.target === "9 in order") && evs.some(e => e.kind === "order.workbench" && e.target === "tree running") && !JSON.stringify(evs).includes("ops@example.org"), "live: plan order is in the event log, as counts");
+}
+
+// ADR-161 live: the polymath engine runs on the server and logs counts only.
+{
+  await go("#/polymath");
+  await page.waitForSelector("#f-pm-q");
+  await page.getByRole("button", { name: "Think it through" }).click();
+  await page.waitForSelector(".pm-domain");
+  ok((await page.locator(".pm-domain").count()) === 5 && await page.getByText("Partly grounded").isVisible(), "live: the polymath engine answers from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "polymath.run" && e.target === "3 domains partly grounded"), "live: the run is in the event log, as counts");
+}
+
 // ADR-160 live: the workbench runs on the server and logs counts only.
 {
   await go("#/workbench");
@@ -582,6 +630,10 @@ await page.waitForTimeout(300);
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
+    ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
+    ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(400); }],
+    ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(400); }],
     ["atlas plan", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); }],

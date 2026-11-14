@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 135,
+ "files": 143,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 150
+  "low": 159
  },
  "byRule": {
   "D05": 27,
-  "M05": 121,
+  "M05": 130,
   "P21": 2
  },
- "sha256": "dd9ac41a1ad712354eb175291f4ef4265c69336ca92b5389cad1ecc583254207",
+ "sha256": "c89b7b1e5ccb056f8a10c83b0743b1d811908f9d42063ab081a6422ad72f0ac1",
  "findings": [
   {
    "rule": "D05",
@@ -235,6 +235,27 @@
    "rule": "M05",
    "severity": "low",
    "line": 378,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 392,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 399,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 406,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1063,6 +1084,48 @@
    "line": 29,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-160-unified-workbench.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 21,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-161-polymath-engine.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 36,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-161-polymath-engine.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-162-skill-tree.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-163-plan-order.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 22,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-163-plan-order.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-164-project-search.md"
   }
  ]
 }
