@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 137,
+ "files": 139,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 153
+  "low": 155
  },
  "byRule": {
   "D05": 27,
-  "M05": 124,
+  "M05": 126,
   "P21": 2
  },
- "sha256": "cd47943edb7ea4c65c1fcb62e8ba5ec843fd0207b5e570019c5783866b5be302",
+ "sha256": "f4aae87b28b0b8c88ba750230bab4738685f91c97b198341d7f79fb1fee4bb99",
  "findings": [
   {
    "rule": "D05",
@@ -242,6 +242,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 392,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 399,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1084,6 +1091,13 @@
    "line": 36,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-161-polymath-engine.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-162-skill-tree.md"
   }
  ]
 }

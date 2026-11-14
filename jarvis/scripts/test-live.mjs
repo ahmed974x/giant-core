@@ -518,6 +518,19 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "cinematic.compile" && e.target.startsWith("blue_hour_7500k ") && e.target.endsWith(" verified")), "live: the preset is in the event log");
 }
 
+// ADR-162 live: the skill tree comes from the server, and composing is logged as a count.
+{
+  await go("#/tree");
+  await page.waitForSelector(".st-svg");
+  await page.locator('.st-node[data-id="skill:replica-universal-math"]').click();
+  await page.getByRole("button", { name: "Add to the composer" }).click();
+  await page.getByRole("button", { name: "Compose", exact: true }).click();
+  await page.waitForSelector("#h-st-comp ~ div code");
+  ok((await page.locator(".st-node.k-skill").count()) >= 57 && await page.getByText("Ready: every skill is tested").isVisible(), "live: the tree and the composer answer from the server");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
+}
+
 // ADR-161 live: the polymath engine runs on the server and logs counts only.
 {
   await go("#/polymath");
@@ -593,6 +606,7 @@ await page.waitForTimeout(300);
     ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
+    ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(400); }],

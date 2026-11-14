@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-13T17:16:37Z",
- "javascriptRanAt": "2026-11-13T16:31:30.295Z",
+ "ranAt": "2026-11-13T23:57:32Z",
+ "javascriptRanAt": "2026-11-13T23:18:14.792Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 8239,
- "killed": 8239,
- "equivalent": 276,
+ "total": 8602,
+ "killed": 8602,
+ "equivalent": 279,
  "score": 100.0,
  "targets": [
   {
@@ -822,6 +822,45 @@
    "score": 100,
    "survivors": [],
    "equivalents": []
+  },
+  {
+   "file": "jarvis/server/lib/skill-tree.mjs",
+   "sha256": "39c99107bdf6e75bcef2440d581cb8b506f9736071bb2f67b84a5b10f5d7863b",
+   "functions": [
+    "stR",
+    "familyOf",
+    "statusOf",
+    "checkInput",
+    "buildTree",
+    "composeSkills",
+    "skillTree"
+   ],
+   "mutants": 168,
+   "killed": 165,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "buildTree",
+     "line": 70,
+     "kind": "< -> <=",
+     "why": "checkInput refuses a repeated skill name, so two names are never equal and < and <= agree"
+    },
+    {
+     "fn": "buildTree",
+     "line": 70,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "buildTree",
+     "line": 70,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
   },
   {
    "file": "jarvis/server/lib/polymath-engine.mjs",
@@ -2039,6 +2078,28 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-skill-tree/skill_tree.py",
+   "sha256": "73d931d40719e167c3725cab9f3ca8a9d99a12cae828dbcb634ecd455aba4a48",
+   "functions": [
+    "_fail",
+    "st_r",
+    "_int",
+    "family_of",
+    "status_of",
+    "_check",
+    "build_tree",
+    "compose_skills",
+    "skill_tree"
+   ],
+   "mutants": 198,
+   "killed": 198,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
+  },
+  {
    "file": ".claude/skills/replica-polymath-engine/polymath_engine.py",
    "sha256": "6c58c7f55913d4bdcfb4aea50a9cf71fbc3918065ee91547becd046922912bb1",
    "functions": [
@@ -2432,5 +2493,5 @@
    ]
   }
  ],
- "sha256": "b31909ebe82093441c8e42aaf6f445ef8a3db63fd99161aee43ece5bf00624dc"
+ "sha256": "639f0b57e9159020ae85bc2137c1444a9e32ffec831c42a2fd1a25a3354264c0"
 }

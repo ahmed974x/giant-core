@@ -101,6 +101,8 @@ PASS live: the calculation is in the event log
 PASS live: the formula is typeset beside the server's answer
 PASS live: a cinematic preset compiles on the server
 PASS live: the preset is in the event log
+PASS live: the tree and the composer answer from the server
+PASS live: composing is in the event log, as a count
 PASS live: the polymath engine answers from the server
 PASS live: the run is in the event log, as counts
 PASS live: the workbench runs on the server, sends locked
@@ -131,4 +133,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-132 passed, 0 failed
+134 passed, 0 failed

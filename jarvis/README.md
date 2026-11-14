@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-161).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-162).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -393,6 +393,13 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The question goes through the privacy shield first. Each of the five domains (maths, time series, optics, design, security) says whether it ran, why it was named and which engine and ADR answered, with a link to its page. A domain named without its input says it needs input.
 - Every named domain lists how it could fail and what in this repository stops it. The decision matrix uses only your numbers. A claim on a domain that did not run is marked not backed, and with no engine run the answer abstains instead of guessing. An RFC 6962 Merkle root binds the records. Nothing is sent.
 - The API is `POST /api/w/:slug/polymath/run` with `{question, domains, math, series, optics, css, candidates, atlas, options, weights, claims}`. The same engine runs with `python3 .claude/skills/replica-polymath-engine/polymath_engine.py`.
+
+## Skill tree (ADR-162)
+
+- **`#/tree`:** every skill in `.claude/skills` as one tree. The roots under the ground line are the rules and core engines (AGENTS.md, DESIGN.md, the approval locks, the state prover, the Merkle log, the privacy shield, the contrast healer); the trunk is the workbench, the polymath engine and the universal agent; the branches are Jarvis skills, OMEGA skills and vendored references; the leaves are each skill's tools.
+- Each skill's state comes from facts: proved (every mutant killed and a golden file shared with the server), tested, text rules, reference, or needs attention (a critical or high finding). Pick a skill to see its tools, scan, tests, mutation result, the review that names it and its page.
+- **Compose skills:** add skills to the composer and press Compose to get each one's path to the roots, the command that tests it and the trunk engine that already runs them together. Nothing is installed or run.
+- Refresh the tree with `python3 .claude/skills/replica-skill-tree/skill_tree.py snapshot --root . --out jarvis/app/data/skill-tree-input.json`, then build the page. The API is `GET /api/w/:slug/tree` and `POST /api/w/:slug/tree/compose` with `{names}`.
 
 ## What Jarvis will not do
 

@@ -218,6 +218,10 @@ PASS F40 the secret check shows the SHA-1 prefix and the secret is gone from the
 PASS F40 the shield replaces an e-mail address and a phone number
 PASS F40 three teaching personas, labelled
 PASS F40 a persona's picks can be used
+PASS F44 seven roots, a trunk of three and every skill
+PASS F44 states drawn from facts: proved skills, none needing attention
+PASS F44 a skill's facts and its page
+PASS F44 composing two skills names the workbench and their test commands
 PASS F43 five domains, three ran, the claim on markets is not backed
 PASS F43 the shield cleaned the question; the decision and claims are shown
 PASS F43 each domain links to its page; the Merkle root is shown
@@ -242,4 +246,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-243 passed, 0 failed
+247 passed, 0 failed

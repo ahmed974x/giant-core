@@ -598,6 +598,9 @@
       // ADR-159 in sample mode: the same universal agent as the server, in this page.
       // ADR-160 in sample mode: the same workbench as the server, in this page.
       // ADR-161 in sample mode: the same polymath engine as the server, in this page.
+      // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
+      tree() { return ok(SkillTree.buildTree(DATA.tree || { skills: [] })); },
+      treeCompose(body) { try { return ok(SkillTree.composeSkills(DATA.tree || { skills: [] }, body.names)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       polymath(body) { try { return ok(Polymath.runPolymath(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       workbench(body) { try { return ok(UnifiedWorkbench.runWorkbench(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       universal(body) { try { return ok(LlmPlan.universalAgent(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
@@ -1048,6 +1051,8 @@
       universal: body => req("POST", w("/agent/universal"), body),
       workbench: body => req("POST", w("/workbench/run"), body),
       polymath: body => req("POST", w("/polymath/run"), body),
+      tree: () => req("GET", w("/tree")),
+      treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2598,6 +2603,11 @@
     /*@POLYMATH@*/
     return { runPolymath, PM_DOMAINS };
   })();
+  // ADR-162: the skill tree, the same engine as the server (no dependencies).
+  const SkillTree = (() => {
+    /*@SKILL_TREE@*/
+    return { buildTree, composeSkills };
+  })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
@@ -4016,6 +4026,104 @@
           h("section", { class: "panel", "aria-labelledby": "h-ua-rev" }, h("h2", { id: "h-ua-rev", text: "Reviewed outside projects" }),
             h("p", { class: "t-caption muted", text: "Read-only review on 12 November 2026. Nothing was installed; only text rules were written into this code." }), revBox))));
   };
+  /* ── Skill tree (ADR-162): the skills as one tree, from facts in the repository ── */
+  const ST_STATUS = { proved: ["ok", "Proved"], tested: ["running", "Tested"], rules: ["idle", "Text rules"], reference: ["idle", "Reference"], attention: ["failed", "Needs attention"] };
+  const ST_FAMILY = { "family:jarvis": "Jarvis skills", "family:omega": "OMEGA skills", "family:vendored": "Vendored references" };
+  function stDraw(t, onPick) {
+    const V = t.view, byId = new Map(t.nodes.map(n => [n.id, n]));
+    const curve = (a, b) => { const my = (a.y + b.y) / 2; return `M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`; };
+    const edges = t.edges.map(e => { const a = byId.get(e.from), b = byId.get(e.to); return svg("path", { class: "st-edge k-" + e.kind, d: curve(a, b), "data-a": e.from, "data-b": e.to }); });
+    const nodes = t.nodes.map(n => {
+      const r = { root: 9, trunk: 14, family: 10, skill: 7, tool: 3 }[n.kind];
+      const kids = [svg("circle", { r, cx: 0, cy: 0 })];
+      if (n.kind !== "skill" && n.kind !== "tool") kids.push(svg("text", { x: 0, y: n.kind === "root" ? 24 : -18, "text-anchor": "middle" }, tr(n.label) || n.label));
+      const g = svg("g", { class: "st-node k-" + n.kind + (n.status ? " s-" + n.status : ""), transform: `translate(${n.x},${n.y})`, "data-id": n.id,
+        ...(n.kind === "tool" ? { "aria-hidden": "true" } : { tabindex: "0", role: "button", "aria-label": n.kind === "skill" ? (tr("Skill") || "Skill") + " " + n.label : (tr(n.label) || n.label) }) }, ...kids);
+      if (n.kind !== "tool") {
+        g.addEventListener("click", () => onPick(n.id));
+        g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(n.id); } });
+      }
+      return g;
+    });
+    return svg("svg", { class: "st-svg", viewBox: `0 0 ${V.width} ${V.height}`, role: "group", "aria-label": "Skill tree" },
+      svg("line", { class: "st-ground", x1: 0, y1: V.ground, x2: V.width, y2: V.ground }), ...edges, ...nodes);
+  }
+  pages.tree = () => {
+    const chosen = [];
+    const treeBox = h("div", { class: "stack" }), info = h("div", { class: "stack st-info", "aria-live": "polite" }, h("p", { class: "t-sm muted", text: "Pick a node to see its facts." }));
+    const chips = h("div", { class: "row" }), composeOut = h("div", { class: "stack", "aria-live": "polite" });
+    const composeBtn = h("button", { class: "btn btn-primary", type: "button", disabled: true }, icon("i-check", "sm"), "Compose");
+    let tree = null, svgEl = null;
+    const renderChips = () => {
+      chips.replaceChildren(...(chosen.length ? chosen.map(n => { const b = h("button", { class: "btn btn-secondary btn-sm", type: "button", "aria-label": "Remove " + n }, h("bdi", { lang: "en", dir: "ltr", translate: "no", text: n }), icon("i-x", "sm"));
+        b.addEventListener("click", () => { chosen.splice(chosen.indexOf(n), 1); renderChips(); }); return b; }) : [h("span", { class: "t-sm muted", text: "No skill chosen yet. Pick skills in the tree or the list." })]));
+      composeBtn.disabled = !chosen.length;
+    };
+    const pick = id => {
+      const n = tree.nodes.find(x => x.id === id); if (!n) return;
+      $$(".st-node", svgEl).forEach(x => x.classList.toggle("sel", x.dataset.id === id));
+      $$(".st-edge", svgEl).forEach(e => e.classList.toggle("on", e.dataset.a === id || e.dataset.b === id));
+      const facts = [];
+      if (n.kind === "skill") {
+        const st = ST_STATUS[n.status];
+        facts.push(h("p", { class: "row" }, badge(st[0], st[1]), h("span", { class: "t-sm muted", text: ST_FAMILY[n.family] })),
+          n.description ? h("p", { class: "t-sm" }, uaData(n.description)) : null,
+          h("ul", { class: "plist" },
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Tools" }), uaNum(n.tools), ...tree.nodes.filter(x => x.kind === "tool" && x.skill === n.label).map(x => h("code", { translate: "no", dir: "ltr", text: x.label }))),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Scan" }), ...["critical", "high", "medium"].map(k => h("span", { class: "row" }, h("span", { class: "muted", text: { critical: "Critical", high: "High", medium: "Medium" }[k] }), uaNum(n.scan[k])))),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Tests" }), n.tests ? badge("ok", "Yes") : badge("idle", "No"), h("span", { class: "muted", text: "Same answers as the server" }), n.golden ? badge("ok", "Yes") : badge("idle", "No")),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Mutants killed" }), n.mutation ? uaNum(n.mutation.killed + " / " + n.mutation.mutants) : h("span", { text: "Not in the mutation run" })),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Named in" }), n.review ? h("code", { translate: "no", dir: "ltr", text: n.review }) : h("span", { text: "No review names it" }))),
+          h("div", { class: "row" }, n.route ? h("a", { class: "btn btn-secondary btn-sm", href: n.route, text: "Open its page" }) : null,
+            (() => { const b = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Add to the composer", disabled: chosen.includes(n.label) || chosen.length >= 12 });
+              b.addEventListener("click", () => { if (!chosen.includes(n.label)) chosen.push(n.label); renderChips(); pick(id); }); return b; })()));
+      } else {
+        facts.push(n.note ? h("p", { class: "t-sm", text: n.note }) : null, n.adr ? h("p", { class: "row t-sm" }, uaData(n.adr), n.skill ? uaData(n.skill) : null) : null,
+          n.kind === "family" ? h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Skills" }), uaNum(tree.counts.family[n.id])) : null,
+          n.route ? h("a", { class: "btn btn-secondary btn-sm", href: n.route, text: "Open its page" }) : null);
+      }
+      info.replaceChildren(h("h3", { translate: "no", text: n.kind === "skill" ? n.label : (tr(n.label) || n.label) }), ...facts.filter(Boolean));
+    };
+    composeBtn.addEventListener("click", async () => {
+      composeBtn.disabled = true;
+      try {
+        const r = await store.treeCompose({ names: chosen.slice() });
+        composeOut.replaceChildren(h("p", { class: "row" }, r.ready ? badge("ok", "Ready: every skill is tested") : badge("warn", "Not every skill is tested")),
+          r.joined_by.length ? h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Already run together on" }), ...r.joined_by.map(j => h("a", { href: j.route, text: tr(j.label) || j.label })))
+            : h("p", { class: "t-sm muted", text: "No trunk engine runs all of these together yet." }),
+          h("ol", { class: "plist" }, r.steps.map(s => h("li", { class: "stack t-sm" }, h("span", { class: "row" }, uaData(s.skill), badge(ST_STATUS[s.status][0], ST_STATUS[s.status][1])),
+            s.command ? h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: s.command }) : h("span", { class: "muted" }, uaData(s.note))))));
+      } catch (err) { composeOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not composed"), " ", h("span", { text: err.message }))); }
+      finally { composeBtn.disabled = !chosen.length; }
+    });
+    loadInto(treeBox, () => store.tree(), t => {
+      tree = t; svgEl = stDraw(t, pick);
+      // The drawing is wider than a phone: its region reads left to right and opens on the trunk.
+      const wrapEl = h("div", { class: "table-scroll st-wrap", dir: "ltr", tabindex: "0", role: "region", "aria-label": "Skill tree drawing" }, svgEl);
+      requestAnimationFrame(() => { wrapEl.scrollLeft = Math.max(0, (wrapEl.scrollWidth - wrapEl.clientWidth) / 2); });
+      const c = t.counts.status;
+      const list = h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Skills list" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Skill" }), h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "State" }), h("th", { scope: "col", text: "Tools" }), h("th", { scope: "col", text: "Mutants killed" }))),
+        h("tbody", null, t.nodes.filter(n => n.kind === "skill").map(n => { const b = h("button", { class: "linklike", type: "button" }, h("bdi", { lang: "en", dir: "ltr", translate: "no", text: n.label })); b.addEventListener("click", () => pick(n.id));
+          return h("tr", null, h("td", null, b), h("td", { text: ST_FAMILY[n.family] }), h("td", null, badge(ST_STATUS[n.status][0], ST_STATUS[n.status][1])), h("td", null, uaNum(n.tools)), h("td", null, n.mutation ? uaNum(n.mutation.killed + " / " + n.mutation.mutants) : uaNum(null))); }))));
+      return h("div", { class: "stack" },
+        h("p", { class: "row" }, ...Object.keys(ST_STATUS).map(k => h("span", { class: "row" }, badge(ST_STATUS[k][0], ST_STATUS[k][1]), uaNum(c[k]))),
+          h("span", { class: "muted t-sm", text: "Skills" }), uaNum(t.counts.skills), h("span", { class: "muted t-sm", text: "Tools" }), uaNum(t.counts.tools),
+          h("span", { class: "muted t-sm", text: "Mutants killed" }), uaNum(t.mutation.killed + " / " + t.mutation.mutants)),
+        wrapEl, list);
+    });
+    renderChips();
+    return h("div", { class: "stack" },
+      pageHead("Skill tree", "Every skill in this repository as one tree. The rules and core engines are the roots, the engines that join the others are the trunk, and each skill's tools are its leaves. Each state comes from the skill's own scan, tests and mutation run."),
+      sampleNote(),
+      h("div", { class: "st-layout" },
+        h("section", { class: "panel", "aria-labelledby": "h-st" }, h("h2", { id: "h-st", text: "The tree" }), treeBox),
+        h("div", { class: "stack" },
+          h("section", { class: "panel", "aria-labelledby": "h-st-info" }, h("h2", { id: "h-st-info", text: "Facts" }), info),
+          h("section", { class: "panel", "aria-labelledby": "h-st-comp" }, h("h2", { id: "h-st-comp", text: "Compose skills" }),
+            h("p", { class: "t-caption muted", text: "Join chosen skills: their path to the roots, the commands that test them, and the trunk engine that already runs them together. Nothing is installed." }),
+            chips, h("div", { class: "row" }, composeBtn), composeOut))));
+  };
   /* ── Polymath engine (ADR-161): one question across the repository's engines; it abstains when none ran ── */
   const PM_LABEL = { math: "Maths", timeseries: "Time series", optics: "Optics", design: "Design", security: "Security" };
   const PM_STATUS = { ok: ["ok", "Ran"], needs_input: ["warn", "Needs input"], error: ["failed", "Refused"], not_named: ["idle", "Not named"] };
@@ -4387,7 +4495,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4468,7 +4576,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

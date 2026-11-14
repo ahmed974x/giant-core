@@ -116,6 +116,7 @@ const TARGETS = [
   { file: "hyper-studio.mjs", functions: ["rotatePlane", "applyAngles", "hypercube", "sixteenCell", "e8Roots", "matMul", "reflection", "symEigen", "coxeterPlane", "perspective", "rings", "faceShade", "projection", "facesViewer", "lengthsKept", "normsKept", "backToFront", "facingOk", "countsOk", "isIdentity", "coxeterOk", "ringsExact", "ringsMultiple", "dofOk", "harmonicOk", "ev100Ok", "insideBox", "pathOk", "overlapOk", "hyperSvg", "kelvinToXy", "kelvinToColour", "optics", "astar", "bfsLength", "verlet", "gamePhysics", "hyper"], oracle: "hyper" },
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
+  { file: "skill-tree.mjs", functions: ["stR", "familyOf", "statusOf", "checkInput", "buildTree", "composeSkills", "skillTree"], oracle: "tree" },
   { file: "polymath-engine.mjs", functions: ["pmR", "runDomain", "decide", "runPolymath"], oracle: "polymath" },
   { file: "unified-workbench.mjs", functions: ["runStage", "lockedOf", "runWorkbench"], oracle: "workbench" },
   { file: "universal-agent.mjs", functions: ["uaR", "unit", "list", "text", "buildRequest", "scoreCandidate", "route", "relay", "compress", "triageOne", "security", "graph", "lean", "design", "universalAgent"], oracle: "agent" },
@@ -125,10 +126,13 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
+  // ADR-162: skill-tree.mjs.
+  { file: "skill-tree.mjs", line: "const skills = checkInput(input).slice().sort((a, b) => (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "checkInput refuses a repeated skill name, so two names are never equal and < and <= agree" },
+  { file: "skill-tree.mjs", line: "const skills = checkInput(input).slice().sort((a, b) => (a.name < b.name ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
   // ADR-161: polymath-engine.mjs.
   { file: "polymath-engine.mjs", line: "rows.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "decide refuses a repeated option name, so two names are never equal and < and <= agree" },
   { file: "polymath-engine.mjs", line: "rows.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
@@ -561,6 +565,14 @@ function oracleMath(m) {
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
   return out;
+}
+
+// ADR-162: the skill tree. The skill's golden file (the server's answers).
+function oracleTree(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-skill-tree", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return m.skillTree(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  return g.requests.map((r, i) => ["golden " + i, J(run(r)) === J(g.outputs[i])]);
 }
 
 // ADR-161: the polymath engine. The skill's golden file (the server's answers) and the series limit built here.

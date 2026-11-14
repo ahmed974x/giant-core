@@ -869,6 +869,22 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok((await page.locator(".fa-entry input:checked").count()) === 3, "F40 a persona's picks can be used");
 }
 
+// F44: the skill tree (ADR-162).
+{
+  await go("#/tree");
+  await page.waitForSelector(".st-svg");
+  ok((await page.locator(".st-node.k-root").count()) === 7 && (await page.locator(".st-node.k-trunk").count()) === 3 && (await page.locator(".st-node.k-skill").count()) >= 57, "F44 seven roots, a trunk of three and every skill");
+  ok((await page.locator(".st-node.k-skill.s-proved").count()) >= 7 && (await page.locator(".st-node.k-skill.s-attention").count()) === 0, "F44 states drawn from facts: proved skills, none needing attention");
+  await page.locator('.st-node[data-id="skill:replica-universal-math"]').click();
+  ok(await page.locator("#h-st-info ~ div").getByText("replica-universal-math").first().isVisible() && (await page.locator('#h-st-info ~ div a[href="#/math"]').count()) === 1, "F44 a skill's facts and its page");
+  await page.getByRole("button", { name: "Add to the composer" }).click();
+  await page.locator('.st-node[data-id="skill:replica-foss-atlas"]').click();
+  await page.getByRole("button", { name: "Add to the composer" }).click();
+  await page.getByRole("button", { name: "Compose", exact: true }).click();
+  await page.waitForTimeout(200);
+  ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
+}
+
 // F43: the polymath engine (ADR-161).
 {
   await go("#/polymath");
@@ -939,6 +955,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
+    ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
     ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
     ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],

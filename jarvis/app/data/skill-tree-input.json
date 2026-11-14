@@ -1,0 +1,1105 @@
+{
+ "format": "jarvis-skill-tree-input-v1",
+ "skills": [
+  {
+   "name": "algorithmic-art",
+   "description": "Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code, generative art, algorithmic art, flow fields, or",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 14,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "apple-liquid-glass-hig",
+   "description": "Use when adding or restyling glass chrome, popovers, cards, rings or charts on an OMEGA page (Ops Room, THE CHAIN, NABD). Turns Apple HIG glass and material rules into the OMEGA tokens, CSP limits and",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "autonomous-24-selftest-gate",
+   "description": "Use when adding, changing or reading the Ops Room system self-test (shield button or ?selftest=1), now 24 checks. Fixed fixtures plus live data, read-only probes, honest failures, and the release gate",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "awesome-research",
+   "description": "Find trustworthy free open-source tools, libraries and open-weight AI models by starting from the curated \"awesome\" lists (github.com/sindresorhus/awesome, github.com/topics/awesome) instead of raw po",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "build-mcpb",
+   "description": "This skill should be used when the user wants to \"package an MCP server\", \"bundle an MCP\", \"make an MCPB\", \"ship a local MCP server\", \"distribute a local MCP\", discusses \".mcpb files\", mentions bundli",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "cyber-space-osint-grid",
+   "description": "Use when adding or changing an OSIRIS cyber, space or air source in the Ops Room (SANS InfoCON, Shodan InternetDB, RIS Live BGP, adsb.lol squawks, NASA GIBS overlays, cables per strait, CSTI). Passive",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "frontend-design",
+   "description": "Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defau",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "hvplot",
+   "description": "Best practices for doing quick exploratory data analysis with minimal code and a Pandas .plot like API using HoloViews hvPlot.",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "liquid-neural-139-flow",
+   "description": "Use when changing the continuous-time (liquid) dynamics of the Ops Room neural flow 139 → 48 → 36 → 48 → 24 → 16 → 8, its τ table, shock events, Heun solver, settle animation or the oscilloscope's τ r",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "local-glm-agent-windows-mcp",
+   "description": "Use when changing the local model bridge (Ollama on 127.0.0.1, GLM models), the MCP bridge tool that calls it, the launchers OMEGA-PRIME.bat and start-omega.bat, or the Windows-MCP setup. Local, read-",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "mcp-builder",
+   "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate externa",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "neural-139-inputs-heads",
+   "description": "Use when changing which readings enter the 139 inputs of the Ops Room neural flow, the meaning or wording of its 8 decision heads (including the $20 base, protected wallet and SHA-256 receipt heads), ",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "neural-flow-decision-viz",
+   "description": "Use when changing the Ops Room deep neural flow (139 → 48 → 36 → 48 → 24 → 16 → 8), its threads, pulses, oscilloscope inspector, chrono-scrubber, training worker or decision heads. Real inputs only, e",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-apex-council",
+   "description": "Use when changing or using the OMEGA APEX council (omega-ops-room-v1/omega-apex.html, scripts/lib/apex-council.mjs), its fifteen field helpers, its paper-only PRIME plans, or the dark gold peak tone s",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-deep-research-agent",
+   "description": "Use when changing or running the ORACLE deep research agent (plan, gather, evaluate, write; scholar and passive OSINT modes) in omega-ops-room-v1/omega-oracle.html, scripts/lib/deep-research.mjs, the ",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-design",
+   "description": "Use when building, redesigning or reviewing any OMEGA / NABD web surface (site-landing, Ops Room, THE CHAIN). Applies DESIGN.md, the Vercel Web Interface Guidelines and the three-size browser loop.",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-extend",
+   "description": "How to add a metric, panel, data table, service or plugin to the OMEGA stack (giant-core) so it matches the existing code. Use before changing services/quant (stdlib risk engine), services/studio (Pan",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-finance-chain",
+   "description": "Use when researching a stock, building a valuation model, reviewing an earnings call or updating a ticker's notes.md for OMEGA. Rules for the three THE CHAIN agents; research only, never trading.",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "omega-knowledge-domain",
+   "description": "Use when changing or using the OMEGA knowledge domain (omega-ops-room-v1/omega-knowledge.html, scripts/lib/knowledge-domain.mjs) that joins ideas, open-source tools, ORACLE sources, PRIME agents, page",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "osint-bgp-cables",
+   "description": "Use when adding or changing an OSIRIS layer for internet routing, outages, submarine cables, satellites, space weather or exploited vulnerabilities. Passive, keyless public sources only, through the p",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "panel",
+   "description": "Best practices for developing tools, dashboards and interactive data apps with HoloViz Panel. Create reactive, component-based UIs with widgets, layouts, templates, and real-time updates. Use when dev",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/JARVIS-FOUNDER-GATE-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "panel-material-ui",
+   "description": "Best practices for developing modern looking tools, dashboards and data apps using HoloViz Panel and Panel Material UI components.",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "param",
+   "description": "Use when building Python classes with validated, typed parameters using the Param library. Triggers include creating configuration classes, building reusable components with state, implementing reacti",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "quant-microstructure-gex",
+   "description": "Use when changing Brain 2 maths or the trading desk's readings - Kalman latent price, BOCPD regime change, Kyle's lambda, iceberg detection, book entropy, L2 VWAP fill, dealer gamma (GEX), DVOL, 25-de",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "replica-architect",
+   "description": ">-",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-backend",
+   "description": ">-",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-build",
+   "description": ">-",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-cyber-recon",
+   "description": "Defensive checks before anything joins Jarvis or the repo - leaked keys (patterns plus Shannon entropy), unsafe code in pages, templates and skills (XSS sinks, eval, processes, unparameterized SQL, we",
+   "tools": [
+    {
+     "name": "manifest_parse.py",
+     "functions": 7
+    },
+    {
+     "name": "rcommon.py",
+     "functions": 7
+    },
+    {
+     "name": "sbom_integrity.py",
+     "functions": 3
+    },
+    {
+     "name": "secret_audit.py",
+     "functions": 3
+    },
+    {
+     "name": "static_guard.py",
+     "functions": 7
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/CYBER-RECON-SKILL-REVIEW-2026-11-05.md"
+  },
+  {
+   "name": "replica-design",
+   "description": "Rebuilds an app's design system clean-room style - measured colour roles, type, spacing, components and states as tokens (light + dark), with open fonts/icons and a WCAG gate.",
+   "tools": [
+    {
+     "name": "build_tokens.py",
+     "functions": 7
+    },
+    {
+     "name": "contrast.py",
+     "functions": 13
+    },
+    {
+     "name": "sample.py",
+     "functions": 6
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/REPLICA-DESIGN-SKILL-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-diff",
+   "description": ">-",
+   "tools": [
+    {
+     "name": "imgdiff.py",
+     "functions": 10
+    },
+    {
+     "name": "parity.py",
+     "functions": 6
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-entrepreneur",
+   "description": ">-",
+   "tools": [
+    {
+     "name": "reviews.py",
+     "functions": 9
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/JARVIS-SERVER-AND-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-formal-verify",
+   "description": "Proves properties of a plan or workflow by breadth-first search over its state machine - no deadlock, every step reachable, and no money, publish, permissions, install or outbound effect reachable wit",
+   "tools": [
+    {
+     "name": "mutation_audit.py",
+     "functions": 8
+    },
+    {
+     "name": "state_prover.py",
+     "functions": 4
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": {
+    "killed": 63,
+    "mutants": 63
+   },
+   "review": "docs/security/JARVIS-FORMAL-VERIFY-EXPORTER-MACRO-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-foss-atlas",
+   "description": "An atlas of open-source tools that replace hosted products (LibreOffice, Nextcloud, Mattermost, Matomo, n8n, GIMP, Penpot, Immich, Navidrome, OpenCut, Cap, Handy, AnythingLLM, Scrapling, Brave), open ",
+   "tools": [
+    {
+     "name": "foss_atlas.py",
+     "functions": 13
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 205,
+    "mutants": 205
+   },
+   "review": "docs/security/FOSS-ATLAS-PRIVACY-SHIELD-REVIEW-2026-11-12.md"
+  },
+  {
+   "name": "replica-graphify",
+   "description": "A structural knowledge graph of Jarvis without a vector database - screens, API routes, server modules, SQL tables with their constraints, and skills with their Python tools, joined by what each one c",
+   "tools": [
+    {
+     "name": "graphify.py",
+     "functions": 14
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-humanizer",
+   "description": "Plain-word suggestions for Arabic and English text - finds stiff, machine-sounding wording (in order to, utilize, leverage, it is important to note, في عالمنا اليوم, تجدر الإشارة إلى أن, قم بـ) and su",
+   "tools": [
+    {
+     "name": "humanize.py",
+     "functions": 5
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-hybrid-python",
+   "description": "Algorithmic design engines for Jarvis in standard-library Python - Weisfeiler-Lehman layout fingerprints and clean golden-ratio templates (topology_synth), graphlib workflow scheduling with locked ste",
+   "tools": [
+    {
+     "name": "curriculum_50k.py",
+     "functions": 17
+    },
+    {
+     "name": "dag_scheduler.py",
+     "functions": 3
+    },
+    {
+     "name": "hcommon.py",
+     "functions": 7
+    },
+    {
+     "name": "pattern_memory.py",
+     "functions": 7
+    },
+    {
+     "name": "static_intel.py",
+     "functions": 5
+    },
+    {
+     "name": "topology_synth.py",
+     "functions": 11
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/HYBRID-PYTHON-SKILL-REVIEW-2026-11-05.md"
+  },
+  {
+   "name": "replica-hyper-studio",
+   "description": "Draws shapes from 3 to 8 dimensions as plain SVG and checks them - a cube (SO(3), painter's sort, OKLCH face shading), a tesseract and a 16-cell (SO(4) rotations in the six planes, perspective R4 to R",
+   "tools": [
+    {
+     "name": "cinematic_presets.py",
+     "functions": 16
+    },
+    {
+     "name": "hyper_studio.py",
+     "functions": 30
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 1317,
+    "mutants": 1317
+   },
+   "review": "docs/security/HYPER-STUDIO-REVIEW-2026-11-07.md"
+  },
+  {
+   "name": "replica-impeccable",
+   "description": "A quality gate against low-effort output - 62 rules over prose (hype and filler words, placeholder text, exclamation marks), design (colour literals outside tokens, transition all, 100vh, text under 1",
+   "tools": [
+    {
+     "name": "slop_guard.py",
+     "functions": 11
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-long-horizon",
+   "description": "Run long, multi-step tasks without losing the thread - three plan files on disk, SHA-256 chained state capsules to resume after /clear, and an evidence gate that blocks \"done\" until tests pass.",
+   "tools": [
+    {
+     "name": "capsule.py",
+     "functions": 7
+    },
+    {
+     "name": "gate.py",
+     "functions": 8
+    },
+    {
+     "name": "lhcommon.py",
+     "functions": 12
+    },
+    {
+     "name": "plan.py",
+     "functions": 5
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": {
+    "killed": 51,
+    "mutants": 51
+   },
+   "review": "docs/security/GOVERNANCE-SKILLS-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-passive-recon",
+   "description": "Reads what a domain already publishes about itself, from files you saved - an RDAP record (RFC 7480/9083: status, DNSSEC, dates, name servers), crt.sh certificate rows (names deduplicated in one pass,",
+   "tools": [
+    {
+     "name": "passive_recon.py",
+     "functions": 12
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 3,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": {
+    "killed": 264,
+    "mutants": 264
+   },
+   "review": "docs/security/PASSIVE-RECON-REVIEW-2026-11-07.md"
+  },
+  {
+   "name": "replica-polymath-engine",
+   "description": "One question across the repository's own deterministic engines in five stages - the privacy shield cleans it and fixed word rules plus the person's choice name the domains (maths, time series, optics,",
+   "tools": [
+    {
+     "name": "polymath_engine.py",
+     "functions": 8
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 175,
+    "mutants": 175
+   },
+   "review": "docs/security/POLYMATH-ENGINE-REVIEW-2026-11-13.md"
+  },
+  {
+   "name": "replica-prompt-metacodes",
+   "description": "Five prompt meta-codes that change what the answer holds and never turn a request away - ALT3 (three plans - the fastest slice, the most careful with tests, mutation and contrast first, and self-hoste",
+   "tools": [
+    {
+     "name": "prompt_metacodes.py",
+     "functions": 11
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 20,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 172,
+    "mutants": 172
+   },
+   "review": "docs/security/PROMPT-METACODES-REVIEW-2026-11-07.md"
+  },
+  {
+   "name": "replica-quantum-math",
+   "description": "Four exact engines in standard-library Python - a VPIN-style context-toxicity score for an agent's event stream (with a rollback hint), a Poisson-relaxation fluid layout for 375, 768 and 1440 px in RT",
+   "tools": [
+    {
+     "name": "quantum_math.py",
+     "functions": 9
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": {
+    "killed": 99,
+    "mutants": 99
+   },
+   "review": "docs/security/QUANTUM-MATH-SYNC-GZIP-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-reversal-engine",
+   "description": "Corrects a plan or a page template by the repository's rules and says exactly what it changed - a money, publish, permissions, install or outbound step that is not a locked approval becomes {gate appr",
+   "tools": [
+    {
+     "name": "reversal_engine.py",
+     "functions": 27
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": {
+    "killed": 516,
+    "mutants": 516
+   },
+   "review": "docs/security/CONTRAST-HEALER-REVIEW-2026-11-07.md"
+  },
+  {
+   "name": "replica-skill-tree",
+   "description": "The repository's skills as one tree - roots (AGENTS.md, DESIGN.md, the approval locks, the state prover, the Merkle log, the privacy shield, the contrast healer), a trunk of the engines that join the ",
+   "tools": [
+    {
+     "name": "skill_tree.py",
+     "functions": 8
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 198,
+    "mutants": 198
+   },
+   "review": "docs/security/SKILL-TREE-REVIEW-2026-11-13.md"
+  },
+  {
+   "name": "replica-test",
+   "description": ">-",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md"
+  },
+  {
+   "name": "replica-timeseries-math",
+   "description": "Time-series maths in the standard library - Welford running mean and variance, EWMA, online z-score anomalies, a VPIN-style flow imbalance and LTTB downsampling that keeps peaks and troughs - for tele",
+   "tools": [
+    {
+     "name": "ts_math.py",
+     "functions": 11
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/TIMESERIES-MERKLE-AUDIT-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "replica-unified-workbench",
+   "description": "One deterministic pipeline over the repository's own engines - the privacy shield cleans the task (and checks a secret by its SHA-1 prefix only), the prompt meta-codes plan it, the universal agent bui",
+   "tools": [
+    {
+     "name": "unified_workbench.py",
+     "functions": 4
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 56,
+    "mutants": 56
+   },
+   "review": "docs/security/UNIFIED-WORKBENCH-REVIEW-2026-11-12.md"
+  },
+  {
+   "name": "replica-universal-agent",
+   "description": "A universal agent that plans and checks but never calls a model - a Claude request builder that moves effort into output_config and drops the fields the current models refuse (temperature, top_p, top_",
+   "tools": [
+    {
+     "name": "universal_agent.py",
+     "functions": 15
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 274,
+    "mutants": 274
+   },
+   "review": "docs/security/THIRD-PARTY-SKILLS-REVIEW-2026-11-12.md"
+  },
+  {
+   "name": "replica-universal-math",
+   "description": "Exact, step-by-step maths with every answer checked backwards - a Pratt parser (no eval) with simplification and the exact symbolic derivative, roots by Brent's method and Newton with |f(root)| <= 1e-",
+   "tools": [
+    {
+     "name": "universal_math.py",
+     "functions": 30
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 1281,
+    "mutants": 1281
+   },
+   "review": "docs/security/UNIVERSAL-MATH-REVIEW-2026-11-07.md"
+  },
+  {
+   "name": "replica-ux-physics",
+   "description": "Measures a page against the physics of use - Fitts's law (index of difficulty from the thumb, 44 px touch targets), Hick's law (reaction time per group of choices, more than 7 flagged), RTL/LTR mirror",
+   "tools": [
+    {
+     "name": "chaos_fuzzer.py",
+     "functions": 3
+    },
+    {
+     "name": "symbol_index.py",
+     "functions": 5
+    },
+    {
+     "name": "ux_physics.py",
+     "functions": 11
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": false,
+   "mutation": null,
+   "review": "docs/security/JARVIS-COUNCIL-TIME-MACHINE-UX-PHYSICS-REVIEW-2026-11-06.md"
+  },
+  {
+   "name": "safe-vault-cryptographic-ratchet",
+   "description": "Use when touching the paper wallet, the locked base, profit sweeps, receipts, Merkle checkpoints, capsules or the key vault. Keeps the SHA-256 receipt chain verifiable across the Ops Room, NABD and th",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "stablecoin-cyber-vuln-intel",
+   "description": "Use when changing the DefiLlama liquidity flow index (LFI), the CIRCL Vulnerability-Lookup feed with MISP taxonomy tags, the 8-part CSTI or the Open-Meteo Marine sea state at the five straits. Keyless",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "supreme-software-ui-architect",
+   "description": "Use before building or reviewing any OMEGA page, canvas or data feature. Engineering and visual craft rules - 4/8 grid, concentric radii, glass only where allowed, P3 colour, zero clipped text, zero-j",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "synaptic-spiderweb-viz",
+   "description": "Use when changing the Brain 2 synaptic web canvas in the Ops Room - its rings of nodes, edges, pulses, glass causal card, gym panel or labels. Event-driven drawing, real readings only, accessible fall",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "theme-factory",
+   "description": "Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact t",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "web-artifacts-builder",
+   "description": "Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state manag",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  },
+  {
+   "name": "webapp-testing",
+   "description": "Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser l",
+   "tools": [],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0
+   },
+   "tests": false,
+   "golden": false,
+   "mutation": null,
+   "review": null
+  }
+ ]
+}
