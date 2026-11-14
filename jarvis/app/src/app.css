@@ -600,3 +600,37 @@ td.wrap { white-space: normal; min-width: 16ch; }
 
 /* ADR-160: the workbench chain hash is 64 characters with no break point; let it wrap on a phone. */
 .uw-hash { overflow-wrap: anywhere; min-inline-size: 0; }
+
+/* ADR-162: the skill tree. Roots below the ground line, the trunk, three branches and the tools as leaves. */
+.st-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1280px) { .st-layout { grid-template-columns: minmax(0, 1fr) 380px; align-items: start; } }
+.st-wrap { border-radius: 12px; }
+.st-svg { display: block; min-inline-size: 760px; inline-size: 100%; height: auto; direction: ltr; }
+.st-ground { stroke: var(--color-border); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.st-edge { fill: none; stroke: var(--color-border); stroke-width: 1; opacity: 0.7; transition: opacity 160ms var(--ease, ease); }
+.st-edge.k-feeds { stroke: var(--color-text-muted); stroke-width: 1.4; }
+.st-edge.k-trunk { stroke: var(--color-text-muted); stroke-width: 6; opacity: 0.5; }
+.st-edge.k-leaf { opacity: 0.5; }
+.st-edge.on { stroke: var(--color-accent); stroke-width: 2; opacity: 1; }
+.st-node { cursor: pointer; }
+.st-node circle { fill: var(--color-surface-raised); stroke: var(--color-text-muted); stroke-width: 1.5; transition: transform 160ms var(--ease, ease); }
+.st-node text { fill: var(--color-text-muted); font-size: 12px; font-weight: 600; }
+.st-node.k-root circle { fill: var(--color-text-muted); }
+.st-node.k-trunk circle { fill: var(--color-accent); stroke: var(--color-accent); }
+.st-node.k-family circle { fill: var(--color-surface); stroke: var(--color-accent); stroke-width: 2; }
+.st-node.k-tool { cursor: default; }
+.st-node.k-tool circle { fill: var(--color-text-subtle); stroke: none; }
+.st-node.s-proved circle { fill: var(--color-success); stroke: var(--color-success); }
+.st-node.s-tested circle { fill: var(--color-accent); stroke: var(--color-accent); }
+.st-node.s-rules circle { fill: var(--color-surface); stroke: var(--color-text-muted); }
+.st-node.s-reference circle { fill: none; stroke: var(--color-text-subtle); stroke-dasharray: 2 2; }
+.st-node.s-attention circle { fill: var(--color-danger); stroke: var(--color-danger); }
+.st-node:hover circle, .st-node.sel circle { stroke: var(--color-focus); stroke-width: 3; }
+.st-node:focus { outline: none; }
+.st-node:focus-visible circle { stroke: var(--color-focus); stroke-width: 3; }
+.linklike { background: none; border: 0; padding: 0; color: var(--color-accent); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; min-height: 0; }
+.linklike:hover { color: var(--color-text); }
+.linklike:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; border-radius: 4px; }
+@media (pointer: coarse) { .linklike { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .st-edge, .st-node circle { transition: none; } }
+

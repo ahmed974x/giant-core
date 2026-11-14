@@ -597,6 +597,11 @@
       atlasPersonas(q) { return ok(LlmPlan.personas(q)); },
       // ADR-159 in sample mode: the same universal agent as the server, in this page.
       // ADR-160 in sample mode: the same workbench as the server, in this page.
+      // ADR-161 in sample mode: the same polymath engine as the server, in this page.
+      // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
+      tree() { return ok(SkillTree.buildTree(DATA.tree || { skills: [] })); },
+      treeCompose(body) { try { return ok(SkillTree.composeSkills(DATA.tree || { skills: [] }, body.names)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
+      polymath(body) { try { return ok(Polymath.runPolymath(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       workbench(body) { try { return ok(UnifiedWorkbench.runWorkbench(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       universal(body) { try { return ok(LlmPlan.universalAgent(body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-157 in sample mode: the same presets engine as the server, in this page.
@@ -1045,6 +1050,9 @@
       atlasPersonas: q => req("GET", w("/atlas/personas?seed=" + encodeURIComponent(q.seed) + "&count=" + encodeURIComponent(q.count))),
       universal: body => req("POST", w("/agent/universal"), body),
       workbench: body => req("POST", w("/workbench/run"), body),
+      polymath: body => req("POST", w("/polymath/run"), body),
+      tree: () => req("GET", w("/tree")),
+      treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
       studioGet: id => req("GET", w("/studio/snapshots/" + encodeURIComponent(id))),
       studioSave: body => req("POST", w("/studio/snapshots"), body),
@@ -2567,14 +2575,14 @@
       runCouncil, snapshotOf, snapshotHash, canonical, lineDiff, prettyLines, blockDiff, uxReport,
       planMachine, provePlan, exportSql, exportTokens, exportComponent, exportSpec, slugOf,
       reversePlan, reverseTemplate, describeCorrection, healOklchContrast, normalizeDomain, sampleReport, analyse, lttb, leafHash, frontierPush, frontierRoot, inclusionPath, verifyInclusion, auditEntry, EMPTY_ROOT, AUDITED,
-      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas, universalAgent: UniversalAgent.universalAgent, sha256Hex };
+      scrub, layer, LOCK_CONSTRAINTS, SSRF_PROBES, isBlockedAddress, compileMetacodes, METACODES, atlasView, planFossStack, scrubPrivate, kAnonymity, personas, universalAgent: UniversalAgent.universalAgent, sha256Hex, merkleRoot };
   })();
   // ADR-155: the hyper studio (jarvis/server/lib/hyper-studio.mjs, inlined by the build in its own scope).
   // ADR-157: the cinematic presets share this scope and use the contrast healer from the council's libraries.
   const Hyper = (() => {
     const healOklchContrast = (fg, bg) => LlmPlan.healOklchContrast(fg, bg);
     /*@HYPER_STUDIO@*/
-    return { hyper, HS_LIMITS, compileCinematic, CINEMATIC_PRESETS, CP_CATEGORIES };
+    return { hyper, optics, HS_LIMITS, compileCinematic, CINEMATIC_PRESETS, CP_CATEGORIES };
   })();
   // ADR-154: universal maths (jarvis/server/lib/universal-math.mjs, inlined by the build in its own scope).
   const UniMath = (() => {
@@ -2587,6 +2595,18 @@
     const solveMath = UniMath.solve;
     /*@UNIFIED_WORKBENCH@*/
     return { runWorkbench, UW_STAGES };
+  })();
+  // ADR-161: the polymath engine, the same as the server, over the scopes above.
+  const Polymath = (() => {
+    const { leafHash, merkleRoot, scrubPrivate, planFossStack, analyse, universalAgent } = LlmPlan;
+    const solveMath = UniMath.solve, optics = Hyper.optics;
+    /*@POLYMATH@*/
+    return { runPolymath, PM_DOMAINS };
+  })();
+  // ADR-162: the skill tree, the same engine as the server (no dependencies).
+  const SkillTree = (() => {
+    /*@SKILL_TREE@*/
+    return { buildTree, composeSkills };
   })();
   const PRESETS = {
     night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
@@ -4006,6 +4026,196 @@
           h("section", { class: "panel", "aria-labelledby": "h-ua-rev" }, h("h2", { id: "h-ua-rev", text: "Reviewed outside projects" }),
             h("p", { class: "t-caption muted", text: "Read-only review on 12 November 2026. Nothing was installed; only text rules were written into this code." }), revBox))));
   };
+  /* ── Skill tree (ADR-162): the skills as one tree, from facts in the repository ── */
+  const ST_STATUS = { proved: ["ok", "Proved"], tested: ["running", "Tested"], rules: ["idle", "Text rules"], reference: ["idle", "Reference"], attention: ["failed", "Needs attention"] };
+  const ST_FAMILY = { "family:jarvis": "Jarvis skills", "family:omega": "OMEGA skills", "family:vendored": "Vendored references" };
+  function stDraw(t, onPick) {
+    const V = t.view, byId = new Map(t.nodes.map(n => [n.id, n]));
+    const curve = (a, b) => { const my = (a.y + b.y) / 2; return `M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`; };
+    const edges = t.edges.map(e => { const a = byId.get(e.from), b = byId.get(e.to); return svg("path", { class: "st-edge k-" + e.kind, d: curve(a, b), "data-a": e.from, "data-b": e.to }); });
+    const nodes = t.nodes.map(n => {
+      const r = { root: 9, trunk: 14, family: 10, skill: 7, tool: 3 }[n.kind];
+      const kids = [svg("circle", { r, cx: 0, cy: 0 })];
+      if (n.kind !== "skill" && n.kind !== "tool") kids.push(svg("text", { x: 0, y: n.kind === "root" ? 24 : -18, "text-anchor": "middle" }, tr(n.label) || n.label));
+      const g = svg("g", { class: "st-node k-" + n.kind + (n.status ? " s-" + n.status : ""), transform: `translate(${n.x},${n.y})`, "data-id": n.id,
+        ...(n.kind === "tool" ? { "aria-hidden": "true" } : { tabindex: "0", role: "button", "aria-label": n.kind === "skill" ? (tr("Skill") || "Skill") + " " + n.label : (tr(n.label) || n.label) }) }, ...kids);
+      if (n.kind !== "tool") {
+        g.addEventListener("click", () => onPick(n.id));
+        g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(n.id); } });
+      }
+      return g;
+    });
+    return svg("svg", { class: "st-svg", viewBox: `0 0 ${V.width} ${V.height}`, role: "group", "aria-label": "Skill tree" },
+      svg("line", { class: "st-ground", x1: 0, y1: V.ground, x2: V.width, y2: V.ground }), ...edges, ...nodes);
+  }
+  pages.tree = () => {
+    const chosen = [];
+    const treeBox = h("div", { class: "stack" }), info = h("div", { class: "stack st-info", "aria-live": "polite" }, h("p", { class: "t-sm muted", text: "Pick a node to see its facts." }));
+    const chips = h("div", { class: "row" }), composeOut = h("div", { class: "stack", "aria-live": "polite" });
+    const composeBtn = h("button", { class: "btn btn-primary", type: "button", disabled: true }, icon("i-check", "sm"), "Compose");
+    let tree = null, svgEl = null;
+    const renderChips = () => {
+      chips.replaceChildren(...(chosen.length ? chosen.map(n => { const b = h("button", { class: "btn btn-secondary btn-sm", type: "button", "aria-label": "Remove " + n }, h("bdi", { lang: "en", dir: "ltr", translate: "no", text: n }), icon("i-x", "sm"));
+        b.addEventListener("click", () => { chosen.splice(chosen.indexOf(n), 1); renderChips(); }); return b; }) : [h("span", { class: "t-sm muted", text: "No skill chosen yet. Pick skills in the tree or the list." })]));
+      composeBtn.disabled = !chosen.length;
+    };
+    const pick = id => {
+      const n = tree.nodes.find(x => x.id === id); if (!n) return;
+      $$(".st-node", svgEl).forEach(x => x.classList.toggle("sel", x.dataset.id === id));
+      $$(".st-edge", svgEl).forEach(e => e.classList.toggle("on", e.dataset.a === id || e.dataset.b === id));
+      const facts = [];
+      if (n.kind === "skill") {
+        const st = ST_STATUS[n.status];
+        facts.push(h("p", { class: "row" }, badge(st[0], st[1]), h("span", { class: "t-sm muted", text: ST_FAMILY[n.family] })),
+          n.description ? h("p", { class: "t-sm" }, uaData(n.description)) : null,
+          h("ul", { class: "plist" },
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Tools" }), uaNum(n.tools), ...tree.nodes.filter(x => x.kind === "tool" && x.skill === n.label).map(x => h("code", { translate: "no", dir: "ltr", text: x.label }))),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Scan" }), ...["critical", "high", "medium"].map(k => h("span", { class: "row" }, h("span", { class: "muted", text: { critical: "Critical", high: "High", medium: "Medium" }[k] }), uaNum(n.scan[k])))),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Tests" }), n.tests ? badge("ok", "Yes") : badge("idle", "No"), h("span", { class: "muted", text: "Same answers as the server" }), n.golden ? badge("ok", "Yes") : badge("idle", "No")),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Mutants killed" }), n.mutation ? uaNum(n.mutation.killed + " / " + n.mutation.mutants) : h("span", { text: "Not in the mutation run" })),
+            h("li", { class: "row t-sm" }, h("span", { class: "muted", text: "Named in" }), n.review ? h("code", { translate: "no", dir: "ltr", text: n.review }) : h("span", { text: "No review names it" }))),
+          h("div", { class: "row" }, n.route ? h("a", { class: "btn btn-secondary btn-sm", href: n.route, text: "Open its page" }) : null,
+            (() => { const b = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Add to the composer", disabled: chosen.includes(n.label) || chosen.length >= 12 });
+              b.addEventListener("click", () => { if (!chosen.includes(n.label)) chosen.push(n.label); renderChips(); pick(id); }); return b; })()));
+      } else {
+        facts.push(n.note ? h("p", { class: "t-sm", text: n.note }) : null, n.adr ? h("p", { class: "row t-sm" }, uaData(n.adr), n.skill ? uaData(n.skill) : null) : null,
+          n.kind === "family" ? h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Skills" }), uaNum(tree.counts.family[n.id])) : null,
+          n.route ? h("a", { class: "btn btn-secondary btn-sm", href: n.route, text: "Open its page" }) : null);
+      }
+      info.replaceChildren(h("h3", { translate: "no", text: n.kind === "skill" ? n.label : (tr(n.label) || n.label) }), ...facts.filter(Boolean));
+    };
+    composeBtn.addEventListener("click", async () => {
+      composeBtn.disabled = true;
+      try {
+        const r = await store.treeCompose({ names: chosen.slice() });
+        composeOut.replaceChildren(h("p", { class: "row" }, r.ready ? badge("ok", "Ready: every skill is tested") : badge("warn", "Not every skill is tested")),
+          r.joined_by.length ? h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Already run together on" }), ...r.joined_by.map(j => h("a", { href: j.route, text: tr(j.label) || j.label })))
+            : h("p", { class: "t-sm muted", text: "No trunk engine runs all of these together yet." }),
+          h("ol", { class: "plist" }, r.steps.map(s => h("li", { class: "stack t-sm" }, h("span", { class: "row" }, uaData(s.skill), badge(ST_STATUS[s.status][0], ST_STATUS[s.status][1])),
+            s.command ? h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: s.command }) : h("span", { class: "muted" }, uaData(s.note))))));
+      } catch (err) { composeOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not composed"), " ", h("span", { text: err.message }))); }
+      finally { composeBtn.disabled = !chosen.length; }
+    });
+    loadInto(treeBox, () => store.tree(), t => {
+      tree = t; svgEl = stDraw(t, pick);
+      // The drawing is wider than a phone: its region reads left to right and opens on the trunk.
+      const wrapEl = h("div", { class: "table-scroll st-wrap", dir: "ltr", tabindex: "0", role: "region", "aria-label": "Skill tree drawing" }, svgEl);
+      requestAnimationFrame(() => { wrapEl.scrollLeft = Math.max(0, (wrapEl.scrollWidth - wrapEl.clientWidth) / 2); });
+      const c = t.counts.status;
+      const list = h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Skills list" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Skill" }), h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "State" }), h("th", { scope: "col", text: "Tools" }), h("th", { scope: "col", text: "Mutants killed" }))),
+        h("tbody", null, t.nodes.filter(n => n.kind === "skill").map(n => { const b = h("button", { class: "linklike", type: "button" }, h("bdi", { lang: "en", dir: "ltr", translate: "no", text: n.label })); b.addEventListener("click", () => pick(n.id));
+          return h("tr", null, h("td", null, b), h("td", { text: ST_FAMILY[n.family] }), h("td", null, badge(ST_STATUS[n.status][0], ST_STATUS[n.status][1])), h("td", null, uaNum(n.tools)), h("td", null, n.mutation ? uaNum(n.mutation.killed + " / " + n.mutation.mutants) : uaNum(null))); }))));
+      return h("div", { class: "stack" },
+        h("p", { class: "row" }, ...Object.keys(ST_STATUS).map(k => h("span", { class: "row" }, badge(ST_STATUS[k][0], ST_STATUS[k][1]), uaNum(c[k]))),
+          h("span", { class: "muted t-sm", text: "Skills" }), uaNum(t.counts.skills), h("span", { class: "muted t-sm", text: "Tools" }), uaNum(t.counts.tools),
+          h("span", { class: "muted t-sm", text: "Mutants killed" }), uaNum(t.mutation.killed + " / " + t.mutation.mutants)),
+        wrapEl, list);
+    });
+    renderChips();
+    return h("div", { class: "stack" },
+      pageHead("Skill tree", "Every skill in this repository as one tree. The rules and core engines are the roots, the engines that join the others are the trunk, and each skill's tools are its leaves. Each state comes from the skill's own scan, tests and mutation run."),
+      sampleNote(),
+      h("div", { class: "st-layout" },
+        h("section", { class: "panel", "aria-labelledby": "h-st" }, h("h2", { id: "h-st", text: "The tree" }), treeBox),
+        h("div", { class: "stack" },
+          h("section", { class: "panel", "aria-labelledby": "h-st-info" }, h("h2", { id: "h-st-info", text: "Facts" }), info),
+          h("section", { class: "panel", "aria-labelledby": "h-st-comp" }, h("h2", { id: "h-st-comp", text: "Compose skills" }),
+            h("p", { class: "t-caption muted", text: "Join chosen skills: their path to the roots, the commands that test them, and the trunk engine that already runs them together. Nothing is installed." }),
+            chips, h("div", { class: "row" }, composeBtn), composeOut))));
+  };
+  /* ── Polymath engine (ADR-161): one question across the repository's engines; it abstains when none ran ── */
+  const PM_LABEL = { math: "Maths", timeseries: "Time series", optics: "Optics", design: "Design", security: "Security" };
+  const PM_STATUS = { ok: ["ok", "Ran"], needs_input: ["warn", "Needs input"], error: ["failed", "Refused"], not_named: ["idle", "Not named"] };
+  const PM_WHY = { asked: "You chose it", words: "Its words are in the question", input: "Its input was given" };
+  const PM_SAMPLE = {
+    question: "Design a telemetry pipeline with Welford variance, check the CSS contrast and solve the equation for the alert threshold. Mail ops@example.org.",
+    series: "10, 10.5, 11, 10.2, 10.8, 11.1, 10.4, 10.9, 10.6, 11.2, 10.3, 10.7, 10.5, 11, 10.8, 10.4, 10.9, 10.6, 11.1, 10.2, 10.7, 10.5, 10.9, 10.4, 11, 10.6, 10.8, 10.3, 10.7, 10.5, 10.9, 24, 10.6, 10.8",
+    css: ".hero{background:linear-gradient(90deg,#3b82f6,#8b5cf6);color:#777777;background-color:#ffffff}",
+    expression: "x^2-9",
+    claims: "timeseries: The variance stays stable\nmath: The threshold is 3\nmarkets: Prices fall tomorrow",
+  };
+  function pmSummary(d) {
+    const m = d.summary, row = (...k) => h("p", { class: "row t-sm" }, ...k);
+    if (d.status === "error") return row(h("span", { class: "muted", text: "Refused" }), uaData(m.error));
+    if (d.status !== "ok") return null;
+    if (d.id === "math") return row(uaData(m.task), h("span", { class: "muted", text: "Checks passed" }), uaNum(m.passed + " / " + m.checks));
+    if (d.id === "timeseries") return row(h("span", { class: "muted", text: "Points" }), uaNum(m.n), h("span", { class: "muted", text: "Mean" }), uaNum(m.mean), h("span", { class: "muted", text: "SD" }), uaNum(m.sd), h("span", { class: "muted", text: "Anomalies" }), uaNum(m.anomalies));
+    if (d.id === "optics") return row(h("span", { class: "muted", text: "Hyperfocal (m)" }), uaNum(m.hyperfocal_m), h("span", { class: "muted", text: "Near (m)" }), uaNum(m.near_m), h("span", { class: "muted", text: "Far (m)" }), uaNum(m.far_m));
+    if (d.id === "design") return row(m.verified ? badge("ok", "Clean") : badge("warn", "Corrected"), ...m.rules.map(uaData));
+    return row(...(m.verdicts ? [["confirmed", "Confirmed"], ["needs_validation", "Needs validation"]].map(([k, l]) => h("span", { class: "row" }, h("span", { class: "muted", text: l }), uaNum(m.verdicts[k]))) : []),
+      m.atlas ? h("span", { class: "row" }, h("span", { class: "muted", text: "Picks" }), uaNum(m.atlas.picks)) : null);
+  }
+  function pmResult(r) {
+    const g = r.grounding;
+    return h("div", { class: "stack" },
+      h("p", { class: "row" }, g.abstained ? badge("warn", "Abstained") : g.grounded ? badge("ok", "Grounded") : badge("warn", "Partly grounded"), badge("idle", "Not sent"),
+        h("span", { class: "muted t-sm", text: "Replaced" }), uaNum(r.replaced)),
+      g.reason ? h("p", { class: "t-sm" }, uaData(g.reason)) : null,
+      h("ol", { class: "plist pm-domains" }, r.domains.map(d => h("li", { class: "stack pm-domain" },
+        h("p", { class: "row" }, h("strong", { text: PM_LABEL[d.id] }), badge(PM_STATUS[d.status][0], PM_STATUS[d.status][1]), uaData(d.source.adr),
+          d.why ? h("span", { class: "t-caption muted", text: PM_WHY[d.why] }) : null, d.status !== "not_named" ? h("a", { class: "t-caption", href: d.source.route, text: "Open the page" }) : null),
+        pmSummary(d)))),
+      r.inversion.length ? h("section", { class: "stack", "aria-labelledby": "h-pm-inv" }, h("h3", { id: "h-pm-inv", text: "How it could fail, and what stops it" }),
+        h("ul", { class: "plist" }, r.inversion.map(x => h("li", { class: "stack t-sm" }, h("span", { class: "row" }, h("strong", { text: PM_LABEL[x.domain] }), uaData(x.failure)), h("span", { class: "muted" }, uaData(x.gate)))))) : null,
+      h("section", { class: "stack", "aria-labelledby": "h-pm-wdm" }, h("h3", { id: "h-pm-wdm", text: "Weighted decision" }),
+        r.decision ? h("div", { class: "stack" },
+          h("div", { class: "table-scroll" }, h("table", { class: "table" }, h("thead", null, h("tr", null, h("th", { text: "Option" }), h("th", { text: "Score out of 10" }))),
+            h("tbody", null, r.decision.ranked.map(o => h("tr", null, h("td", null, uaData(o.name)), h("td", null, uaNum(o.score))))))),
+          h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Chosen" }), r.decision.chosen ? uaData(r.decision.chosen) : h("span", { text: "None: the top scores are equal." }), h("span", { class: "tag-inf", text: r.decision.tag })))
+          : h("p", { class: "t-sm muted", text: "No options or weights were given, so nothing is scored." })),
+      r.claims.length ? h("section", { class: "stack", "aria-labelledby": "h-pm-claims" }, h("h3", { id: "h-pm-claims", text: "Claims" }),
+        h("ul", { class: "plist" }, r.claims.map(c => h("li", { class: "row t-sm" }, c.grounded ? badge("ok", "Backed") : badge("failed", "Not backed"), uaData(c.source === null ? "—" : c.source), uaData(c.text))))) : null,
+      h("p", { class: "row t-caption muted" }, h("span", { text: "Merkle root" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.merkle.root })),
+      h("details", null, h("summary", { text: "The whole answer as JSON" }), h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: JSON.stringify(r, null, 1) })));
+  }
+  pages.polymath = () => {
+    const resultBox = h("div", { class: "stack", "aria-live": "polite" });
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const area = (id, rows, value, dir = "auto") => { const t = h("textarea", { class: "textarea", id, name: id, rows, autocomplete: "off", dir, maxLength: 20000 }); t.value = value; return t; };
+    const qIn = area("f-pm-q", 3, PM_SAMPLE.question), seriesIn = area("f-pm-series", 3, PM_SAMPLE.series, "ltr"), cssIn = area("f-pm-css", 2, PM_SAMPLE.css, "ltr"), claimsIn = area("f-pm-claims", 3, PM_SAMPLE.claims, "ltr");
+    [seriesIn, cssIn, claimsIn].forEach(t => { t.lang = "en"; t.translate = false; t.spellcheck = false; });
+    const exprIn = h("input", { class: "input", id: "f-pm-expr", name: "expression", autocomplete: "off", dir: "ltr", lang: "en", translate: "no", value: PM_SAMPLE.expression });
+    const num = (id, value) => h("input", { class: "input", type: "number", id, name: id, step: "any", autocomplete: "off", value: String(value) });
+    const focal = num("f-pm-focal", 85), fstop = num("f-pm-fstop", 1.8), dist = num("f-pm-dist", 2);
+    const boxes = Object.fromEntries(Object.keys(PM_LABEL).map(k => [k, h("input", { type: "checkbox", id: "f-pm-d-" + k, name: "domain-" + k })]));
+    const crit = ["correctness", "security", "parity"], optNames = ["Deterministic engines", "One heuristic pass"];
+    const CRIT_LABEL = { correctness: "Correctness", security: "Security", parity: "Parity" };
+    const cell = (id, value, label) => { const i = num(id, value); i.setAttribute("aria-label", label); return i; };
+    const wIn = crit.map((c, i) => cell("f-pm-w-" + c, [4, 3, 3][i], CRIT_LABEL[c] + " weight")), sIn = optNames.map((o, j) => crit.map((c, i) => cell("f-pm-s-" + j + "-" + c, [[9, 9, 10], [6, 7, 5]][j][i], "Option " + (j + 1) + ": " + CRIT_LABEL[c])));
+    const [wdmOn, wdmLabel] = (() => { const b = h("input", { type: "checkbox", id: "f-pm-wdm", name: "wdm", checked: true }); return [b, h("label", { class: "check", htmlFor: "f-pm-wdm" }, b, h("span", { text: "Score the two options with these weights" }))]; })();
+    const runBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Think it through");
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true; runBtn.setAttribute("aria-busy", "true");
+      const body = { question: qIn.value, domains: Object.keys(boxes).filter(k => boxes[k].checked) };
+      const vals = seriesIn.value.split(/[\s,]+/).filter(Boolean).map(Number);
+      if (vals.length) body.series = vals.map((v, t) => ({ t, v }));
+      if (cssIn.value.trim()) body.css = cssIn.value;
+      if (exprIn.value.trim()) body.math = { task: "calculus", expression: exprIn.value, interval: [-10, 10] };
+      if (boxes.optics.checked) body.optics = { focal_mm: Number(focal.value), f_stop: Number(fstop.value), subject_distance_m: Number(dist.value) };
+      if (wdmOn.checked) { body.weights = Object.fromEntries(crit.map((c, i) => [c, Number(wIn[i].value)])); body.options = optNames.map((name, j) => ({ name, scores: Object.fromEntries(crit.map((c, i) => [c, Number(sIn[j][i].value)])) })); }
+      body.claims = claimsIn.value.split("\n").map(l => l.trim()).filter(Boolean).map(l => { const k = l.indexOf(":"); return k > 0 ? { source: l.slice(0, k).trim(), text: l.slice(k + 1).trim() || l } : { text: l }; });
+      try { resultBox.replaceChildren(pmResult(await store.polymath(body))); }
+      catch (err) { resultBox.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not run"), " ", h("span", { text: err.message }))); }
+      finally { runBtn.disabled = false; runBtn.removeAttribute("aria-busy"); }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Polymath", "Asks one question across this repository's engines: maths, time series, optics, design and security. Each answer names the engine behind it, and with no engine run it abstains instead of guessing. Nothing is sent."),
+      sampleNote(),
+      h("div", { class: "grid-2" },
+        h("section", { class: "panel", "aria-labelledby": "h-pm" }, h("h2", { id: "h-pm", text: "Ask" }),
+          field("f-pm-q", "Question", qIn, "E-mail addresses, keys and card numbers are replaced before anything reads the question."),
+          h("fieldset", { class: "stack" }, h("legend", { class: "legend", text: "Always include these domains" }),
+            h("div", { class: "row" }, Object.entries(PM_LABEL).map(([k, l]) => h("label", { class: "check", htmlFor: "f-pm-d-" + k }, boxes[k], h("span", { text: l }))))),
+          field("f-pm-expr", "Expression for maths", exprIn), field("f-pm-series", "Series for the time-series check (numbers)", seriesIn), field("f-pm-css", "CSS for the design check", cssIn),
+          h("div", { class: "grid-2" }, field("f-pm-focal", "Focal length (mm)", focal), field("f-pm-fstop", "f-stop", fstop), field("f-pm-dist", "Subject distance (m)", dist)),
+          wdmLabel,
+          h("div", { class: "table-scroll" }, h("table", { class: "table" }, h("thead", null, h("tr", null, h("th", { text: "Option" }), ...crit.map(c => h("th", { text: CRIT_LABEL[c] })))),
+            h("tbody", null, h("tr", null, h("td", { text: "Weight" }), ...wIn.map(i => h("td", null, i))), ...optNames.map((o, j) => h("tr", null, h("td", null, uaData(o)), ...sIn[j].map(i => h("td", null, i))))))),
+          field("f-pm-claims", "Claims to check, one a line as domain: claim", claimsIn),
+          h("div", { class: "row" }, runBtn)),
+        h("section", { class: "panel", "aria-labelledby": "h-pm-out" }, h("h2", { id: "h-pm-out", text: "Answer" }), resultBox)));
+  };
   /* ── Unified workbench (ADR-160): one task through every engine, in order; nothing is sent ── */
   const UW_LABEL = { shield: "Privacy shield", metacodes: "Meta-codes", request: "Model request", design: "Design check", math: "Maths", atlas: "FOSS atlas", security: "Security verdicts" };
   const UW_SAMPLE = {
@@ -4285,7 +4495,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4366,7 +4576,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

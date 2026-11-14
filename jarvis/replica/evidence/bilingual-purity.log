@@ -1,8 +1,8 @@
 {
  "format": "jarvis-bilingual-purity-v1",
  "sample": {
-  "ranAt": "2026-11-13T00:18:17.646Z",
-  "screens": 38,
+  "ranAt": "2026-11-14T00:14:26.662Z",
+  "screens": 42,
   "arabic": {
    "violations": 0,
    "where": {}
@@ -13,8 +13,8 @@
   }
  },
  "live": {
-  "ranAt": "2026-11-13T00:19:49.379Z",
-  "screens": 35,
+  "ranAt": "2026-11-14T00:16:01.994Z",
+  "screens": 39,
   "arabic": {
    "violations": 0,
    "where": {}

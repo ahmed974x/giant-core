@@ -1,0 +1,12 @@
+test_golden (test_skill_tree.SameAsServer.test_golden) ... ok
+test_compose_names_the_joining_engine (test_skill_tree.Tree.test_compose_names_the_joining_engine) ... ok
+test_no_code_is_run (test_skill_tree.Tree.test_no_code_is_run) ... ok
+test_refusals (test_skill_tree.Tree.test_refusals) ... ok
+test_roots_trunk_families (test_skill_tree.Tree.test_roots_trunk_families) ... ok
+test_snapshot_reads_this_repository (test_skill_tree.Tree.test_snapshot_reads_this_repository) ... ok
+test_status_comes_from_facts (test_skill_tree.Tree.test_status_comes_from_facts) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.180s
+
+OK

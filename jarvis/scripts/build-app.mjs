@@ -148,6 +148,8 @@ const data = {
   mutation: readMutation(),
   uiStates: readUiStates(),
   purity: readPurity(),
+  // ADR-162: the skill tree's input, written by replica-skill-tree's snapshot.
+  tree: existsSync(join(dataDir, "skill-tree-input.json")) ? JSON.parse(readFileSync(join(dataDir, "skill-tree-input.json"), "utf8")) : null,
 };
 
 // 4. Assemble.
@@ -183,7 +185,7 @@ const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-grap
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

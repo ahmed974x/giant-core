@@ -43,6 +43,8 @@ import { compileCinematic, presetList, CINEMATIC_PRESETS, goldenSpiral, goldenRe
 import { atlasView as faAtlas, planFossStack, scrubPrivate, personas as faPersonas, sha1Hex, kAnonymity } from "../lib/foss-atlas.mjs";
 import { universalAgent, UA_WEIGHTS, UA_REVIEWED } from "../lib/universal-agent.mjs";
 import { runWorkbench, UW_STAGES } from "../lib/unified-workbench.mjs";
+import { runPolymath, PM_DOMAINS } from "../lib/polymath-engine.mjs";
+import { skillTree, buildTree } from "../lib/skill-tree.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -861,6 +863,42 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-161: the polymath engine through the server: five domains, inversion, the person's decision matrix, grounding, Merkle.
+  const series = Array.from({ length: 40 }, (_, i) => ({ t: i, v: 10 + (i % 7) * 0.5 }));
+  const pq = { question: "Telemetry variance for the alert, solve the equation, check the css; mail ops@example.org", series, math: { task: "calculus", expression: "x^2-9", interval: [-10, 10] }, css: ".a{color:#777;background-color:#fff}",
+    options: [{ name: "A", scores: { x: 9, y: 8 } }, { name: "B", scores: { x: 6, y: 7 } }], weights: { x: 4, y: 3 }, claims: [{ text: "The variance is stable", source: "timeseries" }, { text: "Prices fall", source: "markets" }] };
+  const pm = await post("/api/w/jarvis-studio/polymath/run", pq);
+  const st = Object.fromEntries(pm.body.domains.map(d => [d.id, d.status]));
+  ok(pm.status === 200 && pm.body.domains.map(d => d.id).join() === PM_DOMAINS.join() && st.math === "ok" && st.timeseries === "ok" && st.design === "ok" && st.optics === "not_named" && pm.body.sent === false, tag("polymath: the named domains run their engines, nothing is sent"), st);
+  ok(!JSON.stringify(pm.body).includes("ops@example.org") && pm.body.replaced === 1, tag("polymath: the shield cleans the question first"));
+  ok(pm.body.decision.chosen === "A" && pm.body.decision.weights.x === 0.5714 && pm.body.inversion.length >= 6, tag("polymath: the decision uses only the given numbers; each named domain lists how it fails"), pm.body.decision);
+  ok(pm.body.grounding.grounded === false && pm.body.grounding.abstained === false && pm.body.grounding.unknown_citations.join() === "markets" && pm.body.claims[0].grounded, tag("polymath: a claim on a domain that did not run is not grounded"));
+  ok(/^[0-9a-f]{64}$/.test(pm.body.merkle.root) && pm.body.merkle.root === runPolymath(pq).merkle.root, tag("polymath: the Merkle root is the engine's"));
+  const ab = await post("/api/w/jarvis-studio/polymath/run", { question: "What will the market do tomorrow?" });
+  ok(ab.status === 200 && ab.body.grounding.abstained && ab.body.decision === null, tag("polymath: with no engine run it abstains instead of guessing"));
+  ok((await post("/api/w/jarvis-studio/polymath/run", { question: "" })).status === 400 && (await post("/api/w/jarvis-studio/polymath/run", { question: "x", options: [{ name: "A" }], weights: { x: 1 } })).status === 400, tag("polymath: an empty question and a one-option matrix are refused"));
+  const pev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(pev.some(e => e.kind === "polymath.run" && e.target === "3 domains partly grounded") && pev.some(e => e.kind === "polymath.run" && e.target === "0 domains abstained") && !JSON.stringify(pev).includes("market do tomorrow"), tag("polymath: the event log keeps counts, never the question"));
+  }
+
+  {
+  // ADR-162: the skill tree from the repository's snapshot, and composing skills.
+  const tr = await j("/api/w/jarvis-studio/tree");
+  const kinds = k => tr.body.nodes.filter(n => n.kind === k);
+  const snap = JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", "skill-tree-input.json"), "utf8"));
+  ok(tr.status === 200 && kinds("root").length === 7 && kinds("trunk").length === 3 && kinds("family").length === 3 && kinds("skill").length === snap.skills.length && tr.body.counts.skills === snap.skills.length, tag("tree: seven roots, a trunk of three, three branches and every skill in the snapshot"), tr.body.counts);
+  ok(kinds("root").every(n => n.y > tr.body.view.ground) && kinds("skill").every(n => n.y < tr.body.view.ground), tag("tree: the roots are below the ground line and the skills above it"));
+  const um = kinds("skill").find(n => n.label === "replica-universal-math");
+  ok(um && um.status === "proved" && um.route === "#/math" && um.mutation.killed === um.mutation.mutants && kinds("skill").every(n => n.scan.critical + n.scan.high === 0 ? n.status !== "attention" : n.status === "attention"), tag("tree: each state follows the skill's own facts"), um);
+  const cp = await post("/api/w/jarvis-studio/tree/compose", { names: ["replica-universal-math", "replica-foss-atlas"] });
+  ok(cp.status === 200 && cp.body.ready && cp.body.joined_by.map(x => x.id).join() === "trunk:workbench,trunk:polymath" && cp.body.steps.every(s => s.command.startsWith("python3 -m unittest discover -s .claude/skills/")), tag("tree: two skills composed, with their test commands and the engines that already join them"), cp.body);
+  const bad = await post("/api/w/jarvis-studio/tree/compose", { names: ["nope"] });
+  ok(bad.status === 400 && bad.body.detail === "nope" && (await post("/api/w/jarvis-studio/tree/compose", { names: [] })).status === 400, tag("tree: an unknown skill and an empty choice are refused"));
+  const tev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(tev.some(e => e.kind === "tree.compose" && e.target === "2 skills ready"), tag("tree: composing is in the event log, as a count"));
+  }
+
+  {
   // ADR-151: the local model is told to answer in the language the person is using.
   const sysOf = since => opts.ollamaCalls.slice(since).filter(c => c.path === "/api/chat").map(c => JSON.parse(c.body).messages[0].content);
   let at = opts.ollamaCalls.length;
@@ -991,6 +1029,19 @@ async function suite(mode, opts) {
   ok(JSON.stringify(got) === JSON.stringify(g.outputs), "math: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
   const ar = JSON.parse(readFileSync(join(repo, "jarvis", "app", "src", "i18n-ar.json"), "utf8")).strings;
   ok(Object.entries(UM_AR).every(([k, v]) => ar[k] === v), "math: the server's Arabic lines are the page's lines", Object.keys(UM_AR).filter(k => ar[k] !== UM_AR[k]));
+}
+// ADR-162: the skill tree, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-skill-tree", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return skillTree(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  ok(g.requests.length >= 28 && g.requests.every((r, i) => JSON.stringify(run(r)) === JSON.stringify(g.outputs[i])), "tree: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
+  ok(buildTree({ skills: [] }).nodes.length === 13, "tree: with no skill it still has its roots, trunk and branches");
+}
+// ADR-161: the polymath engine, pure: the server's answers equal the skill's golden file.
+{
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-polymath-engine", "tests", "golden.json"), "utf8"));
+  const run = r => { try { return runPolymath(r); } catch (e) { return { error: e.message, detail: e.detail ?? null }; } };
+  ok(g.requests.length >= 46 && g.requests.every((r, i) => JSON.stringify(run(r)) === JSON.stringify(g.outputs[i])), "polymath: the server gives exactly the answers in the skill's golden file (the Python skill checks the same file)");
 }
 // ADR-160: the unified workbench, pure: the server's answers equal the skill's golden file.
 {

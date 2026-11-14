@@ -43,11 +43,15 @@ import { compileCinematic, presetList } from "./lib/cinematic-presets.mjs";
 import { atlasView, planFossStack, scrubPrivate, personas as atlasPersonas } from "./lib/foss-atlas.mjs";
 import { universalAgent } from "./lib/universal-agent.mjs";
 import { runWorkbench } from "./lib/unified-workbench.mjs";
+import { runPolymath } from "./lib/polymath-engine.mjs";
+import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
 import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// ADR-162: the skill tree's input, written by .claude/skills/replica-skill-tree/skill_tree.py snapshot.
+const readSkillTreeInput = () => { const p = join(here, "..", "app", "data", "skill-tree-input.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : { skills: [] }; };
 const repoRoot = resolve(here, "..", "..");
 
 export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, reconFetch = fetchPublicResource, founderKey, publicHost, quiet = false } = {}) {
@@ -408,6 +412,23 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = scrubPrivate(body.text); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "privacy.scrub", out.total + " replaced");
+          return send(200, out);
+        }
+        // ADR-162: the skill tree from the snapshot replica-skill-tree wrote; compose joins chosen skills. Read only.
+        if (req.method === "GET" && rest === "/tree") return send(200, buildTree(readSkillTreeInput()));
+        if (req.method === "POST" && rest === "/tree/compose") {
+          let out;
+          try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-161: the polymath engine. Five stages over the repository's own engines; it abstains when none ran.
+        // Nothing is sent. The event log keeps counts only, never the question.
+        if (req.method === "POST" && rest === "/polymath/run") {
+          let out;
+          try { out = runPolymath(body); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          const ran = out.domains.filter(d => d.status === "ok").length;
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "polymath.run", ran + " domains" + (out.grounding.abstained ? " abstained" : out.grounding.grounded ? " grounded" : " partly grounded"));
           return send(200, out);
         }
         // ADR-160: the unified workbench. One pipeline over the shield, meta-codes, the universal agent, the reversal
