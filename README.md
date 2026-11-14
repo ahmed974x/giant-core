@@ -224,3 +224,11 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (48
 - `tree-facts-*`: one skill's facts: its state, tools, scan, tests, golden file, mutation result, the review naming it and its page;
 - `tree-compose-*`: two skills composed: ready, already run together on the workbench and polymath, with their test commands;
 - `tree-list-*`: the full table of skills with family, state, tools and mutation results.
+
+## ADR-163 (2026-11-14)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `order-skills-*`: `#/order`, Kahn's order of the polymath engine and the hyper studio with everything they load, in three layers, no cycle;
+- `order-tree-*`: the workbench as a behaviour tree: Sequence and Fallback nodes with each status, running at the approvals while steps are locked;
+- `order-uct-*`: UCB1 over the three meta-code plans from the typed record: the untried plan is chosen first, the others scored.
