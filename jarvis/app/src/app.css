@@ -661,3 +661,6 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .ia-diff .ia-line { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ia-card, .ia-hash { overflow-wrap: anywhere; min-inline-size: 0; }
 .ia-op-add td:first-child, .ia-op-del td:first-child { font-weight: 600; }
+
+/* ADR-169: release readiness. Long lists of codes and file paths wrap inside the card. */
+.rg-wrap { flex-wrap: wrap; overflow-wrap: anywhere; min-inline-size: 0; }

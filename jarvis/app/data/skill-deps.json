@@ -70,6 +70,11 @@
    "replica-reversal-engine"
   ],
   "replica-quantum-math": [],
+  "replica-release-gate": [
+   "replica-impact-analysis",
+   "replica-prompt-metacodes",
+   "replica-skill-tree"
+  ],
   "replica-reversal-engine": [],
   "replica-runbook": [
    "replica-formal-verify",
@@ -80,6 +85,7 @@
    "replica-polymath-engine",
    "replica-project-search",
    "replica-prompt-metacodes",
+   "replica-release-gate",
    "replica-reversal-engine",
    "replica-skill-tree",
    "replica-timeseries-math",

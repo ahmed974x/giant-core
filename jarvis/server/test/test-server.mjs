@@ -49,6 +49,7 @@ import { planOrder } from "../lib/plan-order.mjs";
 import { searchProject } from "../lib/project-search.mjs";
 import { runbook } from "../lib/runbook.mjs";
 import { impactAnalysis, catalogJson, licenceRule, weightsGb, lcsDiff, dependentsOf } from "../lib/impact-analysis.mjs";
+import { releaseGate, RG_GROWTH, RG_FAILURE } from "../lib/release-gate.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -903,6 +904,31 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-169: release readiness over the catalog module and the snapshots on disk.
+  const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
+  const rctx = { catalog: catalogJson(MODEL_PROFILES), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json"), corpus: data("search-corpus.json") };
+  const same = (body, req) => JSON.stringify(body) === JSON.stringify(releaseGate(req, rctx));
+  const au = await post("/api/w/jarvis-studio/release", { mode: "audit", tree: { skills: [] } });
+  ok(au.status === 200 && same(au.body, { mode: "audit" }) && au.body.verdict === "ready" && au.body.status.attention === 0 && au.body.skills === data("skill-tree-input.json").skills.length && au.body.records.adrs > 90 && au.body.sent === false,
+    tag("release: the audit reads the snapshots on disk, never the request, and is ready with no skill needing attention"), au.body);
+  const snap = (o = {}) => ({ ...Object.fromEntries([...RG_GROWTH.map(k => [k, 100]), ...RG_FAILURE.map(k => [k, 0])]), ...o });
+  const rv = async c => (await post("/api/w/jarvis-studio/release", { mode: "regress", baseline: snap(), candidate: c })).body;
+  const st = await rv(snap()), pr = await rv(snap({ mutants_killed: 101 })), rg1 = await rv(snap({ app_passed: 99 })), rg2 = await rv(snap({ server_passed: 200, skillspector_high: 1 }));
+  ok(st.verdict === "steady" && pr.verdict === "proven_progress" && rg1.verdict === "reject_regression" && rg2.verdict === "reject_regression" && rg2.counts.progress === 1 && rg2.counts.regression === 1 && st.checks.length === 12,
+    tag("release: equal is steady, more killed mutants is progress, fewer page flows or one SkillSpector high is a regression"));
+  const qb = { mode: "bundle", skills: ["replica-impact-analysis", "replica-runbook"], model: "openai/gpt-oss-120b", use: "service", bits: 4, memory_gb: 80, notes: { a: "one", b: "one\ntwo" } };
+  const bu = await post("/api/w/jarvis-studio/release", qb);
+  ok(bu.status === 200 && same(bu.body, qb) && bu.body.pages.includes("#/runbook") && bu.body.model.verdict === "allowed" && bu.body.model.memory.weights_gb === 58.41 && bu.body.notes.counts.added === 1 && bu.body.steps.length === 2 && bu.body.steps.every(s => s.locked && s.status === "pending_approval") && /^[0-9a-f]{64}$/.test(bu.body.chain_sha256),
+    tag("release: the bundle runs impact analysis on the skills, the model and the notes, keeps both steps locked and hashes the chain"), bu.body);
+  const cd = (await post("/api/w/jarvis-studio/release", { mode: "bundle", skills: ["replica-runbook"], model: "codestral:22b", use: "service" })).body, q8 = (await post("/api/w/jarvis-studio/release", { mode: "bundle", skills: ["replica-runbook"], model: "qwen3.8", use: "personal" })).body;
+  ok(cd.model.verdict === "not_allowed" && q8.model.verdict === "size_unnamed" && q8.steps.length === 1, tag("release: Codestral served to others is forbidden and a name without a size is not guessed, as in ADR-168"));
+  const bad = await Promise.all([{ mode: "x" }, { mode: "regress", baseline: snap(), candidate: snap({ live_failed: -1 }) }, { mode: "bundle", skills: [] }, { mode: "bundle", skills: ["nope"] }, { mode: "bundle", skills: ["replica-runbook"], model: "gpt-oss-120b" }].map(b => post("/api/w/jarvis-studio/release", b)));
+  ok(bad.every(r => r.status === 400) && bad.map(r => r.body.detail).join() === "mode,candidate.live_failed,skills,nope,use", tag("release: bad requests are refused with 400, and the engines it calls keep their own checks"), bad.map(r => r.body));
+  const rev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(rev.some(e => e.kind === "release.audit" && e.target === "ready") && rev.some(e => e.kind === "release.regress" && e.target === "reject_regression") && rev.some(e => e.kind === "release.bundle" && /^2 skills, \d+ pages, 2 locked$/.test(e.target)) && !JSON.stringify(rev).includes("gpt-oss-120b"), tag("release: events keep the verdict and counts, never the model name"));
+  }
+
+  {
   // ADR-168: impact analysis over the catalog module and the snapshots on disk; the request cannot bring its own.
   const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
   const ictx = { catalog: catalogJson(MODEL_PROFILES), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json"), corpus: data("search-corpus.json") };
@@ -941,7 +967,7 @@ async function suite(mode, opts) {
     tag("runbook: six stages run in order on the cleaned goal, nothing is sent"), rb.body.stages?.map(s => s.status));
   ok(st.docs.summary.top[0].id === "docs/adr/ADR-153-oklch-bisection-contrast-healer.md" && st.order.summary.verified && st.order.summary.layers.at(-1).includes("replica-polymath-engine"), tag("runbook: the healer's record is found and the skills are ordered from the snapshot"));
   ok(st.tree.summary.status === "running" && rb.body.locked > 0 && st.plan.summary.tag === "[INFERENCE]", tag("runbook: locked steps keep the workbench tree running; the plan choice is [INFERENCE]"));
-  ok(st.routes.summary.ok === 10 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: ten page probes pass and diagnostics is server only"), st.routes.summary);
+  ok(st.routes.summary.ok === 11 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: eleven page probes pass and diagnostics is server only"), st.routes.summary);
   ok(rb.body.chain_sha256 === runbook(rq, rctx).chain_sha256 && /^[0-9a-f]{64}$/.test(rb.body.chain_sha256), tag("runbook: the chain hash is the engine's"));
   const bad = await post("/api/w/jarvis-studio/runbook", { goal: "Contrast", skills: ["nope"] });
   ok(bad.status === 200 && bad.body.ready === false && bad.body.stages[2].status === "error" && (await post("/api/w/jarvis-studio/runbook", { goal: "" })).status === 400, tag("runbook: an unknown skill is a stage error, an empty goal is refused"));

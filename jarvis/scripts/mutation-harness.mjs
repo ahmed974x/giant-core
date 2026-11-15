@@ -118,6 +118,7 @@ const TARGETS = [
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
   { file: "runbook.mjs", functions: ["rbStage", "rbProbe", "probeRoutes", "rbDesign", "runOnce", "repairRequest", "runbook"], oracle: "runbook" },
+  { file: "release-gate.mjs", functions: ["rgR", "adrGaps", "auditRepo", "snapshot", "regressGate", "releaseBundle", "releaseGate"], oracle: "release" },
   { file: "impact-analysis.mjs", functions: ["catalogJson", "licenceRule", "weightsGb", "checkCatalog", "checkModel", "dependentsOf", "blastRadius", "lines", "lcsDiff", "diffTexts", "impactAnalysis"], oracle: "impact" },
   { file: "project-search.mjs", functions: ["psR", "byScore", "bm25Rank", "trigrams", "dice", "titleRank", "rrf", "snippet", "checkCorpus", "searchProject"], oracle: "search" },
   { file: "plan-order.mjs", functions: ["poR", "poName", "kahnOrder", "orderKept", "skillOrder", "poCheck", "poTick", "tickTree", "workbenchTree", "uctSelect", "planOrder"], oracle: "order" },
@@ -131,10 +132,12 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch, runbook: oracleRunbook, impact: oracleImpact };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch, runbook: oracleRunbook, impact: oracleImpact, release: oracleRelease };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
+  // ADR-169: release-gate.mjs.
+  { file: "release-gate.mjs", line: "for (let n = nums[0]; n <= nums[nums.length - 1]; n++)", kind: "<= -> <", why: "the last number is always present, so the last step of the loop never adds a missing number" },
   // ADR-168: impact-analysis.mjs. The LCS mutants were also run against the real function on every pair of texts of up to 4 lines over 3 words (14,641 pairs): none differs.
   { file: "impact-analysis.mjs", line: "note = open >= 0 && close > open ?", kind: "> -> >=", why: "\"(\" and \")\" are different characters, so their positions are never equal once open >= 0" },
   { file: "impact-analysis.mjs", line: ".sort((a, b) => a.depth - b.depth || (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "the names are keys of one Map, so two names are never equal and < and <= agree" },
@@ -584,6 +587,17 @@ function oracleMath(m) {
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
   return out;
+}
+
+// ADR-169: release readiness. The skill's golden file (the server's answers, refusals included).
+function oracleRelease(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-release-gate", "tests", "golden.json"), "utf8"));
+  const run = c => {
+    const ctx = c.ctx === undefined ? g.ctx : c.ctx === null ? undefined : { ...g.ctx, ...c.ctx };
+    try { return { response: m.releaseGate(c.request, ctx) }; } catch (e) { if (e.status !== 400) return { crash: String(e) }; return { error: { error: e.message, detail: e.detail ?? null } }; }
+  };
+  return g.cases.map((c, i) => ["golden " + i, J(run(c)) === J(c.error ? { error: c.error } : { response: c.response })]);
 }
 
 // ADR-168: impact analysis. The skill's golden file (the server's answers, refusals included) and the catalog as data.

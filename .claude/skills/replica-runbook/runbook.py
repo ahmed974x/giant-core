@@ -19,10 +19,11 @@ _SKILLS = os.path.dirname(_HERE)
 sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-foss-atlas", "replica-project-search", "replica-plan-order", "replica-unified-workbench",
                                                             "replica-polymath-engine", "replica-skill-tree", "replica-universal-agent", "replica-universal-math",
                                                             "replica-hyper-studio", "replica-prompt-metacodes", "replica-formal-verify", "replica-reversal-engine",
-                                                            "replica-timeseries-math", "replica-impact-analysis")]
+                                                            "replica-timeseries-math", "replica-impact-analysis", "replica-release-gate")]
 from foss_atlas import k_anonymity, plan_foss_stack, scrub_private  # noqa: E402
 from hyper_studio import optics  # noqa: E402
 from impact_analysis import impact_analysis  # noqa: E402
+from release_gate import release_gate  # noqa: E402
 from plan_order import plan_order, skill_order, workbench_tree  # noqa: E402
 from polymath_engine import run_polymath  # noqa: E402
 from project_search import search_project  # noqa: E402
@@ -34,6 +35,7 @@ from universal_math import solve  # noqa: E402
 
 RB_STAGES = ["shield", "docs", "order", "tree", "plan", "routes"]
 RB_ROUTES = [
+    {"route": "#/release", "adr": "ADR-169", "engine": "release-gate"},
     {"route": "#/impact", "adr": "ADR-168", "engine": "impact-analysis"},
     {"route": "#/docs", "adr": "ADR-164", "engine": "project-search"},
     {"route": "#/order", "adr": "ADR-163", "engine": "plan-order"},
@@ -74,6 +76,9 @@ def _stage(sid, fn):
 
 def _probe(route, ctx):
     """One fixed probe per page: whether the engine gave its checked answer, and the engine's whole answer."""
+    if route == "#/release":
+        a = release_gate({"mode": "audit"}, ctx)
+        return a["verdict"] == "ready", a
     if route == "#/impact":
         k = sorted(ctx["deps"])
         if not k:

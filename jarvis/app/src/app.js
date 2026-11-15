@@ -602,6 +602,8 @@
       // ADR-165 in sample mode: the same runbook as the server, over the snapshots built into this page.
       runbook(body) { try { return ok(Runbook.runbook(body, { corpus: DATA.corpus || { docs: [] }, deps: DATA.deps || {}, tree: DATA.tree || { skills: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-168 in sample mode: the same impact analysis as the server, over the catalog and snapshots built into this page.
+      // ADR-169 in sample mode: the same release gate as the server, over the snapshots built into this page.
+      release(body) { try { return ok(Release.releaseGate(body, { catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       impact(body) { try { return ok(Impact.impactAnalysis(body, { catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-164 in sample mode: the same search as the server, over the corpus built into this page.
       docsSearch(body) { try { return ok(ProjectSearch.searchProject(DATA.corpus || { docs: [] }, body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
@@ -1063,6 +1065,7 @@
       docsSearch: body => req("POST", w("/docs/search"), body),
       runbook: body => req("POST", w("/runbook"), body),
       impact: body => req("POST", w("/impact"), body),
+      release: body => req("POST", w("/release"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -2643,13 +2646,19 @@
   const Impact = (() => {
     const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { searchProject } = ProjectSearch;
     /*@IMPACT@*/
-    return { impactAnalysis, catalogJson };
+    return { impactAnalysis, catalogJson, IA_PAGES };
+  })();
+  // ADR-169: release readiness, the same as the server, over the skill tree and impact analysis inlined above.
+  const Release = (() => {
+    const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact;
+    /*@RELEASE@*/
+    return { releaseGate, RG_GROWTH, RG_FAILURE };
   })();
   // ADR-165: the runbook, the same as the server, over the engines inlined above.
   const Runbook = (() => {
     const { scrubPrivate, kAnonymity, planFossStack, universalAgent, sha256Hex } = LlmPlan;
     const { searchProject } = ProjectSearch, { planOrder, skillOrder, workbenchTree } = PlanOrder, { runWorkbench } = UnifiedWorkbench, { runPolymath } = Polymath, { buildTree } = SkillTree;
-    const solveMath = UniMath.solve, optics = Hyper.optics, { impactAnalysis } = Impact;
+    const solveMath = UniMath.solve, optics = Hyper.optics, { impactAnalysis } = Impact, { releaseGate } = Release;
     /*@RUNBOOK@*/
     return { runbook, RB_STAGES };
   })();
@@ -4249,6 +4258,115 @@
         h("div", { class: "row" }, btn)),
       h("section", { class: "panel stack", "aria-labelledby": "h-rb-r" }, h("h2", { id: "h-rb-r", text: "Stages" }), out));
   };
+  /* ── Release readiness (ADR-169): the repository audit, the regression gate and the release bundle ── */
+  const RG_VERDICT = {
+    ready: ["ok", "Ready: no skill needs attention"], attention: ["failed", "A skill needs attention"], empty: ["warn", "No skill in the snapshot"],
+    reject_regression: ["failed", "Rejected: a check regressed"], proven_progress: ["ok", "Proven progress"], steady: ["idle", "Steady"],
+  };
+  const RG_CHECK = { regression: ["failed", "Regression"], progress: ["ok", "Progress"], steady: ["idle", "Steady"] };
+  const RG_LABEL = {
+    server_passed: "Server tests passed", app_passed: "Page flows passed", live_passed: "Live tests passed", mutants_killed: "Mutants killed",
+    server_failed: "Server tests failed", app_failed: "Page flows failed", live_failed: "Live tests failed", mutants_survived: "Mutants that survived",
+    skillspector_critical: "SkillSpector critical", skillspector_high: "SkillSpector high", contrast_failing: "Contrast pairs failing", purity_violations: "Bilingual purity violations",
+  };
+  const RG_STATE = { proved: "Proved", tested: "Tested", rules: "Text rules", reference: "Reference", attention: "Needs attention" };
+  const rgPct = v => fmtN.format(Math.round(v * 1000) / 10) + "%";
+  function rgAuditBody(r) {
+    const v = RG_VERDICT[r.verdict], muted = t => h("span", { class: "muted", text: t });
+    return h("div", { class: "stack" },
+      h("p", { class: "row" }, badge(v[0], v[1]), badge("idle", "Not sent"), muted("Skills"), uaNum(r.skills)),
+      h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Skill states" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "State" }), h("th", { scope: "col", text: "Skills" }))),
+        h("tbody", null, Object.keys(RG_STATE).map(k => h("tr", null, h("td", { text: RG_STATE[k] }), h("td", { class: "num", text: String(r.status[k]) })))))),
+      h("p", { class: "row t-sm" }, muted("Proved"), h("span", { class: "num", text: rgPct(r.shares.proved) }), muted("Tested"), h("span", { class: "num", text: rgPct(r.shares.tested) }), muted("Proved or tested"), h("span", { class: "num", text: rgPct(r.shares.proved_or_tested) })),
+      h("p", { class: "row t-sm" }, muted("Decision records"), uaNum(r.records.adrs), muted("Security reviews"), uaNum(r.records.reviews),
+        r.records.first === null ? null : h("span", { class: "row" }, muted("Numbered"), h("code", { translate: "no", dir: "ltr", text: r.records.first + "–" + r.records.last }))),
+      r.records.missing.length ? h("p", { class: "row t-caption muted rg-wrap" }, h("span", { text: "Numbers not in the corpus" }), ...r.records.missing.map(n => h("code", { translate: "no", dir: "ltr", text: String(n) }))) : null);
+  }
+  function rgRegressBody(r) {
+    const v = RG_VERDICT[r.verdict];
+    return h("div", { class: "stack" },
+      h("p", { class: "row" }, badge(v[0], v[1]), ...Object.keys(RG_CHECK).map(k => h("span", { class: "row t-sm" }, h("span", { class: "muted", text: RG_CHECK[k][1] }), uaNum(r.counts[k])))),
+      h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Checks" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, ...["Check", "Baseline", "Candidate", "Change", "Verdict"].map(t => h("th", { scope: "col", text: t })))),
+        h("tbody", null, r.checks.map(c => h("tr", null, h("td", { text: RG_LABEL[c.check] }), h("td", { class: "num", text: String(c.baseline) }), h("td", { class: "num", text: String(c.candidate) }),
+          h("td", { class: "num", text: (c.delta > 0 ? "+" : "") + c.delta }), h("td", null, badge(RG_CHECK[c.verdict][0], RG_CHECK[c.verdict][1]))))))));
+  }
+  function rgBundleBody(r) {
+    const code = n => h("code", { translate: "no", dir: "ltr", text: n });
+    return h("div", { class: "stack" },
+      h("p", { class: "row" }, badge("idle", "Not sent"), h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(r.steps.length)),
+      h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Skills in this release" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, ...["Skill", "Layers it loads", "Skills that load it", "On a cycle"].map(t => h("th", { scope: "col", text: t })))),
+        h("tbody", null, r.skills.map(s => h("tr", null, h("td", null, code(s.skill)), h("td", { class: "num", text: String(s.layers.length) }), h("td", { class: "num", text: String(s.dependents.length) }),
+          h("td", null, s.cycle.length ? badge("failed", "Cycle found") : badge("ok", "No cycle"))))))),
+      h("h3", { text: "Pages to test again" }),
+      r.pages.length ? h("p", { class: "row t-sm" }, ...r.pages.map(p => h("a", { href: p, translate: "no", dir: "ltr", text: p }))) : h("p", { class: "t-sm muted", text: "No page is built on these skills." }),
+      h("h3", { text: "Test commands" }),
+      h("ul", { class: "plist" }, [...r.tests, ...r.shared_tests].map(c => h("li", { class: "t-sm" }, h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: c })))),
+      r.model ? h("section", { class: "stack" }, h("h3", { text: "The model" }), iaCatalogBody(r.model)) : null,
+      r.notes ? h("section", { class: "stack" }, h("h3", { text: "Release notes, line by line" }), iaDiffBody(r.notes)) : null,
+      h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Publishing the release waits for Director 00's approval." })),
+      iaHash("Chain hash", r.chain_sha256));
+  }
+  pages.release = () => {
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const latin = el => { el.lang = "en"; el.translate = false; el.spellcheck = false; return el; };
+    const run = (btn, out, body, render) => async () => {
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { out.replaceChildren(render(await store.release(body()))); } catch (err) { out.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not checked"), " ", h("span", { text: err.message }))); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    };
+    // 1. The repository audit.
+    const aOut = h("div", { class: "stack", "aria-live": "polite" });
+    const aBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Audit the repository");
+    aBtn.addEventListener("click", run(aBtn, aOut, () => ({ mode: "audit" }), rgAuditBody));
+    // 2. The regression gate, both snapshots filled from this build's evidence files.
+    const rel = DATA.release || { snapshot: {}, from: [] }, json = JSON.stringify(rel.snapshot, null, 1);
+    const baseIn = latin(h("textarea", { class: "textarea", id: "f-rg-base", name: "baseline", rows: 8, autocomplete: "off", dir: "ltr", maxLength: 4000 }));
+    const candIn = latin(h("textarea", { class: "textarea", id: "f-rg-cand", name: "candidate", rows: 8, autocomplete: "off", dir: "ltr", maxLength: 4000 }));
+    baseIn.value = json; candIn.value = json;
+    const rOut = h("div", { class: "stack", "aria-live": "polite" });
+    const rBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Compare the snapshots");
+    rBtn.addEventListener("click", async () => {
+      let b, c;
+      try { b = JSON.parse(baseIn.value); c = JSON.parse(candIn.value); } catch (e) { rOut.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not checked"), " ", h("span", { text: "Each snapshot is a JSON object." }))); return; }
+      await run(rBtn, rOut, () => ({ mode: "regress", baseline: b, candidate: c }), rgRegressBody)();
+    });
+    // 3. The release bundle.
+    const skillsIn = latin(h("input", { class: "input", id: "f-rg-skills", name: "skills", autocomplete: "off", dir: "ltr", value: "replica-impact-analysis, replica-runbook" }));
+    const modelIn = latin(h("input", { class: "input", id: "f-rg-model", name: "model", autocomplete: "off", dir: "ltr", maxLength: 120, value: "openai/gpt-oss-120b" }));
+    const useIn = h("select", { class: "input", id: "f-rg-use", name: "use" }, ...Object.entries(IA_USE).map(([k, v]) => h("option", { value: k, text: v })));
+    useIn.value = "service";
+    const bitsIn = h("input", { class: "input", type: "number", id: "f-rg-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
+    const memIn = h("input", { class: "input", type: "number", id: "f-rg-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const aNotes = h("textarea", { class: "textarea", id: "f-rg-a", name: "notes-before", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
+    aNotes.value = "Impact analysis in #/impact\nThe runbook probes ten pages";
+    const bNotes = h("textarea", { class: "textarea", id: "f-rg-b", name: "notes-after", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
+    bNotes.value = "Impact analysis in #/impact\nRelease readiness in #/release\nThe runbook probes eleven pages";
+    const bOut = h("div", { class: "stack", "aria-live": "polite" });
+    const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the release");
+    bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "bundle", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}) } : {}),
+      ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) }), rgBundleBody));
+    return h("div", { class: "stack" },
+      pageHead("Release readiness", "Three checks before a release, over facts already in this repository: the skill tree and the decision records, two snapshots of the checks' counts compared, and the skills, model and notes of one release run through impact analysis. Nothing is sent or published."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-rg-a" }, h("h2", { id: "h-rg-a", text: "Repository audit" }),
+        h("p", { class: "t-caption muted", text: "Ready only when no skill needs attention. The shares count proved and tested skills over all skills." }),
+        h("div", { class: "row" }, aBtn), aOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-rg-r" }, h("h2", { id: "h-rg-r", text: "Regression gate" }),
+        h("p", { class: "t-caption muted", text: "Both snapshots start from this build's evidence files. Change the candidate to the new run's counts." }),
+        h("p", { class: "row t-caption muted rg-wrap" }, h("span", { text: "Read from" }), ...(rel.from.length ? rel.from.map(f => h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: f })) : [h("span", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })])),
+        h("div", { class: "grid-2" }, field("f-rg-base", "Baseline", baseIn), field("f-rg-cand", "Candidate", candIn)),
+        h("div", { class: "row" }, rBtn), rOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-rg-b" }, h("h2", { id: "h-rg-b", text: "Release bundle" }),
+        field("f-rg-skills", "Skills this release touched, separated by commas", skillsIn),
+        h("div", { class: "grid-2" }, field("f-rg-model", "Model name (optional)", modelIn, "Leave it empty for a release with no model."), field("f-rg-use", "Use", useIn)),
+        h("div", { class: "grid-2" }, field("f-rg-bits", "Bits per weight (optional)", bitsIn), field("f-rg-mem", "Memory you have, in GB (optional)", memIn)),
+        h("div", { class: "grid-2" }, field("f-rg-a", "Release notes before", aNotes), field("f-rg-b", "Release notes after", bNotes)),
+        h("div", { class: "row" }, bBtn), bOut));
+  };
   /* ── Impact analysis (ADR-168): a model against the catalog, a skill's blast radius, two texts compared line by line ── */
   const IA_VERDICT = {
     allowed: ["ok", "The documented licence allows it"],
@@ -4862,7 +4980,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4943,7 +5061,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

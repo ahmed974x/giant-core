@@ -118,6 +118,25 @@ function readMutation() {
     current: existsSync(join(root, t.file)) && createHash("sha256").update(readFileSync(join(root, t.file))).digest("hex") === t.sha256 }));
   return { ranAt: log.ranAt, total: log.total, killed: log.killed, equivalent: log.equivalent, score: log.score, sha256: log.sha256, targets, verified: targets.every(t => t.current) };
 }
+// ADR-169: the checks' counts in this build's evidence files, for the release page's two snapshots. A file that is
+// missing or does not parse leaves its counts out, and the page says which files were read.
+function readReleaseSnapshot() {
+  const root = join(here, "..", ".."), snapshot = {}, from = [];
+  const text = rel => (existsSync(join(root, rel)) ? readFileSync(join(root, rel), "utf8") : null);
+  for (const [k, rel] of [["server", "jarvis/replica/evidence/tests-server.log"], ["app", "jarvis/replica/evidence/tests-app.log"], ["live", "jarvis/replica/evidence/tests-live.log"]]) {
+    const m = /^(\d+) passed, (\d+) failed$/.exec((text(rel) || "").trim().split("\n").pop());
+    if (m) { snapshot[k + "_passed"] = Number(m[1]); snapshot[k + "_failed"] = Number(m[2]); from.push(rel); }
+  }
+  const mu = readMutation();
+  if (mu) { snapshot.mutants_killed = mu.killed; snapshot.mutants_survived = mu.total - mu.killed; from.push("jarvis/replica/evidence/mutation-audit.log"); }
+  const scan = text("jarvis/app/data/skills-scan.json");
+  if (scan) { const s = JSON.parse(scan).summary; snapshot.skillspector_critical = s.critical; snapshot.skillspector_high = s.high; from.push("jarvis/app/data/skills-scan.json"); }
+  const contrast = /(\d+) checks, (\d+) failing/.exec(text("jarvis/replica/design/contrast-report.txt") || "");
+  if (contrast) { snapshot.contrast_failing = Number(contrast[2]); from.push("jarvis/replica/design/contrast-report.txt"); }
+  const purity = text("jarvis/replica/evidence/bilingual-purity.log");
+  if (purity) { const p = JSON.parse(purity); snapshot.purity_violations = ["sample", "live"].reduce((n, m) => n + (p[m] ? p[m].arabic.violations + p[m].english.violations : 0), 0); from.push("jarvis/replica/evidence/bilingual-purity.log"); }
+  return { snapshot, from };
+}
 function readUiStates() {
   const p = join(here, "..", "replica", "evidence", "ui-states.json");
   if (!existsSync(p)) fail("jarvis/replica/evidence/ui-states.json is missing: run state_prover.py --ui jarvis/app/src/app.css --spec jarvis/replica/ui-states.json --json.");
@@ -148,6 +167,7 @@ const data = {
   mutation: readMutation(),
   uiStates: readUiStates(),
   purity: readPurity(),
+  release: readReleaseSnapshot(),
   // ADR-162: the skill tree's input, written by replica-skill-tree's snapshot.
   // ADR-164: the documents project search reads, written by replica-project-search's corpus.
   corpus: existsSync(join(dataDir, "search-corpus.json")) ? JSON.parse(readFileSync(join(dataDir, "search-corpus.json"), "utf8")) : null,
@@ -199,7 +219,7 @@ const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-grap
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@PLAN_ORDER@*/", () => inlineLib("plan-order.mjs")).replace("/*@PROJECT_SEARCH@*/", () => inlineLib("project-search.mjs")).replace("/*@RUNBOOK@*/", () => inlineLib("runbook.mjs")).replace("/*@IMPACT@*/", () => inlineLib("impact-analysis.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@PLAN_ORDER@*/", () => inlineLib("plan-order.mjs")).replace("/*@PROJECT_SEARCH@*/", () => inlineLib("project-search.mjs")).replace("/*@RUNBOOK@*/", () => inlineLib("runbook.mjs")).replace("/*@IMPACT@*/", () => inlineLib("impact-analysis.mjs")).replace("/*@RELEASE@*/", () => inlineLib("release-gate.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.

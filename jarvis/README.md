@@ -448,6 +448,20 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 
 - The runbook (ADR-165) probes `#/impact` as its eleventh page.
 
+## Release readiness (ADR-169)
+
+- **`#/release`** runs three checks before a release, over facts already in the repository. Nothing is sent or published.
+
+- **Repository audit.** The skill tree's states (proved, tested, text rules, reference, needs attention) with the proved and tested shares, and the decision records and security reviews in the corpus with any missing ADR numbers. It is ready only when no skill needs attention.
+
+- **Regression gate.** Two snapshots of twelve counts: tests passed (server, page flows, live), mutants killed, and the failure counts (failed tests, surviving mutants, SkillSpector critical and high, failing contrast pairs, purity violations). Both start from this build's evidence files, and the page names them.
+  - A count that should grow may not fall, and every failure count must be 0.
+  - The release is «Rejected: a check regressed», «Proven progress» or «Steady».
+
+- **Release bundle.** The skills a change touched go through impact analysis (ADR-168), with an optional model and release notes. The page shows the pages and test commands joined, the model's licence and memory verdict, the notes line by line and a chain hash. Publishing the release stays «قيد الموافقة».
+
+- The API is `POST /api/w/:slug/release` with `{mode: "audit" | "regress" | "bundle", …}`. The same engine runs with `python3 .claude/skills/replica-release-gate/release_gate.py '{"mode": "audit"}' --data jarvis/app/data`. The runbook probes `#/release` as its twelfth page.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

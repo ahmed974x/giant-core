@@ -885,6 +885,42 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F49: release readiness (ADR-169): the repository audit, the regression gate and the release bundle.
+{
+  const press = id => page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click();
+  await go("#/release");
+  await page.waitForSelector("#f-rg-base");
+  const snap = JSON.parse(await page.locator("#f-rg-cand").inputValue());
+  ok(Object.keys(snap).length === 12 && snap.server_passed > 0 && snap.mutants_survived === 0 && (await page.locator('section[aria-labelledby="h-rg-r"] code.uw-hash').count()) === 7, "F49 both snapshots start from the seven evidence files of this build");
+  await press("h-rg-a");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("Ready: no skill needs attention").isVisible() && (await page.locator('section[aria-labelledby="h-rg-a"] tbody tr').count()) === 5, "F49 the audit is ready: no skill needs attention, five states listed");
+  await press("h-rg-r");
+  await page.waitForTimeout(250);
+  ok(await page.locator('section[aria-labelledby="h-rg-r"]').getByText("Steady").first().isVisible() && (await page.locator('section[aria-labelledby="h-rg-r"] tbody tr').count()) === 12, "F49 the same snapshot twice is steady, twelve checks");
+  await page.locator("#f-rg-cand").fill(JSON.stringify({ ...snap, server_passed: snap.server_passed - 1 }));
+  await press("h-rg-r");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("Rejected: a check regressed").isVisible(), "F49 one server test fewer is rejected as a regression");
+  await page.locator("#f-rg-cand").fill(JSON.stringify({ ...snap, server_passed: snap.server_passed + 5 }));
+  await press("h-rg-r");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("Proven progress").first().isVisible(), "F49 five more server tests with every failure count at 0 is proven progress");
+  await page.locator("#f-rg-cand").fill("{");
+  await press("h-rg-r");
+  await page.waitForTimeout(150);
+  ok(await page.getByText("Each snapshot is a JSON object.").isVisible(), "F49 a snapshot that is not JSON is not checked");
+  await press("h-rg-b");
+  await page.waitForTimeout(400);
+  const b = await page.locator('section[aria-labelledby="h-rg-b"]').innerText();
+  ok(b.includes("#/runbook") && b.includes("#/impact") && b.includes("58.41") && (await page.locator('section[aria-labelledby="h-rg-b"] .lock-line').count()) === 2 && /^[0-9a-f]{64}$/.test(await page.locator('section[aria-labelledby="h-rg-b"] .ia-hash code').last().textContent()), "F49 the bundle joins pages, the model's verdict and memory, the notes diff, a chain hash and two locked steps");
+  await page.locator("#f-rg-model").fill("codestral:22b");
+  await press("h-rg-b");
+  await page.waitForTimeout(300);
+  ok(await page.getByText("The licence forbids serving it to others").isVisible(), "F49 Codestral served to others is forbidden in the bundle too");
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "F49 the page does not scroll sideways");
+}
+
 // F48: impact analysis (ADR-168): a model against the catalog, a skill's blast radius and two texts by LCS.
 {
   const press = id => page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click();
@@ -926,7 +962,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.waitForSelector(".rb-stage");
   const body = await page.locator("#h-rb-r").locator("xpath=..").innerText();
   ok((await page.locator(".rb-stage").count()) === 6 && await page.getByText("Every stage ran").isVisible() && !body.includes("ops@example.org") && (await page.locator("#f-rb-secret").inputValue()) === "", "F47 six stages on the cleaned goal; the secret field is cleared");
-  ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 11 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and eleven page probes");
+  ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 12 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and twelve page probes");
   await page.locator("#f-rb-skills").fill("replica-polymath-engine, nope");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForTimeout(300);
@@ -1047,6 +1083,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
+    ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
     ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
     ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
