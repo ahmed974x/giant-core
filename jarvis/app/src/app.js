@@ -601,6 +601,8 @@
       // ADR-162 in sample mode: the same skill tree as the server, from the snapshot built into this page.
       // ADR-165 in sample mode: the same runbook as the server, over the snapshots built into this page.
       runbook(body) { try { return ok(Runbook.runbook(body, { corpus: DATA.corpus || { docs: [] }, deps: DATA.deps || {}, tree: DATA.tree || { skills: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
+      // ADR-168 in sample mode: the same impact analysis as the server, over the catalog and snapshots built into this page.
+      impact(body) { try { return ok(Impact.impactAnalysis(body, { catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-164 in sample mode: the same search as the server, over the corpus built into this page.
       docsSearch(body) { try { return ok(ProjectSearch.searchProject(DATA.corpus || { docs: [] }, body)); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-163 in sample mode: the same plan-order engine as the server, with the dependency snapshot built into this page.
@@ -1060,6 +1062,7 @@
       order: body => req("POST", w("/order"), body),
       docsSearch: body => req("POST", w("/docs/search"), body),
       runbook: body => req("POST", w("/runbook"), body),
+      impact: body => req("POST", w("/impact"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -2636,11 +2639,17 @@
     /*@PLAN_ORDER@*/
     return { planOrder, skillOrder, workbenchTree };
   })();
+  // ADR-168: impact analysis, the same as the server, over the engines inlined above.
+  const Impact = (() => {
+    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { searchProject } = ProjectSearch;
+    /*@IMPACT@*/
+    return { impactAnalysis, catalogJson };
+  })();
   // ADR-165: the runbook, the same as the server, over the engines inlined above.
   const Runbook = (() => {
     const { scrubPrivate, kAnonymity, planFossStack, universalAgent, sha256Hex } = LlmPlan;
     const { searchProject } = ProjectSearch, { planOrder, skillOrder, workbenchTree } = PlanOrder, { runWorkbench } = UnifiedWorkbench, { runPolymath } = Polymath, { buildTree } = SkillTree;
-    const solveMath = UniMath.solve, optics = Hyper.optics;
+    const solveMath = UniMath.solve, optics = Hyper.optics, { impactAnalysis } = Impact;
     /*@RUNBOOK@*/
     return { runbook, RB_STAGES };
   })();
@@ -4240,6 +4249,124 @@
         h("div", { class: "row" }, btn)),
       h("section", { class: "panel stack", "aria-labelledby": "h-rb-r" }, h("h2", { id: "h-rb-r", text: "Stages" }), out));
   };
+  /* ── Impact analysis (ADR-168): a model against the catalog, a skill's blast radius, two texts compared line by line ── */
+  const IA_VERDICT = {
+    allowed: ["ok", "The documented licence allows it"],
+    allowed_note: ["ok", "The documented licence allows it, with a note"],
+    commercial_licence: ["warn", "Serving it to others needs a separate commercial licence"],
+    read_licence: ["warn", "Custom terms: read the full licence file before any commercial use"],
+    non_production: ["warn", "The licence forbids production and commercial use"],
+    not_allowed: ["failed", "The licence forbids serving it to others"],
+    size_unnamed: ["warn", "The name does not say which size or version, so no licence is guessed"],
+    unknown: ["idle", "Not in the catalog"],
+  };
+  const IA_USE = { personal: "Personal, on this computer", service: "Serving the model to others" };
+  const IA_OP = { "=": "Kept", "-": "Removed", "+": "Added" };
+  function iaHash(label, value) { return h("p", { class: "row t-caption muted ia-hash" }, h("span", { text: label }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: value })); }
+  function iaCatalogBody(r) {
+    const muted = t => h("span", { class: "muted", text: t }), v = IA_VERDICT[r.verdict];
+    const parts = [h("p", { class: "row" }, badge(v[0], v[1]), badge("idle", "Not sent"),
+      r.verdict === "unknown" ? h("span", { class: "t-sm", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }) : null)];
+    if (r.note) parts.push(h("p", { class: "row t-sm" }, muted("Note in the licence"), h("bdi", { lang: "en", dir: "ltr", text: r.note })));
+    if (r.candidates.length) parts.push(h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Families this name could be" }, h("table", { class: "table" },
+      h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Licence" }))),
+      h("tbody", null, r.candidates.map(c => h("tr", null, h("td", null, h("code", { translate: "no", dir: "ltr", text: c.family })), h("td", { class: "wrap" }, h("bdi", { lang: "en", dir: "ltr", text: c.licence }))))))));
+    if (r.family) {
+      const f = r.family;
+      parts.push(h("dl", { class: "kv" },
+        h("dt", { text: "Family" }), h("dd", null, h("code", { translate: "no", dir: "ltr", text: f.family }), " ", h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: f.maker + " · " + f.origin })),
+        h("dt", { text: "Licence" }), h("dd", { class: "wrap" }, h("bdi", { lang: "en", dir: "ltr", text: f.licence })),
+        h("dt", { text: "Source" }), h("dd", { class: "wrap" }, h("a", { class: "ia-card", href: "https://huggingface.co/" + f.card, target: "_blank", rel: "noopener noreferrer", translate: "no", dir: "ltr", text: f.card }), " ", h("span", { class: "num t-caption", text: f.read }))));
+    }
+    const m = r.memory;
+    if (m) {
+      if (m.basis === "card") parts.push(h("p", { class: "row t-sm" }, muted("Weights"), uaNum(m.weights_gb), muted("GB"), m.fits === null ? null : m.fits ? badge("ok", "Fits the memory you typed") : badge("warn", "Does not fit the memory you typed")),
+        h("p", { class: "t-caption muted", text: "Parameters × bits ÷ 8 ÷ 10⁹, from the card's own count. Only the weights are counted, not the runtime's cache or overhead." }));
+      else if (m.basis === "other_card") parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), muted("The catalog's count belongs to another size of this family. Type the card's full name to estimate it.")));
+      else parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), h("span", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }), muted("The record gives no parameter count.")));
+    }
+    for (const st of r.steps) parts.push(h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pulling and running the model waits for Director 00's approval." })));
+    return h("div", { class: "stack" }, ...parts);
+  }
+  function iaBlastBody(r) {
+    const muted = t => h("span", { class: "muted", text: t }), code = n => h("code", { translate: "no", dir: "ltr", text: n });
+    return h("div", { class: "stack" },
+      h("h3", { text: "What it loads" }),
+      h("p", { class: "row" }, r.upstream.verified ? badge("ok", "Every edge kept") : badge("failed", "An edge is broken"), r.upstream.cycle.length ? badge("failed", "Cycle found") : badge("ok", "No cycle")),
+      h("ol", { class: "plist" }, r.upstream.layers.map((l, i) => h("li", { class: "row t-sm" }, muted("Layer"), uaNum(i + 1), ...l.map(code)))),
+      r.upstream.cycle.length ? h("p", { class: "row t-sm" }, muted("On a cycle, left out of the order"), ...r.upstream.cycle.map(code)) : null,
+      h("h3", { text: "What loads it" }),
+      r.dependents.length ? h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Skills that load it" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Skill" }), h("th", { scope: "col", text: "Steps away" }))),
+        h("tbody", null, r.dependents.map(d => h("tr", null, h("td", null, code(d.name)), h("td", { class: "num", text: String(d.depth) }))))))
+        : h("p", { class: "t-sm muted", text: "No other skill loads it." }),
+      h("h3", { text: "Pages to test again" }),
+      r.pages.length ? h("p", { class: "row t-sm" }, ...r.pages.map(p => h("a", { href: p.route, translate: "no", dir: "ltr", text: p.route }))) : h("p", { class: "t-sm muted", text: "No page is built on these skills." }),
+      h("h3", { text: "Test commands" }),
+      h("ul", { class: "plist" }, r.tests.map(t => h("li", { class: "stack t-sm" }, code(t.skill), t.command ? h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: t.command }) : muted("No tests in this skill"))),
+        r.shared_tests.map(c => h("li", { class: "t-sm" }, h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: c })))),
+      h("h3", { text: "Matching documents" }),
+      r.docs.found ? h("ol", { class: "plist" }, r.docs.top.map(x => h("li", { class: "row t-sm" }, h("bdi", { lang: "en", dir: "auto", translate: "no", text: x.title }), uaNum(x.score))))
+        : h("p", { class: "t-sm muted", text: "No document shares a word with it. Nothing is guessed." }));
+  }
+  function iaDiffBody(r) {
+    return h("div", { class: "stack" },
+      h("p", { class: "row t-sm" }, ...["added", "removed", "same"].map(k => h("span", { class: "row" }, h("span", { class: "muted", text: k === "added" ? "Added" : k === "removed" ? "Removed" : "Kept" }), uaNum(r.counts[k])))),
+      h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Line by line" }, h("table", { class: "table ia-diff" },
+        h("thead", null, h("tr", null, ...["Change", "First", "Second", "Line"].map(t => h("th", { scope: "col", text: t })))),
+        h("tbody", null, r.lines.map(x => h("tr", { class: "ia-op-" + (x.op === "+" ? "add" : x.op === "-" ? "del" : "same") },
+          h("td", { text: IA_OP[x.op] }), h("td", { class: "num", text: x.a === null ? "" : String(x.a) }), h("td", { class: "num", text: x.b === null ? "" : String(x.b) }),
+          h("td", null, h("code", { class: "ia-line", dir: "auto", "data-verbatim": "", text: x.text }))))))),
+      iaHash("First text", r.a_sha256), iaHash("Second text", r.b_sha256), iaHash("Difference", r.diff_sha256), iaHash("Chain hash", r.chain_sha256));
+  }
+  pages.impact = () => {
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const latin = el => { el.lang = "en"; el.translate = false; el.spellcheck = false; return el; };
+    const run = (btn, out, body, render) => async () => {
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      try { out.replaceChildren(render(await store.impact(body()))); } catch (err) { out.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not checked"), " ", h("span", { text: err.message }))); }
+      finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+    };
+    // 1. A model against the catalog.
+    const modelIn = latin(h("input", { class: "input", id: "f-ia-model", name: "model", autocomplete: "off", dir: "ltr", maxLength: 120, value: "openai/gpt-oss-120b" }));
+    const useIn = h("select", { class: "input", id: "f-ia-use", name: "use" }, ...Object.entries(IA_USE).map(([k, v]) => h("option", { value: k, text: v })));
+    useIn.value = "service";
+    const memIn = h("input", { class: "input", type: "number", id: "f-ia-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const bitsIn = h("input", { class: "input", type: "number", id: "f-ia-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
+    const cOut = h("div", { class: "stack", "aria-live": "polite" });
+    const cBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Check the model");
+    cBtn.addEventListener("click", run(cBtn, cOut, () => ({ mode: "catalog", model: modelIn.value, use: useIn.value,
+      ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}) }), iaCatalogBody));
+    // 2. A skill's blast radius.
+    const skillIn = latin(h("select", { class: "input", id: "f-ia-skill", name: "skill", dir: "ltr" }, ...Object.keys(DATA.deps || {}).sort().map(n => h("option", { value: n, text: n }))));
+    skillIn.value = "replica-reversal-engine";
+    const queryIn = h("input", { class: "input", type: "search", id: "f-ia-query", name: "query", autocomplete: "off", dir: "auto", maxLength: 300 });
+    const bOut = h("div", { class: "stack", "aria-live": "polite" });
+    const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Find the blast radius");
+    bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "blast", skill: skillIn.value, ...(queryIn.value.trim() ? { query: queryIn.value } : {}) }), iaBlastBody));
+    // 3. Two texts line by line.
+    const aIn = h("textarea", { class: "textarea", id: "f-ia-a", name: "first-text", rows: 5, autocomplete: "off", dir: "auto", maxLength: 20000 });
+    aIn.value = "Read the catalog\nCheck the licence\nPull the model";
+    const bIn = h("textarea", { class: "textarea", id: "f-ia-b", name: "second-text", rows: 5, autocomplete: "off", dir: "auto", maxLength: 20000 });
+    bIn.value = "Read the catalog\nCheck the licence file in full\nPull the model after approval";
+    const dOut = h("div", { class: "stack", "aria-live": "polite" });
+    const dBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Compare line by line");
+    dBtn.addEventListener("click", run(dBtn, dOut, () => ({ mode: "diff", a: aIn.value, b: bIn.value }), iaDiffBody));
+    return h("div", { class: "stack" },
+      pageHead("Impact analysis", "Three checks over facts already in this repository: what a model's documented licence allows and how much memory its weights take, what a skill loads and what would need testing again if it changed, and what changed between two texts or plans. Nothing is ranked, sent or installed."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-ia-c" }, h("h2", { id: "h-ia-c", text: "A model against the catalog" }),
+        field("f-ia-model", "Model name", modelIn, "A Hugging Face card or an Ollama name. A name that does not say which size is not guessed."),
+        field("f-ia-use", "Use", useIn),
+        h("div", { class: "grid-2" }, field("f-ia-mem", "Memory you have, in GB (optional)", memIn), field("f-ia-bits", "Bits per weight (optional)", bitsIn, "For example 4 for a 4-bit file, 16 for half precision.")),
+        h("div", { class: "row" }, cBtn), cOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-ia-b" }, h("h2", { id: "h-ia-b", text: "A skill's blast radius" }),
+        field("f-ia-skill", "Skill", skillIn), field("f-ia-query", "Words for the matching documents (optional)", queryIn, "Empty searches for the skill's own name."),
+        h("div", { class: "row" }, bBtn), bOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-ia-d" }, h("h2", { id: "h-ia-d", text: "Two texts, line by line" }),
+        h("div", { class: "grid-2" }, field("f-ia-a", "First text", aIn), field("f-ia-b", "Second text", bIn)),
+        h("div", { class: "row" }, dBtn), dOut));
+  };
   /* ── Project search (ADR-164): the repository's documents, three lexical rankers fused by RRF ── */
   const PS_KIND = { adr: "Decision record", review: "Security review", skill: "Skill" };
   const PS_RANKER = { body: "Text", field: "Headings", title: "Title letters" };
@@ -4735,7 +4862,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -4816,7 +4943,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

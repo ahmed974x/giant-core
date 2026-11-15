@@ -48,6 +48,7 @@ import { skillTree, buildTree } from "../lib/skill-tree.mjs";
 import { planOrder } from "../lib/plan-order.mjs";
 import { searchProject } from "../lib/project-search.mjs";
 import { runbook } from "../lib/runbook.mjs";
+import { impactAnalysis, catalogJson, licenceRule, weightsGb, lcsDiff, dependentsOf } from "../lib/impact-analysis.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -902,6 +903,34 @@ async function suite(mode, opts) {
   }
 
   {
+  // ADR-168: impact analysis over the catalog module and the snapshots on disk; the request cannot bring its own.
+  const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
+  const ictx = { catalog: catalogJson(MODEL_PROFILES), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json"), corpus: data("search-corpus.json") };
+  const same = (body, req) => JSON.stringify(body) === JSON.stringify(impactAnalysis(req, ictx));
+  const q1 = { mode: "catalog", model: "openai/gpt-oss-120b", use: "service", bits: 4, memory_gb: 80 };
+  const c1 = await post("/api/w/jarvis-studio/impact", { ...q1, catalog: [] });
+  ok(c1.status === 200 && c1.body.verdict === "allowed" && c1.body.memory.basis === "card" && c1.body.memory.weights_gb === 58.41 && c1.body.memory.fits === true && c1.body.steps.length === 1 && c1.body.steps[0].locked === true && c1.body.steps[0].status === "pending_approval" && c1.body.sent === false && same(c1.body, q1),
+    tag("impact: gpt-oss-120b served to others: Apache 2.0 allows it, 58.41 GB at 4 bits, running it stays locked, the engine's answer"), c1.body);
+  const v = async (model, use, bits) => (await post("/api/w/jarvis-studio/impact", { mode: "catalog", model, use, ...(bits ? { bits } : {}) })).body;
+  const q38 = await v("qwen3.8", "service"), ml4 = await v("mistralai/Mistral-Large-4-1T-A52B", "service", 4), cod = await v("codestral:22b", "service"), kim = await v("moonshotai/Kimi-K3", "service"), oss20 = await v("gpt-oss:20b", "personal", 4), ds3 = await v("deepseek-ai/DeepSeek-V3-0324", "service");
+  ok(q38.verdict === "size_unnamed" && q38.candidates.map(c => c.family).sort().join() === "qwen3.8-27b,qwen3.8-flash,qwen3.8-max" && q38.steps.length === 0, tag("impact: qwen3.8 names no size, so no licence is guessed"));
+  ok(ml4.verdict === "commercial_licence" && ml4.memory.basis === "no_count" && cod.verdict === "not_allowed" && kim.verdict === "read_licence" && ds3.verdict === "allowed_note" && /earlier checkpoints/.test(ds3.note), tag("impact: Mistral Large 4 needs a commercial licence, Codestral forbids serving, Kimi K3 needs its file read, DeepSeek V3 keeps its note"));
+  ok(oss20.memory.basis === "other_card" && oss20.memory.weights_gb === null, tag("impact: another size of a family is not estimated from the card's count"));
+  ok(JSON.stringify(data("model-catalog.json").families) === JSON.stringify(catalogJson(MODEL_PROFILES)) && data("model-catalog.json").families.length === 30, tag("impact: the catalog JSON on disk equals the module (30 families)"));
+  const qb = { mode: "blast", skill: "replica-reversal-engine" };
+  const bl = await post("/api/w/jarvis-studio/impact", { ...qb, deps: {}, tree: null });
+  ok(bl.status === 200 && same(bl.body, qb) && bl.body.dependents.some(d => d.name === "replica-runbook") && bl.body.dependents.some(d => d.name === "replica-impact-analysis") && bl.body.pages.some(p => p.route === "#/runbook") && bl.body.upstream.verified && bl.body.tests[0].command === "python3 -m unittest discover -s .claude/skills/replica-reversal-engine/tests" && bl.body.docs.found,
+    tag("impact: the reversal engine's blast radius comes from the snapshot on disk, never the request"), bl.body);
+  const qd = { mode: "diff", a: "one\ntwo\nthree", b: "one\n2\nthree\nfour" };
+  const df = await post("/api/w/jarvis-studio/impact", qd);
+  ok(df.status === 200 && same(df.body, qd) && df.body.counts.same === 2 && df.body.counts.removed === 1 && df.body.counts.added === 2 && /^[0-9a-f]{64}$/.test(df.body.chain_sha256) && df.body.a_sha256 === crypto.createHash("sha256").update("one\ntwo\nthree").digest("hex"), tag("impact: two texts compared by LCS with SHA-256 of each and of the chain"));
+  const bad = await Promise.all([{ mode: "x" }, { mode: "catalog", model: "", use: "personal" }, { mode: "catalog", model: "gpt-oss", use: "personal", bits: 64 }, { mode: "blast", skill: "nope" }, { mode: "diff", a: "x".repeat(20001), b: "" }].map(b => post("/api/w/jarvis-studio/impact", b)));
+  ok(bad.every(r => r.status === 400) && bad.map(r => r.body.detail).join() === "mode,model,bits,nope,a", tag("impact: bad requests are refused with 400 and the field"), bad.map(r => r.body));
+  const iev = (await j("/api/w/jarvis-studio/events")).body;
+  ok(iev.some(e => e.kind === "impact.catalog" && e.target === "allowed") && iev.some(e => e.kind === "impact.blast" && /^\d+ dependents, \d+ pages$/.test(e.target)) && iev.some(e => e.kind === "impact.diff" && e.target === "2 added, 1 removed") && !JSON.stringify(iev).includes("gpt-oss-120b") && !JSON.stringify(iev).includes("three"), tag("impact: events keep the verdict and counts, never the model name or the texts"));
+  }
+
+  {
   // ADR-165: the runbook over the three snapshots on disk.
   const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
   const rctx = { corpus: data("search-corpus.json"), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json") };
@@ -912,7 +941,7 @@ async function suite(mode, opts) {
     tag("runbook: six stages run in order on the cleaned goal, nothing is sent"), rb.body.stages?.map(s => s.status));
   ok(st.docs.summary.top[0].id === "docs/adr/ADR-153-oklch-bisection-contrast-healer.md" && st.order.summary.verified && st.order.summary.layers.at(-1).includes("replica-polymath-engine"), tag("runbook: the healer's record is found and the skills are ordered from the snapshot"));
   ok(st.tree.summary.status === "running" && rb.body.locked > 0 && st.plan.summary.tag === "[INFERENCE]", tag("runbook: locked steps keep the workbench tree running; the plan choice is [INFERENCE]"));
-  ok(st.routes.summary.ok === 9 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: nine page probes pass and diagnostics is server only"), st.routes.summary);
+  ok(st.routes.summary.ok === 10 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: ten page probes pass and diagnostics is server only"), st.routes.summary);
   ok(rb.body.chain_sha256 === runbook(rq, rctx).chain_sha256 && /^[0-9a-f]{64}$/.test(rb.body.chain_sha256), tag("runbook: the chain hash is the engine's"));
   const bad = await post("/api/w/jarvis-studio/runbook", { goal: "Contrast", skills: ["nope"] });
   ok(bad.status === 200 && bad.body.ready === false && bad.body.stages[2].status === "error" && (await post("/api/w/jarvis-studio/runbook", { goal: "" })).status === 400, tag("runbook: an unknown skill is a stage error, an empty goal is refused"));

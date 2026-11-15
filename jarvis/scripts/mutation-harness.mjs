@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as umParseOnly from "../server/lib/universal-math.mjs";
+import { MODEL_PROFILES } from "../server/lib/model-catalog.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
@@ -117,6 +118,7 @@ const TARGETS = [
   { file: "math-typeset.mjs", functions: ["textWidth", "textBox", "glue", "moveItem", "hbox", "fracBox", "supBox", "subBox", "delimBox", "sqrtBox", "numText", "layout", "integralBox", "matrixBox", "solutionLines", "boxesHold", "typesetSvg"], oracle: "typeset" },
   { file: "cinematic-presets.mjs", functions: ["frameOf", "goldenRect", "goldenSpiral", "spiralEye", "mirrorPoint", "arcsJoin", "arcsRound", "insideFrame", "closesOnEye", "composition", "sweepOf", "cinematicSvg", "compileCinematic", "presetList"], oracle: "cinematic" },
   { file: "runbook.mjs", functions: ["rbStage", "rbProbe", "probeRoutes", "rbDesign", "runOnce", "repairRequest", "runbook"], oracle: "runbook" },
+  { file: "impact-analysis.mjs", functions: ["catalogJson", "licenceRule", "weightsGb", "checkCatalog", "checkModel", "dependentsOf", "blastRadius", "lines", "lcsDiff", "diffTexts", "impactAnalysis"], oracle: "impact" },
   { file: "project-search.mjs", functions: ["psR", "byScore", "bm25Rank", "trigrams", "dice", "titleRank", "rrf", "snippet", "checkCorpus", "searchProject"], oracle: "search" },
   { file: "plan-order.mjs", functions: ["poR", "poName", "kahnOrder", "orderKept", "skillOrder", "poCheck", "poTick", "tickTree", "workbenchTree", "uctSelect", "planOrder"], oracle: "order" },
   { file: "skill-tree.mjs", functions: ["stR", "familyOf", "statusOf", "checkInput", "buildTree", "composeSkills", "skillTree"], oracle: "tree" },
@@ -129,10 +131,18 @@ const TARGETS = [
   { file: "passive-recon.mjs", functions: ["normalizeDomain", "parseRdap", "parseCt", "gradeHeaders", "parseSecurityTxt", "reconReport"], oracle: "recon" },
   { file: "reversal.mjs", functions: ["correctionVector", "sealed", "reversePlan", "hueOf", "rgbHue", "gradientColours", "fixGradients", "cssOf", "cssBlocks", "glassSelectors", "addCss", "fixContrast", "reverseTemplate"], oracle: "reversal" },
 ];
-const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch, runbook: oracleRunbook };
+const ORACLES = { fetch: oracleFetch, llmPlan: oracleLlmPlan, prover: oracleProver, reversal: oracleReversal, recon: oracleRecon, heal: oracleHeal, math: oracleMath, hyper: oracleHyper, metacodes: oracleMetacodes, typeset: oracleTypeset, cinematic: oracleCinematic, atlas: oracleAtlas, agent: oracleAgent, workbench: oracleWorkbench, polymath: oraclePolymath, tree: oracleTree, order: oracleOrder, search: oracleSearch, runbook: oracleRunbook, impact: oracleImpact };
 // Mutants that cannot change any answer, each reviewed by hand. They are listed in the evidence with the
 // reason and left out of the score's denominator; they are never counted as killed.
 const EQUIVALENT = [
+  // ADR-168: impact-analysis.mjs. The LCS mutants were also run against the real function on every pair of texts of up to 4 lines over 3 words (14,641 pairs): none differs.
+  { file: "impact-analysis.mjs", line: "note = open >= 0 && close > open ?", kind: "> -> >=", why: "\"(\" and \")\" are different characters, so their positions are never equal once open >= 0" },
+  { file: "impact-analysis.mjs", line: ".sort((a, b) => a.depth - b.depth || (a.name < b.name ? -1 : 1));", kind: "< -> <=", why: "the names are keys of one Map, so two names are never equal and < and <= agree" },
+  { file: "impact-analysis.mjs", line: ".sort((a, b) => a.depth - b.depth || (a.name < b.name ? -1 : 1));", kind: "1 -> 2", why: "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same" },
+  { file: "impact-analysis.mjs", line: "L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));", kind: "1 -> 2", why: "the table's extra row or column is never read: the loops and the walk stop at n and m" },
+  { file: "impact-analysis.mjs", line: "L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));", kind: "0 -> 1", why: "filling with 1 adds 1 to every length in the table, so every comparison keeps its answer" },
+  { file: "impact-analysis.mjs", line: "L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);", kind: "1 -> 2", why: "counting a match as 2 doubles every length in the table, so every comparison keeps its answer (n - 1 and m - 1 changed to 2 are killed by the golden file)" },
+  { file: "impact-analysis.mjs", line: "if (i < n && j < m && a[i] === b[j]) {", kind: "< -> <=", why: "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way" },
   // ADR-165: runbook.mjs.
   { file: "runbook.mjs", line: 'if (route === "#/universal") { const u = universalAgent({ mode: "catalog" }); return [u.claude.length > 0, u]; }', kind: "> -> >=", why: "the catalog always lists the five Claude models from the claude-api table, so the length is never 0" },
   { file: "runbook.mjs", line: 'if (route === "#/universal") { const u = universalAgent({ mode: "catalog" }); return [u.claude.length > 0, u]; }', kind: "0 -> 1", why: "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree" },
@@ -574,6 +584,18 @@ function oracleMath(m) {
   out.push(["roots nan neighbour", J([m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 2), m.findRoots(x => (x <= 0 ? x : NaN), null, -1, 1, 4), m.findRoots(x => (x < 0 ? NaN : x), null, -1, 1, 2)]) === "[[0],[0],[0]]"]);
 
   return out;
+}
+
+// ADR-168: impact analysis. The skill's golden file (the server's answers, refusals included) and the catalog as data.
+function oracleImpact(m) {
+  const J = x => JSON.stringify(x);
+  const g = JSON.parse(readFileSync(join(repo, ".claude", "skills", "replica-impact-analysis", "tests", "golden.json"), "utf8"));
+  const run = c => {
+    const ctx = c.ctx === undefined ? g.ctx : c.ctx === null ? undefined : { ...g.ctx, ...c.ctx };
+    try { return { response: m.impactAnalysis(c.request, ctx) }; } catch (e) { if (e.status !== 400) return { crash: String(e) }; return { error: { error: e.message, detail: e.detail ?? null } }; }
+  };
+  const cat = JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", "model-catalog.json"), "utf8")).families;
+  return [...g.cases.map((c, i) => ["golden " + i, J(run(c)) === J(c.error ? { error: c.error } : { response: c.response })]), ["catalog as data", J(m.catalogJson(MODEL_PROFILES)) === J(cat)]];
 }
 
 // ADR-165: the runbook. The skill's golden file (the server's answers, refusals included).

@@ -885,6 +885,37 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F48: impact analysis (ADR-168): a model against the catalog, a skill's blast radius and two texts by LCS.
+{
+  const press = id => page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click();
+  await go("#/impact");
+  await page.waitForSelector("#f-ia-model");
+  await press("h-ia-c");
+  await page.waitForSelector("#h-ia-c ~ div[aria-live] .badge");
+  const c = await page.locator("#h-ia-c").locator("xpath=..").innerText();
+  ok(c.includes("The documented licence allows it") && c.includes("58.41") && c.includes("Fits the memory you typed") && await page.locator("#h-ia-c").locator("xpath=..").locator(".lock-line").isVisible() && await page.locator("a.ia-card").getAttribute("rel") === "noopener noreferrer", "F48 gpt-oss-120b served to others: Apache 2.0 allows it, 58.41 GB of weights at 4 bits fit 80 GB, and running it stays locked");
+  await page.locator("#f-ia-model").fill("qwen3.8");
+  await press("h-ia-c");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("The name does not say which size or version, so no licence is guessed").isVisible() && (await page.locator("#h-ia-c").locator("xpath=..").locator("tbody tr").count()) === 3 && (await page.locator("#h-ia-c").locator("xpath=..").locator(".lock-line").count()) === 0, "F48 qwen3.8 names no size: three families listed, no licence guessed, nothing to run");
+  await page.locator("#f-ia-model").fill("mistralai/Mistral-Large-4-1T-A52B");
+  await press("h-ia-c");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("Serving it to others needs a separate commercial licence").isVisible() && await page.getByText("The record gives no parameter count.").isVisible(), "F48 Mistral Large 4 served to others needs a commercial licence, and its memory is not estimated");
+  await page.locator("#f-ia-model").fill("gpt-oss:20b");
+  await press("h-ia-c");
+  await page.waitForTimeout(250);
+  ok(await page.getByText("The catalog's count belongs to another size of this family. Type the card's full name to estimate it.").isVisible(), "F48 another size of a family is not estimated from the card's count");
+  await press("h-ia-b");
+  await page.waitForSelector("#h-ia-b ~ div[aria-live] ol");
+  const b = await page.locator("#h-ia-b").locator("xpath=..").innerText();
+  ok(b.includes("replica-runbook") && b.includes("#/runbook") && b.includes("python3 -m unittest discover -s .claude/skills/replica-reversal-engine/tests") && b.includes("node jarvis/server/test/test-server.mjs"), "F48 the reversal engine's blast radius names the runbook, its page and the real test commands");
+  await press("h-ia-d");
+  await page.waitForSelector(".ia-diff");
+  ok((await page.locator(".ia-diff tbody tr").count()) === 5 && (await page.locator(".ia-hash code").count()) === 4 && /^[0-9a-f]{64}$/.test(await page.locator(".ia-hash code").last().textContent()), "F48 two plans compared line by line with four SHA-256 hashes");
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "F48 the page does not scroll sideways");
+}
+
 // F47: the runbook (ADR-165) and the interface name «أثير برايم» / Aether Prime.
 {
   await go("#/runbook");
@@ -895,7 +926,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.waitForSelector(".rb-stage");
   const body = await page.locator("#h-rb-r").locator("xpath=..").innerText();
   ok((await page.locator(".rb-stage").count()) === 6 && await page.getByText("Every stage ran").isVisible() && !body.includes("ops@example.org") && (await page.locator("#f-rb-secret").inputValue()) === "", "F47 six stages on the cleaned goal; the secret field is cleared");
-  ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 10 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and ten page probes");
+  ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 11 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and eleven page probes");
   await page.locator("#f-rb-skills").fill("replica-polymath-engine, nope");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForTimeout(300);
@@ -1016,6 +1047,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
+    ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
     ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }],

@@ -43,6 +43,11 @@
   "replica-hyper-studio": [
    "replica-reversal-engine"
   ],
+  "replica-impact-analysis": [
+   "replica-plan-order",
+   "replica-project-search",
+   "replica-prompt-metacodes"
+  ],
   "replica-impeccable": [],
   "replica-long-horizon": [],
   "replica-passive-recon": [],
@@ -70,6 +75,7 @@
    "replica-formal-verify",
    "replica-foss-atlas",
    "replica-hyper-studio",
+   "replica-impact-analysis",
    "replica-plan-order",
    "replica-polymath-engine",
    "replica-project-search",

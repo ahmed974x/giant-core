@@ -156,6 +156,12 @@ const data = {
   tree: existsSync(join(dataDir, "skill-tree-input.json")) ? JSON.parse(readFileSync(join(dataDir, "skill-tree-input.json"), "utf8")) : null,
 };
 
+// ADR-168: the catalog as plain data for replica-impact-analysis, from the same module the server reads.
+const { MODEL_PROFILES } = await import("../server/lib/model-catalog.mjs");
+const { catalogJson } = await import("../server/lib/impact-analysis.mjs");
+const catalogFile = join(dataDir, "model-catalog.json");
+const catalogText = JSON.stringify({ format: "jarvis-model-catalog-v1", source: "jarvis/server/lib/model-catalog.mjs", families: catalogJson(MODEL_PROFILES) }, null, 1) + "\n";
+
 // 4. Assemble.
 let html = src("shell.tmpl");
 const fill = (marker, value) => {
@@ -193,7 +199,7 @@ const wfGraphSrc = readFileSync(join(here, "..", "server", "lib", "workflow-grap
 if (/<\/script/i.test(wfGraphSrc)) fail('workflow-graph.mjs contains "</script"; it would end the element early.');
 const cleanCloneSrc = readFileSync(join(here, "..", "server", "lib", "clean-clone.mjs"), "utf8").replace(/^export /gm, "").replace(/^import .*$/gm, "");
 if (/<\/script/i.test(cleanCloneSrc)) fail('clean-clone.mjs contains "</script"; it would end the element early.');
-fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@PLAN_ORDER@*/", () => inlineLib("plan-order.mjs")).replace("/*@PROJECT_SEARCH@*/", () => inlineLib("project-search.mjs")).replace("/*@RUNBOOK@*/", () => inlineLib("runbook.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
+fill("/*@APP_JS@*/", src("app.js").replace("/*@RULES@*/[]", () => "/* SKILLSPECTOR_RULES_START */" + JSON.stringify(rules).replace(/</g, "\\u003c") + "/* SKILLSPECTOR_RULES_END */").replace("/*@CLEAN_CLONE@*/", () => cleanCloneSrc).replace("/*@LLM_PLAN@*/", () => llmPlanSrc).replace("/*@WORKFLOW_GRAPH@*/", () => wfGraphSrc).replace("/*@COUNCIL_LIBS@*/", () => councilSrc).replace("/*@UNIVERSAL_MATH@*/", () => inlineLib("universal-math.mjs") + "\n" + inlineLib("math-typeset.mjs")).replace("/*@UNIFIED_WORKBENCH@*/", () => inlineLib("unified-workbench.mjs")).replace("/*@POLYMATH@*/", () => inlineLib("polymath-engine.mjs")).replace("/*@SKILL_TREE@*/", () => inlineLib("skill-tree.mjs")).replace("/*@PLAN_ORDER@*/", () => inlineLib("plan-order.mjs")).replace("/*@PROJECT_SEARCH@*/", () => inlineLib("project-search.mjs")).replace("/*@RUNBOOK@*/", () => inlineLib("runbook.mjs")).replace("/*@IMPACT@*/", () => inlineLib("impact-analysis.mjs")).replace("/*@HYPER_STUDIO@*/", () => inlineLib("hyper-studio.mjs") + "\n" + inlineLib("cinematic-presets.mjs")).replace("/*@MEMORY_LIBS@*/", () => bm25Src + "\n" + forgeSrc + "\n" + selfCheckSrc + "\n" + skillAuditSrc + "\n" + catalogSrc));
 
 // The policy comes from shell.tmpl; only the sha256 lists SkillSpector pinned in the last build are
 // carried over, so --check compares content and a policy change in the template still takes effect.
@@ -216,8 +222,10 @@ if (existsSync(out)) {
 if (process.argv.includes("--check")) {
   const current = existsSync(out) ? readFileSync(out, "utf8") : "";
   if (current !== html) { console.error("build-app: jarvis/app/index.html is stale. Rebuild, then run skillspector --fix."); process.exit(1); }
+  if (!existsSync(catalogFile) || readFileSync(catalogFile, "utf8") !== catalogText) { console.error("build-app: jarvis/app/data/model-catalog.json is stale. Rebuild."); process.exit(1); }
   console.log("build-app: jarvis/app/index.html is current.");
 } else {
   writeFileSync(out, html);
+  writeFileSync(catalogFile, catalogText);
   console.log(`wrote jarvis/app/index.html (${(html.length / 1024).toFixed(1)} KB, ${skills.length} skills, ${rules.length} rules)`);
 }

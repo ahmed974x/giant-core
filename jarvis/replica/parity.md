@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-166)
+# Parity: Jarvis (ADR-168)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -138,6 +138,11 @@ ADR-165 added one row, built and tested (`test-app.mjs` F47, `test-live.mjs`, se
 ADR-166 added one row, built and tested (`test-app.mjs` F47, server tests, skill unit tests, the mutation run):
 - the runbook's repaired plan and corrected CSS, and the name in every interface sentence.
 
+ADR-167 changed no row's state: the model catalog row now names 30 families, each with its source record.
+
+ADR-168 added one row, built and tested (`test-app.mjs` F48, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- impact analysis: a model against the catalog, a skill's blast radius and two texts compared line by line.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -146,12 +151,12 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (116 counted, must-haves 34 of 34 done)
+features 100.0  (117 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
 - overview                     100.0  (2 features)
-- agents                       100.0  (13 features)
+- agents                       100.0  (14 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
 - quality                      100.0  (13 features)
