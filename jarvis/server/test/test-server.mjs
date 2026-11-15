@@ -1561,16 +1561,30 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
   ok(rd.status === 200 && downs.join() === [...downs].sort((a, b) => b - a).join() && rd.body.radar.skills.every(s => ["rules", "tested"].includes(s.status)) && rd.body.radar.models_for_service.includes("gpt-oss") && !rd.body.radar.models_for_service.includes("codestral"), "architect: the radar lists rules and tested skills, most depended on first, and only families allowed to be served");
   const bads = await Promise.all([{ mode: "x" }, { mode: "seal", passcode: 5 }, { mode: "ui", passcode: CODE, font_scale: 121, density: "compact", numerals: "tabular" }, { mode: "compose", passcode: CODE, name: "x", description: "d", skills: ["a", "b"] }, { mode: "compose", passcode: CODE, name: "ok-name", description: "d", skills: ["replica-runbook"] }].map(ap));
   ok(bads.every(r => r.status === 400) && bads.map(r => r.body.detail).join() === "mode,passcode,font_scale,name,skills", "architect: bad requests are refused with 400 and the field");
+  // ADR-172: the export needs no seal, records its state, puts the preview scale in only while the seal is open,
+  // and leaves writing the file locked; the release export is the same document without the seal.
+  const exq = { mode: "export", skills: ["replica-impact-analysis", "replica-release-gate"], model: "openai/gpt-oss-120b", use: "service", bits: 4, context_tokens: 131072 };
+  const exLocked = await ap(exq), exOpen = await ap({ ...exq, passcode: CODE, font_scale: 110, density: "spacious", numerals: "proportional" });
+  const dl = JSON.parse(exLocked.body.export.json), dop = JSON.parse(exOpen.body.export.json);
+  ok(exLocked.status === 200 && dl.seal.state === "locked" && dl.ui === null && dop.seal.state === "unlocked" && dop.seal.audit_prefix === SEAL.slice(0, 5) && dop.ui.font_scale === 110 && dop.model.context.kv_gb === 1.21 && dop.model.context.attention === "hybrid_sliding"
+    && JSON.stringify(exOpen.body) === JSON.stringify(architectStudio({ ...exq, passcode: CODE, font_scale: 110, density: "spacious", numerals: "proportional" }, actx)) && !exOpen.body.export.json.includes(CODE) && !exOpen.body.export.json.includes(SEAL)
+    && exOpen.body.export.steps.every(st => st.locked && st.status === "pending_approval") && exOpen.body.export.steps.some(st => st.action === "write"),
+    "ADR-172 the architect export needs no seal, carries the preview scale only with it, never the code or the full hash, and leaves writing the file locked");
+  const rel = await fetch(A + "/api/w/jarvis-studio/release", { method: "POST", headers: AH, body: JSON.stringify(exq) }), rb = await rel.json(), rd2 = JSON.parse(rb.export.json);
+  const sorted = o => o === null || typeof o !== "object" ? true : Array.isArray(o) ? o.every(sorted) : Object.keys(o).join() === Object.keys(o).sort().join() && Object.values(o).every(sorted);
+  ok(rel.status === 200 && rd2.title === "Aether Prime release bundle" && !("seal" in rd2) && sorted(rd2) && rb.export.bundle_sha256 === crypto.createHash("sha256").update(rb.export.json).digest("hex") && rb.export.markdown_sha256 === crypto.createHash("sha256").update(rb.export.markdown).digest("hex")
+    && rb.export.markdown.includes("- Context memory: 1.21 GB for 131072 tokens (hybrid_sliding)") && rd2.release_chain_sha256 === rb.chain_sha256,
+    "ADR-172 the release export is key-sorted at every level, each text's SHA-256 is its own, and it names the release chain");
   const r0 = await fetch(A + "/api/w/jarvis-studio/events");
   const aev = await r0.json();
-  ok(aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
+  ok(aev.some(e => e.kind === "architect.export" && /^unlocked, \d+ locked$/.test(e.target)) && aev.some(e => e.kind === "release.export" && /^\d+ characters, 3 locked$/.test(e.target)) && aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
   await as.close();
 }
 // ADR-171: the five custom licences read in full, and each card's config.json, with the context memory they allow.
 {
   const att = MODEL_PROFILES.reduce((n, p) => ({ ...n, [p.config.attention]: (n[p.config.attention] || 0) + 1 }), {});
-  ok(att.gqa === 9 && att.mla === 2 && att.not_estimated === 16 && att.not_read === 3 && MODEL_PROFILES.every(p => p.config.read === "2026-11-15" && (p.config.attention === "not_read" ? p.config.sha256 === null : /^[0-9a-f]{16}$/.test(p.config.sha256))),
-    "ADR-171 30 configs: 9 grouped-query, 2 latent, 16 mixed and not estimated, 3 gated and not read, each with its file's hash", att);
+  ok(att.gqa === 9 && att.mla === 2 && att.hybrid_sliding === 2 && att.not_estimated === 14 && att.not_read === 3 && MODEL_PROFILES.every(p => p.config.read === "2026-11-15" && (p.config.attention === "not_read" ? p.config.sha256 === null : /^[0-9a-f]{16}$/.test(p.config.sha256))),
+    "ADR-171 30 configs: 9 grouped-query, 2 latent, 2 documented sliding and full (ADR-172), 14 mixed and not estimated, 3 gated and not read, each with its file's hash", att);
   const T = Object.fromEntries(MODEL_PROFILES.filter(p => p.terms).map(p => [p.family, p.terms]));
   ok(Object.keys(T).sort().join() === "glm-5.3,kimi-k3,kimi-k3.1-pro,qwen3.8-flash,qwen3.8-max" && T["kimi-k3"].revenue_usd_12m === 20000000 && T["glm-5.3"].revenue_usd_12m === 10000000000 && T["glm-5.3"].requirement === "security_review" && T["qwen3.8-max"].revenue_usd_12m === 50000000 && T["qwen3.8-flash"].when === "always" && T["qwen3.8-flash"].businesses.includes("ai_work_assistant") && T["glm-5.3"].internal_use_exempt === null && T["kimi-k3"].display_name_over.monthly_active_users === 100000000,
     "ADR-171 the five custom licences carry the terms read in full: Kimi's US$20M agreement, GLM-5.3's US$10B security review, Qwen3.8-Max's US$50M licence, Qwen Flash's licence at any revenue");
@@ -1585,8 +1599,22 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
     && r({ model: "deepseek-ai/DeepSeek-R1-0528", use: "personal", bits: 4, context_tokens: 163841 }).exceeds === true && r({ model: "deepseek-ai/DeepSeek-R1-0528", use: "personal", bits: 4, context_tokens: 163840 }).exceeds === false,
     "ADR-171 weights and context add up, and a context one token past the card's documented maximum is flagged");
   const why = m => { const c = r({ model: m, use: "personal", bits: 4, context_tokens: 8192 }); return c.basis + ":" + c.reason; };
-  ok(why("openai/gpt-oss-120b") === "not_estimated:sliding_and_full" && why("moonshotai/Kimi-K3") === "not_estimated:linear_attention" && why("zai-org/GLM-5.3") === "not_estimated:sparse_index" && why("meta-llama/Llama-3.3-70B-Instruct") === "not_read:gated" && why("gpt-oss:20b") === "other_card:null" && impactAnalysis({ mode: "catalog", model: "qwen3.8", use: "personal", context_tokens: 8192 }, ctx).context === null,
+  ok(why("google/gemma-4-31B-it") === "not_estimated:sliding_and_full" && why("moonshotai/Kimi-K3") === "not_estimated:linear_attention" && why("zai-org/GLM-5.3") === "not_estimated:sparse_index" && why("meta-llama/Llama-3.3-70B-Instruct") === "not_read:gated" && why("gpt-oss:20b") === "other_card:null" && impactAnalysis({ mode: "catalog", model: "qwen3.8", use: "personal", context_tokens: 8192 }, ctx).context === null,
     "ADR-171 the context memory is not estimated for mixed attention, a gated card, another size or a name without a size, and each says why");
+}
+// ADR-172: context memory for the two cards whose config.json names every layer as full or sliding attention.
+{
+  const oss = MODEL_PROFILES.find(p => p.card === "openai/gpt-oss-120b").config, olmo = MODEL_PROFILES.find(p => p.card === "allenai/Olmo-3.1-32B-Instruct").config;
+  ok(oss.attention === "hybrid_sliding" && oss.full_layers === 18 && oss.sliding_layers === 18 && oss.sliding_window === 128 && oss.layers === 36 && olmo.full_layers === 16 && olmo.sliding_layers === 48 && olmo.sliding_window === 4096 && olmo.head_dim === 128 && olmo.head_dim_derived === true,
+    "ADR-172 gpt-oss (18 full and 18 sliding layers, window 128) and Olmo 3.1 (16 and 48, window 4096, head size 5120 / 40) as their config.json files state");
+  const full = c => ({ ...c, attention: "gqa" }), kv = (c, t) => kvCacheGb(c, t, 4096, 16);
+  ok(kvCacheGb(oss, 131072, 1, 4) === 1.21 && kvCacheGb(olmo, 65536, 1, 4) === 1.28 && kv(oss, 128) === kv(full(oss), 128) && kv(oss, 100) === kv(full(oss), 100) && kv(oss, 129) < kv(full(oss), 129)
+    && kv(olmo, 4096) === kv(full(olmo), 4096) && kv(olmo, 4097) < kv(full(olmo), 4097) && Math.round((kv(olmo, 8192) - kv(olmo, 4096)) * 100) / 100 === kv(full({ ...olmo, layers: 16 }), 4096),
+    "ADR-172 sliding layers keep at most their window: up to the window the sum equals full attention, past it the sliding layers stop growing");
+  const blocked = MODEL_PROFILES.filter(p => p.config.attention === "not_estimated");
+  ok(blocked.length === 14 && blocked.every(p => Array.isArray(p.config.blocking) && p.config.blocking.length >= 1) && MODEL_PROFILES.find(p => p.card === "google/gemma-4-31B-it").config.blocking.includes("num_global_key_value_heads") && MODEL_PROFILES.find(p => p.card === "moonshotai/Kimi-K3").config.blocking.join() === "linear_attn_config"
+    && MODEL_PROFILES.filter(p => p.config.attention !== "not_estimated").every(p => p.config.blocking === null),
+    "ADR-172 each card still not estimated names the config.json fields that stop it");
 }
 // ADR-167: every family names the Hugging Face record it was read from, that record's date, its parameter count or null, and the day read.
 ok(MODEL_PROFILES.every(p => /^[\w.-]+\/[\w.-]+$/.test(p.card) && profileOf(p.card) === p && /^\d{4}-\d{2}-\d{2}$/.test(p.created) && p.read === "2026-11-15" && (p.params === null || Number.isInteger(p.params) && p.params > 1e9)) && new Set(MODEL_PROFILES.map(p => p.family)).size === 30, "ADR-167 each of the 30 families names its own card, its date and its size, and the card's name finds that family");

@@ -30,10 +30,10 @@ sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-plan-order
 from impact_analysis import dependents_of, licence_rule, load_context  # noqa: E402
 from plan_order import skill_order  # noqa: E402
 from prompt_metacodes import js_json  # noqa: E402
-from release_gate import release_gate  # noqa: E402
+from release_gate import export_bundle, release_document, release_gate  # noqa: E402
 from skill_tree import build_tree  # noqa: E402
 
-AS_MODES = ["seal", "ui", "compose", "radar"]
+AS_MODES = ["seal", "ui", "compose", "radar", "export"]
 AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:"
 AS_DENSITY = {"compact": 4, "balanced": 8, "spacious": 12}
 AS_NUMERALS = {"tabular": "tabular-nums slashed-zero", "proportional": "proportional-nums slashed-zero"}
@@ -158,12 +158,31 @@ def upgrade_radar(ctx):
     return {"skills": skills, "counts": {"rules": sum(1 for s in skills if s["status"] == "rules"), "tested": sum(1 for s in skills if s["status"] == "tested")}, "models_for_service": models}
 
 
+def export_head(seal, ui):
+    """ADR-172: the export's opening Markdown sections: the seal's state and, when it was checked, the preview scale."""
+    lines = ["## Architect seal", "- State: " + seal["state"], "- Audit prefix: " + (seal["audit_prefix"] if seal["audit_prefix"] is not None else "none"), ""]
+    if ui:
+        lines += ["## Preview scale", "- Font scale: " + js_json(ui["font_scale"]) + " percent", "- Density: " + ui["density"], "- Numerals: " + ui["numerals"], "- Settings SHA-256: " + ui["config_sha256"], ""]
+    return lines
+
+
+def architect_export(r, ctx, s):
+    """ADR-172: the release export with the seal's state and audit prefix and, while the seal is open and a scale is
+    sent, the checked preview scale. No seal is needed to export; writing the file stays a locked approval."""
+    ui = ui_tokens(r) if s["unlocked"] and "font_scale" in r else None
+    bundle, doc = release_document(r, ctx)
+    seal = {"state": s["state"], "audit_prefix": s["audit_prefix"]}
+    scale = ui and {"font_scale": ui["font_scale"], "density": ui["density"], "numerals": ui["numerals"], "px": ui["px"], "config_sha256": ui["config_sha256"]}
+    ex = export_bundle({**doc, "title": "Aether Prime architect bundle", "seal": seal, "ui": scale}, export_head(seal, scale))
+    return {**ex, "release_chain_sha256": bundle["chain_sha256"], "steps": doc["steps"]}
+
+
 def architect_studio(req, ctx=None):
     r = req if isinstance(req, dict) else _fail("Send an object with a mode.", "")
     c = ctx if isinstance(ctx, dict) else {}
     mode = r.get("mode")
     if not isinstance(mode, str) or mode not in AS_MODES:
-        _fail("The mode is seal, ui, compose or radar.", "mode")
+        _fail("The mode is seal, ui, compose, radar or export.", "mode")
     s = check_seal(r, c.get("seal"))
     seal = {"configured": s["configured"], "unlocked": s["unlocked"], "state": s["state"], "audit_prefix": s["audit_prefix"]}
     out = {"mode": mode, "seal": seal, "locks": _locks()}
@@ -177,8 +196,10 @@ def architect_studio(req, ctx=None):
         out["compose"] = compose_skill(r, c)
     if mode == "radar":
         out["radar"] = upgrade_radar(c)
+    if mode == "export":
+        out["export"] = architect_export(r, c, s)
     comp = out.get("compose")
-    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]]
+    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]] + ([out["export"]["bundle_sha256"]] if "export" in out else [])
     chain = "0" * 64
     for x in sections:
         chain = _sha(chain + _sha(js_json(x)))

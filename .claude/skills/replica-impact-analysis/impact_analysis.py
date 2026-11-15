@@ -106,7 +106,13 @@ def weights_gb(params, bits):
 
 def kv_cache_gb(c, tokens, batch, kv_bits):
     """The context (KV cache) memory in GB of 10^9 bytes, to two decimals, as JavaScript computes it: gqa counts
-    2 x layers x kv_heads x head_dim values per token, mla layers x (kv_lora_rank + qk_rope_head_dim)."""
+    2 x layers x kv_heads x head_dim values per token, mla layers x (kv_lora_rank + qk_rope_head_dim). ADR-172: hybrid_sliding
+    counts 2 x kv_heads x head_dim x (full_layers x tokens + sliding_layers x min(tokens, sliding_window)) values, a whole
+    number below 2^53 that both languages hold exactly."""
+    if c["attention"] == "hybrid_sliding":
+        values = 2 * c["kv_heads"] * c["head_dim"] * (c["full_layers"] * tokens + c["sliding_layers"] * min(tokens, c["sliding_window"]))
+        x = math.floor(float(values) * batch * kv_bits / 8 / 1e9 * 100 + 0.5) / 100
+        return int(x) if x.is_integer() else x
     per_token = c["layers"] * (c["kv_lora_rank"] + c["qk_rope_head_dim"]) if c["attention"] == "mla" else 2 * c["layers"] * c["kv_heads"] * c["head_dim"]
     x = math.floor(float(per_token) * tokens * batch * kv_bits / 8 / 1e9 * 100 + 0.5) / 100
     return int(x) if x.is_integer() else x
@@ -136,6 +142,7 @@ def context_memory(f, same_card, tokens, batch, kv_bits, weights, memory_gb):
     total = _r2(weights + kv) if kv is not None and weights is not None else None
     reason = c.get("reason") if c and basis in ("not_estimated", "not_read") else None
     return {"tokens": tokens, "batch_size": batch, "kv_bits": kv_bits, "max_context": mx, "exceeds": None if mx is None else tokens > mx, "basis": basis, "reason": reason,
+            "blocking": c.get("blocking") if basis == "not_estimated" else None, "sliding_window": c.get("sliding_window") if basis == "card" else None,
             "attention": c.get("attention") if c else None, "kv_gb": kv, "total_gb": total, "fits": None if total is None or memory_gb is None else total <= memory_gb}
 
 

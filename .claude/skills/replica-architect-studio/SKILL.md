@@ -20,5 +20,6 @@ python3 -m unittest discover -s .claude/skills/replica-architect-studio/tests
 - Installing, outbound calls, running a model and publishing stay locked approvals in every state.
 - The preview scale changes text sizes and spacing in the studio's preview only. Nothing goes below 12 px, the radii stay concentric (outer = inner + padding) and colours do not change.
 - The composite draft hands the skills, the model and the notes to plan order and release readiness, which check them. Writing the draft into `.claude/skills` is a locked install approval.
+- The export (ADR-172) is release readiness's export with the seal's state and its five-character audit prefix and, only while the seal is open, the checked preview scale. It needs no seal, carries neither the code nor the full hash, and writing it to a file stays a locked step.
 - The radar reads the skill tree's states and the dependency snapshot (EXTRACTED). A tested skill needs a golden file and a full mutation run to be proved; a skill of text rules needs tests first.
 - Same answers and chain hash as `jarvis/server/lib/architect-studio.mjs`: `tests/golden.json`.

@@ -65,7 +65,11 @@ export function weightsGb(params, bits) {
 //   gqa  2 x layers x kv_heads x head_dim values per token (a key and a value per head and layer)
 //   mla  layers x (kv_lora_rank + qk_rope_head_dim) values per token (the compressed latent and the rope key)
 // times tokens x batch x kv_bits / 8 bytes. Runtime buffers and the weights are not counted here.
+// ADR-172: hybrid_sliding counts 2 x kv_heads x head_dim values for each cached token of each layer: a full layer keeps
+// every token, a sliding layer at most its window, so the values are 2 x kv_heads x head_dim x (full_layers x tokens +
+// sliding_layers x min(tokens, sliding_window)). That product is a whole number below 2^53, so both languages hold it exactly.
 export function kvCacheGb(c, tokens, batch, kvBits) {
+  if (c.attention === "hybrid_sliding") return Math.round(2 * c.kv_heads * c.head_dim * (c.full_layers * tokens + c.sliding_layers * Math.min(tokens, c.sliding_window)) * batch * kvBits / 8 / 1e9 * 100) / 100;
   const perToken = c.attention === "mla" ? c.layers * (c.kv_lora_rank + c.qk_rope_head_dim) : 2 * c.layers * c.kv_heads * c.head_dim;
   return Math.round(perToken * tokens * batch * kvBits / 8 / 1e9 * 100) / 100;
 }
@@ -79,6 +83,7 @@ export function contextMemory(f, sameCard, tokens, batch, kvBits, weights, memor
   const kv = basis === "card" ? kvCacheGb(c, tokens, batch, kvBits) : null;
   const total = kv !== null && weights !== null ? Math.round((weights + kv) * 100) / 100 : null;
   return { tokens, batch_size: batch, kv_bits: kvBits, max_context: max, exceeds: max === null ? null : tokens > max, basis, reason: c && basis === "not_estimated" ? c.reason : basis === "not_read" && c ? c.reason : null,
+    blocking: basis === "not_estimated" ? c.blocking ?? null : null, sliding_window: basis === "card" ? c.sliding_window ?? null : null,
     attention: c ? c.attention : null, kv_gb: kv, total_gb: total, fits: total === null || memoryGb === null ? null : total <= memoryGb };
 }
 

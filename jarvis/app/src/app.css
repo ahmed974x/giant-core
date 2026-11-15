@@ -675,3 +675,5 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .as-preview .table-scroll { border-radius: var(--as-radius-inner, 12px); }
 .as-preview .as-num { font-family: var(--font-mono, ui-monospace, monospace); font-variant-numeric: var(--as-numerals, tabular-nums slashed-zero); direction: ltr; unicode-bidi: isolate; }
 .as-draft { max-block-size: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* ADR-172: the exported bundle, read only; long lines wrap inside the box, never the page. */
+.ex-text { inline-size: 100%; min-height: 280px; white-space: pre-wrap; overflow-wrap: anywhere; }

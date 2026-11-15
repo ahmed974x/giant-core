@@ -12,15 +12,18 @@
 //            stays a locked approval. Needs the seal.
 //   radar    the skills still in "text rules" or "tested", most depended on first, with what each needs next,
 //            and the catalog families whose documented licence allows serving them to others.
+//   export   ADR-172: the release export (release readiness) with the seal's state and audit prefix and, when the
+//            seal is open and a scale is sent, the checked preview scale, as key-sorted JSON and Markdown with the
+//            SHA-256 of each. No seal is needed to export; writing the file stays a locked approval.
 // The engines called here keep their own checks. Pure: no network, no process, no file. The same answers come
 // from .claude/skills/replica-architect-studio/architect_studio.py (tests/golden.json).
 import { sha256Hex } from "./snapshot.mjs";
 import { skillOrder } from "./plan-order.mjs";
 import { buildTree } from "./skill-tree.mjs";
 import { dependentsOf, licenceRule } from "./impact-analysis.mjs";
-import { releaseGate } from "./release-gate.mjs";
+import { exportBundle, releaseDocument, releaseGate } from "./release-gate.mjs";
 
-export const AS_MODES = ["seal", "ui", "compose", "radar"];
+export const AS_MODES = ["seal", "ui", "compose", "radar", "export"];
 export const AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:";
 export const AS_DENSITY = { compact: 4, balanced: 8, spacious: 12 };
 export const AS_NUMERALS = { tabular: "tabular-nums slashed-zero", proportional: "proportional-nums slashed-zero" };
@@ -92,10 +95,26 @@ export function upgradeRadar(ctx) {
   return { skills, counts: { rules: skills.filter(s => s.status === "rules").length, tested: skills.filter(s => s.status === "tested").length }, models_for_service: models };
 }
 
+// ADR-172: the export's opening Markdown sections: the seal's state and, when it was checked, the preview scale.
+export function exportHead(seal, ui) {
+  const lines = ["## Architect seal", "- State: " + seal.state, "- Audit prefix: " + (seal.audit_prefix ?? "none"), ""];
+  if (ui) lines.push("## Preview scale", "- Font scale: " + ui.font_scale + " percent", "- Density: " + ui.density, "- Numerals: " + ui.numerals, "- Settings SHA-256: " + ui.config_sha256, "");
+  return lines;
+}
+
+// ADR-172: the export. The preview scale is checked only while the seal is open; otherwise it is left out.
+export function architectExport(r, ctx, s) {
+  const ui = s.unlocked && r.font_scale !== undefined ? uiTokens(r) : null;
+  const { bundle, doc } = releaseDocument(r, ctx);
+  const seal = { state: s.state, audit_prefix: s.audit_prefix }, scale = ui && { font_scale: ui.font_scale, density: ui.density, numerals: ui.numerals, px: ui.px, config_sha256: ui.config_sha256 };
+  const ex = exportBundle({ ...doc, title: "Aether Prime architect bundle", seal, ui: scale }, exportHead(seal, scale));
+  return { ...ex, release_chain_sha256: bundle.chain_sha256, steps: doc.steps };
+}
+
 export function architectStudio(req, ctx) {
   const r = req && typeof req === "object" && !Array.isArray(req) ? req : asFail("Send an object with a mode.", "");
   const c = ctx ?? {};
-  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose or radar.", "mode");
+  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose, radar or export.", "mode");
   const s = checkSeal(r, c.seal);
   const seal = { configured: s.configured, unlocked: s.unlocked, state: s.state, audit_prefix: s.audit_prefix };
   const out = { mode, seal, locks: locks() };
@@ -104,6 +123,7 @@ export function architectStudio(req, ctx) {
   if (mode === "ui") out.ui = uiTokens(r);
   if (mode === "compose") out.compose = composeSkill(r, c);
   if (mode === "radar") out.radar = upgradeRadar(c);
-  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks];
+  if (mode === "export") out.export = architectExport(r, c, s);
+  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks, ...(out.export ? [out.export.bundle_sha256] : [])];
   return { ...out, chain_sha256: sections.reduce((h, x) => sha256Hex(h + sha256Hex(JSON.stringify(x))), "0".repeat(64)), sent: false };
 }

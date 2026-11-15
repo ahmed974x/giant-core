@@ -1045,7 +1045,7 @@
    "kind": "screen",
    "label": "atlas",
    "file": "jarvis/app/src/app.js",
-   "line": 4984,
+   "line": 5032,
    "nav": true
   },
   {
@@ -1061,7 +1061,7 @@
    "kind": "screen",
    "label": "diagnostics",
    "file": "jarvis/app/src/app.js",
-   "line": 5052,
+   "line": 5100,
    "nav": true
   },
   {
@@ -1069,7 +1069,7 @@
    "kind": "screen",
    "label": "docs",
    "file": "jarvis/app/src/app.js",
-   "line": 4661,
+   "line": 4709,
    "nav": true
   },
   {
@@ -1093,7 +1093,7 @@
    "kind": "screen",
    "label": "impact",
    "file": "jarvis/app/src/app.js",
-   "line": 4604,
+   "line": 4652,
    "nav": true
   },
   {
@@ -1125,7 +1125,7 @@
    "kind": "screen",
    "label": "memory",
    "file": "jarvis/app/src/app.js",
-   "line": 5087,
+   "line": 5135,
    "nav": true
   },
   {
@@ -1149,7 +1149,7 @@
    "kind": "screen",
    "label": "order",
    "file": "jarvis/app/src/app.js",
-   "line": 4703,
+   "line": 4751,
    "nav": true
   },
   {
@@ -1165,7 +1165,7 @@
    "kind": "screen",
    "label": "polymath",
    "file": "jarvis/app/src/app.js",
-   "line": 4827,
+   "line": 4875,
    "nav": true
   },
   {
@@ -1181,7 +1181,7 @@
    "kind": "screen",
    "label": "release",
    "file": "jarvis/app/src/app.js",
-   "line": 4445,
+   "line": 4466,
    "nav": true
   },
   {
@@ -1277,7 +1277,7 @@
    "kind": "screen",
    "label": "workbench",
    "file": "jarvis/app/src/app.js",
-   "line": 4912,
+   "line": 4960,
    "nav": true
   },
   {
@@ -2039,6 +2039,8 @@
     "skill_draft",
     "compose_skill",
     "upgrade_radar",
+    "export_head",
+    "architect_export",
     "architect_studio",
     "main"
    ]
@@ -2676,6 +2678,12 @@
     "audit_repo",
     "regress_gate",
     "release_bundle",
+    "canonical",
+    "model_section",
+    "bundle_markdown",
+    "export_bundle",
+    "release_document",
+    "release_export",
     "release_gate",
     "main"
    ]
@@ -4448,9 +4456,9 @@
   }
  ],
  "files": {
-  "jarvis/app/src/app.js": "187f2ade4edca93a3fe597aea7b1ba804f9a1a82c6b778b5e8f3d1276fb23660",
+  "jarvis/app/src/app.js": "61ba770b1585f549f1f60b45fa19aa05a7b268eb045a0c1928e7f4676ea3b00a",
   "jarvis/app/src/shell.tmpl": "01d72aa60ad29ea3ab8f97a68ec44070f899e7240bb0521b67f6de8d41ea83c0",
-  "jarvis/server/server.mjs": "d834694a240a9567142c19037323228665f1d717e4c96cb65a7e26b4b5bcd7be",
+  "jarvis/server/server.mjs": "a12760c83000fd0609b0e15577581e733205b258b257ddeb3743b57af70e111f",
   "jarvis/server/lib/schema-sqlite.sql": "fc5c90f4c285cd9fa8576e9a038414b996c3f2198092e774f138d09860f8304c",
   "jarvis/server/lib/founder-gate.mjs": "931899a4801450e75fd77fe94e8cdd1491cd7c9d7f1850bf2ad8bf39ebe7eea7",
   "jarvis/server/lib/open-web-search.mjs": "997dfa5a2001cb0c7dd3d5c1868d07eab1fc7f6d080d43e32cb57234f7d2cef5",
@@ -4493,8 +4501,8 @@
   ".claude/skills/param/SKILL.md": "2f8f2208fb616ad41d268be0c5213cb7af88a6dfab7dfe1cba84f8b85fae686d",
   ".claude/skills/quant-microstructure-gex/SKILL.md": "52ca41f9e39ce6b1f73162c628052ff3d860c05cc85f5cfca3d9595123c65885",
   ".claude/skills/replica-architect/SKILL.md": "58c7c7a60e6d2d053d50f3c15d15e0972505988d7178a5e42f6fde4f0e396be2",
-  ".claude/skills/replica-architect-studio/SKILL.md": "100c86c5383ebdd6c605787b4a19c671ca442033186bcede44f05a10412a1cee",
-  ".claude/skills/replica-architect-studio/architect_studio.py": "633e2612eacfe0aecbf9b015023266ac05ccd4a93d14b48be85f103b6d426fab",
+  ".claude/skills/replica-architect-studio/SKILL.md": "7fb1c608a92cc3d38847b30f810e25210a353535dbe94d8706f8f3c4b77373ce",
+  ".claude/skills/replica-architect-studio/architect_studio.py": "72567d87452cc18ce96af152a480167ba436a73b060f7ac03308b5aac076ab03",
   ".claude/skills/replica-backend/SKILL.md": "6cd20c2626c0f760a12c283ca6cd6e9e83a5170b87fd9223e77c2b3246da42d3",
   ".claude/skills/replica-build/SKILL.md": "f62425258b93404ad561a5b999d3cd079e2a09765809403779caae047ac64cbd",
   ".claude/skills/replica-cyber-recon/SKILL.md": "88139330ad51482eb3f4e8e9df0c4878d51e7b44143966812a170b257e0f8bf0",
@@ -4531,8 +4539,8 @@
   ".claude/skills/replica-hyper-studio/SKILL.md": "9ba43188ba7823c8706dabf0af23226435f36388830d1a28fe69a5134c7bc854",
   ".claude/skills/replica-hyper-studio/cinematic_presets.py": "63951597cd55113bc63dc603aed91b1958aab3c31422aa0415668ff263b31647",
   ".claude/skills/replica-hyper-studio/hyper_studio.py": "f975e04169d69144b2a7c611391b8ce1c9342cd75bbecbc8101ac0d9363312f0",
-  ".claude/skills/replica-impact-analysis/SKILL.md": "b9da0258e27de8c1a81d8605938ea2425e0e41fd88401f8139fb986ab7114873",
-  ".claude/skills/replica-impact-analysis/impact_analysis.py": "042d4d16c29de25a0c51b130878389fbf2656a113030a70257b7a8ded6bcdf1d",
+  ".claude/skills/replica-impact-analysis/SKILL.md": "ecc985004d57d70a92756faeafa2e18374199fb789b4de943d5b3229e5be122c",
+  ".claude/skills/replica-impact-analysis/impact_analysis.py": "d2e716fd1de5878c42f0e369b6b2c95b1047cb6eb78136ae944e52ade65a183e",
   ".claude/skills/replica-impeccable/SKILL.md": "acdaedf5863d6159d441e5f53d54a33ca7c56c82c57b13f4455f166910f3b47b",
   ".claude/skills/replica-impeccable/slop_guard.py": "acbeee13b48b79a0f6ecdc8377f9a54fee9bcff7f2b266bd8068bc130488bd53",
   ".claude/skills/replica-long-horizon/SKILL.md": "2f73eb49ad0353b9e2679a99bbb05f87f24e9ea28280e6cf44d5737b03f8daec",
@@ -4552,12 +4560,12 @@
   ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py": "9611d6c3d710da7759d1ed5476c72711979202367d963f5f56fba8b2616fb030",
   ".claude/skills/replica-quantum-math/SKILL.md": "49ee3100738eb16ddb6e7342f2736d17606ebedc553367ec4f4ff3b24ef8d100",
   ".claude/skills/replica-quantum-math/quantum_math.py": "448589c4333b331fe321ac26fc8ea5d6b1f7ecace65df7315dc56c1c2cb7e1ee",
-  ".claude/skills/replica-release-gate/SKILL.md": "953498a7bb6c2d1bf5471192a77433e990b0810df329541a9fb639237875973a",
-  ".claude/skills/replica-release-gate/release_gate.py": "bfca54e30ab459c8c77fb71169b3cc8a2a85594779717dd7560a38f4e7592938",
+  ".claude/skills/replica-release-gate/SKILL.md": "1a91b5c57d5660979d0c009cab2a5eb4263265f20f66ec8be04eff1520a0dca6",
+  ".claude/skills/replica-release-gate/release_gate.py": "e1890850241496391afe577a0f06f02dd5bf26f83738f92b2cb726fa95d0c560",
   ".claude/skills/replica-reversal-engine/SKILL.md": "6a2826669644f3f59b47d744eb699df16f42e4f8b536018597dcce2e1f782ccc",
   ".claude/skills/replica-reversal-engine/reversal_engine.py": "8a3b024381e40e172ad5b7649c35029b0098cd8fffbe103b7cc3f36cd247916f",
   ".claude/skills/replica-runbook/SKILL.md": "8c05fcae424126022aa72a8180ad478108cf445ce7db0bcbc39ef02cd968cd53",
-  ".claude/skills/replica-runbook/runbook.py": "b8b413cda119a93eac8696a11899fede0770a81d5786a04cbec170b5055f5c06",
+  ".claude/skills/replica-runbook/runbook.py": "29fe4bcc9e52503deaff44dda3e9f2f2e04b077d311d4bf74f2697964efdff4e",
   ".claude/skills/replica-skill-tree/SKILL.md": "44bacc896c1b2b1afac7e2771a817579fbf81f4879452710ddb1500fb62c6ab6",
   ".claude/skills/replica-skill-tree/skill_tree.py": "df0f76d4c55ad4a6a26a290ce58caba253dde22fec29e0599cf1edb6d2af122a",
   ".claude/skills/replica-test/SKILL.md": "75b0c5e38ead5ab46ede3b403e3b83f3bfe507178058ad03782faab4849dda14",
@@ -4581,5 +4589,5 @@
   ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
   ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
  },
- "sha256": "66f174f2d11c9ba6f5d26b8d1ea08a089561bccc1980202b216c91294f74b4c5"
+ "sha256": "54b4041eeb435819f4ff546db88c4efdd67c17dd22107c568d803680715e685c"
 }

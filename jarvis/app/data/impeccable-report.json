@@ -1,7 +1,7 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 154,
+ "files": 155,
  "summary": {
   "high": 0,
   "medium": 0,
@@ -12,7 +12,7 @@
   "M05": 133,
   "P21": 2
  },
- "sha256": "a038ffac1c61556607e927d128736a1b5ad5238ba34f72f1e3c0af1e80baef4b",
+ "sha256": "869c178470b5ce1af7a56f047cafff89a7aea6ae17508e6fc9696b3760084f9d",
  "findings": [
   {
    "rule": "D05",

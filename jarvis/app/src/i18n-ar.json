@@ -3047,6 +3047,23 @@
   "Not estimated: mixed attention": "لم تُقدَّر: انتباه مختلط",
   "The context is a whole number of tokens from 1 to 100000000.": "السياق عدد صحيح من الرموز من 1 إلى 100000000.",
   "The batch size is a whole number from 1 to 4096.": "حجم الدفعة عدد صحيح من 1 إلى 4096.",
-  "Bits per cache value is a whole number from 1 to 32.": "البتات لكل قيمة في ذاكرة السياق عدد صحيح من 1 إلى 32."
+  "Bits per cache value is a whole number from 1 to 32.": "البتات لكل قيمة في ذاكرة السياق عدد صحيح من 1 إلى 32.",
+  "Estimated (sliding and full layers)": "مقدّرة (طبقات منزلقة وطبقات كاملة)",
+  "Export the bundle": "تصدير الحزمة",
+  "The skills, model and use from the composite draft above, at 4 bits per weight. Writing the file to disk stays locked.": "المهارات والنموذج والاستخدام من مسودة المهارة المركّبة أعلاه، بأربع بتات لكل وزن. كتابة الملف على القرص تبقى مقفلة.",
+  "Fields in config.json that stop it": "حقول ملف config.json التي تمنع التقدير",
+  "Sliding window": "النافذة المنزلقة",
+  "2 × key-value heads × head size × (full layers × tokens + sliding layers × the smaller of tokens and the window) × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json.": "2 × رؤوس المفتاح والقيمة × حجم الرأس × (الطبقات الكاملة × الرموز + الطبقات المنزلقة × الأصغر من الرموز والنافذة) × الدفعة × البتات ÷ 8 ÷ 10⁹، من ملف config.json للبطاقة.",
+  "Copy": "نسخ",
+  "Copied": "تم النسخ",
+  "Copying is not allowed here: the text is selected, press Ctrl+C": "النسخ غير مسموح هنا: النص محدد، انسخه من لوحة المفاتيح",
+  "Format": "الصيغة",
+  "Bundle text": "نص الحزمة",
+  "Bundle": "الحزمة",
+  "Markdown": "ماركداون",
+  "Installing or running the model": "تثبيت النموذج أو تشغيله",
+  "Writing the bundle to a file": "كتابة الحزمة في ملف",
+  "Keys are sorted, so the same facts give the same text and the same hash. Nothing was written or sent.": "المفاتيح مرتبة، فالحقائق نفسها تعطي النص نفسه والبصمة نفسها. لم يُكتب أو يُرسل شيء.",
+  "The preview scale is left out until the seal is open.": "مقياس المعاينة مستبعد حتى يُفتح الختم."
  }
 }

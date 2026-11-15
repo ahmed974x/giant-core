@@ -438,7 +438,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/architect") {
           let out;
           try { out = architectStudio(body, { seal: architectSeal, catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400 && e.status !== 403) throw e; return send(e.status, { error: e.message, detail: e.detail }); }
-          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : ""));
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : out.export ? ", " + out.export.steps.length + " locked" : ""));
           return send(200, out);
         }
         // ADR-169: release readiness over the same module and snapshots; the request brings only its own snapshots,
@@ -446,7 +446,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/release") {
           let out;
           try { out = releaseGate(body, { catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
-          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "release." + out.mode, out.mode === "bundle" ? out.skills.length + " skills, " + out.pages.length + " pages, " + out.steps.length + " locked" : out.verdict);
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "release." + out.mode, out.mode === "bundle" ? out.skills.length + " skills, " + out.pages.length + " pages, " + out.steps.length + " locked" : out.mode === "export" ? out.export.json.length + " characters, " + out.steps.length + " locked" : out.verdict);
           return send(200, out);
         }
         // ADR-168: impact analysis over the catalog module and the snapshots on disk; the request cannot bring its own.

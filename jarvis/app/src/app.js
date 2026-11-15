@@ -1803,7 +1803,7 @@
           h("td", { class: "t-caption wrap", dir: "auto", lang: "en", text: p.licence }),
           p.params === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.params) }),
           p.config.max_context === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.config.max_context) }),
-          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
+          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "hybrid_sliding" ? "Estimated (sliding and full layers)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
           h("td", { class: "wrap" }, h("a", { class: "t-caption", href: "https://huggingface.co/" + p.card, target: "_blank", rel: "noopener noreferrer", translate: "no", text: p.card }), h("br"), h("span", { class: "num t-caption", text: p.read })),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
@@ -2655,13 +2655,13 @@
   })();
   // ADR-169: release readiness, the same as the server, over the skill tree and impact analysis inlined above.
   const Release = (() => {
-    const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact;
+    const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact, { skillOrder } = PlanOrder;
     /*@RELEASE@*/
-    return { releaseGate, RG_GROWTH, RG_FAILURE };
+    return { releaseGate, exportBundle, releaseDocument, RG_GROWTH, RG_FAILURE };
   })();
   // ADR-170: the architect studio, the same as the server, over the engines inlined above.
   const Architect = (() => {
-    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate } = Release;
+    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate, exportBundle, releaseDocument } = Release;
     /*@ARCHITECT@*/
     return { architectStudio };
   })();
@@ -4358,6 +4358,19 @@
       } catch (err) { fail(cOut, err); }
       finally { cBtn.disabled = false; }
     });
+    // 5. ADR-172: the export. It needs no seal; the preview scale goes in only while the seal is open.
+    const exCtxIn = h("input", { class: "input", type: "number", id: "f-as-ctx", name: "export-context", autocomplete: "off", min: "1", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
+    const eOut = h("div", { class: "stack", "aria-live": "polite" });
+    const eBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-copy", "sm"), "Export the bundle");
+    eBtn.addEventListener("click", async () => {
+      eBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "export", ...(code ? { passcode: code, font_scale: Number(scaleIn.value), density: densityIn.value, numerals: numIn.value } : {}), skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+          ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, bits: 4, ...(exCtxIn.value.trim() ? { context_tokens: Number(exCtxIn.value) } : {}) } : {}) });
+        eOut.replaceChildren(sealRow(r.seal), r.seal.unlocked ? null : h("p", { class: "t-caption muted", text: "The preview scale is left out until the seal is open." }), bundleExportBody(r.export, r.export.steps), iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(eOut, err); }
+      finally { eBtn.disabled = false; }
+    });
     // 4. The upgrade radar.
     const rOut = h("div", { class: "stack", "aria-live": "polite" });
     const rBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Scan for upgrades");
@@ -4393,7 +4406,11 @@
         h("div", { class: "row" }, cBtn), cOut),
       h("section", { class: "panel stack", "aria-labelledby": "h-as-r" }, h("h2", { id: "h-as-r", text: "Upgrade radar" }),
         h("p", { class: "t-caption muted", text: "The skills still in text rules or tested, the most depended on first. Reading it needs no seal." }),
-        h("div", { class: "row" }, rBtn), rOut));
+        h("div", { class: "row" }, rBtn), rOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-e" }, h("h2", { id: "h-as-e", text: "Export the bundle" }),
+        h("p", { class: "t-caption muted", text: "The skills, model and use from the composite draft above, at 4 bits per weight. Writing the file to disk stays locked." }),
+        field("f-as-ctx", "Context length in tokens (optional)", exCtxIn),
+        h("div", { class: "row" }, eBtn), eOut));
   };
   /* ── Release readiness (ADR-169): the repository audit, the regression gate and the release bundle ── */
   const RG_VERDICT = {
@@ -4484,6 +4501,12 @@
     bNotes.value = "Impact analysis in #/impact\nRelease readiness in #/release\nThe runbook probes eleven pages";
     const bOut = h("div", { class: "stack", "aria-live": "polite" });
     const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the release");
+    const relReq = mode => ({ mode, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
+      ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) });
+    const eOut = h("div", { class: "stack", "aria-live": "polite" });
+    const eBtn = h("button", { class: "btn", type: "button" }, icon("i-copy", "sm"), "Export the bundle");
+    eBtn.addEventListener("click", run(eBtn, eOut, () => relReq("export"), r => bundleExportBody(r.export, r.steps)));
     bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "bundle", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
       ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
       ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) }), rgBundleBody));
@@ -4504,7 +4527,7 @@
         h("div", { class: "grid-2" }, field("f-rg-bits", "Bits per weight (optional)", bitsIn), field("f-rg-mem", "Memory you have, in GB (optional)", memIn)),
         field("f-rg-ctx", "Context length in tokens (optional)", ctxIn),
         h("div", { class: "grid-2" }, field("f-rg-a", "Release notes before", aNotes), field("f-rg-b", "Release notes after", bNotes)),
-        h("div", { class: "row" }, bBtn), bOut));
+        h("div", { class: "row" }, bBtn, eBtn), bOut, eOut));
   };
   /* ── Impact analysis (ADR-168): a model against the catalog, a skill's blast radius, two texts compared line by line ── */
   const IA_VERDICT = {
@@ -4541,11 +4564,32 @@
     const muted = s => h("span", { class: "muted", text: s });
     const head = c.max_context === null ? null : c.exceeds ? h("p", { class: "row t-sm" }, badge("failed", "Longer than the card's documented context"), muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"))
       : h("p", { class: "row t-sm" }, muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"));
-    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])));
+    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])),
+      c.blocking ? h("p", { class: "row t-sm rg-wrap" }, muted("Fields in config.json that stop it"), ...c.blocking.map(b => h("code", { translate: "no", dir: "ltr", text: b }))) : null);
     return h("div", { class: "stack" }, head,
       h("p", { class: "row t-sm" }, muted("Context memory"), uaNum(c.kv_gb), muted("GB"), c.total_gb === null ? null : h("span", { class: "row" }, muted("Weights and context"), uaNum(c.total_gb), muted("GB")),
         c.fits === null ? null : c.fits ? badge("ok", "Fits the memory you typed") : badge("warn", "Does not fit the memory you typed")),
-      h("p", { class: "t-caption muted", text: c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+      c.sliding_window === null ? null : h("p", { class: "row t-sm" }, muted("Sliding window"), h("span", { class: "num", text: fmtN.format(c.sliding_window) }), muted("tokens")),
+      h("p", { class: "t-caption muted", text: c.attention === "hybrid_sliding" ? "2 × key-value heads × head size × (full layers × tokens + sliding layers × the smaller of tokens and the window) × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+  }
+  // ADR-172: an exported bundle as text to copy. Copying stays in this browser; writing a file or sending it stays locked.
+  const EX_LOCK = { publish: "Publishing", install: "Installing or running the model", write: "Writing the bundle to a file" };
+  function bundleExportBody(e, steps) {
+    const area = h("textarea", { class: "textarea code ex-text", id: "f-ex-" + e.bundle_sha256.slice(0, 8), name: "bundle-text", rows: 14, readOnly: true, autocomplete: "off", spellcheck: false, dir: "ltr", lang: "en", translate: "no", "data-verbatim": "", "aria-label": "Bundle text" });
+    const formatIn = h("select", { class: "input", name: "bundle-format", "aria-label": "Format" }, h("option", { value: "json", lang: "en", translate: "no", text: "JSON" }), h("option", { value: "markdown", lang: "en", translate: "no", text: "Markdown" }));
+    const hash = h("div");
+    const show = () => { const md = formatIn.value === "markdown"; area.value = md ? e.markdown : e.json; hash.replaceChildren(iaHash(md ? "Markdown" : "Bundle", md ? e.markdown_sha256 : e.bundle_sha256)); };
+    formatIn.addEventListener("change", show);
+    show();
+    const status = h("span", { "aria-live": "polite" });
+    const copyBtn = h("button", { class: "btn", type: "button" }, icon("i-copy", "sm"), "Copy");
+    copyBtn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(area.value); status.replaceChildren(badge("ok", "Copied")); }
+      catch (err) { area.focus(); area.select(); status.replaceChildren(badge("warn", "Copying is not allowed here: the text is selected, press Ctrl+C")); }
+    });
+    return h("div", { class: "stack" }, h("div", { class: "row" }, formatIn, copyBtn, status), area, hash,
+      h("ul", { class: "plist" }, steps.map(st => h("li", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + EX_LOCK[st.action] })))),
+      h("p", { class: "t-caption muted", text: "Keys are sorted, so the same facts give the same text and the same hash. Nothing was written or sent." }));
   }
   function iaCatalogBody(r) {
     const muted = t => h("span", { class: "muted", text: t }), v = IA_VERDICT[r.verdict];
