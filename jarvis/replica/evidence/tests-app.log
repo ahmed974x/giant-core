@@ -226,6 +226,8 @@ PASS F47 the interface is named Aether Prime
 PASS F47 six stages on the cleaned goal; the secret field is cleared
 PASS F47 the healer's record, the tree waiting on approvals and ten page probes
 PASS F47 an unknown skill refuses one stage and the others still run
+PASS F47 ADR-166: the repaired plan leaves the unknown skill out and passes the six stages
+PASS F47 ADR-166: the CSS gradient is corrected, hashed before and after, and the copy is a fixed point
 PASS F46 the contrast healer's record comes first
 PASS F46 a misspelt title is found by its letters
 PASS F46 nothing shared is nothing found, and it says so
@@ -258,4 +260,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-259 passed, 0 failed
+261 passed, 0 failed

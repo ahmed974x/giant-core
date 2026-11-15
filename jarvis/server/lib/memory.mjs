@@ -97,7 +97,7 @@ export function createMemory({ db, store, llm }) {
       }
       const graded = results.filter(r => r.correct !== null);
       return { engine: status.online ? status.engine : "deterministic-rules", asked: results.length, graded: graded.length, correct: graded.filter(r => r.correct).length, items: results,
-        note: status.online ? "Graded against answers Jarvis computed itself." : "No model running: the computed answers were stored as lessons for later." };
+        note: status.online ? "Graded against answers Aether Prime computed itself." : "No model running: the computed answers were stored as lessons for later." };
     },
 
     // ---- Skill Forge ----

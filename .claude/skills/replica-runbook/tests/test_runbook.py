@@ -14,7 +14,7 @@ class Golden(unittest.TestCase):
     def test_same_answers_as_the_server(self):
         with open(os.path.join(HERE, "golden.json"), encoding="utf-8") as fh:
             cases = json.load(fh)
-        self.assertGreaterEqual(len(cases), 18)
+        self.assertGreaterEqual(len(cases), 30)
         for i, c in enumerate(cases):
             with self.subTest(i=i):
                 if "error" in c:

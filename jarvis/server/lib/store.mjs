@@ -282,7 +282,7 @@ export async function seed(db) {
       { name: "Paper desk reviewer", tools: ["runs.read", "notes.write"], role: "Reads this workspace's runs and writes a short review note. Paper only: it never places, signs or sizes an order.", skills: ["omega-finance-chain"] },
       { name: "ADR reader", tools: ["files.read", "notes.write"], role: "Reads decision records under docs/adr and summarises what changed.", skills: ["omega-knowledge-domain"] },
     ], locked: [["money", "Move paper profit to a real account"], ["outbound", "Email the weekly desk summary"]] },
-    { slug: "jarvis-studio", name: "Jarvis Studio", agents: [
+    { slug: "jarvis-studio", name: "Aether Prime Studio", agents: [
       { name: "Design token auditor", tools: ["files.read", "notes.write"], role: "Reads jarvis/replica/design and reports which tokens changed.", skills: ["replica-design"] },
       { name: "Release notes writer", tools: ["git.log", "notes.write"], role: "Turns recent commits into release notes. Publishing them is Ahmad's call.", skills: ["replica-build"] },
     ], locked: [["publish", "Publish the Studio site to a public domain"], ["install", "Install a new skill into .claude/skills"]] },

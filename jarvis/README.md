@@ -8,7 +8,7 @@ ADR-134 (local server, real runs, workspaces, agent editor, clean-room cloner).
 The page has a strict CSP with `connect-src 'self'`: it talks only to the server that serves it, and
 opened from disk it uses no network at all.
 
-**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-165).
+**Status: phase 1 and 2 built.** All 34 must-haves are done; parity is 100.0 (`replica/parity.md`, ADR-166).
 
 Run it for real with the local server (ADR-134): real data, real tool runs, three workspaces, the agent editor, and the clean-room cloner.
 
@@ -421,7 +421,8 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **`#/runbook`** takes one goal and the skills it needs. The privacy shield cleans the goal first; project search finds the matching records; the skills are put in Kahn's order with what they load; the workbench is read as a behaviour tree; UCB1 picks one of the three plans from your record [INFERENCE]; and each page's engine gets one fixed probe. A SHA-256 chain binds the stages. Nothing is sent or installed, and locked steps stay locked.
 - `#/diagnostics` reads the running server, so the runbook lists it as server only.
 - The API is `POST /api/w/:slug/runbook` with `{goal, skills, record, c, secretCheck, lang}`. The same engine runs with `python3 .claude/skills/replica-runbook/runbook.py '{"goal": "...", "skills": ["..."]}' --data jarvis/app/data`.
-- The interface is named «أثير برايم» in Arabic and "Aether Prime" in English (sidebar and browser tab). Folders, the server and the workspace names are unchanged.
+- **Repaired plan (ADR-166):** when a stage is refused for an input the rules can correct, the runbook leaves it out (an unknown skill, a refused record entry or c, an unreadable CSS), lists each change and runs the repaired request through the six stages once more. Locked steps stay locked. An optional CSS is shown corrected by the reversal engine and the contrast healer, with SHA-256 before and after and a check that the corrected copy needs no further change.
+- The interface is named «أثير برايم» in Arabic and "Aether Prime" in English: the sidebar, the tab, every sentence that named Jarvis and the seeded workspace "Aether Prime Studio". Folders, file names, the server, the `jarvis-studio` slug, headers, user agents and model names keep their spelling.
 
 ## What Jarvis will not do
 

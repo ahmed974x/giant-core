@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-14T21:51:19.124Z",
+ "ranAt": "2026-11-15T01:42:38.789Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -144,7 +144,7 @@
   },
   {
    "file": "jarvis/server/lib/universal-math.mjs",
-   "sha256": "31da8bd3490e3d8554d9f2b699d28ba748b9ecebd71a350b6e620bc27ce12f76",
+   "sha256": "9db8ac343effd53e77c7198c6886310b2c19791ce7f5686ed9affa84213874f7",
    "functions": [
     "tokenize",
     "parse",
@@ -815,15 +815,18 @@
   },
   {
    "file": "jarvis/server/lib/runbook.mjs",
-   "sha256": "232787b35e18024e7b18beb50994dc915cdb7a7084d726aa726784b2a07bbb31",
+   "sha256": "9028b8d27ee9b8331e8e976292aa20893c1a313420fccf8137b18705ad880661",
    "functions": [
     "rbStage",
     "rbProbe",
     "probeRoutes",
+    "rbDesign",
+    "runOnce",
+    "repairRequest",
     "runbook"
    ],
-   "mutants": 50,
-   "killed": 48,
+   "mutants": 86,
+   "killed": 84,
    "equivalent": 2,
    "survived": 0,
    "score": 100,
@@ -911,7 +914,7 @@
   },
   {
    "file": "jarvis/server/lib/skill-tree.mjs",
-   "sha256": "39c99107bdf6e75bcef2440d581cb8b506f9736071bb2f67b84a5b10f5d7863b",
+   "sha256": "adf8ffc11db36a4479bd93396896c4ea6ba72c1f1d5962f2a0aaa9d59d95b135",
    "functions": [
     "stR",
     "familyOf",
@@ -1049,7 +1052,7 @@
   },
   {
    "file": "jarvis/server/lib/foss-atlas.mjs",
-   "sha256": "9e9dcf119962e11bad2c270101885f88a33d1362329b2f49f7b4fee2da61231f",
+   "sha256": "1bb3436438a25a7b0b45737b21ec03eb6b3b2b5798e98e5771577794841921f7",
    "functions": [
     "sha1Hex",
     "rotl",

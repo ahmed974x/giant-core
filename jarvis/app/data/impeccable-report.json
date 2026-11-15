@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 145,
+ "files": 146,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 160
+  "low": 162
  },
  "byRule": {
   "D05": 27,
-  "M05": 131,
+  "M05": 133,
   "P21": 2
  },
- "sha256": "122450c4d5b9642df00959adf413d5b6d5845bd5784f7639e7e607bda76f5d9a",
+ "sha256": "e65f288c795fc1b7508ff713fa370d811e3a96732b2274a3dd6c9a3e73b5f9c4",
  "findings": [
   {
    "rule": "D05",
@@ -256,6 +256,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 406,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 421,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1133,6 +1140,13 @@
    "line": 7,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-165-runbook-and-interface-name.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-166-runbook-repair-and-name-in-text.md"
   }
  ]
 }

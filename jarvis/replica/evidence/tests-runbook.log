@@ -5,6 +5,6 @@ test_no_code_is_run (test_runbook.Stages.test_no_code_is_run) ... ok
 test_this_repository (test_runbook.Stages.test_this_repository) ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 0.437s
+Ran 5 tests in 0.604s
 
 OK

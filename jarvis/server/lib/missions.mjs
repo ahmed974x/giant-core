@@ -97,7 +97,7 @@ export const TEMPLATES = {
     ],
   },
   "design-audit": {
-    title: "Design system audit", goal: "Check the Jarvis tokens and their gates before any page changes.",
+    title: "Design system audit", goal: "Check the Aether Prime tokens and their gates before any page changes.",
     steps: [
       { phase: 1, kind: "tool", title: "Read the design tokens and reports", tool: "files.read", input: { path: "jarvis/replica/design" } },
       { phase: 2, kind: "gate", title: "Contrast gate (WCAG and APCA)", criteria: [{ check: "contrast", evidence: "jarvis/replica/design/contrast-report.txt" }] },
@@ -472,7 +472,7 @@ export function createMissions({ store, runner, db, repoRoot, dataDir, onEvent =
         let apId = s.approval_id;
         const existing = apId ? await db.one("select id, status from approvals where id = $1", [apId]) : null;
         if (!existing || existing.status !== "pending") {
-          const payload = { agent: "Mission: " + m.title, mission: m.id, step: s.idx, locked, note: locked ? "Locked in Jarvis: " + LOCKED[s.category] + ". Director 00 decides outside Jarvis; the mission carries on with steps that do not need it." : "The mission waits for this step; other steps carry on." };
+          const payload = { agent: "Mission: " + m.title, mission: m.id, step: s.idx, locked, note: locked ? "Locked in Aether Prime: " + LOCKED[s.category] + ". Director 00 decides outside Aether Prime; the mission carries on with steps that do not need it." : "The mission waits for this step; other steps carry on." };
           if (s.category === "file_write") {
             const md = noteMarkdown(m, steps);
             const name = "mission-" + m.template + "-" + iso().slice(0, 16).replace(/[:T]/g, "-") + "-" + s.id.slice(0, 6) + ".md";

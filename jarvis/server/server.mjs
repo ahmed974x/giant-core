@@ -199,7 +199,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (!ws) return fail(400, "Name the workspace the request belongs to.");
         // Changing the mode itself is refused (403); the request is recorded as a locked card.
         const r = await access.requestPublic(ws);
-        return send(403, { error: "Opening Jarvis to the public is locked. A «قيد الموافقة» card waits for Director 00.", ...r });
+        return send(403, { error: "Opening Aether Prime to the public is locked. A «قيد الموافقة» card waits for Director 00.", ...r });
       }
       if (R("GET", /^\/api\/health$/)) return send(200, { ok: true, mode: db.kind, where: db.where, runs: "real (fixed-rule planner, no model)", version: 1 });
       if (R("GET", /^\/api\/workspaces$/)) return send(200, await store.listWorkspaces());

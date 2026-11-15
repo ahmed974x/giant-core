@@ -404,7 +404,7 @@ await go("#/settings");
 ok(await page.locator("#h-access ~ div").getByText("Founder only", { exact: true }).isVisible() && await page.locator("#h-access ~ div").getByText("founder_private").isVisible(), "F19 the access mode is shown as founder only");
 await page.getByRole("button", { name: "Open to the public…" }).click();
 await page.waitForTimeout(300);
-ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVisible() && await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible(), "F19 opening to the public becomes a locked publish card");
+ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVisible() && await page.locator("dialog[open]").getByText(/Open Aether Prime to the public/).isVisible(), "F19 opening to the public becomes a locked publish card");
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 await page.locator("#f-epname").fill("Local trick"); await page.locator("#f-epurl").fill("https://127.0.0.1:8000/v1");
 await page.getByRole("button", { name: "Ask to add…" }).click();
@@ -418,7 +418,7 @@ await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click(
 ok(await page.locator("#h-ep ~ div li").filter({ hasText: "https://api.deepseek.com/v1" }).getByText("بانتظار الموافقة").isVisible(), "F19 the endpoint stays a draft with a violet lock line");
 await go("#/approvals");
 await page.getByRole("tab", { name: /Locked/ }).click();
-ok(await page.locator("[role=tabpanel]:not([hidden])").getByText(/Open Jarvis to the public/).isVisible() && await page.locator("[role=tabpanel]:not([hidden])").getByText(/api\.deepseek\.com/).first().isVisible(), "F19 both requests wait in the locked approvals");
+ok(await page.locator("[role=tabpanel]:not([hidden])").getByText(/Open Aether Prime to the public/).isVisible() && await page.locator("[role=tabpanel]:not([hidden])").getByText(/api\.deepseek\.com/).first().isVisible(), "F19 both requests wait in the locked approvals");
 
 // F20: the live skill loader (ADR-142): synthesize, audit, mount at once, FIX, DERIVED, CAPTURED, locked install.
 await go("#/loader");
@@ -774,7 +774,7 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}');
   await page.getByRole("button", { name: "Solve and check" }).click();
   await page.waitForTimeout(200);
-  ok(await page.getByText("Not solved").isVisible() && await page.getByText("This sign is not maths Jarvis reads.").isVisible() && (await page.locator("code[data-verbatim]", { hasText: "$" }).count()) === 1, "F36 a sign it does not read is refused with the reason and the sign");
+  ok(await page.getByText("Not solved").isVisible() && await page.getByText("This sign is not maths Aether Prime reads.").isVisible() && (await page.locator("code[data-verbatim]", { hasText: "$" }).count()) === 1, "F36 a sign it does not read is refused with the reason and the sign");
   await page.locator("#f-umbody").fill("{not json");
   await page.getByRole("button", { name: "Solve and check" }).click();
   ok(await page.getByText("The request is not valid JSON.").isVisible(), "F36 a request that is not JSON is said, not sent");
@@ -896,10 +896,12 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   const body = await page.locator("#h-rb-r").locator("xpath=..").innerText();
   ok((await page.locator(".rb-stage").count()) === 6 && await page.getByText("Every stage ran").isVisible() && !body.includes("ops@example.org") && (await page.locator("#f-rb-secret").inputValue()) === "", "F47 six stages on the cleaned goal; the secret field is cleared");
   ok(/ADR-153/.test(body) && await page.locator("#h-rb-r").locator("xpath=..").getByText("Running: waiting for approval").isVisible() && (await page.locator(".rb-stage table tbody tr").count()) === 10 && (await page.locator(".rb-stage table").getByText("Server only").count()) === 1, "F47 the healer's record, the tree waiting on approvals and ten page probes");
-  await page.locator("#f-rb-skills").fill("nope");
+  await page.locator("#f-rb-skills").fill("replica-polymath-engine, nope");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForTimeout(300);
-  ok(await page.getByText("A stage was refused").isVisible() && (await page.locator(".rb-stage").count()) === 6, "F47 an unknown skill refuses one stage and the others still run");
+  ok(await page.getByText("A stage was refused").first().isVisible() && (await page.locator(".rb-stage").count()) === 6, "F47 an unknown skill refuses one stage and the others still run");
+  ok(await page.locator(".rb-repair").getByText("Every stage ran").isVisible() && await page.locator(".rb-repair code", { hasText: "nope" }).isVisible() && (await page.locator(".rb-repair code.uw-hash").count()) === 2, "F47 ADR-166: the repaired plan leaves the unknown skill out and passes the six stages");
+  ok(await page.locator(".rb-design").getByText("ai-gradient").isVisible() && await page.getByText("The corrected copy needs no further change").isVisible() && (await page.locator(".rb-design code.uw-hash").count()) === 2, "F47 ADR-166: the CSS gradient is corrected, hashed before and after, and the copy is a fixed point");
 }
 
 // F46: project search (ADR-164): three lexical rankers fused by RRF over the repository's documents.

@@ -40,7 +40,7 @@ export function tokenize(src) {
       out.push({ t: "id", v: s.slice(i, j).toLowerCase() });
       i = j;
     } else if ("+-*/^(),".includes(c)) { out.push({ t: c }); i++; }
-    else umFail("This sign is not maths Jarvis reads.", c);
+    else umFail("This sign is not maths Aether Prime reads.", c);
     if (out.length > UM_LIMITS.tokens) umFail("The expression has more than 200 parts.");
   }
   // Implicit multiplication: 2x, 2(x+1), (x+1)(x-1), x(...) is a function call only for known functions.
@@ -628,7 +628,7 @@ export const UM_AR = {
   "The system solved by Gaussian elimination with partial pivoting": "حل النظام بحذف غاوس مع الارتكاز الجزئي",
   "The value at the end": "القيمة عند النهاية",
   "This number could not be factorised within the limits.": "تعذر تحليل هذا العدد ضمن الحدود.",
-  "This sign is not maths Jarvis reads.": "هذه العلامة ليست من الرياضيات التي يقرؤها Jarvis.",
+  "This sign is not maths Aether Prime reads.": "هذه العلامة ليست من الرياضيات التي يقرؤها أثير برايم.",
   "Write an expression first.": "اكتب تعبيراً أولاً.",
   "a·x + b·y equals the gcd.": "a·x + b·y يساوي القاسم المشترك الأكبر.",
   "x leaves every given remainder.": "x يعطي كل باقٍ مطلوب.",

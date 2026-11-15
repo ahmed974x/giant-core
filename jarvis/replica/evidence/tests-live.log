@@ -1,7 +1,7 @@
 PASS live mode says where the data comes from
 PASS first workspace is OMEGA PRIME
 PASS OMEGA PRIME shows its own agents
-PASS keyboard switch to Jarvis Studio
+PASS keyboard switch to Aether Prime Studio
 PASS the agent list changes with the workspace
 PASS locked cards belong to the workspace
 PASS locked cards have no approve button

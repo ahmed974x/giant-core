@@ -66,16 +66,22 @@ export function probeRoutes(ctx) {
   });
 }
 
-export function runbook(req, ctx) {
-  const r = req && typeof req === "object" && !Array.isArray(req) ? req : rbFail("Send an object with a goal.", "");
+// The CSS, corrected by the reversal engine and the contrast healer (ADR-150, ADR-153), and checked once more:
+// a corrected copy that needs no further correction is a fixed point.
+function rbDesign(css) {
+  const d = universalAgent({ mode: "design", css });
+  return { rules: d.rules, before_sha256: sha256Hex(css), corrected_css: d.css, after_sha256: d.after_sha256, fixed_point: universalAgent({ mode: "design", css: d.css }).rules.length === 0 };
+}
+
+function runOnce(r, snap) {
   const goal = typeof r.goal === "string" && r.goal.trim() && r.goal.length <= 2000 ? r.goal : rbFail("The goal is text of 1 to 2000 characters.", "goal");
-  const c = ctx ?? {};
-  const snap = { corpus: c.corpus ?? { docs: [] }, deps: c.deps ?? {}, tree: c.tree ?? { skills: [] } };
   const lang = r.lang === "ar" ? "ar" : "en";
   const shield = scrubPrivate(goal);
   const clean = shield.text;
-  // The workbench takes any goal the shield returns, so this stage cannot be refused.
-  const w = workbenchTree(runWorkbench({ task: clean, lang }));
+  // The workbench takes any goal the shield returns, so this stage is never refused; a bad CSS fails its design stage.
+  const w = workbenchTree(runWorkbench({ task: clean, lang, ...(r.css === undefined ? {} : { css: r.css }) }));
+  const tree = { status: w.status, stopped_at: w.stopped_at, waiting: w.waiting, leaves: w.ticked };
+  if (r.css !== undefined) { try { tree.design = rbDesign(r.css); } catch (e) { if (e.status !== 400) throw e; tree.design = { error: e.message }; } }
   const stages = [
     { id: "shield", status: "ok", summary: { replaced: shield.total, rules: shield.redactions.map(x => x.rule), secret_prefix: r.secretCheck === undefined ? null : kAnonymity(r.secretCheck).prefix, looked_up: false } },
     rbStage("docs", () => {
@@ -83,7 +89,7 @@ export function runbook(req, ctx) {
       return { found: s.found, counts: s.counts, top: s.results.map(x => ({ id: x.id, kind: x.kind, title: x.title, score: x.score, ranks: x.ranks, snippet: x.snippet })) };
     }),
     rbStage("order", () => { const k = skillOrder(snap.deps, r.skills); return { chosen: k.chosen, added: k.added, layers: k.layers, cycle: k.cycle, verified: k.verified }; }),
-    { id: "tree", status: "ok", summary: { status: w.status, stopped_at: w.stopped_at, waiting: w.waiting, leaves: w.ticked } },
+    { id: "tree", status: w.status === "failure" ? "error" : "ok", summary: tree },
     rbStage("plan", () => {
       const p = planOrder({ mode: "plans", prompt: clean, lang, ...(r.record === undefined ? {} : { record: r.record }), ...(r.c === undefined ? {} : { c: r.c }) });
       return { chosen: p.chosen, reason: p.reason, ranked: p.ranked, tag: p.tag };
@@ -92,4 +98,42 @@ export function runbook(req, ctx) {
   ];
   const chain = stages.reduce((h, s) => sha256Hex(h + JSON.stringify([s.id, s.status, s.summary])), "0".repeat(64));
   return { lang, goal: clean, stages, locked: w.waiting, ready: stages.every(s => s.status === "ok"), chain_sha256: chain, sent: false };
+}
+
+// A refused stage whose input this repository can correct by rule gets a repaired request: skills not in the
+// snapshot are left out, record entries and a c that the plan rule refuses are left out, and a CSS the design
+// stage cannot read is left out. Each change is listed. With nothing to change, there is no repair.
+export function repairRequest(r, run, snap) {
+  const failed = new Set(run.stages.filter(s => s.status === "error").map(s => s.id));
+  const req = { ...r }, changes = [];
+  if (failed.has("order") && Array.isArray(r.skills)) {
+    const kept = [...new Set(r.skills.filter(n => typeof n === "string" && Object.hasOwn(snap.deps, n)))].slice(0, 12);
+    if (kept.length) { req.skills = kept; changes.push({ stage: "order", field: "skills", removed: r.skills.filter(n => !kept.includes(n)) }); }
+  }
+  if (failed.has("plan")) {
+    const tries = q => { try { planOrder({ mode: "plans", prompt: run.goal, ...q }); return true; } catch (e) { if (e.status !== 400) throw e; return false; } };
+    if (r.c !== undefined && !tries({ c: r.c })) { delete req.c; changes.push({ stage: "plan", field: "c", removed: [r.c] }); }
+    if (r.record !== undefined && !(r.record && typeof r.record === "object" && !Array.isArray(r.record))) { delete req.record; changes.push({ stage: "plan", field: "record", removed: ["record"] }); }
+    else if (r.record !== undefined) {
+      const bad = Object.keys(r.record).filter(k => !tries({ record: { [k]: r.record[k] } }));
+      if (bad.length) { req.record = Object.fromEntries(Object.entries(r.record).filter(([k]) => !bad.includes(k))); changes.push({ stage: "plan", field: "record", removed: bad }); }
+    }
+  }
+  // The design stage reads the CSS with the same rule as the workbench, so a CSS it cannot read is the tree's refusal.
+  if (r.css !== undefined && run.stages[3].summary.design.error) { delete req.css; changes.push({ stage: "tree", field: "css", removed: ["css"] }); }
+  return changes.length ? { request: req, changes } : null;
+}
+
+export function runbook(req, ctx) {
+  const r = req && typeof req === "object" && !Array.isArray(req) ? req : rbFail("Send an object with a goal.", "");
+  const c = ctx ?? {};
+  const snap = { corpus: c.corpus ?? { docs: [] }, deps: c.deps ?? {}, tree: c.tree ?? { skills: [] } };
+  const out = runOnce(r, snap);
+  const fix = out.ready ? null : repairRequest(r, out, snap);
+  if (!fix) return { ...out, repair: null };
+  const after = runOnce(fix.request, snap);
+  // The repaired request is shown without the goal, the secret or the CSS, which the result already covers.
+  const shown = Object.fromEntries(["skills", "record", "c"].filter(k => fix.request[k] !== undefined).map(k => [k, fix.request[k]]));
+  return { ...out, repair: { changes: fix.changes, request: shown, request_sha256: sha256Hex(JSON.stringify(shown)),
+    after: { ready: after.ready, locked: after.locked, stages: after.stages.map(s => ({ id: s.id, status: s.status })), chain_sha256: after.chain_sha256 } } };
 }

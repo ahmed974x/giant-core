@@ -88,7 +88,7 @@ await page.keyboard.press("ArrowDown");
 await page.keyboard.press("ArrowDown");
 await page.keyboard.press("Enter");
 await page.waitForTimeout(500);
-ok((await page.locator("#wsName").textContent()) === "Jarvis Studio", "keyboard switch to Jarvis Studio");
+ok((await page.locator("#wsName").textContent()) === "Aether Prime Studio", "keyboard switch to Aether Prime Studio");
 ok(await page.getByRole("link", { name: "Design token auditor" }).isVisible() && !(await page.getByText("ADR reader").count()), "the agent list changes with the workspace");
 await go("#/approvals");
 await page.getByRole("tab", { name: /Locked/ }).click();
@@ -168,7 +168,7 @@ await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 // Mission Control on the real engine: Jarvis Studio's design audit (contrast and security gates on
 // the repo's saved evidence, a locked install step, a note that is written only after approval).
 await page.locator("#wsBtn").click();
-await page.getByRole("menuitemradio", { name: "Jarvis Studio" }).click();
+await page.getByRole("menuitemradio", { name: "Aether Prime Studio" }).click();
 await page.waitForTimeout(400);
 await go("#/missions");
 await page.locator(".mcard").first().click();
@@ -324,7 +324,7 @@ ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVis
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 await page.getByRole("button", { name: "Open to the public…" }).click();
 await page.waitForTimeout(400);
-ok(await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
+ok(await page.locator("dialog[open]").getByText(/Open Aether Prime to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 
 // ADR-142 live: discover on GitHub, import one SKILL.md as text, mounted in the database at once.

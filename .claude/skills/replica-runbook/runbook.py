@@ -117,20 +117,36 @@ def probe_routes(ctx):
     return out
 
 
-def runbook(req, ctx=None):
-    r = req if isinstance(req, dict) else _fail("Send an object with a goal.", "")
+def _design(css):
+    """The CSS corrected by the reversal engine and the contrast healer, and checked once more (a fixed point)."""
+    d = universal_agent({"mode": "design", "css": css})
+    return {"rules": d["rules"], "before_sha256": _sha(css), "corrected_css": d["css"], "after_sha256": d["after_sha256"],
+            "fixed_point": len(universal_agent({"mode": "design", "css": d["css"]})["rules"]) == 0}
+
+
+def _sha(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _run_once(r, snap):
     goal = r.get("goal")
     if not isinstance(goal, str) or not goal.strip() or _len16(goal) > 2000:
         _fail("The goal is text of 1 to 2000 characters.", "goal")
-    c = ctx if isinstance(ctx, dict) else {}
-    snap = {"corpus": c.get("corpus") if c.get("corpus") is not None else {"docs": []}, "deps": c.get("deps") if c.get("deps") is not None else {},
-            "tree": c.get("tree") if c.get("tree") is not None else {"skills": []}}
     lang = "ar" if r.get("lang") == "ar" else "en"
     shield = scrub_private(goal)
     clean = shield["text"]
     secret = r.get("secretCheck", _MISSING)
-    # The workbench takes any goal the shield returns, so this stage cannot be refused.
-    w = workbench_tree(run_workbench({"task": clean, "lang": lang}))
+    # The workbench takes any goal the shield returns, so this stage is never refused; a bad CSS fails its design stage.
+    wq = {"task": clean, "lang": lang}
+    if "css" in r:
+        wq["css"] = r["css"]
+    w = workbench_tree(run_workbench(wq))
+    tree = {"status": w["status"], "stopped_at": w["stopped_at"], "waiting": w["waiting"], "leaves": w["ticked"]}
+    if "css" in r:
+        try:
+            tree["design"] = _design(r["css"])
+        except ValueError as e:
+            tree["design"] = {"error": str(e)}
 
     def docs():
         s = search_project(snap["corpus"], {"query": clean, "limit": 5})
@@ -156,11 +172,63 @@ def runbook(req, ctx=None):
     stages = [{"id": "shield", "status": "ok", "summary": {"replaced": shield["total"], "rules": [x["rule"] for x in shield["redactions"]],
                                                          "secret_prefix": None if secret is _MISSING else k_anonymity(secret)["prefix"], "looked_up": False}},
               _stage("docs", docs), _stage("order", order),
-              {"id": "tree", "status": "ok", "summary": {"status": w["status"], "stopped_at": w["stopped_at"], "waiting": w["waiting"], "leaves": w["ticked"]}}, _stage("plan", plan), _stage("routes", routes)]
+              {"id": "tree", "status": "error" if w["status"] == "failure" else "ok", "summary": tree}, _stage("plan", plan), _stage("routes", routes)]
     chain = "0" * 64
     for s in stages:
-        chain = hashlib.sha256((chain + js_json([s["id"], s["status"], s["summary"]])).encode("utf-8")).hexdigest()
+        chain = _sha(chain + js_json([s["id"], s["status"], s["summary"]]))
     return {"lang": lang, "goal": clean, "stages": stages, "locked": w["waiting"], "ready": all(s["status"] == "ok" for s in stages), "chain_sha256": chain, "sent": False}
+
+
+def repair_request(r, run, snap):
+    """Skills not in the snapshot, record entries and a c the plan rule refuses, and a CSS the design stage cannot
+    read are left out of a refused request; each change is listed. With nothing to change, there is no repair."""
+    failed = {s["id"] for s in run["stages"] if s["status"] == "error"}
+    req, changes = dict(r), []
+    if "order" in failed and isinstance(r.get("skills"), list):
+        kept = list(dict.fromkeys(n for n in r["skills"] if isinstance(n, str) and n in snap["deps"]))[:12]
+        if kept:
+            req["skills"] = kept
+            changes.append({"stage": "order", "field": "skills", "removed": [n for n in r["skills"] if n not in kept]})
+    if "plan" in failed:
+        def tries(q):
+            try:
+                plan_order({"mode": "plans", "prompt": run["goal"], **q})
+                return True
+            except ValueError:
+                return False
+        if "c" in r and not tries({"c": r["c"]}):
+            del req["c"]
+            changes.append({"stage": "plan", "field": "c", "removed": [r["c"]]})
+        if "record" in r and not isinstance(r["record"], dict):
+            del req["record"]
+            changes.append({"stage": "plan", "field": "record", "removed": ["record"]})
+        elif "record" in r:
+            bad = [k for k in r["record"] if not tries({"record": {k: r["record"][k]}})]
+            if bad:
+                req["record"] = {k: v for k, v in r["record"].items() if k not in bad}
+                changes.append({"stage": "plan", "field": "record", "removed": bad})
+    # The design stage reads the CSS with the same rule as the workbench, so a CSS it cannot read is the tree's refusal.
+    if "css" in r and "error" in run["stages"][3]["summary"]["design"]:
+        del req["css"]
+        changes.append({"stage": "tree", "field": "css", "removed": ["css"]})
+    return {"request": req, "changes": changes} if changes else None
+
+
+def runbook(req, ctx=None):
+    r = req if isinstance(req, dict) else _fail("Send an object with a goal.", "")
+    c = ctx if isinstance(ctx, dict) else {}
+    snap = {"corpus": c.get("corpus") if c.get("corpus") is not None else {"docs": []}, "deps": c.get("deps") if c.get("deps") is not None else {},
+            "tree": c.get("tree") if c.get("tree") is not None else {"skills": []}}
+    out = _run_once(r, snap)
+    fix = None if out["ready"] else repair_request(r, out, snap)
+    if not fix:
+        return {**out, "repair": None}
+    after = _run_once(fix["request"], snap)
+    # The repaired request is shown without the goal, the secret or the CSS, which the result already covers.
+    shown = {k: fix["request"][k] for k in ("skills", "record", "c") if k in fix["request"]}
+    return {**out, "repair": {"changes": fix["changes"], "request": shown, "request_sha256": _sha(js_json(shown)),
+                              "after": {"ready": after["ready"], "locked": after["locked"], "stages": [{"id": s["id"], "status": s["status"]} for s in after["stages"]],
+                                        "chain_sha256": after["chain_sha256"]}}}
 
 
 def load_context(data_dir):

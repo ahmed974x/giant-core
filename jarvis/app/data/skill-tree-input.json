@@ -893,7 +893,7 @@
    "tools": [
     {
      "name": "runbook.py",
-     "functions": 4
+     "functions": 5
     }
    ],
    "scan": {
@@ -905,10 +905,10 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 75,
-    "mutants": 75
+    "killed": 118,
+    "mutants": 118
    },
-   "review": "docs/security/RUNBOOK-REVIEW-2026-11-14.md"
+   "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },
   {
    "name": "replica-skill-tree",
@@ -931,7 +931,7 @@
     "killed": 198,
     "mutants": 198
    },
-   "review": "docs/security/SKILL-TREE-REVIEW-2026-11-13.md"
+   "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },
   {
    "name": "replica-test",
@@ -1035,7 +1035,7 @@
     "killed": 1281,
     "mutants": 1281
    },
-   "review": "docs/security/UNIVERSAL-MATH-REVIEW-2026-11-07.md"
+   "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },
   {
    "name": "replica-ux-physics",

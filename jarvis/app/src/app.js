@@ -67,7 +67,7 @@
   /* ── Data layer (phase 1: in-page sample data; phase 2 swaps in /api with the same names) ── */
   const LOCKED = { money: "moves money", publish: "publishes to an outside domain", permissions: "changes repository permissions", install: "installs a skill into the repo", outbound: "sends a message outside" };
   const TOOL_LIST = ["files.read", "notes.read", "notes.write", "runs.read", "git.log", "web.read"];
-  const WORKSPACES = [["omega-prime", "OMEGA PRIME"], ["jarvis-studio", "Jarvis Studio"], ["giant-core", "giant-core"]];
+  const WORKSPACES = [["omega-prime", "OMEGA PRIME"], ["jarvis-studio", "Aether Prime Studio"], ["giant-core", "giant-core"]];
 
   // Shared validation (the server runs the same rules and has the final say).
   function validateAgentInput(input, existing, exceptId) {
@@ -213,7 +213,7 @@
         { id: "ap_1", category: "file_write", runId: "run_a1", agentId: "ag_research", action: "Save the summary to notes/research-summary.md", payload: "+ notes/research-summary.md (2.1 KB)", status: "pending", createdAt: t - 25 * MIN },
         { id: "ap_2", category: "file_write", runId: null, agentId: "ag_inbox", action: "Delete three old draft notes", payload: "- notes/draft-1.md\n- notes/draft-2.md\n- notes/draft-3.md", status: "pending", createdAt: t - 50 * MIN },
         { id: "ap_3", category: "file_write", runId: "run_a3", agentId: "ag_inbox", action: "Write topic index to notes/topics.md", payload: "+ notes/topics.md (0.8 KB)", status: "approved", decidedBy: "member:owner", decidedAt: t - 4 * 60 * MIN, createdAt: t - 5 * 60 * MIN },
-        { id: "ap_4", category: "money", agentId: "ag_weekly", action: "Pay a supplier invoice", payload: "No amount is shown: money actions never run from Jarvis.", status: "pending", createdAt: t - 3 * 60 * MIN },
+        { id: "ap_4", category: "money", agentId: "ag_weekly", action: "Pay a supplier invoice", payload: "No amount is shown: money actions never run from Aether Prime.", status: "pending", createdAt: t - 3 * 60 * MIN },
         { id: "ap_5", category: "publish", agentId: "ag_release", action: "Publish the release notes site to a public domain", payload: "target: a public domain", status: "pending", createdAt: t - 2 * 60 * MIN },
         { id: "ap_6", category: "permissions", agentId: "ag_release", action: "Give this agent push access to giant-core", payload: "repository: ahmed974x/giant-core", status: "pending", createdAt: t - 100 * MIN },
         { id: "ap_7", category: "install", agentId: "ag_research", action: "Install a new skill into .claude/skills", payload: "skill: a third-party SKILL.md", status: "pending", createdAt: t - 90 * MIN },
@@ -355,7 +355,7 @@
         const p = W().approvals.find(x => x.id === id);
         if (!p) return bad("No approval with that id in this workspace.");
         if (p.status !== "pending") return bad("Someone already decided this one.");
-        if (LOCKED[p.category] && decision === "approved") return bad("Locked: this " + LOCKED[p.category] + ". It needs Director 00's separate approval outside Jarvis.");
+        if (LOCKED[p.category] && decision === "approved") return bad("Locked: this " + LOCKED[p.category] + ". It needs Director 00's separate approval outside Aether Prime.");
         if (decision === "rejected" && !String(reason || "").trim()) return bad("Say why, so the agent can do something else.");
         p.status = decision; p.decidedBy = "member:owner"; p.decidedAt = Date.now(); p.reason = decision === "rejected" ? String(reason).trim() : null;
         W().events.push(ev("member:owner", "approval." + decision, id));
@@ -438,7 +438,7 @@
       } else {
         const locked = !!LOCKED[s.category];
         const ap = { id: uid("ap"), category: s.category, runId: null, agentId: null, missionId: m.id, missionStep: s.idx, agentLabel: "Mission: " + m.title, action: s.title,
-          payload: locked ? "Mission step: locked in Jarvis (" + LOCKED[s.category] + "). The mission carries on with steps that do not need it." : "+ notes/mission-" + m.template + ".md (sample: nothing is written from the browser)", status: "pending", createdAt: Date.now() };
+          payload: locked ? "Mission step: locked in Aether Prime (" + LOCKED[s.category] + "). The mission carries on with steps that do not need it." : "+ notes/mission-" + m.template + ".md (sample: nothing is written from the browser)", status: "pending", createdAt: Date.now() };
         ws.approvals.push(ap); ws.events.push(ev("mission:" + m.id, "approval.requested", ap.id));
         setS(m, s, { status: "blocked", approvalId: ap.id, ms: 4, output: { approval: ap.id, locked } });
       }
@@ -765,7 +765,7 @@
       },
       deleteTier(id) { const b = W().billing || { tiers: [] }; b.tiers = b.tiers.filter(t => t.id !== id); save(); return api.billing(); },
       requestMoney(what) {
-        const ap = { id: uid("ap"), category: "money", agentId: null, action: what === "billing" ? "Turn on billing and token plans for subscribers" : "Activate the subscriber plan “" + what + "”", payload: "Charging people is Director 00's decision outside Jarvis, after a legal review.", status: "pending", createdAt: Date.now() };
+        const ap = { id: uid("ap"), category: "money", agentId: null, action: what === "billing" ? "Turn on billing and token plans for subscribers" : "Activate the subscriber plan “" + what + "”", payload: "Charging people is Director 00's decision outside Aether Prime, after a legal review.", status: "pending", createdAt: Date.now() };
         W().approvals.push(ap); save(); return api.billing().then(b => ({ locked: true, approvalId: ap.id, billing: b }));
       },
       analytics() {
@@ -802,7 +802,7 @@
       // ADR-141 in sample mode: the same locks, on this browser's data. There is no gate without a server.
       accessStatus() { return ok({ mode: "founder_private", publicLocked: true, gate: false, signedIn: true, publicHost: null, sample: true }); },
       requestPublic() {
-        const ap = { id: uid("ap"), category: "publish", agentId: null, action: "Open Jarvis to the public (founder_private → public_subscribers)", payload: "Anyone could then reach Jarvis. This is a publish action for Director 00 outside Jarvis.", status: "pending", createdAt: Date.now() };
+        const ap = { id: uid("ap"), category: "publish", agentId: null, action: "Open Aether Prime to the public (founder_private → public_subscribers)", payload: "Anyone could then reach Aether Prime. This is a publish action for Director 00 outside Aether Prime.", status: "pending", createdAt: Date.now() };
         W().approvals.push(ap); save(); return ok({ locked: true, approvalId: ap.id });
       },
       listEndpoints() { return ok((W().endpoints || []).slice().reverse()); },
@@ -1406,7 +1406,7 @@
     return h("article", { class: "approval locked", "aria-labelledby": "t-" + p.id },
       h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("span", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pending human approval" })),
       h("h3", { id: "t-" + p.id, dir: "auto", text: p.action }),
-      h("p", { class: "muted t-sm", text: "Locked: this " + (LOCKED[p.category] || "action") + ". No agent can approve it, and Jarvis has no approve button for it. It needs Director 00's separate approval outside Jarvis (AGENTS.md §1)." }),
+      h("p", { class: "muted t-sm", text: "Locked: this " + (LOCKED[p.category] || "action") + ". No agent can approve it, and Aether Prime has no approve button for it. It needs Director 00's separate approval outside Aether Prime (AGENTS.md §1)." }),
       h("p", { class: "subtle t-caption" }, isSampleRequest(p) ? h("span", { class: "badge", text: "Sample request" }) : null, isSampleRequest(p) ? " " : null, (p.agentName && !isSampleRequest(p) ? "Asked by " + p.agentName + " · " : ""), timeEl(p.createdAt)));
   }
 
@@ -1472,7 +1472,7 @@
       h("fieldset", null, h("legend", { class: "legend", text: "Tools and permissions" }), toolBoxes),
       h("fieldset", null, h("legend", { class: "legend", text: "Linked skills" }), h("span", { class: "hint", text: "Skills this agent follows. They come from .claude/skills in this repo." }), skillFilter, skillBox),
       h("fieldset", null, h("legend", { class: "legend" }, "Locked ", h("bdi", { lang: "ar", dir: "rtl", text: "«قيد الموافقة»" })), lockedRows,
-        h("p", { class: "hint", id: "h-locked", text: "No agent can be given these. They are Director 00's decisions outside Jarvis (AGENTS.md §1)." })));
+        h("p", { class: "hint", id: "h-locked", text: "No agent can be given these. They are Director 00's decisions outside Aether Prime (AGENTS.md §1)." })));
     const save = h("button", { class: "btn btn-primary", type: "button", text: editing ? "Save changes" : "Create agent" });
     save.addEventListener("click", () => {
       const input = { name: f.name.value, model: f.model.value, rolePrompt: f.rolePrompt.value, maxSteps: f.maxSteps.value.trim() === "" ? NaN : Number(f.maxSteps.value),
@@ -1553,7 +1553,7 @@
       const perms = a.permissions || { writeNotes: a.tools.includes("notes.write"), readWeb: a.tools.includes("web.read") };
       const tabs = [["Config", () => h("dl", { class: "stack t-sm" },
         h("div", null, h("dt", { class: "muted", text: "Role" }), h("dd", { dir: "auto", text: a.rolePrompt || "No role written yet." })),
-        h("div", null, h("dt", { class: "muted", text: "Model" }), h("dd", { text: a.model + (a.model.includes("Hosted") ? " — the key lives in the Ops Room vault, never in Jarvis." : a.model.includes("no model") ? " — planning and summaries follow fixed rules." : "") })),
+        h("div", null, h("dt", { class: "muted", text: "Model" }), h("dd", { text: a.model + (a.model.includes("Hosted") ? " — the key lives in the Ops Room vault, never in Aether Prime." : a.model.includes("no model") ? " — planning and summaries follow fixed rules." : "") })),
         h("div", null, h("dt", { class: "muted", text: "Max steps per run" }), h("dd", { class: "num", text: String(a.maxSteps) })),
         h("div", null, h("dt", { class: "muted", text: "Execution" }), h("dd", { text: a.mode === "long_horizon" ? "Long-horizon mission: phases, gates, a capsule every " + plural(a.capsuleEvery || 1, "phase") + ", locked steps wait while the rest carries on." : "Single run: one pass through the tools." })),
         h("div", null, h("dt", { class: "muted", text: "Permissions" }), h("dd", { class: "row" },
@@ -1674,13 +1674,14 @@
       const card = p => h("article", { class: "approval", "aria-labelledby": "t-" + p.id },
         h("div", { class: "row" }, badge("pending"), h("span", { class: "subtle t-caption" }, p.agentName + " · ", timeEl(p.createdAt))),
         h("h3", { id: "t-" + p.id, dir: "auto", text: p.action }),
-        h("pre", { class: "diff", text: payloadText(p) }),
+        // File content shown as written; marked as such when it carries Arabic (a commit subject, a note).
+        h("pre", { class: "diff", text: payloadText(p), ...(langOf(payloadText(p)) === "ar" ? { "data-verbatim": "" } : {}) }),
         h("div", { class: "row" },
           h("button", { class: "btn btn-primary", type: "button", text: "Approve", onclick: e => { e.currentTarget.disabled = true; store.decide(p.id, "approved").then(() => toast("ok", "Approved."), err => toast("error", err.message)); } }),
           h("button", { class: "btn btn-secondary", type: "button", text: "Reject…", onclick: e => rejectDialog(p, e.currentTarget) })));
       return tabsWidget("ap", [
         ["Waiting (" + waiting.length + ")", () => waiting.length ? h("div", { class: "grid-2" }, waiting.map(card)) : emptyState("i-check", "Nothing is waiting", "When an agent wants to act outside its sandbox, it asks here.")],
-        ["Locked (" + locked.length + ")", () => locked.length ? h("div", { class: "stack" }, h("p", { class: "muted t-sm", text: "These actions are Director 00's decisions outside Jarvis. They stay here so nothing happens quietly." }), h("div", { class: "grid-2" }, locked.map(lockedCard))) : emptyState("i-lock", "No locked requests", "Money, publishing, permissions, installs and outbound messages would show here.")],
+        ["Locked (" + locked.length + ")", () => locked.length ? h("div", { class: "stack" }, h("p", { class: "muted t-sm", text: "These actions are Director 00's decisions outside Aether Prime. They stay here so nothing happens quietly." }), h("div", { class: "grid-2" }, locked.map(lockedCard))) : emptyState("i-lock", "No locked requests", "Money, publishing, permissions, installs and outbound messages would show here.")],
         ["Decided (" + decided.length + ")", () => decided.length ? h("div", { class: "table-scroll" }, h("table", null, h("thead", null, h("tr", null, ["Action", "Decision", "Reason", "When"].map(c => h("th", { scope: "col", text: c })))),
           h("tbody", null, decided.map(p => h("tr", null, h("td", { dir: "auto" }, h("span", { class: "trunc", text: p.action })), h("td", null, badge(p.status)), h("td", { class: "muted" }, h("span", { class: "trunc", text: p.reason || "—" })), h("td", null, timeEl(p.decidedAt || p.createdAt))))))) : emptyState("i-inbox", "No decisions yet", "Approved and rejected requests are listed here.")],
       ]);
@@ -1805,7 +1806,7 @@
         h("tbody", null, st.profiles.map(p => h("tr", null, h("td", { class: "mono t-caption", translate: "no", text: p.model }), h("td", { translate: "no", lang: "en", text: p.maker + " " + p.family }), h("td", { class: "t-caption", dir: "auto", text: p.licence }), h("td", { text: { plan: "Plans", design: "Designs and code", chat: "Answers" }[p.role] })))))) : null,
       catalogTable(st),
       llmAsk(st),
-      h("p", { class: "t-caption muted", text: "Ollama: build the two Jarvis models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused." })));
+      h("p", { class: "t-caption muted", text: "Ollama: build the two Aether Prime models once (jarvis/server/models): ollama create jarvis-planner -f Jarvis-Planner.Modelfile, and the same for jarvis-designer. vLLM or llama.cpp: start the server on 127.0.0.1 and set JARVIS_OPENAI_COMPAT_URL=http://127.0.0.1:8000/v1. Hosted endpoints and models ending in :cloud are refused." })));
     return h("section", { class: "panel", "aria-labelledby": "h-llm" }, h("h2", { id: "h-llm", text: "Local model" }), box,
       h("p", { class: "subtle t-caption", text: "Cost to you: 0 tokens. Everything runs on this computer; nothing leaves 127.0.0.1." }));
   }
@@ -1821,7 +1822,7 @@
     const box = h("div", { class: "stack" });
     loadInto(box, () => store.accessStatus(), st => {
       const ask = h("button", { class: "btn btn-secondary", type: "button" }, icon("i-lock", "sm"), "Open to the public…");
-      ask.addEventListener("click", e => { const from = e.currentTarget; store.requestPublic().then(() => showLocked(from, "publish", "Open Jarvis to the public (founder_private → public_subscribers)"), err => toast("error", err.message)); });
+      ask.addEventListener("click", e => { const from = e.currentTarget; store.requestPublic().then(() => showLocked(from, "publish", "Open Aether Prime to the public (founder_private → public_subscribers)"), err => toast("error", err.message)); });
       const signOut = st.gate ? h("button", { class: "btn btn-ghost", type: "button", text: "Sign out" }) : null;
       if (signOut) signOut.addEventListener("click", () => store.signOut().catch(err => toast("error", err.message)));
       return h("div", { class: "stack" },
@@ -1829,7 +1830,7 @@
         h("dl", { class: "kv" },
           h("dt", { text: "Sign-in" }), h("dd", { text: st.sample ? "No server: this page runs on this computer only." : st.gate ? "On: every page and API call needs the founder key." : "Off: answers on 127.0.0.1 only. Set JARVIS_FOUNDER_KEY to require the key." }),
           h("dt", { text: "Public address" }), h("dd", null, st.publicHost ? h("code", { translate: "no", text: "https://" + st.publicHost }) : h("span", { class: "muted", text: "None (127.0.0.1 only)" }))),
-        lockLine("Opening Jarvis to the public is a publish action (AGENTS.md §1). The database keeps it founder only."),
+        lockLine("Opening Aether Prime to the public is a publish action (AGENTS.md §1). The database keeps it founder only."),
         h("div", { class: "row" }, ask, signOut));
     });
     return h("section", { class: "panel", "aria-labelledby": "h-access" }, h("h2", { id: "h-access", text: "Access" }), box);
@@ -1845,7 +1846,7 @@
     add.addEventListener("click", e => { const from = e.currentTarget; store.requestEndpoint({ name: name.value, url: url.value }).then(r => { name.value = ""; url.value = ""; reload(); showLocked(from, "outbound", "Send workspace text to the hosted model endpoint " + r.endpoint.host); }, err => toast("error", err.message)); });
     reload();
     return h("section", { class: "panel", "aria-labelledby": "h-ep" }, h("h2", { id: "h-ep", text: "Hosted model endpoints" }),
-      h("p", { class: "t-sm", text: "Jarvis talks to models on 127.0.0.1 only. A hosted endpoint would send prompts, memory examples and plans outside this computer and needs a key, so asking for one makes a locked card for Director 00. Nothing is sent." }),
+      h("p", { class: "t-sm", text: "Aether Prime talks to models on 127.0.0.1 only. A hosted endpoint would send prompts, memory examples and plans outside this computer and needs a key, so asking for one makes a locked card for Director 00. Nothing is sent." }),
       h("div", { class: "grid-2" }, h("div", { class: "field" }, h("label", { htmlFor: "f-epname", text: "Name" }), name), h("div", { class: "field" }, h("label", { htmlFor: "f-epurl", text: "Address" }), url)),
       h("div", { class: "row" }, add), list);
   }
@@ -1867,7 +1868,7 @@
         accessPanel(),
         endpointsPanel(),
         h("section", { class: "panel", "aria-labelledby": "h-keys" }, h("h2", { id: "h-keys", text: "Model keys" }),
-          h("p", { class: "t-sm", text: "Keys are never typed or stored in Jarvis. They live only in the Ops Room vault (AES-GCM-256, PBKDF2 600,000 rounds) or in the encrypted env files." }),
+          h("p", { class: "t-sm", text: "Keys are never typed or stored in Aether Prime. They live only in the Ops Room vault (AES-GCM-256, PBKDF2 600,000 rounds) or in the encrypted env files." }),
           h("p", { class: "subtle t-caption", text: "AGENTS.md §4: secrets never live in code, git or plain localStorage." })),
         h("section", { class: "panel", "aria-labelledby": "h-look" }, h("h2", { id: "h-look", text: "Look" }),
           h("div", { class: "field" }, h("span", { class: "legend", text: "Theme" }), seg("Theme", [["dark", "Dark"], ["light", "Light"]], theme(), setTheme)),
@@ -1877,7 +1878,7 @@
           h("div", null, reset)));
     };
     loadInto(box, () => store.workspace(), render);
-    return h("div", { class: "stack" }, pageHead("Settings", "Workspace, members, keys and how Jarvis looks."), box,
+    return h("div", { class: "stack" }, pageHead("Settings", "Workspace, members, keys and how Aether Prime looks."), box,
       h("section", { class: "block", "aria-labelledby": "h-members" }, h("h2", { id: "h-members", text: "Members" }),
         h("p", { class: "muted t-sm", text: "Add people and give them a role. Nobody is emailed: invitations are outbound messages, which stay locked. Repository permissions are a separate, locked decision." }), membersPanel()),
       h("section", { class: "block", "aria-labelledby": "h-plans" }, h("h2", { id: "h-plans", text: "Plans and tokens" }), plansPanel()));
@@ -1986,7 +1987,7 @@
     councilBtn.addEventListener("click", () => askCouncil(false));
     const planPanel = h("section", { class: "panel", "aria-labelledby": "h-plan" }, h("h2", { id: "h-plan", text: "Plan with the local model" }),
       h("div", { class: "field" }, h("label", { htmlFor: "f-goal", text: "Goal" }), goal,
-        h("span", { class: "hint", id: "h-goal", text: "The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Jarvis decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00." })),
+        h("span", { class: "hint", id: "h-goal", text: "The local model on 127.0.0.1 drafts the steps when Ollama runs; otherwise the fixed rules do. Either way Aether Prime decides the locks: money, publishing, permissions, installs and outbound messages always wait for Director 00." })),
       h("div", { class: "row" }, planBtn, councilBtn), councilBox);
     const mcPanel = metacodesPanel("ALT3 X10THINK /HUMAN Build a real-time analytics dashboard, then deploy it and add a payment gate");
     // Changes made from a dialog land after it closes, so the close event refreshes too.
@@ -2031,7 +2032,7 @@
       pl.engine === "macro" ? h("p", { class: "t-sm" }, "Composed in Ctrl+K from the fixed rules (no model) ", pl.proof && pl.proof.verified ? badge("ok", "Formal Proof: Verified") : null) :
       pl.engine === "council" ? h("p", { class: "t-sm" }, "Agreed by the council: architect, red team and UX critic, synthesizer", pl.model ? h("span", null, " (", h("code", { translate: "no", text: pl.model }), ") ", h("span", { class: "tag-inf", text: "[INFERENCE - local LLM]" })) : " (fixed rules, no model)") :
       h("p", { class: "t-sm" }, byModel ? "Drafted by the local model " : "Drafted by the fixed rules", byModel ? h("code", { translate: "no", text: pl.model }) : null, byModel ? " on 127.0.0.1 " : " ", h("span", { class: "tag-inf", text: byModel ? "[INFERENCE - local LLM]" : "(no model)" })),
-      h("p", { class: "t-caption muted", text: "Every lock was decided by Jarvis's rules, not by the plan, and the database refuses to mark a locked step done." }),
+      h("p", { class: "t-caption muted", text: "Every lock was decided by Aether Prime's rules, not by the plan, and the database refuses to mark a locked step done." }),
       pl.warning ? h("p", { class: "t-caption muted", dir: "auto", text: pl.warning }) : null,
       pl.thinking ? h("details", { class: "think" }, h("summary", { text: "Thinking (untrusted model text)" }), h("pre", { class: "log", dir: "auto", text: pl.thinking })) : null);
   }
@@ -2052,7 +2053,7 @@
     if (o.error) return o.error;
     if (o.rejected !== undefined) return "Rejected: " + o.rejected;
     if (o.written !== undefined) return o.written ? "Approved and written to " + o.written : (o.note || "Approved.");
-    if (o.approval) return o.locked ? "Waiting for Director 00 outside Jarvis." : "Waiting for a person to approve.";
+    if (o.approval) return o.locked ? "Waiting for Director 00 outside Aether Prime." : "Waiting for a person to approve.";
     if (o.results) return (o.pass ? "Gate passed: " : "Gate failed: ") + plural(o.results.filter(r => r.ok).length, "check") + " of " + o.results.length + " passed on saved evidence.";
     return stepSummary(s);
   }
@@ -2063,7 +2064,7 @@
         h("button", { class: "btn btn-primary", type: "button", text: "Carry on", onclick: () => store.skipStep(m.id, s.idx).then(() => { closeDialog(); toast("info", "Skipped. The request stays in the inbox."); }, err => toast("error", err.message)) })], e.currentTarget));
     return h("div", { class: "approval locked mlock" },
       h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "بانتظار الموافقة" }), h("span", { class: "subtle t-caption", text: "· Waiting for Director 00" })),
-      h("p", { class: "muted t-sm", text: "Locked: this " + LOCKED[s.category] + ". Jarvis has no approve button for it, and the database refuses to mark this step done (mission_steps_locked_never_done). Steps that do not need it carry on." }),
+      h("p", { class: "muted t-sm", text: "Locked: this " + LOCKED[s.category] + ". Aether Prime has no approve button for it, and the database refuses to mark this step done (mission_steps_locked_never_done). Steps that do not need it carry on." }),
       h("div", { class: "row" }, h("a", { class: "btn btn-ghost btn-sm", href: "#/approvals", text: "Open in Approvals" }), skip));
   }
   function stepItem(m, s) {
@@ -2125,7 +2126,7 @@
         pageHead(m.title, m.goal && m.goal.trim() !== m.title.trim() ? m.goal : null, badge(m.status), pauseBtn, runBtn),
         m.simulated ? sampleNote("Sample mission: tool steps are simulated; gates judge the repo's evidence files as of the build; capsules are real SHA-256 chains in this browser. Start jarvis/server for real runs.") : sampleNote(),
         plannerBox(m.planner),
-        lockedWaiting && m.status !== "succeeded" ? h("p", { class: "sample-note lock-note", role: "note" }, icon("i-lock", "sm"), plural(lockedWaiting, "locked step") + (lockedWaiting === 1 ? " waits" : " wait") + " for Director 00 outside Jarvis; every step that does not need " + (lockedWaiting === 1 ? "it" : "them") + " has carried on.") : null,
+        lockedWaiting && m.status !== "succeeded" ? h("p", { class: "sample-note lock-note", role: "note" }, icon("i-lock", "sm"), plural(lockedWaiting, "locked step") + (lockedWaiting === 1 ? " waits" : " wait") + " for Director 00 outside Aether Prime; every step that does not need " + (lockedWaiting === 1 ? "it" : "them") + " has carried on.") : null,
         h("div", { class: "mission" },
           h("div", { class: "stack" },
             h("div", { class: "mstats" },
@@ -2287,7 +2288,7 @@
       inspector.replaceChildren(...[
         h("div", { class: "field" }, h("label", { htmlFor: "f-node-title", text: "Title" }), title),
         h("div", { class: "field" }, h("label", { htmlFor: "f-node-kind", text: "Kind" }), kind), extraField, needs,
-        locked ? h("p", { class: "sample-note lock-note" }, icon("i-lock", "sm"), "This step is locked: it waits for Director 00 outside Jarvis, whatever kind it is drawn as.") : null,
+        locked ? h("p", { class: "sample-note lock-note" }, icon("i-lock", "sm"), "This step is locked: it waits for Director 00 outside Aether Prime, whatever kind it is drawn as.") : null,
         h("div", { class: "row" }, del)].filter(Boolean));
     }
     function drawPhases() {
@@ -2431,7 +2432,7 @@
   pages.webhooks = () => {
     const box = h("div", { class: "stack" });
     const render = list => list.length ? h("div", { class: "stack" }, list.map(wh => {
-      const act = (fn, msg) => e => { e.currentTarget.disabled = true; fn().then(r => { if (r && r.locked) toast("warn", "Locked: sending outside Jarvis waits for Director 00."); else toast("ok", msg); reload(); }, err => { toast("error", err.message); reload(); }); };
+      const act = (fn, msg) => e => { e.currentTarget.disabled = true; fn().then(r => { if (r && r.locked) toast("warn", "Locked: sending outside Aether Prime waits for Director 00."); else toast("ok", msg); reload(); }, err => { toast("error", err.message); reload(); }); };
       return h("article", { class: "approval" + (wh.external ? " locked" : ""), "aria-labelledby": "wh-" + wh.id },
         h("div", { class: "row between" }, h("h3", { id: "wh-" + wh.id, dir: "auto", text: wh.name }), h("div", { class: "row" }, h("span", { class: "badge", text: wh.direction === "in" ? "Incoming" : "Outgoing" }), badge(wh.status === "active" ? "ok" : wh.status === "paused" ? "paused" : "idle", wh.status === "active" ? "On" : wh.status === "paused" ? "Paused" : "Draft"))),
         h("p", { class: "mono t-caption", translate: "no", text: wh.direction === "in" ? "POST " + wh.endpoint : wh.url }),
@@ -2442,10 +2443,10 @@
           wh.direction === "out" && wh.status === "active" ? h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Send test event", onclick: act(() => store.testWebhook(wh.id).then(r => { toast(r.status === "sent" ? "ok" : "error", "Test: " + r.status + " · " + r.detail); return null; }), "Sent.") }) : null,
           h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Show secret", onclick: e => secretDialog(wh.id, null, e.currentTarget) }),
           h("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Delete", onclick: act(() => store.deleteWebhook(wh.id), "Deleted.") })));
-    })) : emptyState("i-hook", "No webhooks yet", store.mode === "live" ? "Incoming webhooks let local tools tell Jarvis something happened; outgoing ones send mission results to a tool on this computer." : "Webhooks run on the local server, where their secrets are kept. Start it with: node jarvis/server/server.mjs");
+    })) : emptyState("i-hook", "No webhooks yet", store.mode === "live" ? "Incoming webhooks let local tools tell Aether Prime something happened; outgoing ones send mission results to a tool on this computer." : "Webhooks run on the local server, where their secrets are kept. Start it with: node jarvis/server/server.mjs");
     const reload = () => loadInto(box, () => store.listWebhooks(), render);
     const name = h("input", { class: "input", id: "f-whname", name: "webhook-name", autocomplete: "off", maxLength: 80, placeholder: "CI results" });
-    const dir = h("select", { class: "select", id: "f-whdir", name: "webhook-direction", autocomplete: "off" }, h("option", { value: "in", text: "Incoming (a tool posts to Jarvis)" }), h("option", { value: "out", text: "Outgoing (Jarvis posts to a tool)" }));
+    const dir = h("select", { class: "select", id: "f-whdir", name: "webhook-direction", autocomplete: "off" }, h("option", { value: "in", text: "Incoming (a tool posts to Aether Prime)" }), h("option", { value: "out", text: "Outgoing (Aether Prime posts to a tool)" }));
     const url = h("input", { class: "input mono", id: "f-whurl", name: "webhook-url", type: "url", autocomplete: "off", placeholder: "http://127.0.0.1:9000/hook", disabled: true });
     dir.addEventListener("change", () => { url.disabled = dir.value !== "out"; });
     const add = h("button", { class: "btn btn-primary", type: "button" }, icon("i-plus", "sm"), "Add webhook");
@@ -2547,7 +2548,7 @@
       const price = h("input", { class: "input num", id: "f-tprice", name: "tier-price", inputmode: "numeric", autocomplete: "off", placeholder: "1900" });
       const save = h("button", { class: "btn btn-secondary btn-sm", type: "button", text: "Save draft plan" });
       save.addEventListener("click", () => store.saveTier({ name: name.value, monthlyTokens: Number(toks.value), priceMinor: Number(price.value || 0), currency: "USD" }).then(nb => box.replaceChildren(render(nb)), e => toast("error", e.message)));
-      const money = what => e => store.requestMoney(what).then(() => { toast("warn", "Locked: charging people waits for Director 00 outside Jarvis."); location.hash = "#/approvals"; }, err => toast("error", err.message));
+      const money = what => e => store.requestMoney(what).then(() => { toast("warn", "Locked: charging people waits for Director 00 outside Aether Prime."); location.hash = "#/approvals"; }, err => toast("error", err.message));
       return h("div", { class: "stack" },
         h("div", { class: "row" }, badge("ok", b.creatorZeroToken ? "Creator · zero-token · unlimited" : "Creator mode off"), badge("idle", b.billingEnabled ? "Billing on" : "Billing off")),
         h("p", { class: "t-sm", text: "You pay nothing: every entry in the ledger is yours at cost 0. Plans for future subscribers are drafts; turning on billing or a plan is a money decision that waits for Director 00 (AGENTS.md §1), and the database keeps both off." }),
@@ -2638,7 +2639,7 @@
     return { runbook, RB_STAGES };
   })();
   const PRESETS = {
-    night: { label: "Night (Jarvis)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
+    night: { label: "Night (Aether Prime)", bg: "#090b10", surface: "#10141b", text: "#eef2f8", muted: "#b9c1cd", accent: "#77bcff", onAccent: "#04101f", border: "#242b37" },
     paper: { label: "Paper", bg: "#f7f7f5", surface: "#ffffff", text: "#16181d", muted: "#4a505c", accent: "#0b5ed7", onAccent: "#ffffff", border: "#e2e4e8" },
     sand: { label: "Sand", bg: "#f6f1e7", surface: "#fffaf0", text: "#2a2118", muted: "#5c4d3c", accent: "#8a4b0f", onAccent: "#fffaf0", border: "#e6dccb" },
   };
@@ -2660,12 +2661,12 @@
       v: 1, name: "My product", lang: "en", width: 1440, preset: "night", theme: { ...PRESETS.night },
       blocks: [
         { id: "b-nav", type: "nav", on: true, t: { en: { brand: "My product", links: "Features, Questions", cta: "Get started" }, ar: { brand: "منتجي", links: "المزايا، الأسئلة", cta: "ابدأ الآن" } } },
-        { id: "b-hero", type: "hero", on: true, t: { en: { kicker: "Built in Jarvis Studio", title: "Say what your product does in one line", body: "Replace this text with the problem you solve and who it is for. Keep it short and plain.", primary: "Get started", secondary: "See features" }, ar: { kicker: "صُمّم في استوديو جارفس", title: "قل ما يفعله منتجك في سطر واحد", body: "استبدل هذا النص بالمشكلة التي تحلّها ولمن هي. اجعله قصيراً وواضحاً.", primary: "ابدأ الآن", secondary: "شاهد المزايا" } } },
+        { id: "b-hero", type: "hero", on: true, t: { en: { kicker: "Built in Aether Prime Studio", title: "Say what your product does in one line", body: "Replace this text with the problem you solve and who it is for. Keep it short and plain.", primary: "Get started", secondary: "See features" }, ar: { kicker: "صُمّم في استوديو جارفس", title: "قل ما يفعله منتجك في سطر واحد", body: "استبدل هذا النص بالمشكلة التي تحلّها ولمن هي. اجعله قصيراً وواضحاً.", primary: "ابدأ الآن", secondary: "شاهد المزايا" } } },
         { id: "b-features", type: "features", on: true, t: { en: { title: "What it does", f1t: "Works in two languages", f1b: "Arabic right to left and English left to right, from the same blocks.", f2t: "Readable by default", f2b: "Every colour pair is checked against WCAG and APCA while you edit.", f3t: "No trackers", f3b: "The page loads nothing from the network: no scripts, fonts or analytics from outside." }, ar: { title: "ماذا يفعل", f1t: "يعمل بلغتين", f1b: "العربية من اليمين إلى اليسار والإنجليزية من اليسار إلى اليمين، بالأقسام نفسها.", f2t: "مقروء من البداية", f2b: "كل زوج ألوان يُفحص بمعياري WCAG وAPCA أثناء التعديل.", f3t: "بلا تتبّع", f3b: "الصفحة لا تحمّل شيئاً من الشبكة: لا سكربتات ولا خطوط ولا تحليلات خارجية." } } },
         { id: "b-stats", type: "stats", on: false, t: { en: { s1v: "2", s1l: "languages", s2v: "3", s2l: "screen sizes checked", s3v: "0", s3l: "outside requests" }, ar: { s1v: "2", s1l: "لغتان", s2v: "3", s2l: "مقاسات شاشة مفحوصة", s3v: "0", s3l: "طلبات خارجية" } } },
         { id: "b-faq", type: "faq", on: true, t: { en: { title: "Questions", q1: "Does it work offline?", a1: "Yes. The downloaded file carries its fonts and needs no network.", q2: "Can I change the colours?", a2: "Yes. The Studio warns you when a pair becomes hard to read.", q3: "", a3: "" }, ar: { title: "أسئلة", q1: "هل يعمل دون اتصال؟", a1: "نعم. الملف المحمّل يحمل خطوطه ولا يحتاج إلى الشبكة.", q2: "هل أستطيع تغيير الألوان؟", a2: "نعم. ينبّهك الاستوديو حين يصبح زوج ألوان صعب القراءة.", q3: "", a3: "" } } },
         { id: "b-cta", type: "cta", on: true, t: { en: { title: "Ready to try it?", body: "Write the one next step you want a visitor to take.", button: "Get started" }, ar: { title: "جاهز للتجربة؟", body: "اكتب الخطوة التالية التي تريدها من الزائر.", button: "ابدأ الآن" } } },
-        { id: "b-footer", type: "footer", on: true, t: { en: { text: "Made with Jarvis Studio." }, ar: { text: "صُنع باستوديو جارفس." } } },
+        { id: "b-footer", type: "footer", on: true, t: { en: { text: "Made with Aether Prime Studio." }, ar: { text: "صُنع باستوديو جارفس." } } },
       ],
     };
   }
@@ -2826,7 +2827,7 @@
     const gzIn = h("input", { class: "input", type: "file", id: "f-gz", name: "template-gz", accept: ".gz,application/gzip", "aria-describedby": "h-gz" });
     const cleanText = v => (typeof v === "string" ? v.slice(0, 400) : "");
     const cleanSite = t => {
-      if (!t || t.format !== "jarvis-studio-template-v1" || !t.site || !Array.isArray(t.site.blocks)) throw new Error("This is not a Jarvis Studio template.");
+      if (!t || t.format !== "jarvis-studio-template-v1" || !t.site || !Array.isArray(t.site.blocks)) throw new Error("This is not a Aether Prime Studio template.");
       const theme = {};
       for (const [k, v] of Object.entries(t.site.theme || {})) if (PRESETS.night[k] !== undefined && /^#[0-9a-fA-F]{6}$/.test(v)) theme[k] = v;
       const blocks = t.site.blocks.filter(b => b && BLOCK_NAMES[b.type]).slice(0, 20).map((b, i) => ({ id: /^[\w-]{1,40}$/.test(b.id) ? b.id : "b-" + i, type: b.type, on: b.on !== false,
@@ -2902,7 +2903,7 @@
           h("dt", { text: "Sections" }), h("dd", { text: r.sections.join(" · ") }),
           h("dt", { text: "Dropped" }), h("dd", { text: [plural(d.scripts, "script") + " (" + plural(d.trackers, "tracker") + ")", plural(d.stylesheets, "stylesheet"), plural(d.images, "image"), plural(d.frames, "frame"), plural(d.textCharacters, "character") + " of their text"].join(", ") }),
           h("dt", { text: "Sweep" }), h("dd", null, r.sweep.leaks ? badge("failed", r.sweep.leaks + " possible leaks: " + r.sweep.leaked.join(", ")) : badge("ok", "0 leaks · " + plural(r.sweep.brandTermsChecked, "brand term") + " and " + plural(r.sweep.sourcePhrasesChecked, "phrase") + " checked"))));
-        toast("ok", "Extracted " + out.blocks.length + " sections into a clean template in the Jarvis design system. Nothing of the source was kept.");
+        toast("ok", "Extracted " + out.blocks.length + " sections into a clean template in the Aether Prime design system. Nothing of the source was kept.");
       } catch (e) {
         report.replaceChildren(h("p", { class: "err" }, icon("i-alert", "sm"), e.message));
         toast("error", e.message);
@@ -3369,7 +3370,7 @@
     setMode();
     side.replaceChildren(h("section", { class: "panel", "aria-labelledby": "h-src" }, h("h2", { id: "h-src", text: "Sources" }),
       h("ul", { class: "feed" }, Object.entries(SEARCH_LABEL).map(([id, label]) => h("li", null, h("span", { class: "t-sm", dir: "auto", text: label }), h("span", { class: "subtle t-caption", text: { searxng: "only if JARVIS_SEARXNG_URL is set", pypi: "one package by name", osv: "vulnerabilities" }[id] || "keyless JSON API" })))),
-      h("p", { class: "subtle t-caption", text: "No search page is scraped and no anti-bot check is bypassed. With no internet, Jarvis answers from this workspace's memory and says so." })));
+      h("p", { class: "subtle t-caption", text: "No search page is scraped and no anti-bot check is bypassed. With no internet, Aether Prime answers from this workspace's memory and says so." })));
     return h("div", { class: "stack" },
       pageHead("Search", "Live search across official, keyless public APIs, through the local server. Results are untrusted text with links; a summary goes into memory."), sampleNote(),
       form,
@@ -3454,7 +3455,7 @@
     reloadAll();
     const off = store.subscribe(() => { if (!mounted.isConnected) { off(); return; } if (!dlg.open) { store.listRuntime().then(l => mounted.replaceChildren(renderMounted(l)), () => {}); store.evolutionLog().then(l => evoBox.replaceChildren(renderEvo(l)), () => {}); } });
     return h("div", { class: "stack" },
-      pageHead("Skill Loader", "Find, write and grow skills from inside Jarvis. Each one is audited, then mounted in this workspace at once. Writing one into the repository stays a locked approval."), sampleNote(),
+      pageHead("Skill Loader", "Find, write and grow skills from inside Aether Prime. Each one is audited, then mounted in this workspace at once. Writing one into the repository stays a locked approval."), sampleNote(),
       h("div", { class: "mixer" },
         h("div", { class: "stack" },
           h("section", { class: "panel", "aria-labelledby": "h-disc" }, h("h2", { id: "h-disc", text: "Discover on GitHub" }),
@@ -3548,7 +3549,7 @@
       q.findings.length ? h("ul", { class: "feed" }, q.findings.slice(0, 12).map(f => h("li", null, badge(f.severity === "high" ? "failed" : f.severity === "medium" ? "warn" : "idle", f.severity), h("span", { class: "mono t-caption", translate: "no", text: f.rule + " " + f.file + ":" + f.line }), h("span", { class: "t-caption", dir: "auto", text: f.message })))) : null,
       h("p", { class: "subtle t-caption num", translate: "no", text: "sha256 " + q.sha256.slice(0, 12) + " · " + fmtDate.format(new Date(q.built)) })) : h("p", { class: "muted t-sm", text: "No quality report in this build. Run replica-impeccable, then build the page." });
     return h("div", { class: "stack" },
-      pageHead("Governance", "How Jarvis is kept honest: the working rules, a map of what calls what, the quality gate, and which outside tools were taken in or kept out."),
+      pageHead("Governance", "How Aether Prime is kept honest: the working rules, a map of what calls what, the quality gate, and which outside tools were taken in or kept out."),
       h("p", { class: "sample-note", dir: "auto" }, icon("i-alert", "sm"), "Build-time snapshots from the repository's own tools, read from the code with fixed rules [INFERENCE]; the code is the truth."),
       h("div", { class: "grid-2" },
         h("section", { class: "panel", "aria-labelledby": "h-grules" }, h("h2", { id: "h-grules", text: "Working rules" }), rules, h("p", { class: "subtle t-caption", text: "From Karpathy's surgical rules, written into CLAUDE.md." })),
@@ -3593,7 +3594,7 @@
         revList(e.corrections))))
         : emptyState("i-check", "No corrections yet", "When a plan or a page breaks a rule, the corrected copy and what changed appear here.")));
     const parts = [h("h2", { id: "h-rev", text: "Autonomous Reversal Log" }),
-      h("p", { class: "t-sm", text: "When a plan or a page breaks a rule, Jarvis writes a corrected copy and logs what changed, with SHA-256 of before, after and the corrections. A local model's plan is corrected on its own: a sensitive step becomes a locked approval, pending_approval." })];
+      h("p", { class: "t-sm", text: "When a plan or a page breaks a rule, Aether Prime writes a corrected copy and logs what changed, with SHA-256 of before, after and the corrections. A local model's plan is corrected on its own: a sensitive step becomes a locked approval, pending_approval." })];
     if (withInput) {
       const ta = h("textarea", { class: "textarea code", id: "f-rev", name: "reversal-template", autocomplete: "off", rows: 5, spellcheck: false, "aria-describedby": "h-rev-hint" });
       const out = h("div", { class: "stack", "aria-live": "polite" });
@@ -3678,7 +3679,7 @@
       h("section", { class: "panel", "aria-labelledby": "h-recon" }, h("h2", { id: "h-recon", text: "Check a domain" }), form),
       box,
       h("section", { class: "panel", "aria-labelledby": "h-rlock" }, h("h2", { id: "h-rlock", text: "Still locked" }),
-        lockLine("anything beyond reading what is public: port scans, login attempts and outbound messages are not part of Jarvis and wait for Director 00")));
+        lockLine("anything beyond reading what is public: port scans, login attempts and outbound messages are not part of Aether Prime and wait for Director 00")));
   };
 
   /* ── Math lab (ADR-154): exact steps, each answer checked backwards before it is marked verified ── */
@@ -4057,7 +4058,7 @@
   };
   /* ── Skill tree (ADR-162): the skills as one tree, from facts in the repository ── */
   const ST_STATUS = { proved: ["ok", "Proved"], tested: ["running", "Tested"], rules: ["idle", "Text rules"], reference: ["idle", "Reference"], attention: ["failed", "Needs attention"] };
-  const ST_FAMILY = { "family:jarvis": "Jarvis skills", "family:omega": "OMEGA skills", "family:vendored": "Vendored references" };
+  const ST_FAMILY = { "family:jarvis": "Aether Prime skills", "family:omega": "OMEGA skills", "family:vendored": "Vendored references" };
   function stDraw(t, onPick) {
     const V = t.view, byId = new Map(t.nodes.map(n => [n.id, n]));
     const curve = (a, b) => { const my = (a.y + b.y) / 2; return `M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`; };
@@ -4159,7 +4160,7 @@
   const RB_ROUTE = { ok: ["ok", "Passed"], failed: ["failed", "Failed"], error: ["failed", "Refused"], server_only: ["idle", "Server only"] };
   function rbStageBody(s) {
     const m = s.summary, row = (...k) => h("p", { class: "row t-sm" }, ...k), muted = t => h("span", { class: "muted", text: t });
-    if (s.status === "error") return row(badge("failed", "Refused"), uaData(m.error));
+    if (s.status === "error" && s.id !== "tree") return row(badge("failed", "Refused"), uaData(m.error));
     if (s.id === "shield") return row(muted("Replaced"), uaNum(m.replaced), ...m.rules.map(uaData), m.secret_prefix ? h("span", { class: "row" }, muted("Secret check prefix"), h("code", { translate: "no", dir: "ltr", text: m.secret_prefix })) : null);
     if (s.id === "docs") return h("div", { class: "stack" }, row(m.found ? badge("ok", "Found") : badge("warn", "Nothing found"), muted("Documents searched"), uaNum(m.counts.docs)),
       m.top.length ? h("ol", { class: "plist" }, m.top.map(x => h("li", { class: "stack t-sm" }, h("span", { class: "row" }, h("bdi", { lang: "en", dir: "auto", translate: "no", text: x.title }), uaNum(x.score)),
@@ -4167,13 +4168,35 @@
     if (s.id === "order") return h("div", { class: "stack" }, row(m.verified ? badge("ok", "Every edge kept") : badge("failed", "An edge is broken"), muted("Added because they are loaded"), uaNum(m.added.length)),
       h("ol", { class: "plist" }, m.layers.map((l, i) => h("li", { class: "row t-sm" }, muted("Layer"), uaNum(i + 1), ...l.map(n => h("code", { translate: "no", dir: "ltr", text: n }))))),
       m.cycle.length ? row(muted("On a cycle, left out of the order"), ...m.cycle.map(n => h("code", { translate: "no", dir: "ltr", text: n }))) : null);
-    if (s.id === "tree") return row(m.status === "success" ? badge("ok", "Success") : m.status === "running" ? badge("running", "Running: waiting for approval") : badge("failed", "Failure"),
-      m.stopped_at ? h("span", { class: "row" }, muted("Stopped at"), uaData(m.stopped_at)) : null, muted("Locked steps"), uaNum(m.waiting));
+    if (s.id === "tree") return h("div", { class: "stack" }, row(m.status === "success" ? badge("ok", "Success") : m.status === "running" ? badge("running", "Running: waiting for approval") : badge("failed", "Failure"),
+      m.stopped_at ? h("span", { class: "row" }, muted("Stopped at"), uaData(m.stopped_at)) : null, muted("Locked steps"), uaNum(m.waiting)),
+      m.design ? rbDesignBody(m.design) : null);
     if (s.id === "plan") return row(muted("Chosen"), h("strong", { text: RB_PLAN[m.chosen] || m.chosen }), h("span", { class: "tag-inf", text: m.tag }), muted(PO_REASON[m.reason]));
     return h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Page probes" }, h("table", { class: "table" },
       h("thead", null, h("tr", null, ...["Page", "Decision record", "Engine", "State"].map(t => h("th", { scope: "col", text: t })))),
       h("tbody", null, m.routes.map(x => h("tr", null, h("td", null, h("a", { href: x.route, translate: "no", dir: "ltr", text: x.route })), h("td", null, uaData(x.adr)),
         h("td", null, h("code", { translate: "no", dir: "ltr", text: x.engine })), h("td", null, badge(RB_ROUTE[x.status][0], RB_ROUTE[x.status][1])))))));
+  }
+  function rbDesignBody(d) {
+    const muted = t => h("span", { class: "muted", text: t });
+    if (d.error) return h("p", { class: "row t-sm" }, badge("failed", "CSS not read"), uaData(d.error));
+    return h("div", { class: "stack rb-design" },
+      h("p", { class: "row t-sm" }, d.rules.length ? badge("warn", "Corrected") : badge("ok", "Clean"), ...d.rules.map(uaData), d.fixed_point ? badge("ok", "The corrected copy needs no further change") : badge("failed", "The corrected copy still changes")),
+      h("p", { class: "row t-caption muted" }, muted("Before"), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: d.before_sha256 })),
+      h("p", { class: "row t-caption muted" }, muted("After"), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: d.after_sha256 })),
+      h("details", null, h("summary", { text: "The corrected CSS" }), h("pre", { class: "diff", translate: "no", dir: "ltr", "data-verbatim": "", text: d.corrected_css })));
+  }
+  const RB_FIELD = { skills: "Skills", record: "Your record", c: "Exploration c", css: "CSS" };
+  function rbRepairBody(rep) {
+    const a = rep.after;
+    return h("section", { class: "panel stack rb-repair", "aria-labelledby": "h-rb-fix" }, h("h2", { id: "h-rb-fix", text: "Repaired plan" }),
+      h("p", { class: "t-caption muted", text: "What the rules could correct was left out, and the repaired request was run through the six stages once more. Locked steps stay locked." }),
+      h("ul", { class: "plist" }, rep.changes.map(c => h("li", { class: "row t-sm" }, h("strong", { text: RB_TITLE[c.stage] }), h("span", { class: "muted", text: RB_FIELD[c.field] }),
+        ...(c.removed.length ? [h("span", { class: "muted", text: "Left out" }), ...c.removed.map(x => h("code", { translate: "no", dir: "ltr", text: String(x) }))] : [h("span", { text: "Repeated names joined" })])))),
+      h("p", { class: "row" }, a.ready ? badge("ok", "Every stage ran") : badge("warn", "A stage was refused"), h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(a.locked)),
+      h("p", { class: "row t-sm" }, ...a.stages.map(s => h("span", { class: "row" }, h("span", { text: RB_TITLE[s.id] }), s.status === "ok" ? badge("ok", "Passed") : badge("failed", "Refused")))),
+      h("p", { class: "row t-caption muted" }, h("span", { text: "Repaired request" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: rep.request_sha256 })),
+      h("p", { class: "row t-caption muted" }, h("span", { text: "Chain hash" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: a.chain_sha256 })));
   }
   pages.runbook = () => {
     const out = h("div", { class: "stack", "aria-live": "polite" });
@@ -4181,18 +4204,22 @@
     goalIn.value = "Heal the contrast of the login page and email ops@example.org the result";
     const skillsIn = h("input", { class: "input", id: "f-rb-skills", name: "skills", autocomplete: "off", dir: "ltr", lang: "en", translate: "no", value: "replica-polymath-engine" });
     const secretIn = h("input", { class: "input", type: "password", id: "f-rb-secret", name: "secret-check", autocomplete: "off", dir: "ltr" });
+    const cssIn = h("textarea", { class: "textarea", id: "f-rb-css", name: "css", rows: 2, autocomplete: "off", dir: "ltr", lang: "en", translate: "no", spellcheck: false, maxLength: 100000 });
+    cssIn.value = ".hero{background:linear-gradient(90deg,#3b82f6,#8b5cf6);color:#777777;background-color:#ffffff}";
     const btn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Run the runbook");
     btn.addEventListener("click", async () => {
       btn.disabled = true; btn.setAttribute("aria-busy", "true");
       const body = { goal: goalIn.value, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean), lang: document.documentElement.lang === "ar" ? "ar" : "en" };
       if (secretIn.value) body.secretCheck = secretIn.value;
+      if (cssIn.value.trim()) body.css = cssIn.value;
       secretIn.value = "";
       try {
         const r = await store.runbook(body);
         out.replaceChildren(
           h("p", { class: "row" }, r.ready ? badge("ok", "Every stage ran") : badge("warn", "A stage was refused"), badge("idle", "Not sent"), h("span", { class: "muted t-sm", text: "Locked steps" }), uaNum(r.locked)),
           h("ol", { class: "plist rb-stages" }, r.stages.map(s => h("li", { class: "stack rb-stage" }, h("h3", { text: RB_TITLE[s.id] }), rbStageBody(s)))),
-          h("p", { class: "row t-caption muted" }, h("span", { text: "Chain hash" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.chain_sha256 })));
+          h("p", { class: "row t-caption muted" }, h("span", { text: "Chain hash" }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.chain_sha256 })),
+          ...(r.repair ? [rbRepairBody(r.repair)] : []));
       } catch (err) { out.replaceChildren(h("p", { class: "t-sm" }, badge("failed", "Not run"), " ", h("span", { text: err.message }))); }
       finally { btn.disabled = false; btn.removeAttribute("aria-busy"); }
     });
@@ -4203,6 +4230,7 @@
       h("section", { class: "panel stack", "aria-labelledby": "h-rb" }, h("h2", { id: "h-rb", text: "Goal" }),
         field("f-rb-goal", "Goal", goalIn), field("f-rb-skills", "Skills, separated by commas", skillsIn),
         field("f-rb-secret", "Secret to check (optional)", secretIn, "Only the first five characters of its SHA-1 are kept. The field is cleared."),
+        field("f-rb-css", "CSS to check (optional)", cssIn, "A gradient, low contrast or a long word is corrected by the reversal engine and the contrast healer."),
         h("div", { class: "row" }, btn)),
       h("section", { class: "panel stack", "aria-labelledby": "h-rb-r" }, h("h2", { id: "h-rb-r", text: "Stages" }), out));
   };
@@ -4621,7 +4649,7 @@
       h("div", { class: "row between" }, h("h2", { id: "h-layer-" + l.id }, h("bdi", { class: "num", text: String(i + 1) }), " · ", l.name), l.ok ? badge("ok", "Ready") : badge("warn", "Needs attention")),
       h("ul", { class: "plist" }, l.checks.map(c => h("li", null, c.ok ? badge("ok", "OK") : badge(c.detail === "needs the local server" ? "idle" : "failed", c.detail === "needs the local server" ? "Server" : "Check"), " ", h("b", { text: c.name }), " ", h("bdi", { class: "t-caption muted", "data-i18n": "", text: c.detail }))))))));
     return h("div", { class: "stack" },
-      pageHead("Diagnostics", "Whether each layer of Jarvis is ready, checked now from the database, the evidence files and the running services."),
+      pageHead("Diagnostics", "Whether each layer of Aether Prime is ready, checked now from the database, the evidence files and the running services."),
       sampleNote(),
       box,
       h("section", { class: "panel", "aria-labelledby": "h-bundle" }, h("h2", { id: "h-bundle", text: "Diagnostic bundle" }),
@@ -4692,12 +4720,12 @@
             h("div", { class: "field" }, h("label", { htmlFor: "f-ntitle", text: "Title" }), nTitle), h("div", { class: "field" }, h("label", { htmlFor: "f-nbody", text: "Text" }), nBody),
             h("div", { class: "field" }, h("label", { htmlFor: "f-ntags", text: "Tags" }), nTags), h("div", { class: "row" }, addBtn)),
           h("section", { class: "panel", "aria-labelledby": "h-sc" }, h("h2", { id: "h-sc", text: "Self-check" }),
-            h("p", { class: "t-sm", text: "Jarvis asks questions whose answers it computes itself: contrast ratios, which actions are locked, and the spacing scale. With a local model it grades the model; either way each computed answer is stored as a lesson." }),
+            h("p", { class: "t-sm", text: "Aether Prime asks questions whose answers it computes itself: contrast ratios, which actions are locked, and the spacing scale. With a local model it grades the model; either way each computed answer is stored as a lesson." }),
             h("div", { class: "row" }, scBtn, exBtn), scBox),
           h("section", { class: "panel", "aria-labelledby": "h-cur" }, h("h2", { id: "h-cur", text: "Curriculum" }),
             h("p", { class: "t-sm", text: "For a larger set, the replica-hybrid-python skill writes 50,000+ layouts and 50,000+ Arabic and English questions with computed answers, as JSONL, on your computer:" }),
             h("pre", { class: "diff", translate: "no", text: "python3 .claude/skills/replica-hybrid-python/curriculum_50k.py count\npython3 .claude/skills/replica-hybrid-python/curriculum_50k.py export --kind qa --n 50000 --out jarvis/curriculum/qa.jsonl --root ." }),
-            h("p", { class: "subtle t-caption", text: "Standard library only, no network. Use it with your own fine-tuning tools if you choose; Jarvis does not train a model." })))));
+            h("p", { class: "subtle t-caption", text: "Standard library only, no network. Use it with your own fine-tuning tools if you choose; Aether Prime does not train a model." })))));
   };
 
   /* ── Router ─────────────────────────────────────────────────── */

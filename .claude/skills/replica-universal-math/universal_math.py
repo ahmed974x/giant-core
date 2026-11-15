@@ -209,7 +209,7 @@ def tokenize(src):
             out.append({"t": c})
             i += 1
         else:
-            _fail("This sign is not maths Jarvis reads.", c)
+            _fail("This sign is not maths Aether Prime reads.", c)
         if len(out) > LIMITS["tokens"]:
             _fail("The expression has more than 200 parts.")
     res = []
@@ -1128,7 +1128,7 @@ UM_AR = {
     "The system solved by Gaussian elimination with partial pivoting": "حل النظام بحذف غاوس مع الارتكاز الجزئي",
     "The value at the end": "القيمة عند النهاية",
     "This number could not be factorised within the limits.": "تعذر تحليل هذا العدد ضمن الحدود.",
-    "This sign is not maths Jarvis reads.": "هذه العلامة ليست من الرياضيات التي يقرؤها Jarvis.",
+    "This sign is not maths Aether Prime reads.": "هذه العلامة ليست من الرياضيات التي يقرؤها أثير برايم.",
     "Write an expression first.": "اكتب تعبيراً أولاً.",
     "a·x + b·y equals the gcd.": "a·x + b·y يساوي القاسم المشترك الأكبر.",
     "x leaves every given remainder.": "x يعطي كل باقٍ مطلوب.",

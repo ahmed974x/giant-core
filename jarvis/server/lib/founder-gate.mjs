@@ -44,7 +44,7 @@ export function createFounderGate({ key = process.env.JARVIS_FOUNDER_KEY, public
   const enabled = typeof key === "string" && key.length > 0;
   if (enabled && key.length < 12) throw new GateError(400, "JARVIS_FOUNDER_KEY must be at least 12 characters.");
   const host = checkPublicHost(publicHost);
-  if (host && !enabled) throw new GateError(400, "JARVIS_PUBLIC_HOST needs JARVIS_FOUNDER_KEY: Jarvis is never reachable through a public name without the founder gate.");
+  if (host && !enabled) throw new GateError(400, "JARVIS_PUBLIC_HOST needs JARVIS_FOUNDER_KEY: Aether Prime is never reachable through a public name without the founder gate.");
   const salt = randomBytes(16);
   const stretched = enabled ? scryptSync(String(key), salt, 32, SCRYPT) : null;
   const secret = randomBytes(32);

@@ -36,7 +36,7 @@ ST_TRUNK = [
 ST_OMEGA = ["omega-design", "omega-finance-chain", "omega-extend", "omega-apex-council", "omega-deep-research-agent", "omega-knowledge-domain", "apple-liquid-glass-hig",
             "osint-bgp-cables", "quant-microstructure-gex", "synaptic-spiderweb-viz", "safe-vault-cryptographic-ratchet", "neural-flow-decision-viz", "supreme-software-ui-architect",
             "cyber-space-osint-grid", "liquid-neural-139-flow", "autonomous-24-selftest-gate", "stablecoin-cyber-vuln-intel", "neural-139-inputs-heads", "local-glm-agent-windows-mcp"]
-ST_FAMILIES = [{"id": "family:vendored", "label": "Vendored references", "angle": -58}, {"id": "family:jarvis", "label": "Jarvis skills", "angle": 0},
+ST_FAMILIES = [{"id": "family:vendored", "label": "Vendored references", "angle": -58}, {"id": "family:jarvis", "label": "Aether Prime skills", "angle": 0},
                {"id": "family:omega", "label": "OMEGA skills", "angle": 58}]
 ST_ROUTES = {"replica-universal-math": "#/math", "replica-hyper-studio": "#/hyper", "replica-foss-atlas": "#/atlas", "replica-universal-agent": "#/universal",
              "replica-unified-workbench": "#/workbench", "replica-polymath-engine": "#/polymath", "replica-passive-recon": "#/recon", "replica-prompt-metacodes": "#/missions",

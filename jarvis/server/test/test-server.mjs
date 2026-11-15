@@ -754,7 +754,7 @@ async function suite(mode, opts) {
   const nt = await post("/api/w/jarvis-studio/math/solve", { task: "number_theory", n: 104729, crt_remainders: [2, 3, 2], crt_moduli: [3, 5, 7] });
   ok(nt.status === 200 && nt.body.verified && nt.body.result.prime === true && nt.body.result.crt.x === "23" && nt.body.result.crt.modulus === "105", tag("math: 104729 is prime and x = 23 mod 105"));
   const bad = await post("/api/w/jarvis-studio/math/solve?lang=ar", { task: "calculus", expression: "x $ 2" });
-  ok(bad.status === 400 && bad.body.error === UM_AR["This sign is not maths Jarvis reads."] && bad.body.detail === "$", tag("math: a sign it does not read is refused with the reason, in the language asked for"), bad.body);
+  ok(bad.status === 400 && bad.body.error === UM_AR["This sign is not maths Aether Prime reads."] && bad.body.detail === "$", tag("math: a sign it does not read is refused with the reason, in the language asked for"), bad.body);
   ok((await post("/api/w/jarvis-studio/math/solve", { task: "calculus", expression: "x".repeat(401) })).status === 400 && (await post("/api/w/jarvis-studio/math/solve", { task: "rm -rf" })).status === 400, tag("math: a long expression and an unknown task are refused"));
   const mev = (await j("/api/w/jarvis-studio/events")).body;
   ok(Array.isArray(mev) && mev.some(e => e.kind === "math.solve" && e.target === "calculus verified"), tag("math: a calculation is an event in the log"));
@@ -916,6 +916,14 @@ async function suite(mode, opts) {
   ok(rb.body.chain_sha256 === runbook(rq, rctx).chain_sha256 && /^[0-9a-f]{64}$/.test(rb.body.chain_sha256), tag("runbook: the chain hash is the engine's"));
   const bad = await post("/api/w/jarvis-studio/runbook", { goal: "Contrast", skills: ["nope"] });
   ok(bad.status === 200 && bad.body.ready === false && bad.body.stages[2].status === "error" && (await post("/api/w/jarvis-studio/runbook", { goal: "" })).status === 400, tag("runbook: an unknown skill is a stage error, an empty goal is refused"));
+  // ADR-166: a refused stage with a correctable input gets a repaired request, run once more.
+  const rq2 = { goal: "Fix it", skills: ["replica-polymath-engine", "nope"], record: { ghost: { visits: 1, reward: 1 } }, c: 9, css: ".hero{background:linear-gradient(90deg,#3b82f6,#8b5cf6);color:#777777;background-color:#ffffff}" };
+  const fx = await post("/api/w/jarvis-studio/runbook", rq2);
+  ok(fx.status === 200 && fx.body.ready === false && fx.body.repair.after.ready === true && fx.body.repair.changes.map(c => c.field).join() === "skills,c,record" && fx.body.repair.request.skills.join() === "replica-polymath-engine"
+    && JSON.stringify(fx.body) === JSON.stringify(runbook(rq2, rctx)), tag("runbook: the repaired request leaves out what the rules refuse and passes the six stages"), fx.body.repair?.changes);
+  const ds = fx.body.stages[3].summary.design;
+  ok(ds.rules.includes("ai-gradient") && ds.fixed_point === true && /^[0-9a-f]{64}$/.test(ds.before_sha256) && ds.before_sha256 !== ds.after_sha256 && !/gradient\(/.test(ds.corrected_css), tag("runbook: the CSS gradient is corrected, hashed and a fixed point"));
+  ok((await post("/api/w/jarvis-studio/runbook", { goal: "x", skills: ["replica-plan-order"], css: 5 })).body.repair.changes[0].field === "css" && rb.body.repair === null, tag("runbook: an unreadable CSS is left out; a ready run has no repair"));
   const rev = (await j("/api/w/jarvis-studio/events")).body;
   ok(rev.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(rev).includes("ops@example.org"), tag("runbook: the event log keeps counts, never the goal"));
   }
