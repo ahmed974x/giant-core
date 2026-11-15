@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-15T16:52:29Z",
- "javascriptRanAt": "2026-11-15T15:59:07.006Z",
+ "ranAt": "2026-11-15T20:33:15Z",
+ "javascriptRanAt": "2026-11-15T19:39:38.946Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 10054,
- "killed": 10054,
- "equivalent": 302,
+ "total": 10423,
+ "killed": 10423,
+ "equivalent": 306,
  "score": 100.0,
  "targets": [
   {
@@ -825,7 +825,7 @@
   },
   {
    "file": "jarvis/server/lib/runbook.mjs",
-   "sha256": "b1f6744c748312b6d40958abbc6bebf2ee5d9f9621ba42af92d59dbca7bedc19",
+   "sha256": "ed6f30f5628583abb8da530f43729782247d14778abd7c7722cb8048643a383f",
    "functions": [
     "rbStage",
     "rbProbe",
@@ -835,8 +835,8 @@
     "repairRequest",
     "runbook"
    ],
-   "mutants": 92,
-   "killed": 90,
+   "mutants": 95,
+   "killed": 93,
    "equivalent": 2,
    "survived": 0,
    "score": 100,
@@ -844,21 +844,63 @@
    "equivalents": [
     {
      "fn": "rbProbe",
-     "line": 59,
+     "line": 62,
      "kind": "> -> >=",
      "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
     },
     {
      "fn": "rbProbe",
-     "line": 59,
+     "line": 62,
      "kind": "0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
     }
    ]
   },
   {
+   "file": "jarvis/server/lib/architect-studio.mjs",
+   "sha256": "3a29e952bb960df7ff83c849d79565ba1fedd6d79477579112d7b1218493221f",
+   "functions": [
+    "asR",
+    "sealHash",
+    "checkSeal",
+    "locks",
+    "needSeal",
+    "uiTokens",
+    "skillDraft",
+    "composeSkill",
+    "upgradeRadar",
+    "architectStudio"
+   ],
+   "mutants": 106,
+   "killed": 103,
+   "equivalent": 3,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "upgradeRadar",
+     "line": 89,
+     "kind": "< -> <=",
+     "why": "the skill tree refuses a repeated skill name, so two names are never equal and < and <= agree"
+    },
+    {
+     "fn": "upgradeRadar",
+     "line": 89,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "upgradeRadar",
+     "line": 89,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    }
+   ]
+  },
+  {
    "file": "jarvis/server/lib/release-gate.mjs",
-   "sha256": "62014865d267acb3da763878adaec0423790d3cda26f281289f6e3e4cb105d70",
+   "sha256": "eae7a87cb7c3905bddece3fee7609631a5482b4eb94e1d8f4a3c88f9974c0d9d",
    "functions": [
     "rgR",
     "adrGaps",
@@ -885,11 +927,13 @@
   },
   {
    "file": "jarvis/server/lib/impact-analysis.mjs",
-   "sha256": "f858c59e279e5ef0ef49166471705c6ef0efc2f54a4338ed26cbd49c5ac0fad3",
+   "sha256": "b03a0ec76ccae2110b7fad063ab28d4eb49d6aad7c62c4fde3039ef94a19060d",
    "functions": [
     "catalogJson",
     "licenceRule",
     "weightsGb",
+    "kvCacheGb",
+    "contextMemory",
     "checkCatalog",
     "checkModel",
     "dependentsOf",
@@ -899,8 +943,8 @@
     "diffTexts",
     "impactAnalysis"
    ],
-   "mutants": 180,
-   "killed": 170,
+   "mutants": 242,
+   "killed": 232,
    "equivalent": 10,
    "survived": 0,
    "score": 100,
@@ -908,61 +952,61 @@
    "equivalents": [
     {
      "fn": "licenceRule",
-     "line": 46,
+     "line": 51,
      "kind": "> -> >=",
      "why": "\"(\" and \")\" are different characters, so their positions are never equal once open >= 0"
     },
     {
      "fn": "dependentsOf",
-     "line": 101,
+     "line": 131,
      "kind": "< -> <=",
      "why": "the names are keys of one Map, so two names are never equal and < and <= agree"
     },
     {
      "fn": "dependentsOf",
-     "line": 101,
+     "line": 131,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "dependentsOf",
-     "line": 101,
+     "line": 131,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "lcsDiff",
-     "line": 135,
+     "line": 165,
      "kind": "< -> <=",
      "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
     },
     {
      "fn": "lcsDiff",
-     "line": 135,
+     "line": 165,
      "kind": "< -> <=",
      "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
     },
     {
      "fn": "lcsDiff",
-     "line": 130,
+     "line": 160,
      "kind": "1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcsDiff",
-     "line": 130,
+     "line": 160,
      "kind": "1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcsDiff",
-     "line": 130,
+     "line": 160,
      "kind": "0 -> 1",
      "why": "filling with 1 adds 1 to every length in the table, so every comparison keeps its answer"
     },
     {
      "fn": "lcsDiff",
-     "line": 131,
+     "line": 161,
      "kind": "1 -> 2",
      "why": "counting a match as 2 doubles every length in the table, so every comparison keeps its answer (n - 1 and m - 1 changed to 2 are killed by the golden file)"
     }
@@ -2290,7 +2334,7 @@
   },
   {
    "file": ".claude/skills/replica-runbook/runbook.py",
-   "sha256": "a3660c2a35ab97ae62e681864b574721ebf07c912e312117bc451826a0df7cb4",
+   "sha256": "29fe4bcc9e52503deaff44dda3e9f2f2e04b077d311d4bf74f2697964efdff4e",
    "functions": [
     "_fail",
     "_len16",
@@ -2304,8 +2348,8 @@
     "runbook",
     "load_context"
    ],
-   "mutants": 131,
-   "killed": 129,
+   "mutants": 136,
+   "killed": 134,
    "equivalent": 2,
    "survived": 0,
    "score": 100.0,
@@ -2313,21 +2357,54 @@
    "equivalents": [
     {
      "fn": "_probe",
-     "line": 108,
+     "line": 113,
      "kind": "constant 0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
     },
     {
      "fn": "repair_request",
-     "line": 211,
+     "line": 216,
      "kind": "return None",
      "why": "tries is only read through not, and None and False are both false"
     }
    ]
   },
   {
+   "file": ".claude/skills/replica-architect-studio/architect_studio.py",
+   "sha256": "633e2612eacfe0aecbf9b015023266ac05ccd4a93d14b48be85f103b6d426fab",
+   "functions": [
+    "_fail",
+    "_sha",
+    "_len16",
+    "_r2",
+    "_well_formed",
+    "seal_hash",
+    "check_seal",
+    "_locks",
+    "ui_tokens",
+    "skill_draft",
+    "compose_skill",
+    "upgrade_radar",
+    "architect_studio"
+   ],
+   "mutants": 122,
+   "killed": 121,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "_well_formed",
+     "line": 73,
+     "kind": "return None",
+     "why": "the answer is only read as true or false, and None and False are both false"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-release-gate/release_gate.py",
-   "sha256": "fa38fe574cf651eec3f21c9e5b24ee862f982c775189a56a250ac519b2d9304f",
+   "sha256": "bfca54e30ab459c8c77fb71169b3cc8a2a85594779717dd7560a38f4e7592938",
    "functions": [
     "_fail",
     "_sha",
@@ -2349,7 +2426,7 @@
   },
   {
    "file": ".claude/skills/replica-impact-analysis/impact_analysis.py",
-   "sha256": "83d933f4a261749a8e79e8d4a0ea91e7ecc28ad98f8f84f43a5c6adb3c8e1061",
+   "sha256": "042d4d16c29de25a0c51b130878389fbf2656a113030a70257b7a8ded6bcdf1d",
    "functions": [
     "_fail",
     "_len16",
@@ -2358,6 +2435,9 @@
     "_num",
     "licence_rule",
     "weights_gb",
+    "kv_cache_gb",
+    "_r2",
+    "context_memory",
     "_check_catalog",
     "check_model",
     "dependents_of",
@@ -2368,8 +2448,8 @@
     "impact_analysis",
     "load_context"
    ],
-   "mutants": 225,
-   "killed": 221,
+   "mutants": 300,
+   "killed": 296,
    "equivalent": 4,
    "survived": 0,
    "score": 100.0,
@@ -2377,25 +2457,25 @@
    "equivalents": [
     {
      "fn": "lcs_diff",
-     "line": 222,
+     "line": 285,
      "kind": "constant 0 -> 1",
      "why": "filling with 1 adds 1 to every length in the table, so every comparison keeps its answer"
     },
     {
      "fn": "lcs_diff",
-     "line": 222,
+     "line": 285,
      "kind": "constant 1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcs_diff",
-     "line": 222,
+     "line": 285,
      "kind": "constant 1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcs_diff",
-     "line": 225,
+     "line": 288,
      "kind": "constant 1 -> 2",
      "why": "counting a match as 2 doubles every length in the table, so every comparison keeps its answer (the index changes are killed by the golden file)"
     }
@@ -2886,5 +2966,5 @@
    ]
   }
  ],
- "sha256": "1e574593db1d675662c08b054691e49eee4ed2e06cb9e824e944eb118909d947"
+ "sha256": "8392b74af202dd43ecf995fde71778d8f9fba90b58db6be1379b66660521ad40"
 }

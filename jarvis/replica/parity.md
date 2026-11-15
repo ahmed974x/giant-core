@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-169)
+# Parity: Jarvis (ADR-171)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -146,6 +146,12 @@ ADR-168 added one row, built and tested (`test-app.mjs` F48, `test-live.mjs`, se
 ADR-169 added one row, built and tested (`test-app.mjs` F49, `test-live.mjs`, server tests, skill unit tests, the mutation run):
 - release readiness: the repository audit, the regression gate and the release bundle.
 
+ADR-170 added one row, built and tested (`test-app.mjs` F50, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- the architect studio: the seal, the preview scale, the composite skill draft and the upgrade radar.
+
+ADR-171 added one row, built and tested (`test-app.mjs` F51, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- licence terms read in full and context memory from each card's config.json.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -154,7 +160,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (118 counted, must-haves 34 of 34 done)
+features 100.0  (120 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -162,7 +168,7 @@ features 100.0  (118 counted, must-haves 34 of 34 done)
 - agents                       100.0  (14 features)
 - runs                         100.0  (6 features)
 - approvals                    100.0  (3 features)
-- quality                      100.0  (14 features)
+- quality                      100.0  (15 features)
 - studio                       100.0  (19 features)
 - skills                       100.0  (6 features)
 - backend                      100.0  (1 features)
@@ -174,7 +180,7 @@ features 100.0  (118 counted, must-haves 34 of 34 done)
 - integrations                 100.0  (3 features)
 - memory                       100.0  (3 features)
 - search                       100.0  (5 features)
-- models                       100.0  (4 features)
+- models                       100.0  (5 features)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)

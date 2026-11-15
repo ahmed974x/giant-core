@@ -67,7 +67,7 @@ export function releaseBundle(r, ctx) {
   const pages = IA_PAGES.map(p => p.route).filter(route => parts.some(p => p.pages.includes(route)));
   const tests = [...new Set(blasts.flatMap(b => b.tests.map(t => t.command).filter(Boolean)))];
   const shared = [...new Set(blasts.flatMap(b => b.shared_tests))];
-  const model = r.model === undefined ? null : impactAnalysis({ mode: "catalog", model: r.model, use: r.use, bits: r.bits, memory_gb: r.memory_gb }, ctx);
+  const model = r.model === undefined ? null : impactAnalysis({ mode: "catalog", model: r.model, use: r.use, bits: r.bits, memory_gb: r.memory_gb, context_tokens: r.context_tokens, batch_size: r.batch_size, kv_bits: r.kv_bits }, ctx);
   const notes = r.notes === undefined ? null : impactAnalysis({ mode: "diff", a: r.notes?.a, b: r.notes?.b }, ctx);
   const steps = [{ action: "publish", target: "release", gate: "approval", locked: true, status: "pending_approval" }, ...(model ? model.steps : [])];
   const sections = [parts, pages, tests, shared, model, notes && notes.chain_sha256, steps];

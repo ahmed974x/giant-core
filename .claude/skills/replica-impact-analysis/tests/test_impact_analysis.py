@@ -49,8 +49,8 @@ class Repository(unittest.TestCase):
     def test_serving_verdicts(self):
         v = {m: ia.impact_analysis({"mode": "catalog", "model": m, "use": "service"}, self.ctx)["verdict"]
              for m in ("openai/gpt-oss-120b", "mistralai/Mistral-Large-4-1T-A52B", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "codestral:22b")}
-        self.assertEqual(v, {"openai/gpt-oss-120b": "allowed", "mistralai/Mistral-Large-4-1T-A52B": "commercial_licence", "moonshotai/Kimi-K3": "read_licence",
-                             "zai-org/GLM-5.3": "read_licence", "codestral:22b": "not_allowed"})
+        self.assertEqual(v, {"openai/gpt-oss-120b": "allowed", "mistralai/Mistral-Large-4-1T-A52B": "commercial_licence", "moonshotai/Kimi-K3": "revenue_threshold",
+                             "zai-org/GLM-5.3": "revenue_threshold", "codestral:22b": "not_allowed"})
 
     def test_memory_only_for_the_card_counted(self):
         own = ia.impact_analysis({"mode": "catalog", "model": "openai/gpt-oss-120b", "use": "personal", "bits": 4, "memory_gb": 64}, self.ctx)

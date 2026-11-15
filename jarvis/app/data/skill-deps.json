@@ -27,6 +27,13 @@
   "param": [],
   "quant-microstructure-gex": [],
   "replica-architect": [],
+  "replica-architect-studio": [
+   "replica-impact-analysis",
+   "replica-plan-order",
+   "replica-prompt-metacodes",
+   "replica-release-gate",
+   "replica-skill-tree"
+  ],
   "replica-backend": [],
   "replica-build": [],
   "replica-cyber-recon": [],
@@ -77,6 +84,7 @@
   ],
   "replica-reversal-engine": [],
   "replica-runbook": [
+   "replica-architect-studio",
    "replica-formal-verify",
    "replica-foss-atlas",
    "replica-hyper-studio",

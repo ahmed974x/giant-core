@@ -33,7 +33,7 @@ class Stages(unittest.TestCase):
         self.assertTrue(r["ready"])
         self.assertNotIn("ops@example.org", json.dumps(r))
         routes = r["stages"][-1]["summary"]["routes"]
-        self.assertEqual([x["status"] for x in routes].count("ok"), 11)
+        self.assertEqual([x["status"] for x in routes].count("ok"), 12)
         self.assertEqual(routes[-1]["status"], "server_only")
 
     def test_locked_steps_keep_the_tree_running(self):

@@ -50,6 +50,7 @@ import { runbook } from "./lib/runbook.mjs";
 import { impactAnalysis, catalogJson } from "./lib/impact-analysis.mjs";
 import { MODEL_PROFILES } from "./lib/model-catalog.mjs";
 import { releaseGate } from "./lib/release-gate.mjs";
+import { architectStudio } from "./lib/architect-studio.mjs";
 import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
@@ -64,7 +65,7 @@ const readSkillDeps = () => { const p = join(here, "..", "app", "data", "skill-d
 const readSkillTreeInput = () => { const p = join(here, "..", "app", "data", "skill-tree-input.json"); return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : { skills: [] }; };
 const repoRoot = resolve(here, "..", "..");
 
-export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, reconFetch = fetchPublicResource, founderKey, publicHost, quiet = false } = {}) {
+export async function startServer({ port = Number(process.env.JARVIS_PORT || 8798), mode = process.env.JARVIS_DB || "sqlite", databaseUrl = process.env.DATABASE_URL, dataDir = process.env.JARVIS_DATA_DIR || join(here, ".data"), sqliteFile, fetchPage = fetchPublicPage, ollamaUrl, ollamaFetch, openaiUrl, searchRequest, searxngUrl, skillRequest, reconFetch = fetchPublicResource, founderKey, publicHost, architectSeal = process.env.JARVIS_ARCHITECT_SEAL ?? null, quiet = false } = {}) {
   // ADR-141: the founder gate is on when JARVIS_FOUNDER_KEY is set; a bad key or public host stops the start.
   const gate = createFounderGate({ ...(founderKey !== undefined ? { key: founderKey } : {}), ...(publicHost !== undefined ? { publicHost } : {}) });
   const login = loginPage(t => createHash("sha256").update(t).digest("base64"));
@@ -430,6 +431,14 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-170: the architect studio. The seal it checks is the server's own (JARVIS_ARCHITECT_SEAL); one in the request
+        // is never used. Events keep the mode and the seal's state, never the code or its hash.
+        if (req.method === "POST" && rest === "/architect") {
+          let out;
+          try { out = architectStudio(body, { seal: architectSeal, catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400 && e.status !== 403) throw e; return send(e.status, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : ""));
           return send(200, out);
         }
         // ADR-169: release readiness over the same module and snapshots; the request brings only its own snapshots,

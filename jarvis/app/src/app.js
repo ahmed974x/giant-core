@@ -602,6 +602,8 @@
       // ADR-165 in sample mode: the same runbook as the server, over the snapshots built into this page.
       runbook(body) { try { return ok(Runbook.runbook(body, { corpus: DATA.corpus || { docs: [] }, deps: DATA.deps || {}, tree: DATA.tree || { skills: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-168 in sample mode: the same impact analysis as the server, over the catalog and snapshots built into this page.
+      // ADR-170 in sample mode: the seal this browser saved stands in for the server's; the code itself is never kept.
+      architect(body) { try { return ok(Architect.architectStudio(body, { seal: store$.get("aether-architect-seal"), catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       // ADR-169 in sample mode: the same release gate as the server, over the snapshots built into this page.
       release(body) { try { return ok(Release.releaseGate(body, { catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
       impact(body) { try { return ok(Impact.impactAnalysis(body, { catalog: Impact.catalogJson(LlmPlan.MODEL_PROFILES), deps: DATA.deps || {}, tree: DATA.tree || { skills: [] }, corpus: DATA.corpus || { docs: [] } })); } catch (e) { const err = new Error(e.message); if (e.detail) err.detail = e.detail; return new Promise((res, rej) => setTimeout(() => rej(err), 60)); } },
@@ -1066,6 +1068,7 @@
       runbook: body => req("POST", w("/runbook"), body),
       impact: body => req("POST", w("/impact"), body),
       release: body => req("POST", w("/release"), body),
+      architect: body => req("POST", w("/architect"), body),
       tree: () => req("GET", w("/tree")),
       treeCompose: body => req("POST", w("/tree/compose"), body),
       studioSnapshots: () => req("GET", w("/studio/snapshots")),
@@ -1793,12 +1796,14 @@
       h("p", { class: "subtle t-caption", text: "Licences as the model cards state them; check the card of the exact file you pull. Every one runs on 127.0.0.1 only." }),
       h("p", { class: "subtle t-caption", text: "Read from each model's Hugging Face record. The cards' benchmark tables are their makers' own claims, so the catalog ranks nothing." }),
       h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model catalog" }, h("table", null,
-        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Parameters" }), h("th", { scope: "col", text: "Source" }), h("th", { scope: "col", text: "Here" }))),
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Parameters" }), h("th", { scope: "col", text: "Longest context" }), h("th", { scope: "col", text: "Context memory" }), h("th", { scope: "col", text: "Source" }), h("th", { scope: "col", text: "Here" }))),
         h("tbody", null, LlmPlan.MODEL_PROFILES.map(p => h("tr", null,
           h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: p.maker + " · " + p.origin })),
           h("td", { text: LlmPlan.ROLE_LABEL[p.role] || p.role }),
           h("td", { class: "t-caption wrap", dir: "auto", lang: "en", text: p.licence }),
           p.params === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.params) }),
+          p.config.max_context === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.config.max_context) }),
+          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
           h("td", { class: "wrap" }, h("a", { class: "t-caption", href: "https://huggingface.co/" + p.card, target: "_blank", rel: "noopener noreferrer", translate: "no", text: p.card }), h("br"), h("span", { class: "num t-caption", text: p.read })),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
@@ -2646,7 +2651,7 @@
   const Impact = (() => {
     const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { searchProject } = ProjectSearch;
     /*@IMPACT@*/
-    return { impactAnalysis, catalogJson, IA_PAGES };
+    return { impactAnalysis, catalogJson, IA_PAGES, dependentsOf, licenceRule };
   })();
   // ADR-169: release readiness, the same as the server, over the skill tree and impact analysis inlined above.
   const Release = (() => {
@@ -2654,11 +2659,17 @@
     /*@RELEASE@*/
     return { releaseGate, RG_GROWTH, RG_FAILURE };
   })();
+  // ADR-170: the architect studio, the same as the server, over the engines inlined above.
+  const Architect = (() => {
+    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate } = Release;
+    /*@ARCHITECT@*/
+    return { architectStudio };
+  })();
   // ADR-165: the runbook, the same as the server, over the engines inlined above.
   const Runbook = (() => {
     const { scrubPrivate, kAnonymity, planFossStack, universalAgent, sha256Hex } = LlmPlan;
     const { searchProject } = ProjectSearch, { planOrder, skillOrder, workbenchTree } = PlanOrder, { runWorkbench } = UnifiedWorkbench, { runPolymath } = Polymath, { buildTree } = SkillTree;
-    const solveMath = UniMath.solve, optics = Hyper.optics, { impactAnalysis } = Impact, { releaseGate } = Release;
+    const solveMath = UniMath.solve, optics = Hyper.optics, { impactAnalysis } = Impact, { releaseGate } = Release, { architectStudio } = Architect;
     /*@RUNBOOK@*/
     return { runbook, RB_STAGES };
   })();
@@ -4258,6 +4269,132 @@
         h("div", { class: "row" }, btn)),
       h("section", { class: "panel stack", "aria-labelledby": "h-rb-r" }, h("h2", { id: "h-rb-r", text: "Stages" }), out));
   };
+  /* ── Architect studio (ADR-170): the seal, the preview scale, the composite skill draft and the upgrade radar ── */
+  const AS_STATE = { unlocked: ["ok", "Architect mode: on"], locked: ["locked", "Read only: the architect seal is needed"], not_configured: ["warn", "No seal set up yet"] };
+  const AS_LOCK = { install: "Installing or writing a skill", outbound: "Outbound connections", model: "Running a model", publish: "Publishing" };
+  const AS_STATUS = { rules: "Text rules", tested: "Tested" };
+  const AS_NEXT = { tests: "Tests first", golden_and_mutation: "A golden file and the full mutation run" };
+  const AS_SEAL_KEY = "aether-architect-seal", AS_UI_KEY = "aether-architect-ui";
+  pages.architect = () => {
+    const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
+    const latin = el => { el.lang = "en"; el.translate = false; el.spellcheck = false; return el; };
+    let code = "";
+    // With no code checked, nothing is unlocked and the engine would refuse; the page says so without asking the server.
+    const sealed = out => (code ? false : (fail(out, new Error("The architect seal is needed: the studio is read only.")), true));
+    const fail = (out, err) => out.replaceChildren(h("p", { class: "t-sm" }, badge(err.message.startsWith("The architect seal") ? "locked" : "failed", "Not done"), " ", h("span", { text: err.message })));
+    const sealRow = s => h("p", { class: "row" }, badge(AS_STATE[s.state][0], AS_STATE[s.state][1]), s.audit_prefix ? h("span", { class: "row t-sm" }, h("span", { class: "muted", text: "Audit prefix" }), h("code", { translate: "no", dir: "ltr", text: s.audit_prefix })) : null);
+    const lockList = locks => h("ul", { class: "plist" }, locks.map(l => h("li", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + AS_LOCK[l.action] }))));
+    // 1. The seal.
+    const codeIn = h("input", { class: "input", type: "password", id: "f-as-code", name: "architect-code", autocomplete: "off", dir: "ltr", maxLength: 200 });
+    const sOut = h("div", { class: "stack", "aria-live": "polite" });
+    const sBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-lock", "sm"), "Check the code");
+    sBtn.addEventListener("click", async () => {
+      const typed = codeIn.value;
+      codeIn.value = "";
+      sBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "seal", ...(typed ? { passcode: typed } : {}) });
+        code = r.seal.unlocked ? typed : "";
+        let setup = null;
+        if (r.setup && store.mode !== "live") { store$.set(AS_SEAL_KEY, r.setup.seal_hash); setup = h("p", { class: "t-sm" }, badge("ok", "Seal saved in this browser"), " ", h("span", { class: "muted", text: "Check the code again to open architect mode." })); }
+        else if (r.setup) setup = h("div", { class: "stack" }, h("p", { class: "t-sm", text: "Set JARVIS_ARCHITECT_SEAL to this hash on the server and restart it. The code itself is not kept." }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: r.setup.seal_hash }));
+        sOut.replaceChildren(sealRow(r.seal), setup ?? h("span"), lockList(r.locks), iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(sOut, err); }
+      finally { sBtn.disabled = false; }
+    });
+    // 2. The preview scale, applied to the preview only.
+    const saved = (() => { try { return JSON.parse(store$.get(AS_UI_KEY) || "null"); } catch (e) { return null; } })();
+    const scaleIn = h("input", { class: "input", type: "number", id: "f-as-scale", name: "font-scale", autocomplete: "off", min: "90", max: "120", step: "1", inputMode: "numeric", dir: "ltr", value: String(saved?.font_scale ?? 100) });
+    const densityIn = h("select", { class: "input", id: "f-as-density", name: "density" }, ...[["compact", "Compact"], ["balanced", "Balanced"], ["spacious", "Spacious"]].map(([v, t]) => h("option", { value: v, text: t })));
+    densityIn.value = saved?.density ?? "balanced";
+    const numIn = h("select", { class: "input", id: "f-as-numerals", name: "numerals" }, ...[["tabular", "Tabular (equal width)"], ["proportional", "Proportional"]].map(([v, t]) => h("option", { value: v, text: t })));
+    numIn.value = saved?.numerals ?? "tabular";
+    const snap = (DATA.release && DATA.release.snapshot) || {};
+    const preview = h("div", { class: "as-preview", "aria-label": "Preview" },
+      h("p", { class: "as-headline", text: "Preview" }),
+      h("p", { class: "as-body", text: "Text, spacing and numbers in this card follow the scale above. Colours do not change." }),
+      h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Counts from this build's evidence" }, h("table", { class: "table" },
+        h("tbody", null, ["server_passed", "app_passed", "live_passed", "mutants_killed"].filter(k => Number.isInteger(snap[k])).map(k => h("tr", null, h("td", { text: RG_LABEL[k] }), h("td", { class: "as-num", text: fmtN.format(snap[k]) })))))),
+      h("p", { class: "as-caption", text: "Read from this build's evidence files." }));
+    const applyCss = css => { for (const [k, v] of Object.entries(css)) preview.style.setProperty(k, v); };
+    if (saved && saved.css) applyCss(saved.css);
+    const uOut = h("div", { class: "stack", "aria-live": "polite" });
+    const uBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Apply to the preview");
+    uBtn.addEventListener("click", async () => {
+      if (sealed(uOut)) return;
+      uBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "ui", ...(code ? { passcode: code } : {}), font_scale: Number(scaleIn.value), density: densityIn.value, numerals: numIn.value });
+        applyCss(r.ui.css);
+        store$.set(AS_UI_KEY, JSON.stringify({ font_scale: r.ui.font_scale, density: r.ui.density, numerals: r.ui.numerals, css: r.ui.css }));
+        uOut.replaceChildren(h("p", { class: "row t-sm" }, badge("ok", "Applied to the preview"), h("span", { class: "muted", text: "Body text" }), uaNum(r.ui.px.body), h("span", { class: "muted", text: "px" }), h("span", { class: "muted", text: "Captions" }), uaNum(r.ui.px.caption), h("span", { class: "muted", text: "px" })),
+          iaHash("Settings", r.ui.config_sha256));
+      } catch (err) { fail(uOut, err); }
+      finally { uBtn.disabled = false; }
+    });
+    // 3. The composite skill draft.
+    const nameIn = latin(h("input", { class: "input", id: "f-as-name", name: "composite-name", autocomplete: "off", dir: "ltr", maxLength: 48, value: "replica-release-checks" }));
+    const descIn = h("input", { class: "input", id: "f-as-desc", name: "composite-description", autocomplete: "off", dir: "auto", maxLength: 300, value: "Release checks in one place" });
+    const skillsIn = latin(h("input", { class: "input", id: "f-as-skills", name: "composite-skills", autocomplete: "off", dir: "ltr", value: "replica-impact-analysis, replica-release-gate" }));
+    const modelIn = latin(h("input", { class: "input", id: "f-as-model", name: "composite-model", autocomplete: "off", dir: "ltr", maxLength: 120, value: "openai/gpt-oss-120b" }));
+    const useIn = h("select", { class: "input", id: "f-as-use", name: "composite-use" }, ...Object.entries(IA_USE).map(([k, v]) => h("option", { value: k, text: v })));
+    const cOut = h("div", { class: "stack", "aria-live": "polite" });
+    const cBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Draft the composite");
+    cBtn.addEventListener("click", async () => {
+      if (sealed(cOut)) return;
+      cBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "compose", ...(code ? { passcode: code } : {}), name: nameIn.value, description: descIn.value, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+          ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value } : {}) });
+        const c = r.compose, code$ = n => h("code", { translate: "no", dir: "ltr", text: n });
+        cOut.replaceChildren(
+          h("ol", { class: "plist" }, c.order.layers.map((l, i) => h("li", { class: "row t-sm rg-wrap" }, h("span", { class: "muted", text: "Layer" }), uaNum(i + 1), ...l.map(code$)))),
+          c.order.cycle.length ? h("p", { class: "row t-sm" }, badge("failed", "Cycle found"), ...c.order.cycle.map(code$)) : null,
+          c.bundle.model ? iaCatalogBody(c.bundle.model) : null,
+          h("h3", { text: "SKILL.md draft" }),
+          h("pre", { class: "diff as-draft", translate: "no", dir: "ltr", "data-verbatim": "", text: c.draft }),
+          lockList(c.steps.filter((s, i, a) => a.findIndex(x => x.action === s.action) === i)),
+          iaHash("Draft", c.draft_sha256), iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(cOut, err); }
+      finally { cBtn.disabled = false; }
+    });
+    // 4. The upgrade radar.
+    const rOut = h("div", { class: "stack", "aria-live": "polite" });
+    const rBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Scan for upgrades");
+    rBtn.addEventListener("click", async () => {
+      rBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "radar" }), d = r.radar;
+        rOut.replaceChildren(
+          h("p", { class: "row t-sm" }, h("span", { class: "muted", text: "Text rules" }), uaNum(d.counts.rules), h("span", { class: "muted", text: "Tested" }), uaNum(d.counts.tested)),
+          h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Skills to upgrade" }, h("table", { class: "table" },
+            h("thead", null, h("tr", null, ...["Skill", "State", "Skills that load it", "Next step to proved"].map(t => h("th", { scope: "col", text: t })))),
+            h("tbody", null, d.skills.map(s => h("tr", null, h("td", null, h("code", { translate: "no", dir: "ltr", text: s.skill })), h("td", { text: AS_STATUS[s.status] }), h("td", { class: "num", text: String(s.downstream) }), h("td", { text: AS_NEXT[s.next] })))))),
+          h("p", { class: "t-caption muted", text: "Catalog families whose documented licence allows serving them to others:" }),
+          h("p", { class: "row t-caption rg-wrap" }, ...d.models_for_service.map(f => h("code", { translate: "no", dir: "ltr", text: f }))),
+          iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(rOut, err); }
+      finally { rBtn.disabled = false; }
+    });
+    return h("div", { class: "stack" },
+      pageHead("Architect studio", "Four tools for the person who designs Aether Prime: a seal that opens the studio's own tools, a preview scale for text and spacing, a composite skill drafted from skills already here, and a radar of the skills to upgrade next. Installing, outbound connections, running a model and publishing stay locked in every state."),
+      sampleNote(),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-s" }, h("h2", { id: "h-as-s", text: "Architect seal" }),
+        h("p", { class: "t-caption muted", text: "The code is hashed with SHA-256 under a fixed prefix and compared with the saved seal. Only five characters of the hash are shown; the code is never stored. The seal opens this studio's tools only: it is not the server's sign-in." }),
+        field("f-as-code", "Architect code", codeIn, "With no seal set up, the first code becomes the seal."), h("div", { class: "row" }, sBtn), sOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-u" }, h("h2", { id: "h-as-u", text: "Preview scale" }),
+        h("div", { class: "grid-2" }, field("f-as-scale", "Text size, percent (90 to 120)", scaleIn, "Nothing goes below 12 px."), field("f-as-density", "Spacing", densityIn)),
+        field("f-as-numerals", "Numbers in the preview", numIn, "Every other number on these pages stays tabular."),
+        h("div", { class: "row" }, uBtn), uOut, preview),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-c" }, h("h2", { id: "h-as-c", text: "Composite skill" }),
+        h("div", { class: "grid-2" }, field("f-as-name", "Name", nameIn), field("f-as-desc", "Description (one line)", descIn)),
+        field("f-as-skills", "Skills to join, separated by commas (two or more)", skillsIn),
+        h("div", { class: "grid-2" }, field("f-as-model", "Model name (optional)", modelIn), field("f-as-use", "Use", useIn)),
+        h("div", { class: "row" }, cBtn), cOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-r" }, h("h2", { id: "h-as-r", text: "Upgrade radar" }),
+        h("p", { class: "t-caption muted", text: "The skills still in text rules or tested, the most depended on first. Reading it needs no seal." }),
+        h("div", { class: "row" }, rBtn), rOut));
+  };
   /* ── Release readiness (ADR-169): the repository audit, the regression gate and the release bundle ── */
   const RG_VERDICT = {
     ready: ["ok", "Ready: no skill needs attention"], attention: ["failed", "A skill needs attention"], empty: ["warn", "No skill in the snapshot"],
@@ -4340,6 +4477,7 @@
     useIn.value = "service";
     const bitsIn = h("input", { class: "input", type: "number", id: "f-rg-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
     const memIn = h("input", { class: "input", type: "number", id: "f-rg-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const ctxIn = h("input", { class: "input", type: "number", id: "f-rg-ctx", name: "context-tokens", autocomplete: "off", min: "1", max: "100000000", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
     const aNotes = h("textarea", { class: "textarea", id: "f-rg-a", name: "notes-before", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
     aNotes.value = "Impact analysis in #/impact\nThe runbook probes ten pages";
     const bNotes = h("textarea", { class: "textarea", id: "f-rg-b", name: "notes-after", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
@@ -4347,7 +4485,7 @@
     const bOut = h("div", { class: "stack", "aria-live": "polite" });
     const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the release");
     bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "bundle", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
-      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}) } : {}),
+      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
       ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) }), rgBundleBody));
     return h("div", { class: "stack" },
       pageHead("Release readiness", "Three checks before a release, over facts already in this repository: the skill tree and the decision records, two snapshots of the checks' counts compared, and the skills, model and notes of one release run through impact analysis. Nothing is sent or published."),
@@ -4364,6 +4502,7 @@
         field("f-rg-skills", "Skills this release touched, separated by commas", skillsIn),
         h("div", { class: "grid-2" }, field("f-rg-model", "Model name (optional)", modelIn, "Leave it empty for a release with no model."), field("f-rg-use", "Use", useIn)),
         h("div", { class: "grid-2" }, field("f-rg-bits", "Bits per weight (optional)", bitsIn), field("f-rg-mem", "Memory you have, in GB (optional)", memIn)),
+        field("f-rg-ctx", "Context length in tokens (optional)", ctxIn),
         h("div", { class: "grid-2" }, field("f-rg-a", "Release notes before", aNotes), field("f-rg-b", "Release notes after", bNotes)),
         h("div", { class: "row" }, bBtn), bOut));
   };
@@ -4376,11 +4515,38 @@
     non_production: ["warn", "The licence forbids production and commercial use"],
     not_allowed: ["failed", "The licence forbids serving it to others"],
     size_unnamed: ["warn", "The name does not say which size or version, so no licence is guessed"],
+    revenue_threshold: ["warn", "Serving it to others is allowed up to the revenue the licence states; above it the licence asks for more"],
     unknown: ["idle", "Not in the catalog"],
   };
   const IA_USE = { personal: "Personal, on this computer", service: "Serving the model to others" };
   const IA_OP = { "=": "Kept", "-": "Removed", "+": "Added" };
   function iaHash(label, value) { return h("p", { class: "row t-caption muted ia-hash" }, h("span", { text: label }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: value })); }
+  // ADR-171: the licence terms read in full, and the context memory from the card's config.json.
+  const IA_REQUIRE = { agreement: "a separate agreement with the maker", security_review: "the maker's security review", licence: "a separate licence from the maker" };
+  const IA_BUSINESS = { model_as_a_service: "Model as a Service", ai_work_assistant: "AI work assistant" };
+  const IA_REASON = { sliding_and_full: "Some layers use sliding-window attention and others full attention.", linear_attention: "Some layers use linear attention.", sparse_index: "A sparse attention index keeps a cache of its own.", gated: "The card is gated, so its config.json was not read." };
+  const IA_CTX = { other_card: "The config belongs to another size of this family. Type the card's full name to estimate it.", no_bits: "Give the bits per weight or per cache value to estimate it." };
+  const usd = n => "US$" + fmtN.format(n);
+  function iaTermsBody(t) {
+    const muted = s => h("span", { class: "muted", text: s });
+    return h("div", { class: "stack ia-terms" },
+      h("p", { class: "row t-sm rg-wrap" }, muted("Serving it to others"), ...t.businesses.map(b => h("bdi", { lang: "en", dir: "ltr", translate: "no", text: IA_BUSINESS[b] })),
+        h("span", { text: t.when === "always" ? "needs " + IA_REQUIRE[t.requirement] + ", at any revenue." : "needs " + IA_REQUIRE[t.requirement] + " above this revenue over any 12 months:" }),
+        t.revenue_usd_12m === null ? null : h("span", { class: "num", text: usd(t.revenue_usd_12m) })),
+      t.display_name_over ? h("p", { class: "row t-sm rg-wrap" }, muted("The model's name must be shown in a product above"), h("span", { class: "num", text: fmtN.format(t.display_name_over.monthly_active_users) }), muted("monthly users or"), h("span", { class: "num", text: usd(t.display_name_over.monthly_revenue_usd) }), muted("monthly revenue")) : null,
+      h("p", { class: "t-sm muted", text: t.internal_use_exempt ? "Internal use that makes nothing available to others is exempt." : "The licence does not say whether internal use is exempt." }),
+      h("p", { class: "row t-caption muted rg-wrap" }, muted("Read in full"), h("a", { class: "ia-card", href: t.file, target: "_blank", rel: "noopener noreferrer", translate: "no", dir: "ltr", text: "LICENSE" }), h("span", { class: "num", text: t.read }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: t.sha256 })));
+  }
+  function iaContextBody(c) {
+    const muted = s => h("span", { class: "muted", text: s });
+    const head = c.max_context === null ? null : c.exceeds ? h("p", { class: "row t-sm" }, badge("failed", "Longer than the card's documented context"), muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"))
+      : h("p", { class: "row t-sm" }, muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"));
+    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])));
+    return h("div", { class: "stack" }, head,
+      h("p", { class: "row t-sm" }, muted("Context memory"), uaNum(c.kv_gb), muted("GB"), c.total_gb === null ? null : h("span", { class: "row" }, muted("Weights and context"), uaNum(c.total_gb), muted("GB")),
+        c.fits === null ? null : c.fits ? badge("ok", "Fits the memory you typed") : badge("warn", "Does not fit the memory you typed")),
+      h("p", { class: "t-caption muted", text: c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+  }
   function iaCatalogBody(r) {
     const muted = t => h("span", { class: "muted", text: t }), v = IA_VERDICT[r.verdict];
     const parts = [h("p", { class: "row" }, badge(v[0], v[1]), badge("idle", "Not sent"),
@@ -4395,6 +4561,7 @@
         h("dt", { text: "Family" }), h("dd", null, h("code", { translate: "no", dir: "ltr", text: f.family }), " ", h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: f.maker + " · " + f.origin })),
         h("dt", { text: "Licence" }), h("dd", { class: "wrap" }, h("bdi", { lang: "en", dir: "ltr", text: f.licence })),
         h("dt", { text: "Source" }), h("dd", { class: "wrap" }, h("a", { class: "ia-card", href: "https://huggingface.co/" + f.card, target: "_blank", rel: "noopener noreferrer", translate: "no", dir: "ltr", text: f.card }), " ", h("span", { class: "num t-caption", text: f.read }))));
+      if (f.terms) parts.push(iaTermsBody(f.terms));
     }
     const m = r.memory;
     if (m) {
@@ -4403,6 +4570,7 @@
       else if (m.basis === "other_card") parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), muted("The catalog's count belongs to another size of this family. Type the card's full name to estimate it.")));
       else parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), h("span", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }), muted("The record gives no parameter count.")));
     }
+    if (r.context) parts.push(iaContextBody(r.context));
     for (const st of r.steps) parts.push(h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pulling and running the model waits for Director 00's approval." })));
     return h("div", { class: "stack" }, ...parts);
   }
@@ -4450,11 +4618,15 @@
     const useIn = h("select", { class: "input", id: "f-ia-use", name: "use" }, ...Object.entries(IA_USE).map(([k, v]) => h("option", { value: k, text: v })));
     useIn.value = "service";
     const memIn = h("input", { class: "input", type: "number", id: "f-ia-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const ctxIn = h("input", { class: "input", type: "number", id: "f-ia-ctx", name: "context-tokens", autocomplete: "off", min: "1", max: "100000000", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
+    const batchIn = h("input", { class: "input", type: "number", id: "f-ia-batch", name: "batch-size", autocomplete: "off", min: "1", max: "4096", step: "1", inputMode: "numeric", dir: "ltr", value: "1" });
+    const kvIn = h("input", { class: "input", type: "number", id: "f-ia-kv", name: "kv-bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr" });
     const bitsIn = h("input", { class: "input", type: "number", id: "f-ia-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
     const cOut = h("div", { class: "stack", "aria-live": "polite" });
     const cBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Check the model");
     cBtn.addEventListener("click", run(cBtn, cOut, () => ({ mode: "catalog", model: modelIn.value, use: useIn.value,
-      ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}) }), iaCatalogBody));
+      ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}),
+      ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}), ...(batchIn.value.trim() ? { batch_size: Number(batchIn.value) } : {}), ...(kvIn.value.trim() ? { kv_bits: Number(kvIn.value) } : {}) }), iaCatalogBody));
     // 2. A skill's blast radius.
     const skillIn = latin(h("select", { class: "input", id: "f-ia-skill", name: "skill", dir: "ltr" }, ...Object.keys(DATA.deps || {}).sort().map(n => h("option", { value: n, text: n }))));
     skillIn.value = "replica-reversal-engine";
@@ -4477,6 +4649,8 @@
         field("f-ia-model", "Model name", modelIn, "A Hugging Face card or an Ollama name. A name that does not say which size is not guessed."),
         field("f-ia-use", "Use", useIn),
         h("div", { class: "grid-2" }, field("f-ia-mem", "Memory you have, in GB (optional)", memIn), field("f-ia-bits", "Bits per weight (optional)", bitsIn, "For example 4 for a 4-bit file, 16 for half precision.")),
+        h("div", { class: "grid-2" }, field("f-ia-ctx", "Context length in tokens (optional)", ctxIn), field("f-ia-batch", "Batch size", batchIn)),
+        field("f-ia-kv", "Bits per cache value (optional)", kvIn, "Empty uses the bits per weight."),
         h("div", { class: "row" }, cBtn), cOut),
       h("section", { class: "panel stack", "aria-labelledby": "h-ia-b" }, h("h2", { id: "h-ia-b", text: "A skill's blast radius" }),
         field("f-ia-skill", "Skill", skillIn), field("f-ia-query", "Words for the matching documents (optional)", queryIn, "Empty searches for the skill's own name."),
@@ -4980,7 +5154,7 @@
   };
 
   /* ── Router ─────────────────────────────────────────────────── */
-  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness" };
+  const TITLES = { overview: "Overview", agents: "Agents", agent: "Agent", runs: "Runs", run: "Run", missions: "Missions", mission: "Mission", workflows: "Workflows", workflow: "Workflow", analytics: "Analytics", webhooks: "Webhooks", compare: "Compare runs", templates: "Agent templates", approvals: "Approvals", logs: "Logs", settings: "Settings", studio: "Studio", skills: "Skill Mixer", memory: "Memory", search: "Search", loader: "Skill Loader", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness", architect: "Architect studio" };
   let first = true;
   function route() {
     for (const k of Object.keys(TAB_MEMO)) delete TAB_MEMO[k];
@@ -5061,7 +5235,7 @@
   const pal = $("#palette"), palIn = $("#palInput"), palList = $("#palList"), palNone = $("#palNone");
   let palOpener = null, shown = [], active = 0, cmds = [];
   const baseCmds = () => [
-    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
+    ...Object.entries({ overview: "Overview", agents: "Agents", runs: "Runs", missions: "Missions", workflows: "Workflows", analytics: "Analytics", webhooks: "Webhooks", approvals: "Approvals", logs: "Logs", studio: "Studio", search: "Search", skills: "Skill Mixer", loader: "Skill Loader", memory: "Memory", math: "Math lab", hyper: "Hyper studio", atlas: "FOSS atlas", universal: "Universal agent", workbench: "Workbench", polymath: "Polymath", tree: "Skill tree", order: "Plan order", docs: "Project search", runbook: "Runbook", impact: "Impact analysis", release: "Release readiness", architect: "Architect studio", governance: "Governance", diagnostics: "Diagnostics", recon: "Passive recon", settings: "Settings" }).map(([k, v]) => [v, "Page", () => { location.hash = "#/" + k; }]),
     ["New agent", "Action", () => { location.hash = "#/agents"; setTimeout(() => agentDialog($("#searchBtn")), 0); }],
     ["New mission", "Action", () => { location.hash = "#/missions"; setTimeout(() => missionDialog($("#searchBtn")), 0); }],
     ["Compose a macro", "Action", () => setTimeout(() => macroDialog($("#searchBtn")), 0)],

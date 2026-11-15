@@ -270,7 +270,7 @@ python3 .claude/skills/replica-graphify/graphify.py --root . --out jarvis/app/da
 python3 .claude/skills/replica-impeccable/slop_guard.py --json jarvis/app/src jarvis/server/lib jarvis/README.md docs/adr --root . > jarvis/app/data/impeccable-report.json
 ```
 
-Settings → Local model → **Open-weight model catalog** lists 30 families (DeepSeek, Qwen, GLM, Kimi, MiMo, gpt-oss, Gemma, Llama, Olmo, Phi, Granite, Mistral), each with its licence, job, parameter count and the Hugging Face record it was read from on 2026-11-15 (ADR-167). It ranks nothing: the cards' benchmark tables are their makers' own claims.
+Settings → Local model → **Open-weight model catalog** also shows each card's longest documented context and whether its context memory can be estimated, from its `config.json` (ADR-171). It lists 30 families (DeepSeek, Qwen, GLM, Kimi, MiMo, gpt-oss, Gemma, Llama, Olmo, Phi, Granite, Mistral), each with its licence, job, parameter count and the Hugging Face record it was read from on 2026-11-15 (ADR-167). It ranks nothing: the cards' benchmark tables are their makers' own claims.
 
 ## Council, time machine and UX heatmap (ADR-144)
 
@@ -446,6 +446,11 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 
 - `node jarvis/scripts/build-app.mjs` writes `jarvis/app/data/model-catalog.json` from the module, for the Python twin; `--check` fails when it is stale.
 
+- **Licence terms and context memory (ADR-171).**
+  - The five custom licences were read in full; the check shows their terms (the requirement, the revenue above which it applies, the name-display rule, internal use) with a link to the file.
+  - With a context length (and optionally the batch size and bits per cache value), it gives the context memory from the card's `config.json`, the total with the weights, and a flag when the length passes the documented maximum.
+  - Models that mix attention types, gated cards and other sizes of a family show why no number is given.
+
 - The runbook (ADR-165) probes `#/impact` as its eleventh page.
 
 ## Release readiness (ADR-169)
@@ -461,6 +466,24 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **Release bundle.** The skills a change touched go through impact analysis (ADR-168), with an optional model and release notes. The page shows the pages and test commands joined, the model's licence and memory verdict, the notes line by line and a chain hash. Publishing the release stays «قيد الموافقة».
 
 - The API is `POST /api/w/:slug/release` with `{mode: "audit" | "regress" | "bundle", …}`. The same engine runs with `python3 .claude/skills/replica-release-gate/release_gate.py '{"mode": "audit"}' --data jarvis/app/data`. The runbook probes `#/release` as its twelfth page.
+
+## Architect studio (ADR-170)
+
+- **`#/architect`** («استوديو المصمم») has four tools. `#/studio` is still the Studio of ADR-133.
+
+- **Architect seal.** The code is hashed as SHA-256 of `aether-prime:architect-seal:v1:` and the NFC code, then compared with the seal the server holds (`JARVIS_ARCHITECT_SEAL`) or, in the file page, the one this browser saved. A seal in the request is never used. Only five characters are shown, and the code is never stored.
+  - With no seal set up, the first code's hash is returned once, so it can be saved.
+  - The seal opens the studio's tools only. It is not the server's sign-in (that is the founder gate, ADR-141).
+
+- **Preview scale.** Text from 90 to 120 percent with a 12 px floor, compact, balanced or spacious spacing with concentric radii, and tabular or proportional numerals. It applies to the preview card only; colours do not change.
+
+- **Composite skill.** Two or more skills, with an optional model, become a `SKILL.md` draft built from plan order and the release bundle: layers, real test commands, pages and the model's verdict. Writing it to disk stays «قيد الموافقة».
+
+- **Upgrade radar.** The skills still in text rules or tested, most depended on first, with the next step to proved, and the catalog families whose documented licence allows serving them. It needs no seal.
+
+- Installing, outbound connections, running a model and publishing stay locked in every state.
+
+- The API is `POST /api/w/:slug/architect` with `{mode: "seal" | "ui" | "compose" | "radar", passcode, …}`. The same engine runs with `python3 .claude/skills/replica-architect-studio/architect_studio.py '{"mode": "radar"}' --data jarvis/app/data`.
 
 ## What Jarvis will not do
 

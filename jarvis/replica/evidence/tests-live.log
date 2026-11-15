@@ -103,11 +103,14 @@ PASS live: a cinematic preset compiles on the server
 PASS live: the preset is in the event log
 PASS live: the tree and the composer answer from the server
 PASS live: composing is in the event log, as a count
+PASS live: the server gives the context memory and the licence terms read in full
+PASS live: with no server seal, the studio shows the hash to set, refuses the preview scale and still scans the radar
+PASS live: events keep the seal's state and counts, never the code or its hash
 PASS live: release readiness answers from the server in all three checks
 PASS live: release readiness is in the event log as verdicts and counts
 PASS live: impact analysis answers from the server in all three checks
 PASS live: impact analysis is in the event log as counts, never the model name
-PASS live: the runbook answers from the server with eleven page probes passed
+PASS live: the runbook answers from the server with twelve page probes passed
 PASS live: the runbook is in the event log, as counts
 PASS live: project search answers from the server
 PASS live: project search is in the event log, as a count
@@ -143,4 +146,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-144 passed, 0 failed
+147 passed, 0 failed
