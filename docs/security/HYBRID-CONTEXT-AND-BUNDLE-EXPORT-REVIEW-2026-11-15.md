@@ -6,17 +6,17 @@ Date: 2026-11-15 · Reviewer: Claude Code, cloud sandbox.
 
 | File | Lines | SHA-256 (first 16) |
 |---|---|---|
-| `jarvis/server/lib/model-catalog.mjs` | @L1 | @H1 |
-| `jarvis/server/lib/impact-analysis.mjs` | @L2 | @H2 |
-| `jarvis/server/lib/release-gate.mjs` | @L3 | @H3 |
-| `jarvis/server/lib/architect-studio.mjs` | @L4 | @H4 |
-| `jarvis/server/lib/campaign-log.mjs` | @L5 | @H5 |
+| `jarvis/server/lib/model-catalog.mjs` | 71 | 45a134b1117d9bc8 |
+| `jarvis/server/lib/impact-analysis.mjs` | 205 | a535263b4fe8ee6e |
+| `jarvis/server/lib/release-gate.mjs` | 150 | f08f5971e53704df |
+| `jarvis/server/lib/architect-studio.mjs` | 179 | 7bf08e72a443e436 |
+| `jarvis/server/lib/campaign-log.mjs` | 24 | dfe02e34ded66f49 |
 
 | File | Lines | SHA-256 (first 16) |
 |---|---|---|
-| `.claude/skills/replica-impact-analysis/impact_analysis.py` | @L6 | @H6 |
-| `.claude/skills/replica-release-gate/release_gate.py` | @L7 | @H7 |
-| `.claude/skills/replica-architect-studio/architect_studio.py` | @L8 | @H8 |
+| `.claude/skills/replica-impact-analysis/impact_analysis.py` | 370 | 3e57ce7a217ef51b |
+| `.claude/skills/replica-release-gate/release_gate.py` | 266 | 747360f72a4294ec |
+| `.claude/skills/replica-architect-studio/architect_studio.py` | 306 | 4575bd9c300da875 |
 
 Also changed:
 
