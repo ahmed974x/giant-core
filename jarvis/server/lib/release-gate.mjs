@@ -93,7 +93,7 @@ export function canonical(v) {
 export function modelSection(m) {
   if (!m) return null;
   return { model: m.model, use: m.use, found: m.found, verdict: m.verdict, note: m.note, family: m.family && { family: m.family.family, licence: m.family.licence, card: m.family.card, read: m.family.read, terms: m.family.terms },
-    memory: m.memory, context: m.context };
+    memory: m.memory, context: m.context, offload: m.offload };
 }
 
 function modelLines(m) {
@@ -103,6 +103,8 @@ function modelLines(m) {
   if (m.memory) lines.push("- Weights: " + (m.memory.weights_gb === null ? "not estimated (" + m.memory.basis + ")" : m.memory.weights_gb + " GB at " + m.memory.bits + " bits"));
   if (m.context) lines.push("- Context memory: " + (m.context.kv_gb === null ? "not estimated (" + m.context.basis + (m.context.blocking ? ": " + m.context.blocking.join(", ") : "") + ")" : m.context.kv_gb + " GB for " + m.context.tokens + " tokens (" + m.context.attention + ")"),
     "- Total: " + (m.context.total_gb === null ? "not estimated" : m.context.total_gb + " GB"), "- Longest documented context: " + (m.context.max_context === null ? "unknown" : m.context.max_context + (m.context.exceeds ? " (exceeded)" : "")));
+  if (m.offload) lines.push("- Where it runs: " + (m.offload.verdict === "local" ? "this laptop, " + m.offload.margin_gb + " GB to spare of " + m.offload.laptop_gb + " GB" : m.offload.verdict === "web_offload" ? "a web host, " + m.offload.shortfall_gb + " GB more than the laptop's " + m.offload.laptop_gb + " GB" : "not decided (" + m.offload.reason + ")"),
+    "- Licence on a site of your own: " + m.offload.own_use + " while only you use it, " + m.offload.others_use + " once others do");
   return lines;
 }
 

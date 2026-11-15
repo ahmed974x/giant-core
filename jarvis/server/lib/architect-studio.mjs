@@ -15,6 +15,11 @@
 //   export   ADR-172: the release export (release readiness) with the seal's state and audit prefix and, when the
 //            seal is open and a scale is sent, the checked preview scale, as key-sorted JSON and Markdown with the
 //            SHA-256 of each. No seal is needed to export; writing the file stays a locked approval.
+//   campaign ADR-172: a long task as checkpoints, one per Kahn layer of the chosen skills and one for the release,
+//            each with its skills, its test commands from the skill tree and a chained SHA-256. The person marks
+//            checkpoints done or failed (with the reason); the first one not complete is where to resume. Each locked
+//            step has its own hash; with the seal open, a step whose hash is sent gets the architect's receipt. A
+//            receipt records the decision and runs nothing: the step stays locked and pending approval.
 // The engines called here keep their own checks. Pure: no network, no process, no file. The same answers come
 // from .claude/skills/replica-architect-studio/architect_studio.py (tests/golden.json).
 import { sha256Hex } from "./snapshot.mjs";
@@ -23,7 +28,8 @@ import { buildTree } from "./skill-tree.mjs";
 import { dependentsOf, licenceRule } from "./impact-analysis.mjs";
 import { exportBundle, releaseDocument, releaseGate } from "./release-gate.mjs";
 
-export const AS_MODES = ["seal", "ui", "compose", "radar", "export"];
+export const AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign"];
+export const AS_RECEIPT_DOMAIN = "aether-prime:approval-receipt:v1:";
 export const AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:";
 export const AS_DENSITY = { compact: 4, balanced: 8, spacious: 12 };
 export const AS_NUMERALS = { tabular: "tabular-nums slashed-zero", proportional: "proportional-nums slashed-zero" };
@@ -111,10 +117,53 @@ export function architectExport(r, ctx, s) {
   return { ...ex, release_chain_sha256: bundle.chain_sha256, steps: doc.steps };
 }
 
+// ADR-172: the campaign's checkpoints, each hash chained to the one before, so the plan has one hash however far it got.
+export function campaignCheckpoints(layers, tree, shared) {
+  const facts = new Map((tree && Array.isArray(tree.skills) ? tree.skills : []).map(x => [x.name, x]));
+  const cps = layers.map((l, i) => ({ id: "cp-" + (i + 1), layer: i + 1, skills: l, verify: l.filter(n => facts.get(n)?.tests).map(n => "python3 -m unittest discover -s .claude/skills/" + n + "/tests") }));
+  cps.push({ id: "cp-release", layer: null, skills: [], verify: shared });
+  let prev = "0".repeat(64);
+  return cps.map(cp => { prev = sha256Hex(prev + JSON.stringify(cp)); return { ...cp, checkpoint_sha256: prev }; });
+}
+
+// A locked step's hash names the campaign, the action and the target; a receipt binds it to the seal that signed it.
+export function stepHash(campaign, step) { return sha256Hex(campaign + ":" + step.action + ":" + step.target); }
+export function receiptHash(seal, step) { return sha256Hex(AS_RECEIPT_DOMAIN + seal + ":" + step); }
+
+export function campaignInput(r) {
+  const done = r.done === undefined ? [] : Array.isArray(r.done) && r.done.length <= 64 && r.done.every(x => typeof x === "string") ? r.done : asFail("Done is a list of up to 64 checkpoint names.", "done");
+  const failed = r.failed === undefined ? {} : r.failed && typeof r.failed === "object" && !Array.isArray(r.failed) && Object.keys(r.failed).length <= 64 ? r.failed : asFail("Failed maps up to 64 checkpoint names to the reason.", "failed");
+  for (const [k, v] of Object.entries(failed)) if (typeof v !== "string" || !v.trim() || v.length > 200 || /[\r\n]/.test(v)) asFail("Each reason is one line of 1 to 200 characters.", "failed." + k);
+  const approved = r.approved === undefined ? [] : Array.isArray(r.approved) && r.approved.length <= 32 && r.approved.every(x => typeof x === "string" && /^[0-9a-f]{64}$/.test(x)) ? r.approved : asFail("Approved is a list of up to 32 step hashes.", "approved");
+  return { done, failed, approved };
+}
+
+export function campaignPlan(r, ctx, s) {
+  const { done, failed, approved } = campaignInput(r);
+  if (approved.length) needSeal(s);
+  const { bundle, doc } = releaseDocument(r, ctx);
+  const plan = campaignCheckpoints(doc.order.layers, ctx.tree, bundle.shared_tests);
+  for (const id of [...done, ...Object.keys(failed)]) if (!plan.some(cp => cp.id === id)) asFail("That checkpoint is not in this campaign.", id);
+  const campaign = plan[plan.length - 1].checkpoint_sha256;
+  const steps = doc.steps.map(st => { const h = stepHash(campaign, st); return { ...st, step_sha256: h, receipt: approved.includes(h) ? { audit_prefix: s.audit_prefix, receipt_sha256: receiptHash(s.hash, h) } : null }; });
+  const signed = steps.every(st => st.receipt);
+  const checkpoints = plan.map(cp => {
+    const status = Object.hasOwn(failed, cp.id) ? "needs_fix" : cp.layer === null ? (signed ? "receipted" : "awaiting_approval") : done.includes(cp.id) ? "done" : "pending";
+    return { ...cp, status, reason: status === "needs_fix" ? failed[cp.id] : null, fix: status === "needs_fix" ? cp.verify : [] };
+  });
+  const open = checkpoints.find(cp => cp.status !== "done" && cp.status !== "receipted");
+  const counts = Object.fromEntries(["done", "pending", "needs_fix", "awaiting_approval", "receipted"].map(k => [k, checkpoints.filter(cp => cp.status === k).length]));
+  const seal = { state: s.state, audit_prefix: s.audit_prefix };
+  const head = [...exportHead(seal, null), "## Checkpoints", ...checkpoints.map(cp => "- " + cp.id + " (" + cp.status + "): " + (cp.skills.length ? cp.skills.join(", ") : "release") + (cp.reason ? "; " + cp.reason : "")),
+    "- Resume from: " + (open ? open.id : "nothing left"), "- Receipts: " + steps.filter(st => st.receipt).length + " of " + steps.length + " locked steps; a receipt runs nothing", ""];
+  const ex = exportBundle({ ...doc, title: "Aether Prime campaign", seal, campaign: { campaign_sha256: campaign, checkpoints, resume: open ? open.id : null }, steps }, head);
+  return { campaign_sha256: campaign, checkpoints, resume: open ? open.id : null, counts, steps, unmatched: approved.filter(h => !steps.some(st => st.step_sha256 === h)).length, export: ex };
+}
+
 export function architectStudio(req, ctx) {
   const r = req && typeof req === "object" && !Array.isArray(req) ? req : asFail("Send an object with a mode.", "");
   const c = ctx ?? {};
-  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose, radar or export.", "mode");
+  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose, radar, export or campaign.", "mode");
   const s = checkSeal(r, c.seal);
   const seal = { configured: s.configured, unlocked: s.unlocked, state: s.state, audit_prefix: s.audit_prefix };
   const out = { mode, seal, locks: locks() };
@@ -124,6 +173,7 @@ export function architectStudio(req, ctx) {
   if (mode === "compose") out.compose = composeSkill(r, c);
   if (mode === "radar") out.radar = upgradeRadar(c);
   if (mode === "export") out.export = architectExport(r, c, s);
-  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks, ...(out.export ? [out.export.bundle_sha256] : [])];
+  if (mode === "campaign") out.campaign = campaignPlan(r, c, s);
+  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks, ...(out.export ? [out.export.bundle_sha256] : []), ...(out.campaign ? [out.campaign.export.bundle_sha256] : [])];
   return { ...out, chain_sha256: sections.reduce((h, x) => sha256Hex(h + sha256Hex(JSON.stringify(x))), "0".repeat(64)), sent: false };
 }

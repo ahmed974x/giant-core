@@ -163,7 +163,7 @@ def model_section(m):
         return None
     f = m["family"]
     return {"model": m["model"], "use": m["use"], "found": m["found"], "verdict": m["verdict"], "note": m["note"],
-            "family": f and {"family": f["family"], "licence": f["licence"], "card": f["card"], "read": f["read"], "terms": f["terms"]}, "memory": m["memory"], "context": m["context"]}
+            "family": f and {"family": f["family"], "licence": f["licence"], "card": f["card"], "read": f["read"], "terms": f["terms"]}, "memory": m["memory"], "context": m["context"], "offload": m["offload"]}
 
 
 def _model_lines(m):
@@ -182,6 +182,12 @@ def _model_lines(m):
         lines += ["- Context memory: " + ("not estimated (" + c["basis"] + (": " + ", ".join(c["blocking"]) if c["blocking"] else "") + ")" if c["kv_gb"] is None else js_json(c["kv_gb"]) + " GB for " + js_json(c["tokens"]) + " tokens (" + c["attention"] + ")"),
                   "- Total: " + ("not estimated" if c["total_gb"] is None else js_json(c["total_gb"]) + " GB"),
                   "- Longest documented context: " + ("unknown" if c["max_context"] is None else js_json(c["max_context"]) + (" (exceeded)" if c["exceeds"] else ""))]
+    if m["offload"]:
+        o = m["offload"]
+        where = ("this laptop, " + js_json(o["margin_gb"]) + " GB to spare of " + js_json(o["laptop_gb"]) + " GB" if o["verdict"] == "local"
+                 else "a web host, " + js_json(o["shortfall_gb"]) + " GB more than the laptop's " + js_json(o["laptop_gb"]) + " GB" if o["verdict"] == "web_offload"
+                 else "not decided (" + o["reason"] + ")")
+        lines += ["- Where it runs: " + where, "- Licence on a site of your own: " + o["own_use"] + " while only you use it, " + o["others_use"] + " once others do"]
     return lines
 
 

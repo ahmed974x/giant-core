@@ -146,6 +146,17 @@ def context_memory(f, same_card, tokens, batch, kv_bits, weights, memory_gb):
             "attention": c.get("attention") if c else None, "kv_gb": kv, "total_gb": total, "fits": None if total is None or memory_gb is None else total <= memory_gb}
 
 
+def offload_route(context, memory_gb, f):
+    """ADR-172: where the model can run. The memory typed is the laptop's; the total is the weights and the context
+    memory. Equal fits. With no total nothing is decided. A site of your own is personal use while only you use it."""
+    total = context["total_gb"] if context else None
+    verdict = "undecided" if total is None else "local" if total <= memory_gb else "web_offload"
+    reason = None if total is not None else "memory_not_estimated" if context else "no_context"
+    return {"laptop_gb": memory_gb, "total_gb": total, "verdict": verdict, "reason": reason,
+            "margin_gb": _r2(memory_gb - total) if verdict == "local" else None, "shortfall_gb": _r2(total - memory_gb) if verdict == "web_offload" else None,
+            "own_use": licence_rule(f["licence"], "personal", f.get("terms"))["verdict"], "others_use": licence_rule(f["licence"], "service", f.get("terms"))["verdict"]}
+
+
 def _check_catalog(catalog):
     if not isinstance(catalog, list) or not 1 <= len(catalog) <= 200:
         _fail("Send the model catalog.", "catalog")
@@ -207,7 +218,7 @@ def check_model(r, catalog):
     if f is None:
         base = model[model.rfind("/") + 1:].split(":")[0].lower()
         cands = [{"family": p["family"], "licence": p["licence"]} for p in fams if p["family"].startswith(base + "-")] if _len16(base) >= 2 else []
-        return {**out, "found": False, "verdict": "size_unnamed" if cands else "unknown", "note": None, "family": None, "candidates": cands, "memory": None, "context": None, "steps": [], "sent": False}
+        return {**out, "found": False, "verdict": "size_unnamed" if cands else "unknown", "note": None, "family": None, "candidates": cands, "memory": None, "context": None, "offload": None, "steps": [], "sent": False}
     rule = licence_rule(f["licence"], use, f.get("terms"))
     # A family's parameter count belongs to the one card it was read from; another size of the family is not guessed.
     name = model.lower()
@@ -224,8 +235,12 @@ def check_model(r, catalog):
     fam = {k: f.get(k) for k in ("family", "maker", "origin", "licence", "role", "params", "card", "created", "read", "terms")}
     fam["params"] = None if f["params"] is None else int(f["params"])
     context = None if tokens is None else context_memory(f, same_card, tokens, batch, kv_bits, memory["weights_gb"] if memory else None, mem)
+    offload = None if mem is None else offload_route(context, mem, f)
+    steps = [{"action": "install", "target": f["family"], "gate": "approval", "locked": True, "status": "pending_approval"}]
+    if offload and offload["verdict"] == "web_offload":
+        steps.append({"action": "publish", "target": "web host", "gate": "approval", "locked": True, "status": "pending_approval"})
     return {**out, "found": True, "verdict": rule["verdict"], "note": rule["note"], "family": fam, "candidates": [], "memory": memory, "context": context,
-            "steps": [{"action": "install", "target": f["family"], "gate": "approval", "locked": True, "status": "pending_approval"}], "sent": False}
+            "offload": offload, "steps": steps, "sent": False}
 
 
 def dependents_of(deps, skill):

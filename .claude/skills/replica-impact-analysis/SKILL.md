@@ -14,6 +14,7 @@ python3 -m unittest discover -s .claude/skills/replica-impact-analysis/tests
 ## Rules
 
 - Context memory (ADR-171, ADR-172) is counted only for the card the config was read from: `gqa` and `mla` with one layout, and `hybrid_sliding` when `config.json` names every layer as full or sliding attention with one numeric window and one head layout (2 × kv_heads × head_dim × (full_layers × tokens + sliding_layers × min(tokens, window))). Any other card is `not_estimated` and names the `config.json` fields that stop it.
+- With the memory you have (`memory_gb`), `offload` says `local` when the weights and context memory fit (equal fits), `web_offload` when they do not, with a locked `publish` step to a web host, or `undecided` with no total. It reads the licence for your own site (personal use) and for others (serving).
 - The catalog comes only from `jarvis/app/data/model-catalog.json`, which `node jarvis/scripts/build-app.mjs` writes from `jarvis/server/lib/model-catalog.mjs` (ADR-167). Nothing is fetched.
 - A name that matches no family but starts more than one family's name (for example `qwen3.8`) is `size_unnamed`: its licence is not guessed.
 - The licence rule reads the licence text as the catalog states it:

@@ -153,7 +153,7 @@ ADR-171 added one row, built and tested (`test-app.mjs` F51, `test-live.mjs`, se
 - licence terms read in full and context memory from each card's config.json.
 
 ADR-172 added one row, built and tested (`test-app.mjs` F52, `test-live.mjs`, server tests, skill unit tests, the mutation run):
-- context memory for documented sliding and full layers, and the bundle export.
+- context memory for documented sliding layers, this laptop or a web host, the bundle export and checkpointed campaigns.
 
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 

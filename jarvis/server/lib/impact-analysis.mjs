@@ -87,6 +87,17 @@ export function contextMemory(f, sameCard, tokens, batch, kvBits, weights, memor
     attention: c ? c.attention : null, kv_gb: kv, total_gb: total, fits: total === null || memoryGb === null ? null : total <= memoryGb };
 }
 
+// ADR-172: where the model can run. The memory typed is the laptop's; the total is the weights and the context
+// memory (ADR-171). Equal fits. With no total (no context asked, or a memory not estimated) nothing is decided.
+// Running it on a site of your own is personal use while only you use it, and serving it to others once others do.
+export function offloadRoute(context, memoryGb, f) {
+  const total = context ? context.total_gb : null;
+  const verdict = total === null ? "undecided" : total <= memoryGb ? "local" : "web_offload";
+  return { laptop_gb: memoryGb, total_gb: total, verdict, reason: total !== null ? null : context ? "memory_not_estimated" : "no_context",
+    margin_gb: verdict === "local" ? Math.round((memoryGb - total) * 100) / 100 : null, shortfall_gb: verdict === "web_offload" ? Math.round((total - memoryGb) * 100) / 100 : null,
+    own_use: licenceRule(f.licence, "personal", f.terms).verdict, others_use: licenceRule(f.licence, "service", f.terms).verdict };
+}
+
 function checkCatalog(catalog) {
   if (!Array.isArray(catalog) || catalog.length < 1 || catalog.length > 200) iaFail("Send the model catalog.", "catalog");
   return catalog.map((p, i) => {
@@ -109,7 +120,7 @@ export function checkModel(r, catalog) {
   if (!f) {
     const base = model.slice(model.lastIndexOf("/") + 1).split(":")[0].toLowerCase();
     const candidates = base.length >= 2 ? fams.filter(p => p.family.startsWith(base + "-")).map(p => ({ family: p.family, licence: p.licence })) : [];
-    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, context: null, steps: [], sent: false };
+    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, context: null, offload: null, steps: [], sent: false };
   }
   const rule = licenceRule(f.licence, use, f.terms);
   // A family's parameter count belongs to the one card it was read from; another size of the family is not guessed.
@@ -119,9 +130,12 @@ export function checkModel(r, catalog) {
     : !sameCard ? { basis: "other_card", params: null, bits, weights_gb: null, fits: null }
       : { basis: "card", params: f.params, bits, weights_gb: weightsGb(f.params, bits), fits: memoryGb === null ? null : weightsGb(f.params, bits) <= memoryGb };
   const context = tokens === null ? null : contextMemory(f, sameCard, tokens, batch, kvBits, memory && memory.weights_gb, memoryGb);
+  const offload = memoryGb === null ? null : offloadRoute(context, memoryGb, f);
+  const steps = [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }];
+  if (offload && offload.verdict === "web_offload") steps.push({ action: "publish", target: "web host", gate: "approval", locked: true, status: "pending_approval" });
   return { ...out, found: true, verdict: rule.verdict, note: rule.note,
     family: { family: f.family, maker: f.maker, origin: f.origin, licence: f.licence, role: f.role, params: f.params, card: f.card, created: f.created, read: f.read, terms: f.terms ?? null },
-    candidates: [], memory, context, steps: [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }], sent: false };
+    candidates: [], memory, context, offload, steps, sent: false };
 }
 
 // The skills that load a skill, nearest first: a breadth-first search over the dependency snapshot read backwards.

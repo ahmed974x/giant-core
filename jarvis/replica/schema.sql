@@ -533,3 +533,24 @@ begin
 end $$;
 create trigger reversal_log_no_update before update or delete on reversal_log
   for each row execute function reversal_log_append_only();
+
+-- ADR-172: the architect's campaigns. Each save is a new row; the latest for a campaign is where it stands. The request
+-- is kept without the architect's code (the check refuses one), so a saved campaign never holds a secret.
+create table architect_campaigns (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id),
+  campaign_sha256 text not null check (length(campaign_sha256) = 64),
+  request jsonb not null,
+  resume text,
+  done_count integer not null check (done_count >= 0),
+  receipts integer not null check (receipts >= 0),
+  created_at timestamptz not null default now(),
+  constraint architect_campaigns_no_code check (not (request ? 'passcode'))
+);
+create index architect_campaigns_ws on architect_campaigns (workspace_id, created_at);
+create function architect_campaigns_append_only() returns trigger language plpgsql as $$
+begin
+  raise exception 'jarvis.architect_campaigns is append-only';
+end $$;
+create trigger architect_campaigns_no_update before update or delete on architect_campaigns
+  for each row execute function architect_campaigns_append_only();

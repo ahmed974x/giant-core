@@ -1,10 +1,14 @@
-# ADR-172: Context memory for documented sliding and full layers, and the bundle export
+# ADR-172: Context memory for documented sliding layers, this laptop or a web host, the bundle export and checkpointed campaigns
 
-Date: 2026-11-15 · Status: Proposed. ADR-171 left 16 of the 30 catalog cards without a context memory estimate, because they mix attention types. Ahmad's message of 2026-11-15 asked for two things:
+Date: 2026-11-15 · Status: Proposed. ADR-171 left 16 of the 30 catalog cards without a context memory estimate, because they mix attention types. Ahmad's messages of 2026-11-15 asked for four things:
 
 - estimate the cards whose `config.json` states every layer without ambiguity, and keep the rest unestimated with the field that stops it;
 
-- export the architect's and the release's results as one document to copy, with its hash.
+- say whether a model fits the laptop or needs a web host, from the memory typed;
+
+- export the architect's and the release's results as one document to copy, with its hash;
+
+- split a long task into checkpoints that can be resumed on another day, with the architect's receipts for locked steps.
 
 ## What was read
 
@@ -71,7 +75,33 @@ Gemma 4's full layers use other heads than its sliding layers, and `attention_k_
 
    - Writing the file is a locked step (`write`), next to publishing and running the model.
 
-4. **Pages.**
+4. **This laptop or a web host** (`offloadRoute` in impact analysis and its twin).
+
+   - The memory typed ("Memory you have") is the laptop's; the total is the weights plus the context memory from ADR-171.
+
+   - `local` when the total is at most the memory (equal fits), with the margin; `web_offload` when it is more, with the shortfall and a locked `publish` step to a web host (ADR-141); `undecided` with no total (`no_context` or `memory_not_estimated`). Nothing is guessed.
+
+   - The licence is read twice: on a site of your own while only you use it (personal use), and once others use it (serving it to others, with ADR-171's terms).
+
+5. **The campaign** (`campaignPlan` in the architect studio and its twin, mode `campaign`).
+
+   - One checkpoint per Kahn layer of the chosen skills, with each skill's test command from the skill tree, and one `cp-release` checkpoint with the shared tests and the locked steps. Each checkpoint's SHA-256 is chained to the one before, so the plan has one hash however far it got.
+
+   - The person marks checkpoints done or failed with a reason; a failed one is `needs_fix` and lists the commands to run again. The first checkpoint not complete is where to resume.
+
+   - Each locked step has its own hash. With the seal open, a step whose hash is sent gets a receipt: SHA-256 of `aether-prime:approval-receipt:v1:`, the seal and the step's hash. A receipt records the architect's decision and runs nothing: the step stays `locked: true` and `pending_approval`, and a hash from another plan opens nothing. Without the seal, sending a hash is refused with 403.
+
+   - The campaign's export is the same document as above with the checkpoints, the resume point and the receipts.
+
+6. **Saving the campaign.**
+
+   - The page keeps the request (skills, model, done, failed, signed step hashes) in this browser, never the code.
+
+   - With the server, `save: true` adds a row to `architect_campaigns` (SQLite and PostgreSQL 16), append-only, with the request, the campaign's hash, where to resume and the counts. `architect_campaigns_no_code` refuses a row whose request holds a code. `GET /api/w/:slug/architect/campaigns` lists the latest first.
+
+   - An existing PostgreSQL database gets the new table only with `jarvis/replica/schema.sql` run again, as for earlier tables.
+
+7. **Pages.**
 
    - `#/impact` shows the window and the hybrid formula, or the blocking fields.
 
@@ -79,14 +109,22 @@ Gemma 4's full layers use other heads than its sliding layers, and `attention_k_
 
    - Settings marks the two cards "Estimated (sliding and full layers)".
 
+   - `#/impact`, the release bundle and the composite draft show where the model runs and the two licence readings.
+
+   - `#/architect` adds the campaign: a bar of solid segments (status colours only), the count complete in tabular numbers, where to resume, a status and reason for each checkpoint, a "Sign with the seal" box for each locked step and the export.
+
 ## Not done
 
 - **A guess for the 14 cards.** Each needs a number its file does not give.
 
 - **Writing the export to disk or sending it.** It stays a locked approval.
 
+- **Running anything from a receipt.** A receipt is a record. Going public, a hosted endpoint, installing or running a model still need Director 00's approval outside this page (ADR-141).
+
+- **The proposal's launch files** (a Caddyfile with `'unsafe-inline'`, a second SQL schema, Bitwarden scripts). They were not added: the repository's own `jarvis/deploy/Caddyfile` and schema stand, and a new tool needs a security review.
+
 ## Consequences
 
 - When a card's `config.json` changes, read it again and compare its SHA-256 before changing its class.
 
-- The mutation run covers `canonical`, `modelSection`, `modelLines`, `bundleMarkdown`, `exportBundle`, `releaseDocument`, `releaseExport`, `exportHead` and `architectExport`, and their Python twins.
+- The mutation run also covers `offloadRoute`, `campaignCheckpoints`, `stepHash`, `receiptHash`, `campaignInput` and `campaignPlan`, and their twins. It covers `canonical`, `modelSection`, `modelLines`, `bundleMarkdown`, `exportBundle`, `releaseDocument`, `releaseExport`, `exportHead` and `architectExport`, and their Python twins.

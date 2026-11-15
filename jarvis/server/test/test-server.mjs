@@ -1575,6 +1575,22 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
   ok(rel.status === 200 && rd2.title === "Aether Prime release bundle" && !("seal" in rd2) && sorted(rd2) && rb.export.bundle_sha256 === crypto.createHash("sha256").update(rb.export.json).digest("hex") && rb.export.markdown_sha256 === crypto.createHash("sha256").update(rb.export.markdown).digest("hex")
     && rb.export.markdown.includes("- Context memory: 1.21 GB for 131072 tokens (hybrid_sliding)") && rd2.release_chain_sha256 === rb.chain_sha256,
     "ADR-172 the release export is key-sorted at every level, each text's SHA-256 is its own, and it names the release chain");
+  // ADR-172: the campaign is planned and saved without the code; a receipt needs the seal and runs nothing.
+  const cq = { mode: "campaign", skills: ["replica-release-gate"], model: "openai/gpt-oss-120b", use: "personal", bits: 4, context_tokens: 131072, memory_gb: 24, done: ["cp-1"], failed: { "cp-2": "golden file differs" } };
+  const c1 = await ap({ ...cq, save: true });
+  const first = c1.body.campaign.steps.map(st => st.step_sha256);
+  const noSeal = await ap({ ...cq, approved: [first[0]] });
+  const c2 = await ap({ ...cq, passcode: CODE, approved: [first[0]], save: true });
+  ok(c1.status === 200 && c1.body.campaign.resume === "cp-2" && c1.body.campaign.counts.done === 1 && c1.body.campaign.steps.some(st => st.action === "publish" && st.target === "web host") && noSeal.status === 403
+    && c2.body.campaign.steps[0].receipt && c2.body.campaign.steps.slice(1).every(st => st.receipt === null) && c2.body.campaign.steps.every(st => st.locked && st.status === "pending_approval") && c2.body.campaign.campaign_sha256 === c1.body.campaign.campaign_sha256
+    && JSON.stringify(c2.body) === JSON.stringify(architectStudio({ ...cq, passcode: CODE, approved: [first[0]], save: true }, actx)).replace(/}$/, ',"saved":' + JSON.stringify(c2.body.saved) + "}"),
+    "ADR-172 the campaign resumes from the failed checkpoint; a receipt needs the seal, signs only the step sent and leaves every step locked");
+  const listed = await (await fetch(A + "/api/w/jarvis-studio/architect/campaigns")).json();
+  ok(listed.campaigns.length === 2 && listed.campaigns[0].receipts === 1 && listed.campaigns[0].resume === "cp-2" && listed.campaigns[0].done === 1 && !JSON.stringify(listed).includes(CODE) && !JSON.stringify(listed).includes("passcode") && !JSON.stringify(listed).includes("\"save\""),
+    "ADR-172 saved campaigns list the latest first, with where to resume and the receipts, never the code");
+  const sqlSchema = readFileSync(join(repo, "jarvis", "server", "lib", "schema-sqlite.sql"), "utf8"), pgSchema = readFileSync(join(repo, "jarvis", "replica", "schema.sql"), "utf8");
+  ok(/architect_campaigns_no_code check \(instr\(request, '"passcode"'\) = 0\)/.test(sqlSchema) && /architect_campaigns_no_code check \(not \(request \? 'passcode'\)\)/.test(pgSchema) && /architect_campaigns_no_update/.test(sqlSchema) && /architect_campaigns_no_delete/.test(sqlSchema) && /architect_campaigns_no_update before update or delete/.test(pgSchema),
+    "ADR-172 both databases refuse a saved campaign with a code and keep the table append-only");
   const r0 = await fetch(A + "/api/w/jarvis-studio/events");
   const aev = await r0.json();
   ok(aev.some(e => e.kind === "architect.export" && /^unlocked, \d+ locked$/.test(e.target)) && aev.some(e => e.kind === "release.export" && /^\d+ characters, 3 locked$/.test(e.target)) && aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
@@ -1615,6 +1631,17 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
   ok(blocked.length === 14 && blocked.every(p => Array.isArray(p.config.blocking) && p.config.blocking.length >= 1) && MODEL_PROFILES.find(p => p.card === "google/gemma-4-31B-it").config.blocking.includes("num_global_key_value_heads") && MODEL_PROFILES.find(p => p.card === "moonshotai/Kimi-K3").config.blocking.join() === "linear_attn_config"
     && MODEL_PROFILES.filter(p => p.config.attention !== "not_estimated").every(p => p.config.blocking === null),
     "ADR-172 each card still not estimated names the config.json fields that stop it");
+}
+// ADR-172: this laptop or a web host, from the memory typed and the total of the weights and the context memory.
+{
+  const ctx = { catalog: catalogJson(MODEL_PROFILES) };
+  const o = q => impactAnalysis({ mode: "catalog", use: "personal", ...q }, ctx);
+  const web = o({ model: "openai/gpt-oss-120b", bits: 4, context_tokens: 131072, memory_gb: 24 }), eq = o({ model: "Qwen/Qwen3-Coder-30B-A3B-Instruct", bits: 4, context_tokens: 32768, memory_gb: 16.08 });
+  ok(web.offload.verdict === "web_offload" && web.offload.shortfall_gb === 35.62 && web.steps.length === 2 && web.steps[1].action === "publish" && web.steps[1].locked && eq.offload.verdict === "local" && eq.offload.margin_gb === 0 && eq.steps.length === 1,
+    "ADR-172 59.62 GB on a 24 GB laptop is 35.62 GB short, so a web host as a locked publishing step; a total equal to the memory fits");
+  ok(o({ model: "openai/gpt-oss-120b", bits: 4, memory_gb: 80 }).offload.reason === "no_context" && o({ model: "google/gemma-4-31B-it", bits: 4, memory_gb: 80, context_tokens: 4096 }).offload.reason === "memory_not_estimated" && o({ model: "openai/gpt-oss-120b", bits: 4 }).offload === null
+    && o({ model: "moonshotai/Kimi-K3", memory_gb: 80, context_tokens: 4096 }).offload.others_use === "revenue_threshold" && o({ model: "Qwen/Qwen3.8-Flash-Next", memory_gb: 80, context_tokens: 4096 }).offload.others_use === "commercial_licence",
+    "ADR-172 nothing is decided without a total, and the licence is read for your own use and for others");
 }
 // ADR-167: every family names the Hugging Face record it was read from, that record's date, its parameter count or null, and the day read.
 ok(MODEL_PROFILES.every(p => /^[\w.-]+\/[\w.-]+$/.test(p.card) && profileOf(p.card) === p && /^\d{4}-\d{2}-\d{2}$/.test(p.created) && p.read === "2026-11-15" && (p.params === null || Number.isInteger(p.params) && p.params > 1e9)) && new Set(MODEL_PROFILES.map(p => p.family)).size === 30, "ADR-167 each of the 30 families names its own card, its date and its size, and the card's name finds that family");

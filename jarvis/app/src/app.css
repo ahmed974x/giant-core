@@ -677,3 +677,11 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .as-draft { max-block-size: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 /* ADR-172: the exported bundle, read only; long lines wrap inside the box, never the page. */
 .ex-text { inline-size: 100%; min-height: 280px; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* ADR-172: the campaign's checkpoints, one solid segment each; colour is status only. */
+.cp-bar { display: flex; gap: 4px; }
+.cp-seg { flex: 1 1 0; block-size: 8px; border-radius: 999px; background: var(--color-surface-sunken); box-shadow: inset 0 0 0 1px var(--color-border); }
+.cp-seg.cp-done, .cp-seg.cp-receipted { background: var(--color-success); box-shadow: none; }
+.cp-seg.cp-needs_fix { background: var(--color-danger); box-shadow: none; }
+.cp-seg.cp-awaiting_approval { background: var(--color-approval); box-shadow: none; }
+.cp-resume td { background: var(--color-surface-sunken); }
+.cp-skill { margin-inline-end: 4px; }
