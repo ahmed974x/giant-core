@@ -18,6 +18,8 @@ export const IA_MODES = ["catalog", "blast", "diff"];
 export const IA_USES = ["personal", "service"];
 // The page each engine serves; a skill on this list changes that page when it changes.
 export const IA_PAGES = [
+  { skill: "replica-architect-studio", route: "#/architect", engine: "architect-studio" },
+  { skill: "replica-release-gate", route: "#/release", engine: "release-gate" },
   { skill: "replica-impact-analysis", route: "#/impact", engine: "impact-analysis" },
   { skill: "replica-runbook", route: "#/runbook", engine: "runbook" },
   { skill: "replica-project-search", route: "#/docs", engine: "project-search" },

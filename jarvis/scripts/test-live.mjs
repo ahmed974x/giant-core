@@ -531,6 +531,18 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-170 live: the architect studio on the server. No seal is set on this server, so the tools stay read only.
+{
+  await go("#/architect");
+  await page.waitForSelector("#f-as-code");
+  await page.locator("#f-as-code").fill("kodex-974");
+  for (const id of ["h-as-s", "h-as-u", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); }
+  const setup = await page.locator('section[aria-labelledby="h-as-s"] code.uw-hash').first().textContent();
+  ok(await page.getByText("No seal set up yet").isVisible() && /^[0-9a-f]{64}$/.test(setup) && await page.getByText("The architect seal is needed: the studio is read only.").isVisible() && (await page.locator('section[aria-labelledby="h-as-r"] tbody tr').count()) > 10, "live: with no server seal, the studio shows the hash to set, refuses the preview scale and still scans the radar");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "architect.seal" && e.target === "not_configured") && evs.some(e => e.kind === "architect.radar" && /^not_configured, \d+ to upgrade$/.test(e.target)) && !JSON.stringify(evs).includes("kodex") && !JSON.stringify(evs).includes(setup), "live: events keep the seal's state and counts, never the code or its hash");
+}
+
 // ADR-169 live: release readiness on the server over the snapshots on disk; events keep the verdict and counts.
 {
   await go("#/release");
@@ -558,7 +570,7 @@ await page.waitForTimeout(300);
   await page.waitForSelector("#f-rb-goal");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForSelector(".rb-stage");
-  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 11, "live: the runbook answers from the server with eleven page probes passed");
+  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 12, "live: the runbook answers from the server with twelve page probes passed");
   const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
   ok(evs.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(evs).includes("ops@example.org"), "live: the runbook is in the event log, as counts");
 }
@@ -663,6 +675,7 @@ await page.waitForTimeout(300);
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["architect locked", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.locator("#f-as-code").fill("kodex-974"); for (const id of ["h-as-s", "h-as-u", "h-as-c", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
     ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],

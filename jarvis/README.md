@@ -462,6 +462,24 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 
 - The API is `POST /api/w/:slug/release` with `{mode: "audit" | "regress" | "bundle", …}`. The same engine runs with `python3 .claude/skills/replica-release-gate/release_gate.py '{"mode": "audit"}' --data jarvis/app/data`. The runbook probes `#/release` as its twelfth page.
 
+## Architect studio (ADR-170)
+
+- **`#/architect`** («استوديو المصمم») has four tools. `#/studio` is still the Studio of ADR-133.
+
+- **Architect seal.** The code is hashed as SHA-256 of `aether-prime:architect-seal:v1:` and the NFC code, then compared with the seal the server holds (`JARVIS_ARCHITECT_SEAL`) or, in the file page, the one this browser saved. A seal in the request is never used. Only five characters are shown, and the code is never stored.
+  - With no seal set up, the first code's hash is returned once, so it can be saved.
+  - The seal opens the studio's tools only. It is not the server's sign-in (that is the founder gate, ADR-141).
+
+- **Preview scale.** Text from 90 to 120 percent with a 12 px floor, compact, balanced or spacious spacing with concentric radii, and tabular or proportional numerals. It applies to the preview card only; colours do not change.
+
+- **Composite skill.** Two or more skills, with an optional model, become a `SKILL.md` draft built from plan order and the release bundle: layers, real test commands, pages and the model's verdict. Writing it to disk stays «قيد الموافقة».
+
+- **Upgrade radar.** The skills still in text rules or tested, most depended on first, with the next step to proved, and the catalog families whose documented licence allows serving them. It needs no seal.
+
+- Installing, outbound connections, running a model and publishing stay locked in every state.
+
+- The API is `POST /api/w/:slug/architect` with `{mode: "seal" | "ui" | "compose" | "radar", passcode, …}`. The same engine runs with `python3 .claude/skills/replica-architect-studio/architect_studio.py '{"mode": "radar"}' --data jarvis/app/data`.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

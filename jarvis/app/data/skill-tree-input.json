@@ -377,6 +377,26 @@
    "review": "docs/security/REPLICA-SKILLS-REVIEW-2026-11-04.md"
   },
   {
+   "name": "replica-architect-studio",
+   "description": "The architect studio's four deterministic tools - a domain-separated SHA-256 seal of the architect's code (NFC, \"aether-prime:architect-seal:v1:\"), compared with the seal the server or this browser ho",
+   "tools": [
+    {
+     "name": "architect_studio.py",
+     "functions": 8
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": null,
+   "review": "docs/security/ARCHITECT-STUDIO-REVIEW-2026-11-15.md"
+  },
+  {
    "name": "replica-backend",
    "description": ">-",
    "tools": [],

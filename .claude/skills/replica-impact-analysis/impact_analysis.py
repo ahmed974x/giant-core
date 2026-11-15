@@ -32,6 +32,8 @@ from prompt_metacodes import js_json  # noqa: E402
 IA_MODES = ["catalog", "blast", "diff"]
 IA_USES = ["personal", "service"]
 IA_PAGES = [
+    {"skill": "replica-architect-studio", "route": "#/architect", "engine": "architect-studio"},
+    {"skill": "replica-release-gate", "route": "#/release", "engine": "release-gate"},
     {"skill": "replica-impact-analysis", "route": "#/impact", "engine": "impact-analysis"},
     {"skill": "replica-runbook", "route": "#/runbook", "engine": "runbook"},
     {"skill": "replica-project-search", "route": "#/docs", "engine": "project-search"},

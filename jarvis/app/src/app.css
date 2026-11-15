@@ -664,3 +664,14 @@ td.wrap { white-space: normal; min-width: 16ch; }
 
 /* ADR-169: release readiness. Long lists of codes and file paths wrap inside the card. */
 .rg-wrap { flex-wrap: wrap; overflow-wrap: anywhere; min-inline-size: 0; }
+
+/* ADR-170: the architect studio's preview. Its text, spacing and radii follow the scale the studio sets (outer radius =
+   inner + padding); nothing goes below 12 px and colours stay the page's own. */
+.as-preview { display: grid; gap: var(--as-gap, 8px); padding: var(--as-pad, 16px); border-radius: var(--as-radius-outer, 28px); border: 1px solid var(--color-border); background: var(--color-surface); min-inline-size: 0; }
+.as-preview .as-headline { font-size: var(--as-headline, 17px); font-weight: 600; }
+.as-preview .as-body { font-size: var(--as-body, 15px); }
+.as-preview .as-caption { font-size: var(--as-caption, 12px); color: var(--color-text-muted); }
+.as-preview .table { font-size: var(--as-footnote, 13px); }
+.as-preview .table-scroll { border-radius: var(--as-radius-inner, 12px); }
+.as-preview .as-num { font-family: var(--font-mono, ui-monospace, monospace); font-variant-numeric: var(--as-numerals, tabular-nums slashed-zero); direction: ltr; unicode-bidi: isolate; }
+.as-draft { max-block-size: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }

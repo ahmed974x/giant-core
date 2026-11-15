@@ -50,6 +50,7 @@ import { searchProject } from "../lib/project-search.mjs";
 import { runbook } from "../lib/runbook.mjs";
 import { impactAnalysis, catalogJson, licenceRule, weightsGb, lcsDiff, dependentsOf } from "../lib/impact-analysis.mjs";
 import { releaseGate, RG_GROWTH, RG_FAILURE } from "../lib/release-gate.mjs";
+import { architectStudio, sealHash } from "../lib/architect-studio.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
 
 // A fake Ollama on 127.0.0.1 (ADR-136). Its plan answer is an injection attempt: it marks publishing,
@@ -967,7 +968,7 @@ async function suite(mode, opts) {
     tag("runbook: six stages run in order on the cleaned goal, nothing is sent"), rb.body.stages?.map(s => s.status));
   ok(st.docs.summary.top[0].id === "docs/adr/ADR-153-oklch-bisection-contrast-healer.md" && st.order.summary.verified && st.order.summary.layers.at(-1).includes("replica-polymath-engine"), tag("runbook: the healer's record is found and the skills are ordered from the snapshot"));
   ok(st.tree.summary.status === "running" && rb.body.locked > 0 && st.plan.summary.tag === "[INFERENCE]", tag("runbook: locked steps keep the workbench tree running; the plan choice is [INFERENCE]"));
-  ok(st.routes.summary.ok === 11 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: eleven page probes pass and diagnostics is server only"), st.routes.summary);
+  ok(st.routes.summary.ok === 12 && st.routes.summary.server_only === 1 && st.routes.summary.routes.at(-1).route === "#/diagnostics", tag("runbook: twelve page probes pass and diagnostics is server only"), st.routes.summary);
   ok(rb.body.chain_sha256 === runbook(rq, rctx).chain_sha256 && /^[0-9a-f]{64}$/.test(rb.body.chain_sha256), tag("runbook: the chain hash is the engine's"));
   const bad = await post("/api/w/jarvis-studio/runbook", { goal: "Contrast", skills: ["nope"] });
   ok(bad.status === 200 && bad.body.ready === false && bad.body.stages[2].status === "error" && (await post("/api/w/jarvis-studio/runbook", { goal: "" })).status === 400, tag("runbook: an unknown skill is a stage error, an empty goal is refused"));
@@ -1534,6 +1535,37 @@ ok(pinCompatUrl("http://127.0.0.1:8000") === "http://127.0.0.1:8000/v1" && pinCo
 ok(profileOf("deepseek-r1:14b").licence === "MIT" && profileOf("Qwen/Qwen2.5-Coder-32B-Instruct").role === "design" && profileOf("deepseek-ai/DeepSeek-V3-0324").role === "chat" && profileOf("llama3:8b") === null && MODEL_PROFILES.length === 30, "model profiles name each family, its licence and its job");
 ok(profileOf("qwq:32b").role === "math" && profileOf("Qwen/Qwen3-Coder-30B-A3B-Instruct").family === "qwen3-coder" && profileOf("glm4:32b").role === "tools" && profileOf("meta-llama/Llama-4-Scout-17B-16E-Instruct").family === "llama-4-scout" && profileOf("llama3.3:70b").family === "llama-3.3" && profileOf("gemma3:27b").origin === "US" && /Apache 2\.0/.test(profileOf("allenai/OLMo-2-0325-32B-Instruct").licence) && profileOf("phi4-reasoning:14b").licence === "MIT" && /Non-Production/.test(profileOf("codestral:22b").licence), "the ADR-143 catalog knows QwQ, Qwen3-Coder, GLM-4, Llama 4 Scout and 3.3, Gemma 3, OLMo 2, Phi-4-reasoning and Codestral");
 ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(p.origin)), "every catalog entry states its licence, job and origin");
+// ADR-170: the architect studio, on a server that holds a seal. A seal in the request is never used.
+{
+  const CODE = "kodex-974", SEAL = sealHash(CODE);
+  const as = await startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), "jarvis-arch-")), quiet: true, architectSeal: SEAL });
+  const A = "http://127.0.0.1:" + as.port, AH = { "content-type": "application/json", "x-jarvis": "1" };
+  const ap = async b => { const r = await fetch(A + "/api/w/jarvis-studio/architect", { method: "POST", headers: AH, body: JSON.stringify(b) }); return { status: r.status, body: await r.json() }; };
+  const ok1 = await ap({ mode: "seal", passcode: CODE }), bad1 = await ap({ mode: "seal", passcode: "wrong" }), forged = await ap({ mode: "seal", passcode: "mine", seal: sealHash("mine"), expected: sealHash("mine") });
+  ok(ok1.status === 200 && ok1.body.seal.unlocked && ok1.body.seal.audit_prefix === SEAL.slice(0, 5) && ok1.body.setup === null && !JSON.stringify(ok1.body).includes(SEAL) && bad1.body.seal.state === "locked" && forged.body.seal.unlocked === false,
+    "architect: the server's seal opens the studio; a wrong code or a seal sent in the request does not; the full hash is never returned once a seal is set");
+  ok(sealHash("é") === sealHash("é") && sealHash("x") !== crypto.createHash("sha256").update("x").digest("hex") && sealHash("x") === crypto.createHash("sha256").update("aether-prime:architect-seal:v1:x").digest("hex"), "architect: the seal is SHA-256 of the fixed prefix and the NFC code");
+  const locked = await ap({ mode: "ui", passcode: "wrong", font_scale: 100, density: "balanced", numerals: "tabular" });
+  ok(locked.status === 403 && locked.body.detail === "seal", "architect: without the seal the preview scale is refused with 403");
+  const ui = await ap({ mode: "ui", passcode: CODE, font_scale: 90, density: "compact", numerals: "tabular" });
+  ok(ui.status === 200 && ui.body.ui.px.body === 13.5 && ui.body.ui.px.caption === 12 && ui.body.ui.px.footnote === 12 && ui.body.ui.css["--as-radius-outer"] === "20px" && ui.body.ui.colours_changed === false && /^[0-9a-f]{64}$/.test(ui.body.ui.config_sha256),
+    "architect: at 90 percent nothing goes below 12 px and the radii stay concentric");
+  const qc = { mode: "compose", passcode: CODE, name: "replica-release-checks", description: "Release checks in one place", skills: ["replica-impact-analysis", "replica-release-gate"], model: "codestral:22b", use: "service" };
+  const cp = await ap(qc);
+  const data = f => JSON.parse(readFileSync(join(repo, "jarvis", "app", "data", f), "utf8"));
+  const actx = { seal: SEAL, catalog: catalogJson(MODEL_PROFILES), deps: data("skill-deps.json").skills, tree: data("skill-tree-input.json"), corpus: data("search-corpus.json") };
+  ok(cp.status === 200 && JSON.stringify(cp.body) === JSON.stringify(architectStudio(qc, actx)) && cp.body.compose.draft.startsWith("---\nname: replica-release-checks\n") && cp.body.compose.bundle.model.verdict === "not_allowed" && cp.body.compose.steps[0].target === ".claude/skills/replica-release-checks/SKILL.md" && cp.body.compose.steps.every(s => s.locked && s.status === "pending_approval"),
+    "architect: the composite draft is the engine's, keeps ADR-168's verdicts and leaves writing the file locked", cp.body.compose?.steps);
+  const rd = await ap({ mode: "radar" });
+  const downs = rd.body.radar.skills.map(s => s.downstream);
+  ok(rd.status === 200 && downs.join() === [...downs].sort((a, b) => b - a).join() && rd.body.radar.skills.every(s => ["rules", "tested"].includes(s.status)) && rd.body.radar.models_for_service.includes("gpt-oss") && !rd.body.radar.models_for_service.includes("codestral"), "architect: the radar lists rules and tested skills, most depended on first, and only families allowed to be served");
+  const bads = await Promise.all([{ mode: "x" }, { mode: "seal", passcode: 5 }, { mode: "ui", passcode: CODE, font_scale: 121, density: "compact", numerals: "tabular" }, { mode: "compose", passcode: CODE, name: "x", description: "d", skills: ["a", "b"] }, { mode: "compose", passcode: CODE, name: "ok-name", description: "d", skills: ["replica-runbook"] }].map(ap));
+  ok(bads.every(r => r.status === 400) && bads.map(r => r.body.detail).join() === "mode,passcode,font_scale,name,skills", "architect: bad requests are refused with 400 and the field");
+  const r0 = await fetch(A + "/api/w/jarvis-studio/events");
+  const aev = await r0.json();
+  ok(aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
+  await as.close();
+}
 // ADR-167: every family names the Hugging Face record it was read from, that record's date, its parameter count or null, and the day read.
 ok(MODEL_PROFILES.every(p => /^[\w.-]+\/[\w.-]+$/.test(p.card) && profileOf(p.card) === p && /^\d{4}-\d{2}-\d{2}$/.test(p.created) && p.read === "2026-11-15" && (p.params === null || Number.isInteger(p.params) && p.params > 1e9)) && new Set(MODEL_PROFILES.map(p => p.family)).size === 30, "ADR-167 each of the 30 families names its own card, its date and its size, and the card's name finds that family");
 ok(profileOf("mistralai/Mistral-Large-4-1T-A52B").params === null && /Model-as-a-Service/.test(profileOf("mistralai/Mistral-Large-4-1T-A52B").licence) && profileOf("gemma4:12b").licence === "Apache 2.0" && profileOf("gemma3:27b").licence.startsWith("Gemma Terms") && profileOf("gpt-oss:20b").licence === "Apache 2.0" && profileOf("zai-org/GLM-5.3").licence.startsWith("GLM-5.3 License") && profileOf("glm-5.3-flash").licence === "MIT" && profileOf("qwen3.8:27b").licence === "Apache 2.0" && profileOf("Qwen/Qwen3.8-Flash-Next").licence.startsWith("Qwen Community License") && profileOf("qwen3.8") === null, "ADR-167 licences follow each checkpoint: Gemma 4 is Apache 2.0, GLM-5.3 and its Flash differ, a Qwen3.8 name without a size is not guessed, and Mistral Large 4 states no parameter count");
