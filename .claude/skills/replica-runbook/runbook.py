@@ -20,15 +20,15 @@ sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-foss-atlas
                                                             "replica-polymath-engine", "replica-skill-tree", "replica-universal-agent", "replica-universal-math",
                                                             "replica-hyper-studio", "replica-prompt-metacodes", "replica-formal-verify", "replica-reversal-engine",
                                                             "replica-timeseries-math", "replica-impact-analysis", "replica-release-gate", "replica-architect-studio")]
+from architect_studio import architect_studio  # noqa: E402
 from foss_atlas import k_anonymity, plan_foss_stack, scrub_private  # noqa: E402
 from hyper_studio import optics  # noqa: E402
 from impact_analysis import impact_analysis  # noqa: E402
-from architect_studio import architect_studio  # noqa: E402
-from release_gate import release_gate  # noqa: E402
 from plan_order import plan_order, skill_order, workbench_tree  # noqa: E402
 from polymath_engine import run_polymath  # noqa: E402
 from project_search import search_project  # noqa: E402
 from prompt_metacodes import js_json  # noqa: E402
+from release_gate import release_gate  # noqa: E402
 from skill_tree import build_tree  # noqa: E402
 from unified_workbench import run_workbench  # noqa: E402
 from universal_agent import universal_agent  # noqa: E402

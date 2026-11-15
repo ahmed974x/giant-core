@@ -48,7 +48,7 @@ import { skillTree, buildTree } from "../lib/skill-tree.mjs";
 import { planOrder } from "../lib/plan-order.mjs";
 import { searchProject } from "../lib/project-search.mjs";
 import { runbook } from "../lib/runbook.mjs";
-import { impactAnalysis, catalogJson, licenceRule, weightsGb, lcsDiff, dependentsOf } from "../lib/impact-analysis.mjs";
+import { impactAnalysis, catalogJson, licenceRule, weightsGb, lcsDiff, dependentsOf, kvCacheGb } from "../lib/impact-analysis.mjs";
 import { releaseGate, RG_GROWTH, RG_FAILURE } from "../lib/release-gate.mjs";
 import { architectStudio, sealHash } from "../lib/architect-studio.mjs";
 import { reversePlan, reverseTemplate, hueOf, isAiGradient, glassSelectors, correctionVector, REVERSAL_RULES } from "../lib/reversal.mjs";
@@ -1565,6 +1565,28 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
   const aev = await r0.json();
   ok(aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
   await as.close();
+}
+// ADR-171: the five custom licences read in full, and each card's config.json, with the context memory they allow.
+{
+  const att = MODEL_PROFILES.reduce((n, p) => ({ ...n, [p.config.attention]: (n[p.config.attention] || 0) + 1 }), {});
+  ok(att.gqa === 9 && att.mla === 2 && att.not_estimated === 16 && att.not_read === 3 && MODEL_PROFILES.every(p => p.config.read === "2026-11-15" && (p.config.attention === "not_read" ? p.config.sha256 === null : /^[0-9a-f]{16}$/.test(p.config.sha256))),
+    "ADR-171 30 configs: 9 grouped-query, 2 latent, 16 mixed and not estimated, 3 gated and not read, each with its file's hash", att);
+  const T = Object.fromEntries(MODEL_PROFILES.filter(p => p.terms).map(p => [p.family, p.terms]));
+  ok(Object.keys(T).sort().join() === "glm-5.3,kimi-k3,kimi-k3.1-pro,qwen3.8-flash,qwen3.8-max" && T["kimi-k3"].revenue_usd_12m === 20000000 && T["glm-5.3"].revenue_usd_12m === 10000000000 && T["glm-5.3"].requirement === "security_review" && T["qwen3.8-max"].revenue_usd_12m === 50000000 && T["qwen3.8-flash"].when === "always" && T["qwen3.8-flash"].businesses.includes("ai_work_assistant") && T["glm-5.3"].internal_use_exempt === null && T["kimi-k3"].display_name_over.monthly_active_users === 100000000,
+    "ADR-171 the five custom licences carry the terms read in full: Kimi's US$20M agreement, GLM-5.3's US$10B security review, Qwen3.8-Max's US$50M licence, Qwen Flash's licence at any revenue");
+  ok(licenceRule("Custom (x)", "service", { when: "always" }).verdict === "commercial_licence" && licenceRule("Custom (x)", "service", { when: "over_revenue" }).verdict === "revenue_threshold" && licenceRule("Custom (x)", "personal", { when: "always" }).verdict === "allowed" && licenceRule("Custom (x)", "service", null).verdict === "read_licence" && licenceRule("Custom (x)", "service", []).verdict === "read_licence",
+    "ADR-171 the licence rule reads the terms first and falls back to the licence text");
+  const q3 = MODEL_PROFILES.find(p => p.family === "qwen3-coder").config, r1 = MODEL_PROFILES.find(p => p.family === "deepseek-r1").config;
+  ok(kvCacheGb(q3, 32768, 1, 4) === 0.81 && kvCacheGb(r1, 163840, 1, 4) === 2.88 && kvCacheGb(MODEL_PROFILES.find(p => p.family === "codestral").config, 32768, 1, 16) === 7.52 && kvCacheGb(q3, 32768, 2, 8) === 3.22,
+    "ADR-171 the context memory: 2 x 48 x 4 x 128 values x 32768 tokens at 4 bits is 0.81 GB, DeepSeek R1's latent cache at 163840 tokens 2.88 GB");
+  const ctx = { catalog: catalogJson(MODEL_PROFILES) };
+  const r = q => impactAnalysis({ mode: "catalog", ...q }, ctx).context;
+  ok(r({ model: "Qwen/Qwen3-Coder-30B-A3B-Instruct", use: "personal", bits: 4, memory_gb: 16, context_tokens: 32768 }).total_gb === 16.08 && r({ model: "Qwen/Qwen3-Coder-30B-A3B-Instruct", use: "personal", bits: 4, memory_gb: 16, context_tokens: 32768 }).fits === false
+    && r({ model: "deepseek-ai/DeepSeek-R1-0528", use: "personal", bits: 4, context_tokens: 163841 }).exceeds === true && r({ model: "deepseek-ai/DeepSeek-R1-0528", use: "personal", bits: 4, context_tokens: 163840 }).exceeds === false,
+    "ADR-171 weights and context add up, and a context one token past the card's documented maximum is flagged");
+  const why = m => { const c = r({ model: m, use: "personal", bits: 4, context_tokens: 8192 }); return c.basis + ":" + c.reason; };
+  ok(why("openai/gpt-oss-120b") === "not_estimated:sliding_and_full" && why("moonshotai/Kimi-K3") === "not_estimated:linear_attention" && why("zai-org/GLM-5.3") === "not_estimated:sparse_index" && why("meta-llama/Llama-3.3-70B-Instruct") === "not_read:gated" && why("gpt-oss:20b") === "other_card:null" && impactAnalysis({ mode: "catalog", model: "qwen3.8", use: "personal", context_tokens: 8192 }, ctx).context === null,
+    "ADR-171 the context memory is not estimated for mixed attention, a gated card, another size or a name without a size, and each says why");
 }
 // ADR-167: every family names the Hugging Face record it was read from, that record's date, its parameter count or null, and the day read.
 ok(MODEL_PROFILES.every(p => /^[\w.-]+\/[\w.-]+$/.test(p.card) && profileOf(p.card) === p && /^\d{4}-\d{2}-\d{2}$/.test(p.created) && p.read === "2026-11-15" && (p.params === null || Number.isInteger(p.params) && p.params > 1e9)) && new Set(MODEL_PROFILES.map(p => p.family)).size === 30, "ADR-167 each of the 30 families names its own card, its date and its size, and the card's name finds that family");

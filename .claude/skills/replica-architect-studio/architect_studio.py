@@ -138,7 +138,7 @@ def compose_skill(r, ctx):
     skills = r.get("skills")
     if not isinstance(skills, list) or len(skills) < 2:
         _fail("A composite joins 2 or more skills.", "skills")
-    bundle = release_gate({"mode": "bundle", "skills": skills, **{k: r[k] for k in ("model", "use", "bits", "memory_gb", "notes") if k in r}}, ctx)
+    bundle = release_gate({"mode": "bundle", "skills": skills, **{k: r[k] for k in ("model", "use", "bits", "memory_gb", "context_tokens", "batch_size", "kv_bits", "notes") if k in r}}, ctx)
     order = skill_order(ctx.get("deps"), skills)
     draft = skill_draft(name, desc.strip(), order, bundle)
     return {"name": name, "order": {"layers": order["layers"], "added": order["added"], "cycle": order["cycle"], "verified": order["verified"]}, "bundle": bundle,
@@ -154,7 +154,7 @@ def upgrade_radar(ctx):
               for n in t["nodes"] if n["kind"] == "skill" and n["status"] in ("rules", "tested")]
     skills.sort(key=lambda s: (-s["downstream"], s["skill"]))
     catalog = ctx.get("catalog") if isinstance(ctx.get("catalog"), list) else []
-    models = sorted(f["family"] for f in catalog if licence_rule(f["licence"], "service")["verdict"] in ("allowed", "allowed_note"))
+    models = sorted(f["family"] for f in catalog if licence_rule(f["licence"], "service", f.get("terms"))["verdict"] in ("allowed", "allowed_note"))
     return {"skills": skills, "counts": {"rules": sum(1 for s in skills if s["status"] == "rules"), "tested": sum(1 for s in skills if s["status"] == "tested")}, "models_for_service": models}
 
 

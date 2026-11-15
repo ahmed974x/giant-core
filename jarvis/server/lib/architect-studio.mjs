@@ -73,7 +73,7 @@ export function composeSkill(r, ctx) {
   const name = typeof r.name === "string" && /^[a-z0-9][a-z0-9-]{1,47}$/.test(r.name) ? r.name : asFail("The name is 2 to 48 lower-case letters, digits and hyphens.", "name");
   const description = typeof r.description === "string" && r.description.trim() && r.description.length <= 300 && !/[\r\n]/.test(r.description) ? r.description.trim() : asFail("The description is one line of 1 to 300 characters.", "description");
   const skills = Array.isArray(r.skills) && r.skills.length >= 2 ? r.skills : asFail("A composite joins 2 or more skills.", "skills");
-  const bundle = releaseGate({ mode: "bundle", skills, ...Object.fromEntries(["model", "use", "bits", "memory_gb", "notes"].filter(k => r[k] !== undefined).map(k => [k, r[k]])) }, ctx);
+  const bundle = releaseGate({ mode: "bundle", skills, ...Object.fromEntries(["model", "use", "bits", "memory_gb", "context_tokens", "batch_size", "kv_bits", "notes"].filter(k => r[k] !== undefined).map(k => [k, r[k]])) }, ctx);
   const order = skillOrder(ctx.deps, skills);
   const draft = skillDraft(name, description, order, bundle);
   return { name, order: { layers: order.layers, added: order.added, cycle: order.cycle, verified: order.verified }, bundle, draft, draft_sha256: sha256Hex(draft),
@@ -88,7 +88,7 @@ export function upgradeRadar(ctx) {
     .map(n => ({ skill: n.label, status: n.status, downstream: dependentsOf(deps, n.label).length, next: n.status === "tested" ? "golden_and_mutation" : "tests" }))
     .sort((a, b) => b.downstream - a.downstream || (a.skill < b.skill ? -1 : 1));
   const catalog = Array.isArray(ctx.catalog) ? ctx.catalog : [];
-  const models = catalog.filter(f => ["allowed", "allowed_note"].includes(licenceRule(f.licence, "service").verdict)).map(f => f.family).sort();
+  const models = catalog.filter(f => ["allowed", "allowed_note"].includes(licenceRule(f.licence, "service", f.terms).verdict)).map(f => f.family).sort();
   return { skills, counts: { rules: skills.filter(s => s.status === "rules").length, tested: skills.filter(s => s.status === "tested").length }, models_for_service: models };
 }
 

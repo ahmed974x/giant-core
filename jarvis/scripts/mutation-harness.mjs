@@ -120,7 +120,7 @@ const TARGETS = [
   { file: "runbook.mjs", functions: ["rbStage", "rbProbe", "probeRoutes", "rbDesign", "runOnce", "repairRequest", "runbook"], oracle: "runbook" },
   { file: "architect-studio.mjs", functions: ["asR", "sealHash", "checkSeal", "locks", "needSeal", "uiTokens", "skillDraft", "composeSkill", "upgradeRadar", "architectStudio"], oracle: "architect" },
   { file: "release-gate.mjs", functions: ["rgR", "adrGaps", "auditRepo", "snapshot", "regressGate", "releaseBundle", "releaseGate"], oracle: "release" },
-  { file: "impact-analysis.mjs", functions: ["catalogJson", "licenceRule", "weightsGb", "checkCatalog", "checkModel", "dependentsOf", "blastRadius", "lines", "lcsDiff", "diffTexts", "impactAnalysis"], oracle: "impact" },
+  { file: "impact-analysis.mjs", functions: ["catalogJson", "licenceRule", "weightsGb", "kvCacheGb", "contextMemory", "checkCatalog", "checkModel", "dependentsOf", "blastRadius", "lines", "lcsDiff", "diffTexts", "impactAnalysis"], oracle: "impact" },
   { file: "project-search.mjs", functions: ["psR", "byScore", "bm25Rank", "trigrams", "dice", "titleRank", "rrf", "snippet", "checkCorpus", "searchProject"], oracle: "search" },
   { file: "plan-order.mjs", functions: ["poR", "poName", "kahnOrder", "orderKept", "skillOrder", "poCheck", "poTick", "tickTree", "workbenchTree", "uctSelect", "planOrder"], oracle: "order" },
   { file: "skill-tree.mjs", functions: ["stR", "familyOf", "statusOf", "checkInput", "buildTree", "composeSkills", "skillTree"], oracle: "tree" },

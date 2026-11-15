@@ -79,8 +79,12 @@ def _num(v):
     return int(v) if isinstance(v, float) and v.is_integer() else v
 
 
-def licence_rule(licence, use):
-    """What a documented licence allows, from its text in the catalog. A note in brackets is kept as written."""
+def licence_rule(licence, use, terms=None):
+    """What a documented licence allows. ADR-171: a licence whose terms were read in full says so directly: serving the
+    model to others needs a licence always, or only above the stated revenue. Otherwise the rule reads the licence text
+    in the catalog, and a note in brackets is kept as written."""
+    if isinstance(terms, dict):
+        return {"verdict": "allowed" if use != "service" else "commercial_licence" if terms.get("when") == "always" else "revenue_threshold", "note": None}
     op, cl = licence.find("("), licence.rfind(")")
     note = licence[op + 1:cl] if op >= 0 and cl > op else None
     if "Non-Production" in licence:
@@ -98,6 +102,41 @@ def weights_gb(params, bits):
     """The weights' memory: parameters x bits / 8 bytes in GB of 10^9 bytes, to two decimals, as JavaScript rounds."""
     x = math.floor(params * bits / 8 / 1e9 * 100 + 0.5) / 100
     return int(x) if x.is_integer() else x
+
+
+def kv_cache_gb(c, tokens, batch, kv_bits):
+    """The context (KV cache) memory in GB of 10^9 bytes, to two decimals, as JavaScript computes it: gqa counts
+    2 x layers x kv_heads x head_dim values per token, mla layers x (kv_lora_rank + qk_rope_head_dim)."""
+    per_token = c["layers"] * (c["kv_lora_rank"] + c["qk_rope_head_dim"]) if c["attention"] == "mla" else 2 * c["layers"] * c["kv_heads"] * c["head_dim"]
+    x = math.floor(float(per_token) * tokens * batch * kv_bits / 8 / 1e9 * 100 + 0.5) / 100
+    return int(x) if x.is_integer() else x
+
+
+def _r2(v):
+    x = math.floor(v * 100 + 0.5) / 100
+    return int(x) if x.is_integer() else x
+
+
+def context_memory(f, same_card, tokens, batch, kv_bits, weights, memory_gb):
+    """The context check for one card: memory only for the card the config was read from, with uniform attention and
+    bits to count by; the longest documented context is checked whenever known."""
+    c = f.get("config") if isinstance(f.get("config"), dict) else None
+    if not same_card:
+        basis = "other_card"
+    elif not c or c.get("attention") == "not_read":
+        basis = "not_read"
+    elif c.get("attention") == "not_estimated":
+        basis = "not_estimated"
+    elif kv_bits is None:
+        basis = "no_bits"
+    else:
+        basis = "card"
+    mx = c.get("max_context") if same_card and c else None
+    kv = kv_cache_gb(c, tokens, batch, kv_bits) if basis == "card" else None
+    total = _r2(weights + kv) if kv is not None and weights is not None else None
+    reason = c.get("reason") if c and basis in ("not_estimated", "not_read") else None
+    return {"tokens": tokens, "batch_size": batch, "kv_bits": kv_bits, "max_context": mx, "exceeds": None if mx is None else tokens > mx, "basis": basis, "reason": reason,
+            "attention": c.get("attention") if c else None, "kv_gb": kv, "total_gb": total, "fits": None if total is None or memory_gb is None else total <= memory_gb}
 
 
 def _check_catalog(catalog):
@@ -135,13 +174,34 @@ def check_model(r, catalog):
         _fail("The memory is a number of GB above 0 and at most 100000.", "memory_gb")
     else:
         mem = _num(mem)
+    tokens = r.get("context_tokens", _MISSING)
+    if tokens is _MISSING:
+        tokens = None
+    elif not (_is_int(tokens) and 1 <= tokens <= 100000000):
+        _fail("The context is a whole number of tokens from 1 to 100000000.", "context_tokens")
+    else:
+        tokens = int(tokens)
+    batch = r.get("batch_size", _MISSING)
+    if batch is _MISSING:
+        batch = 1
+    elif not (_is_int(batch) and 1 <= batch <= 4096):
+        _fail("The batch size is a whole number from 1 to 4096.", "batch_size")
+    else:
+        batch = int(batch)
+    kv_bits = r.get("kv_bits", _MISSING)
+    if kv_bits is _MISSING:
+        kv_bits = bits
+    elif not (_is_int(kv_bits) and 1 <= kv_bits <= 32):
+        _fail("Bits per cache value is a whole number from 1 to 32.", "kv_bits")
+    else:
+        kv_bits = int(kv_bits)
     out = {"mode": "catalog", "model": model, "use": use, "bits": bits, "memory_gb": mem}
     f = next((p for p in fams if p["re"].search(model)), None)
     if f is None:
         base = model[model.rfind("/") + 1:].split(":")[0].lower()
         cands = [{"family": p["family"], "licence": p["licence"]} for p in fams if p["family"].startswith(base + "-")] if _len16(base) >= 2 else []
-        return {**out, "found": False, "verdict": "size_unnamed" if cands else "unknown", "note": None, "family": None, "candidates": cands, "memory": None, "steps": [], "sent": False}
-    rule = licence_rule(f["licence"], use)
+        return {**out, "found": False, "verdict": "size_unnamed" if cands else "unknown", "note": None, "family": None, "candidates": cands, "memory": None, "context": None, "steps": [], "sent": False}
+    rule = licence_rule(f["licence"], use, f.get("terms"))
     # A family's parameter count belongs to the one card it was read from; another size of the family is not guessed.
     name = model.lower()
     same_card = name == f["card"].lower() or name == f["card"][f["card"].find("/") + 1:].lower()
@@ -154,9 +214,10 @@ def check_model(r, catalog):
     else:
         w = weights_gb(f["params"], bits)
         memory = {"basis": "card", "params": int(f["params"]), "bits": bits, "weights_gb": w, "fits": None if mem is None else w <= mem}
-    fam = {k: f.get(k) for k in ("family", "maker", "origin", "licence", "role", "params", "card", "created", "read")}
+    fam = {k: f.get(k) for k in ("family", "maker", "origin", "licence", "role", "params", "card", "created", "read", "terms")}
     fam["params"] = None if f["params"] is None else int(f["params"])
-    return {**out, "found": True, "verdict": rule["verdict"], "note": rule["note"], "family": fam, "candidates": [], "memory": memory,
+    context = None if tokens is None else context_memory(f, same_card, tokens, batch, kv_bits, memory["weights_gb"] if memory else None, mem)
+    return {**out, "found": True, "verdict": rule["verdict"], "note": rule["note"], "family": fam, "candidates": [], "memory": memory, "context": context,
             "steps": [{"action": "install", "target": f["family"], "gate": "approval", "locked": True, "status": "pending_approval"}], "sent": False}
 
 

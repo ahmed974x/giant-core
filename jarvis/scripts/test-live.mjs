@@ -531,6 +531,14 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-171 live: the server answers with the terms and the context memory from the catalog module.
+{
+  const r = await fetch(BASE + "api/w/giant-core/impact", { method: "POST", headers: { "content-type": "application/json", "x-jarvis": "1" }, body: JSON.stringify({ mode: "catalog", model: "Qwen/Qwen3-Coder-30B-A3B-Instruct", use: "service", bits: 4, memory_gb: 24, context_tokens: 32768 }) });
+  const b = await r.json();
+  const k = await (await fetch(BASE + "api/w/giant-core/impact", { method: "POST", headers: { "content-type": "application/json", "x-jarvis": "1" }, body: JSON.stringify({ mode: "catalog", model: "moonshotai/Kimi-K3", use: "service" }) })).json();
+  ok(r.status === 200 && b.context.kv_gb === 0.81 && b.context.total_gb === 16.08 && b.context.fits === true && k.verdict === "revenue_threshold" && k.family.terms.revenue_usd_12m === 20000000, "live: the server gives the context memory and the licence terms read in full");
+}
+
 // ADR-170 live: the architect studio on the server. No seal is set on this server, so the tools stay read only.
 {
   await go("#/architect");
@@ -678,6 +686,8 @@ await page.waitForTimeout(300);
     ["architect locked", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.locator("#f-as-code").fill("kodex-974"); for (const id of ["h-as-s", "h-as-u", "h-as-c", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
+    ["impact context and terms", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "Qwen/Qwen3.8-Flash-Next", "Qwen/Qwen3.8-2.4T-A95B", "meta-llama/Llama-3.3-70B-Instruct", "openai/gpt-oss-120b", "gpt-oss:20b"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
+    ["settings catalog", async () => { await go("#/settings"); await page.locator("details.catalog summary").click(); await page.waitForTimeout(150); }],
     ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
     ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],

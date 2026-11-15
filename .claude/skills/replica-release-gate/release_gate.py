@@ -130,7 +130,7 @@ def release_bundle(r, ctx):
                 shared.append(c)
     model = None
     if "model" in r:
-        model = impact_analysis({"mode": "catalog", "model": r["model"], "use": r.get("use"), **{k: r[k] for k in ("bits", "memory_gb") if k in r}}, ctx)
+        model = impact_analysis({"mode": "catalog", "model": r["model"], "use": r.get("use"), **{k: r[k] for k in ("bits", "memory_gb", "context_tokens", "batch_size", "kv_bits") if k in r}}, ctx)
     notes = None
     if "notes" in r:
         given = r["notes"] if isinstance(r["notes"], dict) else {}

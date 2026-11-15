@@ -270,7 +270,7 @@ python3 .claude/skills/replica-graphify/graphify.py --root . --out jarvis/app/da
 python3 .claude/skills/replica-impeccable/slop_guard.py --json jarvis/app/src jarvis/server/lib jarvis/README.md docs/adr --root . > jarvis/app/data/impeccable-report.json
 ```
 
-Settings → Local model → **Open-weight model catalog** lists 30 families (DeepSeek, Qwen, GLM, Kimi, MiMo, gpt-oss, Gemma, Llama, Olmo, Phi, Granite, Mistral), each with its licence, job, parameter count and the Hugging Face record it was read from on 2026-11-15 (ADR-167). It ranks nothing: the cards' benchmark tables are their makers' own claims.
+Settings → Local model → **Open-weight model catalog** also shows each card's longest documented context and whether its context memory can be estimated, from its `config.json` (ADR-171). It lists 30 families (DeepSeek, Qwen, GLM, Kimi, MiMo, gpt-oss, Gemma, Llama, Olmo, Phi, Granite, Mistral), each with its licence, job, parameter count and the Hugging Face record it was read from on 2026-11-15 (ADR-167). It ranks nothing: the cards' benchmark tables are their makers' own claims.
 
 ## Council, time machine and UX heatmap (ADR-144)
 
@@ -445,6 +445,11 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - The API is `POST /api/w/:slug/impact` with `{mode: "catalog" | "blast" | "diff", …}`. The server reads the catalog module and the snapshots on disk and ignores any catalog or snapshot sent in the request. The same engine runs with `python3 .claude/skills/replica-impact-analysis/impact_analysis.py '{"mode": "blast", "skill": "replica-runbook"}' --data jarvis/app/data`.
 
 - `node jarvis/scripts/build-app.mjs` writes `jarvis/app/data/model-catalog.json` from the module, for the Python twin; `--check` fails when it is stale.
+
+- **Licence terms and context memory (ADR-171).**
+  - The five custom licences were read in full; the check shows their terms (the requirement, the revenue above which it applies, the name-display rule, internal use) with a link to the file.
+  - With a context length (and optionally the batch size and bits per cache value), it gives the context memory from the card's `config.json`, the total with the weights, and a flag when the length passes the documented maximum.
+  - Models that mix attention types, gated cards and other sizes of a family show why no number is given.
 
 - The runbook (ADR-165) probes `#/impact` as its eleventh page.
 

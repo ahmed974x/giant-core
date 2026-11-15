@@ -1796,12 +1796,14 @@
       h("p", { class: "subtle t-caption", text: "Licences as the model cards state them; check the card of the exact file you pull. Every one runs on 127.0.0.1 only." }),
       h("p", { class: "subtle t-caption", text: "Read from each model's Hugging Face record. The cards' benchmark tables are their makers' own claims, so the catalog ranks nothing." }),
       h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model catalog" }, h("table", null,
-        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Parameters" }), h("th", { scope: "col", text: "Source" }), h("th", { scope: "col", text: "Here" }))),
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Parameters" }), h("th", { scope: "col", text: "Longest context" }), h("th", { scope: "col", text: "Context memory" }), h("th", { scope: "col", text: "Source" }), h("th", { scope: "col", text: "Here" }))),
         h("tbody", null, LlmPlan.MODEL_PROFILES.map(p => h("tr", null,
           h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: p.maker + " · " + p.origin })),
           h("td", { text: LlmPlan.ROLE_LABEL[p.role] || p.role }),
           h("td", { class: "t-caption wrap", dir: "auto", lang: "en", text: p.licence }),
           p.params === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.params) }),
+          p.config.max_context === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.config.max_context) }),
+          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
           h("td", { class: "wrap" }, h("a", { class: "t-caption", href: "https://huggingface.co/" + p.card, target: "_blank", rel: "noopener noreferrer", translate: "no", text: p.card }), h("br"), h("span", { class: "num t-caption", text: p.read })),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
@@ -4471,6 +4473,7 @@
     useIn.value = "service";
     const bitsIn = h("input", { class: "input", type: "number", id: "f-rg-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
     const memIn = h("input", { class: "input", type: "number", id: "f-rg-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const ctxIn = h("input", { class: "input", type: "number", id: "f-rg-ctx", name: "context-tokens", autocomplete: "off", min: "1", max: "100000000", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
     const aNotes = h("textarea", { class: "textarea", id: "f-rg-a", name: "notes-before", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
     aNotes.value = "Impact analysis in #/impact\nThe runbook probes ten pages";
     const bNotes = h("textarea", { class: "textarea", id: "f-rg-b", name: "notes-after", rows: 4, autocomplete: "off", dir: "auto", maxLength: 20000 });
@@ -4478,7 +4481,7 @@
     const bOut = h("div", { class: "stack", "aria-live": "polite" });
     const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the release");
     bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "bundle", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
-      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}) } : {}),
+      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
       ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) }), rgBundleBody));
     return h("div", { class: "stack" },
       pageHead("Release readiness", "Three checks before a release, over facts already in this repository: the skill tree and the decision records, two snapshots of the checks' counts compared, and the skills, model and notes of one release run through impact analysis. Nothing is sent or published."),
@@ -4495,6 +4498,7 @@
         field("f-rg-skills", "Skills this release touched, separated by commas", skillsIn),
         h("div", { class: "grid-2" }, field("f-rg-model", "Model name (optional)", modelIn, "Leave it empty for a release with no model."), field("f-rg-use", "Use", useIn)),
         h("div", { class: "grid-2" }, field("f-rg-bits", "Bits per weight (optional)", bitsIn), field("f-rg-mem", "Memory you have, in GB (optional)", memIn)),
+        field("f-rg-ctx", "Context length in tokens (optional)", ctxIn),
         h("div", { class: "grid-2" }, field("f-rg-a", "Release notes before", aNotes), field("f-rg-b", "Release notes after", bNotes)),
         h("div", { class: "row" }, bBtn), bOut));
   };
@@ -4507,11 +4511,38 @@
     non_production: ["warn", "The licence forbids production and commercial use"],
     not_allowed: ["failed", "The licence forbids serving it to others"],
     size_unnamed: ["warn", "The name does not say which size or version, so no licence is guessed"],
+    revenue_threshold: ["warn", "Serving it to others is allowed up to the revenue the licence states; above it the licence asks for more"],
     unknown: ["idle", "Not in the catalog"],
   };
   const IA_USE = { personal: "Personal, on this computer", service: "Serving the model to others" };
   const IA_OP = { "=": "Kept", "-": "Removed", "+": "Added" };
   function iaHash(label, value) { return h("p", { class: "row t-caption muted ia-hash" }, h("span", { text: label }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: value })); }
+  // ADR-171: the licence terms read in full, and the context memory from the card's config.json.
+  const IA_REQUIRE = { agreement: "a separate agreement with the maker", security_review: "the maker's security review", licence: "a separate licence from the maker" };
+  const IA_BUSINESS = { model_as_a_service: "Model as a Service", ai_work_assistant: "AI work assistant" };
+  const IA_REASON = { sliding_and_full: "Some layers use sliding-window attention and others full attention.", linear_attention: "Some layers use linear attention.", sparse_index: "A sparse attention index keeps a cache of its own.", gated: "The card is gated, so its config.json was not read." };
+  const IA_CTX = { other_card: "The config belongs to another size of this family. Type the card's full name to estimate it.", no_bits: "Give the bits per weight or per cache value to estimate it." };
+  const usd = n => "US$" + fmtN.format(n);
+  function iaTermsBody(t) {
+    const muted = s => h("span", { class: "muted", text: s });
+    return h("div", { class: "stack ia-terms" },
+      h("p", { class: "row t-sm rg-wrap" }, muted("Serving it to others"), ...t.businesses.map(b => h("bdi", { lang: "en", dir: "ltr", translate: "no", text: IA_BUSINESS[b] })),
+        h("span", { text: t.when === "always" ? "needs " + IA_REQUIRE[t.requirement] + ", at any revenue." : "needs " + IA_REQUIRE[t.requirement] + " above this revenue over any 12 months:" }),
+        t.revenue_usd_12m === null ? null : h("span", { class: "num", text: usd(t.revenue_usd_12m) })),
+      t.display_name_over ? h("p", { class: "row t-sm rg-wrap" }, muted("The model's name must be shown in a product above"), h("span", { class: "num", text: fmtN.format(t.display_name_over.monthly_active_users) }), muted("monthly users or"), h("span", { class: "num", text: usd(t.display_name_over.monthly_revenue_usd) }), muted("monthly revenue")) : null,
+      h("p", { class: "t-sm muted", text: t.internal_use_exempt ? "Internal use that makes nothing available to others is exempt." : "The licence does not say whether internal use is exempt." }),
+      h("p", { class: "row t-caption muted rg-wrap" }, muted("Read in full"), h("a", { class: "ia-card", href: t.file, target: "_blank", rel: "noopener noreferrer", translate: "no", dir: "ltr", text: "LICENSE" }), h("span", { class: "num", text: t.read }), h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: t.sha256 })));
+  }
+  function iaContextBody(c) {
+    const muted = s => h("span", { class: "muted", text: s });
+    const head = c.max_context === null ? null : c.exceeds ? h("p", { class: "row t-sm" }, badge("failed", "Longer than the card's documented context"), muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"))
+      : h("p", { class: "row t-sm" }, muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"));
+    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])));
+    return h("div", { class: "stack" }, head,
+      h("p", { class: "row t-sm" }, muted("Context memory"), uaNum(c.kv_gb), muted("GB"), c.total_gb === null ? null : h("span", { class: "row" }, muted("Weights and context"), uaNum(c.total_gb), muted("GB")),
+        c.fits === null ? null : c.fits ? badge("ok", "Fits the memory you typed") : badge("warn", "Does not fit the memory you typed")),
+      h("p", { class: "t-caption muted", text: c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+  }
   function iaCatalogBody(r) {
     const muted = t => h("span", { class: "muted", text: t }), v = IA_VERDICT[r.verdict];
     const parts = [h("p", { class: "row" }, badge(v[0], v[1]), badge("idle", "Not sent"),
@@ -4526,6 +4557,7 @@
         h("dt", { text: "Family" }), h("dd", null, h("code", { translate: "no", dir: "ltr", text: f.family }), " ", h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: f.maker + " · " + f.origin })),
         h("dt", { text: "Licence" }), h("dd", { class: "wrap" }, h("bdi", { lang: "en", dir: "ltr", text: f.licence })),
         h("dt", { text: "Source" }), h("dd", { class: "wrap" }, h("a", { class: "ia-card", href: "https://huggingface.co/" + f.card, target: "_blank", rel: "noopener noreferrer", translate: "no", dir: "ltr", text: f.card }), " ", h("span", { class: "num t-caption", text: f.read }))));
+      if (f.terms) parts.push(iaTermsBody(f.terms));
     }
     const m = r.memory;
     if (m) {
@@ -4534,6 +4566,7 @@
       else if (m.basis === "other_card") parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), muted("The catalog's count belongs to another size of this family. Type the card's full name to estimate it.")));
       else parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), h("span", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }), muted("The record gives no parameter count.")));
     }
+    if (r.context) parts.push(iaContextBody(r.context));
     for (const st of r.steps) parts.push(h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pulling and running the model waits for Director 00's approval." })));
     return h("div", { class: "stack" }, ...parts);
   }
@@ -4581,11 +4614,15 @@
     const useIn = h("select", { class: "input", id: "f-ia-use", name: "use" }, ...Object.entries(IA_USE).map(([k, v]) => h("option", { value: k, text: v })));
     useIn.value = "service";
     const memIn = h("input", { class: "input", type: "number", id: "f-ia-mem", name: "memory-gb", autocomplete: "off", min: "0.01", max: "100000", step: "any", inputMode: "decimal", dir: "ltr", value: "80" });
+    const ctxIn = h("input", { class: "input", type: "number", id: "f-ia-ctx", name: "context-tokens", autocomplete: "off", min: "1", max: "100000000", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
+    const batchIn = h("input", { class: "input", type: "number", id: "f-ia-batch", name: "batch-size", autocomplete: "off", min: "1", max: "4096", step: "1", inputMode: "numeric", dir: "ltr", value: "1" });
+    const kvIn = h("input", { class: "input", type: "number", id: "f-ia-kv", name: "kv-bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr" });
     const bitsIn = h("input", { class: "input", type: "number", id: "f-ia-bits", name: "bits", autocomplete: "off", min: "1", max: "32", step: "1", inputMode: "numeric", dir: "ltr", value: "4" });
     const cOut = h("div", { class: "stack", "aria-live": "polite" });
     const cBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Check the model");
     cBtn.addEventListener("click", run(cBtn, cOut, () => ({ mode: "catalog", model: modelIn.value, use: useIn.value,
-      ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}) }), iaCatalogBody));
+      ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}),
+      ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}), ...(batchIn.value.trim() ? { batch_size: Number(batchIn.value) } : {}), ...(kvIn.value.trim() ? { kv_bits: Number(kvIn.value) } : {}) }), iaCatalogBody));
     // 2. A skill's blast radius.
     const skillIn = latin(h("select", { class: "input", id: "f-ia-skill", name: "skill", dir: "ltr" }, ...Object.keys(DATA.deps || {}).sort().map(n => h("option", { value: n, text: n }))));
     skillIn.value = "replica-reversal-engine";
@@ -4608,6 +4645,8 @@
         field("f-ia-model", "Model name", modelIn, "A Hugging Face card or an Ollama name. A name that does not say which size is not guessed."),
         field("f-ia-use", "Use", useIn),
         h("div", { class: "grid-2" }, field("f-ia-mem", "Memory you have, in GB (optional)", memIn), field("f-ia-bits", "Bits per weight (optional)", bitsIn, "For example 4 for a 4-bit file, 16 for half precision.")),
+        h("div", { class: "grid-2" }, field("f-ia-ctx", "Context length in tokens (optional)", ctxIn), field("f-ia-batch", "Batch size", batchIn)),
+        field("f-ia-kv", "Bits per cache value (optional)", kvIn, "Empty uses the bits per weight."),
         h("div", { class: "row" }, cBtn), cOut),
       h("section", { class: "panel stack", "aria-labelledby": "h-ia-b" }, h("h2", { id: "h-ia-b", text: "A skill's blast radius" }),
         field("f-ia-skill", "Skill", skillIn), field("f-ia-query", "Words for the matching documents (optional)", queryIn, "Empty searches for the skill's own name."),

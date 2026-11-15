@@ -40,11 +40,14 @@ const iaFail = (m, d) => { throw new ImpactError(m, d); };
 
 // The catalog as plain data: each family's pattern as its source text, read case-insensitively.
 export function catalogJson(profiles) {
-  return profiles.map(p => ({ family: p.family, match: p.match.source, maker: p.maker, origin: p.origin, licence: p.licence, role: p.role, params: p.params, card: p.card, created: p.created, read: p.read }));
+  return profiles.map(p => ({ family: p.family, match: p.match.source, maker: p.maker, origin: p.origin, licence: p.licence, role: p.role, params: p.params, card: p.card, created: p.created, read: p.read, terms: p.terms ?? null, config: p.config }));
 }
 
-// What a documented licence allows, from its text in the catalog. A note in brackets is kept as written.
-export function licenceRule(licence, use) {
+// What a documented licence allows. ADR-171: a licence whose terms were read in full (terms) says so directly: serving
+// the model to others needs a licence always, or only above the stated revenue. Otherwise the rule reads the licence
+// text in the catalog, and a note in brackets is kept as written.
+export function licenceRule(licence, use, terms) {
+  if (terms && typeof terms === "object" && !Array.isArray(terms)) return { verdict: use !== "service" ? "allowed" : terms.when === "always" ? "commercial_licence" : "revenue_threshold", note: null };
   const open = licence.indexOf("("), close = licence.lastIndexOf(")"), note = open >= 0 && close > open ? licence.slice(open + 1, close) : null;
   if (/Non-Production/.test(licence)) return { verdict: use === "service" ? "not_allowed" : "non_production", note };
   if (/Model-as-a-Service/.test(licence)) return { verdict: use === "service" ? "commercial_licence" : "allowed_note", note };
@@ -56,6 +59,27 @@ export function licenceRule(licence, use) {
 // The weights' memory: parameters x bits / 8 bytes, in GB of 10^9 bytes, to two decimals. Cache and runtime are not counted.
 export function weightsGb(params, bits) {
   return Math.round(params * bits / 8 / 1e9 * 100) / 100;
+}
+
+// ADR-171: the context (KV cache) memory, in GB of 10^9 bytes, to two decimals. Uniform attention only:
+//   gqa  2 x layers x kv_heads x head_dim values per token (a key and a value per head and layer)
+//   mla  layers x (kv_lora_rank + qk_rope_head_dim) values per token (the compressed latent and the rope key)
+// times tokens x batch x kv_bits / 8 bytes. Runtime buffers and the weights are not counted here.
+export function kvCacheGb(c, tokens, batch, kvBits) {
+  const perToken = c.attention === "mla" ? c.layers * (c.kv_lora_rank + c.qk_rope_head_dim) : 2 * c.layers * c.kv_heads * c.head_dim;
+  return Math.round(perToken * tokens * batch * kvBits / 8 / 1e9 * 100) / 100;
+}
+
+// The context check for one card. The memory is estimated only for the card the config was read from, with uniform
+// attention and bits to count by; otherwise the basis says why. The longest documented context is checked whenever known.
+export function contextMemory(f, sameCard, tokens, batch, kvBits, weights, memoryGb) {
+  const c = f.config && typeof f.config === "object" ? f.config : null;
+  const basis = !sameCard ? "other_card" : !c || c.attention === "not_read" ? "not_read" : c.attention === "not_estimated" ? "not_estimated" : kvBits === null ? "no_bits" : "card";
+  const max = sameCard && c ? c.max_context : null;
+  const kv = basis === "card" ? kvCacheGb(c, tokens, batch, kvBits) : null;
+  const total = kv !== null && weights !== null ? Math.round((weights + kv) * 100) / 100 : null;
+  return { tokens, batch_size: batch, kv_bits: kvBits, max_context: max, exceeds: max === null ? null : tokens > max, basis, reason: c && basis === "not_estimated" ? c.reason : basis === "not_read" && c ? c.reason : null,
+    attention: c ? c.attention : null, kv_gb: kv, total_gb: total, fits: total === null || memoryGb === null ? null : total <= memoryGb };
 }
 
 function checkCatalog(catalog) {
@@ -72,23 +96,27 @@ export function checkModel(r, catalog) {
   const use = IA_USES.includes(r.use) ? r.use : iaFail("The use is personal or service.", "use");
   const bits = r.bits === undefined ? null : Number.isInteger(r.bits) && r.bits >= 1 && r.bits <= 32 ? r.bits : iaFail("Bits per weight is a whole number from 1 to 32.", "bits");
   const memoryGb = r.memory_gb === undefined ? null : typeof r.memory_gb === "number" && Number.isFinite(r.memory_gb) && r.memory_gb > 0 && r.memory_gb <= 100000 ? r.memory_gb : iaFail("The memory is a number of GB above 0 and at most 100000.", "memory_gb");
+  const tokens = r.context_tokens === undefined ? null : Number.isInteger(r.context_tokens) && r.context_tokens >= 1 && r.context_tokens <= 100000000 ? r.context_tokens : iaFail("The context is a whole number of tokens from 1 to 100000000.", "context_tokens");
+  const batch = r.batch_size === undefined ? 1 : Number.isInteger(r.batch_size) && r.batch_size >= 1 && r.batch_size <= 4096 ? r.batch_size : iaFail("The batch size is a whole number from 1 to 4096.", "batch_size");
+  const kvBits = r.kv_bits === undefined ? bits : Number.isInteger(r.kv_bits) && r.kv_bits >= 1 && r.kv_bits <= 32 ? r.kv_bits : iaFail("Bits per cache value is a whole number from 1 to 32.", "kv_bits");
   const out = { mode: "catalog", model, use, bits, memory_gb: memoryGb };
   const f = fams.find(p => p.re.test(model));
   if (!f) {
     const base = model.slice(model.lastIndexOf("/") + 1).split(":")[0].toLowerCase();
     const candidates = base.length >= 2 ? fams.filter(p => p.family.startsWith(base + "-")).map(p => ({ family: p.family, licence: p.licence })) : [];
-    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, steps: [], sent: false };
+    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, context: null, steps: [], sent: false };
   }
-  const rule = licenceRule(f.licence, use);
+  const rule = licenceRule(f.licence, use, f.terms);
   // A family's parameter count belongs to the one card it was read from; another size of the family is not guessed.
   const name = model.toLowerCase(), sameCard = name === f.card.toLowerCase() || name === f.card.slice(f.card.indexOf("/") + 1).toLowerCase();
   const memory = bits === null ? null : f.params === null
     ? { basis: "no_count", params: null, bits, weights_gb: null, fits: null }
     : !sameCard ? { basis: "other_card", params: null, bits, weights_gb: null, fits: null }
       : { basis: "card", params: f.params, bits, weights_gb: weightsGb(f.params, bits), fits: memoryGb === null ? null : weightsGb(f.params, bits) <= memoryGb };
+  const context = tokens === null ? null : contextMemory(f, sameCard, tokens, batch, kvBits, memory && memory.weights_gb, memoryGb);
   return { ...out, found: true, verdict: rule.verdict, note: rule.note,
-    family: { family: f.family, maker: f.maker, origin: f.origin, licence: f.licence, role: f.role, params: f.params, card: f.card, created: f.created, read: f.read },
-    candidates: [], memory, steps: [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }], sent: false };
+    family: { family: f.family, maker: f.maker, origin: f.origin, licence: f.licence, role: f.role, params: f.params, card: f.card, created: f.created, read: f.read, terms: f.terms ?? null },
+    candidates: [], memory, context, steps: [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }], sent: false };
 }
 
 // The skills that load a skill, nearest first: a breadth-first search over the dependency snapshot read backwards.

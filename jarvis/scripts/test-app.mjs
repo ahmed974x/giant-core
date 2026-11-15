@@ -885,6 +885,43 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   ok(await page.getByText("Ready: every skill is tested").isVisible() && (await page.locator('#h-st-comp ~ div a[href="#/workbench"]').count()) === 1 && (await page.locator("#h-st-comp ~ div code").count()) === 2, "F44 composing two skills names the workbench and their test commands");
 }
 
+// F51: licence terms and context memory (ADR-171) in impact analysis and the Settings catalog.
+{
+  const press = () => page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click();
+  const out = () => page.locator('section[aria-labelledby="h-ia-c"] > div[aria-live]');
+  await go("#/impact");
+  await page.waitForSelector("#f-ia-ctx");
+  await page.locator("#f-ia-model").fill("Qwen/Qwen3-Coder-30B-A3B-Instruct");
+  await page.locator("#f-ia-mem").fill("24");
+  await press();
+  await page.waitForTimeout(250);
+  const t1 = await out().innerText();
+  ok(t1.includes("0.81") && t1.includes("16.08") && t1.includes("262,144") && await out().getByText("Fits the memory you typed").last().isVisible(), "F51 Qwen3-Coder at 32,768 tokens: 0.81 GB of context and 16.08 GB with the weights, under the documented 262,144");
+  await page.locator("#f-ia-model").fill("deepseek-ai/DeepSeek-R1-0528");
+  await page.locator("#f-ia-ctx").fill("200000");
+  await press();
+  await page.waitForTimeout(250);
+  ok(await out().getByText("Longer than the card's documented context").isVisible(), "F51 200,000 tokens is longer than DeepSeek R1's documented context");
+  await page.locator("#f-ia-model").fill("openai/gpt-oss-120b");
+  await page.locator("#f-ia-ctx").fill("8192");
+  await press();
+  await page.waitForTimeout(250);
+  ok(await out().getByText("Context memory not estimated").isVisible() && await out().getByText("Some layers use sliding-window attention and others full attention.").isVisible(), "F51 gpt-oss mixes sliding and full attention, so its context memory is not estimated, and the page says why");
+  await page.locator("#f-ia-model").fill("moonshotai/Kimi-K3");
+  await press();
+  await page.waitForTimeout(250);
+  const t2 = await out().innerText();
+  ok(t2.includes("US$20,000,000") && t2.includes("needs a separate agreement with the maker above this revenue over any 12 months:") && await out().getByText("Internal use that makes nothing available to others is exempt.").isVisible() && await out().locator(".ia-terms a").getAttribute("rel") === "noopener noreferrer",
+    "F51 Kimi K3's terms read in full: an agreement above US$20,000,000 over 12 months, internal use exempt, with a link to the licence file");
+  await page.locator("#f-ia-model").fill("Qwen/Qwen3.8-Flash-Next");
+  await press();
+  await page.waitForTimeout(250);
+  ok(await out().getByText("needs a separate licence from the maker, at any revenue.").isVisible(), "F51 the Qwen Community License needs a separate licence for a service business at any revenue");
+  await go("#/settings");
+  await page.locator("details.catalog summary").click();
+  ok(await page.locator("details.catalog th", { hasText: "Longest context" }).isVisible() && (await page.locator("details.catalog td", { hasText: "Not read: the card is gated" }).count()) === 3 && (await page.locator("details.catalog td", { hasText: "Estimated (latent attention)" }).count()) === 2, "F51 the Settings catalog shows each card's longest context and whether its context memory can be estimated");
+}
+
 // F50: the architect studio (ADR-170): the seal, the preview scale, the composite skill draft and the upgrade radar.
 {
   const press = id => page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click();
@@ -1127,6 +1164,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["architect open", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.evaluate(() => localStorage.removeItem("aether-architect-seal")); for (let i = 0; i < 2; i++) { await page.locator("#f-as-code").fill("kodex-974"); await page.locator('section[aria-labelledby="h-as-s"] button.btn-primary').click(); await page.waitForTimeout(250); } for (const id of ["h-as-u", "h-as-c"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); } await page.evaluate(() => { localStorage.removeItem("aether-architect-seal"); localStorage.removeItem("aether-architect-ui"); }); }],
     ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
+    ["impact context and terms", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "Qwen/Qwen3.8-Flash-Next", "Qwen/Qwen3.8-2.4T-A95B", "meta-llama/Llama-3.3-70B-Instruct", "openai/gpt-oss-120b", "gpt-oss:20b"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
+    ["settings catalog", async () => { await go("#/settings"); await page.locator("details.catalog summary").click(); await page.waitForTimeout(150); }],
     ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
     ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],

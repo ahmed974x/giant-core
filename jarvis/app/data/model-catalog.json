@@ -12,7 +12,21 @@
    "params": 1650497936906,
    "card": "deepseek-ai/DeepSeek-V4-Pro-0813",
    "created": "2026-08-13",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sparse_index",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "9dd2a89255469e12",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "deepseek-v4-flash",
@@ -24,7 +38,21 @@
    "params": 763205315794,
    "card": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
    "created": "2026-10-17",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sparse_index",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "8be45ce0476004a3",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "deepseek-r1",
@@ -36,7 +64,21 @@
    "params": 684531386000,
    "card": "deepseek-ai/DeepSeek-R1-0528",
    "created": "2025-05-28",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "mla",
+    "reason": null,
+    "max_context": 163840,
+    "layers": 61,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": 512,
+    "qk_rope_head_dim": 64,
+    "sha256": "79ddea672a62e95d",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "deepseek-v3",
@@ -48,7 +90,21 @@
    "params": 684531386000,
    "card": "deepseek-ai/DeepSeek-V3-0324",
    "created": "2025-03-24",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "mla",
+    "reason": null,
+    "max_context": 163840,
+    "layers": 61,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": 512,
+    "qk_rope_head_dim": 64,
+    "sha256": "79ddea672a62e95d",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwen3.8-max",
@@ -60,7 +116,37 @@
    "params": 2446182725504,
    "card": "Qwen/Qwen3.8-2.4T-A95B",
    "created": "2026-08-08",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": {
+    "requirement": "licence",
+    "when": "over_revenue",
+    "revenue_usd_12m": 50000000,
+    "businesses": [
+     "model_as_a_service",
+     "ai_work_assistant"
+    ],
+    "display_name_over": {
+     "monthly_active_users": 100000000,
+     "monthly_revenue_usd": 20000000
+    },
+    "internal_use_exempt": true,
+    "file": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/blob/main/LICENSE",
+    "sha256": "a136bc4137ef3d7a",
+    "read": "2026-11-15"
+   },
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 262144,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "4e3819548967e319",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwen3.8-flash",
@@ -72,7 +158,37 @@
    "params": 179999981459,
    "card": "Qwen/Qwen3.8-Flash-Next",
    "created": "2026-08-24",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": {
+    "requirement": "licence",
+    "when": "always",
+    "revenue_usd_12m": null,
+    "businesses": [
+     "model_as_a_service",
+     "ai_work_assistant"
+    ],
+    "display_name_over": {
+     "monthly_active_users": 100000000,
+     "monthly_revenue_usd": 20000000
+    },
+    "internal_use_exempt": true,
+    "file": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next/blob/main/LICENSE",
+    "sha256": "a0dc422560841fd6",
+    "read": "2026-11-15"
+   },
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 262144,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "889658f2508e8c61",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwen3.8-27b",
@@ -84,7 +200,21 @@
    "params": 27781427952,
    "card": "Qwen/Qwen3.8-27B",
    "created": "2026-08-05",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 262144,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "191e0af232104ed8",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwq",
@@ -96,7 +226,21 @@
    "params": 32763876352,
    "card": "Qwen/QwQ-32B",
    "created": "2025-03-05",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 40960,
+    "layers": 64,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "61feaaef406a79c1",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwen3-coder",
@@ -108,7 +252,21 @@
    "params": 30532122624,
    "card": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
    "created": "2025-07-31",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 262144,
+    "layers": 48,
+    "kv_heads": 4,
+    "head_dim": 128,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "e2c8d8eea3947178",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "qwen2.5-coder",
@@ -120,7 +278,21 @@
    "params": 32763876352,
    "card": "Qwen/Qwen2.5-Coder-32B-Instruct",
    "created": "2024-11-06",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 32768,
+    "layers": 64,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "9fb1473a47db69c0",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "glm-5.3-flash",
@@ -132,7 +304,21 @@
    "params": 321323031390,
    "card": "zai-org/GLM-5.3-Flash",
    "created": "2026-08-25",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "bb8f01c42cb92a52",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "glm-5.3",
@@ -144,7 +330,33 @@
    "params": 753329940480,
    "card": "zai-org/GLM-5.3",
    "created": "2026-08-25",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": {
+    "requirement": "security_review",
+    "when": "over_revenue",
+    "revenue_usd_12m": 10000000000,
+    "businesses": [
+     "model_as_a_service"
+    ],
+    "display_name_over": null,
+    "internal_use_exempt": null,
+    "file": "https://huggingface.co/zai-org/GLM-5.3/blob/main/LICENSE",
+    "sha256": "96e1622099fc9d6b",
+    "read": "2026-11-15"
+   },
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sparse_index",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "3ac7261209557454",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "glm-5.2",
@@ -156,7 +368,21 @@
    "params": 753329940480,
    "card": "zai-org/GLM-5.2",
    "created": "2026-06-16",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sparse_index",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "185f93ee6d12548e",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "glm-4",
@@ -168,7 +394,21 @@
    "params": 32566081536,
    "card": "zai-org/GLM-4-32B-0414",
    "created": "2025-04-07",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 32768,
+    "layers": 61,
+    "kv_heads": 2,
+    "head_dim": 128,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "d39fa377eb7e712d",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "kimi-k3.1-pro",
@@ -180,7 +420,36 @@
    "params": 2780110363392,
    "card": "moonshotai/Kimi-K3.1-Pro",
    "created": "2026-11-02",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": {
+    "requirement": "agreement",
+    "when": "over_revenue",
+    "revenue_usd_12m": 20000000,
+    "businesses": [
+     "model_as_a_service"
+    ],
+    "display_name_over": {
+     "monthly_active_users": 100000000,
+     "monthly_revenue_usd": 20000000
+    },
+    "internal_use_exempt": true,
+    "file": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/blob/main/LICENSE",
+    "sha256": "da05c356f773d22a",
+    "read": "2026-11-15"
+   },
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "d95037631e3f23bf",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "kimi-k3",
@@ -192,7 +461,36 @@
    "params": 2779931837184,
    "card": "moonshotai/Kimi-K3",
    "created": "2026-06-13",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": {
+    "requirement": "agreement",
+    "when": "over_revenue",
+    "revenue_usd_12m": 20000000,
+    "businesses": [
+     "model_as_a_service"
+    ],
+    "display_name_over": {
+     "monthly_active_users": 100000000,
+     "monthly_revenue_usd": 20000000
+    },
+    "internal_use_exempt": true,
+    "file": "https://huggingface.co/moonshotai/Kimi-K3/blob/main/LICENSE",
+    "sha256": "20c797ce19af0c17",
+    "read": "2026-11-15"
+   },
+   "config": {
+    "attention": "not_estimated",
+    "reason": "linear_attention",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "9710e121a58d03ac",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "mimo-v2.6-pro",
@@ -204,7 +502,21 @@
    "params": 1024216603392,
    "card": "XiaomiMiMo/MiMo-V2.6-Pro-RL",
    "created": "2026-09-21",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sliding_and_full",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "a9dc00e2a0c2c172",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "mimo-v2.6-flash",
@@ -216,7 +528,21 @@
    "params": 310756322688,
    "card": "XiaomiMiMo/MiMo-V2.6-Flash-RL",
    "created": "2026-09-21",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sliding_and_full",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "61bea4a0f7a0dd89",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "gpt-oss",
@@ -228,7 +554,21 @@
    "params": 116829156672,
    "card": "openai/gpt-oss-120b",
    "created": "2025-08-04",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sliding_and_full",
+    "max_context": 131072,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "933aeb666a3fd851",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "gemma-4",
@@ -240,7 +580,21 @@
    "params": 31273088876,
    "card": "google/gemma-4-31B-it",
    "created": "2026-03-11",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sliding_and_full",
+    "max_context": 262144,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "e967dd38bc5cfd38",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "gemma-3",
@@ -252,7 +606,21 @@
    "params": 27432406640,
    "card": "google/gemma-3-27b-it",
    "created": "2025-03-01",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_read",
+    "reason": "gated",
+    "max_context": null,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": null,
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "llama-4-scout",
@@ -264,7 +632,21 @@
    "params": 108641793536,
    "card": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
    "created": "2025-04-02",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_read",
+    "reason": "gated",
+    "max_context": null,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": null,
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "llama-3.3",
@@ -276,7 +658,21 @@
    "params": 70553706496,
    "card": "meta-llama/Llama-3.3-70B-Instruct",
    "created": "2024-11-26",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_read",
+    "reason": "gated",
+    "max_context": null,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": null,
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "olmo-3",
@@ -288,7 +684,21 @@
    "params": 32233522176,
    "card": "allenai/Olmo-3.1-32B-Instruct",
    "created": "2025-12-10",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sliding_and_full",
+    "max_context": 65536,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "d47a120cb2669cd4",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "olmo-2",
@@ -300,7 +710,21 @@
    "params": 32234279936,
    "card": "allenai/OLMo-2-0325-32B-Instruct",
    "created": "2025-03-12",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 4096,
+    "layers": 64,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "e977b63b4196481a",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "phi-4-reasoning",
@@ -312,7 +736,21 @@
    "params": 14659507200,
    "card": "microsoft/Phi-4-reasoning",
    "created": "2025-04-09",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 32768,
+    "layers": 40,
+    "kv_heads": 10,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "0a13d8a96ac97a77",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "granite-switch-4.1",
@@ -324,7 +762,21 @@
    "params": 29989814272,
    "card": "ibm-granite/granite-switch-4.1-30b",
    "created": "2026-10-14",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 131072,
+    "layers": 66,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "aff59d46125eba29",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "mistral-large-4",
@@ -336,7 +788,21 @@
    "params": null,
    "card": "mistralai/Mistral-Large-4-1T-A52B",
    "created": "2026-09-30",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "not_estimated",
+    "reason": "sparse_index",
+    "max_context": 1048576,
+    "layers": null,
+    "kv_heads": null,
+    "head_dim": null,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "3081fb94f5001f34",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "devstral-small-2",
@@ -348,7 +814,21 @@
    "params": 24011361280,
    "card": "mistralai/Devstral-Small-2-24B-Instruct-2512",
    "created": "2025-11-28",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 393216,
+    "layers": 40,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": false,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "8d570ae877badd9f",
+    "read": "2026-11-15"
+   }
   },
   {
    "family": "codestral",
@@ -360,7 +840,21 @@
    "params": 22247282688,
    "card": "mistralai/Codestral-22B-v0.1",
    "created": "2024-05-29",
-   "read": "2026-11-15"
+   "read": "2026-11-15",
+   "terms": null,
+   "config": {
+    "attention": "gqa",
+    "reason": null,
+    "max_context": 32768,
+    "layers": 56,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "head_dim_derived": true,
+    "kv_lora_rank": null,
+    "qk_rope_head_dim": null,
+    "sha256": "71c3c7714ddd5348",
+    "read": "2026-11-15"
+   }
   }
  ]
 }
