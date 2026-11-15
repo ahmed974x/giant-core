@@ -222,9 +222,16 @@ PASS F44 seven roots, a trunk of three and every skill
 PASS F44 states drawn from facts: proved skills, none needing attention
 PASS F44 a skill's facts and its page
 PASS F44 composing two skills names the workbench and their test commands
+PASS F48 gpt-oss-120b served to others: Apache 2.0 allows it, 58.41 GB of weights at 4 bits fit 80 GB, and running it stays locked
+PASS F48 qwen3.8 names no size: three families listed, no licence guessed, nothing to run
+PASS F48 Mistral Large 4 served to others needs a commercial licence, and its memory is not estimated
+PASS F48 another size of a family is not estimated from the card's count
+PASS F48 the reversal engine's blast radius names the runbook, its page and the real test commands
+PASS F48 two plans compared line by line with four SHA-256 hashes
+PASS F48 the page does not scroll sideways
 PASS F47 the interface is named Aether Prime
 PASS F47 six stages on the cleaned goal; the secret field is cleared
-PASS F47 the healer's record, the tree waiting on approvals and ten page probes
+PASS F47 the healer's record, the tree waiting on approvals and eleven page probes
 PASS F47 an unknown skill refuses one stage and the others still run
 PASS F47 ADR-166: the repaired plan leaves the unknown skill out and passes the six stages
 PASS F47 ADR-166: the CSS gradient is corrected, hashed before and after, and the copy is a fixed point
@@ -260,4 +267,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-261 passed, 0 failed
+268 passed, 0 failed
