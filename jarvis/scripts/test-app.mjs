@@ -476,7 +476,7 @@ const reg = page.locator("#h-greg ~ .table-scroll");
 ok(await reg.locator("tr", { hasText: "Career Ops" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "Claude-Mem" }).getByText("Excluded").isVisible() && await reg.locator("tr", { hasText: "HyperFrames" }).getByText("Kept outside the repo").isVisible() && await reg.locator("tr", { hasText: "Superpowers" }).getByText("Adopted as a rule").isVisible(), "F21 the register shows what was adopted, excluded and kept out");
 await go("#/settings");
 await page.locator("details.catalog summary").click();
-ok((await page.locator("details.catalog tbody tr").count()) === 12 && await page.locator("details.catalog tr", { hasText: "codestral" }).getByText(/Non-Production/).isVisible(), "F21 the open-weight catalog lists 12 families with their licences");
+ok((await page.locator("details.catalog tbody tr").count()) === 30 && await page.locator("details.catalog tr", { hasText: "codestral" }).getByText(/Non-Production/).isVisible(), "F21 the open-weight catalog lists 30 families with their licences");
 
 // F22: the Studio time machine (ADR-144): SHA-256 chained snapshots, side-by-side diff, fork.
 await go("#/studio");
