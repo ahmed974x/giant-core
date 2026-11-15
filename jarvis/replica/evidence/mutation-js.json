@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-15T01:42:38.789Z",
+ "ranAt": "2026-11-15T11:21:57.188Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -815,7 +815,7 @@
   },
   {
    "file": "jarvis/server/lib/runbook.mjs",
-   "sha256": "9028b8d27ee9b8331e8e976292aa20893c1a313420fccf8137b18705ad880661",
+   "sha256": "75a3ce636b93130d484f2c7bd1fcca66d05f1817d0c4ba67db44335d28fef739",
    "functions": [
     "rbStage",
     "rbProbe",
@@ -825,8 +825,8 @@
     "repairRequest",
     "runbook"
    ],
-   "mutants": 86,
-   "killed": 84,
+   "mutants": 90,
+   "killed": 88,
    "equivalent": 2,
    "survived": 0,
    "score": 100,
@@ -834,15 +834,100 @@
    "equivalents": [
     {
      "fn": "rbProbe",
-     "line": 53,
+     "line": 56,
      "kind": "> -> >=",
      "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
     },
     {
      "fn": "rbProbe",
-     "line": 53,
+     "line": 56,
      "kind": "0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/impact-analysis.mjs",
+   "sha256": "f858c59e279e5ef0ef49166471705c6ef0efc2f54a4338ed26cbd49c5ac0fad3",
+   "functions": [
+    "catalogJson",
+    "licenceRule",
+    "weightsGb",
+    "checkCatalog",
+    "checkModel",
+    "dependentsOf",
+    "blastRadius",
+    "lines",
+    "lcsDiff",
+    "diffTexts",
+    "impactAnalysis"
+   ],
+   "mutants": 180,
+   "killed": 170,
+   "equivalent": 10,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "licenceRule",
+     "line": 46,
+     "kind": "> -> >=",
+     "why": "\"(\" and \")\" are different characters, so their positions are never equal once open >= 0"
+    },
+    {
+     "fn": "dependentsOf",
+     "line": 101,
+     "kind": "< -> <=",
+     "why": "the names are keys of one Map, so two names are never equal and < and <= agree"
+    },
+    {
+     "fn": "dependentsOf",
+     "line": 101,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "dependentsOf",
+     "line": 101,
+     "kind": "1 -> 2",
+     "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 135,
+     "kind": "< -> <=",
+     "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 130,
+     "kind": "1 -> 2",
+     "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 130,
+     "kind": "1 -> 2",
+     "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 130,
+     "kind": "0 -> 1",
+     "why": "filling with 1 adds 1 to every length in the table, so every comparison keeps its answer"
+    },
+    {
+     "fn": "lcsDiff",
+     "line": 131,
+     "kind": "1 -> 2",
+     "why": "counting a match as 2 doubles every length in the table, so every comparison keeps its answer (n - 1 and m - 1 changed to 2 are killed by the golden file)"
     }
    ]
   },

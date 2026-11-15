@@ -531,13 +531,24 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-168 live: impact analysis on the server over the catalog module and the snapshots; events keep counts only.
+{
+  await go("#/impact");
+  await page.waitForSelector("#f-ia-model");
+  for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); }
+  await page.waitForSelector(".ia-diff");
+  ok(await page.getByText("58.41").isVisible() && await page.locator("#h-ia-b").locator("xpath=..").getByText("#/runbook").first().isVisible() && (await page.locator(".ia-hash code").count()) === 4, "live: impact analysis answers from the server in all three checks");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "impact.catalog" && e.target === "allowed") && evs.some(e => e.kind === "impact.blast" && /^\d+ dependents, \d+ pages$/.test(e.target)) && evs.some(e => e.kind === "impact.diff" && e.target === "2 added, 2 removed") && !JSON.stringify(evs).includes("gpt-oss-120b"), "live: impact analysis is in the event log as counts, never the model name");
+}
+
 // ADR-165 live: the runbook runs on the server over the snapshots on disk and logs counts only.
 {
   await go("#/runbook");
   await page.waitForSelector("#f-rb-goal");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForSelector(".rb-stage");
-  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 9, "live: the runbook answers from the server with nine page probes passed");
+  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 10, "live: the runbook answers from the server with ten page probes passed");
   const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
   ok(evs.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(evs).includes("ops@example.org"), "live: the runbook is in the event log, as counts");
 }
@@ -642,6 +653,8 @@ await page.waitForTimeout(300);
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
+    ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
     ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(400); }],

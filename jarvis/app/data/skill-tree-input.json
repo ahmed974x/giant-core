@@ -672,6 +672,29 @@
    "review": "docs/security/HYPER-STUDIO-REVIEW-2026-11-07.md"
   },
   {
+   "name": "replica-impact-analysis",
+   "description": "Deterministic impact checks over facts the repository already holds - a model name against the 30-family open-weight catalog (its family, what its documented licence allows for personal use or for ser",
+   "tools": [
+    {
+     "name": "impact_analysis.py",
+     "functions": 10
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 221,
+    "mutants": 221
+   },
+   "review": "docs/security/IMPACT-ANALYSIS-REVIEW-2026-11-15.md"
+  },
+  {
    "name": "replica-impeccable",
    "description": "A quality gate against low-effort output - 62 rules over prose (hype and filler words, placeholder text, exclamation marks), design (colour literals outside tokens, transition all, 100vh, text under 1",
    "tools": [
@@ -905,8 +928,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 118,
-    "mutants": 118
+    "killed": 125,
+    "mutants": 125
    },
    "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },

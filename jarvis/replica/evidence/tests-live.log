@@ -103,7 +103,9 @@ PASS live: a cinematic preset compiles on the server
 PASS live: the preset is in the event log
 PASS live: the tree and the composer answer from the server
 PASS live: composing is in the event log, as a count
-PASS live: the runbook answers from the server with nine page probes passed
+PASS live: impact analysis answers from the server in all three checks
+PASS live: impact analysis is in the event log as counts, never the model name
+PASS live: the runbook answers from the server with ten page probes passed
 PASS live: the runbook is in the event log, as counts
 PASS live: project search answers from the server
 PASS live: project search is in the event log, as a count
@@ -139,4 +141,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-140 passed, 0 failed
+142 passed, 0 failed

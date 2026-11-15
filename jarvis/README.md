@@ -424,6 +424,30 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
 - **Repaired plan (ADR-166):** when a stage is refused for an input the rules can correct, the runbook leaves it out (an unknown skill, a refused record entry or c, an unreadable CSS), lists each change and runs the repaired request through the six stages once more. Locked steps stay locked. An optional CSS is shown corrected by the reversal engine and the contrast healer, with SHA-256 before and after and a check that the corrected copy needs no further change.
 - The interface is named «أثير برايم» in Arabic and "Aether Prime" in English: the sidebar, the tab, every sentence that named Jarvis and the seeded workspace "Aether Prime Studio". Folders, file names, the server, the `jarvis-studio` slug, headers, user agents and model names keep their spelling.
 
+## Impact analysis (ADR-168)
+
+- **`#/impact`** runs three checks over facts already in the repository. Nothing is ranked, sent or installed.
+
+- **A model against the catalog.** Type a model name, the use (personal, or serving it to others), and optionally the memory you have and the bits per weight. The page shows:
+  - the family, from the 30 in `model-catalog.mjs` (ADR-167);
+  - what its documented licence allows. Apache 2.0 and MIT allow serving it; Mistral Large 4 needs a separate commercial licence for that; custom terms say to read the licence file. A name without a size, such as `qwen3.8`, lists the families it could be and guesses no licence;
+  - the weights' memory: parameters × bits ÷ 8 ÷ 10⁹ GB, the weights only. It is given only for the card the count was read from;
+  - one locked step: pulling and running the model waits for approval.
+
+- **A skill's blast radius.** For one skill it shows:
+  - what the skill loads, in Kahn's layers, with a cycle named;
+  - what loads it, by a reverse breadth-first search over `skill-deps.json`;
+  - the pages built on those skills, each skill's own test command and the shared test commands;
+  - the matching documents from project search.
+
+- **Two texts, line by line.** A longest-common-subsequence diff, with the SHA-256 of each text, of the difference and of the chain.
+
+- The API is `POST /api/w/:slug/impact` with `{mode: "catalog" | "blast" | "diff", …}`. The server reads the catalog module and the snapshots on disk and ignores any catalog or snapshot sent in the request. The same engine runs with `python3 .claude/skills/replica-impact-analysis/impact_analysis.py '{"mode": "blast", "skill": "replica-runbook"}' --data jarvis/app/data`.
+
+- `node jarvis/scripts/build-app.mjs` writes `jarvis/app/data/model-catalog.json` from the module, for the Python twin; `--check` fails when it is stale.
+
+- The runbook (ADR-165) probes `#/impact` as its eleventh page.
+
 ## What Jarvis will not do
 
 - **Money, publishing, repository permissions, installing skills, outbound messages.** These are locked «قيد الموافقة» cards that no agent can approve (AGENTS.md §1). `schema.sql` refuses them too.

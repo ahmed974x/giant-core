@@ -18,9 +18,11 @@ import { buildTree } from "./skill-tree.mjs";
 import { universalAgent } from "./universal-agent.mjs";
 import { solve as solveMath } from "./universal-math.mjs";
 import { optics } from "./hyper-studio.mjs";
+import { impactAnalysis } from "./impact-analysis.mjs";
 
 export const RB_STAGES = ["shield", "docs", "order", "tree", "plan", "routes"];
 export const RB_ROUTES = [
+  { route: "#/impact", adr: "ADR-168", engine: "impact-analysis" },
   { route: "#/docs", adr: "ADR-164", engine: "project-search" },
   { route: "#/order", adr: "ADR-163", engine: "plan-order" },
   { route: "#/tree", adr: "ADR-162", engine: "skill-tree" },
@@ -45,6 +47,7 @@ function rbStage(id, fn) {
 // One fixed probe per page: [whether the engine gave its checked answer, the engine's whole answer]. The answer is
 // reported as the first 12 hex characters of its SHA-256, so any change in the probe or the engine shows.
 function rbProbe(route, ctx) {
+  if (route === "#/impact") { const k = Object.keys(ctx.deps).sort(); if (!k.length) return [false, k]; const b = impactAnalysis({ mode: "blast", skill: k[0] }, ctx); return [b.upstream.verified, b]; }
   if (route === "#/docs") { const s = searchProject(ctx.corpus, { query: "contrast healer", limit: 3 }); return [s.found, s]; }
   if (route === "#/order") { const k = Object.keys(ctx.deps).sort(); if (!k.length) return [false, k]; const o = skillOrder(ctx.deps, [k[0]]); return [o.verified, o]; }
   if (route === "#/tree") { const t = buildTree(ctx.tree); return [t.counts.skills > 0, t]; }

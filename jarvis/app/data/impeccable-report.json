@@ -1,7 +1,7 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 147,
+ "files": 149,
  "summary": {
   "high": 0,
   "medium": 0,
@@ -12,7 +12,7 @@
   "M05": 133,
   "P21": 2
  },
- "sha256": "d8bbe4917449fb6890627e736818fd3dcc8928b7d82c670da56ce97e77133cad",
+ "sha256": "7f60ba75161d710a81cef19869436653d3f967e217c996c625cc116e0a14ac66",
  "findings": [
   {
    "rule": "D05",
@@ -192,7 +192,7 @@
   {
    "rule": "D05",
    "severity": "low",
-   "line": 516,
+   "line": 519,
    "message": "Spacing off the 4/8 scale (DESIGN.md §3).",
    "file": "jarvis/app/src/app.css"
   },

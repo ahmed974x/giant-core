@@ -654,3 +654,10 @@ td.wrap { white-space: normal; min-width: 16ch; }
 /* ADR-166: the runbook's corrected CSS and repaired plan. */
 .rb-design pre { max-block-size: 240px; overflow: auto; }
 .rb-repair { border-inline-start: 3px solid var(--color-border); }
+
+/* ADR-168: impact analysis. Tables scroll inside their own box and never widen the page; hashes, card names and
+   compared lines wrap inside the card. */
+.ia-scroll { contain: inline-size; max-block-size: 360px; overflow: auto; }
+.ia-diff .ia-line { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ia-card, .ia-hash { overflow-wrap: anywhere; min-inline-size: 0; }
+.ia-op-add td:first-child, .ia-op-del td:first-child { font-weight: 600; }
