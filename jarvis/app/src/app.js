@@ -4279,6 +4279,8 @@
     const field = (id, label, control, hint) => h("div", { class: "field" }, h("label", { htmlFor: id, text: label }), control, hint ? h("span", { class: "hint", text: hint }) : null);
     const latin = el => { el.lang = "en"; el.translate = false; el.spellcheck = false; return el; };
     let code = "";
+    // With no code checked, nothing is unlocked and the engine would refuse; the page says so without asking the server.
+    const sealed = out => (code ? false : (fail(out, new Error("The architect seal is needed: the studio is read only.")), true));
     const fail = (out, err) => out.replaceChildren(h("p", { class: "t-sm" }, badge(err.message.startsWith("The architect seal") ? "locked" : "failed", "Not done"), " ", h("span", { text: err.message })));
     const sealRow = s => h("p", { class: "row" }, badge(AS_STATE[s.state][0], AS_STATE[s.state][1]), s.audit_prefix ? h("span", { class: "row t-sm" }, h("span", { class: "muted", text: "Audit prefix" }), h("code", { translate: "no", dir: "ltr", text: s.audit_prefix })) : null);
     const lockList = locks => h("ul", { class: "plist" }, locks.map(l => h("li", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + AS_LOCK[l.action] }))));
@@ -4319,6 +4321,7 @@
     const uOut = h("div", { class: "stack", "aria-live": "polite" });
     const uBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Apply to the preview");
     uBtn.addEventListener("click", async () => {
+      if (sealed(uOut)) return;
       uBtn.disabled = true;
       try {
         const r = await store.architect({ mode: "ui", ...(code ? { passcode: code } : {}), font_scale: Number(scaleIn.value), density: densityIn.value, numerals: numIn.value });
@@ -4338,6 +4341,7 @@
     const cOut = h("div", { class: "stack", "aria-live": "polite" });
     const cBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Draft the composite");
     cBtn.addEventListener("click", async () => {
+      if (sealed(cOut)) return;
       cBtn.disabled = true;
       try {
         const r = await store.architect({ mode: "compose", ...(code ? { passcode: code } : {}), name: nameIn.value, description: descIn.value, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),

@@ -393,7 +393,10 @@
    },
    "tests": true,
    "golden": true,
-   "mutation": null,
+   "mutation": {
+    "killed": 121,
+    "mutants": 121
+   },
    "review": "docs/security/ARCHITECT-STUDIO-REVIEW-2026-11-15.md"
   },
   {
@@ -697,7 +700,7 @@
    "tools": [
     {
      "name": "impact_analysis.py",
-     "functions": 10
+     "functions": 12
     }
    ],
    "scan": {
@@ -709,8 +712,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 221,
-    "mutants": 221
+    "killed": 296,
+    "mutants": 296
    },
    "review": "docs/security/IMPACT-ANALYSIS-REVIEW-2026-11-15.md"
   },
@@ -971,8 +974,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 129,
-    "mutants": 129
+    "killed": 134,
+    "mutants": 134
    },
    "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },
