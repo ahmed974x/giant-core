@@ -249,3 +249,11 @@ Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36
 - `runbook-stages-*`: `#/runbook`: one goal through the shield, project search, the order of skills, the workbench tree waiting on approvals and the plan choice; the brand reads «أثير برايم» / Aether Prime;
 - `runbook-probes-*`: the ten page probes (nine passed, diagnostics server only) and the chain hash;
 - `runbook-refused-*`: an unknown skill refuses the order stage while the other stages still run.
+
+## ADR-166 (2026-11-15)
+
+Real server, dark and light, at 1440, 768 and 375, in **English and Arabic** (36 shots):
+
+- `runbook-design-*`: `#/runbook` with a gradient CSS: corrected by the reversal engine and the contrast healer, SHA-256 before and after, and the corrected copy needs no further change;
+- `runbook-repair-*`: an unknown skill is left out and the repaired request passes the six stages, with its own hash and chain;
+- `brand-settings-*`: Settings with the interface named «أثير برايم» / Aether Prime.
