@@ -1000,7 +1000,7 @@
    "kind": "screen",
    "label": "analytics",
    "file": "jarvis/app/src/app.js",
-   "line": 2345,
+   "line": 2352,
    "nav": true
   },
   {
@@ -1016,7 +1016,7 @@
    "kind": "screen",
    "label": "atlas",
    "file": "jarvis/app/src/app.js",
-   "line": 4562,
+   "line": 4569,
    "nav": true
   },
   {
@@ -1024,7 +1024,7 @@
    "kind": "screen",
    "label": "compare",
    "file": "jarvis/app/src/app.js",
-   "line": 2463,
+   "line": 2470,
    "nav": false
   },
   {
@@ -1032,7 +1032,7 @@
    "kind": "screen",
    "label": "diagnostics",
    "file": "jarvis/app/src/app.js",
-   "line": 4630,
+   "line": 4637,
    "nav": true
   },
   {
@@ -1040,7 +1040,7 @@
    "kind": "screen",
    "label": "docs",
    "file": "jarvis/app/src/app.js",
-   "line": 4239,
+   "line": 4246,
    "nav": true
   },
   {
@@ -1048,7 +1048,7 @@
    "kind": "screen",
    "label": "governance",
    "file": "jarvis/app/src/app.js",
-   "line": 3535,
+   "line": 3542,
    "nav": true
   },
   {
@@ -1056,7 +1056,7 @@
    "kind": "screen",
    "label": "hyper",
    "file": "jarvis/app/src/app.js",
-   "line": 3951,
+   "line": 3958,
    "nav": true
   },
   {
@@ -1064,7 +1064,7 @@
    "kind": "screen",
    "label": "loader",
    "file": "jarvis/app/src/app.js",
-   "line": 3390,
+   "line": 3397,
    "nav": true
   },
   {
@@ -1072,7 +1072,7 @@
    "kind": "screen",
    "label": "logs",
    "file": "jarvis/app/src/app.js",
-   "line": 1692,
+   "line": 1693,
    "nav": true
   },
   {
@@ -1080,7 +1080,7 @@
    "kind": "screen",
    "label": "math",
    "file": "jarvis/app/src/app.js",
-   "line": 3787,
+   "line": 3794,
    "nav": true
   },
   {
@@ -1088,7 +1088,7 @@
    "kind": "screen",
    "label": "memory",
    "file": "jarvis/app/src/app.js",
-   "line": 4665,
+   "line": 4672,
    "nav": true
   },
   {
@@ -1096,7 +1096,7 @@
    "kind": "screen",
    "label": "mission",
    "file": "jarvis/app/src/app.js",
-   "line": 2107,
+   "line": 2114,
    "nav": false
   },
   {
@@ -1104,7 +1104,7 @@
    "kind": "screen",
    "label": "missions",
    "file": "jarvis/app/src/app.js",
-   "line": 1947,
+   "line": 1954,
    "nav": true
   },
   {
@@ -1112,7 +1112,7 @@
    "kind": "screen",
    "label": "order",
    "file": "jarvis/app/src/app.js",
-   "line": 4281,
+   "line": 4288,
    "nav": true
   },
   {
@@ -1128,7 +1128,7 @@
    "kind": "screen",
    "label": "polymath",
    "file": "jarvis/app/src/app.js",
-   "line": 4405,
+   "line": 4412,
    "nav": true
   },
   {
@@ -1136,7 +1136,7 @@
    "kind": "screen",
    "label": "recon",
    "file": "jarvis/app/src/app.js",
-   "line": 3660,
+   "line": 3667,
    "nav": true
   },
   {
@@ -1152,7 +1152,7 @@
    "kind": "screen",
    "label": "runbook",
    "file": "jarvis/app/src/app.js",
-   "line": 4200,
+   "line": 4207,
    "nav": true
   },
   {
@@ -1168,7 +1168,7 @@
    "kind": "screen",
    "label": "search",
    "file": "jarvis/app/src/app.js",
-   "line": 3306,
+   "line": 3313,
    "nav": true
   },
   {
@@ -1176,7 +1176,7 @@
    "kind": "screen",
    "label": "settings",
    "file": "jarvis/app/src/app.js",
-   "line": 1852,
+   "line": 1859,
    "nav": true
   },
   {
@@ -1184,7 +1184,7 @@
    "kind": "screen",
    "label": "skills",
    "file": "jarvis/app/src/app.js",
-   "line": 3156,
+   "line": 3163,
    "nav": true
   },
   {
@@ -1192,7 +1192,7 @@
    "kind": "screen",
    "label": "studio",
    "file": "jarvis/app/src/app.js",
-   "line": 2687,
+   "line": 2694,
    "nav": true
   },
   {
@@ -1200,7 +1200,7 @@
    "kind": "screen",
    "label": "templates",
    "file": "jarvis/app/src/app.js",
-   "line": 2492,
+   "line": 2499,
    "nav": false
   },
   {
@@ -1208,7 +1208,7 @@
    "kind": "screen",
    "label": "tree",
    "file": "jarvis/app/src/app.js",
-   "line": 4080,
+   "line": 4087,
    "nav": true
   },
   {
@@ -1216,7 +1216,7 @@
    "kind": "screen",
    "label": "universal",
    "file": "jarvis/app/src/app.js",
-   "line": 4030,
+   "line": 4037,
    "nav": true
   },
   {
@@ -1224,7 +1224,7 @@
    "kind": "screen",
    "label": "webhooks",
    "file": "jarvis/app/src/app.js",
-   "line": 2431,
+   "line": 2438,
    "nav": true
   },
   {
@@ -1232,7 +1232,7 @@
    "kind": "screen",
    "label": "workbench",
    "file": "jarvis/app/src/app.js",
-   "line": 4490,
+   "line": 4497,
    "nav": true
   },
   {
@@ -1240,7 +1240,7 @@
    "kind": "screen",
    "label": "workflow",
    "file": "jarvis/app/src/app.js",
-   "line": 2204,
+   "line": 2211,
    "nav": false
   },
   {
@@ -1248,7 +1248,7 @@
    "kind": "screen",
    "label": "workflows",
    "file": "jarvis/app/src/app.js",
-   "line": 2186,
+   "line": 2193,
    "nav": true
   },
   {
@@ -4302,7 +4302,7 @@
   }
  ],
  "files": {
-  "jarvis/app/src/app.js": "ea343a78f86567ab0eacadaedbfd82f0a63104e9629d83f81309b60cdd47f8cd",
+  "jarvis/app/src/app.js": "e62ef0056be958a21c6d8690b2a349c4b2884f92c3bdcb33b08539028e25ca2a",
   "jarvis/app/src/shell.tmpl": "fa4f5e799f28a1a4c5b523f106493a8e91147d7f34dd3ed17ac746ad7e450404",
   "jarvis/server/server.mjs": "45cc66590dbdc27c0a82b9c7d990369ccd3c197049753ae47fee1004037be810",
   "jarvis/server/lib/schema-sqlite.sql": "fc5c90f4c285cd9fa8576e9a038414b996c3f2198092e774f138d09860f8304c",
@@ -4429,5 +4429,5 @@
   ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
   ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
  },
- "sha256": "6f53e896cade5a432d21839ea096330c22cb862e558a78115cab64abb2c81841"
+ "sha256": "dd7fa81307f83399c3280090c271fa82a5c0e386fc771f9286c061ef1a717680"
 }

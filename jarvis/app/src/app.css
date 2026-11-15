@@ -502,6 +502,9 @@ td.wrap { white-space: normal; min-width: 16ch; }
 .gmap-node:focus-visible { outline: none; }
 .gmap-info { min-width: 0; }
 .catalog summary { cursor: pointer; font-weight: 600; }
+/* ADR-167: the catalog table scrolls inside its box; its width no longer widens the panel or the page. */
+.catalog .table-scroll { contain: inline-size; }
+.catalog td.wrap a { overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .gmap-edge { transition: none; } }
 
 /* ADR-144: UX heatmap over the preview, the Studio time machine and the council trace. */

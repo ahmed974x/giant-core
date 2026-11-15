@@ -127,7 +127,7 @@ PASS F21 picking a screen lists its API routes and lights its links
 PASS F21 the inspector prints no stray null
 PASS F21 the quality gate reports 62 rules and no high finding
 PASS F21 the register shows what was adopted, excluded and kept out
-PASS F21 the open-weight catalog lists 12 families with their licences
+PASS F21 the open-weight catalog lists 30 families with their licences
 PASS F22 two snapshots are saved and the SHA-256 chain verifies
 PASS F22 saving the same site again adds nothing
 PASS F22 the diff shows the old and new line side by side

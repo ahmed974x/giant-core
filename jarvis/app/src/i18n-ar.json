@@ -2820,6 +2820,15 @@
   "What the rules could correct was left out, and the repaired request was run through the six stages once more. Locked steps stay locked.": "ما أمكن للقواعد تصحيحه تُرك خارج الطلب، وأُعيد تمرير الطلب المصحح على المراحل الست مرة أخرى. الخطوات المقفلة تبقى مقفلة.",
   "Left out": "تُرك خارجاً",
   "Repeated names joined": "دُمجت الأسماء المكررة",
-  "Repaired request": "الطلب المصحح"
+  "Repaired request": "الطلب المصحح",
+  "Parameters": "عدد المعاملات",
+  "Read from each model's Hugging Face record. The cards' benchmark tables are their makers' own claims, so the catalog ranks nothing.": "قُرئ كل سطر من سجل النموذج على Hugging Face. جداول المقاييس في البطاقات ادعاءات صانعيها، لذلك لا يرتّب الكتالوج أي نموذج.",
+  "Qwen3.8-Max License (custom, MIT-based with added conditions)": "رخصة Qwen3.8-Max (رخصة خاصة مبنية على MIT مع شروط إضافية)",
+  "Qwen Community License 1.0 (custom, MIT-based with added conditions)": "رخصة مجتمع Qwen 1.0 (رخصة خاصة مبنية على MIT مع شروط إضافية)",
+  "GLM-5.3 License (custom, MIT-based with added conditions)": "رخصة GLM-5.3 (رخصة خاصة مبنية على MIT مع شروط إضافية)",
+  "Kimi K3.1-Pro License (custom, MIT-based with added conditions)": "رخصة Kimi K3.1-Pro (رخصة خاصة مبنية على MIT مع شروط إضافية)",
+  "Kimi K3 License (custom, MIT-based with added conditions)": "رخصة Kimi K3 (رخصة خاصة مبنية على MIT مع شروط إضافية)",
+  "Apache 2.0 (code, checkpoints and training details released)": "رخصة Apache 2.0 (نُشر الكود ونقاط الحفظ وتفاصيل التدريب)",
+  "Mistral Ecosystem Open-Weight License (modified MIT; a Model-as-a-Service business needs a separate commercial licence)": "رخصة Mistral للأوزان المفتوحة (رخصة MIT معدّلة؛ من يقدّم النموذج خدمةً لغيره يحتاج رخصة تجارية منفصلة)"
  }
 }

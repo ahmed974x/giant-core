@@ -1778,16 +1778,22 @@
       thinkBox, out, meta);
   }
   // ADR-143: the full open-weight catalog (licence, job, notes), marked where a model is served here.
+  // ADR-167: each row names the Hugging Face record it was read from, the day it was read and the parameter
+  // count the record's files declare; a record with no count says so. Nothing is ranked.
+  const fmtParams = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 });
   function catalogTable(st) {
     const here = new Set((st.profiles || []).map(p => p.family));
     return h("details", { class: "catalog" }, h("summary", { text: "Open-weight model catalog (" + LlmPlan.MODEL_PROFILES.length + " families)" }),
       h("p", { class: "subtle t-caption", text: "Licences as the model cards state them; check the card of the exact file you pull. Every one runs on 127.0.0.1 only." }),
+      h("p", { class: "subtle t-caption", text: "Read from each model's Hugging Face record. The cards' benchmark tables are their makers' own claims, so the catalog ranks nothing." }),
       h("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": "Open-weight model catalog" }, h("table", null,
-        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Here" }))),
+        h("thead", null, h("tr", null, h("th", { scope: "col", text: "Family" }), h("th", { scope: "col", text: "Used for" }), h("th", { scope: "col", text: "Licence" }), h("th", { scope: "col", text: "Parameters" }), h("th", { scope: "col", text: "Source" }), h("th", { scope: "col", text: "Here" }))),
         h("tbody", null, LlmPlan.MODEL_PROFILES.map(p => h("tr", null,
           h("td", null, h("b", { translate: "no", text: p.family }), h("br"), h("span", { class: "subtle t-caption", translate: "no", lang: "en", text: p.maker + " · " + p.origin })),
           h("td", { text: LlmPlan.ROLE_LABEL[p.role] || p.role }),
-          h("td", { class: "t-caption wrap", dir: "auto", text: p.licence }),
+          h("td", { class: "t-caption wrap", dir: "auto", lang: "en", text: p.licence }),
+          p.params === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.params) }),
+          h("td", { class: "wrap" }, h("a", { class: "t-caption", href: "https://huggingface.co/" + p.card, target: "_blank", rel: "noopener noreferrer", translate: "no", text: p.card }), h("br"), h("span", { class: "num t-caption", text: p.read })),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
   function llmPanel() {

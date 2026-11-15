@@ -270,7 +270,7 @@ python3 .claude/skills/replica-graphify/graphify.py --root . --out jarvis/app/da
 python3 .claude/skills/replica-impeccable/slop_guard.py --json jarvis/app/src jarvis/server/lib jarvis/README.md docs/adr --root . > jarvis/app/data/impeccable-report.json
 ```
 
-Settings → Local model → **Open-weight model catalog** lists 12 families (DeepSeek, Qwen, GLM, Llama, Gemma, OLMo, Phi, Codestral), each with its licence and job.
+Settings → Local model → **Open-weight model catalog** lists 30 families (DeepSeek, Qwen, GLM, Kimi, MiMo, gpt-oss, Gemma, Llama, Olmo, Phi, Granite, Mistral), each with its licence, job, parameter count and the Hugging Face record it was read from on 2026-11-15 (ADR-167). It ranks nothing: the cards' benchmark tables are their makers' own claims.
 
 ## Council, time machine and UX heatmap (ADR-144)
 
