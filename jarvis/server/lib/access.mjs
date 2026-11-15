@@ -41,7 +41,7 @@ export function createAccess({ db, store }) {
     // Asking to open Jarvis to the public: a locked publish approval, and a 403 for the caller.
     async requestPublic(slug) {
       const wid = await wsId(slug);
-      const apId = await store.createApproval(wid, { category: "publish", action: "Open Jarvis to the public (founder_private → public_subscribers)", payload: { note: "Anyone could then reach Jarvis. This is a publish action for Director 00 outside Jarvis (AGENTS.md §1); the database keeps the access mode founder_private." }, actor: "member:owner" });
+      const apId = await store.createApproval(wid, { category: "publish", action: "Open Aether Prime to the public (founder_private → public_subscribers)", payload: { note: "Anyone could then reach Aether Prime. This is a publish action for Director 00 outside Aether Prime (AGENTS.md §1); the database keeps the access mode founder_private." }, actor: "member:owner" });
       return { locked: true, approvalId: apId, mode: "founder_private" };
     },
     async listEndpoints(slug) {

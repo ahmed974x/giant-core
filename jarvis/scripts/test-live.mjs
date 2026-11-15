@@ -88,7 +88,7 @@ await page.keyboard.press("ArrowDown");
 await page.keyboard.press("ArrowDown");
 await page.keyboard.press("Enter");
 await page.waitForTimeout(500);
-ok((await page.locator("#wsName").textContent()) === "Jarvis Studio", "keyboard switch to Jarvis Studio");
+ok((await page.locator("#wsName").textContent()) === "Aether Prime Studio", "keyboard switch to Aether Prime Studio");
 ok(await page.getByRole("link", { name: "Design token auditor" }).isVisible() && !(await page.getByText("ADR reader").count()), "the agent list changes with the workspace");
 await go("#/approvals");
 await page.getByRole("tab", { name: /Locked/ }).click();
@@ -168,7 +168,7 @@ await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 // Mission Control on the real engine: Jarvis Studio's design audit (contrast and security gates on
 // the repo's saved evidence, a locked install step, a note that is written only after approval).
 await page.locator("#wsBtn").click();
-await page.getByRole("menuitemradio", { name: "Jarvis Studio" }).click();
+await page.getByRole("menuitemradio", { name: "Aether Prime Studio" }).click();
 await page.waitForTimeout(400);
 await go("#/missions");
 await page.locator(".mcard").first().click();
@@ -324,7 +324,7 @@ ok(await page.locator("dialog[open]").getByText("قيد الموافقة").isVis
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 await page.getByRole("button", { name: "Open to the public…" }).click();
 await page.waitForTimeout(400);
-ok(await page.locator("dialog[open]").getByText(/Open Jarvis to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
+ok(await page.locator("dialog[open]").getByText(/Open Aether Prime to the public/).isVisible() && (await srv.db.one("select mode from access_settings")).mode === "founder_private", "live: asking to go public leaves the database founder_private");
 await page.locator("dialog[open]").getByRole("button", { name: "Close" }).click();
 
 // ADR-142 live: discover on GitHub, import one SKILL.md as text, mounted in the database at once.
@@ -531,6 +531,17 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-165 live: the runbook runs on the server over the snapshots on disk and logs counts only.
+{
+  await go("#/runbook");
+  await page.waitForSelector("#f-rb-goal");
+  await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
+  await page.waitForSelector(".rb-stage");
+  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 9, "live: the runbook answers from the server with nine page probes passed");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(evs).includes("ops@example.org"), "live: the runbook is in the event log, as counts");
+}
+
 // ADR-164 live: project search answers from the corpus on the server and logs counts only.
 {
   await go("#/docs");
@@ -631,6 +642,7 @@ await page.waitForTimeout(300);
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
     ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
     ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(400); }],
     ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],

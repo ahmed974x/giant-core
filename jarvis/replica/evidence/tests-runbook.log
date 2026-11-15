@@ -1,0 +1,10 @@
+test_same_answers_as_the_server (test_runbook.Golden.test_same_answers_as_the_server) ... ok
+test_a_refused_stage_does_not_stop_the_others (test_runbook.Stages.test_a_refused_stage_does_not_stop_the_others) ... ok
+test_locked_steps_keep_the_tree_running (test_runbook.Stages.test_locked_steps_keep_the_tree_running) ... ok
+test_no_code_is_run (test_runbook.Stages.test_no_code_is_run) ... ok
+test_this_repository (test_runbook.Stages.test_this_repository) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.604s
+
+OK

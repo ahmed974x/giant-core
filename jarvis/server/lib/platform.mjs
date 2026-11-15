@@ -300,7 +300,7 @@ export function createPlatform({ db, store, runner, missions, dataDir, fetchImpl
     async requestMoney(slug, what) {
       const wid = await wsId(slug);
       const action = what === "billing" ? "Turn on billing and token plans for subscribers" : "Activate the subscriber plan “" + String(what).slice(0, 40) + "”";
-      const apId = await store.createApproval(wid, { category: "money", action, payload: { note: "Charging people is Director 00's decision outside Jarvis, after a legal review (AGENTS.md §1). The database keeps billing off and every plan a draft." }, actor: "member:owner" });
+      const apId = await store.createApproval(wid, { category: "money", action, payload: { note: "Charging people is Director 00's decision outside Aether Prime, after a legal review (AGENTS.md §1). The database keeps billing off and every plan a draft." }, actor: "member:owner" });
       return { locked: true, approvalId: apId, billing: await api.billing(slug) };
     },
     async recordUsage(slug, { engine, model, tokens, ref }) {

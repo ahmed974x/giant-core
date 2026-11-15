@@ -48,6 +48,6 @@ export function slugName(words, fallback = "workspace-skill") {
 // The steps of a captured skill, from a finished mission: every locked step becomes a stop, never an action.
 export function stepsFromMission(m) {
   return (m.steps || []).slice(0, 10).map(s => s.locked || s.kind === "approval"
-    ? "Stop at “" + String(s.title).slice(0, 80) + "”: it needs Director 00's approval outside Jarvis."
+    ? "Stop at “" + String(s.title).slice(0, 80) + "”: it needs Director 00's approval outside Aether Prime."
     : String(s.title).slice(0, 120) + (s.kind === "gate" && s.gate ? " (gate: " + s.gate + ")" : ""));
 }

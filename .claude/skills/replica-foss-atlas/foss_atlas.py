@@ -222,7 +222,7 @@ def n8n_blueprint(steps):
                "notes": "Locked: waits for Director 00 (AGENTS.md §1). Nothing runs here." if s.get("locked") else "Inert step. Nothing runs here."} for i, s in enumerate(steps)]
     allnames = ["Start", *names]
     connections = {n: {"main": [[{"node": allnames[i + 1], "type": "main", "index": 0}]]} for i, n in enumerate(allnames) if i < len(allnames) - 1}
-    return {"name": "Jarvis FOSS stack (inert)", "nodes": nodes, "connections": connections, "active": False}
+    return {"name": "Aether Prime FOSS stack (inert)", "nodes": nodes, "connections": connections, "active": False}
 
 
 def _is_num(v):

@@ -31,7 +31,7 @@ export const ST_OMEGA = ["omega-design", "omega-finance-chain", "omega-extend", 
   "cyber-space-osint-grid", "liquid-neural-139-flow", "autonomous-24-selftest-gate", "stablecoin-cyber-vuln-intel", "neural-139-inputs-heads", "local-glm-agent-windows-mcp"];
 export const ST_FAMILIES = [
   { id: "family:vendored", label: "Vendored references", angle: -58 },
-  { id: "family:jarvis", label: "Jarvis skills", angle: 0 },
+  { id: "family:jarvis", label: "Aether Prime skills", angle: 0 },
   { id: "family:omega", label: "OMEGA skills", angle: 58 },
 ];
 export const ST_ROUTES = { "replica-universal-math": "#/math", "replica-hyper-studio": "#/hyper", "replica-foss-atlas": "#/atlas", "replica-universal-agent": "#/universal",

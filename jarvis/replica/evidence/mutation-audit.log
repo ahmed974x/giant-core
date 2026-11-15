@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-14T15:12:10Z",
- "javascriptRanAt": "2026-11-14T14:37:54.690Z",
+ "ranAt": "2026-11-15T02:44:12Z",
+ "javascriptRanAt": "2026-11-15T01:42:38.789Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 9283,
- "killed": 9283,
- "equivalent": 283,
+ "total": 9485,
+ "killed": 9485,
+ "equivalent": 287,
  "score": 100.0,
  "targets": [
   {
@@ -154,7 +154,7 @@
   },
   {
    "file": "jarvis/server/lib/universal-math.mjs",
-   "sha256": "31da8bd3490e3d8554d9f2b699d28ba748b9ecebd71a350b6e620bc27ce12f76",
+   "sha256": "9db8ac343effd53e77c7198c6886310b2c19791ce7f5686ed9affa84213874f7",
    "functions": [
     "tokenize",
     "parse",
@@ -824,6 +824,39 @@
    "equivalents": []
   },
   {
+   "file": "jarvis/server/lib/runbook.mjs",
+   "sha256": "9028b8d27ee9b8331e8e976292aa20893c1a313420fccf8137b18705ad880661",
+   "functions": [
+    "rbStage",
+    "rbProbe",
+    "probeRoutes",
+    "rbDesign",
+    "runOnce",
+    "repairRequest",
+    "runbook"
+   ],
+   "mutants": 86,
+   "killed": 84,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "rbProbe",
+     "line": 53,
+     "kind": "> -> >=",
+     "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
+    },
+    {
+     "fn": "rbProbe",
+     "line": 53,
+     "kind": "0 -> 1",
+     "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    }
+   ]
+  },
+  {
    "file": "jarvis/server/lib/project-search.mjs",
    "sha256": "296887965c6d2675ebbb863aa0a0595a394a778ef2a19d0f2e8eec82ce1267d2",
    "functions": [
@@ -891,7 +924,7 @@
   },
   {
    "file": "jarvis/server/lib/skill-tree.mjs",
-   "sha256": "39c99107bdf6e75bcef2440d581cb8b506f9736071bb2f67b84a5b10f5d7863b",
+   "sha256": "adf8ffc11db36a4479bd93396896c4ea6ba72c1f1d5962f2a0aaa9d59d95b135",
    "functions": [
     "stR",
     "familyOf",
@@ -1029,7 +1062,7 @@
   },
   {
    "file": "jarvis/server/lib/foss-atlas.mjs",
-   "sha256": "9e9dcf119962e11bad2c270101885f88a33d1362329b2f49f7b4fee2da61231f",
+   "sha256": "1bb3436438a25a7b0b45737b21ec03eb6b3b2b5798e98e5771577794841921f7",
    "functions": [
     "sha1Hex",
     "rotl",
@@ -1600,7 +1633,7 @@
   },
   {
    "file": ".claude/skills/replica-universal-math/universal_math.py",
-   "sha256": "071ccf47553d1f1e1121aa2d323721771cf2feb86a60f80b5358d03c0895562c",
+   "sha256": "2f79121a5f4d38843ff101c2feb4ac8e1f01fbed7e1a891f26e27ed0c3492736",
    "functions": [
     "js_round",
     "js_str",
@@ -2144,6 +2177,43 @@
    ]
   },
   {
+   "file": ".claude/skills/replica-runbook/runbook.py",
+   "sha256": "73ad63d53fcad57390210750ca4f6de490d8c704b02d8284021ad9e88ffb4271",
+   "functions": [
+    "_fail",
+    "_len16",
+    "_stage",
+    "_probe",
+    "probe_routes",
+    "_design",
+    "_sha",
+    "_run_once",
+    "repair_request",
+    "runbook",
+    "load_context"
+   ],
+   "mutants": 120,
+   "killed": 118,
+   "equivalent": 2,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "_probe",
+     "line": 95,
+     "kind": "constant 0 -> 1",
+     "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    },
+    {
+     "fn": "repair_request",
+     "line": 198,
+     "kind": "return None",
+     "why": "tries is only read through not, and None and False are both false"
+    }
+   ]
+  },
+  {
    "file": ".claude/skills/replica-project-search/project_search.py",
    "sha256": "5eb36c44d77055883b382f7906d4483e7d84ba2f8834b16871037523c2d6b4fa",
    "functions": [
@@ -2214,7 +2284,7 @@
   },
   {
    "file": ".claude/skills/replica-skill-tree/skill_tree.py",
-   "sha256": "73d931d40719e167c3725cab9f3ca8a9d99a12cae828dbcb634ecd455aba4a48",
+   "sha256": "df0f76d4c55ad4a6a26a290ce58caba253dde22fec29e0599cf1edb6d2af122a",
    "functions": [
     "_fail",
     "st_r",
@@ -2336,7 +2406,7 @@
   },
   {
    "file": ".claude/skills/replica-foss-atlas/foss_atlas.py",
-   "sha256": "031ce353fb732738f71a705dcbe8f60f193870e0c17036e27a4202de51983da0",
+   "sha256": "0915bc147cbaa6730b4033518e4b74ad0455785e2f01c5dce78401d7f94dcbad",
    "functions": [
     "_num",
     "fa_r",
@@ -2628,5 +2698,5 @@
    ]
   }
  ],
- "sha256": "d5d618935d8c59d195af392ee205f27daa2532770965e1a365313853bd2f738f"
+ "sha256": "21c73c2878d545d78b29c4aa5c092eb71e3ec21696fb254b3ed9a3c8c31bab04"
 }

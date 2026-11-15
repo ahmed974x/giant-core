@@ -1,7 +1,7 @@
 PASS live mode says where the data comes from
 PASS first workspace is OMEGA PRIME
 PASS OMEGA PRIME shows its own agents
-PASS keyboard switch to Jarvis Studio
+PASS keyboard switch to Aether Prime Studio
 PASS the agent list changes with the workspace
 PASS locked cards belong to the workspace
 PASS locked cards have no approve button
@@ -103,6 +103,8 @@ PASS live: a cinematic preset compiles on the server
 PASS live: the preset is in the event log
 PASS live: the tree and the composer answer from the server
 PASS live: composing is in the event log, as a count
+PASS live: the runbook answers from the server with nine page probes passed
+PASS live: the runbook is in the event log, as counts
 PASS live: project search answers from the server
 PASS live: project search is in the event log, as a count
 PASS live: Kahn's order and the workbench tree answer from the server
@@ -137,4 +139,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-138 passed, 0 failed
+140 passed, 0 failed

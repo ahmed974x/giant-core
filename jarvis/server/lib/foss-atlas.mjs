@@ -147,7 +147,7 @@ export function n8nBlueprint(steps) {
       notes: s.locked ? "Locked: waits for Director 00 (AGENTS.md §1). Nothing runs here." : "Inert step. Nothing runs here." })));
   const connections = {};
   ["Start"].concat(names).forEach((n, i, all) => { if (i < all.length - 1) connections[n] = { main: [[{ node: all[i + 1], type: "main", index: 0 }]] }; });
-  return { name: "Jarvis FOSS stack (inert)", nodes, connections, active: false };
+  return { name: "Aether Prime FOSS stack (inert)", nodes, connections, active: false };
 }
 export function planFossStack(req) {
   const r = req && typeof req === "object" ? req : {};

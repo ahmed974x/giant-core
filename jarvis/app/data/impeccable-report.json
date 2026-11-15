@@ -1,18 +1,18 @@
 {
  "tool": "slop_guard",
  "rules": 62,
- "files": 143,
+ "files": 146,
  "summary": {
   "high": 0,
   "medium": 0,
-  "low": 159
+  "low": 162
  },
  "byRule": {
   "D05": 27,
-  "M05": 130,
+  "M05": 133,
   "P21": 2
  },
- "sha256": "c89b7b1e5ccb056f8a10c83b0743b1d811908f9d42063ab081a6422ad72f0ac1",
+ "sha256": "e65f288c795fc1b7508ff713fa370d811e3a96732b2274a3dd6c9a3e73b5f9c4",
  "findings": [
   {
    "rule": "D05",
@@ -256,6 +256,13 @@
    "rule": "M05",
    "severity": "low",
    "line": 406,
+   "message": "Paragraph longer than 150 words.",
+   "file": "jarvis/README.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 421,
    "message": "Paragraph longer than 150 words.",
    "file": "jarvis/README.md"
   },
@@ -1126,6 +1133,20 @@
    "line": 7,
    "message": "Paragraph longer than 150 words.",
    "file": "docs/adr/ADR-164-project-search.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 7,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-165-runbook-and-interface-name.md"
+  },
+  {
+   "rule": "M05",
+   "severity": "low",
+   "line": 19,
+   "message": "Paragraph longer than 150 words.",
+   "file": "docs/adr/ADR-166-runbook-repair-and-name-in-text.md"
   }
  ]
 }
