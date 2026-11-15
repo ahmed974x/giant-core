@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-15T11:21:57.188Z",
+ "ranAt": "2026-11-15T15:59:07.006Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -815,7 +815,7 @@
   },
   {
    "file": "jarvis/server/lib/runbook.mjs",
-   "sha256": "75a3ce636b93130d484f2c7bd1fcca66d05f1817d0c4ba67db44335d28fef739",
+   "sha256": "b1f6744c748312b6d40958abbc6bebf2ee5d9f9621ba42af92d59dbca7bedc19",
    "functions": [
     "rbStage",
     "rbProbe",
@@ -825,8 +825,8 @@
     "repairRequest",
     "runbook"
    ],
-   "mutants": 90,
-   "killed": 88,
+   "mutants": 92,
+   "killed": 90,
    "equivalent": 2,
    "survived": 0,
    "score": 100,
@@ -834,15 +834,42 @@
    "equivalents": [
     {
      "fn": "rbProbe",
-     "line": 56,
+     "line": 59,
      "kind": "> -> >=",
      "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
     },
     {
      "fn": "rbProbe",
-     "line": 56,
+     "line": 59,
      "kind": "0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/release-gate.mjs",
+   "sha256": "62014865d267acb3da763878adaec0423790d3cda26f281289f6e3e4cb105d70",
+   "functions": [
+    "rgR",
+    "adrGaps",
+    "auditRepo",
+    "snapshot",
+    "regressGate",
+    "releaseBundle",
+    "releaseGate"
+   ],
+   "mutants": 72,
+   "killed": 71,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "adrGaps",
+     "line": 30,
+     "kind": "<= -> <",
+     "why": "the last number is always present, so the last step of the loop never adds a missing number"
     }
    ]
   },

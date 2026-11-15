@@ -1,15 +1,15 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-15T12:12:01Z",
- "javascriptRanAt": "2026-11-15T11:21:57.188Z",
+ "ranAt": "2026-11-15T16:52:29Z",
+ "javascriptRanAt": "2026-11-15T15:59:07.006Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 9887,
- "killed": 9887,
- "equivalent": 301,
+ "total": 10054,
+ "killed": 10054,
+ "equivalent": 302,
  "score": 100.0,
  "targets": [
   {
@@ -825,7 +825,7 @@
   },
   {
    "file": "jarvis/server/lib/runbook.mjs",
-   "sha256": "75a3ce636b93130d484f2c7bd1fcca66d05f1817d0c4ba67db44335d28fef739",
+   "sha256": "b1f6744c748312b6d40958abbc6bebf2ee5d9f9621ba42af92d59dbca7bedc19",
    "functions": [
     "rbStage",
     "rbProbe",
@@ -835,8 +835,8 @@
     "repairRequest",
     "runbook"
    ],
-   "mutants": 90,
-   "killed": 88,
+   "mutants": 92,
+   "killed": 90,
    "equivalent": 2,
    "survived": 0,
    "score": 100,
@@ -844,15 +844,42 @@
    "equivalents": [
     {
      "fn": "rbProbe",
-     "line": 56,
+     "line": 59,
      "kind": "> -> >=",
      "why": "the catalog always lists the five Claude models from the claude-api table, so the length is never 0"
     },
     {
      "fn": "rbProbe",
-     "line": 56,
+     "line": 59,
      "kind": "0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
+    }
+   ]
+  },
+  {
+   "file": "jarvis/server/lib/release-gate.mjs",
+   "sha256": "62014865d267acb3da763878adaec0423790d3cda26f281289f6e3e4cb105d70",
+   "functions": [
+    "rgR",
+    "adrGaps",
+    "auditRepo",
+    "snapshot",
+    "regressGate",
+    "releaseBundle",
+    "releaseGate"
+   ],
+   "mutants": 72,
+   "killed": 71,
+   "equivalent": 1,
+   "survived": 0,
+   "score": 100,
+   "survivors": [],
+   "equivalents": [
+    {
+     "fn": "adrGaps",
+     "line": 30,
+     "kind": "<= -> <",
+     "why": "the last number is always present, so the last step of the loop never adds a missing number"
     }
    ]
   },
@@ -2263,7 +2290,7 @@
   },
   {
    "file": ".claude/skills/replica-runbook/runbook.py",
-   "sha256": "69bba822d510bf8738d526e10e409cb993534f9fece18cfbe5b96591ecf93120",
+   "sha256": "a3660c2a35ab97ae62e681864b574721ebf07c912e312117bc451826a0df7cb4",
    "functions": [
     "_fail",
     "_len16",
@@ -2277,8 +2304,8 @@
     "runbook",
     "load_context"
    ],
-   "mutants": 127,
-   "killed": 125,
+   "mutants": 131,
+   "killed": 129,
    "equivalent": 2,
    "survived": 0,
    "score": 100.0,
@@ -2286,17 +2313,39 @@
    "equivalents": [
     {
      "fn": "_probe",
-     "line": 103,
+     "line": 108,
      "kind": "constant 0 -> 1",
      "why": "the catalog always lists the five Claude models from the claude-api table, so > 0 and > 1 agree"
     },
     {
      "fn": "repair_request",
-     "line": 206,
+     "line": 211,
      "kind": "return None",
      "why": "tries is only read through not, and None and False are both false"
     }
    ]
+  },
+  {
+   "file": ".claude/skills/replica-release-gate/release_gate.py",
+   "sha256": "fa38fe574cf651eec3f21c9e5b24ee862f982c775189a56a250ac519b2d9304f",
+   "functions": [
+    "_fail",
+    "_sha",
+    "_r4",
+    "adr_gaps",
+    "audit_repo",
+    "_snapshot",
+    "regress_gate",
+    "release_bundle",
+    "release_gate"
+   ],
+   "mutants": 90,
+   "killed": 90,
+   "equivalent": 0,
+   "survived": 0,
+   "score": 100.0,
+   "survivors": [],
+   "equivalents": []
   },
   {
    "file": ".claude/skills/replica-impact-analysis/impact_analysis.py",
@@ -2837,5 +2886,5 @@
    ]
   }
  ],
- "sha256": "a0194b4ed4b5c40e126fd23947bdd480834bff083275e494edabea0cd91020e9"
+ "sha256": "1e574593db1d675662c08b054691e49eee4ed2e06cb9e824e944eb118909d947"
 }

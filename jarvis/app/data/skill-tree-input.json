@@ -888,6 +888,29 @@
    "review": "docs/security/QUANTUM-MATH-SYNC-GZIP-REVIEW-2026-11-06.md"
   },
   {
+   "name": "replica-release-gate",
+   "description": "Release readiness over facts the repository already holds - an audit of the skill tree's states (proved, tested, rules, reference, attention) and of the decision records and security reviews in the pr",
+   "tools": [
+    {
+     "name": "release_gate.py",
+     "functions": 6
+    }
+   ],
+   "scan": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "tests": true,
+   "golden": true,
+   "mutation": {
+    "killed": 90,
+    "mutants": 90
+   },
+   "review": "docs/security/RELEASE-GATE-REVIEW-2026-11-15.md"
+  },
+  {
    "name": "replica-reversal-engine",
    "description": "Corrects a plan or a page template by the repository's rules and says exactly what it changed - a money, publish, permissions, install or outbound step that is not a locked approval becomes {gate appr",
    "tools": [
@@ -928,8 +951,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 125,
-    "mutants": 125
+    "killed": 129,
+    "mutants": 129
    },
    "review": "docs/security/RUNBOOK-REPAIR-AND-NAME-REVIEW-2026-11-15.md"
   },

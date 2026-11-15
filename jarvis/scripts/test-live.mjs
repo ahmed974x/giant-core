@@ -531,6 +531,16 @@ await page.waitForTimeout(300);
   ok(evs.some(e => e.kind === "tree.compose" && e.target === "1 skills ready"), "live: composing is in the event log, as a count");
 }
 
+// ADR-169 live: release readiness on the server over the snapshots on disk; events keep the verdict and counts.
+{
+  await go("#/release");
+  await page.waitForSelector("#f-rg-base");
+  for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); }
+  ok(await page.getByText("Ready: no skill needs attention").isVisible() && (await page.locator('section[aria-labelledby="h-rg-r"] tbody tr').count()) === 12 && (await page.locator('section[aria-labelledby="h-rg-b"] .lock-line').count()) === 2, "live: release readiness answers from the server in all three checks");
+  const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
+  ok(evs.some(e => e.kind === "release.audit" && e.target === "ready") && evs.some(e => e.kind === "release.regress" && e.target === "steady") && evs.some(e => e.kind === "release.bundle" && /^2 skills, \d+ pages, 2 locked$/.test(e.target)) && !JSON.stringify(evs).includes("gpt-oss-120b"), "live: release readiness is in the event log as verdicts and counts");
+}
+
 // ADR-168 live: impact analysis on the server over the catalog module and the snapshots; events keep counts only.
 {
   await go("#/impact");
@@ -548,7 +558,7 @@ await page.waitForTimeout(300);
   await page.waitForSelector("#f-rb-goal");
   await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click();
   await page.waitForSelector(".rb-stage");
-  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 10, "live: the runbook answers from the server with ten page probes passed");
+  ok((await page.locator(".rb-stage").count()) === 6 && (await page.locator(".rb-stage table").getByText("Passed").count()) === 11, "live: the runbook answers from the server with eleven page probes passed");
   const evs = await (await fetch(BASE + "api/w/giant-core/events")).json();
   ok(evs.some(e => e.kind === "runbook.run" && /^6 stages ok, \d+ locked$/.test(e.target)) && !JSON.stringify(evs).includes("ops@example.org"), "live: the runbook is in the event log, as counts");
 }
@@ -653,6 +663,8 @@ await page.waitForTimeout(300);
     ["metacodes results", async () => { await go("#/missions"); await page.locator("[role=group] button", { hasText: "KILLCRITIC" }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
     ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(400); }],
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
+    ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
+    ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
     ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
     ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
     ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],

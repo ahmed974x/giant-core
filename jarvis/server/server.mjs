@@ -49,6 +49,7 @@ import { searchProject } from "./lib/project-search.mjs";
 import { runbook } from "./lib/runbook.mjs";
 import { impactAnalysis, catalogJson } from "./lib/impact-analysis.mjs";
 import { MODEL_PROFILES } from "./lib/model-catalog.mjs";
+import { releaseGate } from "./lib/release-gate.mjs";
 import { buildTree, composeSkills } from "./lib/skill-tree.mjs";
 import { fallbackPlan } from "./lib/llm-plan.mjs";
 import { compileMetacodes, mcText } from "./lib/prompt-metacodes.mjs";
@@ -429,6 +430,14 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
           let out;
           try { out = composeSkills(readSkillTreeInput(), body.names); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
           await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "tree.compose", out.chosen.length + " skills" + (out.ready ? " ready" : " not ready"));
+          return send(200, out);
+        }
+        // ADR-169: release readiness over the same module and snapshots; the request brings only its own snapshots,
+        // skills, model and notes. Nothing is published; events keep the verdict and counts.
+        if (req.method === "POST" && rest === "/release") {
+          let out;
+          try { out = releaseGate(body, { catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "release." + out.mode, out.mode === "bundle" ? out.skills.length + " skills, " + out.pages.length + " pages, " + out.steps.length + " locked" : out.verdict);
           return send(200, out);
         }
         // ADR-168: impact analysis over the catalog module and the snapshots on disk; the request cannot bring its own.
