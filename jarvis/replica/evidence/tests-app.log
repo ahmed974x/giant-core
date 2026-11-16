@@ -297,8 +297,13 @@ PASS F33 Arabic mode is all Arabic on every screen; names and identifiers sit in
 PASS F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data
 PASS F33 the page is back in English
 PASS F33 Diagnostics lists the bilingual purity gate in the proof layer
+PASS F33b a dotted English caption in Arabic mode is a violation, one word or several
+PASS F33b code, lang="en", data-verbatim and an isolated name stay allowed
+PASS F33b without the probe the release page is clean in Arabic
+PASS F33b a hook that checks before it leaves the page keeps that page's violations
+PASS F33b the page is back in English
 PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-302 passed, 0 failed
+307 passed, 0 failed

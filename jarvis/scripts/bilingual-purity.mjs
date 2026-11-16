@@ -24,7 +24,11 @@ export const PURITY = (lang) => {
     if (!t || !el || el.closest("script, style, template, iframe, .stage") || !visible(el)) continue;
     if (lang === "ar") {
       if (!/[A-Za-z]/.test(t) || el.closest('[lang="en"], [data-verbatim], code, pre, kbd, samp, textarea')) continue;
-      if (!isolated(el)) out.push("not isolated: " + t);
+      // ADR-173: a caption that starts with a separator ("· Publishing") is interface text, also when it is
+      // one word. Browsers give every block (div, p, li) unicode-bidi: isolate, so only <bdi> or translate="no"
+      // makes it an isolated name.
+      if (/^[·•]/.test(t) && !el.closest('bdi, [translate="no"]') && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "))) out.push("English caption: " + t);
+      else if (!isolated(el)) out.push("not isolated: " + t);
       else if (prose(t)) out.push("English words: " + t);
     } else if (/[؀-ۿ]/.test(t) && !el.closest('[lang="ar"], [data-verbatim]')) out.push("Arabic in English: " + t);
   }
@@ -41,7 +45,9 @@ export const PURITY = (lang) => {
 export const PURITY_ROUTES = ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "recon", "math", "hyper", "atlas", "universal", "workbench", "polymath", "tree", "order", "docs", "runbook", "impact", "release", "architect", "webhooks", "settings", "design-system"];
 
 // Visits each route in both languages (the language button switches them) and runs PURITY on each.
-// extra: [name, async () => {}] steps that open a deeper screen (an agent, a mission, the workflow editor).
+// extra: [name, async (check) => {}] steps that open a deeper screen (an agent, a mission, the workflow editor).
+// The gate runs when the step ends; a step that visits several pages calls check() before it leaves each one
+// (ADR-173), or only the last page is read.
 // typed: text the test typed itself, which is data and is kept as written.
 export async function checkPurity({ page, go, routes = PURITY_ROUTES, extra = [], typed = [], mode, evidence }) {
   const result = { ar: {}, en: {} };
@@ -50,11 +56,12 @@ export async function checkPurity({ page, go, routes = PURITY_ROUTES, extra = []
     if ((await page.evaluate(() => document.documentElement.lang)) !== lang) { await page.locator("#langBtn").click(); await page.waitForTimeout(300); }
     const steps = routes.map(r => [r, () => go("#/" + r)]).concat(extra);
     for (const [name, open] of steps) {
-      await open();
-      await page.waitForTimeout(150);
+      const found = [];
       // Typed text counts as data, also when the page cut it short with "…".
-      const found = (await page.evaluate(PURITY, lang)).filter(t => !typed.some(x => t.includes(x) || (t.endsWith("…") && x.startsWith(t.slice(t.indexOf(": ") + 2, -1)))));
-      if (found.length) result[lang][name] = found;
+      const check = async () => { await page.waitForTimeout(150); found.push(...(await page.evaluate(PURITY, lang)).filter(t => !typed.some(x => t.includes(x) || (t.endsWith("…") && x.startsWith(t.slice(t.indexOf(": ") + 2, -1)))))); };
+      await open(check);
+      await check();
+      if (found.length) result[lang][name] = [...new Set(found)];
     }
   }
   if ((await page.evaluate(() => document.documentElement.lang)) !== "en") { await page.locator("#langBtn").click(); await page.waitForTimeout(300); }

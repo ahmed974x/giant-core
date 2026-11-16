@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkPurity } from "./bilingual-purity.mjs";
+import { checkPurity, PURITY } from "./bilingual-purity.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const URL_ = "file://" + join(here, "..", "app", "index.html");
@@ -1260,8 +1260,8 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
     ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
     ["architect locked", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); for (const id of ["h-as-u", "h-as-c", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(250); } }],
     ["architect open", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.evaluate(() => localStorage.removeItem("aether-architect-seal")); for (let i = 0; i < 2; i++) { await page.locator("#f-as-code").fill("kodex-974"); await page.locator('section[aria-labelledby="h-as-s"] button.btn-primary').click(); await page.waitForTimeout(250); } for (const id of ["h-as-u", "h-as-c"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); } await page.evaluate(() => { localStorage.removeItem("aether-architect-seal"); localStorage.removeItem("aether-architect-ui"); }); }],
-    ["bundle export", async () => { await go("#/release"); await page.waitForSelector("#f-rg-skills"); await page.locator("#f-rg-model").fill("openai/gpt-oss-120b"); await page.locator("#f-rg-bits").fill("4"); await page.locator("#f-rg-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-rg-b"]').getByRole("button", { name: /Export the bundle|تصدير الحزمة/ }).click(); await page.waitForTimeout(250); await go("#/architect"); await page.waitForSelector("#f-as-ctx"); await page.locator('section[aria-labelledby="h-as-e"] button.btn-primary').click(); await page.waitForTimeout(250); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["allenai/Olmo-3.1-32B-Instruct", "google/gemma-4-31B-it"]) { await page.locator("#f-ia-model").fill(m); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-ctx").fill("8192"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); } }],
-    ["campaign", async () => { await go("#/architect"); await page.waitForSelector("#f-as-mem"); await page.locator('section[aria-labelledby="h-as-p"] button.btn-primary').click(); await page.waitForTimeout(400); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); await page.locator("#f-ia-model").fill("openai/gpt-oss-120b"); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-mem").fill("24"); await page.locator("#f-ia-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); await page.evaluate(() => localStorage.removeItem("aether-architect-campaign")); }],
+    ["bundle export", async check => { await go("#/release"); await page.waitForSelector("#f-rg-skills"); await page.locator("#f-rg-model").fill("openai/gpt-oss-120b"); await page.locator("#f-rg-bits").fill("4"); await page.locator("#f-rg-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-rg-b"]').getByRole("button", { name: /Export the bundle|تصدير الحزمة/ }).click(); await page.waitForTimeout(250); await check(); await go("#/architect"); await page.waitForSelector("#f-as-ctx"); await page.locator('section[aria-labelledby="h-as-e"] button.btn-primary').click(); await page.waitForTimeout(250); await check(); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["allenai/Olmo-3.1-32B-Instruct", "google/gemma-4-31B-it"]) { await page.locator("#f-ia-model").fill(m); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-ctx").fill("8192"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); } }],
+    ["campaign", async check => { await go("#/architect"); await page.waitForSelector("#f-as-mem"); await page.locator('section[aria-labelledby="h-as-p"] button.btn-primary').click(); await page.waitForTimeout(400); await check(); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); await page.locator("#f-ia-model").fill("openai/gpt-oss-120b"); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-mem").fill("24"); await page.locator("#f-ia-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); await page.evaluate(() => localStorage.removeItem("aether-architect-campaign")); }],
     ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
     ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
     ["impact context and terms", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "Qwen/Qwen3.8-Flash-Next", "Qwen/Qwen3.8-2.4T-A95B", "meta-llama/Llama-3.3-70B-Instruct", "openai/gpt-oss-120b", "gpt-oss:20b"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
@@ -1283,6 +1283,33 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await go("#/diagnostics");
   await page.waitForSelector(".layers .layer");
   ok(await page.locator("#h-layer-proof").locator("..").locator("..").getByText("Bilingual purity gate").isVisible(), "F33 Diagnostics lists the bilingual purity gate in the proof layer");
+}
+
+// F33b (ADR-173): a locked step's caption left in English ("· Writing the bundle to a file" with no Arabic
+// line) is a violation in Arabic mode, one word or several, inside .lock-line, .subtle and .t-caption alike;
+// code, lang="en", data-verbatim and an isolated name are not. A hook that leaves the page checks it first.
+{
+  const probe = () => page.evaluate(() => {
+    const mk = (tag, attrs, text) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text) e.textContent = text; return e; };
+    const ul = mk("ul", { class: "plist", id: "purity-probe" });
+    const lock = mk("li", { class: "lock-line" });
+    lock.append(mk("bdi", { lang: "ar", dir: "rtl" }, "قيد الموافقة"), mk("span", { class: "subtle t-caption" }, "· Archiving the probe somewhere"));
+    ul.append(lock, mk("li", { class: "lock-line" }, "· Archiving"));
+    for (const [tag, attrs, text] of [["code", {}, "· Exporting as written"], ["span", { lang: "en" }, "· Exporting as written"], ["span", { "data-verbatim": "" }, "· Exporting as written"], ["bdi", { dir: "ltr", translate: "no" }, "· Exporting"]]) { const li = mk("li", {}); li.append(mk(tag, attrs, text)); ul.append(li); }
+    document.querySelector("main").prepend(ul);
+  });
+  await go("#/release");
+  if ((await page.evaluate(() => document.documentElement.lang)) !== "ar") { await page.locator("#langBtn").click(); await page.waitForTimeout(300); }
+  await probe();
+  await page.waitForTimeout(150);
+  const found = await page.evaluate(PURITY, "ar");
+  ok(found.includes("English caption: · Archiving the probe somewhere") && found.includes("English caption: · Archiving"), "F33b a dotted English caption in Arabic mode is a violation, one word or several", JSON.stringify(found));
+  ok(!found.some(t => t.includes("Exporting")), "F33b code, lang=\"en\", data-verbatim and an isolated name stay allowed", JSON.stringify(found));
+  await page.evaluate(() => document.getElementById("purity-probe").remove());
+  ok((await page.evaluate(PURITY, "ar")).length === 0, "F33b without the probe the release page is clean in Arabic");
+  const hop = await checkPurity({ page, go, routes: [], extra: [["probe then leave", async check => { await go("#/release"); await probe(); await check(); await go("#/impact"); }]] });
+  ok((hop.result.ar["probe then leave"] || []).includes("English caption: · Archiving the probe somewhere"), "F33b a hook that checks before it leaves the page keeps that page's violations", JSON.stringify(hop.result.ar));
+  ok((await page.evaluate(() => document.documentElement.lang)) === "en", "F33b the page is back in English");
 }
 
 // Shell: RTL switch and theme switch.
