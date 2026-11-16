@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-15T19:39:38.946Z",
+ "ranAt": "2026-11-15T23:18:32.935Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -848,7 +848,7 @@
   },
   {
    "file": "jarvis/server/lib/architect-studio.mjs",
-   "sha256": "3a29e952bb960df7ff83c849d79565ba1fedd6d79477579112d7b1218493221f",
+   "sha256": "7bf08e72a443e436b9229ccee66e364bee29c3af2d3af44264ab3191ec6080c2",
    "functions": [
     "asR",
     "sealHash",
@@ -859,10 +859,17 @@
     "skillDraft",
     "composeSkill",
     "upgradeRadar",
+    "exportHead",
+    "architectExport",
+    "campaignCheckpoints",
+    "stepHash",
+    "receiptHash",
+    "campaignInput",
+    "campaignPlan",
     "architectStudio"
    ],
-   "mutants": 106,
-   "killed": 103,
+   "mutants": 189,
+   "killed": 186,
    "equivalent": 3,
    "survived": 0,
    "score": 100,
@@ -870,19 +877,19 @@
    "equivalents": [
     {
      "fn": "upgradeRadar",
-     "line": 89,
+     "line": 98,
      "kind": "< -> <=",
      "why": "the skill tree refuses a repeated skill name, so two names are never equal and < and <= agree"
     },
     {
      "fn": "upgradeRadar",
-     "line": 89,
+     "line": 98,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "upgradeRadar",
-     "line": 89,
+     "line": 98,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     }
@@ -890,7 +897,7 @@
   },
   {
    "file": "jarvis/server/lib/release-gate.mjs",
-   "sha256": "eae7a87cb7c3905bddece3fee7609631a5482b4eb94e1d8f4a3c88f9974c0d9d",
+   "sha256": "f08f5971e53704df1c9f6f9682765d4fb6ab8f200e93dc961b1f164ab5779e15",
    "functions": [
     "rgR",
     "adrGaps",
@@ -898,10 +905,17 @@
     "snapshot",
     "regressGate",
     "releaseBundle",
+    "canonical",
+    "modelSection",
+    "modelLines",
+    "bundleMarkdown",
+    "exportBundle",
+    "releaseDocument",
+    "releaseExport",
     "releaseGate"
    ],
-   "mutants": 72,
-   "killed": 71,
+   "mutants": 157,
+   "killed": 156,
    "equivalent": 1,
    "survived": 0,
    "score": 100,
@@ -909,7 +923,7 @@
    "equivalents": [
     {
      "fn": "adrGaps",
-     "line": 30,
+     "line": 35,
      "kind": "<= -> <",
      "why": "the last number is always present, so the last step of the loop never adds a missing number"
     }
@@ -917,13 +931,14 @@
   },
   {
    "file": "jarvis/server/lib/impact-analysis.mjs",
-   "sha256": "b03a0ec76ccae2110b7fad063ab28d4eb49d6aad7c62c4fde3039ef94a19060d",
+   "sha256": "a535263b4fe8ee6e4f34dcb35913fcf1f10303c3685546fb6d1cf7c463302271",
    "functions": [
     "catalogJson",
     "licenceRule",
     "weightsGb",
     "kvCacheGb",
     "contextMemory",
+    "offloadRoute",
     "checkCatalog",
     "checkModel",
     "dependentsOf",
@@ -933,8 +948,8 @@
     "diffTexts",
     "impactAnalysis"
    ],
-   "mutants": 242,
-   "killed": 232,
+   "mutants": 265,
+   "killed": 255,
    "equivalent": 10,
    "survived": 0,
    "score": 100,
@@ -948,55 +963,55 @@
     },
     {
      "fn": "dependentsOf",
-     "line": 131,
+     "line": 150,
      "kind": "< -> <=",
      "why": "the names are keys of one Map, so two names are never equal and < and <= agree"
     },
     {
      "fn": "dependentsOf",
-     "line": 131,
+     "line": 150,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "dependentsOf",
-     "line": 131,
+     "line": 150,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "lcsDiff",
-     "line": 165,
+     "line": 184,
      "kind": "< -> <=",
      "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
     },
     {
      "fn": "lcsDiff",
-     "line": 165,
+     "line": 184,
      "kind": "< -> <=",
      "why": "a[n] and b[m] are undefined and never equal a line of text, so the equal branch is not taken either way"
     },
     {
      "fn": "lcsDiff",
-     "line": 160,
+     "line": 179,
      "kind": "1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcsDiff",
-     "line": 160,
+     "line": 179,
      "kind": "1 -> 2",
      "why": "the table's extra row or column is never read: the loops and the walk stop at n and m"
     },
     {
      "fn": "lcsDiff",
-     "line": 160,
+     "line": 179,
      "kind": "0 -> 1",
      "why": "filling with 1 adds 1 to every length in the table, so every comparison keeps its answer"
     },
     {
      "fn": "lcsDiff",
-     "line": 161,
+     "line": 180,
      "kind": "1 -> 2",
      "why": "counting a match as 2 doubles every length in the table, so every comparison keeps its answer (n - 1 and m - 1 changed to 2 are killed by the golden file)"
     }
