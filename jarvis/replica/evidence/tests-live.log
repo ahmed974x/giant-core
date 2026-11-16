@@ -104,6 +104,10 @@ PASS live: the preset is in the event log
 PASS live: the tree and the composer answer from the server
 PASS live: composing is in the event log, as a count
 PASS live: the server gives the context memory and the licence terms read in full
+PASS live: the server estimates documented sliding and full layers and exports the bundle with writing it locked
+PASS live: the release page shows the server's export as text to copy
+PASS live: the export is in the event log, as counts
+PASS live: the server saves the campaign and lists it, ready to resume from cp-2
 PASS live: with no server seal, the studio shows the hash to set, refuses the preview scale and still scans the radar
 PASS live: events keep the seal's state and counts, never the code or its hash
 PASS live: release readiness answers from the server in all three checks
@@ -146,4 +150,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-147 passed, 0 failed
+151 passed, 0 failed

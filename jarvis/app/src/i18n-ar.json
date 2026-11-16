@@ -3098,6 +3098,8 @@
   "The weights or the context memory are not estimated, so nothing is decided.": "ذاكرة الأوزان أو ذاكرة السياق غير مقدّرة، لذلك لم يُحسم شيء.",
   "On a site of your own, while only you use it": "على موقع خاص بك، ما دمت المستخدم الوحيد",
   "Once others use it": "عندما يستخدمه غيرك",
-  "Putting it on a web host is publishing: a locked step until Director 00 approves it. The browser stays the light front end.": "وضعه على موقع ويب نشرٌ: خطوة مقفلة حتى يوافق عليها المدير 00. يبقى المتصفح واجهة خفيفة."
+  "Putting it on a web host is publishing: a locked step until Director 00 approves it. The browser stays the light front end.": "وضعه على موقع ويب نشرٌ: خطوة مقفلة حتى يوافق عليها المدير 00. يبقى المتصفح واجهة خفيفة.",
+  "· Installing or running the model": "· تثبيت النموذج أو تشغيله",
+  "· Writing the bundle to a file": "· كتابة الحزمة في ملف"
  }
 }

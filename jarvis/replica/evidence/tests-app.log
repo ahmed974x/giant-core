@@ -224,10 +224,21 @@ PASS F44 a skill's facts and its page
 PASS F44 composing two skills names the workbench and their test commands
 PASS F51 Qwen3-Coder at 32,768 tokens: 0.81 GB of context and 16.08 GB with the weights, under the documented 262,144
 PASS F51 200,000 tokens is longer than DeepSeek R1's documented context
-PASS F51 gpt-oss mixes sliding and full attention, so its context memory is not estimated, and the page says why
+PASS F51 Gemma 4's full layers use other heads, so its context memory is not estimated, and the page names the config.json fields that stop it
 PASS F51 Kimi K3's terms read in full: an agreement above US$20,000,000 over 12 months, internal use exempt, with a link to the licence file
 PASS F51 the Qwen Community License needs a separate licence for a service business at any revenue
 PASS F51 the Settings catalog shows each card's longest context and whether its context memory can be estimated
+PASS F52 gpt-oss at 131,072 tokens: 18 full and 18 sliding layers of 128 tokens give 1.21 GB of context and 59.62 GB with the weights
+PASS F52 the release bundle exports as key-sorted JSON with the model's context memory, and its writing steps stay locked
+PASS F52 the same bundle as Markdown
+PASS F52 the copy button copies, or selects the text where copying is not allowed
+PASS F52 the architect bundle exports without the seal, records the seal's state and leaves the preview scale out
+PASS F52 the Settings catalog estimates the two cards whose config.json names every layer
+PASS F53 gpt-oss at 131,072 tokens needs 59.62 GB: 35.62 GB more than a 24 GB laptop, so a web host, which stays a locked publishing step
+PASS F53 a total equal to the memory you have fits this laptop
+PASS F53 the campaign has one checkpoint per Kahn layer and one for the release, resumes from cp-1 and keeps its steps locked
+PASS F53 one checkpoint done and one failed with its reason: the campaign resumes from the failed one
+PASS F53 with the seal open one step gets the architect's receipt, every step stays locked, and the saved campaign keeps no code
 PASS F50 with no seal, the preview scale is refused
 PASS F50 the first code becomes the seal: only its hash is kept and the field is cleared
 PASS F50 a wrong code stays read only and the four locks stay
@@ -290,4 +301,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-291 passed, 0 failed
+302 passed, 0 failed
