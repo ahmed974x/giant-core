@@ -239,6 +239,9 @@ PASS F53 a total equal to the memory you have fits this laptop
 PASS F53 the campaign has one checkpoint per Kahn layer and one for the release, resumes from cp-1 and keeps its steps locked
 PASS F53 one checkpoint done and one failed with its reason: the campaign resumes from the failed one
 PASS F53 with the seal open one step gets the architect's receipt, every step stays locked, and the saved campaign keeps no code
+PASS F54 in Arabic, an English line after ·, •, - or —, one word or many, or next to Arabic in the same text, breaks the purity rule; an identifier does not
+PASS F54 a purity step that ends on another screen than it names is a violation, so no screen goes unchecked
+PASS F55 every one of the 64 skills is checked: its SKILL.md, tests, golden file, page and scan, with the missing parts named and installing locked
 PASS F50 with no seal, the preview scale is refused
 PASS F50 the first code becomes the seal: only its hash is kept and the field is cleared
 PASS F50 a wrong code stays read only and the four locks stay
@@ -301,4 +304,4 @@ PASS Shell direction switches to RTL
 PASS Shell theme switches to light
 PASS no console or page errors
 
-302 passed, 0 failed
+305 passed, 0 failed

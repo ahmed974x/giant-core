@@ -382,7 +382,7 @@
    "tools": [
     {
      "name": "architect_studio.py",
-     "functions": 15
+     "functions": 16
     }
    ],
    "scan": {
@@ -394,8 +394,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 224,
-    "mutants": 224
+    "killed": 254,
+    "mutants": 254
    },
    "review": "docs/security/ARCHITECT-STUDIO-REVIEW-2026-11-15.md"
   },
@@ -916,7 +916,7 @@
    "tools": [
     {
      "name": "release_gate.py",
-     "functions": 12
+     "functions": 14
     }
    ],
    "scan": {
@@ -928,8 +928,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 203,
-    "mutants": 203
+    "killed": 234,
+    "mutants": 234
    },
    "review": "docs/security/HYBRID-CONTEXT-AND-BUNDLE-EXPORT-REVIEW-2026-11-15.md"
   },
