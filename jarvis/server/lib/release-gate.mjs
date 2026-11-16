@@ -11,6 +11,8 @@
 //            the pages, the test commands, the model's licence verdict, terms, weights and context memory, the locked
 //            steps and the chain hash, written as key-sorted JSON (two-space indent) and as Markdown, with the SHA-256
 //            of each text. Writing the file to disk or sending it anywhere stays a locked approval.
+//            ADR-173: it also says, for each chosen skill, whether it is provisioned: its SKILL.md, its tests, its
+//            golden file (the twin gives the server's answers), its page and a clean SkillSpector scan.
 // The checks belong to the engines called here; this file adds no second guard for them. Pure: no network, no
 // process, no file; nothing is sent, installed or published. The same answers come from
 // .claude/skills/replica-release-gate/release_gate.py (tests/golden.json).
@@ -80,6 +82,26 @@ export function releaseBundle(r, ctx) {
     chain_sha256: sections.reduce((h, s) => sha256Hex(h + sha256Hex(JSON.stringify(s))), "0".repeat(64)), sent: false };
 }
 
+// ADR-173: what one skill has, from the skill-tree snapshot (files only) and the pages that run it. A missing part
+// is named by the file or field that is missing; nothing is guessed, installed or run.
+export function skillProvision(name, facts, routes) {
+  const f = facts.get(name) ?? null, route = routes.get(name) ?? null, missing = [];
+  if (!f) missing.push("SKILL.md");
+  if (!(f && f.tests)) missing.push("tests/");
+  if (!(f && f.golden)) missing.push("tests/golden.json");
+  if (route === null) missing.push("page route");
+  if (f && f.scan && f.scan.critical + f.scan.high > 0) missing.push("SkillSpector clean scan");
+  return { skill: name, status: missing.length ? "incomplete" : "provisioned", missing, route, test_command: f && f.tests ? "python3 -m unittest discover -s .claude/skills/" + name + "/tests" : null };
+}
+
+// The chosen skills, or every skill in the snapshot by name.
+export function skillProvisionReport(names, tree) {
+  const list = tree && Array.isArray(tree.skills) ? tree.skills : [];
+  const facts = new Map(list.map(s => [s.name, s])), routes = new Map(IA_PAGES.map(p => [p.skill, p.route]));
+  const skills = (names ?? list.map(s => s.name).sort()).map(n => skillProvision(n, facts, routes));
+  return { skills, counts: { provisioned: skills.filter(s => s.status === "provisioned").length, incomplete: skills.filter(s => s.status === "incomplete").length } };
+}
+
 // ADR-172: the exported document. Keys are sorted at every level, so the same facts always give the same text.
 export function canonical(v) {
   if (Array.isArray(v)) return v.map(canonical);
@@ -113,6 +135,7 @@ export function bundleMarkdown(d, head) {
   const lines = ["# " + d.title, "", ...head, "## Skills in order (Kahn's layers)"];
   d.order.layers.forEach((l, i) => lines.push("- Layer " + (i + 1) + ": " + l.join(", ")));
   if (d.order.cycle.length) lines.push("- On a cycle, left out: " + d.order.cycle.join(", "));
+  lines.push("", "## Skills provisioned (" + d.provision.counts.provisioned + " of " + d.provision.skills.length + ")", ...d.provision.skills.map(s => "- " + s.skill + ": " + (s.missing.length ? "missing " + s.missing.join(", ") : "provisioned")));
   lines.push("", "## Pages to test again", ...(d.pages.length ? d.pages.map(p => "- " + p) : ["- none"]), "", "## Test commands", "", "```bash", ...d.tests, "```", "");
   if (d.model) lines.push(...modelLines(d.model), "");
   lines.push("## Locked steps", ...d.steps.map(s => "- " + s.action + " " + s.target + ": waiting for approval"), "", "## Release chain", "- SHA-256: " + d.release_chain_sha256);
@@ -131,7 +154,7 @@ export function releaseDocument(r, ctx) {
   const b = releaseBundle(r, ctx);
   const order = skillOrder(ctx.deps, b.skills.map(p => p.skill));
   const steps = [...b.steps, { action: "write", target: "bundle file", gate: "approval", locked: true, status: "pending_approval" }];
-  return { bundle: b, doc: { title: "Aether Prime release bundle", order: { layers: order.layers, cycle: order.cycle }, pages: b.pages, tests: [...b.tests, ...b.shared_tests], model: modelSection(b.model), steps, release_chain_sha256: b.chain_sha256 } };
+  return { bundle: b, doc: { title: "Aether Prime release bundle", order: { layers: order.layers, cycle: order.cycle }, provision: skillProvisionReport(b.skills.map(p => p.skill), ctx.tree), pages: b.pages, tests: [...b.tests, ...b.shared_tests], model: modelSection(b.model), steps, release_chain_sha256: b.chain_sha256 } };
 }
 
 export function releaseExport(r, ctx) {

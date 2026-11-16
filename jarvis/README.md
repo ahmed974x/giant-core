@@ -459,6 +459,11 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
   - With the memory you have and a context length, impact analysis says whether the model runs on this laptop (with the margin) or needs a web host (with the shortfall; publishing stays locked), and reads the licence for your own site and for others.
   - `#/architect` → **Campaign with checkpoints** splits the skills by Kahn layer, keeps where to resume in this browser and on the server, and signs a locked step with the seal as a receipt that runs nothing.
 
+- **The purity gate, the schema at start and provisioning (ADR-173).**
+  - Every purity step names the screen it ends on, so the gate reads each screen it opens; a dotted English line in Arabic is caught even with one word.
+  - An existing PostgreSQL database gets the tables, indexes, functions and triggers added to `jarvis/replica/schema.sql` at the next start, in one transaction, without losing rows.
+  - `#/architect` → **Skills provisioned** checks each of the 64 skills for its `SKILL.md`, tests, golden file, page and a clean scan, and names what is missing. The release and architect exports carry the same report. Nothing is installed.
+
 - The runbook (ADR-165) probes `#/impact` as its eleventh page.
 
 ## Release readiness (ADR-169)

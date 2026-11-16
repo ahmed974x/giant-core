@@ -2657,11 +2657,11 @@
   const Release = (() => {
     const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact, { skillOrder } = PlanOrder;
     /*@RELEASE@*/
-    return { releaseGate, exportBundle, releaseDocument, RG_GROWTH, RG_FAILURE };
+    return { releaseGate, exportBundle, releaseDocument, canonical, skillProvisionReport, RG_GROWTH, RG_FAILURE };
   })();
   // ADR-170: the architect studio, the same as the server, over the engines inlined above.
   const Architect = (() => {
-    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate, exportBundle, releaseDocument } = Release;
+    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate, exportBundle, releaseDocument, canonical, skillProvisionReport } = Release;
     /*@ARCHITECT@*/
     return { architectStudio };
   })();
@@ -4422,6 +4422,25 @@
       } catch (err) { fail(pOut, err); }
       finally { pBtn.disabled = false; }
     });
+    // 7. ADR-173: whether each skill is provisioned, from the skill-tree snapshot; nothing is installed or run.
+    const PV_STATUS = { provisioned: ["ok", "Provisioned"], incomplete: ["warn", "Missing a part"] };
+    const vOut = h("div", { class: "stack", "aria-live": "polite" });
+    const vBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Check every skill");
+    vBtn.addEventListener("click", async () => {
+      vBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "provision", ...(code ? { passcode: code } : {}) }), v = r.provision, code$ = n => h("code", { translate: "no", dir: "ltr", text: n });
+        vOut.replaceChildren(
+          h("p", { class: "row t-sm" }, h("span", { class: "num", text: fmtN.format(v.counts.provisioned) }), h("span", { class: "muted", text: "of" }), h("span", { class: "num", text: fmtN.format(v.skills.length) }), h("span", { class: "muted", text: "skills provisioned" })),
+          h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Skills provisioned" }, h("table", { class: "table" },
+            h("thead", null, h("tr", null, h("th", { scope: "col", text: "Skill" }), h("th", { scope: "col", text: "Status" }), h("th", { scope: "col", text: "Missing" }), h("th", { scope: "col", text: "Page" }))),
+            h("tbody", null, v.skills.map(x => h("tr", null, h("td", null, code$(x.skill)), h("td", null, badge(PV_STATUS[x.status][0], PV_STATUS[x.status][1])),
+              h("td", { class: "wrap" }, ...(x.missing.length ? x.missing.map(m => h("code", { class: "cp-skill", translate: "no", dir: "ltr", text: m })) : [h("span", { class: "muted", text: "Nothing" })])),
+              h("td", null, x.route ? code$(x.route) : h("span", { class: "muted", text: "None" }))))))),
+          lockList(v.steps), bundleExportBody(v.export, []), iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(vOut, err); }
+      finally { vBtn.disabled = false; }
+    });
     // 4. The upgrade radar.
     const rOut = h("div", { class: "stack", "aria-live": "polite" });
     const rBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Scan for upgrades");
@@ -4462,6 +4481,9 @@
         h("p", { class: "t-caption muted", text: "The skills, model and use from the composite draft above, at 4 bits per weight. Writing the file to disk stays locked." }),
         field("f-as-ctx", "Context length in tokens (optional)", exCtxIn),
         h("div", { class: "row" }, eBtn), eOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-v" }, h("h2", { id: "h-as-v", text: "Skills provisioned" }),
+        h("p", { class: "t-caption muted", text: "For each skill in this repository: its SKILL.md, tests, golden file, page and a clean scan, with the missing part named. Nothing is installed or run." }),
+        h("div", { class: "row" }, vBtn), vOut),
       h("section", { class: "panel stack", "aria-labelledby": "h-as-p" }, h("h2", { id: "h-as-p", text: "Campaign with checkpoints" }),
         h("p", { class: "t-caption muted", text: "A long task split by Kahn's layers of the skills above. Mark each checkpoint as it goes; the first one not complete is where to resume, on another day too." }),
         field("f-as-mem", "Memory you have, in GB (optional)", memIn, "With the context length above: this laptop, or a web host when the model does not fit."),

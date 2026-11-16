@@ -6,6 +6,7 @@
 import { readFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { syncStatements } from "./schema-sync.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const JSON_COLS = new Set(["tools", "skills", "limits", "input", "log", "output", "payload", "data", "graph", "theme", "blocks", "findings", "depends_on", "criteria", "state", "planner", "events", "tags", "outcome", "files", "scan", "site", "corrections", "vector"]);
@@ -70,7 +71,15 @@ export async function openPostgres(url) {
   // search_path as a startup option, so it is set before the first query on every connection.
   const pool = new pg.Pool({ connectionString: url, max: 5, options: "-c search_path=jarvis,public" });
   const exists = await pool.query("select to_regclass('jarvis.agents') as t");
-  if (!exists.rows[0].t) await pool.query(readFileSync(join(here, "..", "..", "replica", "schema.sql"), "utf8"));
+  const schema = readFileSync(join(here, "..", "..", "replica", "schema.sql"), "utf8");
+  if (!exists.rows[0].t) await pool.query(schema);
+  // ADR-173: a database made by an earlier version gets the tables, indexes, functions and triggers added since,
+  // in one transaction; what is already there is left as it is.
+  else {
+    const client = await pool.connect();
+    try { await client.query("begin"); for (const st of syncStatements(schema)) await client.query(st); await client.query("commit"); client.release(); }
+    catch (e) { await client.query("rollback").catch(() => {}); client.release(); await pool.end(); throw e; }
+  }
   const q = async (client, sql, params) => (await client.query({ text: sql, values: params })).rows.map(mapRow);
   return {
     kind: "postgres",

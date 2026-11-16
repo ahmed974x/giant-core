@@ -148,6 +148,35 @@ def release_bundle(r, ctx):
     return {"mode": "bundle", "skills": parts, "pages": pages, "tests": tests, "shared_tests": shared, "model": model, "notes": notes, "steps": steps, "chain_sha256": chain, "sent": False}
 
 
+def skill_provision(name, facts, routes):
+    """ADR-173: what one skill has, from the skill-tree snapshot and the pages that run it; a missing part is named
+    by the file or field that is missing. Nothing is guessed, installed or run."""
+    f = facts.get(name)
+    route = routes.get(name)
+    missing = []
+    if not f:
+        missing.append("SKILL.md")
+    if not (f and f.get("tests")):
+        missing.append("tests/")
+    if not (f and f.get("golden")):
+        missing.append("tests/golden.json")
+    if route is None:
+        missing.append("page route")
+    if f and f.get("scan") and f["scan"]["critical"] + f["scan"]["high"] > 0:
+        missing.append("SkillSpector clean scan")
+    return {"skill": name, "status": "incomplete" if missing else "provisioned", "missing": missing, "route": route,
+            "test_command": "python3 -m unittest discover -s .claude/skills/" + name + "/tests" if f and f.get("tests") else None}
+
+
+def skill_provision_report(names, tree):
+    """The chosen skills, or every skill in the snapshot by name."""
+    lst = tree["skills"] if isinstance(tree, dict) and isinstance(tree.get("skills"), list) else []
+    facts = {s["name"]: s for s in lst}
+    routes = {p["skill"]: p["route"] for p in IA_PAGES}
+    skills = [skill_provision(n, facts, routes) for n in (names if names is not None else sorted(s["name"] for s in lst))]
+    return {"skills": skills, "counts": {"provisioned": sum(1 for s in skills if s["status"] == "provisioned"), "incomplete": sum(1 for s in skills if s["status"] == "incomplete")}}
+
+
 def canonical(v):
     """The exported document with keys sorted at every level, so the same facts always give the same text."""
     if isinstance(v, list):
@@ -198,6 +227,9 @@ def bundle_markdown(d, head):
         lines.append("- Layer " + str(i + 1) + ": " + ", ".join(layer))
     if d["order"]["cycle"]:
         lines.append("- On a cycle, left out: " + ", ".join(d["order"]["cycle"]))
+    p = d["provision"]
+    lines += ["", "## Skills provisioned (" + str(p["counts"]["provisioned"]) + " of " + str(len(p["skills"])) + ")"]
+    lines += ["- " + s["skill"] + ": " + ("missing " + ", ".join(s["missing"]) if s["missing"] else "provisioned") for s in p["skills"]]
     lines += ["", "## Pages to test again"] + (["- " + p for p in d["pages"]] if d["pages"] else ["- none"]) + ["", "## Test commands", "", "```bash"] + d["tests"] + ["```", ""]
     if d["model"]:
         lines += [*_model_lines(d["model"]), ""]
@@ -224,7 +256,8 @@ def release_document(r, ctx):
     b = release_bundle(r, ctx)
     order = skill_order(ctx.get("deps"), [p["skill"] for p in b["skills"]])
     steps = b["steps"] + [{"action": "write", "target": "bundle file", "gate": "approval", "locked": True, "status": "pending_approval"}]
-    doc = {"title": "Aether Prime release bundle", "order": {"layers": order["layers"], "cycle": order["cycle"]}, "pages": b["pages"], "tests": b["tests"] + b["shared_tests"],
+    doc = {"title": "Aether Prime release bundle", "order": {"layers": order["layers"], "cycle": order["cycle"]},
+           "provision": skill_provision_report([p["skill"] for p in b["skills"]], ctx.get("tree")), "pages": b["pages"], "tests": b["tests"] + b["shared_tests"],
            "model": model_section(b["model"]), "steps": steps, "release_chain_sha256": b["chain_sha256"]}
     return b, doc
 
