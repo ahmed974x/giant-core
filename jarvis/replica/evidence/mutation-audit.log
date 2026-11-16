@@ -1,14 +1,14 @@
 {
  "format": "jarvis-mutation-audit-v1",
- "ranAt": "2026-11-16T00:51:40Z",
- "javascriptRanAt": "2026-11-15T23:18:32.935Z",
+ "ranAt": "2026-11-16T13:23:25Z",
+ "javascriptRanAt": "2026-11-16T12:21:00.199Z",
  "tools": [
   "jarvis/scripts/mutation-harness.mjs",
   "jarvis/scripts/mutation_harness.py",
   ".claude/skills/replica-formal-verify/mutation_audit.py"
  ],
- "total": 10865,
- "killed": 10865,
+ "total": 10980,
+ "killed": 10980,
  "equivalent": 307,
  "score": 100.0,
  "targets": [
@@ -858,7 +858,7 @@
   },
   {
    "file": "jarvis/server/lib/architect-studio.mjs",
-   "sha256": "7bf08e72a443e436b9229ccee66e364bee29c3af2d3af44264ab3191ec6080c2",
+   "sha256": "34764f82ba9dbd697e4bcb68ec4277c08c01d9e8f5e3b0406ad5a0325ce69ecf",
    "functions": [
     "asR",
     "sealHash",
@@ -876,10 +876,11 @@
     "receiptHash",
     "campaignInput",
     "campaignPlan",
+    "provisionPlan",
     "architectStudio"
    ],
-   "mutants": 189,
-   "killed": 186,
+   "mutants": 218,
+   "killed": 215,
    "equivalent": 3,
    "survived": 0,
    "score": 100,
@@ -887,19 +888,19 @@
    "equivalents": [
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "< -> <=",
      "why": "the skill tree refuses a repeated skill name, so two names are never equal and < and <= agree"
     },
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     }
@@ -907,7 +908,7 @@
   },
   {
    "file": "jarvis/server/lib/release-gate.mjs",
-   "sha256": "f08f5971e53704df1c9f6f9682765d4fb6ab8f200e93dc961b1f164ab5779e15",
+   "sha256": "61261d74d2739b05d081deaa1606ee9c9925e565d80db2f37747ead5e0194331",
    "functions": [
     "rgR",
     "adrGaps",
@@ -915,6 +916,8 @@
     "snapshot",
     "regressGate",
     "releaseBundle",
+    "skillProvision",
+    "skillProvisionReport",
     "canonical",
     "modelSection",
     "modelLines",
@@ -924,8 +927,8 @@
     "releaseExport",
     "releaseGate"
    ],
-   "mutants": 157,
-   "killed": 156,
+   "mutants": 182,
+   "killed": 181,
    "equivalent": 1,
    "survived": 0,
    "score": 100,
@@ -933,7 +936,7 @@
    "equivalents": [
     {
      "fn": "adrGaps",
-     "line": 35,
+     "line": 37,
      "kind": "<= -> <",
      "why": "the last number is always present, so the last step of the loop never adds a missing number"
     }
@@ -2386,7 +2389,7 @@
   },
   {
    "file": ".claude/skills/replica-architect-studio/architect_studio.py",
-   "sha256": "4575bd9c300da8757a812abad0a08697a70b2f61a20e738f48295274aac19bf9",
+   "sha256": "d7493066d4c4f7ddfa20e8d328e78d2a51143456ac629374d8d02c188eb57247",
    "functions": [
     "_fail",
     "_sha",
@@ -2407,10 +2410,11 @@
     "receipt_hash",
     "campaign_input",
     "campaign_plan",
+    "provision_plan",
     "architect_studio"
    ],
-   "mutants": 225,
-   "killed": 224,
+   "mutants": 255,
+   "killed": 254,
    "equivalent": 1,
    "survived": 0,
    "score": 100.0,
@@ -2418,7 +2422,7 @@
    "equivalents": [
     {
      "fn": "_well_formed",
-     "line": 74,
+     "line": 75,
      "kind": "return None",
      "why": "the answer is only read as true or false, and None and False are both false"
     }
@@ -2426,7 +2430,7 @@
   },
   {
    "file": ".claude/skills/replica-release-gate/release_gate.py",
-   "sha256": "747360f72a4294ec535ee15400412fb7edcd003d820aa1d28eac34e2503b74f2",
+   "sha256": "b5c4127c9bf64f3050143840b89f4bbe184075a5c2dc28fc52df57a5ab101a02",
    "functions": [
     "_fail",
     "_sha",
@@ -2436,6 +2440,8 @@
     "_snapshot",
     "regress_gate",
     "release_bundle",
+    "skill_provision",
+    "skill_provision_report",
     "canonical",
     "model_section",
     "_model_lines",
@@ -2446,8 +2452,8 @@
     "release_export",
     "release_gate"
    ],
-   "mutants": 204,
-   "killed": 203,
+   "mutants": 235,
+   "killed": 234,
    "equivalent": 1,
    "survived": 0,
    "score": 100.0,
@@ -2455,7 +2461,7 @@
    "equivalents": [
     {
      "fn": "model_section",
-     "line": 163,
+     "line": 192,
      "kind": "return None",
      "why": "the mutated line already returns None"
     }
@@ -3004,5 +3010,5 @@
    ]
   }
  ],
- "sha256": "6809cb9a1484584ca44fbe5577795eb239237072cb7389db4922b8adc9f8f3c5"
+ "sha256": "10b5043ebe6b46697b54321f8b86a19d755d61bc6fba64dfef48762de1f9fdd7"
 }

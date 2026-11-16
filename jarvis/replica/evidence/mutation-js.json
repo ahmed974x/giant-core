@@ -1,6 +1,6 @@
 {
  "tool": "jarvis/scripts/mutation-harness.mjs",
- "ranAt": "2026-11-15T23:18:32.935Z",
+ "ranAt": "2026-11-16T12:21:00.199Z",
  "targets": [
   {
    "file": "jarvis/server/lib/fetch-public.mjs",
@@ -848,7 +848,7 @@
   },
   {
    "file": "jarvis/server/lib/architect-studio.mjs",
-   "sha256": "7bf08e72a443e436b9229ccee66e364bee29c3af2d3af44264ab3191ec6080c2",
+   "sha256": "34764f82ba9dbd697e4bcb68ec4277c08c01d9e8f5e3b0406ad5a0325ce69ecf",
    "functions": [
     "asR",
     "sealHash",
@@ -866,10 +866,11 @@
     "receiptHash",
     "campaignInput",
     "campaignPlan",
+    "provisionPlan",
     "architectStudio"
    ],
-   "mutants": 189,
-   "killed": 186,
+   "mutants": 218,
+   "killed": 215,
    "equivalent": 3,
    "survived": 0,
    "score": 100,
@@ -877,19 +878,19 @@
    "equivalents": [
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "< -> <=",
      "why": "the skill tree refuses a repeated skill name, so two names are never equal and < and <= agree"
     },
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     },
     {
      "fn": "upgradeRadar",
-     "line": 98,
+     "line": 101,
      "kind": "1 -> 2",
      "why": "sort reads only the sign of the comparator, so -1 and -2, 1 and 2 order the same"
     }
@@ -897,7 +898,7 @@
   },
   {
    "file": "jarvis/server/lib/release-gate.mjs",
-   "sha256": "f08f5971e53704df1c9f6f9682765d4fb6ab8f200e93dc961b1f164ab5779e15",
+   "sha256": "61261d74d2739b05d081deaa1606ee9c9925e565d80db2f37747ead5e0194331",
    "functions": [
     "rgR",
     "adrGaps",
@@ -905,6 +906,8 @@
     "snapshot",
     "regressGate",
     "releaseBundle",
+    "skillProvision",
+    "skillProvisionReport",
     "canonical",
     "modelSection",
     "modelLines",
@@ -914,8 +917,8 @@
     "releaseExport",
     "releaseGate"
    ],
-   "mutants": 157,
-   "killed": 156,
+   "mutants": 182,
+   "killed": 181,
    "equivalent": 1,
    "survived": 0,
    "score": 100,
@@ -923,7 +926,7 @@
    "equivalents": [
     {
      "fn": "adrGaps",
-     "line": 35,
+     "line": 37,
      "kind": "<= -> <",
      "why": "the last number is always present, so the last step of the loop never adds a missing number"
     }

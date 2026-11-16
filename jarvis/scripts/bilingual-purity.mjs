@@ -16,6 +16,11 @@ export const PURITY = (lang) => {
   const out = [];
   const KEEP = /\b(Jarvis|SkillSpector|Ollama|Claude|Code|Replica|HTML|CSS|JSON|JSONL|SQL|SKILL|TDD|Lint|EN|AR|LTR|RTL|Ctrl|Pro|CI|API|ADR|WCAG|APCA|OKLCH|HMAC|SHA|sha256|SQLite|PostgreSQL|Readex|Inter|Geist|Mono|POST|GET|PATCH|DELETE|PUT|GitHub|OpenAlex|Wikipedia|SearXNG|PyPI|OSV|npm|Hacker|News|Algolia|Merkle|RFC|VPIN|EWMA|LTTB|Welford|IPv6|IPv4|SSRF|CSP|DeepSeek|Qwen|Llama|Gemma|OLMo|Phi|Mistral|MIT|Apache|BSD|URL|UI|UX|AI|MCP|GLM|LLM|node|python3|ollama|create|Studio|Lc|Lint|Superpowers|gstack|Max|Redux|Mem|Career|Ops|HyperFrames|OMEGA|PRIME|Hugging|Face|Kimi)\b|--?[a-z][\w-]*|[\w-]*[._/@:#=$%§][\w.\-/@:#=$%§]*|\b[A-Z0-9][A-Z0-9_-]+\b|\b\w*_\w*\b|\b[a-z]+[A-Z]\w*\b|\b[a-z0-9]+(?:-[a-z0-9]+)+\b|\b\d+\w*\b|\b[0-9a-f]{7,}\b/g;
   const prose = t => t.split(/\s*[,·;|()]\s*|\s+[→—-]\s+/).some(piece => /\s/.test(piece.trim()) && /[A-Za-z]{2,}/.test(piece.replace(KEEP, " ")));
+  // ADR-173: a line that starts with a list mark (· • - – —) is interface text, so even one English word after
+  // it breaks the rule; so does an English word in the same text as Arabic, which the translator would have
+  // isolated in its own <bdi> if it were a name.
+  const marked = t => /^[·•\-–—]\s*\S/.test(t) && /[A-Za-z]{2,}/.test(t.replace(/^[·•\-–—]\s*/, "").replace(KEEP, " "));
+  const mixed = t => /[؀-ۿ]/.test(t) && /[A-Za-z]{2,}/.test(t.replace(KEEP, " "));
   const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 || r.height > 0; };
   const isolated = el => { for (let x = el; x && x !== document.body; x = x.parentElement) if (x.tagName === "BDI" || /isolate|plaintext/.test(getComputedStyle(x).unicodeBidi)) return true; return false; };
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
@@ -25,7 +30,7 @@ export const PURITY = (lang) => {
     if (lang === "ar") {
       if (!/[A-Za-z]/.test(t) || el.closest('[lang="en"], [data-verbatim], code, pre, kbd, samp, textarea')) continue;
       if (!isolated(el)) out.push("not isolated: " + t);
-      else if (prose(t)) out.push("English words: " + t);
+      else if (prose(t) || marked(t) || mixed(t)) out.push("English words: " + t);
     } else if (/[؀-ۿ]/.test(t) && !el.closest('[lang="ar"], [data-verbatim]')) out.push("Arabic in English: " + t);
   }
   for (const el of document.querySelectorAll("[aria-label], [placeholder], [title]")) {
@@ -41,7 +46,9 @@ export const PURITY = (lang) => {
 export const PURITY_ROUTES = ["overview", "agents", "agents/templates", "runs", "missions", "workflows", "approvals", "analytics", "logs", "studio", "skills", "memory", "search", "loader", "governance", "diagnostics", "recon", "math", "hyper", "atlas", "universal", "workbench", "polymath", "tree", "order", "docs", "runbook", "impact", "release", "architect", "webhooks", "settings", "design-system"];
 
 // Visits each route in both languages (the language button switches them) and runs PURITY on each.
-// extra: [name, async () => {}] steps that open a deeper screen (an agent, a mission, the workflow editor).
+// extra: [name, async () => {}, route?] steps that open a deeper screen (an agent, a mission, the workflow editor).
+// ADR-173: the gate reads only the screen a step ends on, so a step names that screen (route, as in "#/release");
+// a step that ends anywhere else is a violation, so no screen is left unchecked by a step that moved on.
 // typed: text the test typed itself, which is data and is kept as written.
 export async function checkPurity({ page, go, routes = PURITY_ROUTES, extra = [], typed = [], mode, evidence }) {
   const result = { ar: {}, en: {} };
@@ -49,9 +56,11 @@ export async function checkPurity({ page, go, routes = PURITY_ROUTES, extra = []
     await go("#/overview");
     if ((await page.evaluate(() => document.documentElement.lang)) !== lang) { await page.locator("#langBtn").click(); await page.waitForTimeout(300); }
     const steps = routes.map(r => [r, () => go("#/" + r)]).concat(extra);
-    for (const [name, open] of steps) {
+    for (const [name, open, route] of steps) {
       await open();
       await page.waitForTimeout(150);
+      const at = await page.evaluate(() => location.hash);
+      if (route && !at.startsWith(route)) { result[lang][name] = ["screen: the step ended on " + at + ", not " + route]; continue; }
       // Typed text counts as data, also when the page cut it short with "…".
       const found = (await page.evaluate(PURITY, lang)).filter(t => !typed.some(x => t.includes(x) || (t.endsWith("…") && x.startsWith(t.slice(t.indexOf(": ") + 2, -1)))));
       if (found.length) result[lang][name] = found;

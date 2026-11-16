@@ -3100,6 +3100,13 @@
   "Once others use it": "عندما يستخدمه غيرك",
   "Putting it on a web host is publishing: a locked step until Director 00 approves it. The browser stays the light front end.": "وضعه على موقع ويب نشرٌ: خطوة مقفلة حتى يوافق عليها المدير 00. يبقى المتصفح واجهة خفيفة.",
   "· Installing or running the model": "· تثبيت النموذج أو تشغيله",
-  "· Writing the bundle to a file": "· كتابة الحزمة في ملف"
+  "· Writing the bundle to a file": "· كتابة الحزمة في ملف",
+  "Skills provisioned": "المهارات المثبّتة",
+  "For each skill in this repository: its SKILL.md, tests, golden file, page and a clean scan, with the missing part named. Nothing is installed or run.": "لكل مهارة في هذا المستودع: ملف SKILL.md والاختبارات والملف الذهبي والصفحة وفحص نظيف، مع تسمية الجزء الناقص. لا يُثبَّت شيء ولا يُشغَّل.",
+  "Check every skill": "افحص كل المهارات",
+  "skills provisioned": "مهارة مثبّتة",
+  "Provisioned": "مثبّتة",
+  "Missing a part": "ينقصها جزء",
+  "Nothing": "لا شيء"
  }
 }

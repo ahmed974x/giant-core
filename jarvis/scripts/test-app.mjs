@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkPurity } from "./bilingual-purity.mjs";
+import { checkPurity, PURITY } from "./bilingual-purity.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const URL_ = "file://" + join(here, "..", "app", "index.html");
@@ -1020,6 +1020,43 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
   await page.locator("#f-as-skills").fill("replica-impact-analysis, replica-release-gate");
 }
 
+// F54: the bilingual purity gate catches dotted lock lines and steps that move on (ADR-173).
+{
+  const setLang = async l => { if ((await page.evaluate(() => document.documentElement.lang)) !== l) { await page.locator("#langBtn").click(); await page.waitForTimeout(300); } };
+  await go("#/release");
+  await setLang("ar");
+  await page.waitForSelector("#f-rg-skills");
+  await page.evaluate(() => {
+    const ul = document.createElement("ul"); ul.className = "plist"; ul.id = "purity-probe";
+    for (const t of ["· Writing the probe to a file", "• Publishing", "- Moving the probe", "— Probe", "قيد الموافقة · Publishing", "· replica-release-gate"]) {
+      const li = document.createElement("li"); li.className = "lock-line"; const sp = document.createElement("span"); sp.textContent = t; li.append(sp); ul.append(li);
+    }
+    document.querySelector('section[aria-labelledby="h-rg-b"]').append(ul);
+  });
+  const v = await page.evaluate(PURITY, "ar");
+  const caught = t => v.some(x => x.endsWith(t));
+  ok(["· Writing the probe to a file", "• Publishing", "- Moving the probe", "— Probe", "قيد الموافقة · Publishing"].every(caught) && !caught("· replica-release-gate"),
+    "F54 in Arabic, an English line after ·, •, - or —, one word or many, or next to Arabic in the same text, breaks the purity rule; an identifier does not", v.filter(x => /probe|Probe|Publishing|replica-release/.test(x)));
+  await page.evaluate(() => document.getElementById("purity-probe").remove());
+  const moved = await checkPurity({ page, go, routes: [], extra: [["moves on", async () => { await go("#/release"); await go("#/impact"); }, "#/release"]], typed: [] });
+  ok(moved.ar === 1 && moved.en === 1 && /^screen: the step ended on #\/impact, not #\/release$/.test(moved.result.ar["moves on"][0]), "F54 a purity step that ends on another screen than it names is a violation, so no screen goes unchecked");
+  await setLang("en");
+}
+
+// F55: whether each skill is provisioned (ADR-173).
+{
+  await go("#/architect");
+  await page.waitForSelector("#f-as-mem");
+  const sec = page.locator('section[aria-labelledby="h-as-v"]');
+  await sec.locator("button.btn-primary").click();
+  await page.waitForTimeout(400);
+  const rows = await sec.locator("tbody tr").count(), doc = JSON.parse(await sec.locator("textarea.ex-text").inputValue());
+  const own = sec.locator("tbody tr", { has: page.locator("code", { hasText: /^replica-architect-studio$/ }) });
+  ok(rows === 64 && doc.provision.skills.length === 64 && doc.provision.counts.provisioned + doc.provision.counts.incomplete === 64 && await own.getByText("Provisioned").isVisible() && await own.locator("code", { hasText: "#/architect" }).isVisible()
+    && doc.provision.skills.find(x => x.skill === "omega-design").missing.join() === "tests/,tests/golden.json,page route" && (await sec.locator(".lock-line").count()) === 1 && Object.keys(doc).join() === Object.keys(doc).sort().join(),
+    "F55 every one of the 64 skills is checked: its SKILL.md, tests, golden file, page and scan, with the missing parts named and installing locked");
+}
+
 // F50: the architect studio (ADR-170): the seal, the preview scale, the composite skill draft and the upgrade radar.
 {
   const press = id => page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click();
@@ -1249,33 +1286,37 @@ ok((await page.evaluate(() => document.documentElement.lang)) === "en" && await 
 {
   const pur = await checkPurity({ page, go, typed: [...TYPED], mode: "sample", evidence: join(here, "..", "replica", "evidence", "bilingual-purity.log"), extra: [
     ["agent", () => go("#/agents/ag_release")],
-    ["workflow editor", async () => { await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click(); }],
-    ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }],
-    ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }],
-    ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }],
-    ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click(); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }],
-    ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }],
-    ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }],
-    ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }],
-    ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }],
-    ["architect locked", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); for (const id of ["h-as-u", "h-as-c", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(250); } }],
-    ["architect open", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.evaluate(() => localStorage.removeItem("aether-architect-seal")); for (let i = 0; i < 2; i++) { await page.locator("#f-as-code").fill("kodex-974"); await page.locator('section[aria-labelledby="h-as-s"] button.btn-primary').click(); await page.waitForTimeout(250); } for (const id of ["h-as-u", "h-as-c"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); } await page.evaluate(() => { localStorage.removeItem("aether-architect-seal"); localStorage.removeItem("aether-architect-ui"); }); }],
-    ["bundle export", async () => { await go("#/release"); await page.waitForSelector("#f-rg-skills"); await page.locator("#f-rg-model").fill("openai/gpt-oss-120b"); await page.locator("#f-rg-bits").fill("4"); await page.locator("#f-rg-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-rg-b"]').getByRole("button", { name: /Export the bundle|تصدير الحزمة/ }).click(); await page.waitForTimeout(250); await go("#/architect"); await page.waitForSelector("#f-as-ctx"); await page.locator('section[aria-labelledby="h-as-e"] button.btn-primary').click(); await page.waitForTimeout(250); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["allenai/Olmo-3.1-32B-Instruct", "google/gemma-4-31B-it"]) { await page.locator("#f-ia-model").fill(m); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-ctx").fill("8192"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); } }],
-    ["campaign", async () => { await go("#/architect"); await page.waitForSelector("#f-as-mem"); await page.locator('section[aria-labelledby="h-as-p"] button.btn-primary').click(); await page.waitForTimeout(400); await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); await page.locator("#f-ia-model").fill("openai/gpt-oss-120b"); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-mem").fill("24"); await page.locator("#f-ia-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); await page.evaluate(() => localStorage.removeItem("aether-architect-campaign")); }],
-    ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }],
-    ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }],
-    ["impact context and terms", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "Qwen/Qwen3.8-Flash-Next", "Qwen/Qwen3.8-2.4T-A95B", "meta-llama/Llama-3.3-70B-Instruct", "openai/gpt-oss-120b", "gpt-oss:20b"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
-    ["settings catalog", async () => { await go("#/settings"); await page.locator("details.catalog summary").click(); await page.waitForTimeout(150); }],
-    ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }],
-    ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }],
-    ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }],
-    ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }],
-    ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }],
-    ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }],
-    ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }],
-    ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }],
-    ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }],
-    ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }],
+    ["workflow editor", async () => { await go("#/workflows"); await page.locator("tbody a").first().click(); await page.waitForSelector(".wf-node"); await page.locator(".wf-node").first().click(); }, "#/workflows"],
+    ["mission", async () => { await go("#/missions"); await page.locator(".mcard").first().click(); await page.waitForTimeout(300); }, "#/missions"],
+    ["recon result", async () => { await go("#/recon"); await page.locator("#f-recon").fill("example.com"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-rc-rdap"); }, "#/recon"],
+    ["math result", async () => { await go("#/math"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-plot"); }, "#/math"],
+    ["hyper results", async () => { await go("#/hyper"); await page.waitForSelector(".hy-stage svg"); await page.locator("section[aria-labelledby=h-hy-optics] button[type=submit]").click(); await page.locator("section[aria-labelledby=h-hy-game_physics] button[type=submit]").click(); await page.waitForSelector(".hy-game"); }, "#/hyper"],
+    ["metacodes results", async () => { await go("#/missions"); for (const c of ["KILLCRITIC", "EL10"]) await page.locator("[role=group] button", { hasText: c }).click(); await page.locator("#h-mc").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector("#h-mc-crit"); }, "#/missions"],
+    ["typeset matrix", async () => { await go("#/math"); await page.locator("#f-umtask").selectOption("linear_algebra"); await page.locator("form button[type=submit]").click(); await page.waitForSelector("#h-um-formula"); }, "#/math"],
+    ["cinematic preset", async () => { await go("#/hyper"); await page.waitForSelector(".cine-svg"); await page.locator("#f-cine").selectOption("rim_backlight"); await page.waitForTimeout(200); }, "#/hyper"],
+    ["skill tree", async () => { await go("#/tree"); await page.waitForSelector(".st-svg"); await page.locator('.st-node[data-id="skill:replica-universal-math"]').click(); }, "#/tree"],
+    ["architect locked", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); for (const id of ["h-as-u", "h-as-c", "h-as-r"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(250); } }, "#/architect"],
+    ["architect open", async () => { await go("#/architect"); await page.waitForSelector("#f-as-code"); await page.evaluate(() => localStorage.removeItem("aether-architect-seal")); for (let i = 0; i < 2; i++) { await page.locator("#f-as-code").fill("kodex-974"); await page.locator('section[aria-labelledby="h-as-s"] button.btn-primary').click(); await page.waitForTimeout(250); } for (const id of ["h-as-u", "h-as-c"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(400); } await page.evaluate(() => { localStorage.removeItem("aether-architect-seal"); localStorage.removeItem("aether-architect-ui"); }); }, "#/architect"],
+    ["release export", async () => { await go("#/release"); await page.waitForSelector("#f-rg-skills"); await page.locator("#f-rg-model").fill("openai/gpt-oss-120b"); await page.locator("#f-rg-bits").fill("4"); await page.locator("#f-rg-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-rg-b"]').getByRole("button", { name: /Export the bundle|تصدير الحزمة/ }).click(); await page.waitForTimeout(250); }, "#/release"],
+    ["architect export", async () => { await go("#/architect"); await page.waitForSelector("#f-as-ctx"); await page.locator('section[aria-labelledby="h-as-e"] button.btn-primary').click(); await page.waitForTimeout(250); }, "#/architect"],
+    ["impact hybrid", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["allenai/Olmo-3.1-32B-Instruct", "google/gemma-4-31B-it"]) { await page.locator("#f-ia-model").fill(m); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-ctx").fill("8192"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); } }, "#/impact"],
+    ["architect campaign", async () => { await go("#/architect"); await page.waitForSelector("#f-as-mem"); await page.locator('section[aria-labelledby="h-as-p"] button.btn-primary').click(); await page.waitForTimeout(400); }, "#/architect"],
+    ["impact offload", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); await page.locator("#f-ia-model").fill("openai/gpt-oss-120b"); await page.locator("#f-ia-bits").fill("4"); await page.locator("#f-ia-mem").fill("24"); await page.locator("#f-ia-ctx").fill("131072"); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(250); await page.evaluate(() => localStorage.removeItem("aether-architect-campaign")); }, "#/impact"],
+    ["architect provision", async () => { await go("#/architect"); await page.waitForSelector("#f-as-mem"); await page.locator('section[aria-labelledby="h-as-v"] button.btn-primary').click(); await page.waitForTimeout(400); }, "#/architect"],
+    ["release results", async () => { await go("#/release"); await page.waitForSelector("#f-rg-base"); for (const id of ["h-rg-a", "h-rg-r", "h-rg-b"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(300); } }, "#/release"],
+    ["release verdicts", async () => { await go("#/release"); await page.waitForSelector("#f-rg-cand"); await page.locator("#f-rg-cand").fill(JSON.stringify({ server_passed: 0, app_passed: 0, live_passed: 0, mutants_killed: 0, server_failed: 1, app_failed: 0, live_failed: 0, mutants_survived: 0, skillspector_critical: 0, skillspector_high: 0, contrast_failing: 0, purity_violations: 0 })); await page.locator('section[aria-labelledby="h-rg-r"] button.btn-primary').click(); await page.waitForTimeout(300); await page.locator("#f-rg-model").fill("qwen3.8"); await page.locator('section[aria-labelledby="h-rg-b"] button.btn-primary').click(); await page.waitForTimeout(300); }, "#/release"],
+    ["impact context and terms", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-ctx"); for (const m of ["Qwen/Qwen3-Coder-30B-A3B-Instruct", "moonshotai/Kimi-K3", "zai-org/GLM-5.3", "Qwen/Qwen3.8-Flash-Next", "Qwen/Qwen3.8-2.4T-A95B", "meta-llama/Llama-3.3-70B-Instruct", "openai/gpt-oss-120b", "gpt-oss:20b"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }, "#/impact"],
+    ["settings catalog", async () => { await go("#/settings"); await page.locator("details.catalog summary").click(); await page.waitForTimeout(150); }, "#/settings"],
+    ["impact results", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const id of ["h-ia-c", "h-ia-b", "h-ia-d"]) { await page.locator(`section[aria-labelledby="${id}"] button.btn-primary`).click(); await page.waitForTimeout(200); } await page.waitForSelector(".ia-diff"); }, "#/impact"],
+    ["impact verdicts", async () => { await go("#/impact"); await page.waitForSelector("#f-ia-model"); for (const m of ["qwen3.8", "mistralai/Mistral-Large-4-1T-A52B", "gpt-oss:20b", "nothing-known"]) { await page.locator("#f-ia-model").fill(m); await page.locator('section[aria-labelledby="h-ia-c"] button.btn-primary').click(); await page.waitForTimeout(200); } }, "#/impact"],
+    ["runbook", async () => { await go("#/runbook"); await page.waitForSelector("#f-rb-goal"); await page.locator("#h-rb").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".rb-stage"); }, "#/runbook"],
+    ["project search", async () => { await go("#/docs"); await page.waitForSelector("#f-ps-q"); await page.locator("#h-ps ~ form button[type=submit]").click(); await page.waitForSelector(".ps-hit"); }, "#/docs"],
+    ["plan order", async () => { await go("#/order"); await page.waitForSelector("#f-po-names"); for (let i = 0; i < 3; i++) await page.locator("section.panel button.btn-primary").nth(i).click(); await page.waitForSelector(".po-node"); await page.waitForTimeout(200); }, "#/order"],
+    ["polymath run", async () => { await go("#/polymath"); await page.waitForSelector("#f-pm-q"); await page.locator("#h-pm").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".pm-domain"); }, "#/polymath"],
+    ["workbench run", async () => { await go("#/workbench"); await page.waitForSelector("#f-uw-task"); await page.locator("#h-uw").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForSelector(".uw-stage"); }, "#/workbench"],
+    ["universal agent", async () => { await go("#/universal"); await page.waitForSelector("#f-ua-json"); await page.locator("#h-ua").locator("xpath=..").locator("button.btn-primary").click(); await page.waitForTimeout(200); }, "#/universal"],
+    ["atlas plan and scrub", async () => { await go("#/atlas"); await page.waitForSelector(".fa-entry"); await page.getByRole("button", { name: /Plan the stack|خطّط الحزمة/ }).click(); await page.waitForSelector("#h-fa-steps"); await page.locator("#f-fa-shield").fill("a.b@x.org"); await page.locator("#h-fa-shield").locator("xpath=..").locator("button").click(); await page.waitForTimeout(200); }, "#/atlas"],
+    ["math refusal", async () => { await go("#/math"); await page.locator("#f-umbody").fill('{"task":"calculus","expression":"x $ 2"}'); await page.locator("form button[type=submit]").click(); await page.waitForTimeout(200); }, "#/math"],
   ] });
   ok(pur.ar === 0, "F33 Arabic mode is all Arabic on every screen; names and identifiers sit in isolation", JSON.stringify(pur.result.ar).slice(0, 700));
   ok(pur.en === 0, "F33 English mode has no Arabic outside the language button, the locked marks, the teaching label and Arabic data", JSON.stringify(pur.result.en).slice(0, 700));

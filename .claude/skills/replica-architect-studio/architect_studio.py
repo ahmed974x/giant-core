@@ -30,10 +30,11 @@ sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-plan-order
 from impact_analysis import dependents_of, licence_rule, load_context  # noqa: E402
 from plan_order import skill_order  # noqa: E402
 from prompt_metacodes import js_json  # noqa: E402
-from release_gate import export_bundle, release_document, release_gate  # noqa: E402
+from release_gate import _pretty, canonical, export_bundle, release_document, release_gate, skill_provision_report  # noqa: E402
+from release_gate import _sha as _sha_text  # noqa: E402
 from skill_tree import build_tree  # noqa: E402
 
-AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign"]
+AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign", "provision"]
 AS_RECEIPT_DOMAIN = "aether-prime:approval-receipt:v1:"
 AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:"
 AS_DENSITY = {"compact": 4, "balanced": 8, "spacious": 12}
@@ -256,12 +257,33 @@ def campaign_plan(r, ctx, s):
             "unmatched": sum(1 for h in approved if not any(st["step_sha256"] == h for st in steps)), "export": ex}
 
 
+def provision_plan(r, ctx, s):
+    """ADR-173: whether each skill (the chosen ones, or every one in the snapshot) is provisioned, as a document to
+    copy with the seal's state. Nothing is installed; installing or changing a skill stays a locked approval."""
+    names = None
+    if "skills" in r:
+        sk = r["skills"]
+        if not (isinstance(sk, list) and 1 <= len(sk) <= 64 and all(isinstance(x, str) and _len16(x) <= 80 for x in sk)):
+            _fail("Choose 1 to 64 skills, or none for every skill.", "skills")
+        names = list(dict.fromkeys(sk))
+    report = skill_provision_report(names, ctx.get("tree"))
+    steps = [{"action": "install", "target": ".claude/skills", "gate": "approval", "locked": True, "status": "pending_approval"}]
+    data = canonical({"title": "Aether Prime skill provisioning", "seal": {"state": s["state"], "audit_prefix": s["audit_prefix"]}, "provision": report, "steps": steps})
+    p = data["provision"]
+    lines = ["# " + data["title"], "", *export_head(data["seal"], None), "## Skills (" + str(p["counts"]["provisioned"]) + " of " + str(len(p["skills"])) + " provisioned)",
+             *["- " + x["skill"] + ": " + ("missing " + ", ".join(x["missing"]) if x["missing"] else "provisioned") + (" (" + x["route"] + ")" if x["route"] else "") for x in p["skills"]],
+             "", "## Locked steps", "- install .claude/skills: waiting for approval"]
+    text = _pretty(data) + "\n"
+    markdown = "\n".join(lines) + "\n"
+    return {**report, "steps": steps, "export": {"format": "aether-prime-bundle-v1", "json": text, "markdown": markdown, "bundle_sha256": _sha_text(text), "markdown_sha256": _sha_text(markdown)}}
+
+
 def architect_studio(req, ctx=None):
     r = req if isinstance(req, dict) else _fail("Send an object with a mode.", "")
     c = ctx if isinstance(ctx, dict) else {}
     mode = r.get("mode")
     if not isinstance(mode, str) or mode not in AS_MODES:
-        _fail("The mode is seal, ui, compose, radar, export or campaign.", "mode")
+        _fail("The mode is seal, ui, compose, radar, export, campaign or provision.", "mode")
     s = check_seal(r, c.get("seal"))
     seal = {"configured": s["configured"], "unlocked": s["unlocked"], "state": s["state"], "audit_prefix": s["audit_prefix"]}
     out = {"mode": mode, "seal": seal, "locks": _locks()}
@@ -279,8 +301,10 @@ def architect_studio(req, ctx=None):
         out["export"] = architect_export(r, c, s)
     if mode == "campaign":
         out["campaign"] = campaign_plan(r, c, s)
+    if mode == "provision":
+        out["provision"] = provision_plan(r, c, s)
     comp = out.get("compose")
-    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]] + ([out["export"]["bundle_sha256"]] if "export" in out else []) + ([out["campaign"]["export"]["bundle_sha256"]] if "campaign" in out else [])
+    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]] + ([out["export"]["bundle_sha256"]] if "export" in out else []) + ([out["campaign"]["export"]["bundle_sha256"]] if "campaign" in out else []) + ([out["provision"]["export"]["bundle_sha256"]] if "provision" in out else [])
     chain = "0" * 64
     for x in sections:
         chain = _sha(chain + _sha(js_json(x)))

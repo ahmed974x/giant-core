@@ -440,7 +440,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/architect") {
           let out;
           try { out = architectStudio(body, { seal: architectSeal, catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400 && e.status !== 403) throw e; return send(e.status, { error: e.message, detail: e.detail }); }
-          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : out.export ? ", " + out.export.steps.length + " locked" : out.campaign ? ", resume " + (out.campaign.resume ?? "none") + ", " + out.campaign.counts.done + " done" : ""));
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : out.export ? ", " + out.export.steps.length + " locked" : out.campaign ? ", resume " + (out.campaign.resume ?? "none") + ", " + out.campaign.counts.done + " done" : out.provision ? ", " + out.provision.counts.provisioned + " of " + out.provision.skills.length + " provisioned" : ""));
           // ADR-172: a campaign is saved only when asked, without the code.
           if (out.campaign && body.save === true) out.saved = await campaigns.save(slug, body, out.campaign);
           return send(200, out);

@@ -108,6 +108,7 @@ PASS live: the server estimates documented sliding and full layers and exports t
 PASS live: the release page shows the server's export as text to copy
 PASS live: the export is in the event log, as counts
 PASS live: the server saves the campaign and lists it, ready to resume from cp-2
+PASS live: the server checks which skills are provisioned and keeps installing locked
 PASS live: with no server seal, the studio shows the hash to set, refuses the preview scale and still scans the radar
 PASS live: events keep the seal's state and counts, never the code or its hash
 PASS live: release readiness answers from the server in all three checks
@@ -150,4 +151,4 @@ PASS live governance renders
 PASS live agents/templates renders
 PASS no console or page errors
 
-151 passed, 0 failed
+152 passed, 0 failed

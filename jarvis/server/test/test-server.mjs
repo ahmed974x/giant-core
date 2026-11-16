@@ -6,6 +6,8 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, existsSync } from "node:fs";
+import { openSqlite, openPostgres } from "../lib/db.mjs";
+import { sqlStatements, syncStatements, idempotent } from "../lib/schema-sync.mjs";
 import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1591,9 +1593,14 @@ ok(MODEL_PROFILES.every(p => p.licence && p.role && ["CN", "US", "EU"].includes(
   const sqlSchema = readFileSync(join(repo, "jarvis", "server", "lib", "schema-sqlite.sql"), "utf8"), pgSchema = readFileSync(join(repo, "jarvis", "replica", "schema.sql"), "utf8");
   ok(/architect_campaigns_no_code check \(instr\(request, '"passcode"'\) = 0\)/.test(sqlSchema) && /architect_campaigns_no_code check \(not \(request \? 'passcode'\)\)/.test(pgSchema) && /architect_campaigns_no_update/.test(sqlSchema) && /architect_campaigns_no_delete/.test(sqlSchema) && /architect_campaigns_no_update before update or delete/.test(pgSchema),
     "ADR-172 both databases refuse a saved campaign with a code and keep the table append-only");
+  // ADR-173: provisioning reads the snapshot on disk; a skill not in it is missing its SKILL.md; installing stays locked.
+  const pv = await ap({ mode: "provision", skills: ["replica-architect-studio", "omega-design", "no-such-skill"] });
+  ok(pv.status === 200 && JSON.stringify(pv.body) === JSON.stringify(architectStudio({ mode: "provision", skills: ["replica-architect-studio", "omega-design", "no-such-skill"] }, actx)) && pv.body.provision.skills[0].status === "provisioned" && pv.body.provision.skills[2].missing[0] === "SKILL.md"
+    && pv.body.provision.steps.every(st => st.locked && st.status === "pending_approval") && pv.body.provision.export.bundle_sha256 === crypto.createHash("sha256").update(pv.body.provision.export.json).digest("hex"),
+    "ADR-173 provisioning names each skill's missing parts from the snapshot, hashes its document and keeps installing locked");
   const r0 = await fetch(A + "/api/w/jarvis-studio/events");
   const aev = await r0.json();
-  ok(aev.some(e => e.kind === "architect.export" && /^unlocked, \d+ locked$/.test(e.target)) && aev.some(e => e.kind === "release.export" && /^\d+ characters, 3 locked$/.test(e.target)) && aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
+  ok(aev.some(e => e.kind === "architect.provision" && /^not_configured, 1 of 3 provisioned$|^locked, 1 of 3 provisioned$/.test(e.target)) && aev.some(e => e.kind === "architect.export" && /^unlocked, \d+ locked$/.test(e.target)) && aev.some(e => e.kind === "release.export" && /^\d+ characters, 3 locked$/.test(e.target)) && aev.some(e => e.kind === "architect.seal" && e.target === "unlocked") && aev.some(e => e.kind === "architect.compose" && /^unlocked, \d+ layers$/.test(e.target)) && !JSON.stringify(aev).includes(CODE) && !JSON.stringify(aev).includes(SEAL.slice(5)), "architect: events keep the state and counts, never the code or the hash");
   await as.close();
 }
 // ADR-171: the five custom licences read in full, and each card's config.json, with the context memory they allow.
@@ -1728,6 +1735,38 @@ await suite("sqlite", optsA);
 if (process.env.JARVIS_TEST_PG_URL) await suite("postgres", { mode: "postgres", databaseUrl: process.env.JARVIS_TEST_PG_URL, ollamaUrl: fakeA.url, ollamaCalls: fakeA.calls });
 else console.log("skip: PostgreSQL suite (set JARVIS_TEST_PG_URL to an empty local test database)");
 fakeA.srv.close();
+
+// ADR-173: a database made by an earlier version catches up at start, without losing its rows.
+{
+  const sql = readFileSync(join(repo, "jarvis", "replica", "schema.sql"), "utf8"), st = sqlStatements(sql), sync = syncStatements(sql);
+  ok(st.length === 82 && sync.filter(x => /^create table if not exists /.test(x)).length === 33 && sync.filter(x => /^create (unique )?index if not exists /.test(x)).length === 29 && sync.filter(x => /^create or replace (function|trigger) /.test(x)).length === 18
+    && st.filter(x => /^create function/.test(x)).every(x => /\$\$[\s\S]*\$\$/.test(x)) && sqlStatements("select 'a;b'; -- c;d\nselect $q$x;y$q$;").join("|") === "select 'a;b'|select $q$x;y$q$" && idempotent("create table if not exists t (a int)") === "create table if not exists t (a int)" && idempotent("create index on runs (workspace_id, created_at desc)") === "create index if not exists runs_workspace_id_created_at_idx on runs (workspace_id, created_at desc)",
+    "ADR-173 schema.sql splits into its 82 statements, quotes, comments and $$ bodies whole, each made safe to run again");
+  const dir = mkdtempSync(join(tmpdir(), "jarvis-sync-")), file = join(dir, "j.sqlite");
+  const a = await openSqlite(file);
+  await a.run("insert into workspaces (id, name, slug, created_at, updated_at) values ($1, $2, $3, $4, $4)", ["w-sync", "Sync", "sync-test", new Date().toISOString()]);
+  await a.run("drop table architect_campaigns");
+  await a.close();
+  const b = await openSqlite(file);
+  const t = await b.one("select name from sqlite_master where type = 'table' and name = 'architect_campaigns'"), w = await b.one("select count(*) as c from workspaces where slug = 'sync-test'");
+  await b.close();
+  ok(t && t.name === "architect_campaigns" && Number(w.c) === 1, "ADR-173 [sqlite] an existing database gets architect_campaigns back at start and keeps its rows");
+  if (process.env.JARVIS_TEST_PG_URL) {
+    const u = process.env.JARVIS_TEST_PG_URL;
+    const p1 = await openPostgres(u);
+    const before = Number((await p1.one("select count(*) as c from workspaces")).c), idx0 = Number((await p1.one("select count(*) as c from pg_indexes where schemaname = 'jarvis'")).c);
+    await p1.run("drop table architect_campaigns");
+    await p1.close();
+    const p2 = await openPostgres(u);
+    const back = await p2.one("select to_regclass('jarvis.architect_campaigns') as t"), after = Number((await p2.one("select count(*) as c from workspaces")).c);
+    const trig = Number((await p2.one("select count(*) as c from pg_trigger where tgname = 'architect_campaigns_no_update'")).c), con = Number((await p2.one("select count(*) as c from pg_constraint where conname = 'architect_campaigns_no_code'")).c);
+    await p2.close();
+    const p3 = await openPostgres(u);
+    const again = Number((await p3.one("select count(*) as c from workspaces")).c), idx3 = Number((await p3.one("select count(*) as c from pg_indexes where schemaname = 'jarvis'")).c);
+    await p3.close();
+    ok(back.t && before > 0 && after === before && again === before && trig === 1 && con === 1 && idx3 === idx0, "ADR-173 [postgres] an existing database gets architect_campaigns, its trigger and its check back at start, keeps its rows, and a second start adds no index", { before, after, again, trig, con, idx0, idx3 });
+  }
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

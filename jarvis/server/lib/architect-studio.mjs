@@ -20,15 +20,18 @@
 //            checkpoints done or failed (with the reason); the first one not complete is where to resume. Each locked
 //            step has its own hash; with the seal open, a step whose hash is sent gets the architect's receipt. A
 //            receipt records the decision and runs nothing: the step stays locked and pending approval.
+//   provision ADR-173: whether each skill (the chosen ones, or every skill in the snapshot) is provisioned: its
+//            SKILL.md, tests, golden file, page and a clean scan, with the missing parts named; as key-sorted JSON and
+//            Markdown with their SHA-256. Installing or changing a skill stays a locked approval.
 // The engines called here keep their own checks. Pure: no network, no process, no file. The same answers come
 // from .claude/skills/replica-architect-studio/architect_studio.py (tests/golden.json).
 import { sha256Hex } from "./snapshot.mjs";
 import { skillOrder } from "./plan-order.mjs";
 import { buildTree } from "./skill-tree.mjs";
 import { dependentsOf, licenceRule } from "./impact-analysis.mjs";
-import { exportBundle, releaseDocument, releaseGate } from "./release-gate.mjs";
+import { canonical, exportBundle, releaseDocument, releaseGate, skillProvisionReport } from "./release-gate.mjs";
 
-export const AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign"];
+export const AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign", "provision"];
 export const AS_RECEIPT_DOMAIN = "aether-prime:approval-receipt:v1:";
 export const AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:";
 export const AS_DENSITY = { compact: 4, balanced: 8, spacious: 12 };
@@ -160,10 +163,22 @@ export function campaignPlan(r, ctx, s) {
   return { campaign_sha256: campaign, checkpoints, resume: open ? open.id : null, counts, steps, unmatched: approved.filter(h => !steps.some(st => st.step_sha256 === h)).length, export: ex };
 }
 
+// ADR-173: the provisioning report as a document to copy, with the seal's state; nothing is installed.
+export function provisionPlan(r, ctx, s) {
+  const names = r.skills === undefined ? null : Array.isArray(r.skills) && r.skills.length >= 1 && r.skills.length <= 64 && r.skills.every(x => typeof x === "string" && x.length <= 80) ? [...new Set(r.skills)] : asFail("Choose 1 to 64 skills, or none for every skill.", "skills");
+  const report = skillProvisionReport(names, ctx.tree);
+  const steps = [{ action: "install", target: ".claude/skills", gate: "approval", locked: true, status: "pending_approval" }];
+  const data = canonical({ title: "Aether Prime skill provisioning", seal: { state: s.state, audit_prefix: s.audit_prefix }, provision: report, steps });
+  const lines = ["# " + data.title, "", ...exportHead(data.seal, null), "## Skills (" + data.provision.counts.provisioned + " of " + data.provision.skills.length + " provisioned)",
+    ...data.provision.skills.map(x => "- " + x.skill + ": " + (x.missing.length ? "missing " + x.missing.join(", ") : "provisioned") + (x.route ? " (" + x.route + ")" : "")), "", "## Locked steps", "- install .claude/skills: waiting for approval"];
+  const json = JSON.stringify(data, null, 2) + "\n", markdown = lines.join("\n") + "\n";
+  return { ...report, steps, export: { format: "aether-prime-bundle-v1", json, markdown, bundle_sha256: sha256Hex(json), markdown_sha256: sha256Hex(markdown) } };
+}
+
 export function architectStudio(req, ctx) {
   const r = req && typeof req === "object" && !Array.isArray(req) ? req : asFail("Send an object with a mode.", "");
   const c = ctx ?? {};
-  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose, radar, export or campaign.", "mode");
+  const mode = AS_MODES.includes(r.mode) ? r.mode : asFail("The mode is seal, ui, compose, radar, export, campaign or provision.", "mode");
   const s = checkSeal(r, c.seal);
   const seal = { configured: s.configured, unlocked: s.unlocked, state: s.state, audit_prefix: s.audit_prefix };
   const out = { mode, seal, locks: locks() };
@@ -174,6 +189,7 @@ export function architectStudio(req, ctx) {
   if (mode === "radar") out.radar = upgradeRadar(c);
   if (mode === "export") out.export = architectExport(r, c, s);
   if (mode === "campaign") out.campaign = campaignPlan(r, c, s);
-  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks, ...(out.export ? [out.export.bundle_sha256] : []), ...(out.campaign ? [out.campaign.export.bundle_sha256] : [])];
+  if (mode === "provision") out.provision = provisionPlan(r, c, s);
+  const sections = [seal, out.setup ?? null, out.ui ?? null, out.compose ? out.compose.draft_sha256 : null, out.compose ? out.compose.bundle.chain_sha256 : null, out.radar ?? null, out.locks, ...(out.export ? [out.export.bundle_sha256] : []), ...(out.campaign ? [out.campaign.export.bundle_sha256] : []), ...(out.provision ? [out.provision.export.bundle_sha256] : [])];
   return { ...out, chain_sha256: sections.reduce((h, x) => sha256Hex(h + sha256Hex(JSON.stringify(x))), "0".repeat(64)), sent: false };
 }
