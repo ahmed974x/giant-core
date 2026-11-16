@@ -6,16 +6,16 @@ Date: 2026-11-16 · Reviewer: Claude Code, cloud sandbox.
 
 | File | Lines | SHA-256 (first 16) |
 |---|---|---|
-| `jarvis/scripts/bilingual-purity.mjs` | @L1 | @H1 |
-| `jarvis/server/lib/schema-sync.mjs` | @L2 | @H2 |
-| `jarvis/server/lib/db.mjs` | @L3 | @H3 |
-| `jarvis/server/lib/release-gate.mjs` | @L4 | @H4 |
-| `jarvis/server/lib/architect-studio.mjs` | @L5 | @H5 |
+| `jarvis/scripts/bilingual-purity.mjs` | 78 | 7476370ab83a3943 |
+| `jarvis/server/lib/schema-sync.mjs` | 41 | ac6da1db9f2d07c5 |
+| `jarvis/server/lib/db.mjs` | 104 | 6af70a0981634629 |
+| `jarvis/server/lib/release-gate.mjs` | 173 | 61261d74d2739b05 |
+| `jarvis/server/lib/architect-studio.mjs` | 195 | 34764f82ba9dbd69 |
 
 | File | Lines | SHA-256 (first 16) |
 |---|---|---|
-| `.claude/skills/replica-release-gate/release_gate.py` | @L6 | @H6 |
-| `.claude/skills/replica-architect-studio/architect_studio.py` | @L7 | @H7 |
+| `.claude/skills/replica-release-gate/release_gate.py` | 299 | b5c4127c9bf64f30 |
+| `.claude/skills/replica-architect-studio/architect_studio.py` | 330 | d7493066d4c4f7dd |
 
 Also changed: `server.mjs` (the provisioning event), `app.js` and `i18n-ar.json`, the golden files, and the server, flow, live and mutation tests.
 
