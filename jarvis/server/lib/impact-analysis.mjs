@@ -65,7 +65,11 @@ export function weightsGb(params, bits) {
 //   gqa  2 x layers x kv_heads x head_dim values per token (a key and a value per head and layer)
 //   mla  layers x (kv_lora_rank + qk_rope_head_dim) values per token (the compressed latent and the rope key)
 // times tokens x batch x kv_bits / 8 bytes. Runtime buffers and the weights are not counted here.
+// ADR-172: hybrid_sliding counts 2 x kv_heads x head_dim values for each cached token of each layer: a full layer keeps
+// every token, a sliding layer at most its window, so the values are 2 x kv_heads x head_dim x (full_layers x tokens +
+// sliding_layers x min(tokens, sliding_window)). That product is a whole number below 2^53, so both languages hold it exactly.
 export function kvCacheGb(c, tokens, batch, kvBits) {
+  if (c.attention === "hybrid_sliding") return Math.round(2 * c.kv_heads * c.head_dim * (c.full_layers * tokens + c.sliding_layers * Math.min(tokens, c.sliding_window)) * batch * kvBits / 8 / 1e9 * 100) / 100;
   const perToken = c.attention === "mla" ? c.layers * (c.kv_lora_rank + c.qk_rope_head_dim) : 2 * c.layers * c.kv_heads * c.head_dim;
   return Math.round(perToken * tokens * batch * kvBits / 8 / 1e9 * 100) / 100;
 }
@@ -79,7 +83,19 @@ export function contextMemory(f, sameCard, tokens, batch, kvBits, weights, memor
   const kv = basis === "card" ? kvCacheGb(c, tokens, batch, kvBits) : null;
   const total = kv !== null && weights !== null ? Math.round((weights + kv) * 100) / 100 : null;
   return { tokens, batch_size: batch, kv_bits: kvBits, max_context: max, exceeds: max === null ? null : tokens > max, basis, reason: c && basis === "not_estimated" ? c.reason : basis === "not_read" && c ? c.reason : null,
+    blocking: basis === "not_estimated" ? c.blocking ?? null : null, sliding_window: basis === "card" ? c.sliding_window ?? null : null,
     attention: c ? c.attention : null, kv_gb: kv, total_gb: total, fits: total === null || memoryGb === null ? null : total <= memoryGb };
+}
+
+// ADR-172: where the model can run. The memory typed is the laptop's; the total is the weights and the context
+// memory (ADR-171). Equal fits. With no total (no context asked, or a memory not estimated) nothing is decided.
+// Running it on a site of your own is personal use while only you use it, and serving it to others once others do.
+export function offloadRoute(context, memoryGb, f) {
+  const total = context ? context.total_gb : null;
+  const verdict = total === null ? "undecided" : total <= memoryGb ? "local" : "web_offload";
+  return { laptop_gb: memoryGb, total_gb: total, verdict, reason: total !== null ? null : context ? "memory_not_estimated" : "no_context",
+    margin_gb: verdict === "local" ? Math.round((memoryGb - total) * 100) / 100 : null, shortfall_gb: verdict === "web_offload" ? Math.round((total - memoryGb) * 100) / 100 : null,
+    own_use: licenceRule(f.licence, "personal", f.terms).verdict, others_use: licenceRule(f.licence, "service", f.terms).verdict };
 }
 
 function checkCatalog(catalog) {
@@ -104,7 +120,7 @@ export function checkModel(r, catalog) {
   if (!f) {
     const base = model.slice(model.lastIndexOf("/") + 1).split(":")[0].toLowerCase();
     const candidates = base.length >= 2 ? fams.filter(p => p.family.startsWith(base + "-")).map(p => ({ family: p.family, licence: p.licence })) : [];
-    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, context: null, steps: [], sent: false };
+    return { ...out, found: false, verdict: candidates.length ? "size_unnamed" : "unknown", note: null, family: null, candidates, memory: null, context: null, offload: null, steps: [], sent: false };
   }
   const rule = licenceRule(f.licence, use, f.terms);
   // A family's parameter count belongs to the one card it was read from; another size of the family is not guessed.
@@ -114,9 +130,12 @@ export function checkModel(r, catalog) {
     : !sameCard ? { basis: "other_card", params: null, bits, weights_gb: null, fits: null }
       : { basis: "card", params: f.params, bits, weights_gb: weightsGb(f.params, bits), fits: memoryGb === null ? null : weightsGb(f.params, bits) <= memoryGb };
   const context = tokens === null ? null : contextMemory(f, sameCard, tokens, batch, kvBits, memory && memory.weights_gb, memoryGb);
+  const offload = memoryGb === null ? null : offloadRoute(context, memoryGb, f);
+  const steps = [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }];
+  if (offload && offload.verdict === "web_offload") steps.push({ action: "publish", target: "web host", gate: "approval", locked: true, status: "pending_approval" });
   return { ...out, found: true, verdict: rule.verdict, note: rule.note,
     family: { family: f.family, maker: f.maker, origin: f.origin, licence: f.licence, role: f.role, params: f.params, card: f.card, created: f.created, read: f.read, terms: f.terms ?? null },
-    candidates: [], memory, context, steps: [{ action: "install", target: f.family, gate: "approval", locked: true, status: "pending_approval" }], sent: false };
+    candidates: [], memory, context, offload, steps, sent: false };
 }
 
 // The skills that load a skill, nearest first: a breadth-first search over the dependency snapshot read backwards.

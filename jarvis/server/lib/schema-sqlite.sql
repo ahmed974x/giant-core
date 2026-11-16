@@ -483,3 +483,22 @@ create trigger if not exists reversal_log_no_update before update on reversal_lo
   begin select raise(abort, 'jarvis.reversal_log is append-only'); end;
 create trigger if not exists reversal_log_no_delete before delete on reversal_log
   begin select raise(abort, 'jarvis.reversal_log is append-only'); end;
+
+-- ADR-172: the architect's campaigns. Each save is a new row; the latest for a campaign is where it stands. The request
+-- is kept without the architect's code (the check refuses one), so a saved campaign never holds a secret.
+create table if not exists architect_campaigns (
+  id text primary key,
+  workspace_id text not null references workspaces(id),
+  campaign_sha256 text not null check (length(campaign_sha256) = 64),
+  request text not null,
+  resume text,
+  done_count integer not null check (done_count >= 0),
+  receipts integer not null check (receipts >= 0),
+  created_at text not null,
+  constraint architect_campaigns_no_code check (instr(request, '"passcode"') = 0)
+);
+create index if not exists architect_campaigns_ws on architect_campaigns (workspace_id, created_at);
+create trigger if not exists architect_campaigns_no_update before update on architect_campaigns
+  begin select raise(abort, 'jarvis.architect_campaigns is append-only'); end;
+create trigger if not exists architect_campaigns_no_delete before delete on architect_campaigns
+  begin select raise(abort, 'jarvis.architect_campaigns is append-only'); end;

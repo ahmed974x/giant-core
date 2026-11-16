@@ -1803,7 +1803,7 @@
           h("td", { class: "t-caption wrap", dir: "auto", lang: "en", text: p.licence }),
           p.params === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.params) }),
           p.config.max_context === null ? h("td", null, h("span", { class: "t-caption", lang: "ar", dir: "rtl", text: "تعذر التحقق منها" })) : h("td", { class: "num", text: fmtParams.format(p.config.max_context) }),
-          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
+          h("td", { class: "t-caption wrap", text: p.config.attention === "gqa" ? "Estimated (grouped-query attention)" : p.config.attention === "mla" ? "Estimated (latent attention)" : p.config.attention === "hybrid_sliding" ? "Estimated (sliding and full layers)" : p.config.attention === "not_read" ? "Not read: the card is gated" : "Not estimated: mixed attention" }),
           h("td", { class: "wrap" }, h("a", { class: "t-caption", href: "https://huggingface.co/" + p.card, target: "_blank", rel: "noopener noreferrer", translate: "no", text: p.card }), h("br"), h("span", { class: "num t-caption", text: p.read })),
           h("td", null, here.has(p.family) ? badge("ok", "Served") : h("span", { class: "subtle t-caption", text: "—" }))))))));
   }
@@ -2655,13 +2655,13 @@
   })();
   // ADR-169: release readiness, the same as the server, over the skill tree and impact analysis inlined above.
   const Release = (() => {
-    const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact;
+    const { sha256Hex } = LlmPlan, { buildTree } = SkillTree, { impactAnalysis, IA_PAGES } = Impact, { skillOrder } = PlanOrder;
     /*@RELEASE@*/
-    return { releaseGate, RG_GROWTH, RG_FAILURE };
+    return { releaseGate, exportBundle, releaseDocument, RG_GROWTH, RG_FAILURE };
   })();
   // ADR-170: the architect studio, the same as the server, over the engines inlined above.
   const Architect = (() => {
-    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate } = Release;
+    const { sha256Hex } = LlmPlan, { skillOrder } = PlanOrder, { buildTree } = SkillTree, { dependentsOf, licenceRule } = Impact, { releaseGate, exportBundle, releaseDocument } = Release;
     /*@ARCHITECT@*/
     return { architectStudio };
   })();
@@ -4358,6 +4358,70 @@
       } catch (err) { fail(cOut, err); }
       finally { cBtn.disabled = false; }
     });
+    // 5. ADR-172: the export. It needs no seal; the preview scale goes in only while the seal is open.
+    const exCtxIn = h("input", { class: "input", type: "number", id: "f-as-ctx", name: "export-context", autocomplete: "off", min: "1", step: "1", inputMode: "numeric", dir: "ltr", value: "32768" });
+    const eOut = h("div", { class: "stack", "aria-live": "polite" });
+    const eBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-copy", "sm"), "Export the bundle");
+    eBtn.addEventListener("click", async () => {
+      eBtn.disabled = true;
+      try {
+        const r = await store.architect({ mode: "export", ...(code ? { passcode: code, font_scale: Number(scaleIn.value), density: densityIn.value, numerals: numIn.value } : {}), skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+          ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, bits: 4, ...(exCtxIn.value.trim() ? { context_tokens: Number(exCtxIn.value) } : {}) } : {}) });
+        eOut.replaceChildren(sealRow(r.seal), r.seal.unlocked ? null : h("p", { class: "t-caption muted", text: "The preview scale is left out until the seal is open." }), bundleExportBody(r.export, r.export.steps), iaHash("Chain hash", r.chain_sha256));
+      } catch (err) { fail(eOut, err); }
+      finally { eBtn.disabled = false; }
+    });
+    // 6. ADR-172: the campaign. Checkpoints by Kahn layer, where to resume, and receipts for locked steps, which need
+    // the seal and run nothing. Progress is kept in this browser (and on the server when it runs), never the code.
+    const CP_STATUS = { done: ["ok", "Done"], pending: ["idle", "Not started"], needs_fix: ["failed", "Needs a fix"], awaiting_approval: ["locked", "Waiting for approval"], receipted: ["ok", "Signed by the architect"] };
+    const CAMP_KEY = "aether-architect-campaign";
+    const camp = (() => { try { const v = JSON.parse(store$.get(CAMP_KEY) || "null"); return v && typeof v === "object" ? { done: Array.isArray(v.done) ? v.done : [], failed: v.failed && typeof v.failed === "object" ? v.failed : {}, approved: Array.isArray(v.approved) ? v.approved : [] } : { done: [], failed: {}, approved: [] }; } catch (e) { return { done: [], failed: {}, approved: [] }; } })();
+    const memIn = h("input", { class: "input", type: "number", id: "f-as-mem", name: "laptop-memory", autocomplete: "off", min: "0", step: "0.01", inputMode: "decimal", dir: "ltr", value: "64" });
+    const pOut = h("div", { class: "stack", "aria-live": "polite" });
+    const pBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the campaign");
+    const campaignBody = (c, saved) => {
+      const total = c.checkpoints.length, complete = c.checkpoints.filter(cp => cp.status === "done" || cp.status === "receipted").length;
+      const rows = c.checkpoints.map(cp => {
+        const sel = h("select", { class: "input", name: "status-" + cp.id, "aria-label": "Status" }, ...(cp.layer === null ? [["open", "Waiting for approval"], ["needs_fix", "Needs a fix"]] : [["pending", "Not started"], ["done", "Done"], ["needs_fix", "Needs a fix"]]).map(([v, t]) => h("option", { value: v, text: t })));
+        sel.value = cp.status === "needs_fix" ? "needs_fix" : cp.layer === null ? "open" : cp.status;
+        const why = h("input", { class: "input", name: "reason-" + cp.id, autocomplete: "off", dir: "auto", maxLength: 200, "aria-label": "Why it failed", value: cp.reason ?? "" });
+        sel.addEventListener("change", () => { camp.done = camp.done.filter(x => x !== cp.id); delete camp.failed[cp.id]; if (sel.value === "done") camp.done.push(cp.id); if (sel.value === "needs_fix") camp.failed[cp.id] = why.value.trim() || "Failed"; });
+        why.addEventListener("change", () => { if (sel.value === "needs_fix") camp.failed[cp.id] = why.value.trim() || "Failed"; });
+        return h("tr", { class: cp.id === c.resume ? "cp-resume" : null },
+          h("td", null, h("code", { translate: "no", dir: "ltr", text: cp.id })),
+          h("td", { class: "wrap" }, ...(cp.skills.length ? cp.skills.map(n => h("code", { class: "cp-skill", translate: "no", dir: "ltr", text: n })) : [h("span", { class: "muted", text: "Shared tests and the locked steps" })])),
+          h("td", null, badge(CP_STATUS[cp.status][0], CP_STATUS[cp.status][1])),
+          h("td", null, h("div", { class: "stack" }, sel, why)));
+      });
+      const steps = c.steps.map(st => {
+        const box = h("input", { type: "checkbox", name: "sign-" + st.step_sha256.slice(0, 12), disabled: !code, checked: camp.approved.includes(st.step_sha256) });
+        box.addEventListener("change", () => { camp.approved = camp.approved.filter(x => x !== st.step_sha256); if (box.checked) camp.approved.push(st.step_sha256); });
+        return h("li", { class: "stack" }, h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + EX_LOCK[st.action] })),
+          h("p", { class: "row t-caption" }, h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: st.step_sha256.slice(0, 12) }), h("label", { class: "row" }, box, h("span", { text: "Sign with the seal" })),
+            st.receipt ? badge("ok", "Receipt") : null, st.receipt ? h("code", { class: "uw-hash", translate: "no", dir: "ltr", text: st.receipt.receipt_sha256.slice(0, 12) }) : null));
+      });
+      return h("div", { class: "stack" },
+        h("div", { class: "cp-bar", role: "img", "aria-label": "Checkpoints complete" }, ...c.checkpoints.map(cp => h("span", { class: "cp-seg cp-" + cp.status }))),
+        h("p", { class: "row t-sm" }, h("span", { class: "num", text: fmtN.format(complete) }), h("span", { class: "muted", text: "of" }), h("span", { class: "num", text: fmtN.format(total) }), h("span", { class: "muted", text: "checkpoints complete" }),
+          h("span", { class: "muted", text: "Resume from" }), c.resume ? h("code", { translate: "no", dir: "ltr", text: c.resume }) : h("span", { text: "Nothing left" }), saved ? badge("ok", "Saved on the server") : null),
+        h("div", { class: "table-scroll ia-scroll", tabindex: "0", role: "region", "aria-label": "Checkpoints" }, h("table", { class: "table" },
+          h("thead", null, h("tr", null, h("th", { scope: "col", text: "Checkpoint" }), h("th", { scope: "col", text: "Skills" }), h("th", { scope: "col", text: "Status" }), h("th", { scope: "col", text: "Update" }))),
+          h("tbody", null, rows))),
+        h("ul", { class: "plist" }, steps),
+        h("p", { class: "t-caption muted", text: "A receipt records the architect's decision and runs nothing: every step stays locked until Director 00 approves it." }),
+        bundleExportBody(c.export, c.steps), iaHash("Campaign", c.campaign_sha256));
+    };
+    pBtn.addEventListener("click", async () => {
+      pBtn.disabled = true;
+      try {
+        const req = { mode: "campaign", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean), done: camp.done, failed: camp.failed,
+          ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, bits: 4, ...(exCtxIn.value.trim() ? { context_tokens: Number(exCtxIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}) } : {}) };
+        const r = await store.architect({ ...req, ...(code ? { passcode: code, approved: camp.approved } : {}), ...(store.mode === "live" ? { save: true } : {}) });
+        store$.set(CAMP_KEY, JSON.stringify({ ...req, approved: camp.approved }));
+        pOut.replaceChildren(r.seal.unlocked ? null : h("p", { class: "t-caption muted", text: "Receipts need the seal. Check the code above to sign a locked step." }), campaignBody(r.campaign, r.saved));
+      } catch (err) { fail(pOut, err); }
+      finally { pBtn.disabled = false; }
+    });
     // 4. The upgrade radar.
     const rOut = h("div", { class: "stack", "aria-live": "polite" });
     const rBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Scan for upgrades");
@@ -4393,7 +4457,15 @@
         h("div", { class: "row" }, cBtn), cOut),
       h("section", { class: "panel stack", "aria-labelledby": "h-as-r" }, h("h2", { id: "h-as-r", text: "Upgrade radar" }),
         h("p", { class: "t-caption muted", text: "The skills still in text rules or tested, the most depended on first. Reading it needs no seal." }),
-        h("div", { class: "row" }, rBtn), rOut));
+        h("div", { class: "row" }, rBtn), rOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-e" }, h("h2", { id: "h-as-e", text: "Export the bundle" }),
+        h("p", { class: "t-caption muted", text: "The skills, model and use from the composite draft above, at 4 bits per weight. Writing the file to disk stays locked." }),
+        field("f-as-ctx", "Context length in tokens (optional)", exCtxIn),
+        h("div", { class: "row" }, eBtn), eOut),
+      h("section", { class: "panel stack", "aria-labelledby": "h-as-p" }, h("h2", { id: "h-as-p", text: "Campaign with checkpoints" }),
+        h("p", { class: "t-caption muted", text: "A long task split by Kahn's layers of the skills above. Mark each checkpoint as it goes; the first one not complete is where to resume, on another day too." }),
+        field("f-as-mem", "Memory you have, in GB (optional)", memIn, "With the context length above: this laptop, or a web host when the model does not fit."),
+        h("div", { class: "row" }, pBtn), pOut));
   };
   /* ── Release readiness (ADR-169): the repository audit, the regression gate and the release bundle ── */
   const RG_VERDICT = {
@@ -4484,6 +4556,12 @@
     bNotes.value = "Impact analysis in #/impact\nRelease readiness in #/release\nThe runbook probes eleven pages";
     const bOut = h("div", { class: "stack", "aria-live": "polite" });
     const bBtn = h("button", { class: "btn btn-primary", type: "button" }, icon("i-check", "sm"), "Plan the release");
+    const relReq = mode => ({ mode, skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
+      ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
+      ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) });
+    const eOut = h("div", { class: "stack", "aria-live": "polite" });
+    const eBtn = h("button", { class: "btn", type: "button" }, icon("i-copy", "sm"), "Export the bundle");
+    eBtn.addEventListener("click", run(eBtn, eOut, () => relReq("export"), r => bundleExportBody(r.export, r.steps)));
     bBtn.addEventListener("click", run(bBtn, bOut, () => ({ mode: "bundle", skills: skillsIn.value.split(/[\s,]+/).filter(Boolean),
       ...(modelIn.value.trim() ? { model: modelIn.value, use: useIn.value, ...(bitsIn.value.trim() ? { bits: Number(bitsIn.value) } : {}), ...(memIn.value.trim() ? { memory_gb: Number(memIn.value) } : {}), ...(ctxIn.value.trim() ? { context_tokens: Number(ctxIn.value) } : {}) } : {}),
       ...(aNotes.value || bNotes.value ? { notes: { a: aNotes.value, b: bNotes.value } } : {}) }), rgBundleBody));
@@ -4504,7 +4582,7 @@
         h("div", { class: "grid-2" }, field("f-rg-bits", "Bits per weight (optional)", bitsIn), field("f-rg-mem", "Memory you have, in GB (optional)", memIn)),
         field("f-rg-ctx", "Context length in tokens (optional)", ctxIn),
         h("div", { class: "grid-2" }, field("f-rg-a", "Release notes before", aNotes), field("f-rg-b", "Release notes after", bNotes)),
-        h("div", { class: "row" }, bBtn), bOut));
+        h("div", { class: "row" }, bBtn, eBtn), bOut, eOut));
   };
   /* ── Impact analysis (ADR-168): a model against the catalog, a skill's blast radius, two texts compared line by line ── */
   const IA_VERDICT = {
@@ -4541,11 +4619,44 @@
     const muted = s => h("span", { class: "muted", text: s });
     const head = c.max_context === null ? null : c.exceeds ? h("p", { class: "row t-sm" }, badge("failed", "Longer than the card's documented context"), muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"))
       : h("p", { class: "row t-sm" }, muted("Longest documented context"), h("span", { class: "num", text: fmtN.format(c.max_context) }), muted("tokens"));
-    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])));
+    if (c.basis !== "card") return h("div", { class: "stack" }, head, h("p", { class: "row t-sm" }, badge("idle", "Context memory not estimated"), muted(c.reason ? IA_REASON[c.reason] : IA_CTX[c.basis])),
+      c.blocking ? h("p", { class: "row t-sm rg-wrap" }, muted("Fields in config.json that stop it"), ...c.blocking.map(b => h("code", { translate: "no", dir: "ltr", text: b }))) : null);
     return h("div", { class: "stack" }, head,
       h("p", { class: "row t-sm" }, muted("Context memory"), uaNum(c.kv_gb), muted("GB"), c.total_gb === null ? null : h("span", { class: "row" }, muted("Weights and context"), uaNum(c.total_gb), muted("GB")),
         c.fits === null ? null : c.fits ? badge("ok", "Fits the memory you typed") : badge("warn", "Does not fit the memory you typed")),
-      h("p", { class: "t-caption muted", text: c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+      c.sliding_window === null ? null : h("p", { class: "row t-sm" }, muted("Sliding window"), h("span", { class: "num", text: fmtN.format(c.sliding_window) }), muted("tokens")),
+      h("p", { class: "t-caption muted", text: c.attention === "hybrid_sliding" ? "2 × key-value heads × head size × (full layers × tokens + sliding layers × the smaller of tokens and the window) × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : c.attention === "mla" ? "Layers × (latent rank + rope key) × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." : "2 × layers × key-value heads × head size × tokens × batch × bits ÷ 8 ÷ 10⁹, from the card's config.json." }));
+  }
+  // ADR-172: an exported bundle as text to copy. Copying stays in this browser; writing a file or sending it stays locked.
+  const EX_LOCK = { publish: "Publishing", install: "Installing or running the model", write: "Writing the bundle to a file" };
+  function bundleExportBody(e, steps) {
+    const area = h("textarea", { class: "textarea code ex-text", id: "f-ex-" + e.bundle_sha256.slice(0, 8), name: "bundle-text", rows: 14, readOnly: true, autocomplete: "off", spellcheck: false, dir: "ltr", lang: "en", translate: "no", "data-verbatim": "", "aria-label": "Bundle text" });
+    const formatIn = h("select", { class: "input", name: "bundle-format", "aria-label": "Format" }, h("option", { value: "json", lang: "en", translate: "no", text: "JSON" }), h("option", { value: "markdown", lang: "en", translate: "no", text: "Markdown" }));
+    const hash = h("div");
+    const show = () => { const md = formatIn.value === "markdown"; area.value = md ? e.markdown : e.json; hash.replaceChildren(iaHash(md ? "Markdown" : "Bundle", md ? e.markdown_sha256 : e.bundle_sha256)); };
+    formatIn.addEventListener("change", show);
+    show();
+    const status = h("span", { "aria-live": "polite" });
+    const copyBtn = h("button", { class: "btn", type: "button" }, icon("i-copy", "sm"), "Copy");
+    copyBtn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(area.value); status.replaceChildren(badge("ok", "Copied")); }
+      catch (err) { area.focus(); area.select(); status.replaceChildren(badge("warn", "Copying is not allowed here: the text is selected, press Ctrl+C")); }
+    });
+    return h("div", { class: "stack" }, h("div", { class: "row" }, formatIn, copyBtn, status), area, hash,
+      h("ul", { class: "plist" }, steps.map(st => h("li", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· " + EX_LOCK[st.action] })))),
+      h("p", { class: "t-caption muted", text: "Keys are sorted, so the same facts give the same text and the same hash. Nothing was written or sent." }));
+  }
+  // ADR-172: this laptop or a web host, from the memory typed and the total of weights and context.
+  const IA_OFFLOAD_WHY = { no_context: "Give a context length to compare the total with the memory you have.", memory_not_estimated: "The weights or the context memory are not estimated, so nothing is decided." };
+  function iaOffloadBody(o) {
+    const muted = t => h("span", { class: "muted", text: t });
+    const head = o.verdict === "local" ? h("p", { class: "row t-sm" }, badge("ok", "Runs on this laptop"), muted("Left over"), uaNum(o.margin_gb), muted("GB"))
+      : o.verdict === "web_offload" ? h("p", { class: "row t-sm" }, badge("warn", "Move it to a web host: it does not fit this laptop"), muted("Short by"), uaNum(o.shortfall_gb), muted("GB"))
+        : h("p", { class: "row t-sm" }, badge("idle", "Not decided: the memory is not estimated"), muted(IA_OFFLOAD_WHY[o.reason]));
+    return h("div", { class: "stack ia-offload" }, head,
+      h("p", { class: "row t-sm" }, muted("On a site of your own, while only you use it"), badge(IA_VERDICT[o.own_use][0], IA_VERDICT[o.own_use][1])),
+      h("p", { class: "row t-sm" }, muted("Once others use it"), badge(IA_VERDICT[o.others_use][0], IA_VERDICT[o.others_use][1])),
+      o.verdict === "web_offload" ? h("p", { class: "t-caption muted", text: "Putting it on a web host is publishing: a locked step until Director 00 approves it. The browser stays the light front end." }) : null);
   }
   function iaCatalogBody(r) {
     const muted = t => h("span", { class: "muted", text: t }), v = IA_VERDICT[r.verdict];
@@ -4571,6 +4682,7 @@
       else parts.push(h("p", { class: "row t-sm" }, badge("idle", "Not estimated"), h("span", { lang: "ar", dir: "rtl", text: "تعذر التحقق منها" }), muted("The record gives no parameter count.")));
     }
     if (r.context) parts.push(iaContextBody(r.context));
+    if (r.offload) parts.push(iaOffloadBody(r.offload));
     for (const st of r.steps) parts.push(h("p", { class: "lock-line" }, icon("i-lock", "sm"), h("bdi", { lang: "ar", dir: "rtl", text: "قيد الموافقة" }), h("span", { class: "subtle t-caption", text: "· Pulling and running the model waits for Director 00's approval." })));
     return h("div", { class: "stack" }, ...parts);
   }

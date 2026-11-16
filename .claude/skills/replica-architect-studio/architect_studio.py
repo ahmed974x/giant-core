@@ -30,10 +30,11 @@ sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-plan-order
 from impact_analysis import dependents_of, licence_rule, load_context  # noqa: E402
 from plan_order import skill_order  # noqa: E402
 from prompt_metacodes import js_json  # noqa: E402
-from release_gate import release_gate  # noqa: E402
+from release_gate import export_bundle, release_document, release_gate  # noqa: E402
 from skill_tree import build_tree  # noqa: E402
 
-AS_MODES = ["seal", "ui", "compose", "radar"]
+AS_MODES = ["seal", "ui", "compose", "radar", "export", "campaign"]
+AS_RECEIPT_DOMAIN = "aether-prime:approval-receipt:v1:"
 AS_SEAL_DOMAIN = "aether-prime:architect-seal:v1:"
 AS_DENSITY = {"compact": 4, "balanced": 8, "spacious": 12}
 AS_NUMERALS = {"tabular": "tabular-nums slashed-zero", "proportional": "proportional-nums slashed-zero"}
@@ -158,12 +159,109 @@ def upgrade_radar(ctx):
     return {"skills": skills, "counts": {"rules": sum(1 for s in skills if s["status"] == "rules"), "tested": sum(1 for s in skills if s["status"] == "tested")}, "models_for_service": models}
 
 
+def export_head(seal, ui):
+    """ADR-172: the export's opening Markdown sections: the seal's state and, when it was checked, the preview scale."""
+    lines = ["## Architect seal", "- State: " + seal["state"], "- Audit prefix: " + (seal["audit_prefix"] if seal["audit_prefix"] is not None else "none"), ""]
+    if ui:
+        lines += ["## Preview scale", "- Font scale: " + js_json(ui["font_scale"]) + " percent", "- Density: " + ui["density"], "- Numerals: " + ui["numerals"], "- Settings SHA-256: " + ui["config_sha256"], ""]
+    return lines
+
+
+def architect_export(r, ctx, s):
+    """ADR-172: the release export with the seal's state and audit prefix and, while the seal is open and a scale is
+    sent, the checked preview scale. No seal is needed to export; writing the file stays a locked approval."""
+    ui = ui_tokens(r) if s["unlocked"] and "font_scale" in r else None
+    bundle, doc = release_document(r, ctx)
+    seal = {"state": s["state"], "audit_prefix": s["audit_prefix"]}
+    scale = ui and {"font_scale": ui["font_scale"], "density": ui["density"], "numerals": ui["numerals"], "px": ui["px"], "config_sha256": ui["config_sha256"]}
+    ex = export_bundle({**doc, "title": "Aether Prime architect bundle", "seal": seal, "ui": scale}, export_head(seal, scale))
+    return {**ex, "release_chain_sha256": bundle["chain_sha256"], "steps": doc["steps"]}
+
+
+def campaign_checkpoints(layers, tree, shared):
+    """ADR-172: one checkpoint per Kahn layer and one for the release, each hash chained to the one before."""
+    facts = {x.get("name"): x for x in tree["skills"]} if isinstance(tree, dict) and isinstance(tree.get("skills"), list) else {}
+    cps = [{"id": "cp-" + str(i + 1), "layer": i + 1, "skills": layer, "verify": ["python3 -m unittest discover -s .claude/skills/" + n + "/tests" for n in layer if (facts.get(n) or {}).get("tests")]}
+           for i, layer in enumerate(layers)]
+    cps.append({"id": "cp-release", "layer": None, "skills": [], "verify": shared})
+    prev = "0" * 64
+    out = []
+    for cp in cps:
+        prev = _sha(prev + js_json(cp))
+        out.append({**cp, "checkpoint_sha256": prev})
+    return out
+
+
+def step_hash(campaign, step):
+    """A locked step's hash names the campaign, the action and the target."""
+    return _sha(campaign + ":" + step["action"] + ":" + step["target"])
+
+
+def receipt_hash(seal, step):
+    """A receipt binds a step's hash to the seal that signed it."""
+    return _sha(AS_RECEIPT_DOMAIN + seal + ":" + step)
+
+
+def campaign_input(r):
+    done = r.get("done", [])
+    if "done" in r and not (isinstance(done, list) and len(done) <= 64 and all(isinstance(x, str) for x in done)):
+        _fail("Done is a list of up to 64 checkpoint names.", "done")
+    failed = r.get("failed", {})
+    if "failed" in r and not (isinstance(failed, dict) and len(failed) <= 64):
+        _fail("Failed maps up to 64 checkpoint names to the reason.", "failed")
+    for k, v in failed.items():
+        if not isinstance(v, str) or not v.strip() or _len16(v) > 200 or re.search(r"[\r\n]", v):
+            _fail("Each reason is one line of 1 to 200 characters.", "failed." + k)
+    approved = r.get("approved", [])
+    if "approved" in r and not (isinstance(approved, list) and len(approved) <= 32 and all(isinstance(x, str) and re.fullmatch(r"[0-9a-f]{64}", x) for x in approved)):
+        _fail("Approved is a list of up to 32 step hashes.", "approved")
+    return done, failed, approved
+
+
+def campaign_plan(r, ctx, s):
+    """ADR-172: a long task as checkpoints, where to resume, and the architect's receipts for locked steps. A receipt
+    records the decision and runs nothing: the step stays locked and pending approval."""
+    done, failed, approved = campaign_input(r)
+    if approved and not s["unlocked"]:
+        _fail("The architect seal is needed: the studio is read only.", "seal", 403)
+    bundle, doc = release_document(r, ctx)
+    plan = campaign_checkpoints(doc["order"]["layers"], ctx.get("tree"), bundle["shared_tests"])
+    for cid in done + list(failed):
+        if not any(cp["id"] == cid for cp in plan):
+            _fail("That checkpoint is not in this campaign.", cid)
+    campaign = plan[-1]["checkpoint_sha256"]
+    steps = []
+    for st in doc["steps"]:
+        h = step_hash(campaign, st)
+        steps.append({**st, "step_sha256": h, "receipt": {"audit_prefix": s["audit_prefix"], "receipt_sha256": receipt_hash(s["hash"], h)} if h in approved else None})
+    signed = all(st["receipt"] for st in steps)
+    checkpoints = []
+    for cp in plan:
+        if cp["id"] in failed:
+            status = "needs_fix"
+        elif cp["layer"] is None:
+            status = "receipted" if signed else "awaiting_approval"
+        else:
+            status = "done" if cp["id"] in done else "pending"
+        checkpoints.append({**cp, "status": status, "reason": failed[cp["id"]] if status == "needs_fix" else None, "fix": cp["verify"] if status == "needs_fix" else []})
+    first = next((cp for cp in checkpoints if cp["status"] not in ("done", "receipted")), None)
+    counts = {k: sum(1 for cp in checkpoints if cp["status"] == k) for k in ("done", "pending", "needs_fix", "awaiting_approval", "receipted")}
+    seal = {"state": s["state"], "audit_prefix": s["audit_prefix"]}
+    head = [*export_head(seal, None), "## Checkpoints",
+            *["- " + cp["id"] + " (" + cp["status"] + "): " + (", ".join(cp["skills"]) if cp["skills"] else "release") + ("; " + cp["reason"] if cp["reason"] else "") for cp in checkpoints],
+            "- Resume from: " + (first["id"] if first else "nothing left"),
+            "- Receipts: " + str(sum(1 for st in steps if st["receipt"])) + " of " + str(len(steps)) + " locked steps; a receipt runs nothing", ""]
+    ex = export_bundle({**doc, "title": "Aether Prime campaign", "seal": seal, "campaign": {"campaign_sha256": campaign, "checkpoints": checkpoints, "resume": first["id"] if first else None}, "steps": steps}, head)
+    return {"campaign_sha256": campaign, "checkpoints": checkpoints, "resume": first["id"] if first else None, "counts": counts, "steps": steps,
+            "unmatched": sum(1 for h in approved if not any(st["step_sha256"] == h for st in steps)), "export": ex}
+
+
 def architect_studio(req, ctx=None):
     r = req if isinstance(req, dict) else _fail("Send an object with a mode.", "")
     c = ctx if isinstance(ctx, dict) else {}
     mode = r.get("mode")
     if not isinstance(mode, str) or mode not in AS_MODES:
-        _fail("The mode is seal, ui, compose or radar.", "mode")
+        _fail("The mode is seal, ui, compose, radar, export or campaign.", "mode")
     s = check_seal(r, c.get("seal"))
     seal = {"configured": s["configured"], "unlocked": s["unlocked"], "state": s["state"], "audit_prefix": s["audit_prefix"]}
     out = {"mode": mode, "seal": seal, "locks": _locks()}
@@ -177,8 +275,12 @@ def architect_studio(req, ctx=None):
         out["compose"] = compose_skill(r, c)
     if mode == "radar":
         out["radar"] = upgrade_radar(c)
+    if mode == "export":
+        out["export"] = architect_export(r, c, s)
+    if mode == "campaign":
+        out["campaign"] = campaign_plan(r, c, s)
     comp = out.get("compose")
-    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]]
+    sections = [seal, out.get("setup"), out.get("ui"), comp and comp["draft_sha256"], comp and comp["bundle"]["chain_sha256"], out.get("radar"), out["locks"]] + ([out["export"]["bundle_sha256"]] if "export" in out else []) + ([out["campaign"]["export"]["bundle_sha256"]] if "campaign" in out else [])
     chain = "0" * 64
     for x in sections:
         chain = _sha(chain + _sha(js_json(x)))

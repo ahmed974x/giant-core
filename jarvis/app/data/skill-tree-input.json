@@ -382,7 +382,7 @@
    "tools": [
     {
      "name": "architect_studio.py",
-     "functions": 8
+     "functions": 15
     }
    ],
    "scan": {
@@ -394,8 +394,8 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 121,
-    "mutants": 121
+    "killed": 224,
+    "mutants": 224
    },
    "review": "docs/security/ARCHITECT-STUDIO-REVIEW-2026-11-15.md"
   },
@@ -700,7 +700,7 @@
    "tools": [
     {
      "name": "impact_analysis.py",
-     "functions": 12
+     "functions": 13
     }
    ],
    "scan": {
@@ -712,10 +712,10 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 296,
-    "mutants": 296
+    "killed": 331,
+    "mutants": 331
    },
-   "review": "docs/security/IMPACT-ANALYSIS-REVIEW-2026-11-15.md"
+   "review": "docs/security/HYBRID-CONTEXT-AND-BUNDLE-EXPORT-REVIEW-2026-11-15.md"
   },
   {
    "name": "replica-impeccable",
@@ -916,7 +916,7 @@
    "tools": [
     {
      "name": "release_gate.py",
-     "functions": 6
+     "functions": 12
     }
    ],
    "scan": {
@@ -928,10 +928,10 @@
    "tests": true,
    "golden": true,
    "mutation": {
-    "killed": 90,
-    "mutants": 90
+    "killed": 203,
+    "mutants": 203
    },
-   "review": "docs/security/RELEASE-GATE-REVIEW-2026-11-15.md"
+   "review": "docs/security/HYBRID-CONTEXT-AND-BUNDLE-EXPORT-REVIEW-2026-11-15.md"
   },
   {
    "name": "replica-reversal-engine",

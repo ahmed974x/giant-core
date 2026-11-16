@@ -79,6 +79,7 @@
   "replica-quantum-math": [],
   "replica-release-gate": [
    "replica-impact-analysis",
+   "replica-plan-order",
    "replica-prompt-metacodes",
    "replica-skill-tree"
   ],

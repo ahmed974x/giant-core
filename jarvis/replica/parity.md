@@ -1,4 +1,4 @@
-# Parity: Jarvis (ADR-171)
+# Parity: Jarvis (ADR-172)
 
 Made by `python3 .claude/skills/replica-diff/parity.py jarvis/replica/features.csv --markdown` on 2026-11-06.
 
@@ -152,6 +152,9 @@ ADR-170 added one row, built and tested (`test-app.mjs` F50, `test-live.mjs`, se
 ADR-171 added one row, built and tested (`test-app.mjs` F51, `test-live.mjs`, server tests, skill unit tests, the mutation run):
 - licence terms read in full and context memory from each card's config.json.
 
+ADR-172 added one row, built and tested (`test-app.mjs` F52, `test-live.mjs`, server tests, skill unit tests, the mutation run):
+- context memory for documented sliding layers, this laptop or a web host, the bundle export and checkpointed campaigns.
+
 Each row is covered by a flow test (`test-app.mjs` F13–F15, `test-live.mjs`) and by server tests on SQLite and PostgreSQL 16.
 
 Two rows stay out of the score on purpose, as before:
@@ -160,7 +163,7 @@ Two rows stay out of the score on purpose, as before:
 
 ## Score: 100.0 / 100
 
-features 100.0  (120 counted, must-haves 34 of 34 done)
+features 100.0  (121 counted, must-haves 34 of 34 done)
 
 ## By area, weakest first
 - shell                        100.0  (8 features)
@@ -180,7 +183,7 @@ features 100.0  (120 counted, must-haves 34 of 34 done)
 - integrations                 100.0  (3 features)
 - memory                       100.0  (3 features)
 - search                       100.0  (5 features)
-- models                       100.0  (5 features)
+- models                       100.0  (6 features)
 - access                       100.0  (2 features)
 - governance                   100.0  (1 features)
 - analytics                    100.0  (1 features)

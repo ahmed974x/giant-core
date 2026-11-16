@@ -2,16 +2,17 @@
  "format": "jarvis-knowledge-graph-v1",
  "counts": {
   "screen": 37,
-  "route": 126,
-  "module": 16,
-  "table": 32,
+  "route": 127,
+  "module": 17,
+  "table": 33,
   "skill": 64,
   "tool": 48
  },
- "edges_count": 313,
+ "edges_count": 314,
  "unlinked": [
   "route:GET /api/health",
   "route:GET /api/search/status",
+  "route:GET /api/w/:slug/architect/campaigns",
   "route:GET /api/w/:slug/memory/export",
   "route:GET /api/w/:slug/stream",
   "route:GET /api/w/:slug/studio/cinematic/presets",
@@ -33,6 +34,12 @@
    "kind": "module",
    "label": "audit-log.mjs",
    "file": "jarvis/server/lib/audit-log.mjs"
+  },
+  {
+   "id": "module:campaigns",
+   "kind": "module",
+   "label": "campaign-log.mjs",
+   "file": "jarvis/server/lib/campaign-log.mjs"
   },
   {
    "id": "module:gate",
@@ -123,882 +130,889 @@
    "kind": "route",
    "label": "DELETE /api/w/:slug/agents/:id/schedule",
    "file": "jarvis/server/server.mjs",
-   "line": 351
+   "line": 353
   },
   {
    "id": "route:DELETE /api/w/:slug/billing/tiers/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/billing/tiers/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 364
+   "line": 366
   },
   {
    "id": "route:DELETE /api/w/:slug/forge/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/forge/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 568
+   "line": 575
   },
   {
    "id": "route:DELETE /api/w/:slug/members/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/members/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 346
+   "line": 348
   },
   {
    "id": "route:DELETE /api/w/:slug/memory/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/memory/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 563
+   "line": 570
   },
   {
    "id": "route:DELETE /api/w/:slug/model-endpoints/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/model-endpoints/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 552
+   "line": 559
   },
   {
    "id": "route:DELETE /api/w/:slug/skills/runtime/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/skills/runtime/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 544
+   "line": 551
   },
   {
    "id": "route:DELETE /api/w/:slug/webhooks/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/webhooks/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 356
+   "line": 358
   },
   {
    "id": "route:DELETE /api/w/:slug/workflows/:id",
    "kind": "route",
    "label": "DELETE /api/w/:slug/workflows/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 340
+   "line": 342
   },
   {
    "id": "route:GET /api/access",
    "kind": "route",
    "label": "GET /api/access",
    "file": "jarvis/server/server.mjs",
-   "line": 199
+   "line": 201
   },
   {
    "id": "route:GET /api/founder/status",
    "kind": "route",
    "label": "GET /api/founder/status",
    "file": "jarvis/server/server.mjs",
-   "line": 192
+   "line": 194
   },
   {
    "id": "route:GET /api/health",
    "kind": "route",
    "label": "GET /api/health",
    "file": "jarvis/server/server.mjs",
-   "line": 208
+   "line": 210
   },
   {
    "id": "route:GET /api/llm/status",
    "kind": "route",
    "label": "GET /api/llm/status",
    "file": "jarvis/server/server.mjs",
-   "line": 210
+   "line": 212
   },
   {
    "id": "route:GET /api/search/status",
    "kind": "route",
    "label": "GET /api/search/status",
    "file": "jarvis/server/server.mjs",
-   "line": 265
+   "line": 267
   },
   {
    "id": "route:GET /api/w/:slug/agents",
    "kind": "route",
    "label": "GET /api/w/:slug/agents",
    "file": "jarvis/server/server.mjs",
-   "line": 304
+   "line": 306
   },
   {
    "id": "route:GET /api/w/:slug/agents/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/agents/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 307
+   "line": 309
   },
   {
    "id": "route:GET /api/w/:slug/analytics",
    "kind": "route",
    "label": "GET /api/w/:slug/analytics",
    "file": "jarvis/server/server.mjs",
-   "line": 366
+   "line": 368
   },
   {
    "id": "route:GET /api/w/:slug/approvals",
    "kind": "route",
    "label": "GET /api/w/:slug/approvals",
    "file": "jarvis/server/server.mjs",
-   "line": 321
+   "line": 323
+  },
+  {
+   "id": "route:GET /api/w/:slug/architect/campaigns",
+   "kind": "route",
+   "label": "GET /api/w/:slug/architect/campaigns",
+   "file": "jarvis/server/server.mjs",
+   "line": 448
   },
   {
    "id": "route:GET /api/w/:slug/atlas",
    "kind": "route",
    "label": "GET /api/w/:slug/atlas",
    "file": "jarvis/server/server.mjs",
-   "line": 411
+   "line": 413
   },
   {
    "id": "route:GET /api/w/:slug/atlas/personas",
    "kind": "route",
    "label": "GET /api/w/:slug/atlas/personas",
    "file": "jarvis/server/server.mjs",
-   "line": 412
+   "line": 414
   },
   {
    "id": "route:GET /api/w/:slug/audit/head",
    "kind": "route",
    "label": "GET /api/w/:slug/audit/head",
    "file": "jarvis/server/server.mjs",
-   "line": 371
+   "line": 373
   },
   {
    "id": "route:GET /api/w/:slug/audit/leaves",
    "kind": "route",
    "label": "GET /api/w/:slug/audit/leaves",
    "file": "jarvis/server/server.mjs",
-   "line": 372
+   "line": 374
   },
   {
    "id": "route:GET /api/w/:slug/audit/merkle-proof",
    "kind": "route",
    "label": "GET /api/w/:slug/audit/merkle-proof",
    "file": "jarvis/server/server.mjs",
-   "line": 373
+   "line": 375
   },
   {
    "id": "route:GET /api/w/:slug/audit/verify",
    "kind": "route",
    "label": "GET /api/w/:slug/audit/verify",
    "file": "jarvis/server/server.mjs",
-   "line": 374
+   "line": 376
   },
   {
    "id": "route:GET /api/w/:slug/billing",
    "kind": "route",
    "label": "GET /api/w/:slug/billing",
    "file": "jarvis/server/server.mjs",
-   "line": 362
+   "line": 364
   },
   {
    "id": "route:GET /api/w/:slug/diagnostics",
    "kind": "route",
    "label": "GET /api/w/:slug/diagnostics",
    "file": "jarvis/server/server.mjs",
-   "line": 375
+   "line": 377
   },
   {
    "id": "route:GET /api/w/:slug/diagnostics/bundle",
    "kind": "route",
    "label": "GET /api/w/:slug/diagnostics/bundle",
    "file": "jarvis/server/server.mjs",
-   "line": 376
+   "line": 378
   },
   {
    "id": "route:GET /api/w/:slug/events",
    "kind": "route",
    "label": "GET /api/w/:slug/events",
    "file": "jarvis/server/server.mjs",
-   "line": 332
+   "line": 334
   },
   {
    "id": "route:GET /api/w/:slug/forge",
    "kind": "route",
    "label": "GET /api/w/:slug/forge",
    "file": "jarvis/server/server.mjs",
-   "line": 564
+   "line": 571
   },
   {
    "id": "route:GET /api/w/:slug/members",
    "kind": "route",
    "label": "GET /api/w/:slug/members",
    "file": "jarvis/server/server.mjs",
-   "line": 301
+   "line": 303
   },
   {
    "id": "route:GET /api/w/:slug/memory",
    "kind": "route",
    "label": "GET /api/w/:slug/memory",
    "file": "jarvis/server/server.mjs",
-   "line": 555
+   "line": 562
   },
   {
    "id": "route:GET /api/w/:slug/memory/export",
    "kind": "route",
    "label": "GET /api/w/:slug/memory/export",
    "file": "jarvis/server/server.mjs",
-   "line": 558
+   "line": 565
   },
   {
    "id": "route:GET /api/w/:slug/missions",
    "kind": "route",
    "label": "GET /api/w/:slug/missions",
    "file": "jarvis/server/server.mjs",
-   "line": 333
+   "line": 335
   },
   {
    "id": "route:GET /api/w/:slug/missions/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/missions/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 609
+   "line": 616
   },
   {
    "id": "route:GET /api/w/:slug/missions/:id/capsules/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/missions/:id/capsules/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 613
+   "line": 620
   },
   {
    "id": "route:GET /api/w/:slug/missions/:id/verify",
    "kind": "route",
    "label": "GET /api/w/:slug/missions/:id/verify",
    "file": "jarvis/server/server.mjs",
-   "line": 612
+   "line": 619
   },
   {
    "id": "route:GET /api/w/:slug/model-endpoints",
    "kind": "route",
    "label": "GET /api/w/:slug/model-endpoints",
    "file": "jarvis/server/server.mjs",
-   "line": 547
+   "line": 554
   },
   {
    "id": "route:GET /api/w/:slug/reversal/log",
    "kind": "route",
    "label": "GET /api/w/:slug/reversal/log",
    "file": "jarvis/server/server.mjs",
-   "line": 397
+   "line": 399
   },
   {
    "id": "route:GET /api/w/:slug/runs",
    "kind": "route",
    "label": "GET /api/w/:slug/runs",
    "file": "jarvis/server/server.mjs",
-   "line": 318
+   "line": 320
   },
   {
    "id": "route:GET /api/w/:slug/runs/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/runs/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 319
+   "line": 321
   },
   {
    "id": "route:GET /api/w/:slug/schedules",
    "kind": "route",
    "label": "GET /api/w/:slug/schedules",
    "file": "jarvis/server/server.mjs",
-   "line": 348
+   "line": 350
   },
   {
    "id": "route:GET /api/w/:slug/skills/evolution",
    "kind": "route",
    "label": "GET /api/w/:slug/skills/evolution",
    "file": "jarvis/server/server.mjs",
-   "line": 537
+   "line": 544
   },
   {
    "id": "route:GET /api/w/:slug/skills/runtime",
    "kind": "route",
    "label": "GET /api/w/:slug/skills/runtime",
    "file": "jarvis/server/server.mjs",
-   "line": 536
+   "line": 543
   },
   {
    "id": "route:GET /api/w/:slug/stats",
    "kind": "route",
    "label": "GET /api/w/:slug/stats",
    "file": "jarvis/server/server.mjs",
-   "line": 302
+   "line": 304
   },
   {
    "id": "route:GET /api/w/:slug/stream",
    "kind": "route",
    "label": "GET /api/w/:slug/stream",
    "file": "jarvis/server/server.mjs",
-   "line": 570
+   "line": 577
   },
   {
    "id": "route:GET /api/w/:slug/studio/cinematic/presets",
    "kind": "route",
    "label": "GET /api/w/:slug/studio/cinematic/presets",
    "file": "jarvis/server/server.mjs",
-   "line": 510
+   "line": 517
   },
   {
    "id": "route:GET /api/w/:slug/studio/diff",
    "kind": "route",
    "label": "GET /api/w/:slug/studio/diff",
    "file": "jarvis/server/server.mjs",
-   "line": 530
+   "line": 537
   },
   {
    "id": "route:GET /api/w/:slug/studio/snapshots",
    "kind": "route",
    "label": "GET /api/w/:slug/studio/snapshots",
    "file": "jarvis/server/server.mjs",
-   "line": 527
+   "line": 534
   },
   {
    "id": "route:GET /api/w/:slug/studio/snapshots/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/studio/snapshots/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 532
+   "line": 539
   },
   {
    "id": "route:GET /api/w/:slug/studio/verify",
    "kind": "route",
    "label": "GET /api/w/:slug/studio/verify",
    "file": "jarvis/server/server.mjs",
-   "line": 529
+   "line": 536
   },
   {
    "id": "route:GET /api/w/:slug/telemetry/metrics",
    "kind": "route",
    "label": "GET /api/w/:slug/telemetry/metrics",
    "file": "jarvis/server/server.mjs",
-   "line": 369
+   "line": 371
   },
   {
    "id": "route:GET /api/w/:slug/telemetry/series",
    "kind": "route",
    "label": "GET /api/w/:slug/telemetry/series",
    "file": "jarvis/server/server.mjs",
-   "line": 370
+   "line": 372
   },
   {
    "id": "route:GET /api/w/:slug/tree",
    "kind": "route",
    "label": "GET /api/w/:slug/tree",
    "file": "jarvis/server/server.mjs",
-   "line": 429
+   "line": 431
   },
   {
    "id": "route:GET /api/w/:slug/version",
    "kind": "route",
    "label": "GET /api/w/:slug/version",
    "file": "jarvis/server/server.mjs",
-   "line": 303
+   "line": 305
   },
   {
    "id": "route:GET /api/w/:slug/webhooks",
    "kind": "route",
    "label": "GET /api/w/:slug/webhooks",
    "file": "jarvis/server/server.mjs",
-   "line": 353
+   "line": 355
   },
   {
    "id": "route:GET /api/w/:slug/webhooks/:id/secret",
    "kind": "route",
    "label": "GET /api/w/:slug/webhooks/:id/secret",
    "file": "jarvis/server/server.mjs",
-   "line": 360
+   "line": 362
   },
   {
    "id": "route:GET /api/w/:slug/workflows",
    "kind": "route",
    "label": "GET /api/w/:slug/workflows",
    "file": "jarvis/server/server.mjs",
-   "line": 335
+   "line": 337
   },
   {
    "id": "route:GET /api/w/:slug/workflows/:id",
    "kind": "route",
    "label": "GET /api/w/:slug/workflows/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 338
+   "line": 340
   },
   {
    "id": "route:GET /api/workspaces",
    "kind": "route",
    "label": "GET /api/workspaces",
    "file": "jarvis/server/server.mjs",
-   "line": 209
+   "line": 211
   },
   {
    "id": "route:PATCH /api/access",
    "kind": "route",
    "label": "PATCH /api/access",
    "file": "jarvis/server/server.mjs",
-   "line": 200
+   "line": 202
   },
   {
    "id": "route:PATCH /api/w/:slug/agents/:id",
    "kind": "route",
    "label": "PATCH /api/w/:slug/agents/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 308
+   "line": 310
   },
   {
    "id": "route:PATCH /api/w/:slug/members/:id",
    "kind": "route",
    "label": "PATCH /api/w/:slug/members/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 345
+   "line": 347
   },
   {
    "id": "route:POST /api/founder/login",
    "kind": "route",
    "label": "POST /api/founder/login",
    "file": "jarvis/server/server.mjs",
-   "line": 193
+   "line": 195
   },
   {
    "id": "route:POST /api/founder/logout",
    "kind": "route",
    "label": "POST /api/founder/logout",
    "file": "jarvis/server/server.mjs",
-   "line": 198
+   "line": 200
   },
   {
    "id": "route:POST /api/llm/council",
    "kind": "route",
    "label": "POST /api/llm/council",
    "file": "jarvis/server/server.mjs",
-   "line": 250
+   "line": 252
   },
   {
    "id": "route:POST /api/llm/run",
    "kind": "route",
    "label": "POST /api/llm/run",
    "file": "jarvis/server/server.mjs",
-   "line": 211
+   "line": 213
   },
   {
    "id": "route:POST /api/llm/stream",
    "kind": "route",
    "label": "POST /api/llm/stream",
    "file": "jarvis/server/server.mjs",
-   "line": 227
+   "line": 229
   },
   {
    "id": "route:POST /api/search/live",
    "kind": "route",
    "label": "POST /api/search/live",
    "file": "jarvis/server/server.mjs",
-   "line": 266
+   "line": 268
   },
   {
    "id": "route:POST /api/studio/clean-clone",
    "kind": "route",
    "label": "POST /api/studio/clean-clone",
    "file": "jarvis/server/server.mjs",
-   "line": 285
+   "line": 287
   },
   {
    "id": "route:POST /api/w/:slug/access/request-public",
    "kind": "route",
    "label": "POST /api/w/:slug/access/request-public",
    "file": "jarvis/server/server.mjs",
-   "line": 549
+   "line": 556
   },
   {
    "id": "route:POST /api/w/:slug/agent/universal",
    "kind": "route",
    "label": "POST /api/w/:slug/agent/universal",
    "file": "jarvis/server/server.mjs",
-   "line": 502
+   "line": 509
   },
   {
    "id": "route:POST /api/w/:slug/agents",
    "kind": "route",
    "label": "POST /api/w/:slug/agents",
    "file": "jarvis/server/server.mjs",
-   "line": 305
+   "line": 307
   },
   {
    "id": "route:POST /api/w/:slug/agents/:id/runs",
    "kind": "route",
    "label": "POST /api/w/:slug/agents/:id/runs",
    "file": "jarvis/server/server.mjs",
-   "line": 310
+   "line": 312
   },
   {
    "id": "route:POST /api/w/:slug/approvals/:id/decide",
    "kind": "route",
    "label": "POST /api/w/:slug/approvals/:id/decide",
    "file": "jarvis/server/server.mjs",
-   "line": 322
+   "line": 324
   },
   {
    "id": "route:POST /api/w/:slug/architect",
    "kind": "route",
    "label": "POST /api/w/:slug/architect",
    "file": "jarvis/server/server.mjs",
-   "line": 438
+   "line": 440
   },
   {
    "id": "route:POST /api/w/:slug/atlas/plan",
    "kind": "route",
    "label": "POST /api/w/:slug/atlas/plan",
    "file": "jarvis/server/server.mjs",
-   "line": 416
+   "line": 418
   },
   {
    "id": "route:POST /api/w/:slug/audit/record",
    "kind": "route",
    "label": "POST /api/w/:slug/audit/record",
    "file": "jarvis/server/server.mjs",
-   "line": 398
+   "line": 400
   },
   {
    "id": "route:POST /api/w/:slug/billing/request",
    "kind": "route",
    "label": "POST /api/w/:slug/billing/request",
    "file": "jarvis/server/server.mjs",
-   "line": 365
+   "line": 367
   },
   {
    "id": "route:POST /api/w/:slug/billing/tiers",
    "kind": "route",
    "label": "POST /api/w/:slug/billing/tiers",
    "file": "jarvis/server/server.mjs",
-   "line": 363
+   "line": 365
   },
   {
    "id": "route:POST /api/w/:slug/docs/search",
    "kind": "route",
    "label": "POST /api/w/:slug/docs/search",
    "file": "jarvis/server/server.mjs",
-   "line": 468
+   "line": 475
   },
   {
    "id": "route:POST /api/w/:slug/forge",
    "kind": "route",
    "label": "POST /api/w/:slug/forge",
    "file": "jarvis/server/server.mjs",
-   "line": 565
+   "line": 572
   },
   {
    "id": "route:POST /api/w/:slug/forge/:id/install",
    "kind": "route",
    "label": "POST /api/w/:slug/forge/:id/install",
    "file": "jarvis/server/server.mjs",
-   "line": 567
+   "line": 574
   },
   {
    "id": "route:POST /api/w/:slug/impact",
    "kind": "route",
    "label": "POST /api/w/:slug/impact",
    "file": "jarvis/server/server.mjs",
-   "line": 454
+   "line": 461
   },
   {
    "id": "route:POST /api/w/:slug/math/solve",
    "kind": "route",
    "label": "POST /api/w/:slug/math/solve",
    "file": "jarvis/server/server.mjs",
-   "line": 385
+   "line": 387
   },
   {
    "id": "route:POST /api/w/:slug/members",
    "kind": "route",
    "label": "POST /api/w/:slug/members",
    "file": "jarvis/server/server.mjs",
-   "line": 343
+   "line": 345
   },
   {
    "id": "route:POST /api/w/:slug/memory",
    "kind": "route",
    "label": "POST /api/w/:slug/memory",
    "file": "jarvis/server/server.mjs",
-   "line": 556
+   "line": 563
   },
   {
    "id": "route:POST /api/w/:slug/memory/self-check",
    "kind": "route",
    "label": "POST /api/w/:slug/memory/self-check",
    "file": "jarvis/server/server.mjs",
-   "line": 557
+   "line": 564
   },
   {
    "id": "route:POST /api/w/:slug/metacodes/compile",
    "kind": "route",
    "label": "POST /api/w/:slug/metacodes/compile",
    "file": "jarvis/server/server.mjs",
-   "line": 519
+   "line": 526
   },
   {
    "id": "route:POST /api/w/:slug/missions",
    "kind": "route",
    "label": "POST /api/w/:slug/missions",
    "file": "jarvis/server/server.mjs",
-   "line": 587
+   "line": 594
   },
   {
    "id": "route:POST /api/w/:slug/missions/:id/capsules/:id/restore",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/:id/capsules/:id/restore",
    "file": "jarvis/server/server.mjs",
-   "line": 614
+   "line": 621
   },
   {
    "id": "route:POST /api/w/:slug/missions/:id/pause",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/:id/pause",
    "file": "jarvis/server/server.mjs",
-   "line": 611
+   "line": 618
   },
   {
    "id": "route:POST /api/w/:slug/missions/:id/run",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/:id/run",
    "file": "jarvis/server/server.mjs",
-   "line": 610
+   "line": 617
   },
   {
    "id": "route:POST /api/w/:slug/missions/:id/steps/:id/skip",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/:id/steps/:id/skip",
    "file": "jarvis/server/server.mjs",
-   "line": 615
+   "line": 622
   },
   {
    "id": "route:POST /api/w/:slug/missions/macro",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/macro",
    "file": "jarvis/server/server.mjs",
-   "line": 597
+   "line": 604
   },
   {
    "id": "route:POST /api/w/:slug/missions/plan",
    "kind": "route",
    "label": "POST /api/w/:slug/missions/plan",
    "file": "jarvis/server/server.mjs",
-   "line": 588
+   "line": 595
   },
   {
    "id": "route:POST /api/w/:slug/model-endpoints",
    "kind": "route",
    "label": "POST /api/w/:slug/model-endpoints",
    "file": "jarvis/server/server.mjs",
-   "line": 548
+   "line": 555
   },
   {
    "id": "route:POST /api/w/:slug/model-endpoints/:id/activate",
    "kind": "route",
    "label": "POST /api/w/:slug/model-endpoints/:id/activate",
    "file": "jarvis/server/server.mjs",
-   "line": 551
+   "line": 558
   },
   {
    "id": "route:POST /api/w/:slug/order",
    "kind": "route",
    "label": "POST /api/w/:slug/order",
    "file": "jarvis/server/server.mjs",
-   "line": 476
+   "line": 483
   },
   {
    "id": "route:POST /api/w/:slug/polymath/run",
    "kind": "route",
    "label": "POST /api/w/:slug/polymath/run",
    "file": "jarvis/server/server.mjs",
-   "line": 485
+   "line": 492
   },
   {
    "id": "route:POST /api/w/:slug/privacy-shield/scrub",
    "kind": "route",
    "label": "POST /api/w/:slug/privacy-shield/scrub",
    "file": "jarvis/server/server.mjs",
-   "line": 422
+   "line": 424
   },
   {
    "id": "route:POST /api/w/:slug/recon/passive",
    "kind": "route",
    "label": "POST /api/w/:slug/recon/passive",
    "file": "jarvis/server/server.mjs",
-   "line": 377
+   "line": 379
   },
   {
    "id": "route:POST /api/w/:slug/release",
    "kind": "route",
    "label": "POST /api/w/:slug/release",
    "file": "jarvis/server/server.mjs",
-   "line": 446
+   "line": 453
   },
   {
    "id": "route:POST /api/w/:slug/reversal/plan",
    "kind": "route",
    "label": "POST /api/w/:slug/reversal/plan",
    "file": "jarvis/server/server.mjs",
-   "line": 395
+   "line": 397
   },
   {
    "id": "route:POST /api/w/:slug/reversal/template",
    "kind": "route",
    "label": "POST /api/w/:slug/reversal/template",
    "file": "jarvis/server/server.mjs",
-   "line": 396
+   "line": 398
   },
   {
    "id": "route:POST /api/w/:slug/runbook",
    "kind": "route",
    "label": "POST /api/w/:slug/runbook",
    "file": "jarvis/server/server.mjs",
-   "line": 461
+   "line": 468
   },
   {
    "id": "route:POST /api/w/:slug/runs/:id/cancel",
    "kind": "route",
    "label": "POST /api/w/:slug/runs/:id/cancel",
    "file": "jarvis/server/server.mjs",
-   "line": 320
+   "line": 322
   },
   {
    "id": "route:POST /api/w/:slug/skills/discover-online",
    "kind": "route",
    "label": "POST /api/w/:slug/skills/discover-online",
    "file": "jarvis/server/server.mjs",
-   "line": 538
+   "line": 545
   },
   {
    "id": "route:POST /api/w/:slug/skills/evolve",
    "kind": "route",
    "label": "POST /api/w/:slug/skills/evolve",
    "file": "jarvis/server/server.mjs",
-   "line": 541
+   "line": 548
   },
   {
    "id": "route:POST /api/w/:slug/skills/import",
    "kind": "route",
    "label": "POST /api/w/:slug/skills/import",
    "file": "jarvis/server/server.mjs",
-   "line": 539
+   "line": 546
   },
   {
    "id": "route:POST /api/w/:slug/skills/runtime/:id/install",
    "kind": "route",
    "label": "POST /api/w/:slug/skills/runtime/:id/install",
    "file": "jarvis/server/server.mjs",
-   "line": 543
+   "line": 550
   },
   {
    "id": "route:POST /api/w/:slug/skills/synthesize-and-mount",
    "kind": "route",
    "label": "POST /api/w/:slug/skills/synthesize-and-mount",
    "file": "jarvis/server/server.mjs",
-   "line": 540
+   "line": 547
   },
   {
    "id": "route:POST /api/w/:slug/studio/cinematic",
    "kind": "route",
    "label": "POST /api/w/:slug/studio/cinematic",
    "file": "jarvis/server/server.mjs",
-   "line": 511
+   "line": 518
   },
   {
    "id": "route:POST /api/w/:slug/studio/hyper",
    "kind": "route",
    "label": "POST /api/w/:slug/studio/hyper",
    "file": "jarvis/server/server.mjs",
-   "line": 401
+   "line": 403
   },
   {
    "id": "route:POST /api/w/:slug/studio/snapshots",
    "kind": "route",
    "label": "POST /api/w/:slug/studio/snapshots",
    "file": "jarvis/server/server.mjs",
-   "line": 528
+   "line": 535
   },
   {
    "id": "route:POST /api/w/:slug/studio/snapshots/:id/fork",
    "kind": "route",
    "label": "POST /api/w/:slug/studio/snapshots/:id/fork",
    "file": "jarvis/server/server.mjs",
-   "line": 533
+   "line": 540
   },
   {
    "id": "route:POST /api/w/:slug/telemetry/record",
    "kind": "route",
    "label": "POST /api/w/:slug/telemetry/record",
    "file": "jarvis/server/server.mjs",
-   "line": 368
+   "line": 370
   },
   {
    "id": "route:POST /api/w/:slug/tree/compose",
    "kind": "route",
    "label": "POST /api/w/:slug/tree/compose",
    "file": "jarvis/server/server.mjs",
-   "line": 430
+   "line": 432
   },
   {
    "id": "route:POST /api/w/:slug/webhooks",
    "kind": "route",
    "label": "POST /api/w/:slug/webhooks",
    "file": "jarvis/server/server.mjs",
-   "line": 354
+   "line": 356
   },
   {
    "id": "route:POST /api/w/:slug/webhooks/:id/activate",
    "kind": "route",
    "label": "POST /api/w/:slug/webhooks/:id/activate",
    "file": "jarvis/server/server.mjs",
-   "line": 357
+   "line": 359
   },
   {
    "id": "route:POST /api/w/:slug/webhooks/:id/pause",
    "kind": "route",
    "label": "POST /api/w/:slug/webhooks/:id/pause",
    "file": "jarvis/server/server.mjs",
-   "line": 358
+   "line": 360
   },
   {
    "id": "route:POST /api/w/:slug/webhooks/:id/test",
    "kind": "route",
    "label": "POST /api/w/:slug/webhooks/:id/test",
    "file": "jarvis/server/server.mjs",
-   "line": 359
+   "line": 361
   },
   {
    "id": "route:POST /api/w/:slug/workbench/run",
    "kind": "route",
    "label": "POST /api/w/:slug/workbench/run",
    "file": "jarvis/server/server.mjs",
-   "line": 494
+   "line": 501
   },
   {
    "id": "route:POST /api/w/:slug/workflows",
    "kind": "route",
    "label": "POST /api/w/:slug/workflows",
    "file": "jarvis/server/server.mjs",
-   "line": 336
+   "line": 338
   },
   {
    "id": "route:POST /api/w/:slug/workflows/:id/run",
    "kind": "route",
    "label": "POST /api/w/:slug/workflows/:id/run",
    "file": "jarvis/server/server.mjs",
-   "line": 341
+   "line": 343
   },
   {
    "id": "route:PUT /api/w/:slug/agents/:id/schedule",
    "kind": "route",
    "label": "PUT /api/w/:slug/agents/:id/schedule",
    "file": "jarvis/server/server.mjs",
-   "line": 350
+   "line": 352
   },
   {
    "id": "route:PUT /api/w/:slug/workflows/:id",
    "kind": "route",
    "label": "PUT /api/w/:slug/workflows/:id",
    "file": "jarvis/server/server.mjs",
-   "line": 339
+   "line": 341
   },
   {
    "id": "screen:agent",
@@ -1045,7 +1059,7 @@
    "kind": "screen",
    "label": "atlas",
    "file": "jarvis/app/src/app.js",
-   "line": 4984,
+   "line": 5100,
    "nav": true
   },
   {
@@ -1061,7 +1075,7 @@
    "kind": "screen",
    "label": "diagnostics",
    "file": "jarvis/app/src/app.js",
-   "line": 5052,
+   "line": 5168,
    "nav": true
   },
   {
@@ -1069,7 +1083,7 @@
    "kind": "screen",
    "label": "docs",
    "file": "jarvis/app/src/app.js",
-   "line": 4661,
+   "line": 4777,
    "nav": true
   },
   {
@@ -1093,7 +1107,7 @@
    "kind": "screen",
    "label": "impact",
    "file": "jarvis/app/src/app.js",
-   "line": 4604,
+   "line": 4720,
    "nav": true
   },
   {
@@ -1125,7 +1139,7 @@
    "kind": "screen",
    "label": "memory",
    "file": "jarvis/app/src/app.js",
-   "line": 5087,
+   "line": 5203,
    "nav": true
   },
   {
@@ -1149,7 +1163,7 @@
    "kind": "screen",
    "label": "order",
    "file": "jarvis/app/src/app.js",
-   "line": 4703,
+   "line": 4819,
    "nav": true
   },
   {
@@ -1165,7 +1179,7 @@
    "kind": "screen",
    "label": "polymath",
    "file": "jarvis/app/src/app.js",
-   "line": 4827,
+   "line": 4943,
    "nav": true
   },
   {
@@ -1181,7 +1195,7 @@
    "kind": "screen",
    "label": "release",
    "file": "jarvis/app/src/app.js",
-   "line": 4445,
+   "line": 4521,
    "nav": true
   },
   {
@@ -1277,7 +1291,7 @@
    "kind": "screen",
    "label": "workbench",
    "file": "jarvis/app/src/app.js",
-   "line": 4912,
+   "line": 5028,
    "nav": true
   },
   {
@@ -1783,6 +1797,16 @@
    ]
   },
   {
+   "id": "table:architect_campaigns",
+   "kind": "table",
+   "label": "architect_campaigns",
+   "file": "jarvis/server/lib/schema-sqlite.sql",
+   "line": 489,
+   "constraints": [
+    "architect_campaigns_no_code"
+   ]
+  },
+  {
    "id": "table:audit_leaves",
    "kind": "table",
    "label": "audit_leaves",
@@ -2039,6 +2063,13 @@
     "skill_draft",
     "compose_skill",
     "upgrade_radar",
+    "export_head",
+    "architect_export",
+    "campaign_checkpoints",
+    "step_hash",
+    "receipt_hash",
+    "campaign_input",
+    "campaign_plan",
     "architect_studio",
     "main"
    ]
@@ -2463,6 +2494,7 @@
     "weights_gb",
     "kv_cache_gb",
     "context_memory",
+    "offload_route",
     "check_model",
     "dependents_of",
     "blast_radius",
@@ -2676,6 +2708,12 @@
     "audit_repo",
     "regress_gate",
     "release_bundle",
+    "canonical",
+    "model_section",
+    "bundle_markdown",
+    "export_bundle",
+    "release_document",
+    "release_export",
     "release_gate",
     "main"
    ]
@@ -2899,6 +2937,11 @@
   {
    "from": "module:audit",
    "to": "table:audit_leaves",
+   "kind": "sql"
+  },
+  {
+   "from": "module:campaigns",
+   "to": "table:architect_campaigns",
    "kind": "sql"
   },
   {
@@ -4448,10 +4491,10 @@
   }
  ],
  "files": {
-  "jarvis/app/src/app.js": "187f2ade4edca93a3fe597aea7b1ba804f9a1a82c6b778b5e8f3d1276fb23660",
+  "jarvis/app/src/app.js": "73f64811a733b5b60fb2ca83cba5f57ad52bd59cdc824fd43464677908e74be1",
   "jarvis/app/src/shell.tmpl": "01d72aa60ad29ea3ab8f97a68ec44070f899e7240bb0521b67f6de8d41ea83c0",
-  "jarvis/server/server.mjs": "d834694a240a9567142c19037323228665f1d717e4c96cb65a7e26b4b5bcd7be",
-  "jarvis/server/lib/schema-sqlite.sql": "fc5c90f4c285cd9fa8576e9a038414b996c3f2198092e774f138d09860f8304c",
+  "jarvis/server/server.mjs": "3ceeb5effa0e2318cddeff36bd2a03a19d6e6803d3fb95e4a98fe4dc12e7a3b5",
+  "jarvis/server/lib/schema-sqlite.sql": "da2ca4c27a85d4de86e3f8b9a3baa70930a3e6e7c24d11ec0b5e935c66e8ecd9",
   "jarvis/server/lib/founder-gate.mjs": "931899a4801450e75fd77fe94e8cdd1491cd7c9d7f1850bf2ad8bf39ebe7eea7",
   "jarvis/server/lib/open-web-search.mjs": "997dfa5a2001cb0c7dd3d5c1868d07eab1fc7f6d080d43e32cb57234f7d2cef5",
   "jarvis/server/lib/ollama-bridge.mjs": "208ae706a61f45558c04716312ad2ac2e49d8378825d1676fa6c500c3b7ee5b3",
@@ -4466,6 +4509,7 @@
   "jarvis/server/lib/telemetry.mjs": "3291b2191714e9fbff05392630102e1d57ba866f00e43291330c1b919cbb58c8",
   "jarvis/server/lib/readiness.mjs": "e59871ff3006e47fb40f138d78123c1e654a19f0b6ce3430c71d4ec86b76d25e",
   "jarvis/server/lib/reversal-log.mjs": "6c35302605cec510cdc7fbb68d46f9e9c1558cb891caca4264f81642d3181457",
+  "jarvis/server/lib/campaign-log.mjs": "dfe02e34ded66f49c40ab806a9fd4c44e0be3bd2ac8259643e3fae824a6515e9",
   "jarvis/server/lib/passive-recon.mjs": "cc840b56ca206213b7c998fcd8388e8c31b198186628a15be2aaaf98104b7876",
   "jarvis/server/lib/skill-loader.mjs": "8b3fd164908867dc8ed6e4e77d04e67d95c7d4e2ca131deb7e2bb9d324c2ab79",
   ".claude/skills/algorithmic-art/SKILL.md": "3bc4092c09804853186524c826bc0621b940bb6122c05b84496dff95388e6eef",
@@ -4493,8 +4537,8 @@
   ".claude/skills/param/SKILL.md": "2f8f2208fb616ad41d268be0c5213cb7af88a6dfab7dfe1cba84f8b85fae686d",
   ".claude/skills/quant-microstructure-gex/SKILL.md": "52ca41f9e39ce6b1f73162c628052ff3d860c05cc85f5cfca3d9595123c65885",
   ".claude/skills/replica-architect/SKILL.md": "58c7c7a60e6d2d053d50f3c15d15e0972505988d7178a5e42f6fde4f0e396be2",
-  ".claude/skills/replica-architect-studio/SKILL.md": "100c86c5383ebdd6c605787b4a19c671ca442033186bcede44f05a10412a1cee",
-  ".claude/skills/replica-architect-studio/architect_studio.py": "633e2612eacfe0aecbf9b015023266ac05ccd4a93d14b48be85f103b6d426fab",
+  ".claude/skills/replica-architect-studio/SKILL.md": "83fc0aa236db927798479351a1f2a446204576a851f6b5baa446e462b5f588e1",
+  ".claude/skills/replica-architect-studio/architect_studio.py": "4575bd9c300da8757a812abad0a08697a70b2f61a20e738f48295274aac19bf9",
   ".claude/skills/replica-backend/SKILL.md": "6cd20c2626c0f760a12c283ca6cd6e9e83a5170b87fd9223e77c2b3246da42d3",
   ".claude/skills/replica-build/SKILL.md": "f62425258b93404ad561a5b999d3cd079e2a09765809403779caae047ac64cbd",
   ".claude/skills/replica-cyber-recon/SKILL.md": "88139330ad51482eb3f4e8e9df0c4878d51e7b44143966812a170b257e0f8bf0",
@@ -4531,8 +4575,8 @@
   ".claude/skills/replica-hyper-studio/SKILL.md": "9ba43188ba7823c8706dabf0af23226435f36388830d1a28fe69a5134c7bc854",
   ".claude/skills/replica-hyper-studio/cinematic_presets.py": "63951597cd55113bc63dc603aed91b1958aab3c31422aa0415668ff263b31647",
   ".claude/skills/replica-hyper-studio/hyper_studio.py": "f975e04169d69144b2a7c611391b8ce1c9342cd75bbecbc8101ac0d9363312f0",
-  ".claude/skills/replica-impact-analysis/SKILL.md": "b9da0258e27de8c1a81d8605938ea2425e0e41fd88401f8139fb986ab7114873",
-  ".claude/skills/replica-impact-analysis/impact_analysis.py": "042d4d16c29de25a0c51b130878389fbf2656a113030a70257b7a8ded6bcdf1d",
+  ".claude/skills/replica-impact-analysis/SKILL.md": "dc28fe0af0f8c552d67a71567038eb5c5b7617a44d375821cf690adf9c37f33a",
+  ".claude/skills/replica-impact-analysis/impact_analysis.py": "3e57ce7a217ef51b94462eb3d28da4aba1594dcf5774c5a421bc491f0e7d7869",
   ".claude/skills/replica-impeccable/SKILL.md": "acdaedf5863d6159d441e5f53d54a33ca7c56c82c57b13f4455f166910f3b47b",
   ".claude/skills/replica-impeccable/slop_guard.py": "acbeee13b48b79a0f6ecdc8377f9a54fee9bcff7f2b266bd8068bc130488bd53",
   ".claude/skills/replica-long-horizon/SKILL.md": "2f73eb49ad0353b9e2679a99bbb05f87f24e9ea28280e6cf44d5737b03f8daec",
@@ -4552,12 +4596,12 @@
   ".claude/skills/replica-prompt-metacodes/prompt_metacodes.py": "9611d6c3d710da7759d1ed5476c72711979202367d963f5f56fba8b2616fb030",
   ".claude/skills/replica-quantum-math/SKILL.md": "49ee3100738eb16ddb6e7342f2736d17606ebedc553367ec4f4ff3b24ef8d100",
   ".claude/skills/replica-quantum-math/quantum_math.py": "448589c4333b331fe321ac26fc8ea5d6b1f7ecace65df7315dc56c1c2cb7e1ee",
-  ".claude/skills/replica-release-gate/SKILL.md": "953498a7bb6c2d1bf5471192a77433e990b0810df329541a9fb639237875973a",
-  ".claude/skills/replica-release-gate/release_gate.py": "bfca54e30ab459c8c77fb71169b3cc8a2a85594779717dd7560a38f4e7592938",
+  ".claude/skills/replica-release-gate/SKILL.md": "1a91b5c57d5660979d0c009cab2a5eb4263265f20f66ec8be04eff1520a0dca6",
+  ".claude/skills/replica-release-gate/release_gate.py": "747360f72a4294ec535ee15400412fb7edcd003d820aa1d28eac34e2503b74f2",
   ".claude/skills/replica-reversal-engine/SKILL.md": "6a2826669644f3f59b47d744eb699df16f42e4f8b536018597dcce2e1f782ccc",
   ".claude/skills/replica-reversal-engine/reversal_engine.py": "8a3b024381e40e172ad5b7649c35029b0098cd8fffbe103b7cc3f36cd247916f",
   ".claude/skills/replica-runbook/SKILL.md": "8c05fcae424126022aa72a8180ad478108cf445ce7db0bcbc39ef02cd968cd53",
-  ".claude/skills/replica-runbook/runbook.py": "b8b413cda119a93eac8696a11899fede0770a81d5786a04cbec170b5055f5c06",
+  ".claude/skills/replica-runbook/runbook.py": "29fe4bcc9e52503deaff44dda3e9f2f2e04b077d311d4bf74f2697964efdff4e",
   ".claude/skills/replica-skill-tree/SKILL.md": "44bacc896c1b2b1afac7e2771a817579fbf81f4879452710ddb1500fb62c6ab6",
   ".claude/skills/replica-skill-tree/skill_tree.py": "df0f76d4c55ad4a6a26a290ce58caba253dde22fec29e0599cf1edb6d2af122a",
   ".claude/skills/replica-test/SKILL.md": "75b0c5e38ead5ab46ede3b403e3b83f3bfe507178058ad03782faab4849dda14",
@@ -4581,5 +4625,5 @@
   ".claude/skills/web-artifacts-builder/SKILL.md": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
   ".claude/skills/webapp-testing/SKILL.md": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
  },
- "sha256": "66f174f2d11c9ba6f5d26b8d1ea08a089561bccc1980202b216c91294f74b4c5"
+ "sha256": "87dca3984f6cd5884b160e738d92a18656eb941d0328af98c072d3fd4fa9ecea"
 }

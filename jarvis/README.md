@@ -451,6 +451,14 @@ python3 .claude/skills/replica-formal-verify/state_prover.py --plan plan.json
   - With a context length (and optionally the batch size and bits per cache value), it gives the context memory from the card's `config.json`, the total with the weights, and a flag when the length passes the documented maximum.
   - Models that mix attention types, gated cards and other sizes of a family show why no number is given.
 
+- **Sliding and full layers, and the export (ADR-172).**
+  - gpt-oss-120b and Olmo 3.1 32B name every layer in `config.json`, so their context memory counts full layers for every token and sliding layers for at most the window. The other mixed cards name the fields that stop the estimate.
+  - `#/release` and `#/architect` export the bundle as key-sorted JSON or Markdown, read only, with a copy button and the SHA-256 of each text. Writing it to a file stays locked.
+
+- **This laptop or a web host, and campaigns (ADR-172).**
+  - With the memory you have and a context length, impact analysis says whether the model runs on this laptop (with the margin) or needs a web host (with the shortfall; publishing stays locked), and reads the licence for your own site and for others.
+  - `#/architect` → **Campaign with checkpoints** splits the skills by Kahn layer, keeps where to resume in this browser and on the server, and signs a locked step with the seal as a receipt that runs nothing.
+
 - The runbook (ADR-165) probes `#/impact` as its eleventh page.
 
 ## Release readiness (ADR-169)

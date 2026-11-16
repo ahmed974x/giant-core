@@ -7,14 +7,19 @@
 //   bundle   the skills a change touched and an optional model, through impact analysis (ADR-168): each skill's
 //            blast radius, the pages and test commands joined, the model's licence and memory verdict, and an LCS
 //            diff of the release notes; a SHA-256 chain binds the sections. Publishing stays a locked approval.
+//   export   ADR-172: the bundle as one document to copy: Kahn's layers of the chosen skills (plan order, ADR-163),
+//            the pages, the test commands, the model's licence verdict, terms, weights and context memory, the locked
+//            steps and the chain hash, written as key-sorted JSON (two-space indent) and as Markdown, with the SHA-256
+//            of each text. Writing the file to disk or sending it anywhere stays a locked approval.
 // The checks belong to the engines called here; this file adds no second guard for them. Pure: no network, no
 // process, no file; nothing is sent, installed or published. The same answers come from
 // .claude/skills/replica-release-gate/release_gate.py (tests/golden.json).
 import { sha256Hex } from "./snapshot.mjs";
 import { buildTree } from "./skill-tree.mjs";
 import { impactAnalysis, IA_PAGES } from "./impact-analysis.mjs";
+import { skillOrder } from "./plan-order.mjs";
 
-export const RG_MODES = ["audit", "regress", "bundle"];
+export const RG_MODES = ["audit", "regress", "bundle", "export"];
 // Counts that should only grow, and counts that must be 0 for a release.
 export const RG_GROWTH = ["server_passed", "app_passed", "live_passed", "mutants_killed"];
 export const RG_FAILURE = ["server_failed", "app_failed", "live_failed", "mutants_survived", "skillspector_critical", "skillspector_high", "contrast_failing", "purity_violations"];
@@ -75,11 +80,71 @@ export function releaseBundle(r, ctx) {
     chain_sha256: sections.reduce((h, s) => sha256Hex(h + sha256Hex(JSON.stringify(s))), "0".repeat(64)), sent: false };
 }
 
+// ADR-172: the exported document. Keys are sorted at every level, so the same facts always give the same text.
+export function canonical(v) {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (v === null || typeof v !== "object") return v;
+  const o = {};
+  for (const k of Object.keys(v).sort()) o[k] = canonical(v[k]);
+  return o;
+}
+
+// The model's part of the document: what impact analysis said, nothing added.
+export function modelSection(m) {
+  if (!m) return null;
+  return { model: m.model, use: m.use, found: m.found, verdict: m.verdict, note: m.note, family: m.family && { family: m.family.family, licence: m.family.licence, card: m.family.card, read: m.family.read, terms: m.family.terms },
+    memory: m.memory, context: m.context, offload: m.offload };
+}
+
+function modelLines(m) {
+  const f = m.family, lines = ["## Model", "- Name: " + m.model + " (" + m.use + ")", "- Family: " + (f ? f.family + ", card " + f.card + ", read " + f.read : "not in the catalog"), "- Licence verdict: " + m.verdict];
+  if (f) lines.push("- Licence: " + f.licence);
+  if (f && f.terms) lines.push("- Terms: " + f.terms.requirement + ", " + (f.terms.when === "always" ? "at any revenue" : "above US$" + f.terms.revenue_usd_12m + " over 12 months") + ", file SHA-256 " + f.terms.sha256);
+  if (m.memory) lines.push("- Weights: " + (m.memory.weights_gb === null ? "not estimated (" + m.memory.basis + ")" : m.memory.weights_gb + " GB at " + m.memory.bits + " bits"));
+  if (m.context) lines.push("- Context memory: " + (m.context.kv_gb === null ? "not estimated (" + m.context.basis + (m.context.blocking ? ": " + m.context.blocking.join(", ") : "") + ")" : m.context.kv_gb + " GB for " + m.context.tokens + " tokens (" + m.context.attention + ")"),
+    "- Total: " + (m.context.total_gb === null ? "not estimated" : m.context.total_gb + " GB"), "- Longest documented context: " + (m.context.max_context === null ? "unknown" : m.context.max_context + (m.context.exceeds ? " (exceeded)" : "")));
+  if (m.offload) lines.push("- Where it runs: " + (m.offload.verdict === "local" ? "this laptop, " + m.offload.margin_gb + " GB to spare of " + m.offload.laptop_gb + " GB" : m.offload.verdict === "web_offload" ? "a web host, " + m.offload.shortfall_gb + " GB more than the laptop's " + m.offload.laptop_gb + " GB" : "not decided (" + m.offload.reason + ")"),
+    "- Licence on a site of your own: " + m.offload.own_use + " while only you use it, " + m.offload.others_use + " once others do");
+  return lines;
+}
+
+// The same document as Markdown, read from the key-sorted data; head is the caller's own opening sections.
+export function bundleMarkdown(d, head) {
+  const lines = ["# " + d.title, "", ...head, "## Skills in order (Kahn's layers)"];
+  d.order.layers.forEach((l, i) => lines.push("- Layer " + (i + 1) + ": " + l.join(", ")));
+  if (d.order.cycle.length) lines.push("- On a cycle, left out: " + d.order.cycle.join(", "));
+  lines.push("", "## Pages to test again", ...(d.pages.length ? d.pages.map(p => "- " + p) : ["- none"]), "", "## Test commands", "", "```bash", ...d.tests, "```", "");
+  if (d.model) lines.push(...modelLines(d.model), "");
+  lines.push("## Locked steps", ...d.steps.map(s => "- " + s.action + " " + s.target + ": waiting for approval"), "", "## Release chain", "- SHA-256: " + d.release_chain_sha256);
+  return lines.join("\n") + "\n";
+}
+
+// The document as text to copy, in two forms, each with its SHA-256.
+export function exportBundle(doc, head = []) {
+  const data = canonical(doc);
+  const json = JSON.stringify(data, null, 2) + "\n", markdown = bundleMarkdown(data, head);
+  return { format: "aether-prime-bundle-v1", json, markdown, bundle_sha256: sha256Hex(json), markdown_sha256: sha256Hex(markdown) };
+}
+
+// The release part of an export, shared with the architect studio.
+export function releaseDocument(r, ctx) {
+  const b = releaseBundle(r, ctx);
+  const order = skillOrder(ctx.deps, b.skills.map(p => p.skill));
+  const steps = [...b.steps, { action: "write", target: "bundle file", gate: "approval", locked: true, status: "pending_approval" }];
+  return { bundle: b, doc: { title: "Aether Prime release bundle", order: { layers: order.layers, cycle: order.cycle }, pages: b.pages, tests: [...b.tests, ...b.shared_tests], model: modelSection(b.model), steps, release_chain_sha256: b.chain_sha256 } };
+}
+
+export function releaseExport(r, ctx) {
+  const { bundle, doc } = releaseDocument(r, ctx);
+  return { mode: "export", export: exportBundle(doc), steps: doc.steps, chain_sha256: bundle.chain_sha256, sent: false };
+}
+
 export function releaseGate(req, ctx) {
   const r = req && typeof req === "object" && !Array.isArray(req) ? req : rgFail("Send an object with a mode.", "");
   const c = ctx ?? {};
   if (r.mode === "audit") return auditRepo(c);
   if (r.mode === "regress") return regressGate(r);
   if (r.mode === "bundle") return releaseBundle(r, c);
-  return rgFail("The mode is audit, regress or bundle.", "mode");
+  if (r.mode === "export") return releaseExport(r, c);
+  return rgFail("The mode is audit, regress, bundle or export.", "mode");
 }

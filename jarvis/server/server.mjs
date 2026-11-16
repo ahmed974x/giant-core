@@ -35,6 +35,7 @@ import { createAuditLog } from "./lib/audit-log.mjs";
 import { createTelemetry } from "./lib/telemetry.mjs";
 import { createReadiness } from "./lib/readiness.mjs";
 import { createReversalLog } from "./lib/reversal-log.mjs";
+import { createCampaignLog } from "./lib/campaign-log.mjs";
 import { createPassiveRecon } from "./lib/passive-recon.mjs";
 import { solve as solveMath, localize as localizeMath, umText } from "./lib/universal-math.mjs";
 import { hyper as hyperStudio, hyperSvg } from "./lib/hyper-studio.mjs";
@@ -104,6 +105,7 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
   const readiness = createReadiness({ db, store, llm, search, audit, repoRoot, address: () => (server.address() || {}).address });
   // ADR-150: the reversal engine corrects plans and templates; each correction is logged, audited and remembered.
   const reversal = createReversalLog({ db, store, memory });
+  const campaigns = createCampaignLog({ db, store });
   // ADR-152: passive recon of a domain: RDAP, certificate logs, response headers, security.txt (four GETs).
   const recon = createPassiveRecon({ fetchResource: reconFetch });
   const latency = new Map();
@@ -438,15 +440,20 @@ export async function startServer({ port = Number(process.env.JARVIS_PORT || 879
         if (req.method === "POST" && rest === "/architect") {
           let out;
           try { out = architectStudio(body, { seal: architectSeal, catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400 && e.status !== 403) throw e; return send(e.status, { error: e.message, detail: e.detail }); }
-          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : ""));
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "architect." + out.mode, out.seal.state + (out.compose ? ", " + out.compose.order.layers.length + " layers" : out.radar ? ", " + out.radar.skills.length + " to upgrade" : out.export ? ", " + out.export.steps.length + " locked" : out.campaign ? ", resume " + (out.campaign.resume ?? "none") + ", " + out.campaign.counts.done + " done" : ""));
+          // ADR-172: a campaign is saved only when asked, without the code.
+          if (out.campaign && body.save === true) out.saved = await campaigns.save(slug, body, out.campaign);
           return send(200, out);
+        }
+        if (req.method === "GET" && rest === "/architect/campaigns") {
+          return send(200, { campaigns: await campaigns.list(slug, url.searchParams.get("limit")) });
         }
         // ADR-169: release readiness over the same module and snapshots; the request brings only its own snapshots,
         // skills, model and notes. Nothing is published; events keep the verdict and counts.
         if (req.method === "POST" && rest === "/release") {
           let out;
           try { out = releaseGate(body, { catalog: catalogJson(MODEL_PROFILES), deps: readSkillDeps(), tree: readSkillTreeInput(), corpus: readSearchCorpus() }); } catch (e) { if (e.status !== 400) throw e; return send(400, { error: e.message, detail: e.detail }); }
-          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "release." + out.mode, out.mode === "bundle" ? out.skills.length + " skills, " + out.pages.length + " pages, " + out.steps.length + " locked" : out.verdict);
+          await store.logEvent(await store.workspaceIdOf(slug), "member:owner", "release." + out.mode, out.mode === "bundle" ? out.skills.length + " skills, " + out.pages.length + " pages, " + out.steps.length + " locked" : out.mode === "export" ? out.export.json.length + " characters, " + out.steps.length + " locked" : out.verdict);
           return send(200, out);
         }
         // ADR-168: impact analysis over the catalog module and the snapshots on disk; the request cannot bring its own.

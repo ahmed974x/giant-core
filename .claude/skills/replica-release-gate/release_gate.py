@@ -9,6 +9,10 @@ Three deterministic checks over facts this repository already holds:
   bundle   the skills a change touched and an optional model, through impact analysis (replica-impact-analysis): each
            skill's blast radius, the pages and test commands joined, the model's licence and memory verdict, and an LCS
            diff of the release notes; a SHA-256 chain binds the sections. Publishing stays a locked approval.
+  export   ADR-172: the bundle as one document to copy: Kahn's layers of the chosen skills (replica-plan-order), the
+           pages, the test commands, the model's licence verdict, terms, weights and context memory, the locked steps
+           and the chain hash, as key-sorted JSON (two-space indent) and as Markdown, with the SHA-256 of each text.
+           Writing the file to disk or sending it anywhere stays a locked approval.
 The checks belong to the engines called here; this file adds no second guard for them. It reads the snapshots it is
 given, sends nothing and starts no process.
 
@@ -24,12 +28,13 @@ import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SKILLS = os.path.dirname(_HERE)
-sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-skill-tree", "replica-impact-analysis", "replica-prompt-metacodes")]
+sys.path[:0] = [_HERE] + [os.path.join(_SKILLS, d) for d in ("replica-skill-tree", "replica-impact-analysis", "replica-plan-order", "replica-prompt-metacodes")]
 from impact_analysis import IA_PAGES, impact_analysis, load_context  # noqa: E402
+from plan_order import skill_order  # noqa: E402
 from prompt_metacodes import js_json  # noqa: E402
 from skill_tree import build_tree  # noqa: E402
 
-RG_MODES = ["audit", "regress", "bundle"]
+RG_MODES = ["audit", "regress", "bundle", "export"]
 RG_GROWTH = ["server_passed", "app_passed", "live_passed", "mutants_killed"]
 RG_FAILURE = ["server_failed", "app_failed", "live_failed", "mutants_survived", "skillspector_critical", "skillspector_high", "contrast_failing", "purity_violations"]
 
@@ -46,7 +51,8 @@ def _fail(message, detail=None):
 
 
 def _sha(text):
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    """SHA-256 of the text as TextEncoder encodes it: a lone surrogate becomes U+FFFD."""
+    return hashlib.sha256(re.sub(r"[\ud800-\udfff]", "\ufffd", text).encode("utf-8")).hexdigest()
 
 
 def _r4(v):
@@ -142,6 +148,92 @@ def release_bundle(r, ctx):
     return {"mode": "bundle", "skills": parts, "pages": pages, "tests": tests, "shared_tests": shared, "model": model, "notes": notes, "steps": steps, "chain_sha256": chain, "sent": False}
 
 
+def canonical(v):
+    """The exported document with keys sorted at every level, so the same facts always give the same text."""
+    if isinstance(v, list):
+        return [canonical(x) for x in v]
+    if not isinstance(v, dict):
+        return v
+    return {k: canonical(v[k]) for k in sorted(v)}
+
+
+def model_section(m):
+    """The model's part of the document: what impact analysis said, nothing added."""
+    if not m:
+        return None
+    f = m["family"]
+    return {"model": m["model"], "use": m["use"], "found": m["found"], "verdict": m["verdict"], "note": m["note"],
+            "family": f and {"family": f["family"], "licence": f["licence"], "card": f["card"], "read": f["read"], "terms": f["terms"]}, "memory": m["memory"], "context": m["context"], "offload": m["offload"]}
+
+
+def _model_lines(m):
+    f = m["family"]
+    lines = ["## Model", "- Name: " + m["model"] + " (" + m["use"] + ")", "- Family: " + (f["family"] + ", card " + f["card"] + ", read " + f["read"] if f else "not in the catalog"), "- Licence verdict: " + m["verdict"]]
+    if f:
+        lines.append("- Licence: " + f["licence"])
+    if f and f["terms"]:
+        t = f["terms"]
+        lines.append("- Terms: " + t["requirement"] + ", " + ("at any revenue" if t["when"] == "always" else "above US$" + js_json(t["revenue_usd_12m"]) + " over 12 months") + ", file SHA-256 " + t["sha256"])
+    if m["memory"]:
+        w = m["memory"]
+        lines.append("- Weights: " + ("not estimated (" + w["basis"] + ")" if w["weights_gb"] is None else js_json(w["weights_gb"]) + " GB at " + js_json(w["bits"]) + " bits"))
+    if m["context"]:
+        c = m["context"]
+        lines += ["- Context memory: " + ("not estimated (" + c["basis"] + (": " + ", ".join(c["blocking"]) if c["blocking"] else "") + ")" if c["kv_gb"] is None else js_json(c["kv_gb"]) + " GB for " + js_json(c["tokens"]) + " tokens (" + c["attention"] + ")"),
+                  "- Total: " + ("not estimated" if c["total_gb"] is None else js_json(c["total_gb"]) + " GB"),
+                  "- Longest documented context: " + ("unknown" if c["max_context"] is None else js_json(c["max_context"]) + (" (exceeded)" if c["exceeds"] else ""))]
+    if m["offload"]:
+        o = m["offload"]
+        where = ("this laptop, " + js_json(o["margin_gb"]) + " GB to spare of " + js_json(o["laptop_gb"]) + " GB" if o["verdict"] == "local"
+                 else "a web host, " + js_json(o["shortfall_gb"]) + " GB more than the laptop's " + js_json(o["laptop_gb"]) + " GB" if o["verdict"] == "web_offload"
+                 else "not decided (" + o["reason"] + ")")
+        lines += ["- Where it runs: " + where, "- Licence on a site of your own: " + o["own_use"] + " while only you use it, " + o["others_use"] + " once others do"]
+    return lines
+
+
+def bundle_markdown(d, head):
+    """The same document as Markdown, read from the key-sorted data; head is the caller's own opening sections."""
+    lines = ["# " + d["title"], "", *head, "## Skills in order (Kahn's layers)"]
+    for i, layer in enumerate(d["order"]["layers"]):
+        lines.append("- Layer " + str(i + 1) + ": " + ", ".join(layer))
+    if d["order"]["cycle"]:
+        lines.append("- On a cycle, left out: " + ", ".join(d["order"]["cycle"]))
+    lines += ["", "## Pages to test again"] + (["- " + p for p in d["pages"]] if d["pages"] else ["- none"]) + ["", "## Test commands", "", "```bash"] + d["tests"] + ["```", ""]
+    if d["model"]:
+        lines += [*_model_lines(d["model"]), ""]
+    lines += ["## Locked steps"] + ["- " + s["action"] + " " + s["target"] + ": waiting for approval" for s in d["steps"]] + ["", "## Release chain", "- SHA-256: " + d["release_chain_sha256"]]
+    return "\n".join(lines) + "\n"
+
+
+def _pretty(data):
+    """JSON.stringify(data, null, 2): two-space indent, raw non-ASCII, lone surrogates escaped."""
+    text = json.dumps(data, ensure_ascii=False, indent=2)
+    return re.sub(r"[\ud800-\udfff]", lambda m: f"\\u{ord(m.group(0)):04x}", text)
+
+
+def export_bundle(doc, head=()):
+    """The document as text to copy, in two forms, each with its SHA-256."""
+    data = canonical(doc)
+    text = _pretty(data) + "\n"
+    markdown = bundle_markdown(data, head)
+    return {"format": "aether-prime-bundle-v1", "json": text, "markdown": markdown, "bundle_sha256": _sha(text), "markdown_sha256": _sha(markdown)}
+
+
+def release_document(r, ctx):
+    """The release part of an export, shared with the architect studio."""
+    b = release_bundle(r, ctx)
+    order = skill_order(ctx.get("deps"), [p["skill"] for p in b["skills"]])
+    steps = b["steps"] + [{"action": "write", "target": "bundle file", "gate": "approval", "locked": True, "status": "pending_approval"}]
+    doc = {"title": "Aether Prime release bundle", "order": {"layers": order["layers"], "cycle": order["cycle"]}, "pages": b["pages"], "tests": b["tests"] + b["shared_tests"],
+           "model": model_section(b["model"]), "steps": steps, "release_chain_sha256": b["chain_sha256"]}
+    return b, doc
+
+
+def release_export(r, ctx):
+    b, doc = release_document(r, ctx)
+    return {"mode": "export", "export": export_bundle(doc), "steps": doc["steps"], "chain_sha256": b["chain_sha256"], "sent": False}
+
+
 def release_gate(req, ctx=None):
     r = req if isinstance(req, dict) else _fail("Send an object with a mode.", "")
     c = ctx if isinstance(ctx, dict) else {}
@@ -151,7 +243,9 @@ def release_gate(req, ctx=None):
         return regress_gate(r)
     if r.get("mode") == "bundle":
         return release_bundle(r, c)
-    return _fail("The mode is audit, regress or bundle.", "mode")
+    if r.get("mode") == "export":
+        return release_export(r, c)
+    return _fail("The mode is audit, regress, bundle or export.", "mode")
 
 
 def main(argv=None):
